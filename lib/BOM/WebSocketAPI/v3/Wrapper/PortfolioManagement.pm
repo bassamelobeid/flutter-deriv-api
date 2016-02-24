@@ -27,10 +27,9 @@ sub portfolio {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token          => $c->stash('token'),
-            source         => $c->stash('source')});
+            args   => $args,
+            token  => $c->stash('token'),
+            source => $c->stash('source')});
     return;
 }
 
@@ -92,10 +91,9 @@ sub proposal_open_contract {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token          => $c->stash('token'),
-            contract_id    => $args->{contract_id}});
+            args        => $args,
+            token       => $c->stash('token'),
+            contract_id => $args->{contract_id}});
     return;
 }
 
@@ -157,10 +155,9 @@ sub sell_expired {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token          => $c->stash('token'),
-            source         => $c->stash('source')});
+            args   => $args,
+            token  => $c->stash('token'),
+            source => $c->stash('source')});
     return;
 }
 
