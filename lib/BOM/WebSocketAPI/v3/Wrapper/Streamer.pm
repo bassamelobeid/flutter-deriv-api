@@ -308,12 +308,11 @@ sub process_transaction_updates {
                                     }
                                 },
                                 {
-                                    args           => $args,
-                                    client_loginid => $c->stash('loginid'),
-                                    token          => $c->stash('token'),
-                                    short_code     => $payload->{short_code},
-                                    currency       => $payload->{currency_code},
-                                    language       => $c->stash('request')->language
+                                    args       => $args,
+                                    token      => $c->stash('token'),
+                                    short_code => $payload->{short_code},
+                                    currency   => $payload->{currency_code},
+                                    language   => $c->stash('request')->language
                                 });
                         } else {
                             $details->{$type}->{longcode}         = $payload->{payment_remark};

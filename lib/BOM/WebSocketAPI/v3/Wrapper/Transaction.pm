@@ -32,7 +32,6 @@ sub buy {
         },
         {
             args                => $args,
-            client_loginid      => $c->stash('loginid'),
             token               => $c->stash('token'),
             source              => $c->stash('source'),
             contract_parameters => $contract_parameters
@@ -58,10 +57,9 @@ sub sell {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token          => $c->stash('token'),
-            source         => $c->stash('source')});
+            args   => $args,
+            token  => $c->stash('token'),
+            source => $c->stash('source')});
     return;
 }
 
