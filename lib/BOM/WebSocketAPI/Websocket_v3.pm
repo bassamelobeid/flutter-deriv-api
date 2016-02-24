@@ -334,15 +334,7 @@ sub __handle {
             $c->stash('connection_id' => Data::UUID->new()->create_str());
         }
 
-        my $limit = 1;
-        if (grep { $_ eq $descriptor->{category} } ('ping', 'time')) {
-            $limit = 0;
-        }
-        if ($c->stash('loginid') and not $c->stash('is_virtual') and grep { $_ eq $descriptor->{category} } ('buy', 'sell', 'proposal')) {
-            $limit = 0;
-        }
-
-        if ($limit) {
+        if (not grep { $_ eq $descriptor->{category} } ('ping', 'time')) {
             my $limiting_service = 'websocket_call';
             if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
                 $limiting_service = 'websocket_call_expensive';
@@ -352,6 +344,12 @@ sub __handle {
             }
             if ('verify_email' eq $descriptor->{category}) {
                 $limiting_service = 'websocket_call_email';
+            }
+            if (    $c->stash('loginid')
+                and not $c->stash('is_virtual')
+                and grep { $_ eq $descriptor->{category} } ('buy', 'sell', 'proposal', 'proposal_open_contract'))
+            {
+                $limiting_service = 'websocket_real_pricing';
             }
             if (
                 not within_rate_limits({
