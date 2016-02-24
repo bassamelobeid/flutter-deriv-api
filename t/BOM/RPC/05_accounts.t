@@ -560,6 +560,7 @@ subtest $method => sub {
     ok(%msg, "email received");
     clear_mailbox();
 
+    # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{unlock_password} = $tmp_password;
     is(
