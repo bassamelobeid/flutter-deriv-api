@@ -65,7 +65,6 @@ clear_mailbox();
 my $m = BOM::Database::Model::AccessToken->new;
 my $token = $m->create_token($test_loginid, 'test token');
 
-
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -141,9 +140,39 @@ subtest $method => sub {
 
 $method = 'statement';
 subtest $method => sub {
-  is($c->tcall($method, {language => 'ZH_CN', token => '12345'})->{error}{message_to_client}, '令牌无效。', 'invalid token error');
-  ok(!$c->tcall($method, {language => 'ZH_CN', token => undef, client_loginid => 'CR0021'})->{error},      'no token error if token undef');
-  ok(!$c->tcall($method, {language => 'ZH_CN', token => $token, client_loginid => $test_loginid})->{error},      'no token error if token is valid');
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    ok(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => undef,
+                client_loginid => 'CR0021'
+            }
+            )->{error},
+        'no token error if token undef'
+    );
+    ok(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => $token,
+                client_loginid => $test_loginid
+            }
+            )->{error},
+        'no token error if token is valid'
+    );
     is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
     is(
         $c->tcall(
@@ -238,6 +267,40 @@ subtest $method => sub {
 
 $method = 'balance';
 subtest $method => sub {
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    ok(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => undef,
+                client_loginid => 'CR0021'
+            }
+            )->{error},
+        'no token error if token undef'
+    );
+    ok(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => $token,
+                client_loginid => $test_loginid
+            }
+            )->{error},
+        'no token error if token is valid'
+    );
+
     is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
     is(
         $c->tcall(
@@ -266,6 +329,40 @@ subtest $method => sub {
 
 $method = 'get_account_status';
 subtest $method => sub {
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    ok(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => undef,
+                client_loginid => 'CR0021'
+            }
+            )->{error},
+        'no token error if token undef'
+    );
+    ok(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => $token,
+                client_loginid => $test_loginid
+            }
+            )->{error},
+        'no token error if token is valid'
+    );
+
     is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
     is(
         $c->tcall(
@@ -294,6 +391,40 @@ subtest $method => sub {
 
 $method = 'change_password';
 subtest $method => sub {
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    ok(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => undef,
+                client_loginid => 'CR0021'
+            }
+            )->{error},
+        'no token error if token undef'
+    );
+    ok(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => $token,
+                client_loginid => $test_loginid
+            }
+            )->{error},
+        'no token error if token is valid'
+    );
+
     is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
     is(
         $c->tcall(
