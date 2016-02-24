@@ -18,7 +18,6 @@ use Path::Tiny;
 use BOM::System::RedisReplicated;
 use Try::Tiny;
 use List::Util qw(first);
-use YAML::CacheLoader qw(LoadFile);
 
 BOM::Utility::Log4perl::init_log4perl_console;
 
@@ -79,20 +78,6 @@ sub script_run {
     }
 
     return 0;
-}
-
-sub _is_categorized {
-    my $event = shift;
-
-    my $categories    = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
-    my @available_cat = keys %$categories;
-    my $name          = $event->event_name;
-    $name =~ s/\s/_/g;
-    my $key            = $event->symbol . '_' . $event->impact . '_' . $name;
-    my $default_key    = $event->symbol . '_' . $event->impact . '_default';
-    my $is_categorized = first { $_ =~ /($key|$default_key)/ } @available_cat;
-
-    return $is_categorized // 0;
 }
 
 no Moose;

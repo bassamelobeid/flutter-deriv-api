@@ -80,7 +80,7 @@ sub _build_document {
 
     my $document = $self->chronicle_reader->get('interest_rates', $self->symbol);
 
-    if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
+    if ($self->for_date and $self->for_date->epoch < Date::Utility->new($document->{date})->epoch) {
         $document = $self->chronicle_reader->get_for('interest_rates', $self->symbol, $self->for_date->epoch);
         $document //= {};
     }
