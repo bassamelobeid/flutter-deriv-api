@@ -402,7 +402,7 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    ok(
+    isnt(
         !$c->tcall(
             $method,
             {
@@ -411,9 +411,10 @@ subtest $method => sub {
                 client_loginid => 'CR0021'
             }
             )->{error},
+        '令牌无效。',
         'no token error if token undef'
     );
-    ok(
+    isnt(
         !$c->tcall(
             $method,
             {
@@ -422,6 +423,7 @@ subtest $method => sub {
                 client_loginid => $test_loginid
             }
             )->{error},
+        '令牌无效。',
         'no token error if token is valid'
     );
 
