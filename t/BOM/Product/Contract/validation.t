@@ -1107,40 +1107,6 @@ subtest 'intraday indices duration test' => sub {
     test_error_list('buy', $c, $expected_reasons);
 };
 
-subtest 'intraday index missing pricing coefficient' => sub {
-    my $now = Date::Utility->new('2015-04-08 00:30:00');
-    my $tick_params = {
-        symbol => 'not_checked',
-        epoch  => $now->epoch,
-        quote  => 100
-    };
-    my $tick   = BOM::Market::Data::Tick->new($tick_params);
-    my $params = {
-        bet_type     => 'FLASHU',
-        underlying   => 'AS51',
-        date_start   => $now,
-        date_pricing => $now,
-        duration     => '15m',
-        currency     => 'AUD',
-        current_tick => $tick,
-        payout       => 100,
-        barrier      => 'S0P',
-    };
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'index',
-        {
-            symbol => 'FTSE',
-            recorded_date   => Date::Utility->new($params->{date_pricing}),
-        });
-    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-    $mock_contract->mock('pricing_engine_name' => sub { 'BOM::Product::Pricing::Engine::Intraday::Index' });
-    my $mock_engine = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Index');
-    $mock_engine->mock('_calibration_coefficient', sub {undef});
-    my $c = produce_contract($params);
-    my $expected_reasons = [qr/Calibration coefficient missing/];
-    test_error_list('buy', $c, $expected_reasons);
-};
-
 subtest 'expiry_daily expiration time' => sub {
     my $now         = Date::Utility->new('2014-10-08 00:15:00');
     my $tick_params = {
@@ -1213,113 +1179,6 @@ subtest 'spot reference check' => sub {
     test_error_list('buy', $c, $expected_reasons);
 };
 
-subtest 'economic events blockout period' => sub {
-    my $now               = Date::Utility->new('2015-12-01 10:00');
-    my $underlying_symbol = 'frxUSDJPY';
-    my $volsurface        = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => $underlying_symbol,
-            recorded_date => $now,
-        });
-    my $tick_params = {
-        symbol => $underlying_symbol,
-        epoch  => $now->epoch,
-        quote  => 100
-    };
-    my $tick  = BOM::Market::Data::Tick->new($tick_params);
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'economic_events',
-        {
-            recorded_date => $now->minus_time_interval('15m1s'),
-            events => [{
-                    symbol       => 'USD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('15m1s'),
-                }],
-        });
-
-    my $bet_params = {
-        underlying   => $underlying_symbol,
-        bet_type     => 'CALL',
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $now,
-        date_pricing => $now,
-        duration     => '1m59s',
-        barrier      => 'S0P',
-        current_tick => $tick,
-        volsurface   => $volsurface,
-    };
-    my $c = produce_contract($bet_params);
-    ok !$c->_validate_start_date, 'no error if economic_events is not within period';
-
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'economic_events',
-        {
-            recorded_date => $now->minus_time_interval('14m59s'),
-            events => [{
-                    symbol       => 'USD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('15m1s')
-                },{
-                    symbol       => 'AUD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('14m59s')
-                }]
-        });
-    $c = produce_contract($bet_params);
-    ok !$c->_validate_start_date, 'no error if economic_events is not USD';
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'economic_events',
-        {
-            recorded_date => $now->minus_time_interval('14m59s'),
-            events => [{
-                    symbol       => 'USD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('15m1s')
-                },{
-                    symbol       => 'AUD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('14m59s')
-                },
-                {
-
-                    symbol       => 'USD',
-                    impact       => 4,
-                    release_date => $now->minus_time_interval('14m59s')
-                }],
-        });
-    $c = produce_contract($bet_params);
-    ok !$c->_validate_start_date, 'no error if economic_events is not USD level 5';
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'economic_events',
-        {
-            recorded_date => $now->minus_time_interval('15m58s'),
-            events => [ {
-                    symbol       => 'USD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('15m')
-                }]
-        });
-    $c = produce_contract($bet_params);
-    ok $c->_validate_start_date, 'error if economic_events is USD level 5';
-    like(
-        ($c->_validate_start_date)[0]->{message_to_client},
-        qr/Trades on Forex with duration less than 2 minutes are temporarily disabled until 10:00/,
-        'error message'
-    );
-    $bet_params->{underlying} = 'FTSE';
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'index',
-        {
-            symbol => 'FTSE',
-            recorded_date   => Date::Utility->new($bet_params->{date_pricing}),
-        });
-    $c = produce_contract($bet_params);
-    ok !$c->_validate_start_date, 'no error if underlying is not FX';
-};
-
 subtest 'zero vol' => sub {
     my $now = Date::Utility->new('2016-01-27');
     my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -1351,7 +1210,6 @@ subtest 'zero vol' => sub {
     is $c->pricing_vol, 0, 'pricing vol is zero';
     like($c->primary_validation_error->message, qr/Zero volatility/, 'error');
 };
-
 # Let's not surprise anyone else
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig_suspended),
     'Switched RANGE bets back on, if they were.');
