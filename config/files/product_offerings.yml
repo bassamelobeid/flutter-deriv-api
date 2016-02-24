@@ -1,5 +1,5 @@
 ---
-AEX:
+AEX: &limited_equities
   callput:
     daily:
       spot:
@@ -39,7 +39,7 @@ AEX:
         american:
           max: 365d
           min: 7d
-AS51:
+AS51: &limited_ao_equities
   callput:
     daily:
       spot:
@@ -97,7 +97,7 @@ BBBELG: *stocks
 BBGBLB: *stocks
 BBKBC: *stocks
 BBUCB: *stocks
-BFX:
+BFX: &limited_callput
   callput:
     daily:
       spot:
@@ -116,7 +116,7 @@ BFX:
           max: 1h
           min: 15m
           payout_limit: '5000'
-BSESENSEX30:
+BSESENSEX30: &forward_and_daily
   callput:
     daily:
       spot:
@@ -128,18 +128,7 @@ BSESENSEX30:
         euro_atm:
           max: 1d
           min: 5m
-DFMGI:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
+DFMGI: *forward_and_daily
 DJI:
   callput:
     daily:
@@ -173,46 +162,7 @@ DJI:
         american:
           max: 365d
           min: 1d
-FCHI:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 7d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '5000'
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 7d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 7d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 7d
+FCHI: *limited_equities
 FPACA: *stocks
 FPAI: *stocks
 FPAIR: *stocks
@@ -237,169 +187,8 @@ FPSAN: *stocks
 FPSGO: *stocks
 FPSU: *stocks
 FPVIV: *stocks
-FTAW01: &forward_only
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-FTSE:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 7d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 7d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-GDAXI:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 7d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '5000'
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 7d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 7d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 7d
-HSI:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '5000'
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 7d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 7d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-IBEX35:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-IBOV:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-ISEQ:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '5000'
+GDAXI: *limited_equities
+HSI: *limited_ao_equities
 JCI:
   callput:
     daily:
@@ -412,19 +201,7 @@ JCI:
         euro_atm:
           max: 1d
           min: 15m
-KOSPI2:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-N225: &generic_index
+N225: &index_no_intraday
   callput:
     daily:
       spot:
@@ -456,18 +233,7 @@ NAHEIA: *stocks
 NAINGA: *stocks
 NARDSA: *stocks
 NAUNA: *stocks
-OBX:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
+OBX: *forward_and_daily
 RDBEAR: &random_daily_nightly
   asian:
     tick:
@@ -511,7 +277,7 @@ RDBEAR: &random_daily_nightly
       spot:
         american: *two_minutes_to_day
 RDBULL: *random_daily_nightly
-RDMARS:
+RDMARS: &reset_random
   asian:
     tick:
       spot:
@@ -549,120 +315,9 @@ RDMARS:
         euro_non_atm:
           max: 1d
           min: 5m
-RDMOON:
-  asian:
-    tick:
-      spot:
-        asian:
-          max: '10'
-          min: '5'
-          payout_limit: '10000'
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          max: 1d
-          min: 15s
-        euro_non_atm:
-          max: 1d
-          min: 5m
-    tick:
-      spot:
-        euro_atm:
-          max: '10'
-          min: '5'
-  digits:
-    tick:
-      spot:
-        non_financial:
-          max: '10'
-          min: '5'
-  endsinout:
-    intraday:
-      spot:
-        euro_non_atm:
-          max: 1d
-          min: 5m
-RDSUN:
-  asian:
-    tick:
-      spot:
-        asian:
-          max: '10'
-          min: '5'
-          payout_limit: '10000'
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          max: 1d
-          min: 15s
-        euro_non_atm:
-          max: 1d
-          min: 5m
-    tick:
-      spot:
-        euro_atm:
-          max: '10'
-          min: '5'
-  digits:
-    tick:
-      spot:
-        non_financial:
-          max: '10'
-          min: '5'
-  endsinout:
-    intraday:
-      spot:
-        euro_non_atm:
-          max: 1d
-          min: 5m
-RDVENUS:
-  asian:
-    tick:
-      spot:
-        asian:
-          max: '10'
-          min: '5'
-          payout_limit: '10000'
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          max: 1d
-          min: 15s
-        euro_non_atm:
-          max: 1d
-          min: 5m
-    tick:
-      spot:
-        euro_atm:
-          max: '10'
-          min: '5'
-  digits:
-    tick:
-      spot:
-        non_financial:
-          max: '10'
-          min: '5'
-  endsinout:
-    intraday:
-      spot:
-        euro_non_atm:
-          max: 1d
-          min: 5m
+RDMOON: *reset_random
+RDSUN: *reset_random
+RDVENUS: *reset_random
 RDYANG: *random_daily_nightly
 RDYIN: *random_daily_nightly
 R_100: &random_index
@@ -676,10 +331,10 @@ R_100: &random_index
   callput:
     daily:
       spot:
-        euro_atm: &day_to_year
+        euro_atm: &one_day_to_year
           max: 365d
           min: 1d
-        euro_non_atm: *day_to_year
+        euro_non_atm: *one_day_to_year
     intraday:
       forward:
         euro_atm: *two_minutes_to_day
@@ -702,7 +357,7 @@ R_100: &random_index
   endsinout:
     daily:
       spot:
-        euro_non_atm: *day_to_year
+        euro_non_atm: *one_day_to_year
     intraday:
       spot:
         euro_non_atm: *two_minutes_to_day
@@ -737,338 +392,10 @@ R_100: &random_index
 R_25: *random_index
 R_50: *random_index
 R_75: *random_index
-SASEIDX:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-SGES: *forward_only
-SGFS: *forward_only
-SGH: *forward_only
-SGI: *forward_only
-SGM: *forward_only
-SGN: *forward_only
-SGT: *forward_only
-SGU: *forward_only
-SPBMGUU: *forward_only
-SPC: *generic_index
-SPGSAM: *forward_only
-SPGSBF: *forward_only
-SPGSBO: *forward_only
-SPGSBR: *forward_only
-SPGSCC: *forward_only
-SPGSCN: *forward_only
-SPGSCR: *forward_only
-SPGSCT: *forward_only
-SPGSEN: *forward_only
-SPGSGO: *forward_only
-SPGSGR: *forward_only
-SPGSHO: *forward_only
-SPGSIC: *forward_only
-SPGSIK: *forward_only
-SPGSIL: *forward_only
-SPGSIZ: *forward_only
-SPGSKC: *forward_only
-SPGSKW: *forward_only
-SPGSNG: *forward_only
-SPGSPT: *forward_only
-SPGSSB: *forward_only
-SPGSSO: *forward_only
-SPGSWT: *forward_only
-SPGTECOL: *forward_only
-SPGTIND: *forward_only
-SPGTNE: *forward_only
-SPSIAD: *forward_only
-SPSIBC: *forward_only
-SPSIBI: *forward_only
-SPSIBK: *forward_only
-SPSICS: *forward_only
-SPSIINS: *forward_only
-SPSILT: *forward_only
-SPSIMF: *forward_only
-SPSIPH: *forward_only
-SPSIRE: *forward_only
-SPSISC: *forward_only
-SPSITN: *forward_only
-SPTSX60:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '5000'
-SREITGUP: *forward_only
-SSECOMP:
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 1h
-SSMI:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 7d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '5000'
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 7d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 7d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 7d
-STI:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '5000'
-SX5E:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 7d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '5000'
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 7d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 7d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 7d
-SYNAEX:
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-          payout_limit: '500'
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '500'
-SYNDJI:
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-          payout_limit: '500'
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '500'
-SYNFCHI:
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-          payout_limit: '500'
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '500'
-SYNFTSE:
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-          payout_limit: '500'
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '500'
-SYNGDAXI:
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-          payout_limit: '500'
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '500'
-SYNSX5E:
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-          payout_limit: '500'
-      spot:
-        euro_atm:
-          historical_pricer_max: 1h
-          historical_pricer_min: 15m
-          max: 1h
-          min: 15m
-          payout_limit: '500'
-SZSECOMP:
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 1h
-TOP40:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-UKBATS:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-UKBP:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-UKHSBA:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-UKTSCO:
+SPC: *index_no_intraday
+SSMI: *limited_equities
+STI: *limited_callput
+TOP40: &forward_and_daily
   callput:
     daily:
       spot:
@@ -1112,7 +439,7 @@ frxAUDCAD: &inactive_fx
           max: 1d
           min: 2m
 frxAUDCHF: *inactive_fx
-frxAUDJPY:
+frxAUDJPY: &active_fx
   callput:
     daily:
       spot:
@@ -1165,428 +492,28 @@ frxAUDJPY:
           min: 1h
 frxAUDNZD: *inactive_fx
 frxAUDPLN: *inactive_fx
-frxAUDUSD:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxBROUSD:
+frxAUDUSD: *active_fx
+frxBROUSD: &energy
   callput:
     intraday:
       forward:
         euro_atm:
           max: 1d
           min: 5m
-frxEURAUD:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxEURCAD:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxEURCHF:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxEURGBP:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxEURJPY:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
+frxEURAUD: *active_fx
+frxEURCAD: *active_fx
+frxEURCHF: *active_fx
+frxEURGBP: *active_fx
+frxEURJPY: *active_fx
 frxEURNZD: *inactive_fx
-frxEURUSD:
+frxEURUSD: *active_fx
+frxGBPAUD: *active_fx
+frxGBPCAD: &no_intraday_pd_fx
   callput:
     daily:
       spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxGBPAUD:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxGBPCAD:
-  callput:
-    daily:
-      spot:
-        euro_atm: *day_to_year
-        euro_non_atm: *day_to_year
+        euro_atm: *one_day_to_year
+        euro_non_atm: *one_day_to_year
     intraday:
       forward:
         euro_atm:
@@ -1601,68 +528,18 @@ frxGBPCAD:
   endsinout:
     daily:
       spot:
-        euro_non_atm: *day_to_year
+        euro_non_atm: *one_day_to_year
   staysinout:
     daily:
       spot:
-        american: *day_to_year
+        american: *one_day_to_year
   touchnotouch:
     daily:
       spot:
-        american: *day_to_year
+        american: *one_day_to_year
 frxGBPCHF: *inactive_fx
-frxGBPJPY:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxGBPNOK:
+frxGBPJPY: *active_fx
+frxGBPNOK: &forward_only
   callput:
     intraday:
       forward:
@@ -1670,302 +547,23 @@ frxGBPNOK:
           max: 1d
           min: 5m
 frxGBPNZD: *inactive_fx
-frxGBPPLN:
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-frxGBPUSD:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxNZDJPY:
+frxGBPPLN: *forward_only
+frxGBPUSD: *active_fx
+frxNZDJPY: *forward_and_daily
+frxNZDUSD: *no_intraday_pd_fx
+frxUSDCAD: *active_fx
+frxUSDCHF: *active_fx
+frxUSDJPY: *active_fx
+frxUSDMXN: *forward_and_daily
+frxUSDNOK: *forward_only
+frxUSDPLN: *forward_and_daily
+frxUSDSEK: *forward_only
+frxXAGUSD: &euro_path_dependent_commodities
   callput:
     daily:
       spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-frxNZDUSD:
-  callput:
-    daily:
-      spot:
-        euro_atm: *day_to_year
-        euro_non_atm: *day_to_year
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 1m
-          max: 1d
-          min: 1m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm: *day_to_year
-  staysinout:
-    daily:
-      spot:
-        american: *day_to_year
-  touchnotouch:
-    daily:
-      spot:
-        american: *day_to_year
-frxUSDCAD:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxUSDCHF:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxUSDJPY:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-        euro_non_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 2m
-          max: 1d
-          min: 2m
-        euro_non_atm:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 15m
-  endsinout:
-    daily:
-      spot:
-        euro_non_atm:
-          max: 365d
-          min: 1d
-  staysinout:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-  touchnotouch:
-    daily:
-      spot:
-        american:
-          max: 365d
-          min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
-frxUSDMXN:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-frxUSDNOK:
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-frxUSDPLN:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-frxUSDSEK:
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-frxXAGUSD: &metal
-  callput:
-    daily:
-      spot:
-        euro_atm: *day_to_year
-        euro_non_atm: *day_to_year
+        euro_atm: *one_day_to_year
+        euro_non_atm: *one_day_to_year
     intraday:
       forward:
         euro_atm:
@@ -1988,19 +586,13 @@ frxXAGUSD: &metal
   touchnotouch:
     daily:
       spot:
-        american: *day_to_year
-frxXAUUSD: *metal
-frxXPDUSD:
+        american: *one_day_to_year
+frxXAUUSD: *euro_path_dependent_commodities
+frxXPDUSD: &restricted_metals
   callput:
     daily:
       spot:
         euro_atm:
           max: 365d
           min: 1d
-frxXPTUSD:
-  callput:
-    daily:
-      spot:
-        euro_atm:
-          max: 365d
-          min: 1d
+frxXPTUSD: *restricted_metals
