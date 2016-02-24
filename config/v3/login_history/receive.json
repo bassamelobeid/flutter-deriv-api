@@ -2,7 +2,7 @@
   "$schema":"http://json-schema.org/draft-04/schema#",
   "type":"object",
   "title":"Login History Response",
-  "description":"50 recent login logout history records",
+  "description": "Recent login logout history records",
   "properties":{
     "echo_req":{
       "title":"Echo request",
@@ -21,11 +21,11 @@
             },
             "action":{
               "type":"string",
-              "description":"It is the type of action Example: login, logout"
+              "description": "It is the type of action Example: login, logout"
             },
             "environment":{
               "type":"string",
-              "description":"Provide details about browser, device used during login or logout"
+              "description": "Provide details about browser, device used during login or logout"
             },
             "shortcode": {
               "type": "integer",
