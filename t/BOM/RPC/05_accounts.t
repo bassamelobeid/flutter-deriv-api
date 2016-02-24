@@ -543,17 +543,17 @@ subtest $method => sub {
     $test_client->save;
     is($c->tcall($method, $params)->{status}, 1, 'no unlock_password && lock_password, and set password before, status will be 1');
     $params->{args}{lock_password} = $tmp_new_password;
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was locked.', 'return error if already locked');
+    is($c->tcall($method, $params)->{error}{message_to_client}, '您的收银台已被锁定。', 'return error if already locked');
     $test_client->cashier_setting_password('');
     $test_client->save;
     $params->{args}{lock_password} = $password;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Please use a different password than your login password.',
+        '请使用与登录密码不同的密码。',
         'return error if lock password same with user password'
     );
     $params->{args}{lock_password} = '1111111';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
+    is($c->tcall($method, $params)->{error}{message_to_client}, '密码安全度不够。', 'check strong');
     $params->{args}{lock_password} = $tmp_new_password;
 
     clear_mailbox();
@@ -562,7 +562,7 @@ subtest $method => sub {
     $mocked_client->mock('save', sub { return undef });
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, an error occurred while processing your account.',
+        '对不起，在处理您的账户时出错。',
         'return error if cannot save password'
     );
     $mocked_client->unmock_all;
@@ -581,14 +581,14 @@ subtest $method => sub {
     $test_client->save;
     delete $params->{args}{lock_password};
     $params->{args}{unlock_password} = '123456';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
+    is($c->tcall($method, $params)->{error}{message_to_client}, '您的收银台没有被锁定。', 'return error if not locked');
 
     clear_mailbox();
     $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
     $test_client->save;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, you have entered an incorrect cashier password',
+        '对不起，您输入的收银台密码不正确',
         'return error if not correct'
     );
     $subject = 'Failed attempt to unlock cashier section';
@@ -604,7 +604,7 @@ subtest $method => sub {
     $params->{args}{unlock_password} = $tmp_password;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, an error occurred while processing your account.',
+        '对不起，在处理您的账户时出错。',
         'return error if cannot save'
     );
     $mocked_client->unmock_all;
