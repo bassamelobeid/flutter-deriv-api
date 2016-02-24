@@ -40,6 +40,7 @@ has uses_binary_spot => (
         {
             STI      => 1,
             SZSECOMP => 1,
+            BIST100  => 1,
         };
     },
 );
