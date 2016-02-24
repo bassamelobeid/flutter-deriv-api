@@ -27,7 +27,7 @@
               "type":"string",
               "description": "Provide details about browser, device used during login or logout"
             },
-            "shortcode": {
+            "status": {
               "type": "integer",
               "pattern": "^(1|0)$",
               "description": "Status of activity: 1 - success, 0 - failure"
