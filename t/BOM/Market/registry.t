@@ -38,7 +38,6 @@ subtest 'Market builds or configs test' => sub {
 
         isa_ok $config, 'BOM::Market';
         ok !$config->display_name,      'Display Name';
-        ok !$config->contracts_offered, 'Contracts Offered';
         ok !$config->equity;
         ok !$config->disabled,                 'disabled';
         ok !$config->reduced_display_decimals, 'Reduced Display Decimals';
@@ -66,7 +65,6 @@ subtest 'Market builds or configs test' => sub {
         isa_ok $forex, 'BOM::Market';
         is $forex->display_name, 'Forex', 'Correct display name';
         is $forex->display_order,     1;
-        ok $forex->contracts_offered, 'No contracts here, sorry';
         ok !$forex->equity;
         ok !$forex->disabled, 'But its not disabled';
         ok $forex->reduced_display_decimals;
@@ -111,7 +109,6 @@ subtest 'Market builds or configs test' => sub {
         isa_ok $commodities, 'BOM::Market';
         is $commodities->display_name,  'Commodities';
         is $commodities->display_order, 4;
-        ok $commodities->contracts_offered;
         ok !$commodities->equity;
         ok !$commodities->disabled;
         ok $commodities->reduced_display_decimals;
@@ -157,7 +154,6 @@ subtest 'Market builds or configs test' => sub {
         isa_ok $indices, 'BOM::Market';
         is $indices->display_name,  'Indices';
         is $indices->display_order, 2;
-        ok $indices->contracts_offered;
         ok $indices->equity;
         ok !$indices->disabled;
         ok !$indices->reduced_display_decimals;
@@ -203,7 +199,6 @@ subtest 'Market builds or configs test' => sub {
         isa_ok $random, 'BOM::Market';
         is $random->display_name,  'Randoms';
         is $random->display_order, 5;
-        ok $random->contracts_offered;
         ok !$random->equity;
         ok !$random->disabled;
         ok $random->reduced_display_decimals;
