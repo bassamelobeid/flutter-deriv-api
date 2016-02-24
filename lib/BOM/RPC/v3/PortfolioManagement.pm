@@ -129,9 +129,10 @@ sub proposal_open_contract {
         foreach my $fmb (@fmbs) {
             my $id  = $fmb->{id};
             my $bid = BOM::RPC::v3::Contract::get_bid({
-                short_code  => $fmb->{short_code},
-                contract_id => $id,
-                currency    => $client->currency
+                short_code    => $fmb->{short_code},
+                contract_id   => $id,
+                currency      => $client->currency,
+                purchase_time => $fmb->{purchase_time},
             });
             if (exists $bid->{error}) {
                 $response->{$id} = $bid;
