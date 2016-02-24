@@ -136,6 +136,7 @@ subtest $method => sub {
 
 $method = 'statement';
 subtest $method => sub {
+    is($c->tcall($method, {language => 'ZH_CN', token => '12345'})->{error}{message_to_client}, 'something', 'invalid token error');
     is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
     is(
         $c->tcall(
