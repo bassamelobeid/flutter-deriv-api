@@ -26,14 +26,20 @@ sub get_volatility {
 
     # naked volatility
     my $underlying = $self->underlying;
-    my ($current_epoch, $seconds_to_expiration) =
-        @{$args}{'current_epoch', 'seconds_to_expiration'};
+    my ($current_epoch, $seconds_to_expiration, $economic_events) =
+        @{$args}{'current_epoch', 'seconds_to_expiration', 'economic_events'};
 
     $self->error('current_epoch is not provided to get_volatility') unless $current_epoch;
 
     unless ($seconds_to_expiration) {
         $self->error('seconds_to_expiration is not provided to get_volatility');
         $seconds_to_expiration = 0;    #hard-coded it to zero second
+    }
+
+    # for contract where volatility doesn't matter,
+    # we will return the long term vol.
+    if ($args->{uses_flat_vol}) {
+        return $self->long_term_vol;
     }
 
     my $lookback_interval = Time::Duration::Concise->new(interval => max(900, $seconds_to_expiration) . 's');
@@ -70,14 +76,10 @@ sub get_volatility {
     # if there's error we just return long term volatility
     return $self->long_term_vol if $self->error;
 
-    #go back another hour because we expect the maximum impact on any news would not last for more than an hour.
-    my $start_lookback = $current_epoch - $seconds_to_expiration - 3600;
-    #plus 5 minutes for the shifting logic. If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
-    my $end_lookback    = $current_epoch + $seconds_to_expiration + 300;
-    my $economic_events = $self->_get_economic_events($start_lookback, $end_lookback);
-    my $weights         = _calculate_weights(\@time_samples_past, $economic_events);
-    my $sum_vol         = sum map { $returns_squared[$_] * $weights->[$_] } (0 .. $#time_samples_past);
-    my $observed_vol    = sqrt($sum_vol / sum(@$weights));
+    my $categorized_events = $self->_categorized_economic_events($economic_events);
+    my $weights            = _calculate_weights(\@time_samples_past, $categorized_events);
+    my $sum_vol            = sum map { $returns_squared[$_] * $weights->[$_] } (0 .. $#time_samples_past);
+    my $observed_vol       = sqrt($sum_vol / sum(@$weights));
 
     my $c_start = $args->{current_epoch};
     my $c_end   = $c_start + $args->{seconds_to_expiration};
@@ -99,8 +101,8 @@ sub get_volatility {
             start    => $c_start,
             duration => $args->{seconds_to_expiration},
         };
-        $news_past = _calculate_news_triangle(\@time_samples_past, $economic_events, $contract_details);
-        $news_fut  = _calculate_news_triangle(\@time_samples_fut,  $economic_events, $contract_details);
+        $news_past = _calculate_news_triangle(\@time_samples_past, $categorized_events, $contract_details);
+        $news_fut  = _calculate_news_triangle(\@time_samples_fut,  $categorized_events, $contract_details);
     }
 
     my $past_sum           = sum(map { ($seasonality_past->[$_] * $news_past->[$_])**2 * $weights->[$_] } (0 .. $#time_samples_past));
@@ -145,15 +147,10 @@ sub _seasonalize {
     return $seasonalized_vol;
 }
 
-sub _get_economic_events {
-    my ($self, $start, $end) = @_;
+sub _categorized_economic_events {
+    my ($self, $raw_events) = @_;
 
     my $underlying = $self->underlying;
-
-    my $raw_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
-            from => Date::Utility->new($start),
-            to   => Date::Utility->new($end)});
-    # static duration that needs to be replaced.
     my @events;
     foreach my $event (@$raw_events) {
         my $event_name = $event->{event_name};
