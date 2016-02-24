@@ -6,7 +6,7 @@ extends 'BOM::Product::Pricing::Engine::Intraday';
 use JSON qw(from_json);
 use List::Util qw(max min sum);
 use Sereal qw(decode_sereal);
-use YAML::CacheLoader qw(LoadFile);
+use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
@@ -22,6 +22,13 @@ sub clone {
         %$changes
     });
 }
+
+my $coefficient = LoadFile('/home/git/regentmarkets/bom/config/files/intraday_trend_calibration.yml');
+
+has coefficients => (
+    is      => 'ro',
+    default => sub { $coefficient },
+);
 
 has [qw(average_tick_count long_term_prediction)] => (
     is         => 'ro',
@@ -67,7 +74,7 @@ has _supported_types => (
 );
 
 has [
-    qw(coefficients probability intraday_delta_correction short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta commission_markup risk_markup)
+    qw(probability intraday_delta_correction short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta commission_markup risk_markup)
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -78,10 +85,6 @@ has [qw(_delta_formula _vega_formula)] => (
     is         => 'ro',
     lazy_build => 1,
 );
-
-sub _build_coefficients {
-    return LoadFile('/home/git/regentmarkets/bom/config/files/intraday_trend_calibration.yml');
-}
 
 =head1 probability
 
