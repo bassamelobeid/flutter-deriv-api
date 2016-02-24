@@ -39,10 +39,8 @@ sub authorize {
 sub logout {
     my $params = shift;
 
-    my $email   = $params->{client_email}   // '';
-    my $loginid = $params->{client_loginid} // '';
-
-    if ($email) {
+    if (my $email = $params->{client_email}) {
+        my $loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token}) // '';
         if (my $user = BOM::Platform::User->new({email => $email})) {
             $user->add_login_history({
                 environment => _login_env($params),
