@@ -491,6 +491,43 @@ subtest $method => sub {
 $method = 'cashier_password';
 subtest $method => sub {
 
+  is(
+     $c->tcall(
+               $method,
+               {
+                language => 'ZH_CN',
+                token    => '12345'
+               }
+              )->{error}{message_to_client},
+     '令牌无效。',
+     'invalid token error'
+    );
+  isnt(
+       !$c->tcall(
+                  $method,
+                  {
+                   language       => 'ZH_CN',
+                   token          => undef,
+                   client_loginid => 'CR0021'
+                  }
+                 )->{error},
+       '令牌无效。',
+       'no token error if token undef'
+      );
+  isnt(
+       !$c->tcall(
+                  $method,
+                  {
+                   language       => 'ZH_CN',
+                   token          => $token,
+                   client_loginid => $test_loginid
+                  }
+                 )->{error},
+       '令牌无效。',
+       'no token error if token is valid'
+      );
+
+
     #test lock
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code},             'AuthorizationRequired', 'need a valid client');
