@@ -535,6 +535,7 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok(%msg, "email received");
+    diag("mailbox:\n");
     diag(`cat /tmp/default.mailbox`);
     clear_mailbox();
 
