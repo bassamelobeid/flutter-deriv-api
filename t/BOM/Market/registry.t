@@ -31,7 +31,7 @@ subtest 'display_markets' => sub {
 
 subtest 'Market builds or configs test' => sub {
     subtest 'config' => sub {
-        plan tests => 18;
+        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $config = $registry->get('config');
@@ -57,7 +57,7 @@ subtest 'Market builds or configs test' => sub {
     };
 
     subtest 'forex' => sub {
-        plan tests => 18;
+        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $forex = $registry->get('forex');
@@ -101,7 +101,7 @@ subtest 'Market builds or configs test' => sub {
     };
 
     subtest 'commodities' => sub {
-        plan tests => 18;
+        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $commodities = $registry->get('commodities');
@@ -146,7 +146,7 @@ subtest 'Market builds or configs test' => sub {
     };
 
     subtest 'indices' => sub {
-        plan tests => 18;
+        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $indices = $registry->get('indices');
@@ -191,7 +191,7 @@ subtest 'Market builds or configs test' => sub {
     };
 
     subtest 'random' => sub {
-        plan tests => 18;
+        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $random = $registry->get('random');
