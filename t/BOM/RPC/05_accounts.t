@@ -14,6 +14,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Database::Model::AccessToken;
 
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
@@ -60,6 +61,10 @@ $user->save;
 $user->add_loginid({loginid => $test_loginid});
 $user->save;
 clear_mailbox();
+
+my $m = BOM::Database::Model::AccessToken->new;
+my $token = $m->create_token($test_loginid, $display_name);
+
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
@@ -136,7 +141,9 @@ subtest $method => sub {
 
 $method = 'statement';
 subtest $method => sub {
-    is($c->tcall($method, {language => 'ZH_CN', token => '12345'})->{error}{message_to_client}, 'something', 'invalid token error');
+  is($c->tcall($method, {language => 'ZH_CN', token => '12345'})->{error}{message_to_client}, '令牌无效。', 'invalid token error');
+  ok(!$c->tcall($method, {language => 'ZH_CN', token => undef, client_loginid => 'CR0021'})->{error},      'no token error if token undef');
+  ok(!$c->tcall($method, {language => 'ZH_CN', token => $token, client_loginid => $test_loginid})->{error},      'no token error if token is valid');
     is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
     is(
         $c->tcall(
