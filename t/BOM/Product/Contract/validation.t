@@ -77,14 +77,14 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol        => $_,
         recorded_date => $an_hour_earlier,
-    }) for (qw/USD JPY EUR AUD SGD GBP/);
+    }) for (qw/USD JPY EUR AUD SGD GBP JPY-USD EUR-USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol        => $_,
         recorded_date => $an_hour_earlier->minus_time_interval('150d'),
-    }) for (qw/USD JPY EUR AUD SGD GBP/);
+    }) for (qw/USD JPY EUR AUD SGD GBP JPY-USD EUR-USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',

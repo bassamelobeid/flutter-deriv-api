@@ -28,6 +28,12 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date   => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency',
+    {
+        symbol => 'JPY-USD',
+        recorded_date   => $now,
+    });
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',

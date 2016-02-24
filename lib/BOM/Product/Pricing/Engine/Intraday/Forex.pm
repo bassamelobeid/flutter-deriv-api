@@ -14,6 +14,7 @@ use BOM::Utility::ErrorStrings qw( format_error_string );
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
+use BOM::Platform::Static::Config;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -440,7 +441,7 @@ sub _build_commission_markup {
     my $bet = $self->bet;
     my $comm_base_amount =
         ($self->bet->built_with_bom_parameters)
-        ? BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor
+        ? BOM::Platform::Static::Config::quants->{commission}->{resell_discount_factor}
         : 1;
 
     my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
@@ -460,7 +461,7 @@ sub _build_commission_markup {
         name        => 'intraday_historical_fixed',
         description => 'fixed commission markup for Intraday::Forex pricer',
         set_by      => __PACKAGE__,
-        base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_fixed,
+        base_amount => BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_fixed},
     });
 
     $comm_markup->include_adjustment('info',  $comm_scale);
@@ -560,7 +561,7 @@ sub _build_risk_markup {
             name        => 'intraday_historical_iv_risk',
             description => 'Intraday::Forex markup for IV contracts only.',
             set_by      => 'quants.commission.intraday.historical_iv_risk',
-            base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_iv_risk / 100,
+            base_amount => BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_iv_risk} / 100,
         });
         $risk_markup->include_adjustment('add', $iv_risk);
     }
@@ -599,7 +600,7 @@ has [qw(_vega_formula _delta_formula)] => (
 sub _build_intraday_vega_correction {
     my $self = shift;
 
-    my $vmr = BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_vol_meanrev;
+    my $vmr = BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_vol_meanrev};
     my $vc  = Math::Util::CalculatedValue::Validatable->new({
         name        => 'vega_correction',
         description => 'correction for uncertianty of vol',
