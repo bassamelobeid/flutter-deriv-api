@@ -18,7 +18,7 @@ has shutting_down => (
     default => 0,
 );
 
-use ExpiryQueue qw( dequeue_expired_contract );
+use ExpiryQueue qw( dequeue_expired_contract get_cid);
 use Try::Tiny;
 
 use BOM::Platform::Client;
@@ -59,6 +59,7 @@ sub daemon_run {
 sub _daemon_run {
     my $self = shift;
 
+    my %repush_count;
     $self->warn("Starting as PID $$.");
     while (1) {
         # Outer `while` to live through possible redis disconnects/restarts
@@ -77,10 +78,20 @@ sub _daemon_run {
                 }
                 # This returns a result which might be useful for reporting
                 # but for now we will ignore it.
-                BOM::Product::Transaction::sell_expired_contracts({
+                my $is_sold = BOM::Product::Transaction::sell_expired_contracts({
                         client       => $client,
                         source       => 1063,            # Third party application 'binaryexpiryd'
                         contract_ids => [$contract_id]});
+
+                if (not $is_sold or $is_sold->{number_of_sold_bets} == 0) {
+                    my $cid = get_cid($info);
+                    if (not $repush_count{$cid} or $repush_count{$cid} < 3) {
+                        Cache::RedisDB->redis->rpush('EXPIRYQUEUE::READY', $cid);
+                        $repush_count{$cid}++;
+                    } else {
+                        delete $repush_count{$cid};
+                    }
+                }
             };    # No catch, let MtM pick up the pieces.
         }
     }
