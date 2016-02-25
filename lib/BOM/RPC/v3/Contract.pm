@@ -156,7 +156,6 @@ sub get_bid {
             longcode            => $contract->longcode,
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
-            purchase_time       => $params->{purchase_time},
         };
 
         if (not $contract->is_valid_to_sell and $contract->primary_validation_error) {
