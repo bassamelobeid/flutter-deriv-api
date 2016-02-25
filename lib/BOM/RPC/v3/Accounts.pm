@@ -958,7 +958,7 @@ sub set_account_currency {
     } else {
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidCurrency',
-                message_to_client => localize("The provided currency [_1] is invalid.", $currency)});
+                message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)});
     }
 
     return $response;
