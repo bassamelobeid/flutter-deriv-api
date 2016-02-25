@@ -147,10 +147,11 @@ sub asset_index {
 sub active_symbols {
     my $params = shift;
 
-    my $client;
     my $landing_company_name = 'costarica';
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    if ($params->{token}
+        and my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token}))
+    {
+        my $client = BOM::Platform::Client->new({loginid => $client_loginid});
         $landing_company_name = $client->landing_company->short if $client;
     }
 

@@ -10,6 +10,7 @@ use Time::HiRes;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 use BOM::Database::Rose::DB;
+use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
@@ -55,7 +56,8 @@ sub register {
             my ($params) = @_;
 
             my $args = {country_code => $params->{country}};
-            if ($params->{client_loginid} and $params->{client_loginid} =~ /^(\D+)\d+$/) {
+            my $loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+            if ($loginid and $loginid =~ /^(\D+)\d+$/) {
                 $args->{broker_code} = $1;
             }
             $args->{language} = $params->{language} if ($params->{language});
@@ -131,6 +133,7 @@ sub startup {
                 '/set_self_exclusion'        => register('set_self_exclusion',        \&BOM::RPC::v3::Accounts::set_self_exclusion),
                 '/balance'                   => register('balance',                   \&BOM::RPC::v3::Accounts::balance),
                 '/api_token'                 => register('api_token',                 \&BOM::RPC::v3::Accounts::api_token),
+                '/login_history'             => register('login_history',             \&BOM::RPC::v3::Accounts::login_history),
                 '/verify_email'              => register('verify_email',              \&BOM::RPC::v3::NewAccount::verify_email),
                 '/send_ask'                  => register('send_ask',                  \&BOM::RPC::v3::Contract::send_ask),
                 '/get_bid'                   => register('get_bid',                   \&BOM::RPC::v3::Contract::get_bid),
