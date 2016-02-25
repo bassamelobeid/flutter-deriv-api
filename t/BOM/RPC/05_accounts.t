@@ -127,7 +127,7 @@ subtest $method => sub {
                      language       => 'ZH_CN',
                      token          => undef,
                     }
-                   )->{error}{message_to_client},
+                   ),
                 [qw(USD EUR GBP AUD)],
                 'undefined token will get all currencies'
         );
