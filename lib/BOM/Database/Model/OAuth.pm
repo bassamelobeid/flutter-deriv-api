@@ -141,6 +141,8 @@ sub store_access_token {
         undef, $access_token, $app_id, $loginid, \@scopes, $expires_time);
 
         $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, app_id, loginid, scopes) VALUES (?, ?, ?, ?)", undef, $refresh_token, $app_id, $loginid, \@scopes);
+
+        $dbh->commit;
     } catch {
         $dbh->rollback;
     };
