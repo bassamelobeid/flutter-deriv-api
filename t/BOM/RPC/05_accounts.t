@@ -382,9 +382,9 @@ subtest $method => sub {
         'no token error if token is valid'
     );
 
-    is($c->tcall($method, {client_loginid => $test_loginid})->{balance},  0,  'have 0 balance if no default account');
-    is($c->tcall($method, {client_loginid => $test_loginid})->{currency}, '', 'have no currency if no default account');
-    my $result = $c->tcall($method, {token => $token});
+    is($c->tcall($method, {token => $token})->{balance},  0,  'have 0 balance if no default account');
+    is($c->tcall($method, {token => $token})->{currency}, '', 'have no currency if no default account');
+    my $result = $c->tcall($method, {token => $token_21});
     is_deeply(
         $result,
         {
