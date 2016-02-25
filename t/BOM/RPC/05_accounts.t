@@ -233,7 +233,7 @@ subtest $method => sub {
             }
             )->{error}{message_to_client},
         '此账户不可用。',
-        'need a valid client'
+        'check authorization'
     );
     is($c->tcall($method, {token => $token_21})->{count}, 100, 'have 100 statements');
     is($c->tcall($method, {token => $token1})->{count},   0,   'have 0 statements if no default account');
@@ -352,6 +352,18 @@ subtest $method => sub {
         'no token error if token is valid'
     );
 
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
     is($c->tcall($method, {token => $token1})->{balance},  0,  'have 0 balance if no default account');
     is($c->tcall($method, {token => $token1})->{currency}, '', 'have no currency if no default account');
     my $result = $c->tcall($method, {token => $token_21});
@@ -404,6 +416,17 @@ subtest $method => sub {
         '令牌无效。',
         'no token error if token is valid'
     );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
 
     is_deeply($c->tcall($method, {token => $token1}), {status => [qw(active)]}, 'no result, active');
     $test_client->set_status('tnc_approval', 'test staff', 1);
@@ -452,6 +475,17 @@ subtest $method => sub {
             )->{error}{message_to_client},
         '令牌无效。',
         'no token error if token is valid'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
     );
 
     is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '令牌无效。', 'invalid token error');
