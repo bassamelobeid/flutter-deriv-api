@@ -77,7 +77,7 @@ sub _build_symbols_to_update {
         push @symbols_to_update, 'FTSE';
 
         # update vol of those plan to offer underlyings. This will be remove on yngshan/enable_stocks
-        push @symbols_to_update, qw(IXIC NIFTY SHSZ300); 
+        push @symbols_to_update, qw(IXIC NIFTY SHSZ300 BIST100);
 
     } else {
         @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
