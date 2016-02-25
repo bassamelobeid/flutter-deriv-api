@@ -264,6 +264,7 @@ subtest $method => sub {
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
+    my $token_client2 = $m->create_token($test_client2->login_id, 'test token');
     $test_client2->payment_free_gift(
         currency => 'USD',
         amount   => 1000,
@@ -314,12 +315,12 @@ subtest $method => sub {
     });
 
     $txn->buy(skip_validation => 1);
-    my $result = $c->tcall($method, {token => $token});
+    my $result = $c->tcall($method, {token => $token_client2});
     is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
     $result = $c->tcall(
         $method,
         {
-         token => $token,
+         token => $token_client2,
          args           => {description => 1}});
 
     is(
@@ -332,7 +333,7 @@ subtest $method => sub {
     # here the expired contract is sold, so we can get the txns as test value
     my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})
         ->get_transactions_ws({}, $test_client2->default_account);
-    $result = $c->tcall($method, {client_loginid => $test_client2->loginid});
+    $result = $c->tcall($method, {token => $token_client2});
     is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
