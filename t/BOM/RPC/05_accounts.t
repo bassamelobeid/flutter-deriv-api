@@ -264,7 +264,7 @@ subtest $method => sub {
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
-    my $token_client2 = $m->create_token($test_client2->login_id, 'test token');
+    my $token_client2 = $m->create_token($test_client2->loginid, 'test token');
     $test_client2->payment_free_gift(
         currency => 'USD',
         amount   => 1000,
