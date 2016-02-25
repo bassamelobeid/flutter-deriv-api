@@ -599,7 +599,17 @@ subtest $method => sub {
         '此账户不可用。',
         'check authorization'
     );
-    is($c->tcall($method, {token => $token_vr})->{error}{message_to_client}, '权限不足。', 'need real money account');
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_vr
+            }
+            )->{error}{message_to_client},
+        '权限不足。',
+        'need real money account'
+    );
     my $params = {
         language => 'ZH_CN',
         token    => $token1,
