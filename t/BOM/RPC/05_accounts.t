@@ -65,6 +65,12 @@ clear_mailbox();
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                               broker_code => 'MF',
                                                                              });
+
+diag('line: ' . __LINE__);
+my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                                                                              broker_code => 'MF',
+                                                                             });
+
 $test_client_disabled->set_status('disabled',1,'test disabled');
 $test_client_disabled->save();
 
@@ -72,6 +78,9 @@ my $m = BOM::Database::Model::AccessToken->new;
 my $token = $m->create_token($test_loginid, 'test token');
 my $token_21 = $m->create_token('CR0021', 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
+diag('line: ' . __LINE__);
+my $token_client2 = $m->create_token($test_client2->loginid, 'test token');diag('line: ' . __LINE__);
+
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -261,12 +270,6 @@ subtest $method => sub {
       );
     is($c->tcall($method, {token => $token_21})->{count},      100, 'have 100 statements');
     is($c->tcall($method, {token => $token})->{count}, 0,   'have 0 statements if no default account');
-    diag('line: ' . __LINE__);
-    my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-    });
-    diag('line: ' . __LINE__);
-    my $token_client2 = $m->create_token($test_client2->loginid, 'test token');diag('line: ' . __LINE__);
     $test_client2->payment_free_gift(
         currency => 'USD',
         amount   => 1000,
