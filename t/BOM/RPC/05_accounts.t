@@ -62,9 +62,16 @@ $user->add_loginid({loginid => $test_loginid});
 $user->save;
 clear_mailbox();
 
+my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                                                                              broker_code => 'MF',
+                                                                             });
+$test_client_disabled->set_status('disabled',1,'test disabled');
+$test_client_disabled->save();
+
 my $m = BOM::Database::Model::AccessToken->new;
 my $token = $m->create_token($test_loginid, 'test token');
 my $token_21 = $m->create_token('CR0021', 'test token');
+my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -241,21 +248,17 @@ subtest $method => sub {
         'no token error if token is valid'
       );
 
-    $test_client->set_status('disabled', 1, 'test');
-    $test_client->save();
     is(
         $c->tcall(
             $method,
             {
                 language       => 'ZH_CN',
-                token => $token,
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
         '此账户不可用。',
         'need a valid client'
       );
-    $test_client->clr_status('disabled');
-    $test_client->save();
     is($c->tcall($method, {token => $token_21})->{count},      100, 'have 100 statements');
     is($c->tcall($method, {token => $token})->{count}, 0,   'have 0 statements if no default account');
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
