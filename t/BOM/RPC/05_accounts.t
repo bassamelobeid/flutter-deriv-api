@@ -65,6 +65,7 @@ clear_mailbox();
 my $m = BOM::Database::Model::AccessToken->new;
 my $token = $m->create_token($test_loginid, 'test token');
 my $token_21 = $m->create_token('CR0021', 'test token');
+my $invalid_token = $m->create_token('12345678', 'invalid token for test');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -240,13 +241,12 @@ subtest $method => sub {
             )->{error},
         'no token error if token is valid'
     );
-    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
     is(
         $c->tcall(
             $method,
             {
                 language       => 'ZH_CN',
-                client_loginid => 'CR12345678'
+                token => $invalid_token,
             }
             )->{error}{message_to_client},
         '请登陆。',
