@@ -403,4 +403,28 @@ sub login_history {
     return;
 }
 
+sub set_account_currency {
+    my ($c, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'set_account_currency',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('set_account_currency', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type      => 'set_account_currency',
+                    login_history => $response->{status}};
+            }
+        },
+        {
+            args     => $args,
+            token    => $c->stash('token'),
+            currency => $args->{set_account_currency}});
+
+    return;
+}
+
 1;
