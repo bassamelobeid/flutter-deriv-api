@@ -256,8 +256,8 @@ subtest $method => sub {
       );
     $test_client->clr_status('disabled');
     $test_client->save();
-    is($c->tcall($method, {client_loginid => 'CR0021'})->{count},      100, 'have 100 statements');
-    is($c->tcall($method, {client_loginid => $test_loginid})->{count}, 0,   'have 0 statements if no default account');
+    is($c->tcall($method, {token => $token_21})->{count},      100, 'have 100 statements');
+    is($c->tcall($method, {token => $token})->{count}, 0,   'have 0 statements if no default account');
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
