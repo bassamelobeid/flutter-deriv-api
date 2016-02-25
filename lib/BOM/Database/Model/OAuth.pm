@@ -3,6 +3,7 @@ package BOM::Database::Model::OAuth;
 use Moose;
 use Date::Utility;
 use String::Random ();
+use Try::Tiny;
 use List::MoreUtils qw(uniq);
 use BOM::Database::AuthDB;
 
@@ -130,14 +131,19 @@ sub store_access_token {
     my $expires_in    = 3600;
     my $access_token  = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
     my $refresh_token = 'r1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
+    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
 
     @scopes = __filter_valid_scopes(@scopes);
 
-    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
-    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, scopes, expires) VALUES (?, ?, ?, ?, ?)",
+    $dbh->begin_work;
+    try {
+        $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, scopes, expires) VALUES (?, ?, ?, ?, ?)",
         undef, $access_token, $app_id, $loginid, \@scopes, $expires_time);
 
-    $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, app_id, loginid, scopes) VALUES (?, ?, ?, ?)", undef, $refresh_token, $app_id, $loginid, \@scopes);
+        $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, app_id, loginid, scopes) VALUES (?, ?, ?, ?)", undef, $refresh_token, $app_id, $loginid, \@scopes);
+    } catch {
+        $dbh->rollback;
+    };
 
     return ($access_token, $refresh_token, $expires_in);
 }
