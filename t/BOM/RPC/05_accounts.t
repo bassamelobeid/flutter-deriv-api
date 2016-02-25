@@ -98,13 +98,15 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     });
 
 ################################################################################
-# test
+# test begin
 ################################################################################
 
 my $t = Test::Mojo->new('BOM::RPC');
 my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
-
+################################################################################
+# payout_currencies
+################################################################################
 my $method = 'payout_currencies';
 subtest $method => sub {
     is_deeply(
@@ -134,6 +136,9 @@ subtest $method => sub {
     is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies if no token");
 };
 
+################################################################################
+# landing_company
+################################################################################
 $method = 'landing_company';
 subtest $method => sub {
     is_deeply(
@@ -158,6 +163,9 @@ subtest $method => sub {
     ok(!$c->tcall($method, {args => {landing_company => 'hk'}})->{financial_company}, "hk have no financial_company");
 };
 
+################################################################################
+# landing_company_details
+################################################################################
 $method = 'landing_company_details';
 subtest $method => sub {
     is_deeply(
@@ -178,6 +186,9 @@ subtest $method => sub {
     is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name}, 'Binary (C.R.) S.A.', "details result ok");
 };
 
+################################################################################
+# statement
+################################################################################
 $method = 'statement';
 subtest $method => sub {
     is(
@@ -302,6 +313,9 @@ subtest $method => sub {
 
 };
 
+################################################################################
+# balance
+################################################################################
 $method = 'balance';
 subtest $method => sub {
     is(
@@ -351,6 +365,9 @@ subtest $method => sub {
     );
 };
 
+################################################################################
+# get_account_status
+################################################################################
 $method = 'get_account_status';
 subtest $method => sub {
     is(
@@ -397,6 +414,9 @@ subtest $method => sub {
 };
 
 
+################################################################################
+# change_password
+################################################################################
 $method = 'change_password';
 subtest $method => sub {
     is(
