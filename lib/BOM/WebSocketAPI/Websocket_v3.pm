@@ -410,7 +410,7 @@ sub _failed_key_value {
 
     state %pwd_field = map { $_ => 1 } qw( client_password old_password new_password unlock_password lock_password );
 
-        if ($pwd_field{$key}) {
+    if ($pwd_field{$key}) {
         return;
     } elsif ($key !~ /^[A-Za-z0-9_-]{1,50}$/
         or $value !~ /^[\s\.\w\@_:+\-\/='&\$]{0,300}$/)
