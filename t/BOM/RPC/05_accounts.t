@@ -770,14 +770,13 @@ subtest $method => sub {
     $test_client->set_status('tnc_approval', 'system', 1);
     $test_client->save;
     is($c->tcall($method, $params)->{client_tnc_status}, 1, 'tnc status set');
-    $params->{client_loginid} = $test_client_vr->loginid;
+    $params->{token} = $token_vr;
     is_deeply(
         $c->tcall($method, $params),
         {
             'email'        => 'abc@binary.com',
             'country'      => '印度尼西亚',
             'country_code' => 'id',
-            'salutation'   => 'MR'
         },
         'vr client return less messages'
     );
