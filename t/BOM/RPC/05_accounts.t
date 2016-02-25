@@ -109,14 +109,6 @@ my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
 my $method = 'payout_currencies';
 subtest $method => sub {
-  diag(Dumper($c->tcall(
-                 $method,
-                 {
-                  language => 'ZH_CN',
-                  token    => '12345'
-                 }
-                )));
-
   is_deeply(
          $c->tcall(
                    $method,
@@ -124,7 +116,7 @@ subtest $method => sub {
                     language => 'ZH_CN',
                     token    => '12345'
                    }
-                  )->{error}{message_to_client},
+                  ),
             [qw(USD EUR GBP AUD)],
          'invalid token will get all currencies'
         );
