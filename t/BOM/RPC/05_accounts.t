@@ -212,14 +212,15 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error if token undef'
     );
-    ok(
-        !$c->tcall(
+    isnt(
+        $c->tcall(
             $method,
             {
                 language => 'ZH_CN',
                 token    => $token1,
             }
-            )->{error},
+            )->{error}{message_to_client},
+        '令牌无效。',
         'no token error if token is valid'
     );
 
@@ -339,14 +340,15 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    ok(
-        !$c->tcall(
+    isnt(
+        $c->tcall(
             $method,
             {
                 language => 'ZH_CN',
                 token    => $token1,
             }
-            )->{error},
+            )->{error}{message_to_client},
+        '令牌无效。',
         'no token error if token is valid'
     );
 
@@ -389,16 +391,17 @@ subtest $method => sub {
             }
             )->{error}{message_to_client},
         '令牌无效。',
-        'no token error if token undef'
+        'invalid token error'
     );
-    ok(
-        !$c->tcall(
+    isnt(
+        $c->tcall(
             $method,
             {
                 language => 'ZH_CN',
                 token    => $token1,
             }
-            )->{error},
+            )->{error}{message_to_client},
+        '令牌无效。',
         'no token error if token is valid'
     );
 
@@ -440,7 +443,7 @@ subtest $method => sub {
         'invlaid token error'
     );
     isnt(
-        !$c->tcall(
+        $c->tcall(
             $method,
             {
                 language => 'ZH_CN',
@@ -451,7 +454,7 @@ subtest $method => sub {
         'no token error if token is valid'
     );
 
-    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '令牌无效。', 'no token error');
+    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '令牌无效。', 'invalid token error');
     is(
         $c->tcall(
             $method,
