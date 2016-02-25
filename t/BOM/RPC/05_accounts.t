@@ -451,9 +451,9 @@ subtest $method => sub {
         language       => 'ZH_CN',
         client_loginid => $test_loginid
     };
-    is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
+    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'need token_type');
     $params->{token_type} = 'hello';
-    is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
+    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'need token_type');
     $params->{token_type}         = 'session_token';
     $params->{args}{old_password} = 'old_password';
     $params->{cs_email}           = 'cs@binary.com';
