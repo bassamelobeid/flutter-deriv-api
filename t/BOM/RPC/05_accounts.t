@@ -157,14 +157,14 @@ subtest $method => sub {
     is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name}, 'Binary (C.R.) S.A.', "details result ok");
 };
 
-$res = BOM::RPC::v3::Accounts::api_token({
-        token => $token,
-        args  => {
-            api_token    => 1,
-            delete_token => $token
-        }});
-is scalar(@{$res->{tokens}}), 0, "MF client token deleted successfully";
-
+#$res = BOM::RPC::v3::Accounts::api_token({
+#        token => $token,
+#        args  => {
+#            api_token    => 1,
+#            delete_token => $token
+#        }});
+#is scalar(@{$res->{tokens}}), 0, "MF client token deleted successfully";
+#
 #$test_loginid = 'CR0021';
 # cleanup
 #BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
@@ -411,21 +411,21 @@ subtest $method => sub {
 
 };
 
-$res = BOM::RPC::v3::Accounts::api_token({
-        token => $token,
-        args  => {
-            api_token    => 1,
-            delete_token => $token
-        }});
-is scalar(@{$res->{tokens}}), 0, "token deleted successfully";
+#$res = BOM::RPC::v3::Accounts::api_token({
+#        token => $token,
+#        args  => {
+#            api_token    => 1,
+#            delete_token => $token
+#        }});
+#is scalar(@{$res->{tokens}}), 0, "token deleted successfully";
 
-sub _get_session_token {
-    return BOM::Platform::SessionCookie->new({
-            email      => 'abc@binary.com',
-            loginid    => $test_loginid_mf,
-            expires_in => 3600
-        })->token;
-}
+#sub _get_session_token {
+#    return BOM::Platform::SessionCookie->new({
+#            email      => 'abc@binary.com',
+#            loginid    => $test_loginid_mf,
+#            expires_in => 3600
+#        })->token;
+#}
 
 $method = 'change_password';
 subtest $method => sub {
