@@ -408,7 +408,7 @@ sub __handle {
 sub _failed_key_value {
     my ($key, $value) = @_;
 
-    state %pwd_field = map { $_ => 1 } qw( client_password old_password new_password unlock_password lock_password )
+    state %pwd_field = map { $_ => 1 } qw( client_password old_password new_password unlock_password lock_password );
 
         if ($pwd_field{$key}) {
         return;
