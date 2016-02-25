@@ -412,8 +412,11 @@ sub _failed_key_value {
 
     if ($pwd_field->{$key}) {
         return;
-    } elsif ($key !~ /^[A-Za-z0-9_-]{1,50}$/
-        or $value !~ /^[\s\.\w\@_:+\-\/='&\$]{0,300}$/)
+    } elsif (
+        $key !~ /^[A-Za-z0-9_-]{1,50}$/
+        # !-~ to allow a range of acceptable characters. To find what is the range, look at ascii table
+        or $value !~ /^[\s\w\@_:!-~]{0,300}$/
+        )
     {
         return ($key, $value);
     }
