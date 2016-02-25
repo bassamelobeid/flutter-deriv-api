@@ -52,13 +52,13 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client->email($email);
 $test_client->save;
-my $test_loginid = $test_client->loginid;
-my $user         = BOM::Platform::User->create(
+my $test_loginid_mf = $test_client->loginid;
+my $user            = BOM::Platform::User->create(
     email    => $email,
     password => $hash_pwd
 );
 $user->save;
-$user->add_loginid({loginid => $test_loginid});
+$user->add_loginid({loginid => $test_loginid_mf});
 $user->save;
 clear_mailbox();
 
@@ -87,6 +87,25 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 my $t = Test::Mojo->new('BOM::RPC');
 my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
+
+#cleanup
+BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid_mf);
+
+my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
+# need to mock it as to access api token we need token beforehand
+$mock_utility->mock('token_to_loginid', sub { return $test_loginid_mf });
+
+# create new api token
+my $res = BOM::RPC::v3::Accounts::api_token({
+        token => 'Abc123',
+        args  => {
+            api_token => 1,
+            new_token => 'Sample1'
+        }});
+is scalar(@{$res->{tokens}}), 1, "token created succesfully for MF client";
+my $token = $res->{tokens}->[0]->{token};
+
+$mock_utility->unmock('token_to_loginid');
 
 my $method = 'payout_currencies';
 subtest $method => sub {
@@ -138,6 +157,32 @@ subtest $method => sub {
     is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name}, 'Binary (C.R.) S.A.', "details result ok");
 };
 
+$res = BOM::RPC::v3::Accounts::api_token({
+        token => $token,
+        args  => {
+            api_token    => 1,
+            delete_token => $token
+        }});
+is scalar(@{$res->{tokens}}), 0, "MF client token deleted successfully";
+
+my $test_loginid = 'CR0021';
+# cleanup
+BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
+
+$mock_utility->mock('token_to_loginid', sub { return $test_loginid });
+
+# create new api token
+$res = BOM::RPC::v3::Accounts::api_token({
+        token => 'Abc123',
+        args  => {
+            api_token => 1,
+            new_token => 'Sample1'
+        }});
+is scalar(@{$res->{tokens}}), 1, "token created succesfully for CR client";
+$token = $res->{tokens}->[0]->{token};
+
+$mock_utility->unmock('token_to_loginid');
+
 $method = 'statement';
 subtest $method => sub {
     is(
@@ -151,7 +196,7 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    ok(
+    is(
         !$c->tcall(
             $method,
             {
@@ -159,7 +204,8 @@ subtest $method => sub {
                 token          => undef,
                 client_loginid => 'CR0021'
             }
-            )->{error},
+            )->{error}{message_to_client},
+  '令牌无效。',
         'no token error if token undef'
     );
     ok(
@@ -184,7 +230,7 @@ subtest $method => sub {
             )->{error}{message_to_client},
         '请登陆。',
         'need a valid client'
-    );
+      );
     is($c->tcall($method, {client_loginid => 'CR0021'})->{count},      100, 'have 100 statements');
     is($c->tcall($method, {client_loginid => $test_loginid})->{count}, 0,   'have 0 statements if no default account');
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -245,8 +291,8 @@ subtest $method => sub {
     $result = $c->tcall(
         $method,
         {
-            client_loginid => $test_client2->loginid,
-            args           => {description => 1}});
+         token => $token,
+         args           => {description => 1}});
 
     is(
         $result->{transactions}[0]{longcode},
@@ -286,8 +332,9 @@ subtest $method => sub {
                 token          => undef,
                 client_loginid => 'CR0021'
             }
-            )->{error},
-        'no token error if token undef'
+                  )->{error},
+               '令牌无效。',
+        'invalid token error'
     );
     ok(
         !$c->tcall(
@@ -301,21 +348,9 @@ subtest $method => sub {
         'no token error if token is valid'
     );
 
-    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
-    is(
-        $c->tcall(
-            $method,
-            {
-                language       => 'ZH_CN',
-                client_loginid => 'CR12345678'
-            }
-            )->{error}{message_to_client},
-        '请登陆。',
-        'need a valid client'
-    );
     is($c->tcall($method, {client_loginid => $test_loginid})->{balance},  0,  'have 0 balance if no default account');
     is($c->tcall($method, {client_loginid => $test_loginid})->{currency}, '', 'have no currency if no default account');
-    my $result = $c->tcall($method, {client_loginid => 'CR0021'});
+    my $result = $c->tcall($method, {token => $token});
     is_deeply(
         $result,
         {
@@ -340,15 +375,15 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    ok(
-        !$c->tcall(
+    is(
+        $c->tcall(
             $method,
             {
                 language       => 'ZH_CN',
                 token          => undef,
-                client_loginid => 'CR0021'
             }
-            )->{error},
+            )->{error}{message_to_client},
+        '令牌无效。',
         'no token error if token undef'
     );
     ok(
@@ -357,24 +392,11 @@ subtest $method => sub {
             {
                 language       => 'ZH_CN',
                 token          => $token,
-                client_loginid => $test_loginid
             }
             )->{error},
         'no token error if token is valid'
     );
 
-    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
-    is(
-        $c->tcall(
-            $method,
-            {
-                language       => 'ZH_CN',
-                client_loginid => 'CR12345678'
-            }
-            )->{error}{message_to_client},
-        '请登陆。',
-        'need a valid client'
-    );
     is_deeply($c->tcall($method, {client_loginid => $test_loginid}), {status => [qw(active)]}, 'no result, active');
     $test_client->set_status('tnc_approval', 'test staff', 1);
     $test_client->save();
@@ -389,6 +411,22 @@ subtest $method => sub {
 
 };
 
+$res = BOM::RPC::v3::Accounts::api_token({
+        token => $token,
+        args  => {
+            api_token    => 1,
+            delete_token => $token
+        }});
+is scalar(@{$res->{tokens}}), 0, "token deleted successfully";
+
+sub _get_session_token {
+    return BOM::Platform::SessionCookie->new({
+            email      => 'abc@binary.com',
+            loginid    => $test_loginid_mf,
+            expires_in => 3600
+        })->token;
+}
+
 $method = 'change_password';
 subtest $method => sub {
     is(
@@ -402,17 +440,16 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    isnt(
-        !$c->tcall(
+    is(
+        $c->tcall(
             $method,
             {
                 language       => 'ZH_CN',
                 token          => undef,
-                client_loginid => 'CR0021'
             }
             )->{error},
         '令牌无效。',
-        'no token error if token undef'
+        'invlaid token error'
     );
     isnt(
         !$c->tcall(
@@ -420,9 +457,8 @@ subtest $method => sub {
             {
                 language       => 'ZH_CN',
                 token          => $token,
-                client_loginid => $test_loginid
             }
-            )->{error},
+            )->{error}{message_to_client},
         '令牌无效。',
         'no token error if token is valid'
     );
@@ -441,7 +477,7 @@ subtest $method => sub {
     );
     my $params = {
         language       => 'ZH_CN',
-        client_loginid => $test_loginid
+        token => $token,
     };
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'need token_type');
     $params->{token_type} = 'hello';
@@ -453,7 +489,7 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, '旧密码不正确。');
     $params->{args}{old_password} = $password;
     $params->{args}{new_password} = $password;
-
+    $params->{token} = _get_session_token();
     is($c->tcall($method, $params)->{error}{message_to_client}, '新密码与旧密码相同。');
     $params->{args}{new_password} = '111111111';
     is($c->tcall($method, $params)->{error}{message_to_client}, '密码安全度不够。');
