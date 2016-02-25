@@ -109,13 +109,13 @@ my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
 my $method = 'payout_currencies';
 subtest $method => sub {
-  diag($c->tcall(
+  diag(Dumper($c->tcall(
                  $method,
                  {
                   language => 'ZH_CN',
                   token    => '12345'
                  }
-                ));
+                )));
 
   is(
          $c->tcall(
