@@ -170,9 +170,9 @@ sub get_bid {
             $response->{current_spot}    = $contract->current_spot      if $contract->underlying->feed_license eq 'realtime';
             $response->{entry_spot}      = $contract->entry_spot        if $contract->entry_spot;
 
-            if ($sell_time) {
-                $response->{sell_spot}      = $contract->underlying->tick_at($sell_time)->quote;
-                $response->{sell_spot_time} = $contract->underlying->tick_at($sell_time)->epoch;
+            if ($sell_time and my $sell_tick = $contract->underlying->tick_at($sell_time)) {
+                $response->{sell_spot}      = $sell_tick->quote;
+                $response->{sell_spot_time} = $sell_tick->epoch;
             }
 
             if ($contract->expiry_type eq 'tick') {
