@@ -90,4 +90,20 @@ subtest 'valid stocks' => sub {
     'ohlc for FPFP updated successfully';
 };
 
-done_testing;
+subtest 'valid close' => sub {
+    my $updater = BOM::MarketData::AutoUpdater::OHLC->new(
+        is_a_weekend      => 0,
+        file              => [$data_path . '/close.csv'],
+        directory_to_save => tempdir,
+    );
+    $updater = Test::MockObject::Extends->new($updater);
+    $updater->mock('_passes_sanity_check', sub { '' });
+    lives_ok {
+        $updater->run();
+        ok!$updater->report->{HSI}->{success}, 'HSI failed to be updated due to close >=5%';
+	like($updater->report->{reason}->[0],qr/OHLC big difference/i, 'sanity check for close');
+    }
+    'close for HSI updated successfully';
+};
+
+done_testing
