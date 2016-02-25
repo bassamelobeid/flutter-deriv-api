@@ -706,36 +706,45 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    isnt(
-        !$c->tcall(
+
+    is(
+        $c->tcall(
             $method,
             {
-                language       => 'ZH_CN',
-                token          => undef,
-                client_loginid => 'CR0021'
+                language => 'ZH_CN',
+                token    => undef,
             }
-            )->{error},
+            )->{error}{message_to_client},
         '令牌无效。',
-        'no token error if token undef'
+        'invalid token error'
     );
     isnt(
-        !$c->tcall(
+        $c->tcall(
             $method,
             {
-                language       => 'ZH_CN',
-                token          => $token,
-                client_loginid => $test_loginid
+                language => 'ZH_CN',
+                token    => $token1,
             }
-            )->{error},
+            )->{error}{message_to_client},
         '令牌无效。',
         'no token error if token is valid'
     );
 
-    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
     my $params = {
-        client_loginid => 'CR0021',
-        language       => 'EN'
+        token => $token_21,
+        language       => 'ZH_CN'
     };
     my $result = $c->tcall($method, $params);
     is_deeply(
@@ -757,7 +766,7 @@ subtest $method => sub {
             'first_name'                     => 'shuwnyuan'
         });
 
-    $params->{client_loginid} = $test_loginid;
+    $params->{token} = $token1;
     $test_client->set_status('tnc_approval', 'system', 1);
     $test_client->save;
     is($c->tcall($method, $params)->{client_tnc_status}, 1, 'tnc status set');
