@@ -220,16 +220,15 @@ subtest $method => sub {
         'invalid token error'
     );
     is(
-        !$c->tcall(
+        $c->tcall(
             $method,
             {
                 language       => 'ZH_CN',
                 token          => undef,
-                client_loginid => 'CR0021'
             }
             )->{error}{message_to_client},
   '令牌无效。',
-        'no token error if token undef'
+        'invalid token error if token undef'
     );
     ok(
         !$c->tcall(
@@ -237,7 +236,6 @@ subtest $method => sub {
             {
                 language       => 'ZH_CN',
                 token          => $token,
-                client_loginid => $test_loginid
             }
             )->{error},
         'no token error if token is valid'
