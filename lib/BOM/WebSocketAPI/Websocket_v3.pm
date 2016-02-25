@@ -340,11 +340,13 @@ my %rate_limit_map = (
     verify_email_virtual           => 'websocket_call_email',
 );
 
-sub _reached_limit_check($category, $is_real) {
+sub _reached_limit_check {
+    my ($connection_id, $category, $is_real) = @_;
+
     my $limiting_service = $rate_limit_map{
-        $descriptor->{category} . '_'
+        $category . '_'
             . (
-            $c->stash('loginid') && !$c->stash('is_virtual')
+            ($is_real)
             ? 'real'
             : 'virtual'
             )} // 'websocket_call';
@@ -352,7 +354,7 @@ sub _reached_limit_check($category, $is_real) {
         $limiting_service
         and not within_rate_limits({
                 service  => $limiting_service,
-                consumer => $c->stash('connection_id'),
+                consumer => $connection_id,
             }))
     {
         return 1;
@@ -376,7 +378,7 @@ sub __handle {
             $c->stash('connection_id' => Data::UUID->new()->create_str());
         }
 
-        if (_reached_limit_check($descriptor->{category}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
+        if (_reached_limit_check($c->stash('connection_id'), $descriptor->{category}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
             return $c->new_error($descriptor->{category}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $descriptor->{category}));
         }
 
