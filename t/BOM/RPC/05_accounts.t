@@ -65,7 +65,6 @@ clear_mailbox();
 my $m = BOM::Database::Model::AccessToken->new;
 my $token = $m->create_token($test_loginid, 'test token');
 my $token_21 = $m->create_token('CR0021', 'test token');
-my $invalid_token = $m->create_token('12345678', 'invalid token for test');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -240,18 +239,23 @@ subtest $method => sub {
             }
             )->{error},
         'no token error if token is valid'
-    );
+      );
+
+    $test_client->set_status('disabled', 1, 'test');
+    $test_client->save();
     is(
         $c->tcall(
             $method,
             {
                 language       => 'ZH_CN',
-                token => $invalid_token,
+                token => $token,
             }
             )->{error}{message_to_client},
         '请登陆。',
         'need a valid client'
       );
+    $test_client->clr_status('disabled');
+    $test_client->save();
     is($c->tcall($method, {client_loginid => 'CR0021'})->{count},      100, 'have 100 statements');
     is($c->tcall($method, {client_loginid => $test_loginid})->{count}, 0,   'have 0 statements if no default account');
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
