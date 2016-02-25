@@ -251,7 +251,7 @@ subtest $method => sub {
                 token => $token,
             }
             )->{error}{message_to_client},
-        '请登陆。',
+        '此账户不可用。',
         'need a valid client'
       );
     $test_client->clr_status('disabled');
