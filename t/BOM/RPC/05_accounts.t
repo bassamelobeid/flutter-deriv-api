@@ -491,49 +491,48 @@ subtest $method => sub {
 $method = 'cashier_password';
 subtest $method => sub {
 
-  is(
-     $c->tcall(
-               $method,
-               {
+    is(
+        $c->tcall(
+            $method,
+            {
                 language => 'ZH_CN',
                 token    => '12345'
-               }
-              )->{error}{message_to_client},
-     '令牌无效。',
-     'invalid token error'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
     );
-  isnt(
-       !$c->tcall(
-                  $method,
-                  {
-                   language       => 'ZH_CN',
-                   token          => undef,
-                   client_loginid => 'CR0021'
-                  }
-                 )->{error},
-       '令牌无效。',
-       'no token error if token undef'
-      );
-  isnt(
-       !$c->tcall(
-                  $method,
-                  {
-                   language       => 'ZH_CN',
-                   token          => $token,
-                   client_loginid => $test_loginid
-                  }
-                 )->{error},
-       '令牌无效。',
-       'no token error if token is valid'
-      );
-
+    isnt(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => undef,
+                client_loginid => 'CR0021'
+            }
+            )->{error},
+        '令牌无效。',
+        'no token error if token undef'
+    );
+    isnt(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => $token,
+                client_loginid => $test_loginid
+            }
+            )->{error},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
 
     #test lock
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code},             'AuthorizationRequired', 'need a valid client');
     is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied',      'need real money account');
     my $params = {
-        language => 'ZH_CN',
+        language       => 'ZH_CN',
         client_loginid => $test_loginid,
         args           => {}};
     is($c->tcall($method, $params)->{status}, 0, 'no unlock_password && lock_password, and not set password before, status will be 0');
@@ -586,11 +585,7 @@ subtest $method => sub {
     clear_mailbox();
     $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
     $test_client->save;
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        '对不起，您输入的收银台密码不正确',
-        'return error if not correct'
-    );
+    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，您输入的收银台密码不正确', 'return error if not correct');
     $subject = 'Failed attempt to unlock cashier section';
     %msg     = get_email_by_address_subject(
         email   => $email,
@@ -602,11 +597,7 @@ subtest $method => sub {
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{unlock_password} = $tmp_password;
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        '对不起，在处理您的账户时出错。',
-        'return error if cannot save'
-    );
+    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
     $mocked_client->unmock_all;
 
     clear_mailbox();
@@ -624,6 +615,42 @@ subtest $method => sub {
 
 $method = 'get_settings';
 subtest $method => sub {
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    isnt(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => undef,
+                client_loginid => 'CR0021'
+            }
+            )->{error},
+        '令牌无效。',
+        'no token error if token undef'
+    );
+    isnt(
+        !$c->tcall(
+            $method,
+            {
+                language       => 'ZH_CN',
+                token          => $token,
+                client_loginid => $test_loginid
+            }
+            )->{error},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     my $params = {
