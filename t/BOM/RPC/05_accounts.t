@@ -750,7 +750,7 @@ subtest $method => sub {
     is_deeply(
         $result,
         {
-            'country'                        => 'Australia',
+            'country'                        => '澳大利亚',
             'salutation'                     => 'Ms',
             'is_authenticated_payment_agent' => '0',
             'country_code'                   => 'au',
@@ -775,7 +775,7 @@ subtest $method => sub {
         $c->tcall($method, $params),
         {
             'email'        => 'abc@binary.com',
-            'country'      => 'Indonesia',
+            'country'      => '印度尼西亚',
             'country_code' => 'id'
         },
         'vr client return less messages'
