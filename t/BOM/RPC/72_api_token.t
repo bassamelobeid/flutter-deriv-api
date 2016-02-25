@@ -4,6 +4,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use TestHelper qw/create_test_user/;
 use Test::More;
+use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
@@ -19,6 +20,10 @@ BOM::Database::Model::AccessToken->new->dbh->do("
 ") foreach ('auth.access_token');
 
 my $test_loginid = create_test_user();
+
+my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
+# need to mock it as to access api token we need token beforehand
+$mock_utility->mock('token_to_loginid', sub { return $test_loginid });
 
 my $res = BOM::RPC::v3::Accounts::api_token({
     client_loginid => $test_loginid,
