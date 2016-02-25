@@ -70,8 +70,23 @@ $user->add_loginid({loginid => $test_client_vr->loginid});
 $user->save;
 clear_mailbox();
 
-my $m = BOM::Database::Model::AccessToken->new;
-my $token = $m->create_token($test_loginid, 'test token');
+my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+
+my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+
+$test_client_disabled->set_status('disabled', 1, 'test disabled');
+$test_client_disabled->save();
+
+my $m              = BOM::Database::Model::AccessToken->new;
+my $token1         = $m->create_token($test_loginid, 'test token');
+my $token_21       = $m->create_token('CR0021', 'test token');
+my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
+my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
+my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
@@ -90,18 +105,47 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     });
 
 ################################################################################
-# test
+# test begin
 ################################################################################
 
 my $t = Test::Mojo->new('BOM::RPC');
 my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
+################################################################################
+# payout_currencies
+################################################################################
 my $method = 'payout_currencies';
 subtest $method => sub {
-    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), ['USD'], "will return client's currency");
-    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies");
+    is_deeply(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+        ),
+        [qw(USD EUR GBP AUD)],
+        'invalid token will get all currencies'
+    );
+    is_deeply(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+        ),
+        [qw(USD EUR GBP AUD)],
+        'undefined token will get all currencies'
+    );
+
+    is_deeply($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
+    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies if no token");
 };
 
+################################################################################
+# landing_company
+################################################################################
 $method = 'landing_company';
 subtest $method => sub {
     is_deeply(
@@ -126,6 +170,9 @@ subtest $method => sub {
     ok(!$c->tcall($method, {args => {landing_company => 'hk'}})->{financial_company}, "hk have no financial_company");
 };
 
+################################################################################
+# landing_company_details
+################################################################################
 $method = 'landing_company_details';
 subtest $method => sub {
     is_deeply(
@@ -146,6 +193,9 @@ subtest $method => sub {
     is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name}, 'Binary (C.R.) S.A.', "details result ok");
 };
 
+################################################################################
+# statement
+################################################################################
 $method = 'statement';
 subtest $method => sub {
     is(
@@ -159,45 +209,42 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    ok(
-        !$c->tcall(
-            $method,
-            {
-                language       => 'ZH_CN',
-                token          => undef,
-                client_loginid => 'CR0021'
-            }
-            )->{error},
-        'no token error if token undef'
-    );
-    ok(
-        !$c->tcall(
-            $method,
-            {
-                language       => 'ZH_CN',
-                token          => $token,
-                client_loginid => $test_loginid
-            }
-            )->{error},
-        'no token error if token is valid'
-    );
-    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
     is(
         $c->tcall(
             $method,
             {
-                language       => 'ZH_CN',
-                client_loginid => 'CR12345678'
+                language => 'ZH_CN',
+                token    => undef,
             }
             )->{error}{message_to_client},
-        '请登陆。',
-        'need a valid client'
+        '令牌无效。',
+        'invalid token error if token undef'
     );
-    is($c->tcall($method, {client_loginid => 'CR0021'})->{count},      100, 'have 100 statements');
-    is($c->tcall($method, {client_loginid => $test_loginid})->{count}, 0,   'have 0 statements if no default account');
-    my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-    });
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+    is($c->tcall($method, {token => $token_21})->{count}, 100, 'have 100 statements');
+    is($c->tcall($method, {token => $token1})->{count},   0,   'have 0 statements if no default account');
     $test_client2->payment_free_gift(
         currency => 'USD',
         amount   => 1000,
@@ -248,13 +295,14 @@ subtest $method => sub {
     });
 
     $txn->buy(skip_validation => 1);
-    my $result = $c->tcall($method, {client_loginid => $test_client2->loginid});
+
+    my $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
     $result = $c->tcall(
         $method,
         {
-            client_loginid => $test_client2->loginid,
-            args           => {description => 1}});
+            token => $token_with_txn,
+            args  => {description => 1}});
 
     is(
         $result->{transactions}[0]{longcode},
@@ -266,13 +314,16 @@ subtest $method => sub {
     # here the expired contract is sold, so we can get the txns as test value
     my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})
         ->get_transactions_ws({}, $test_client2->default_account);
-    $result = $c->tcall($method, {client_loginid => $test_client2->loginid});
+    $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
 
 };
 
+################################################################################
+# balance
+################################################################################
 $method = 'balance';
 subtest $method => sub {
     is(
@@ -286,44 +337,44 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    ok(
-        !$c->tcall(
-            $method,
-            {
-                language       => 'ZH_CN',
-                token          => undef,
-                client_loginid => 'CR0021'
-            }
-            )->{error},
-        'no token error if token undef'
-    );
-    ok(
-        !$c->tcall(
-            $method,
-            {
-                language       => 'ZH_CN',
-                token          => $token,
-                client_loginid => $test_loginid
-            }
-            )->{error},
-        'no token error if token is valid'
-    );
-
-    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
     is(
         $c->tcall(
             $method,
             {
-                language       => 'ZH_CN',
-                client_loginid => 'CR12345678'
+                language => 'ZH_CN',
+                token    => undef,
             }
             )->{error}{message_to_client},
-        '请登陆。',
-        'need a valid client'
+        '令牌无效。',
+        'invalid token error'
     );
-    is($c->tcall($method, {client_loginid => $test_loginid})->{balance},  0,  'have 0 balance if no default account');
-    is($c->tcall($method, {client_loginid => $test_loginid})->{currency}, '', 'have no currency if no default account');
-    my $result = $c->tcall($method, {client_loginid => 'CR0021'});
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
+    is($c->tcall($method, {token => $token1})->{balance},  0,  'have 0 balance if no default account');
+    is($c->tcall($method, {token => $token1})->{currency}, '', 'have no currency if no default account');
+    my $result = $c->tcall($method, {token => $token_21});
     is_deeply(
         $result,
         {
@@ -335,6 +386,9 @@ subtest $method => sub {
     );
 };
 
+################################################################################
+# get_account_status
+################################################################################
 $method = 'get_account_status';
 subtest $method => sub {
     is(
@@ -348,55 +402,53 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    ok(
-        !$c->tcall(
-            $method,
-            {
-                language       => 'ZH_CN',
-                token          => undef,
-                client_loginid => 'CR0021'
-            }
-            )->{error},
-        'no token error if token undef'
-    );
-    ok(
-        !$c->tcall(
-            $method,
-            {
-                language       => 'ZH_CN',
-                token          => $token,
-                client_loginid => $test_loginid
-            }
-            )->{error},
-        'no token error if token is valid'
-    );
-
-    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
     is(
         $c->tcall(
             $method,
             {
-                language       => 'ZH_CN',
-                client_loginid => 'CR12345678'
+                language => 'ZH_CN',
+                token    => undef,
             }
             )->{error}{message_to_client},
-        '请登陆。',
-        'need a valid client'
+        '令牌无效。',
+        'invalid token error'
     );
-    is_deeply($c->tcall($method, {client_loginid => $test_loginid}), {status => [qw(active)]}, 'no result, active');
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(active)]}, 'no result, active');
     $test_client->set_status('tnc_approval', 'test staff', 1);
     $test_client->save();
-    is_deeply(
-        $c->tcall($method, {client_loginid => $test_loginid}),
-        {status => [qw(active)]},
-        'status no tnc_approval, but if no result, it will active'
-    );
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
     $test_client->set_status('ok', 'test staff', 1);
     $test_client->save();
-    is_deeply($c->tcall($method, {client_loginid => $test_loginid}), {status => [qw(ok)]}, 'no tnc_approval');
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok)]}, 'no tnc_approval');
 
 };
 
+################################################################################
+# change_password
+################################################################################
 $method = 'change_password';
 subtest $method => sub {
     is(
@@ -410,46 +462,55 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    isnt(
-        !$c->tcall(
-            $method,
-            {
-                language       => 'ZH_CN',
-                token          => undef,
-                client_loginid => 'CR0021'
-            }
-            )->{error},
-        '令牌无效。',
-        'no token error if token undef'
-    );
-    isnt(
-        !$c->tcall(
-            $method,
-            {
-                language       => 'ZH_CN',
-                token          => $token,
-                client_loginid => $test_loginid
-            }
-            )->{error},
-        '令牌无效。',
-        'no token error if token is valid'
-    );
-
-    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
     is(
         $c->tcall(
             $method,
             {
-                language       => 'ZH_CN',
-                client_loginid => 'CR12345678'
+                language => 'ZH_CN',
+                token    => undef,
             }
             )->{error}{message_to_client},
-        '请登陆。',
+        '令牌无效。',
+        'invlaid token error'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
+    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '令牌无效。', 'invalid token error');
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
         'need a valid client'
     );
     my $params = {
-        language       => 'ZH_CN',
-        client_loginid => $test_loginid
+        language => 'ZH_CN',
+        token    => $token1,
     };
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'need token_type');
     $params->{token_type} = 'hello';
@@ -461,7 +522,6 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, '旧密码不正确。');
     $params->{args}{old_password} = $password;
     $params->{args}{new_password} = $password;
-
     is($c->tcall($method, $params)->{error}{message_to_client}, '新密码与旧密码相同。');
     $params->{args}{new_password} = '111111111';
     is($c->tcall($method, $params)->{error}{message_to_client}, '密码安全度不够。');
@@ -488,6 +548,9 @@ subtest $method => sub {
     $password = $new_password;
 };
 
+################################################################################
+# cashier_password
+################################################################################
 $method = 'cashier_password';
 subtest $method => sub {
 
@@ -502,39 +565,56 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    isnt(
-        !$c->tcall(
+
+    is(
+        $c->tcall(
             $method,
             {
-                language       => 'ZH_CN',
-                token          => undef,
-                client_loginid => 'CR0021'
+                language => 'ZH_CN',
+                token    => undef,
             }
-            )->{error},
+            )->{error}{message_to_client},
         '令牌无效。',
-        'no token error if token undef'
+        'invalid token error'
     );
     isnt(
-        !$c->tcall(
+        $c->tcall(
             $method,
             {
-                language       => 'ZH_CN',
-                token          => $token,
-                client_loginid => $test_loginid
+                language => 'ZH_CN',
+                token    => $token1,
             }
-            )->{error},
+            )->{error}{message_to_client},
         '令牌无效。',
         'no token error if token is valid'
     );
 
-    #test lock
-    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code},             'AuthorizationRequired', 'need a valid client');
-    is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied',      'need real money account');
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_vr
+            }
+            )->{error}{message_to_client},
+        '权限不足。',
+        'need real money account'
+    );
     my $params = {
-        language       => 'ZH_CN',
-        client_loginid => $test_loginid,
-        args           => {}};
+        language => 'ZH_CN',
+        token    => $token1,
+        args     => {}};
     is($c->tcall($method, $params)->{status}, 0, 'no unlock_password && lock_password, and not set password before, status will be 0');
     my $tmp_password     = 'sfjksfSFjsk78Sjlk';
     my $tmp_new_password = 'bjxljkwFWf278xK';
