@@ -415,8 +415,8 @@ sub set_account_currency {
                 return $c->new_error('set_account_currency', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 return {
-                    msg_type      => 'set_account_currency',
-                    login_history => $response->{status}};
+                    msg_type             => 'set_account_currency',
+                    set_account_currency => $response->{status}};
             }
         },
         {
