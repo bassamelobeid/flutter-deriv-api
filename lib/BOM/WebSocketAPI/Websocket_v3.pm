@@ -355,7 +355,6 @@ sub _reached_limit_check($category, $is_real) {
                 consumer => $c->stash('connection_id'),
             }))
     {
-
         return 1;
     }
     return;
