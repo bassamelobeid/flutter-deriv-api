@@ -35,7 +35,7 @@ sub token_to_loginid {
         $loginid = $session->loginid;
     }
 
-    return ($loginid, @scopes);
+    return wantarray ? ($loginid, @scopes) : $loginid; # backwards
 }
 
 sub create_error {
