@@ -115,7 +115,7 @@ sub _build_surfaces_from_file {
         push @volsurface, $surface;
     }
 
-    my $combined = {map {%$_} @volsurface};
+    my $combined = {map { %$_ } @volsurface};
     return $combined;
 }
 
