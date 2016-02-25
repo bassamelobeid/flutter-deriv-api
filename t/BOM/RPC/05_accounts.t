@@ -314,7 +314,7 @@ subtest $method => sub {
     });
 
     $txn->buy(skip_validation => 1);
-    my $result = $c->tcall($method, {client_loginid => $test_client2->loginid});
+    my $result = $c->tcall($method, {token => $token_21});
     is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
     $result = $c->tcall(
         $method,
