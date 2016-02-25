@@ -165,23 +165,23 @@ $res = BOM::RPC::v3::Accounts::api_token({
         }});
 is scalar(@{$res->{tokens}}), 0, "MF client token deleted successfully";
 
-my $test_loginid = 'CR0021';
+#$test_loginid = 'CR0021';
 # cleanup
-BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
+#BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
+#
+#$mock_utility->mock('token_to_loginid', sub { return $test_loginid });
 
-$mock_utility->mock('token_to_loginid', sub { return $test_loginid });
-
-# create new api token
-$res = BOM::RPC::v3::Accounts::api_token({
-        token => 'Abc123',
-        args  => {
-            api_token => 1,
-            new_token => 'Sample1'
-        }});
-is scalar(@{$res->{tokens}}), 1, "token created succesfully for CR client";
-$token = $res->{tokens}->[0]->{token};
-
-$mock_utility->unmock('token_to_loginid');
+## create new api token
+#$res = BOM::RPC::v3::Accounts::api_token({
+#        token => 'Abc123',
+#        args  => {
+#            api_token => 1,
+#            new_token => 'Sample1'
+#        }});
+#is scalar(@{$res->{tokens}}), 1, "token created succesfully for CR client";
+#$token = $res->{tokens}->[0]->{token};
+#
+#$mock_utility->unmock('token_to_loginid');
 
 $method = 'statement';
 subtest $method => sub {
