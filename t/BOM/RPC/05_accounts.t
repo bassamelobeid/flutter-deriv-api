@@ -261,16 +261,18 @@ subtest $method => sub {
       );
     is($c->tcall($method, {token => $token_21})->{count},      100, 'have 100 statements');
     is($c->tcall($method, {token => $token})->{count}, 0,   'have 0 statements if no default account');
+    diag('line: ' . __LINE__);
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
-    my $token_client2 = $m->create_token($test_client2->loginid, 'test token');
+    diag('line: ' . __LINE__);
+    my $token_client2 = $m->create_token($test_client2->loginid, 'test token');diag('line: ' . __LINE__);
     $test_client2->payment_free_gift(
         currency => 'USD',
         amount   => 1000,
         remark   => 'free gift',
     );
-
+    diag('line: ' . __LINE__);
     my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch - 99,
         underlying => 'R_50',
@@ -278,7 +280,7 @@ subtest $method => sub {
         bid        => 76.6010,
         ask        => 76.2030,
     });
-
+    diag('line: ' . __LINE__);
     my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch - 52,
         underlying => 'R_50',
@@ -286,12 +288,12 @@ subtest $method => sub {
         bid        => 76.7010,
         ask        => 76.3030,
     });
-
+    diag('line: ' . __LINE__);
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
-
+    diag('line: ' . __LINE__);
     my $contract_expired = produce_contract({
         underlying   => $underlying,
         bet_type     => 'FLASHU',
@@ -304,7 +306,7 @@ subtest $method => sub {
         exit_tick    => $old_tick2,
         barrier      => 'S0P',
     });
-
+    diag('line: ' . __LINE__);
     my $txn = BOM::Product::Transaction->new({
         client        => $test_client2,
         contract      => $contract_expired,
@@ -313,8 +315,8 @@ subtest $method => sub {
         amount_type   => 'stake',
         purchase_date => $now->epoch - 101,
     });
-
-    $txn->buy(skip_validation => 1);
+    diag('line: ' . __LINE__);
+    $txn->buy(skip_validation => 1);diag('line: ' . __LINE__);
     my $result = $c->tcall($method, {token => $token_client2});
     is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
     $result = $c->tcall(
