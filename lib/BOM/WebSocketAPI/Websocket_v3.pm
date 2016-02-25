@@ -340,6 +340,27 @@ my %rate_limit_map = (
     verify_email_virtual           => 'websocket_call_email',
 );
 
+sub _reached_limit_check($category, $is_real) {
+    my $limiting_service = $rate_limit_map{
+        $descriptor->{category} . '_'
+            . (
+            $c->stash('loginid') && !$c->stash('is_virtual')
+            ? 'real'
+            : 'virtual'
+            )} // 'websocket_call';
+    if (
+        $limiting_service
+        and not within_rate_limits({
+                service  => $limiting_service,
+                consumer => $c->stash('connection_id'),
+            }))
+    {
+
+        return 1;
+    }
+    return;
+}
+
 sub __handle {
     my ($c, $p1, $tag) = @_;
 
@@ -356,23 +377,8 @@ sub __handle {
             $c->stash('connection_id' => Data::UUID->new()->create_str());
         }
 
-        my $limiting_service = $rate_limit_map{
-            $descriptor->{category} . '_'
-                . (
-                $c->stash('loginid') && !$c->stash('is_virtual')
-                ? 'real'
-                : 'virtual'
-                )} // 'websocket_call';
-        if (
-            $limiting_service
-            and not within_rate_limits({
-                    service  => $limiting_service,
-                    consumer => $c->stash('connection_id'),
-                }))
-        {
-
+        if (_reached_limit_check($descriptor->{category}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
             return $c->new_error($descriptor->{category}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $descriptor->{category}));
-
         }
 
         my $t0 = [Time::HiRes::gettimeofday];
