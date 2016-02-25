@@ -14,7 +14,6 @@ use BOM::MarketData::EconomicEventCalendar;
 use BOM::Platform::Runtime;
 use Date::Utility;
 
-BOM::Platform::Runtime->instance->app_config->quants->market_data->economic_announcements_source('forexfactory');
 my $now = Date::Utility->new;
 subtest sanity_check => sub {
     my $new_eco = BOM::MarketData::EconomicEventCalendar->new({
