@@ -521,7 +521,7 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, '旧密码不正确。');
     $params->{args}{old_password} = $password;
     $params->{args}{new_password} = $password;
-    $params->{token} = _get_session_token();
+    #$params->{token} = _get_session_token();
     is($c->tcall($method, $params)->{error}{message_to_client}, '新密码与旧密码相同。');
     $params->{args}{new_password} = '111111111';
     is($c->tcall($method, $params)->{error}{message_to_client}, '密码安全度不够。');
