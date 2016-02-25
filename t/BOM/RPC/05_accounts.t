@@ -743,8 +743,8 @@ subtest $method => sub {
     );
 
     my $params = {
-        token => $token_21,
-        language       => 'ZH_CN'
+        token    => $token_21,
+        language => 'ZH_CN'
     };
     my $result = $c->tcall($method, $params);
     is_deeply(
@@ -776,7 +776,8 @@ subtest $method => sub {
         {
             'email'        => 'abc@binary.com',
             'country'      => '印度尼西亚',
-            'country_code' => 'id'
+            'country_code' => 'id',
+            'salutation'   => 'MR'
         },
         'vr client return less messages'
     );
