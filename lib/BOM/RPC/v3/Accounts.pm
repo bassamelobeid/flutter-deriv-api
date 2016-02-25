@@ -414,8 +414,9 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
-                    'to'      => $client->email,
+                    'from' => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'to'   => $client->email,
+                    # TODO: this 'localize' is not tested because there is no translation yet
                     'subject' => localize("[_1] cashier password updated", $client->loginid),
                     'message' => [
                         localize(
@@ -439,8 +440,9 @@ sub cashier_password {
         if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
             BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
-                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
-                    'to'      => $client->email,
+                    'from' => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'to'   => $client->email,
+                    # TODO: this 'localize' is not tested because there is no translation yet
                     'subject' => localize("[_1]-Failed attempt to unlock cashier section", $client->loginid),
                     'message' => [
                         localize(
@@ -460,8 +462,9 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
-                    'to'      => $client->email,
+                    'from' => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'to'   => $client->email,
+                    # TODO: this 'localize' is not tested because there is no translation yet
                     'subject' => localize("[_1] cashier password updated", $client->loginid),
                     'message' => [
                         localize(
