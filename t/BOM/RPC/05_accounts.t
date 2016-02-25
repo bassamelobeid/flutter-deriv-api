@@ -479,7 +479,7 @@ subtest $method => sub {
                 language       => 'ZH_CN',
                 token          => undef,
             }
-            )->{error},
+            )->{error}{message_to_client},
         '令牌无效。',
         'invlaid token error'
     );
@@ -495,16 +495,16 @@ subtest $method => sub {
         'no token error if token is valid'
     );
 
-    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '请登陆。', 'need loginid');
+    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '令牌无效。', 'no token error');
     is(
         $c->tcall(
             $method,
             {
                 language       => 'ZH_CN',
-                client_loginid => 'CR12345678'
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
-        '请登陆。',
+        '此账户不可用。',
         'need a valid client'
     );
     my $params = {
