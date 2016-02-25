@@ -85,7 +85,7 @@ my $m              = BOM::Database::Model::AccessToken->new;
 my $token1         = $m->create_token($test_loginid, 'test token');
 my $token_21       = $m->create_token('CR0021', 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
-
+my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -554,49 +554,56 @@ subtest $method => sub {
 $method = 'cashier_password';
 subtest $method => sub {
 
-  is(
-     $c->tcall(
-               $method,
-               {
+    is(
+        $c->tcall(
+            $method,
+            {
                 language => 'ZH_CN',
                 token    => '12345'
-               }
-              )->{error}{message_to_client},
-     '令牌无效。',
-     'invalid token error'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
     );
-  is(
-       $c->tcall(
-                  $method,
-                  {
-                   language       => 'ZH_CN',
-                   token          => undef,
-                  }
-                 )->{error}{message_to_client},
-       '令牌无效。',
-       'invalid token error'
-      );
-  isnt(
-       $c->tcall(
-                  $method,
-                  {
-                   language       => 'ZH_CN',
-                   token          => $token,
-                  }
-                 )->{error}{message_to_client},
-       '令牌无效。',
-       'no token error if token is valid'
-      );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
 
-
-    #test lock
-    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code},             'AuthorizationRequired', 'need a valid client');
-    is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied',      'need real money account');
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+    is($c->tcall($method, {token => $token_vr})->{error}{message_to_client}, '权限不足。', 'need real money account');
     my $params = {
         language => 'ZH_CN',
-        client_loginid => $test_loginid,
-        args           => {}};
+        token    => $token1,
+        args     => {}};
     is($c->tcall($method, $params)->{status}, 0, 'no unlock_password && lock_password, and not set password before, status will be 0');
     my $tmp_password     = 'sfjksfSFjsk78Sjlk';
     my $tmp_new_password = 'bjxljkwFWf278xK';
@@ -647,11 +654,7 @@ subtest $method => sub {
     clear_mailbox();
     $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
     $test_client->save;
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        '对不起，您输入的收银台密码不正确',
-        'return error if not correct'
-    );
+    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，您输入的收银台密码不正确', 'return error if not correct');
     $subject = 'Failed attempt to unlock cashier section';
     %msg     = get_email_by_address_subject(
         email   => $email,
@@ -663,11 +666,7 @@ subtest $method => sub {
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{unlock_password} = $tmp_password;
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        '对不起，在处理您的账户时出错。',
-        'return error if cannot save'
-    );
+    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
     $mocked_client->unmock_all;
 
     clear_mailbox();
