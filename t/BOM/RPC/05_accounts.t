@@ -511,6 +511,9 @@ subtest $method => sub {
     $password = $new_password;
 };
 
+################################################################################
+# cashier_password
+################################################################################
 $method = 'cashier_password';
 subtest $method => sub {
 
@@ -525,27 +528,25 @@ subtest $method => sub {
      '令牌无效。',
      'invalid token error'
     );
-  isnt(
-       !$c->tcall(
+  is(
+       $c->tcall(
                   $method,
                   {
                    language       => 'ZH_CN',
                    token          => undef,
-                   client_loginid => 'CR0021'
                   }
-                 )->{error},
+                 )->{error}{message_to_client},
        '令牌无效。',
-       'no token error if token undef'
+       'invalid token error'
       );
   isnt(
-       !$c->tcall(
+       $c->tcall(
                   $method,
                   {
                    language       => 'ZH_CN',
                    token          => $token,
-                   client_loginid => $test_loginid
                   }
-                 )->{error},
+                 )->{error}{message_to_client},
        '令牌无效。',
        'no token error if token is valid'
       );
