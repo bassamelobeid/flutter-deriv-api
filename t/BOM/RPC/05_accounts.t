@@ -78,8 +78,8 @@ my $m              = BOM::Database::Model::AccessToken->new;
 my $token1          = $m->create_token($test_loginid, 'test token');
 my $token_21       = $m->create_token('CR0021', 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
-
-my $token_client2 = $m->create_token($test_client2->loginid, 'test token');
+ 
+my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
@@ -288,12 +288,12 @@ subtest $method => sub {
 
     $txn->buy(skip_validation => 1);
 
-    my $result = $c->tcall($method, {token => $token_client2});
+    my $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
     $result = $c->tcall(
         $method,
         {
-            token => $token_client2,
+            token => $token_with_txn,
             args  => {description => 1}});
 
     is(
@@ -306,7 +306,7 @@ subtest $method => sub {
     # here the expired contract is sold, so we can get the txns as test value
     my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})
         ->get_transactions_ws({}, $test_client2->default_account);
-    $result = $c->tcall($method, {token => $token_client2});
+    $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
