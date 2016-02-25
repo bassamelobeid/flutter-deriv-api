@@ -948,7 +948,7 @@ sub set_account_currency {
     my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
 
     my $response = {status => 0};
-    if (grep $_ eq $currency, @{$legal_allowed_currencies}) {
+    if (grep { $_ eq $currency } @{$legal_allowed_currencies}) {
         # no change in default account currency if default account is already set
         if (not $client->default_account and $client->set_default_account($currency)) {
             $response->{status} = 1;
