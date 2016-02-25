@@ -75,7 +75,7 @@ $test_client_disabled->set_status('disabled', 1, 'test disabled');
 $test_client_disabled->save();
 
 my $m              = BOM::Database::Model::AccessToken->new;
-my $token          = $m->create_token($test_loginid, 'test token');
+my $token1          = $m->create_token($test_loginid, 'test token');
 my $token_21       = $m->create_token('CR0021', 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 
@@ -218,7 +218,7 @@ subtest $method => sub {
             $method,
             {
                 language => 'ZH_CN',
-                token    => $token,
+                token    => $token1,
             }
             )->{error},
         'no token error if token is valid'
@@ -236,7 +236,7 @@ subtest $method => sub {
         'need a valid client'
     );
     is($c->tcall($method, {token => $token_21})->{count}, 100, 'have 100 statements');
-    is($c->tcall($method, {token => $token})->{count},    0,   'have 0 statements if no default account');
+    is($c->tcall($method, {token => $token1})->{count},    0,   'have 0 statements if no default account');
     $test_client2->payment_free_gift(
         currency => 'USD',
         amount   => 1000,
@@ -345,14 +345,14 @@ subtest $method => sub {
             $method,
             {
                 language => 'ZH_CN',
-                token    => $token,
+                token    => $token1,
             }
             )->{error},
         'no token error if token is valid'
     );
 
-    is($c->tcall($method, {token => $token})->{balance},  0,  'have 0 balance if no default account');
-    is($c->tcall($method, {token => $token})->{currency}, '', 'have no currency if no default account');
+    is($c->tcall($method, {token => $token1})->{balance},  0,  'have 0 balance if no default account');
+    is($c->tcall($method, {token => $token1})->{currency}, '', 'have no currency if no default account');
     my $result = $c->tcall($method, {token => $token_21});
     is_deeply(
         $result,
@@ -397,19 +397,19 @@ subtest $method => sub {
             $method,
             {
                 language => 'ZH_CN',
-                token    => $token,
+                token    => $token1,
             }
             )->{error},
         'no token error if token is valid'
     );
 
-    is_deeply($c->tcall($method, {token => $token}), {status => [qw(active)]}, 'no result, active');
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(active)]}, 'no result, active');
     $test_client->set_status('tnc_approval', 'test staff', 1);
     $test_client->save();
-    is_deeply($c->tcall($method, {token => $token}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
     $test_client->set_status('ok', 'test staff', 1);
     $test_client->save();
-    is_deeply($c->tcall($method, {token => $token}), {status => [qw(ok)]}, 'no tnc_approval');
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok)]}, 'no tnc_approval');
 
 };
 
@@ -446,7 +446,7 @@ subtest $method => sub {
             $method,
             {
                 language => 'ZH_CN',
-                token    => $token,
+                token    => $token1,
             }
             )->{error}{message_to_client},
         '令牌无效。',
@@ -467,7 +467,7 @@ subtest $method => sub {
     );
     my $params = {
         language => 'ZH_CN',
-        token    => $token,
+        token    => $token1,
     };
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'need token_type');
     $params->{token_type} = 'hello';
