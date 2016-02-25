@@ -109,6 +109,40 @@ my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
 my $method = 'payout_currencies';
 subtest $method => sub {
+      is(
+         $c->tcall(
+                   $method,
+                   {
+                    language => 'ZH_CN',
+                    token    => '12345'
+                   }
+                  )->{error}{message_to_client},
+         '令牌无效。',
+         'invalid token error'
+        );
+      is(
+         !$c->tcall(
+                    $method,
+                    {
+                     language       => 'ZH_CN',
+                     token          => undef,
+                    }
+                   )->{error}{message_to_client},
+         '令牌无效。',
+         'no token error if token undef'
+        );
+      ok(
+         !$c->tcall(
+                    $method,
+                    {
+                     language       => 'ZH_CN',
+                     token          => $token,
+                     client_loginid => $test_loginid
+                    }
+                   )->{error},
+         'no token error if token is valid'
+        );
+
     is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), ['USD'], "will return client's currency");
     is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies");
 };
