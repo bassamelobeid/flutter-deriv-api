@@ -15,7 +15,6 @@ use Moose;
 with 'App::Base::Script';
 with 'BOM::Utility::Logging';
 
-use YAML::CacheLoader;
 use List::Util qw(first);
 use BOM::Market::Underlying;
 use Quant::Framework::InterestRate;

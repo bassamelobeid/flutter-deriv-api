@@ -278,42 +278,6 @@ stocks:
             UPORDOWN: 40
             ONETOUCH: 40
             NOTOUCH: 40
-sectors:
-    suspicious_move: 0.25
-    outlier_tick: 0.10
-    display_name: "Sectors"
-    volatility_surface_type: "flat"
-    eod_blackout_expiry: '1m'
-    eod_blackout_start: '1h'
-    sod_blackout_start: '20m'
-    absolute_barrier_multiplier: 1
-    intradays_must_be_same_day: 1
-    contracts:
-      callput:
-        intraday:
-          forward:
-            euro_atm: five_mins_to_eod
-    equity: 1
-    explanation: 'Sectors represent the weighted value of a basket of companies which may operate in different countries and trade on different exchanges, but pursue similar lines of business.'
-    license: "daily"
-    providers:
-        - 'tenfore'
-        - 'telekurs'
-    markups:
-        apply_traded_markets_markup: 1
-        digital_spread:
-            CALL: 4
-            PUT: 4
-            EXPIRYMISS: 4
-            EXPIRYRANGE: 4
-            DIGITMATCH: 4
-            DIGITDIFF: 4
-            ASIANU: 4
-            ASIAND: 4
-            RANGE: 40
-            UPORDOWN: 40
-            ONETOUCH: 40
-            NOTOUCH: 40
 random:
     display_current_spot: 1
     suspicious_move: 0.5
