@@ -156,6 +156,7 @@ sub get_bid {
             longcode            => $contract->longcode,
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
+            purchase_time       => $params->{purchase_time},
         };
 
         if (not $contract->is_valid_to_sell) {
@@ -163,16 +164,16 @@ sub get_bid {
         }
 
         if (not $contract->is_spread) {
+            $response->{entry_tick}      = $contract->entry_tick->quote if $contract->entry_tick;
+            $response->{entry_tick_time} = $contract->entry_tick->epoch if $contract->entry_tick;
+            $response->{exit_tick}       = $contract->exit_tick->quote  if $contract->exit_tick;
+            $response->{exit_tick_time}  = $contract->exit_tick->epoch  if $contract->exit_tick;
+            $response->{current_spot}    = $contract->current_spot      if $contract->underlying->feed_license eq 'realtime';
+            $response->{entry_spot}      = $contract->entry_spot        if $contract->entry_spot;
+
             if ($contract->expiry_type eq 'tick') {
-                $response->{prediction}      = $contract->prediction;
-                $response->{tick_count}      = $contract->tick_count;
-                $response->{entry_tick}      = $contract->entry_tick ? $contract->entry_tick->quote : '';
-                $response->{entry_tick_time} = $contract->entry_tick ? $contract->entry_tick->epoch : '';
-                $response->{exit_tick}       = $contract->exit_tick ? $contract->exit_tick->quote : '';
-                $response->{exit_tick_time}  = $contract->exit_tick ? $contract->exit_tick->epoch : '';
-            } else {
-                $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-                $response->{entry_spot} = $contract->entry_spot;
+                $response->{prediction} = $contract->prediction;
+                $response->{tick_count} = $contract->tick_count;
             }
 
             if ($contract->two_barriers) {
@@ -229,10 +230,11 @@ sub send_ask {
 sub get_contract_details {
     my $params = shift;
 
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
 
-    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
