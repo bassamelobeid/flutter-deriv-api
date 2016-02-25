@@ -413,7 +413,7 @@ sub _failed_key_value {
         if ($pwd_field{$key}) {
         return;
     } elsif ($key !~ /^[A-Za-z0-9_-]{1,50}$/
-        or $value !~ /^[\s\.\w\@_:+-\/='&\$]{0,300}$/)
+        or $value !~ /^[\s\.\w\@_:+\-\/='&\$]{0,300}$/)
     {
         return ($key, $value);
     }
