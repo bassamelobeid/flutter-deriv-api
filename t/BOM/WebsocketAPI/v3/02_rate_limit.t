@@ -10,8 +10,8 @@ for (1 .. 500) {
     ok(not BOM::WebSocketAPI::Websocket_v3::_reached_limit_check(1, 'time', 0));
 }
 
-# real account wont have buy limit
-for (1 .. 500) {
+# high real account buy sell pricing limit
+for (1 .. 60) {
     ok(not BOM::WebSocketAPI::Websocket_v3::_reached_limit_check(1, 'buy',                    1));
     ok(not BOM::WebSocketAPI::Websocket_v3::_reached_limit_check(1, 'sell',                   1));
     ok(not BOM::WebSocketAPI::Websocket_v3::_reached_limit_check(1, 'proposal',               1));
