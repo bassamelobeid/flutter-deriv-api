@@ -195,35 +195,9 @@ my @dispatch = (
         'landing_company_details',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company_details, 0
     ],
-    [
-        'paymentagent_list',
-        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list, 0
-    ],
-    [
-        'verify_email',
-        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0
-    ],
-    [
-        'new_account_virtual',
-        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0
-    ],
 
-    # authenticated calls
-    ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1, 'trade'],
-    ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1, 'trade'],
-    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
-    [
-        'portfolio',
-        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio, 1, 'read'
-    ],
-    [
-        'proposal_open_contract',
-        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
-        1, 'read'
-    ],
-    ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1, 'trade'],
-    ['balance',      \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,                 1, 'read'],
-    ['statement',    \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement,               1, 'read'],
+    ['balance',   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,   1, 'read'],
+    ['statement', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement, 1, 'read'],
     [
         'profit_table',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::profit_table, 1, 'read'
@@ -256,8 +230,37 @@ my @dispatch = (
         'cashier_password',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1, 'payments'
     ],
-    ['api_token', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token, 1, 'admin'],
-    ['tnc_approval', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval, 1, 'admin'],
+
+    ['api_token',     \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,     1, 'admin'],
+    ['tnc_approval',  \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval,  1, 'admin'],
+    ['login_history', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history, 1, 'read'],
+    [
+        'paymentagent_list',
+        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list, 0
+    ],
+    [
+        'verify_email',
+        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0
+    ],
+    [
+        'new_account_virtual',
+        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0
+    ],
+
+    # authenticated calls
+    ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1, 'trade'],
+    ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1, 'trade'],
+    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
+    [
+        'portfolio',
+        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio, 1, 'read'
+    ],
+    [
+        'proposal_open_contract',
+        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
+        1, 'read'
+    ],
+    ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1, 'read'],
 
     ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register, 1, 'admin'],
     ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,     1, 'admin'],
@@ -388,7 +391,7 @@ sub __handle {
         }
 
         if ($loginid) {
-            my $account_type = $loginid =~ /^VRT/ ? 'virtual' : 'real';
+            my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
                 {tags => [$tag, $descriptor->{category}, "loginid:$loginid", "account_type:$account_type"]});
         }

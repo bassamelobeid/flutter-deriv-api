@@ -70,8 +70,8 @@ sub active_symbols {
             };
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token')});
     return;
 }
 
