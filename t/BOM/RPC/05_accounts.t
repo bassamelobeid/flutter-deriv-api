@@ -64,7 +64,7 @@ clear_mailbox();
 
 my $m = BOM::Database::Model::AccessToken->new;
 my $token = $m->create_token($test_loginid, 'test token');
-
+my $token_21 = $m->create_token('CR0021', 'test token');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -117,7 +117,7 @@ subtest $method => sub {
                  }
                 )));
 
-  is(
+  is_deeply(
          $c->tcall(
                    $method,
                    {
@@ -125,34 +125,23 @@ subtest $method => sub {
                     token    => '12345'
                    }
                   )->{error}{message_to_client},
-         '令牌无效。',
-         'invalid token error'
+            [qw(USD EUR GBP AUD)],
+         'invalid token will get all currencies'
         );
-      is(
-         !$c->tcall(
+      is_deeply(
+         $c->tcall(
                     $method,
                     {
                      language       => 'ZH_CN',
                      token          => undef,
                     }
                    )->{error}{message_to_client},
-         '令牌无效。',
-         'no token error if token undef'
-        );
-      ok(
-         !$c->tcall(
-                    $method,
-                    {
-                     language       => 'ZH_CN',
-                     token          => $token,
-                     client_loginid => $test_loginid
-                    }
-                   )->{error},
-         'no token error if token is valid'
+                [qw(USD EUR GBP AUD)],
+                'undefined token will get all currencies'
         );
 
-    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), ['USD'], "will return client's currency");
-    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies");
+    is_deeply($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
+    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies if no token");
 };
 
 $method = 'landing_company';
