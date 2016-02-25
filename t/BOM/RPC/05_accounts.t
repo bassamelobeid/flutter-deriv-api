@@ -324,8 +324,8 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    ok(
-        !$c->tcall(
+    is(
+        $c->tcall(
             $method,
             {
                 language       => 'ZH_CN',
