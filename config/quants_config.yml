@@ -32,7 +32,10 @@ client_limits:
   intraday_spot_index_turnover_limit: 30000
   smartfx_turnover_limit: 5000
   stocks_turnover_limit: 5000
-  max_real_account_balance: 300000
-  max_virtual_account_balance: 1000000
+  max_balance: 300000
+  max_virtual_balance: 1000000
+  max_virtual_daily_turnover: 1000000
+  max_daily_turnover_authenticated: 500000
+  max_daily_turnover_unauthenticated: 200000
 
 

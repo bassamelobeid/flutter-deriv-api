@@ -452,7 +452,7 @@ sub get_limit_for_account_balance {
 
     my @maxbalances = ();
     my $client_limits = BOM::Platform::Static::Config::quants->{client_limits};
-    push @maxbalances, $self->is_virtual ? $client_limits->{max_virtual_account_balance} : $client_limits->{max_real_account_balance};
+    push @maxbalances, $self->is_virtual ? $client_limits->{max_virtual_balance} : $client_limits->{max_balance};
 
     if ($self->get_self_exclusion and $self->get_self_exclusion->max_balance) {
         push @maxbalances, $self->get_self_exclusion->max_balance;
@@ -476,10 +476,11 @@ sub get_limit_for_daily_turnover {
     my $val = $self->custom_max_daily_turnover;
     return $excl && $excl < $val ? $excl : $val if defined $val;
 
+    my $client_limits = BOM::Platform::Static::Config::quants->{client_limits};
     $val =
-          $self->loginid =~ /^VRT/          ? 1_000_000
-        : $self->client_fully_authenticated ? 500_000
-        :                                     200_000;
+          $self->is_virtual                 ? $client_limits->{max_virtual_daily_turnover}
+        : $self->client_fully_authenticated ? $client_limits->{max_daily_turnover_authenticated}
+        :                                     $client_limits->{max_daily_turnover_unauthenticated}
 
     return $excl && $excl < $val ? $excl : $val;
 }
