@@ -551,12 +551,13 @@ sub get_limit_for_payout {
     return $val if defined $val;
 
     my $lc_limit = $self->landing_company_open_positions_payout_limit;
+    my $limits = BOM::Platform::Static::Config::quants->{client_limits};
 
     $val =
-          $self->loginid =~ /^VRT/          ? 1_000_000
+          $self->is_virtual                 ? $limits->{max_virtual_payout}
         : $lc_limit                         ? $lc_limit
-        : $self->client_fully_authenticated ? 500_000
-        :                                     200_000;
+        : $self->client_fully_authenticated ? $limits->{max_payout_authenticated}
+        :                                     $limits->{max_payout_unauthenticated};
 
     return $val;
 }
@@ -564,7 +565,8 @@ sub get_limit_for_payout {
 sub landing_company_open_positions_payout_limit {
     my $self = shift;
 
-    return ($self->landing_company->short eq 'maltainvest') ? 100_000 : undef;
+    return if ($self->landing_company->short ne 'maltainvest');
+    return BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_maltainvest};
 }
 
 sub get_limit {
