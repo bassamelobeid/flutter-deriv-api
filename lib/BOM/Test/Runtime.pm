@@ -6,7 +6,7 @@ BOM::Test::Runtime
 
 =head1 DESCRIPTION
 
-Used to setup a runtime for testing, without depending on our couch settings which come from production. It will instead load the settings from 't/data/app_settings.yml' file and hence all settings common across test cases can be set there.
+Used to setup a runtime for testing, without depending on our chronicle settings which come from production. It will instead load the settings from 't/data/app_settings.yml' file and hence all settings common across test cases can be set there.
 
 If you want to setup individual AppConfig stuff for your test alone you can directly set the value for your config, like
 BOM::Platform::Runtime->instance->app_config->system->SETTING_NAME('XXXX');
@@ -24,7 +24,7 @@ use strict;
 use warnings;
 
 use BOM::Platform::Runtime;
-use BOM::Test::Runtime::MockCouchDS;
+use BOM::Test::Runtime::MockDS;
 use YAML::CacheLoader;
 
 sub _normal {
@@ -35,9 +35,9 @@ sub _normal {
     my $hash = YAML::CacheLoader::LoadFile($app_settings);
     $hash->{_rev} = 'a';
 
-    my $couch = BOM::Test::Runtime::MockCouchDS->new(data => $hash);
+    my $hdata = BOM::Test::Runtime::MockDS->new(data => $hash);
 
-    my $ac = BOM::Platform::Runtime::AppConfig->new(couch => $couch);
+    my $ac = BOM::Platform::Runtime::AppConfig->new(db => $hdata);
 
     return BOM::Platform::Runtime->instance(BOM::Platform::Runtime->new(app_config => $ac));
 }
