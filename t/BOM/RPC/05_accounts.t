@@ -415,14 +415,15 @@ subtest $method => sub {
     my $data = $fmb_dm->get_sold_bets_of_account($args);
     diag('data is ' . Dumper($data));
     diag('result is' . Dumper($result));
-#    my $expect1 = {                              'sell_price' => '100',
-#                                                 'contract_id' => $txn->contract_id,
-#                                                 'transaction_id' => $txn->transaction_id,
-#                                                 'sell_time' => '1456469911',
-#                                                 'buy_price' => '100',
-#                                                 'purchase_time' => '1127285059'
-#                  }
-#    is($result->{transactions}[0]{sell_price})
+    my $expect1 = {                              'sell_price' => '100',
+                                                 'contract_id' => $txn->contract_id,
+                                                 'transaction_id' => $txn->transaction_id,
+                                                 'sell_time' => Data::Utility->new($data->[1]{sell_time})->epoch,
+                                                 'buy_price' => '100',
+                                                 'purchase_time' =>    Data::Utility->new($data->[0]{purchase_date})->epoch,                             
+                  };
+
+    is_deeply($result->{transactions}[1], $expect1, 'result is correct');
 
 
 #    my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
