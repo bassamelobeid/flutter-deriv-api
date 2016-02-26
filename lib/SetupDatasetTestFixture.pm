@@ -22,7 +22,7 @@ has original_spot => (
 
 =head1 original_rates
 
-The original rates on couch
+The original rates on Chronicle
 
 =cut
 
