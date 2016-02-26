@@ -22,7 +22,7 @@ subtest 'save dividend' => sub {
             symbol          => 'AEX',
         );
         ok $dvd->save, 'save without error';
-        lives_ok { BOM::MarketData::Dividend->new(symbol => 'AEX')->document } 'successfully retrieved saved document from couch';
+        lives_ok { BOM::MarketData::Dividend->new(symbol => 'AEX')->document } 'successfully retrieved saved document from data-store';
     }
     'sucessfully save dividend for AEX';
 };

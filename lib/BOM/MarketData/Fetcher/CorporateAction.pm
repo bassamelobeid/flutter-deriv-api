@@ -6,7 +6,7 @@ BOM::MarketData::Fetcher::CorporateAction
 
 =head1 DESCRIPTION
 
-An interface to fetch corporate action data from couch
+An interface to fetch corporate action data from Chronicle
 
 =cut
 
