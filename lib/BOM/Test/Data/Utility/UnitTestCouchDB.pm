@@ -29,6 +29,7 @@ use BOM::MarketData::VolSurface::Phased;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::System::Chronicle;
 use BOM::System::RedisReplicated;
+use Quant::Framework::Utils::Test;
 use JSON;
 
 sub initialize_symbol_dividend {
@@ -136,6 +137,13 @@ sub _init {
 
 sub create_doc {
     my ($yaml_db, $data_mod) = @_;
+
+    if (grep { $_ eq $yaml_db } qw{currency}) {
+        $data_mod->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader();
+        $data_mod->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();
+
+        return Quant::Framework::Utils::Test::create_doc($yaml_db, $data_mod);
+    }
 
     my $save = 1;
     if (exists $data_mod->{save}) {
