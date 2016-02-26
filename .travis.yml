@@ -47,5 +47,6 @@ install:
     - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
     - sudo ln -s /home/travis/build/regentmarkets/bom-quant-benchmark /home/git/regentmarkets/bom-quant-benchmark
     - . /tmp/travis-scripts/setup_perl5lib.sh
+    - /tmp/travis-scripts/setup_chronicledb.sh
 script:
     - make $TEST_SUITE
