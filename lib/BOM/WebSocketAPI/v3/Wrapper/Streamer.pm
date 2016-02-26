@@ -319,6 +319,25 @@ sub process_transaction_updates {
                             $details->{$type}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
                             $c->send({json => $details});
                         }
+                    } elsif ($type =~ /^[0-9]+$/
+                        and $payload->{action_type} eq 'sell'
+                        and exists $payload->{financial_market_bet_id}
+                        and $payload->{financial_market_bet_id} eq $type)
+                    {
+                        # cancel proposal open contract streaming, transaction subscription and mark is_sold as 1
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
+                            $c, 'unsubscribe',
+                            delete $args->{underlying},
+                            'proposal_open_contract:' . JSON::to_json($args), $args
+                        ) if $args->{underlying};
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+
+                        $args->{is_sold}    = 1;
+                        $args->{sell_price} = $payload->{amount};
+                        $args->{sell_time}  = Date::Utility->new($payload->{sell_time})->epoch;
+
+                        # send proposal details last time
+                        BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, undef, $args);
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
                     BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
