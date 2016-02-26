@@ -7,7 +7,7 @@ use BOM::Platform::Account::Virtual;
 use BOM::Platform::Runtime;
 use BOM::Platform::Account;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMD qw(:init);
 
 BOM::Platform::Runtime->instance->app_config->system->on_production(1);
 
