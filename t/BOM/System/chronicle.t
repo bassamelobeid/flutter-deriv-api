@@ -7,7 +7,7 @@ use Test::Exception;
 use Test::NoWarnings;
 use Time::HiRes;
 use Time::Local ();
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::System::Chronicle;
 use Date::Utility;
 
