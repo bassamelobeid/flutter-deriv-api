@@ -399,7 +399,7 @@ subtest $method => sub {
     $txn->buy(skip_validation => 1);
 
 
-    $result = $c->tcall($method, {token => $token_with_txn});
+    my $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{count},2, 'the new transaction is sold so _sell_expired_contracts is called');
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
