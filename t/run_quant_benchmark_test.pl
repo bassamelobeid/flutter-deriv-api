@@ -23,14 +23,59 @@ use Runner::Bloomberg;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
+use Text::CSV;
 
 sub documentation {
     return 'This script runs quant\'s pricing-related datasets';
 }
 
 sub _benchmark_testing_setup {
-    BOM::Platform::Runtime->instance->app_config->quants->features->enable_parameterized_surface(0);
-    BOM::Platform::Runtime->instance->app_config->quants->market_data->economic_announcements_source('forexfactory');
+
+    BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source} = 'market';
+
+
+    my $file_path = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/interest_rates.csv';
+    my $csv = Text::CSV->new({ sep_char => ',' });
+
+    open(my $data, '<', $file_path) or die "Could not open '$file_path' $!\n";
+    my $dummy_line = <$data>;
+
+    while (my $line = <$data>) {
+        chomp $line;
+
+        if ($csv->parse($line)) {
+            my @fields = $csv->fields();
+
+            my $symbol = $fields[0];
+            my %rates;
+
+            for(my $i=1;$i<scalar @fields;$i+=2) {
+                my $tenor = $fields[$i];
+                my $rate = $fields[$i+1];
+
+                $rates{$tenor} = $rate;
+            }
+
+            BOM::System::Chronicle::set(
+                'interest_rates',
+                $symbol,
+                {
+                    symbol  => $symbol,
+                    type    => 'market',
+                    rates   => \%rates,
+                    date    => '2010-01-01T00:00:00Z'
+                });
+
+        } else {
+            warn "Line could not be parsed: $line\n";
+        }
+    }
+
+    close $data;
+
+
+    BOM::System::Chronicle::set('partial_trading', 'late_opens', {}, Date::Utility->new("2010-01-01"));
+
 
     return 1;
 }
@@ -92,6 +137,7 @@ sub script_run {
 
     use Data::Dumper;
     print Dumper $self->test_suite;
+
     eval {
         foreach my $test (@{$self->test_suite}) {
             my $test_class = $self->test_suite_mapper->{$test};
@@ -101,21 +147,21 @@ sub script_run {
     };
     if ($@) {
         print "[$@]";
+        die $@;
     }
-
 }
 
 sub analyse_report {
     my ($self, $report, $test) = @_;
 
     my $benchmark = LoadFile('/home/git/regentmarkets/bom-quant-benchmark/t/benchmark.yml');
-        my $test_benchmark = $benchmark->{$self->getOption('suite')}->{$test};
-        foreach my $base_or_num (keys %$report) {
-            foreach my $bet_type (keys %{$report->{$base_or_num}}) {
-                subtest "$test benchmark" => sub {
-                    cmp_ok(
-                        roundnear(0.0001,$report->{$base_or_num}->{$bet_type}->{avg}),
-                        '<=',
+    my $test_benchmark = $benchmark->{$self->getOption('suite')}->{$test};
+    foreach my $base_or_num (keys %$report) {
+        foreach my $bet_type (keys %{$report->{$base_or_num}}) {
+            subtest "$test benchmark" => sub {
+                cmp_ok(
+                    roundnear(0.0001,$report->{$base_or_num}->{$bet_type}->{avg}),
+                    '<=',
                         roundnear(0.0001,$test_benchmark->{$base_or_num}->{$bet_type}->{avg}),
                         "Avg mid diff of bet_type[$bet_type] for [$base_or_num] is within benchmark"
                     );
