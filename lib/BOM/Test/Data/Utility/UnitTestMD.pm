@@ -1,8 +1,8 @@
-package BOM::Test::Data::Utility::UnitTestCouchDB;
+package BOM::Test::Data::Utility::UnitTestMD;
 
 =head1 NAME
 
-BOM::Test::Data::Utility::UnitTestCouchDB
+BOM::Test::Data::Utility::UnitTestMD
 
 =head1 DESCRIPTION
 
@@ -10,7 +10,7 @@ To be used by an RMG unit test.
 
 =head1 SYNOPSIS
 
-  use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+  use BOM::Test::Data::Utility::UnitTestMD qw(:init);
 
 =cut
 
