@@ -8,7 +8,7 @@ use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 use Finance::Asset;
-use BOM::Test::Data::Utility::UnitTestCouchDB;
+use BOM::Test::Data::Utility::UnitTestMD;
 use Date::Utility;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

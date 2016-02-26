@@ -8,7 +8,7 @@ use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 use Finance::Asset;
-use BOM::Test::Data::Utility::UnitTestCouchDB;
+use BOM::Test::Data::Utility::UnitTestMD;
 use Date::Utility;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -16,8 +16,8 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => Date::Utility->new->epoch,
     quote      => 100
 });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => 'R_100'});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc('index', {symbol => 'R_100'});
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'currency',
     {
         symbol => 'USD',
