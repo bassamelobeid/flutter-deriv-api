@@ -51,7 +51,7 @@ sub _build_file {
     my $url =
         $filename eq 'auto_upload.xls'
         ? 'https://www.dropbox.com/s/67s60tryh057qx1/auto_upload.xls?dl=0'
-        : 'https://www.dropbox.com//www.dropbox.com/s/4tv8y7sph1nh0cb/auto_upload_stocks.xls?dl=0';
+        : 'https://www.dropbox.com/s/1y0l7dakl8yg5jd/auto_upload_stocks.xls?dl=0';
     my $file = '/tmp/' . $filename;
     `wget -O $file $url > /dev/null 2>&1`;
     return $file;
