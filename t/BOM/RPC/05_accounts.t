@@ -373,7 +373,7 @@ subtest $method => sub {
         'check authorization'
     );
 
-
+    #create a new transaction for test
     my $contract_expired = produce_contract({
                                              underlying   => $underlying,
                                              bet_type     => 'FLASHU',
@@ -399,15 +399,32 @@ subtest $method => sub {
     $txn->buy(skip_validation => 1);
 
 
-    my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
-    my $_sell_expired_is_called = 0;
-    $mock_Portfolio->mock('_sell_expired_contracts',
-        sub { $_sell_expired_is_called = 1; });
-    my $result = $c->tcall($method, {token => $token_with_txn});
-    diag(Dumper($result));
-    $mock_Portfolio = undef;
     $result = $c->tcall($method, {token => $token_with_txn});
-    diag(Dumper($result));
+    is($result->{count},2 'the new transaction is sold so _sell_expired_contracts is called');
+
+    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+            client_loginid => $test_client2->loginid,
+            currency_code  => $test_client2->currency,
+            db             => BOM::Database::ClientDB->new({
+                    client_loginid => $test_client2->loginid,
+                    operation      => 'replica',
+                }
+            )->db,
+        });
+    my $args = {};
+    my $data = $fmb_dm->get_sold_bets_of_account($args);
+    diag('data is ' . Dumper($data));
+    diag('result is' . Dumper($result));
+#    my $expect1 = {                              'sell_price' => '100',
+#                                                 'contract_id' => $txn->contract_id,
+#                                                 'transaction_id' => $txn->transaction_id,
+#                                                 'sell_time' => '1456469911',
+#                                                 'buy_price' => '100',
+#                                                 'purchase_time' => '1127285059'
+#                  }
+#    is($result->{transactions}[0]{sell_price})
+
+
 #    my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
 #    my $_sell_expired_is_called = 0;
 #    $mock_Portfolio->mock('_sell_expired_contracts',
