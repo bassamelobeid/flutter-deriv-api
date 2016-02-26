@@ -19,7 +19,9 @@ has shutting_down => (
 );
 
 use ExpiryQueue qw( dequeue_expired_contract get_cid);
+use List::Util qw(max);
 use Cache::RedisDB;
+use Time::HiRes;
 use Try::Tiny;
 
 use BOM::Platform::Client;
@@ -63,8 +65,10 @@ sub _daemon_run {
     $self->warn("Starting as PID $$.");
     my $redis = Cache::RedisDB->redis;
     while (1) {
+        my $now = time;
+        my $next_time = $now + 1; # we want this to execute every second
         # Outer `while` to live through possible redis disconnects/restarts
-        while (my $info = dequeue_expired_contract(1)) {    # Blocking for next available.
+        while (my $info = dequeue_expired_contract()) {    # Blocking for next available.
             try {
                 my $contract_id = $info->{contract_id};
                 my $client = BOM::Platform::Client->new({loginid => $info->{held_by}});
@@ -94,6 +98,7 @@ sub _daemon_run {
                 }
             };    # No catch, let MtM pick up the pieces.
         }
+        Time::HiRes::sleep(max(0,$next_time - Time::HiRes::time));
     }
 }
 
