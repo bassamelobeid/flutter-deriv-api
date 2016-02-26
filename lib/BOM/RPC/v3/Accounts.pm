@@ -935,4 +935,35 @@ sub login_history {
 
 }
 
+sub set_account_currency {
+    my $params = shift;
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my $currency                 = $params->{currency};
+    my $legal_allowed_currencies = $client->landing_company->legal_allowed_currencies;
+
+    my $response = {status => 0};
+    if (grep { $_ eq $currency } @{$legal_allowed_currencies}) {
+        # no change in default account currency if default account is already set
+        if (not $client->default_account and $client->set_default_account($currency)) {
+            $response->{status} = 1;
+        } else {
+            $response->{status} = 0;
+        }
+    } else {
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidCurrency',
+                message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)});
+    }
+
+    return $response;
+}
+
 1;

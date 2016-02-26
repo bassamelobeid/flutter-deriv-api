@@ -3,23 +3,40 @@ use warnings;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
+use utf8;
 use MojoX::JSON::RPC::Client;
+use Data::Dumper;
+use MIME::QuotedPrint qw(encode_qp);
+use Encode qw(encode);
+use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
+use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::AccessToken;
 
 package MojoX::JSON::RPC::Client;
+use Data::Dumper;
+use Test::Most;
 
 sub tcall {
     my $self   = shift;
     my $method = shift;
     my $params = shift;
-    return $self->call(
+    my $r      = $self->call(
         "/$method",
         {
             id     => Data::UUID->new()->create_str(),
             method => $method,
             params => $params
-        })->result;
+        });
+    ok($r->result,    'rpc response ok');
+    ok(!$r->is_error, 'rpc response ok');
+    if ($r->is_error) {
+        diag(Dumper($r));
+    }
+    return $r->result;
 }
 
 package main;
@@ -35,57 +52,104 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client->email($email);
 $test_client->save;
-my $test_loginid_mf = $test_client->loginid;
-my $user            = BOM::Platform::User->create(
+my $test_loginid = $test_client->loginid;
+my $user         = BOM::Platform::User->create(
     email    => $email,
     password => $hash_pwd
 );
 $user->save;
-$user->add_loginid({loginid => $test_loginid_mf});
+$user->add_loginid({loginid => $test_loginid});
 $user->save;
+clear_mailbox();
+
+my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+
+my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+
+$test_client_disabled->set_status('disabled', 1, 'test disabled');
+$test_client_disabled->save();
+
+my $m              = BOM::Database::Model::AccessToken->new;
+my $token1         = $m->create_token($test_loginid, 'test token');
+my $token_21       = $m->create_token('CR0021', 'test token');
+my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
+
+my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency',
+    {
+        symbol => $_,
+        date   => Date::Utility->new,
+    }) for qw(JPY USD JPY-USD);
+
+my $now        = Date::Utility->new('2005-09-21 06:46:00');
+my $underlying = BOM::Market::Underlying->new('R_50');
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'randomindex',
+    {
+        symbol => 'R_50',
+        date   => $now,
+    });
+
 ################################################################################
-# test
+# test begin
 ################################################################################
 
 my $t = Test::Mojo->new('BOM::RPC');
 my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
-#cleanup
-BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid_mf);
-
-my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
-# need to mock it as to access api token we need token beforehand
-$mock_utility->mock('token_to_loginid', sub { return $test_loginid_mf });
-
-# create new api token
-my $res = BOM::RPC::v3::Accounts::api_token({
-        token => 'Abc123',
-        args  => {
-            api_token => 1,
-            new_token => 'Sample1'
-        }});
-is scalar(@{$res->{tokens}}), 1, "token created succesfully for MF client";
-my $token = $res->{tokens}->[0]->{token};
-
-$mock_utility->unmock('token_to_loginid');
-
+################################################################################
+# payout_currencies
+################################################################################
 my $method = 'payout_currencies';
 subtest $method => sub {
-    my $m               = ref(BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica'));
-    my $mocked_m        = Test::MockModule->new($m, no_auto => 1);
-    my $mocked_currency = [qw(A B C)];
-    is_deeply($c->tcall($method, {token => $token}), ['EUR'], "will return client's currency");
-    $mocked_m->mock('legal_allowed_currencies', sub { return $mocked_currency });
-    is_deeply($c->tcall($method, {}), $mocked_currency, "will return legal currencies");
+    is_deeply(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+        ),
+        [qw(USD EUR GBP AUD)],
+        'invalid token will get all currencies'
+    );
+    is_deeply(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+        ),
+        [qw(USD EUR GBP AUD)],
+        'undefined token will get all currencies'
+    );
+
+    is_deeply($c->tcall($method, {token => $token_21}), ['USD'], "will return client's currency");
+    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies if no token");
 };
 
+################################################################################
+# landing_company
+################################################################################
 $method = 'landing_company';
 subtest $method => sub {
     is_deeply(
-        $c->tcall($method, {args => {landing_company => 'nosuchcountry'}}),
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                args     => {landing_company => 'nosuchcountry'}}
+        ),
         {
             error => {
-                message_to_client => 'Unknown landing company.',
+                message_to_client => '未知着陆公司。',
                 code              => 'UnknownLandingCompany'
             }
         },
@@ -98,13 +162,21 @@ subtest $method => sub {
     ok(!$c->tcall($method, {args => {landing_company => 'hk'}})->{financial_company}, "hk have no financial_company");
 };
 
+################################################################################
+# landing_company_details
+################################################################################
 $method = 'landing_company_details';
 subtest $method => sub {
     is_deeply(
-        $c->tcall($method, {args => {landing_company_details => 'nosuchcountry'}}),
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                args     => {landing_company_details => 'nosuchcountry'}}
+        ),
         {
             error => {
-                message_to_client => 'Unknown landing company.',
+                message_to_client => '未知着陆公司。',
                 code              => 'UnknownLandingCompany'
             }
         },
@@ -113,138 +185,188 @@ subtest $method => sub {
     is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name}, 'Binary (C.R.) S.A.', "details result ok");
 };
 
-$res = BOM::RPC::v3::Accounts::api_token({
-        token => $token,
-        args  => {
-            api_token    => 1,
-            delete_token => $token
-        }});
-is scalar(@{$res->{tokens}}), 0, "MF client token deleted successfully";
-
-my $test_loginid = 'CR0021';
-# cleanup
-BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
-
-$mock_utility->mock('token_to_loginid', sub { return $test_loginid });
-
-# create new api token
-$res = BOM::RPC::v3::Accounts::api_token({
-        token => 'Abc123',
-        args  => {
-            api_token => 1,
-            new_token => 'Sample1'
-        }});
-is scalar(@{$res->{tokens}}), 1, "token created succesfully for CR client";
-$token = $res->{tokens}->[0]->{token};
-
-$mock_utility->unmock('token_to_loginid');
-
+################################################################################
+# statement
+################################################################################
 $method = 'statement';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need token');
-    is($c->tcall($method, {token => 'some_dummy_token'})->{error}{code}, 'InvalidToken', 'need a valid token');
-    is($c->tcall($method, {token => $token})->{count}, 100, 'have 100 statements');
-    my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-    $mock_client->mock('default_account', sub { undef });
-    is($c->tcall($method, {token => $token})->{count}, 0, 'have 0 statements if no default account');
-    undef $mock_client;
-    my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
-    my $_sell_expired_is_called = 0;
-    $mock_Portfolio->mock('_sell_expired_contracts',
-        sub { $_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_) });
-    my $mocked_transaction = Test::MockModule->new('BOM::Database::DataMapper::Transaction');
-    my $txns               = [{
-            'staff_loginid'           => 'CR0021',
-            'source'                  => undef,
-            'sell_time'               => undef,
-            'transaction_time'        => '2005-09-21 06:46:00',
-            'action_type'             => 'buy',
-            'referrer_type'           => 'financial_market_bet',
-            'financial_market_bet_id' => '202339',
-            'payment_id'              => undef,
-            'id'                      => '204459',
-            'purchase_time'           => '2005-09-21 06:46:00',
-            'short_code'              => 'RUNBET_DOUBLEDOWN_USD200_frxUSDJPY_5',
-            'balance_after'           => '505.0000',
-            'remark'                  => undef,
-            'quantity'                => 1,
-            'payment_time'            => undef,
-            'account_id'              => '200359',
-            'amount'                  => '-10.0000',
-            'payment_remark'          => undef
-        },
-        {
-            'staff_loginid'           => 'CR0021',
-            'source'                  => undef,
-            'sell_time'               => undef,
-            'transaction_time'        => '2005-09-21 06:46:00',
-            'action_type'             => 'sell',
-            'referrer_type'           => 'financial_market_bet',
-            'financial_market_bet_id' => '202319',
-            'payment_id'              => undef,
-            'id'                      => '204439',
-            'purchase_time'           => '2005-09-21 06:46:00',
-            'short_code'              => 'RUNBET_DOUBLEDOWN_USD2500_frxUSDJPY_5',
-            'balance_after'           => '515.0000',
-            'remark'                  => undef,
-            'quantity'                => 1,
-            'payment_time'            => undef,
-            'account_id'              => '200359',
-            'amount'                  => '237.5000',
-            'payment_remark'          => undef
-        },
-        {
-            'staff_loginid'           => 'CR0021',
-            'source'                  => undef,
-            'sell_time'               => undef,
-            'transaction_time'        => '2005-09-21 06:14:00',
-            'action_type'             => 'deposit',
-            'referrer_type'           => 'payment',
-            'financial_market_bet_id' => undef,
-            'payment_id'              => '200599',
-            'id'                      => '201399',
-            'purchase_time'           => undef,
-            'short_code'              => undef,
-            'balance_after'           => '600.0000',
-            'remark'                  => undef,
-            'quantity'                => 1,
-            'payment_time'            => '2005-09-21 06:14:00',
-            'account_id'              => '200359',
-            'amount'                  => '600.0000',
-            'payment_remark' =>
-                'Egold deposit Batch 49100734 from egold ac 2427854 (1.291156 ounces of Gold at $464.70/ounce) Egold Timestamp 1127283282'
-        }];
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error if token undef'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
 
-    $mocked_transaction->mock('get_transactions_ws', sub { return $txns });
-    my $result = $c->tcall($method, {token => $token});
-    ok($_sell_expired_is_called, "_sell_expired_contracts is called");
-    is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{purchase_time})->epoch, 'transaction time correct for buy ');
-    is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{sell_time})->epoch,     'transaction time correct for sell');
-    is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+    is($c->tcall($method, {token => $token_21})->{count}, 100, 'have 100 statements');
+    is($c->tcall($method, {token => $token1})->{count},   0,   'have 0 statements if no default account');
+    $test_client2->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
 
-    # this function simple_contract_info is 'loaded' into module Accounts, So mock this module
-    my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
-    $mocked_account->mock('simple_contract_info', sub { return ("mocked info") });
+    my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 99,
+        underlying => 'R_50',
+        quote      => 76.5996,
+        bid        => 76.6010,
+        ask        => 76.2030,
+    });
+
+    my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 52,
+        underlying => 'R_50',
+        quote      => 76.6996,
+        bid        => 76.7010,
+        ask        => 76.3030,
+    });
+
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        underlying => 'R_50',
+    });
+
+    my $contract_expired = produce_contract({
+        underlying   => $underlying,
+        bet_type     => 'FLASHU',
+        currency     => 'USD',
+        stake        => 100,
+        date_start   => $now->epoch - 100,
+        date_expiry  => $now->epoch - 50,
+        current_tick => $tick,
+        entry_tick   => $old_tick1,
+        exit_tick    => $old_tick2,
+        barrier      => 'S0P',
+    });
+
+    my $txn = BOM::Product::Transaction->new({
+        client        => $test_client2,
+        contract      => $contract_expired,
+        price         => 100,
+        payout        => $contract_expired->payout,
+        amount_type   => 'stake',
+        purchase_date => $now->epoch - 101,
+    });
+
+    $txn->buy(skip_validation => 1);
+
+    my $result = $c->tcall($method, {token => $token_with_txn});
+    is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
     $result = $c->tcall(
         $method,
         {
-            token => $token,
+            token => $token_with_txn,
             args  => {description => 1}});
-    is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
-    is($result->{transactions}[2]{longcode}, $txns->[2]{payment_remark}, "if no short code, then longcode is the remark");
+
+    is(
+        $result->{transactions}[0]{longcode},
+        'USD 100.00 payout if Random 50 Index is strictly higher than entry spot at 50 seconds after contract start time.',
+        "if have short code, then simple_contract_info is called"
+    );
+    is($result->{transactions}[2]{longcode}, 'free gift', "if no short code, then longcode is the remark");
+
+    # here the expired contract is sold, so we can get the txns as test value
+    my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})
+        ->get_transactions_ws({}, $test_client2->default_account);
+    $result = $c->tcall($method, {token => $token_with_txn});
+    is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
+    is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
+    is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
 
 };
 
+################################################################################
+# balance
+################################################################################
 $method = 'balance';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need token');
-    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid token');
-    my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-    $mock_client->mock('default_account', sub { undef });
-    is($c->tcall($method, {token => $token})->{balance},  0,  'have 0 balance if no default account');
-    is($c->tcall($method, {token => $token})->{currency}, '', 'have no currency if no default account');
-    undef $mock_client;
-    my $result = $c->tcall($method, {token => $token});
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
+    is($c->tcall($method, {token => $token1})->{balance},  0,  'have 0 balance if no default account');
+    is($c->tcall($method, {token => $token1})->{currency}, '', 'have no currency if no default account');
+    my $result = $c->tcall($method, {token => $token_21});
     is_deeply(
         $result,
         {
@@ -256,78 +378,165 @@ subtest $method => sub {
     );
 };
 
+################################################################################
+# get_account_status
+################################################################################
 $method = 'get_account_status';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need token');
-    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid token');
-    my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-    my %status      = (
-        status1      => 1,
-        tnc_approval => 1,
-        status2      => 0
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
     );
-    $mock_client->mock('client_status_types', sub { return \%status });
-    $mock_client->mock('get_status', sub { my ($self, $status) = @_; return $status{$status} });
-    is_deeply($c->tcall($method, {token => $token}), {status => [qw(status1)]}, 'no tnc_approval, no status with value 0');
-    %status = (tnc_approval => 1);
-    is_deeply($c->tcall($method, {token => $token}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
-    %status = ();
-    is_deeply($c->tcall($method, {token => $token}), {status => [qw(active)]}, 'no result, active');
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(active)]}, 'no result, active');
+    $test_client->set_status('tnc_approval', 'test staff', 1);
+    $test_client->save();
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
+    $test_client->set_status('ok', 'test staff', 1);
+    $test_client->save();
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok)]}, 'no tnc_approval');
+
 };
 
-$res = BOM::RPC::v3::Accounts::api_token({
-        token => $token,
-        args  => {
-            api_token    => 1,
-            delete_token => $token
-        }});
-is scalar(@{$res->{tokens}}), 0, "token deleted successfully";
-
-sub _get_session_token {
-    return BOM::Platform::SessionCookie->new({
-            email      => 'abc@binary.com',
-            loginid    => $test_loginid_mf,
-            expires_in => 3600
-        })->token;
-}
-
+################################################################################
+# change_password
+################################################################################
 $method = 'change_password';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need token');
-    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid token');
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invlaid token error'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
 
-    my $params = {token => _get_session_token()};
-    is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
-
-    $params->{token}              = _get_session_token();
+    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '令牌无效。', 'invalid token error');
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'need a valid client'
+    );
+    my $params = {
+        language => 'ZH_CN',
+        token    => $token1,
+    };
+    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'need token_type');
+    $params->{token_type} = 'hello';
+    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'need token_type');
     $params->{token_type}         = 'session_token';
     $params->{args}{old_password} = 'old_password';
     $params->{cs_email}           = 'cs@binary.com';
     $params->{client_ip}          = '127.0.0.1';
-
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Old password is wrong.');
+    is($c->tcall($method, $params)->{error}{message_to_client}, '旧密码不正确。');
     $params->{args}{old_password} = $password;
     $params->{args}{new_password} = $password;
-
-    $params->{token} = _get_session_token();
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'New password is same as old password.');
-
+    is($c->tcall($method, $params)->{error}{message_to_client}, '新密码与旧密码相同。');
     $params->{args}{new_password} = '111111111';
-    $params->{token} = _get_session_token();
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.');
-
+    is($c->tcall($method, $params)->{error}{message_to_client}, '密码安全度不够。');
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
-    $params->{token} = _get_session_token();
-    my $send_email_called = 0;
-    my $mocked_account    = Test::MockModule->new('BOM::RPC::v3::Accounts');
-    $mocked_account->mock('send_email', sub { $send_email_called++ });
+    clear_mailbox();
     is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
+    my $subject = '您的密码已更改。';
+    $subject = encode_qp(encode('UTF-8', $subject));
+    # I don't know why encode_qp will append two characters "=\n"
+    # so I chopped them
+    chop($subject);
+    chop($subject);
+    my %msg = get_email_by_address_subject(
+        email   => $email,
+        subject => qr/\Q$subject\E/
+    );
+    ok(%msg, "email received");
+    clear_mailbox();
     $user->load;
     isnt($user->password, $hash_pwd, 'user password updated');
     $test_client->load;
     isnt($user->password, $hash_pwd, 'client password updated');
-    ok($send_email_called, 'send_email called');
     $password = $new_password;
 };
 
