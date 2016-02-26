@@ -87,8 +87,8 @@ mini:
                 max: 0.0319
         N225:
             ONETOUCH:
-                avg: 0.0111
-                max: 0.0683
+                avg: 0.0118
+                max: 0.1506
             CALL:
                 avg: 0.0038
                 max: 0.0182
