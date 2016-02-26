@@ -178,12 +178,12 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
     my $class = 'BOM::MarketData::InterestRate';
     $class = 'BOM::MarketData::ImpliedRate' if $symbol =~ /-/;
 
-    my $rates = $class->new(
+    my $rates_obj = $class->new(
         symbol => $symbol,
         rates  => $rates,
         date   => Date::Utility->new,
     );
-    $rates->save;
+    $rates_obj->save;
 }
 
 if (not $overridefilename) {
