@@ -229,9 +229,10 @@ my @dispatch = (
         'cashier_password',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1
     ],
-    ['api_token',     \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,     1],
-    ['tnc_approval',  \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval,  1],
-    ['login_history', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history, 1],
+    ['api_token',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,            1],
+    ['tnc_approval',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval,         1],
+    ['login_history',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history,        1],
+    ['set_account_currency', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency, 1],
     [
         'paymentagent_list',
         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list, 0
