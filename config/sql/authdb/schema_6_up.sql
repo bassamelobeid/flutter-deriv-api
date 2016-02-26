@@ -5,7 +5,7 @@ CREATE TYPE token_scopes AS ENUM ('read', 'trade', 'payments', 'admin');
 DROP TABLE oauth.user_scope_confirm;
 CREATE TABLE oauth.user_scope_confirm (
     app_id           varchar(32) NOT NULL REFERENCES oauth.apps(id),
-    loginid          character varying(12) NOT NULL,
+    loginid          varchar(12) NOT NULL,
     scopes           token_scopes[]
 );
 ALTER TABLE ONLY oauth.user_scope_confirm
@@ -18,7 +18,7 @@ DROP TABLE oauth.auth_code;
 CREATE TABLE oauth.auth_code (
     auth_code            varchar(32) NOT NULL PRIMARY KEY,
     app_id               varchar(32) NOT NULL REFERENCES oauth.apps(id),
-    loginid              character varying(12) NOT NULL,
+    loginid              varchar(12) NOT NULL,
     expires              timestamp NOT NULL,
     scopes           token_scopes[],
     verified             boolean NOT NULL DEFAULT false
@@ -31,7 +31,7 @@ DROP TABLE oauth.access_token;
 CREATE TABLE oauth.access_token (
     access_token         varchar(32) NOT NULL PRIMARY KEY,
     app_id               varchar(32) NOT NULL REFERENCES oauth.apps(id),
-    loginid              character varying(12) NOT NULL,
+    loginid              varchar(12) NOT NULL,
     expires              timestamp NOT NULL,
     scopes           token_scopes[],
     last_used            TIMESTAMP DEFAULT NULL
@@ -44,7 +44,7 @@ DROP TABLE oauth.refresh_token;
 CREATE TABLE oauth.refresh_token (
     refresh_token        varchar(32) NOT NULL PRIMARY KEY,
     app_id               varchar(32) NOT NULL REFERENCES oauth.apps(id),
-    loginid              character varying(12) NOT NULL,
+    loginid              varchar(12) NOT NULL,
     scopes           token_scopes[],
     revoked BOOLEAN NOT NULL DEFAULT false
 );
