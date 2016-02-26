@@ -94,7 +94,7 @@ mini:
                 max: 0.0182
         SSECOMP:
             RANGE:
-                avg: 0.0318
+                avg: 0.0351
                 max: 0.0820
         FTSE:
             EXPIRYRANGE:
