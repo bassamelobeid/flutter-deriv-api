@@ -1,8 +1,8 @@
-package BOM::Test::Data::Utility::UnitTestMD;
+package BOM::Test::Data::Utility::UnitTestMarketData;
 
 =head1 NAME
 
-BOM::Test::Data::Utility::UnitTestMD
+BOM::Test::Data::Utility::UnitTestMarketData
 
 =head1 DESCRIPTION
 
@@ -10,7 +10,7 @@ To be used by an RMG unit test.
 
 =head1 SYNOPSIS
 
-  use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+  use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 =cut
 
