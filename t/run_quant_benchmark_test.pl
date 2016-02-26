@@ -30,6 +30,9 @@ sub documentation {
 }
 
 sub _benchmark_testing_setup {
+
+    BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source} = 'market';
+
     my $file_path = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/interest_rates.csv';
     my $csv = Text::CSV->new({ sep_char => ',' });
 
@@ -68,6 +71,8 @@ sub _benchmark_testing_setup {
     }
 
     close $data;
+
+
 
     return 1;
 }
@@ -129,6 +134,7 @@ sub script_run {
 
     use Data::Dumper;
     print Dumper $self->test_suite;
+
     eval {
         foreach my $test (@{$self->test_suite}) {
             my $test_class = $self->test_suite_mapper->{$test};
@@ -138,8 +144,8 @@ sub script_run {
     };
     if ($@) {
         print "[$@]";
+        die $@;
     }
-
 }
 
 sub analyse_report {

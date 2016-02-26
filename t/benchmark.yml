@@ -36,10 +36,10 @@ mini:
     sdfx:
         BASE:
             UPORDOWN:
-                avg: 0.0256
-                max: 0.089
+                avg: 0.0604
+                max: 0.1527
             ONETOUCH:
-                avg: 0.0218
+                avg: 0.0294
                 max: 0.1217
             NOTOUCH:
                 avg: 0.0253
@@ -49,20 +49,20 @@ mini:
                 max: 0.0361
             PUT:
                 avg: 0.0093
-                max: 0.0453
+                max: 0.0496
             RANGE:
                 avg: 0.0246
                 max: 0.1355
         NUM:
             ONETOUCH:
-                avg: 0.0217
+                avg: 0.0293
                 max: 0.1213
             CALL:
                 avg: 0.0092
                 max: 0.0327
             PUT:
                 avg: 0.0090
-                max: 0.0465
+                max: 0.0502
     sdeq:
         DJI:
             ONETOUCH:
