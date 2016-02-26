@@ -74,7 +74,7 @@ sub _benchmark_testing_setup {
     close $data;
 
 
-    BOM::System::Chronicle::set('partial_trading', 'late_opens', {});
+    BOM::System::Chronicle::set('partial_trading', 'late_opens', {}, Date::Utility->new("2010-01-01"));
 
 
     return 1;
