@@ -326,8 +326,52 @@ subtest $method => sub {
 
 $method = 'profit_table';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error if token undef'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
     my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
     my $_sell_expired_is_called = 0;
     $mock_Portfolio->mock('_sell_expired_contracts',
@@ -367,7 +411,7 @@ subtest $method => sub {
 
             ];
         });
-    my $result = $c->tcall($method, {client_loginid => 'CR0021'});
+    my $result = $c->tcall($method, {token => $token_21});
     is($result->{count}, 1, 'result is correct');
     is_deeply(
         $result->{transactions}[0],
@@ -387,7 +431,7 @@ subtest $method => sub {
     $result = $c->tcall(
         $method,
         {
-            'client_loginid' => 'CR0021',
+            token => $token_21,
             args             => {
                 date_from   => '2015-07-01',
                 date_to     => '2015-08-01',
