@@ -8,13 +8,13 @@ use Test::Exception;
 use BOM::Test::Runtime qw(:normal);
 use Date::Utility;
 use BOM::Market::Currency;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMD qw( :init );
 use BOM::Platform::Runtime;
 use BOM::Platform::Static::Config;
 
 my $historical_ir_date = Date::Utility->new;
 #Here currency means create an "InterestRate" data item in Chronicle
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'currency',
     {
         symbol => 'USD',
@@ -27,14 +27,14 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 #wait for two seconds so the next version of this interest rate will have a different timestamp
 sleep 2;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'currency',
     {
         symbol        => 'RUR',
         recorded_date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'currency',
     {
         symbol => 'USD',
@@ -44,7 +44,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         },
         recorded_date => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'currency',
     {
         symbol => 'USD-JPY',
@@ -55,7 +55,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'holiday',
     {
         recorded_date => Date::Utility->new,

@@ -8,7 +8,7 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMD qw( :init );
 
 use BOM::Market::Underlying;
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
