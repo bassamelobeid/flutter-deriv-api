@@ -319,7 +319,11 @@ sub process_transaction_updates {
                             $details->{$type}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
                             $c->send({json => $details});
                         }
-                    } elsif ($type =~ /^[0-9]+$/ and $payload->{action_type} eq 'sell') {
+                    } elsif ($type =~ /^[0-9]+$/
+                        and $payload->{action_type} eq 'sell'
+                        and exists $payload->{financial_market_bet_id}
+                        and $payload->{financial_market_bet_id} eq $type)
+                    {
                         # cancel proposal open contract streaming, transaction subscription and mark is_sold as 1
                         BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                             $c, 'unsubscribe',
