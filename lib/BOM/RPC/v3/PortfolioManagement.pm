@@ -18,14 +18,10 @@ use BOM::Product::Transaction;
 sub portfolio {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -75,14 +71,10 @@ sub __get_open_contracts {
 sub sell_expired {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -114,14 +106,10 @@ sub _sell_expired_contracts {
 sub proposal_open_contract {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -141,9 +129,10 @@ sub proposal_open_contract {
         foreach my $fmb (@fmbs) {
             my $id  = $fmb->{id};
             my $bid = BOM::RPC::v3::Contract::get_bid({
-                short_code  => $fmb->{short_code},
-                contract_id => $id,
-                currency    => $client->currency
+                short_code    => $fmb->{short_code},
+                contract_id   => $id,
+                currency      => $client->currency,
+                purchase_time => $fmb->{purchase_time},
             });
             if (exists $bid->{error}) {
                 $response->{$id} = $bid;

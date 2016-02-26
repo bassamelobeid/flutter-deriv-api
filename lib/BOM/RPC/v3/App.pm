@@ -8,19 +8,16 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
 
-sub __pre_hook {
-    my ($params) = @_;
-    return unless $params->{client_loginid};
-    return BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-}
-
 sub register {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
-    return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
@@ -75,10 +72,13 @@ sub register {
 sub list {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
-    return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
@@ -90,10 +90,13 @@ sub list {
 sub get {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
-    return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
@@ -113,10 +116,13 @@ sub get {
 sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
-    return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
