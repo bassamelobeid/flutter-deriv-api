@@ -103,36 +103,36 @@ mini:
     ovra:
         BASE:
             NT:
-                avg: 0.0087
+                avg: 0.0142
                 max: 0.1847
             Digital:
                 avg: 0.0059
                 max: 0.0471
             OT:
-                avg: 0.0156
-                max: 0.0923
+                avg: 0.0382
+                max: 0.2013
             DNT:
-                avg: 0.0068
+                avg: 0.0114
                 max: 0.3728
             DOT:
-                avg: 0.0150
-                max: 0.1751
+                avg: 0.0346
+                max: 0.4004
         NUM:
             NT:
-                avg: 0.0078
+                avg: 0.0133
                 max: 0.1421
             Digital:
                 avg: 0.0058
                 max: 0.0475
             OT:
-                avg: 0.0156
-                max: 0.0930
+                avg: 0.0381
+                max: 0.1993
             DNT:
-                avg: 0.006
+                avg: 0.0106
                 max: 0.233
             DOT:
-                avg: 0.0150
-                max: 0.1752
+                avg: 0.0346
+                max: 0.4005
 full:
     sdfx:
         BASE:

@@ -41,7 +41,6 @@ sub run_dataset {
     my @result_output;
     my $csv_header;
 
-    BOM::Platform::Runtime->instance->app_config->quants->market_data->interest_rates_source("market");
     foreach my $file (@files) {
         my $generator     = CSVParser::Bloomberg->new({output_format => 'Bloomberg'});
         my @lines         = read_file($file_loc . "/$file.csv");
