@@ -55,7 +55,13 @@ sub _benchmark_testing_setup {
             BOM::System::Chronicle::set(
                 'interest_rates',
                 $symbol,
-                \%rates);
+                {
+                    symbol  => $symbol,
+                    type    => 'market',
+                    rates   => \%rates,
+                    date    => '2010-01-01T00:00:00Z'
+                });
+
         } else {
             warn "Line could not be parsed: $line\n";
         }
