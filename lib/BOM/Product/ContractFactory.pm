@@ -90,9 +90,9 @@ my %OVERRIDE_LIST = (
 );
 
 sub produce_contract {
-    my ($build_arg, $maybe_currency) = @_;
+    my ($build_arg, $maybe_currency, $maybe_sold) = @_;
 
-    my $params_ref = _args_to_ref($build_arg, $maybe_currency);
+    my $params_ref = _args_to_ref($build_arg, $maybe_currency, $maybe_sold);
     # dereference here
     my %input_params = %$params_ref;
 
@@ -278,12 +278,12 @@ sub produce_contract {
 }
 
 sub _args_to_ref {
-    my ($build_arg, $maybe_currency) = @_;
+    my ($build_arg, $maybe_currency, $maybe_sold) = @_;
 
     my $params_ref =
           (ref $build_arg eq 'HASH') ? $build_arg
         : ((ref $build_arg) =~ /BOM::Database::Model::FinancialMarketBet/) ? financial_market_bet_to_parameters($build_arg, $maybe_currency)
-        : (defined $build_arg) ? shortcode_to_parameters($build_arg, $maybe_currency)
+        : (defined $build_arg) ? shortcode_to_parameters($build_arg, $maybe_currency, $maybe_sold)
         :                        undef;
 
     # After all of that, we should have gotten a hash reference.
