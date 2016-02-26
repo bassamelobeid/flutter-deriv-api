@@ -47,5 +47,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
 COMMIT;
