@@ -10,23 +10,23 @@ use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Data::Utility::UnitTestMD qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'SPC',
         recorded_date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'USD',
         date   => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'SPC',
@@ -82,7 +82,7 @@ subtest "can get volatility for strike, delta, and moneyness" => sub {
 
 subtest "cannot get volatility when underlying spot is undef" => sub {
     plan tests => 4;
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
             symbol         => 'SPC',

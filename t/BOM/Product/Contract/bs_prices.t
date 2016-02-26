@@ -12,7 +12,7 @@ use BOM::Market::Underlying;
 use BOM::Market::Data::Tick;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
@@ -45,14 +45,14 @@ foreach my $code (@codes) {
     $bet_args{date_start} = ($start_time == $now) ? $now : $start_time;
     $bet_args{date_pricing} = $bet_args{date_start};
 
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol => $_,
             recorded_date   => $now,
         }) for (qw/GBP USD/);
 
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => 'frxGBPUSD',

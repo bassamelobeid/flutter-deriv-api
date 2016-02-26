@@ -6,7 +6,7 @@ use warnings;
 use Test::More tests => 3;
 use Test::Exception;
 use Test::NoWarnings;
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
@@ -15,13 +15,13 @@ use BOM::Product::ContractFactory qw(produce_contract);
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new
     }) for ('USD', 'JPY');
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',

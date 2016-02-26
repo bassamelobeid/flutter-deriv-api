@@ -18,7 +18,7 @@ use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
@@ -27,49 +27,49 @@ use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $now = Date::Utility->new;
-BOM::Test::Data::Utility::UnitTestMD::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
         recorded_date => $now
     }) for ('frxEURUSD', 'frxEURJPY');
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'WLDUSD',
         date   => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'R_100',
         date   => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/USD EUR JPY JPY-USD/);
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
         recorded_date => Date::Utility->new,
     }) for qw/frxUSDJPY WLDUSD/;
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'R_50',
         recorded_date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_50',

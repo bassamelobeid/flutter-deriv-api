@@ -10,7 +10,7 @@ use Test::MockObject::Extends;
 use Format::Util::Numbers qw(roundnear);
 use BOM::Test::Runtime qw(:normal);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Platform::Client;
 use BOM::Product::Transaction;
@@ -31,7 +31,7 @@ $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platf
 
 initialize_realtime_ticks_db();
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
@@ -39,7 +39,7 @@ BOM::Test::Data::Utility::UnitTestMD::create_doc(
     }) for (qw/USD JPY GBP JPY-USD/);
 
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_50',
@@ -58,7 +58,7 @@ my $account    = $client->default_account;
 my $loginid    = $client->loginid;
 my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
@@ -273,7 +273,7 @@ subtest 'contract date pricing Validation' => sub {
 
     my $now      = Date::Utility->new;
 
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol => $_,
@@ -312,7 +312,7 @@ subtest 'valid currency test' => sub {
     subtest 'invalid currency' => sub {
         $mock_contract->mock('currency', sub { 'ABC' });
 
-        BOM::Test::Data::Utility::UnitTestMD::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
             {
                 symbol => $_,
@@ -344,7 +344,7 @@ subtest 'valid currency test' => sub {
     subtest 'illegal currency for landing company' => sub {
         $mock_contract->mock('currency', sub { 'AUD' });
 
-        BOM::Test::Data::Utility::UnitTestMD::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol => $_,
@@ -381,7 +381,7 @@ subtest 'valid currency test' => sub {
     };
 
     subtest 'not default currency for client' => sub {
-        BOM::Test::Data::Utility::UnitTestMD::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
             {
                 symbol => $_,
@@ -450,7 +450,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         my $allowed_move = 0.01 * 0.50;
 
-        BOM::Test::Data::Utility::UnitTestMD::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
             {
                 symbol => $_,

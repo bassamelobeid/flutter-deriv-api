@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use BOM::Test::Data::Utility::UnitTestMD qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use Test::Most 0.22 (tests => 165);
 use Test::NoWarnings;
 use Test::MockModule;
@@ -35,7 +35,7 @@ my $recorded_date = Date::Utility->new($date_start);
 my $mocked = Test::MockModule->new('BOM::Market::Underlying');
 $mocked->mock('uses_implied_rate', sub { return 0 });
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc('holiday', {
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('holiday', {
     recorded_date => $recorded_date,
     calendar => {
     '2014-04-18' => {
@@ -128,20 +128,20 @@ BOM::Test::Data::Utility::UnitTestMD::create_doc('holiday', {
     },
 },
 });
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         rates  => $interest_rate->{$_}->{rates},
         recorded_date   => Date::Utility->new($date_pricing),
     }) for qw( GBP JPY USD EUR JPY-USD EUR-USD GBP-USD);
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
     }) for qw( SAR SAR-USD);
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
@@ -149,7 +149,7 @@ BOM::Test::Data::Utility::UnitTestMD::create_doc(
         surface       => $volsurface->{$_}{surfaces},
     }) for qw(frxUSDJPY frxEURUSD frxGBPUSD);
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => $_,
@@ -157,7 +157,7 @@ BOM::Test::Data::Utility::UnitTestMD::create_doc(
         surface       => $volsurface->{$_}{surfaces},
     }) for qw(FTSE GDAXI);
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol        => $_,
@@ -165,12 +165,12 @@ BOM::Test::Data::Utility::UnitTestMD::create_doc(
         recorded_date => $recorded_date,
         rates         => $dividend->{$_}{rates},
     }) for qw( FTSE GDAXI);
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'SASEIDX',
     });
-BOM::Test::Data::Utility::UnitTestMD::create_doc('correlation_matrix', {recorded_date => $recorded_date});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => $recorded_date});
 
 foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
     foreach my $bet_type ('CALL', 'NOTOUCH', 'RANGE', 'EXPIRYRANGE', 'DIGITMATCH') {

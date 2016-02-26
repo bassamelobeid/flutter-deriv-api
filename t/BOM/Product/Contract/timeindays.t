@@ -20,7 +20,7 @@ use JSON qw(decode_json);
 use BOM::Test::Runtime qw(:normal);
 use BOM::Product::ContractFactory qw( produce_contract );
 
-use BOM::Test::Data::Utility::UnitTestMD qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -234,14 +234,14 @@ sub _sample_bet {
 
     $overrides{date_pricing} ||= $overrides{date_start};
 
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol => $_,
             recorded_date   => $overrides{date_pricing},
         }) for (qw/GBP JPY USD JPY-USD/);
 
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol => 'JPY',
@@ -278,7 +278,7 @@ sub _sample_bet {
     );
 
     # Let's add a vol surface to DB so that the bet can be priced.
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             underlying    => $underlying,

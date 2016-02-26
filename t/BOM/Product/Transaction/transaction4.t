@@ -16,7 +16,7 @@ use Cache::RedisDB;
 use BOM::Test::Runtime qw(:normal);
 use BOM::Market::AggTicks;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Platform::Client;
 use BOM::Platform::Runtime;
@@ -27,14 +27,14 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 
 initialize_realtime_ticks_db();
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/USD JPY JPY-USD/);
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',

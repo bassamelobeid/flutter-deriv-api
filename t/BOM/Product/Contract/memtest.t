@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use Test::More tests => 2;
 use Test::NoWarnings;
@@ -29,7 +29,7 @@ my @market_data_underlyings = map { BOM::Market::Underlying->new($_) } keys %$al
 my @exchanges               = map { Finance::Asset->get_parameters_for($_->symbol)->{exchange_name} } @market_data_underlyings;
 my %known_surfaces = map {$_ => 1} qw(moneyness delta);
 my %volsurfaces = map { $_->symbol => 'volsurface_' . $_->volatility_surface_type } grep { $known_surfaces{$_->volatility_surface_type} } @market_data_underlyings;
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol        => $_->symbol,
@@ -39,14 +39,14 @@ my @currencies =
     map { $_->market->name =~ /(forex|commodities)/ ? ($_->asset_symbol, $_->quoted_currency_symbol) : ($_->quoted_currency_symbol) } @underlyings;
 
 for (@currencies, 'AUD-JPY', 'AUD-CAD', 'JPY-AUD', 'CAD-AUD') {
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol        => $_,
             recorded_date => $now
         });
 }
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     $volsurfaces{$_},
     {
         symbol        => $_,
@@ -83,7 +83,7 @@ my %correlations = map {
     $_->symbol !~ /frx/
     } @market_data_underlyings;
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',
     {
         symbol       => 'indices',

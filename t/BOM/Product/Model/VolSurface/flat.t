@@ -5,7 +5,7 @@ use JSON qw(decode_json);
 use BOM::MarketData::Fetcher::VolSurface;
 
 use BOM::Market::Underlying;
-use BOM::Test::Data::Utility::UnitTestMD qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 my $ul              = BOM::Market::Underlying->new('R_50');

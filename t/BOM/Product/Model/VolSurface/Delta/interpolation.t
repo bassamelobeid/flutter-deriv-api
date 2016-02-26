@@ -21,9 +21,9 @@ use ClarkSurfaces;
 use BOM::Market::Currency;
 use BOM::Market::Exchange;
 use BOM::MarketData::VolSurface::Delta;
-use BOM::Test::Data::Utility::UnitTestMD qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,

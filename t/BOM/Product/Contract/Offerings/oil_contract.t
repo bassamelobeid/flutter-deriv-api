@@ -7,7 +7,7 @@ use Test::More tests => 8;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::Data::Tick;
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Date::Utility;
 use BOM::Market::Underlying;
 
@@ -27,7 +27,7 @@ foreach my $ds (@date_start) {
         quote  => 100,
         epoch  => $ds->epoch,
     });
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol        => $_,
@@ -61,7 +61,7 @@ foreach my $ds_2 (@date_start_2) {
         quote  => 100,
         epoch  => $ds_2->epoch,
     });
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol        => $_,

@@ -11,7 +11,7 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Test::Runtime qw(:normal);
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -26,7 +26,7 @@ use BOM::Platform::Runtime;
 my $start = Date::Utility->new('12-Mar-13');
 my $end   = Date::Utility->new('15-Mar-13');
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
@@ -51,7 +51,7 @@ subtest 'discrete points on forex' => sub {
     is $bet->dividend_adjustment->{barrier}, 0, 'barrier adjustment is zero';
 };
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'DEDAI',
@@ -70,7 +70,7 @@ my $cur_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $start->epoch + 30,
     quote      => 111
 });
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'DEDAI',

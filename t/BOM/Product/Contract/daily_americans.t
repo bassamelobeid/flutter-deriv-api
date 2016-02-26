@@ -6,7 +6,7 @@ use warnings;
 use Test::Most tests => 1;
 use Test::Exception;
 use Test::FailWarnings;
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
@@ -16,13 +16,13 @@ use BOM::Product::ContractFactory qw(produce_contract);
 initialize_realtime_ticks_db();
 my $ul   = BOM::Market::Underlying->new('DJI');
 my $when = Date::Utility->new('2015-11-08 16:00:00');
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'USD',
         date   => Date::Utility->new
     });
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => $ul->symbol,
