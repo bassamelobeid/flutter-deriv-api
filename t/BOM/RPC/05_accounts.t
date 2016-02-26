@@ -15,7 +15,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::AccessToken;
-use Date::Utility;
 
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
@@ -419,9 +418,9 @@ subtest $method => sub {
     my $expect1 = {                              'sell_price' => '100',
                                                  'contract_id' => $txn->contract_id,
                                                  'transaction_id' => $txn->transaction_id,
-                                                 'sell_time' => Data::Utility->new($data->[1]{sell_time})->epoch,
+                                                 'sell_time' => Date::Utility->new($data->[1]{sell_time})->epoch,
                                                  'buy_price' => '100',
-                                                 'purchase_time' =>    Data::Utility->new($data->[0]{purchase_date})->epoch,                             
+                                                 'purchase_time' =>    Date::Utility->new($data->[0]{purchase_date})->epoch,                             
                   };
 
     is_deeply($result->{transactions}[1], $expect1, 'result is correct');
