@@ -423,7 +423,7 @@ subtest $method => sub {
 
     is_deeply($result->{transactions}[0], $expect0, 'result is correct');
     $expect0->{longcode} = 'USD 100.00 payout if Random 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
-    $expect0->{shortcode} = $ata->[0]{short_code};
+    $expect0->{shortcode} = $data->[0]{short_code};
     $result = $c->tcall($method, {token => $token_with_txn, args =>{description => 1}});
     is_deeply($result->{transactions}[0], $result, 'the result with description ok');
     is($c->tcall($method,{token => $token_with_txn, args => {after => '2006-01-01 01:01:01'}})->{count},0, 'result is correct for arg after');
