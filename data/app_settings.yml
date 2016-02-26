@@ -3,5 +3,3 @@ global:
   quants:
     internal:
       custom_client_limits: {}
-    market_data:
-      economic_announcements_source: forexfactory
