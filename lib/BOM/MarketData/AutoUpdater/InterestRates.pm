@@ -13,6 +13,8 @@ use BOM::Market::UnderlyingDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 use Bloomberg::CurrencyConfig;
+use Quant::Framework::InterestRate;
+
 has file => (
     is         => 'ro',
     lazy_build => 1,
@@ -60,10 +62,12 @@ sub run {
                 reason  => $validation_error,
             };
         } else {
-            my $rates = BOM::MarketData::InterestRate->new(
-                symbol        => $currency_symbol,
-                rates         => $data,
-                recorded_date => Date::Utility->new,
+            my $rates = Quant::Framework::InterestRate->new(
+                symbol           => $currency_symbol,
+                rates            => $data,
+                recorded_date    => Date::Utility->new,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             );
             $rates->save;
             $report->{$currency_symbol}->{success} = 1;
