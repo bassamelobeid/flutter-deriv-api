@@ -413,8 +413,6 @@ subtest $method => sub {
         });
     my $args = {};
     my $data = $fmb_dm->get_sold_bets_of_account($args);
-    #diag('data is ' . Dumper($data));
-    #diag('result is' . Dumper($result));
     my $expect0 = {                              'sell_price' => '100',
                                                  'contract_id' => $txn->contract_id,
                                                  'transaction_id' => $txn->transaction_id,
@@ -424,88 +422,12 @@ subtest $method => sub {
                   };
 
     is_deeply($result->{transactions}[0], $expect0, 'result is correct');
-
+    $expect0->{longcode} = 'USD 100.00 payout if Random 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
+    $expect0->{shortcode} = $ata->[0]{short_code};
     $result = $c->tcall($method, {token => $token_with_txn, args =>{description => 1}});
-    diag(Dumper($result));
-#    my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
-#    my $_sell_expired_is_called = 0;
-#    $mock_Portfolio->mock('_sell_expired_contracts',
-#        sub { $_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_) });
-#    my $mock_fmb = Test::MockModule->new('BOM::Database::DataMapper::FinancialMarketBet');
-#    my $get_sold_bets_of_account_args;
-#    $mock_fmb->mock(
-#        'get_sold_bets_of_account',
-#        sub {
-#            shift;
-#            $get_sold_bets_of_account_args = shift;
-#            #clone this args because it is changed in the caller function.
-#            $get_sold_bets_of_account_args = {%{$get_sold_bets_of_account_args}};
-#            return [{
-#                    'sell_time'         => '2005-09-21 09:46:00',
-#                    'txn_id'            => '204419',
-#                    'expiry_time'       => undef,
-#                    'sell_price'        => '237.5',
-#                    'id'                => '202319',
-#                    'purchase_time'     => '2005-09-21 06:46:00',
-#                    'fixed_expiry'      => undef,
-#                    'short_code'        => 'RUNBET_DOUBLEDOWN_USD2500_frxUSDJPY_5',
-#                    'is_expired'        => 1,
-#                    'remark'            => 'frxUSDJPY forecast=DOWN Run=111.518,111.514,111.529,111.523,111.525,111.513,',
-#                    'expiry_daily'      => 0,
-#                    'start_time'        => undef,
-#                    'bet_class'         => 'run_bet',
-#                    'is_sold'           => 1,
-#                    'payout_price'      => '250',
-#                    'account_id'        => '200359',
-#                    'bet_type'          => 'RUNBET_DOUBLEDOWN',
-#                    'underlying_symbol' => 'frxUSDJPY',
-#                    'buy_price'         => '125',
-#                    'settlement_time'   => undef,
-#                    'tick_count'        => undef
-#                },
-#
-#            ];
-#        });
-#    my $result = $c->tcall($method, {token => $token_21});
-#    is($result->{count}, 1, 'result is correct');
-#    is_deeply(
-#        $result->{transactions}[0],
-#        {
-#            'sell_price'     => '237.5',
-#            'contract_id'    => '202319',
-#            'transaction_id' => '204419',
-#            'sell_time'      => '1127295960',
-#            'buy_price'      => '125',
-#            'purchase_time'  => '1127285160'
-#        },
-#        'result is correct'
-#    );
-#    my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
-#    $mocked_account->mock('simple_contract_info', sub { return ("mocked info") });
-#
-#    $result = $c->tcall(
-#        $method,
-#        {
-#            token => $token_21,
-#            args             => {
-#                date_from   => '2015-07-01',
-#                date_to     => '2015-08-01',
-#                description => 1
-#            }});
-#
-#    is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
-#    is_deeply(
-#        $get_sold_bets_of_account_args,
-#        {
-#            after     => '2015-07-01',
-#            before    => '2015-08-01',
-#            date_from => '2015-07-01',
-#            date_to   => '2015-08-01',
-#
-#            description => 1
-#        },
-#        'the args feeded to get_sold_bets_of_account is correct'
-#    );
+    is_deeply($result->{transactions}[0], $result, 'the result with description ok');
+    is($c->tcall($method,{token => $token_with_txn, args => {after => '2006-01-01 01:01:01'}})->{count},0, 'result is correct for arg after');
+    is($c->tcall($method,{token => $token_with_txn, args => {before => '2004-01-01 01:01:01'}})->{count},0, 'result is correct for arg after');
 };
 
 ################################################################################
