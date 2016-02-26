@@ -451,7 +451,8 @@ sub get_limit_for_account_balance {
     my $self = shift;
 
     my @maxbalances = ();
-    push @maxbalances, $self->is_virtual ? 1000000 : 300000;
+    my $client_limits = BOM::Platform::Static::Config::quants->{client_limits};
+    push @maxbalances, $self->is_virtual ? $client_limits->{max_virtual_account_balance} : $client_limits->{max_real_account_balance};
 
     if ($self->get_self_exclusion and $self->get_self_exclusion->max_balance) {
         push @maxbalances, $self->get_self_exclusion->max_balance;
