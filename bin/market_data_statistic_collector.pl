@@ -24,8 +24,8 @@ use DataDog::DogStatsd::Helper qw(stats_gauge);
 use BOM::Market::UnderlyingDB;
 use BOM::Platform::Runtime;
 use BOM::MarketData::CorrelationMatrix;
-use BOM::MarketData::ImpliedRate;
-use BOM::MarketData::InterestRate;
+use Quant::Framework::ImpliedRate;
+use Quant::Framework::InterestRate;
 use BOM::MarketData::Dividend;
 use Bloomberg::CurrencyConfig;
 use Try::Tiny;
@@ -139,7 +139,11 @@ sub _collect_rates_ages {
     }
 
     foreach my $implied_symbol_to_update (@implied_symbols_to_update) {
-        my $rates_in_used = BOM::MarketData::ImpliedRate->new(symbol => $implied_symbol_to_update);
+        my $rates_in_used = Quant::Framework::ImpliedRate->new(
+            symbol => $implied_symbol_to_update,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        );
         my $rates_age = (time - $rates_in_used->recorded_date->epoch) / 3600;
         stats_gauge('interest_rate_age', $rates_age, {tags => ['tag:' . $implied_symbol_to_update]});
     }
@@ -150,7 +154,11 @@ sub _collect_rates_ages {
         if ($currency_symbol_to_update eq 'XAU' or $currency_symbol_to_update eq 'XAG') {
             next;
         }
-        my $currency_in_used = BOM::MarketData::InterestRate->new(symbol => $currency_symbol_to_update);
+        my $currency_in_used = Quant::Framework::InterestRate->new(
+            symbol => $currency_symbol_to_update,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        );
         my $currency_rate_age = (time - $currency_in_used->recorded_date->epoch) / 3600;
 
         stats_gauge('interest_rate_age', $currency_rate_age, {tags => ['tag:' . $currency_symbol_to_update]});
@@ -161,7 +169,11 @@ sub _collect_rates_ages {
         submarket => 'smart_fx'
     );
     foreach my $smart_fx (@smart_fx) {
-        my $smart_fx_in_used = BOM::MarketData::InterestRate->new(symbol => $smart_fx);
+        my $smart_fx_in_used = Quant::Framework::InterestRate->new(
+            symbol => $smart_fx,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        );
         my $smart_fx_age = (time - $smart_fx_in_used->recorded_date->epoch) / 3600;
 
         stats_gauge('smart_fx_interest_rate_age', $smart_fx_age, {tags => ['tag:' . $smart_fx]});
