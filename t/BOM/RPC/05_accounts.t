@@ -425,7 +425,7 @@ subtest $method => sub {
 
     is_deeply($result->{transactions}[0], $expect0, 'result is correct');
 
-    $result = $c->tcall($method, {token => $token_with_txn, args->{description}});
+    $result = $c->tcall($method, {token => $token_with_txn, args =>{description}});
     diag(Dumper($result));
 #    my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
 #    my $_sell_expired_is_called = 0;
