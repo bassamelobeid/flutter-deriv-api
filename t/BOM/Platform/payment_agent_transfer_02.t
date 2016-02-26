@@ -40,7 +40,7 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
     # for payment.payment table, remark field length is VARCHAR(800)
     lives_ok {
         my $remark;
-        $remark .= 'x' for (1 .. 800);
+        $remark .= 'x'x800;
 
         $client->payment_account_transfer(
             toClient => $pa_client,
@@ -52,7 +52,7 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
 
     throws_ok {
         my $remark;
-        $remark .= 'x' for (1 .. 801);
+        $remark .= 'x'x801;
 
         $client->payment_account_transfer(
             toClient => $pa_client,
