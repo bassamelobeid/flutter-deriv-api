@@ -12,8 +12,8 @@ use Date::Utility;
 use BOM::System::Localhost;
 use BOM::Utility::Log4perl qw( get_logger );
 use Format::Util::Numbers qw( commas );
-use BOM::MarketData::InterestRate;
-use BOM::MarketData::ImpliedRate;
+use Quant::Framework::InterestRate;
+use Quant::Framework::ImpliedRate;
 use BOM::MarketData::VolSurface::Delta;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -175,13 +175,15 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
     }
     
 
-    my $class = 'BOM::MarketData::InterestRate';
-    $class = 'BOM::MarketData::ImpliedRate' if $symbol =~ /-/;
+    my $class = 'Quant::Framework::InterestRate';
+    $class = 'Quant::Framework::ImpliedRate' if $symbol =~ /-/;
 
     my $rates_obj = $class->new(
         symbol => $symbol,
         rates  => $rates,
         date   => Date::Utility->new,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );
     $rates_obj->save;
 }
