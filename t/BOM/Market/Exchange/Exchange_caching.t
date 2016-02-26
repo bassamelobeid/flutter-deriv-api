@@ -5,9 +5,9 @@ use Test::MockTime qw(:all);
 use Test::More;
 use Test::FailWarnings;
 use BOM::Market::Exchange;
-use BOM::Test::Data::Utility::UnitTestMD qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc('currency', {symbol => 'GBP'});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'GBP'});
 
 # check that cache is flushed after exchanges.yml is touched
 my $LSE = BOM::Market::Exchange->new('LSE');

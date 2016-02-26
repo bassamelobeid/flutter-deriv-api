@@ -7,7 +7,7 @@ use Test::More tests => 2;
 use Test::Exception;
 use Test::NoWarnings;
 
-use BOM::Test::Data::Utility::UnitTestMD qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 use BOM::MarketData::Dividend;
 use Date::Utility;

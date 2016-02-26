@@ -7,7 +7,7 @@ use JSON qw(decode_json);
 
 use BOM::Test::Runtime qw(:normal);
 use Date::Utility;
-use BOM::Test::Data::Utility::UnitTestMD qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Delta;
@@ -18,7 +18,7 @@ use BOM::MarketData::VolSurface::Cutoff;
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new;
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'EUR',
@@ -87,7 +87,7 @@ subtest 'Saving delta then moneyness.' => sub {
 subtest 'Fetch cut.' => sub {
     plan tests => 4;
 
-    my $original = BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    my $original = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => 'frxUSDJPY',
@@ -149,7 +149,7 @@ subtest 'Consecutive saves.' => sub {
 
     my $underlying = BOM::Market::Underlying->new('frxEURUSD');
 
-    my $surface = BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             recorded_date => $now->minus_time_interval('3h'),
@@ -161,7 +161,7 @@ subtest 'Consecutive saves.' => sub {
 
     for (0 .. 2) {
         my $recorded_date = $now->minus_time_interval(2-$_ . 'h');
-        BOM::Test::Data::Utility::UnitTestMD::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
                 recorded_date => $recorded_date,

@@ -9,7 +9,7 @@ use Test::NoWarnings;
 use File::Basename qw(dirname);
 use Test::MockObject::Extends;
 
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 
@@ -39,7 +39,7 @@ subtest 'invalid input' => sub {
 
 subtest 'successful run' => sub {
     lives_ok {
-        BOM::Test::Data::Utility::UnitTestMD::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
             {
                 symbol => $_,
@@ -58,7 +58,7 @@ subtest 'successful run' => sub {
 subtest "sanity check" => sub {
     plan tests => 2;
 
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol => 'AUD',
@@ -75,7 +75,7 @@ subtest "sanity check" => sub {
             date => Date::Utility->new,
         });
 
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol => 'JPY',
@@ -92,7 +92,7 @@ subtest "sanity check" => sub {
             date => Date::Utility->new,
         });
 
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol => 'USD',

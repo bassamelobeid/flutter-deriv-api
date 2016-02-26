@@ -12,7 +12,7 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestMD qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use DateTime;
 use Cache::RedisDB;
@@ -24,7 +24,7 @@ use BOM::Market::Underlying;
 
 initialize_realtime_ticks_db();
 
-BOM::Test::Data::Utility::UnitTestMD::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
@@ -523,7 +523,7 @@ subtest 'all methods on a selection of underlyings' => sub {
         ok($worm->is_in_quiet_period, $worm->symbol . ' is quiet after New York closes');
     }
 
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => 'frxEURUSD',

@@ -6,7 +6,7 @@ use Test::Exception;
 
 use BOM::Test::Runtime qw(:normal);
 use BOM::MarketData::Fetcher::EconomicEvent;
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
@@ -29,7 +29,7 @@ subtest sanity_check => sub {
     my $dt = Date::Utility->new();
     lives_ok {
 
-        $eco = BOM::Test::Data::Utility::UnitTestMD::create_doc(
+        $eco = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'economic_events', {
             events => [ {
                         symbol       => 'USD',
@@ -57,7 +57,7 @@ subtest save_event_to_chronicle => sub {
     my $calendar;
    
     lives_ok {
-        $calendar = BOM::Test::Data::Utility::UnitTestMD::create_doc(
+        $calendar = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'economic_events', {
                 recorded_date => $today,
                 events => [ {

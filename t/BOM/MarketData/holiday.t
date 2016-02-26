@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use BOM::Test::Data::Utility::UnitTestMD qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Test::More tests => 4;
 use Test::NoWarnings;
 use Test::Exception;
@@ -66,7 +66,7 @@ subtest 'save and retrieve event' => sub {
 
 subtest 'save and retrieve event in history' => sub {
     my $yesterday = $now->minus_time_interval('1d');
-    BOM::Test::Data::Utility::UnitTestMD::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'holiday',
         {
             recorded_date => $yesterday,

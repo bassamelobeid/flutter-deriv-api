@@ -8,12 +8,12 @@ use Test::NoWarnings;
 use Date::Utility;
 use BOM::MarketData::CorrelationMatrix;
 use Format::Util::Numbers qw( roundnear );
-use BOM::Test::Data::Utility::UnitTestMD qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 subtest general => sub {
     plan tests => 3;
 
-    BOM::Test::Data::Utility::UnitTestMD::create_doc('correlation_matrix', {recorded_date => Date::Utility->new('2015-05-26')});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new('2015-05-26')});
 
     my $rho             = BOM::MarketData::CorrelationMatrix->new('indices');
     my $index           = 'FCHI';
