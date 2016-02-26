@@ -47,11 +47,6 @@ before_install:
     - /tmp/travis-scripts/redis.sh
 
 install:
-    - sudo mkdir /tmp/go;sudo chmod 777 /tmp/go
-    - export GOPATH=/tmp/go
-    - go get github.com/kavehmz/queue
-    - go get golang.org/x/net/websocket
-    - go get github.com/garyburd/redigo/redis
     - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
     - export WEBSOCKET_CONFIG=$PWD/websocket.conf.travis; export RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis
     - /tmp/travis-scripts/devbox.sh

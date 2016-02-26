@@ -195,35 +195,8 @@ my @dispatch = (
         'landing_company_details',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company_details, 0
     ],
-    [
-        'paymentagent_list',
-        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list, 0
-    ],
-    [
-        'verify_email',
-        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0
-    ],
-    [
-        'new_account_virtual',
-        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0
-    ],
-
-    # authenticated calls
-    ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1],
-    ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1],
-    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1],
-    [
-        'portfolio',
-        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio, 1
-    ],
-    [
-        'proposal_open_contract',
-        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
-        1
-    ],
-    ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1],
-    ['balance',      \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,                 1],
-    ['statement',    \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement,               1],
+    ['balance',   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,   1],
+    ['statement', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement, 1],
     [
         'profit_table',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::profit_table, 1
@@ -256,8 +229,37 @@ my @dispatch = (
         'cashier_password',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1
     ],
-    ['api_token',    \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,    1],
-    ['tnc_approval', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval, 1],
+    ['api_token',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,            1],
+    ['tnc_approval',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval,         1],
+    ['login_history',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history,        1],
+    ['set_account_currency', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency, 1],
+    [
+        'paymentagent_list',
+        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list, 0
+    ],
+    [
+        'verify_email',
+        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0
+    ],
+    [
+        'new_account_virtual',
+        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0
+    ],
+
+    # authenticated calls
+    ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1],
+    ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1],
+    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1],
+    [
+        'portfolio',
+        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio, 1
+    ],
+    [
+        'proposal_open_contract',
+        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
+        1
+    ],
+    ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1],
 
     ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register, 1],
     ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,     1],
@@ -318,6 +320,49 @@ for my $order (0 .. @dispatch - 1) {
     };
 }
 
+my %rate_limit_map = (
+    ping_real                      => '',
+    time_real                      => '',
+    portfolio_real                 => 'websocket_call_expensive',
+    statement_real                 => 'websocket_call_expensive',
+    profit_table_real              => 'websocket_call_expensive',
+    proposal_real                  => 'websocket_real_pricing',
+    proposal_open_contract_real    => 'websocket_real_pricing',
+    verify_email_real              => 'websocket_call_email',
+    buy_real                       => 'websocket_real_pricing',
+    sell_real                      => 'websocket_real_pricing',
+    ping_virtual                   => '',
+    time_virtual                   => '',
+    portfolio_virtual              => 'websocket_call_expensive',
+    statement_virtual              => 'websocket_call_expensive',
+    profit_table_virtual           => 'websocket_call_expensive',
+    proposal_virtual               => 'websocket_call_pricing',
+    proposal_open_contract_virtual => 'websocket_call_pricing',
+    verify_email_virtual           => 'websocket_call_email',
+);
+
+sub _reached_limit_check {
+    my ($connection_id, $category, $is_real) = @_;
+
+    my $limiting_service = $rate_limit_map{
+        $category . '_'
+            . (
+            ($is_real)
+            ? 'real'
+            : 'virtual'
+            )} // 'websocket_call';
+    if (
+        $limiting_service
+        and not within_rate_limits({
+                service  => $limiting_service,
+                consumer => $connection_id,
+            }))
+    {
+        return 1;
+    }
+    return;
+}
+
 sub __handle {
     my ($c, $p1, $tag) = @_;
 
@@ -334,26 +379,8 @@ sub __handle {
             $c->stash('connection_id' => Data::UUID->new()->create_str());
         }
 
-        if (not grep { $_ eq $descriptor->{category} } ('ping', 'time')) {
-            my $limiting_service = 'websocket_call';
-            if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
-                $limiting_service = 'websocket_call_expensive';
-            }
-            if (grep { $_ eq $descriptor->{category} } ('proposal', 'proposal_open_contract')) {
-                $limiting_service = 'websocket_call_pricing';
-            }
-            if ('verify_email' eq $descriptor->{category}) {
-                $limiting_service = 'websocket_call_email';
-            }
-            if (
-                not within_rate_limits({
-                        service  => $limiting_service,
-                        consumer => $c->stash('connection_id'),
-                    }))
-            {
-                return $c->new_error($descriptor->{category}, 'RateLimit',
-                    $c->l('You have reached the rate limit for [_1].', $descriptor->{category}));
-            }
+        if (_reached_limit_check($c->stash('connection_id'), $descriptor->{category}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
+            return $c->new_error($descriptor->{category}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $descriptor->{category}));
         }
 
         my $t0 = [Time::HiRes::gettimeofday];
@@ -381,7 +408,7 @@ sub __handle {
         }
 
         if ($loginid) {
-            my $account_type = $loginid =~ /^VRT/ ? 'virtual' : 'real';
+            my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
                 {tags => [$tag, $descriptor->{category}, "loginid:$loginid", "account_type:$account_type"]});
         }
