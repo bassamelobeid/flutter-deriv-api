@@ -15,7 +15,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::AccessToken;
-use Data::Utility;
+use Date::Utility;
 
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
