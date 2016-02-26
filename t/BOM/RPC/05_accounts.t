@@ -400,7 +400,7 @@ subtest $method => sub {
 
 
     $result = $c->tcall($method, {token => $token_with_txn});
-    is($result->{count},2 'the new transaction is sold so _sell_expired_contracts is called');
+    is($result->{count},2, 'the new transaction is sold so _sell_expired_contracts is called');
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $test_client2->loginid,
