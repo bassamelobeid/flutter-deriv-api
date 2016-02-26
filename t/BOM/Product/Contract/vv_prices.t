@@ -12,12 +12,12 @@ use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMD qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 my $now = Date::Utility->new('2014-11-11');
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'currency',
     {
         symbol => $_,
@@ -25,7 +25,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date   => $now,
     }) for (qw/JPY USD JPY-USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -88,19 +88,19 @@ like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 is roundnear(0.0001, $c->bs_probability->amount), 0.1106, 'correct bs probability for FX contract';
 is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0299, 'correct market supplement';
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'index',
     {
         symbol => 'AEX',
         recorded_date   => Date::Utility->new($params->{date_pricing}),
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'currency',
     {
         symbol => 'EUR',
         recorded_date   => $now,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'AEX',

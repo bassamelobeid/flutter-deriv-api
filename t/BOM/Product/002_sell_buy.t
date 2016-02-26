@@ -16,7 +16,7 @@ use BOM::Database::DataMapper::Account;
 use BOM::Platform::Client;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMD qw(:init);
 use BOM::Product::Transaction;
 use Data::Dumper;
 

@@ -10,7 +10,7 @@ use JSON qw(decode_json);
 use Cache::RedisDB;
 use Date::Utility;
 use BOM::Market::Data::Tick;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMD qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
@@ -18,14 +18,14 @@ use BOM::Product::ContractFactory qw( produce_contract );
 
 my $now = Date::Utility->new('7-Jan-14 12:00');
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'currency',
     {
         symbol => $_,
         recorded_date   => $now->minus_time_interval('10m'),
     }) for (qw/JPY USD JPY-USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -43,7 +43,7 @@ $mocked->mock(
                 'release_time' => 1389096000,
             }];
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'economic_events',
     {
         symbol       => 'USD',

@@ -14,7 +14,7 @@ use BOM::Test::Runtime qw(:normal);
 use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMD qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
@@ -23,19 +23,19 @@ use Quant::Framework::Utils::Test;
 
 initialize_realtime_ticks_db();
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'currency',
     {
         symbol => 'EUR',
         date   => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'index',
     {
         symbol => 'FPFP',
         date   => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'volsurface_delta',
     {
         symbol        => 'FPFP',

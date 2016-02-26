@@ -11,7 +11,7 @@ use Cache::RedisDB;
 use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Moneyness;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMD qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 my $when = Date::Utility->new;
@@ -33,21 +33,21 @@ my $q = {
     365 => 0.065841,
 };
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'currency',
     {
         symbol => 'EUR',
         rates  => $r,
         date   => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'index',
     {
         symbol => 'IBEX35',
         date   => Date::Utility->new,
         rates  => $q
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'volsurface_delta',
     {
         symbol        => 'IBEX35',

@@ -6,28 +6,28 @@ use JSON qw(decode_json);
 
 use BOM::Test::Runtime qw(:normal);
 use BOM::MarketData::VolSurface::Moneyness;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMD qw(:init);
 use BOM::Market::Underlying;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 
 initialize_realtime_ticks_db;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'currency',
     {
         symbol => 'EUR',
         date   => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'index',
     {
         symbol => 'IBEX35',
         date   => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMD::create_doc(
     'volsurface_moneyness',
     {
         symbol           => 'IBEX35',
@@ -62,7 +62,7 @@ subtest fetching_volsurface_data_from_db => sub {
     my $fake_surface = {1 => {smile => {100 => 0.1}}};
     my $fake_date = Date::Utility->new('12-Sep-12');
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMD::create_doc(
         'volsurface_moneyness',
         {
             symbol           => 'IBEX35',

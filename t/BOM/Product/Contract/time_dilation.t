@@ -10,7 +10,7 @@ use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMD qw( :init );
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -276,7 +276,7 @@ foreach my $fixture_type (keys %historical) {
                 $fixture->{$date_key} = Date::Utility->new($fixture->{$date_key})
                     if exists $fixture->{$date_key};
             }
-            BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+            BOM::Test::Data::Utility::UnitTestMD::create_doc(
                 $fixture_type,
                 {
                     symbol => $fixture->{symbol},

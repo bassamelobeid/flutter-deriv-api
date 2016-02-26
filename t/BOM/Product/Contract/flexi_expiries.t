@@ -13,7 +13,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMD qw( :init );
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => Date::Utility->new('2014-03-04 11:45:00')->epoch,

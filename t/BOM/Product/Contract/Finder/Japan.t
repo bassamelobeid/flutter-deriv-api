@@ -8,17 +8,17 @@ use Test::Exception;
 use Test::NoWarnings;
 use Test::Deep;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMD qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_flyby);
 use BOM::Market::Underlying;
 use Date::Utility;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD JPY AUD CAD EUR);
+BOM::Test::Data::Utility::UnitTestMD::create_doc('currency',        {symbol => $_}) for qw(USD JPY AUD CAD EUR);
 subtest "predefined contracts for symbol" => sub {
     my $now = Date::Utility->new('2015-08-21 05:30:00');
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMD::create_doc(
         'holiday', {
             recorded_date => $now,
             calendar => {
@@ -27,7 +27,7 @@ subtest "predefined contracts for symbol" => sub {
                 },
             },
         });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMD::create_doc(
         'volsurface_delta',
         {
             symbol        => $_,
@@ -294,7 +294,7 @@ subtest "predefined barriers" => sub {
         epoch      => $now->epoch,
         quote      => 1.15591,
     });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMD::create_doc(
         'volsurface_delta',
         {
             symbol        => 'frxEURUSD',
