@@ -403,10 +403,10 @@ subtest $method => sub {
     my $_sell_expired_is_called = 0;
     $mock_Portfolio->mock('_sell_expired_contracts',
         sub { $_sell_expired_is_called = 1; });
-    my $result = $c->tcall($method, {token => $token_21});
+    my $result = $c->tcall($method, {token => $token_with_txn});
     diag(Dumper($result));
     $mock_Portfolio = undef;
-    $result = $c->tcall($method, {token => $token_21});
+    $result = $c->tcall($method, {token => $token_with_txn});
     diag(Dumper($result));
 #    my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
 #    my $_sell_expired_is_called = 0;
