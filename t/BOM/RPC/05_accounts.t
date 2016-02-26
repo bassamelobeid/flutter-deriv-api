@@ -413,8 +413,8 @@ subtest $method => sub {
         });
     my $args = {};
     my $data = $fmb_dm->get_sold_bets_of_account($args);
-    diag('data is ' . Dumper($data));
-    diag('result is' . Dumper($result));
+    #diag('data is ' . Dumper($data));
+    #diag('result is' . Dumper($result));
     my $expect0 = {                              'sell_price' => '100',
                                                  'contract_id' => $txn->contract_id,
                                                  'transaction_id' => $txn->transaction_id,
@@ -425,7 +425,8 @@ subtest $method => sub {
 
     is_deeply($result->{transactions}[0], $expect0, 'result is correct');
 
-
+    $result = $c->tcall($method, {token => $token_with_txn, args->{description}});
+    diag(Dumper($result));
 #    my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
 #    my $_sell_expired_is_called = 0;
 #    $mock_Portfolio->mock('_sell_expired_contracts',
