@@ -107,7 +107,7 @@ subtest "cannot get volatility when underlying spot is undef" => sub {
         );
     }
     'creates moneyness surface without spot reference';
-    is($v_new2->spot_reference, 101, 'spot reference retrieved from couch');
+    is($v_new2->spot_reference, 101, 'spot reference retrieved from database');
     lives_ok { $v_new2->get_volatility({days => 7, delta => 35}) } "can get_volatility";
 };
 

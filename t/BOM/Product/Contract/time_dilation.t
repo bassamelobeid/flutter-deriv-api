@@ -266,7 +266,7 @@ my %historical = (
     },
 );
 
-# Now we'll muck up any historical data in the couch unit test DB and
+# Now we'll muck up any historical data in the chronicle unit test DB and
 # replace it with our own crazy values.
 foreach my $fixture_type (keys %historical) {
     while (my ($symbol, $fixtures) = each %{$historical{$fixture_type}}) {

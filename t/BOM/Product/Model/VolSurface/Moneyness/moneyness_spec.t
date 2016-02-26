@@ -56,7 +56,7 @@ subtest creates_moneyness_object => sub {
     qr/Must pass both "surface" and "recorded_date" if passing either/, 'throws exception if only pass in surface';
 };
 
-subtest fetching_volsurface_data_from_couch => sub {
+subtest fetching_volsurface_data_from_db => sub {
     plan tests => 2;
 
     my $fake_surface = {1 => {smile => {100 => 0.1}}};

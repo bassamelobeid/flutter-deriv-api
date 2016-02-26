@@ -433,11 +433,11 @@ subtest 'get_volatility, part 1.' => sub {
     }
 };
 
-subtest 'save surface to couch' => sub {
+subtest 'save surface to chronicle' => sub {
     plan tests => 1;
 
     my $surface = _get_surface();
-    lives_ok { $surface->save } 'can save surface to couch';
+    lives_ok { $surface->save } 'can save surface to chronicle';
 };
 
 # PRIVATE METHODS
