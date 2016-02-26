@@ -132,12 +132,12 @@ sub get_ask {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency) = ($params->{short_code}, $params->{contract_id}, $params->{currency});
+    my ($short_code, $contract_id, $currency, $is_sold, $sell_time) = @{$params}{qw/short_code contract_id currency is_sold sell_time/};
 
     my $response;
     try {
         my $tv = [Time::HiRes::gettimeofday];
-        my $contract = produce_contract($short_code, $currency);
+        my $contract = produce_contract($short_code, $currency, $is_sold);
         $response = {
             ask_price           => sprintf('%.2f', $contract->ask_price),
             bid_price           => sprintf('%.2f', $contract->bid_price),
@@ -158,21 +158,26 @@ sub get_bid {
             payout              => $contract->payout,
         };
 
-        if (not $contract->is_valid_to_sell) {
+        if (not $contract->is_valid_to_sell and $contract->primary_validation_error) {
             $response->{validation_error} = $contract->primary_validation_error->message_to_client;
         }
 
         if (not $contract->is_spread) {
+            $response->{entry_tick}      = $contract->entry_tick->quote if $contract->entry_tick;
+            $response->{entry_tick_time} = $contract->entry_tick->epoch if $contract->entry_tick;
+            $response->{exit_tick}       = $contract->exit_tick->quote  if $contract->exit_tick;
+            $response->{exit_tick_time}  = $contract->exit_tick->epoch  if $contract->exit_tick;
+            $response->{current_spot}    = $contract->current_spot      if $contract->underlying->feed_license eq 'realtime';
+            $response->{entry_spot}      = $contract->entry_spot        if $contract->entry_spot;
+
+            if ($sell_time and my $sell_tick = $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1})) {
+                $response->{sell_spot}      = $sell_tick->quote;
+                $response->{sell_spot_time} = $sell_tick->epoch;
+            }
+
             if ($contract->expiry_type eq 'tick') {
-                $response->{prediction}      = $contract->prediction;
-                $response->{tick_count}      = $contract->tick_count;
-                $response->{entry_tick}      = $contract->entry_tick ? $contract->entry_tick->quote : '';
-                $response->{entry_tick_time} = $contract->entry_tick ? $contract->entry_tick->epoch : '';
-                $response->{exit_tick}       = $contract->exit_tick ? $contract->exit_tick->quote : '';
-                $response->{exit_tick_time}  = $contract->exit_tick ? $contract->exit_tick->epoch : '';
-            } else {
-                $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-                $response->{entry_spot} = $contract->entry_spot;
+                $response->{prediction} = $contract->prediction;
+                $response->{tick_count} = $contract->tick_count;
             }
 
             if ($contract->two_barriers) {
@@ -229,10 +234,11 @@ sub send_ask {
 sub get_contract_details {
     my $params = shift;
 
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
 
-    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
