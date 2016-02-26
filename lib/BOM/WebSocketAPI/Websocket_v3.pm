@@ -233,6 +233,7 @@ my @dispatch = (
     ['tnc_approval',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval,         1],
     ['login_history',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history,        1],
     ['set_account_currency', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency, 1],
+    ['financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::financial_assessment, 1],
     [
         'paymentagent_list',
         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list, 0

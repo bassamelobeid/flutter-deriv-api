@@ -427,4 +427,27 @@ sub set_account_currency {
     return;
 }
 
+sub financial_assessment {
+    my ($c, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'financial_assessment',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('financial_assessment', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type             => 'financial_assessment',
+                    financial_assessment => $response->{status}};
+            }
+        },
+        {
+            args  => $args,
+            token => $c->stash('token')});
+
+    return;
+}
+
 1;
