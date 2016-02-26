@@ -19,8 +19,8 @@ sub buy {
 
     my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
 
-    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
-    #       are done again in BOM::Product::Transaction
+    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization.
+    #       All checks are done again in BOM::Product::Transaction
     return BOM::RPC::v3::Utility::create_error({
         code              => 'AuthorizationRequired',
         message_to_client => localize('Please log in.')}) unless $client;
@@ -76,8 +76,16 @@ sub buy {
 sub buy_contract_for_multiple_accounts {
     my $params = shift;
 
+    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+
+    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization.
+    #       All checks are done again in BOM::Product::Transaction
+    return BOM::RPC::v3::Utility::create_error({
+        code              => 'AuthorizationRequired',
+        message_to_client => localize('Please log in.')}) unless $client;
+
     my @result;
-    my %per_broker;
+    my $found_at_least_one;
 
     my $msg = BOM::Platform::Context::localize('Invalid token');
     for my $t (@{$params->{tokens} || []}) {
@@ -95,15 +103,13 @@ sub buy_contract_for_multiple_accounts {
             token   => $t,
             loginid => $loginid,
         };
-        (my $broker = $loginid) =~ s/\D+$//;
-
-        push @{$per_broker{$broker}}, BOM::Platform::Client->new({loginid => $loginid});
+        $found_at_least_one = 1;
     }
 
-    return \@result unless keys %per_broker;
+    return \@result unless $found_at_least_one;
 
-    # NOTE: we rely here on BOM::Product::Transaction to perform all the client validations
-    #       like client_status and self_exclusion.
+    # NOTE: we rely here on BOM::Product::Transaction to perform all the
+    #       client validations like client_status and self_exclusion.
 
     my $source              = $params->{source};
     my $contract_parameters = $params->{contract_parameters};
@@ -112,27 +118,29 @@ sub buy_contract_for_multiple_accounts {
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
 
-    my $contract = try { produce_contract({%$contract_parameters}) } || do {
-        $msg = BOM::Platform::Context::localize('Cannot create contract');
-        for (@result) {
-            $_->{code}  = 'ContractCreationFailure';
-            $_->{error} = $msg;
-        }
-        return \@result;
-    };
+    my $contract = try { produce_contract({%$contract_parameters}) } ||
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ContractCreationFailure',
+            message_to_client => localize('Cannot create contract')});
 
     my $trx = BOM::Product::Transaction->new({
-        clients_per_broker => \%per_broker,
-        contract           => $contract,
-        price              => ($args->{price} || 0),
-        purchase_date      => $purchase_date,
-        source             => $source,
+        client        => $client,
+        multiple      => \@result,
+        contract      => $contract,
+        price         => ($args->{price} || 0),
+        purchase_date => $purchase_date,
+        source        => $source,
     });
 
-    my $res = $trx->batch_buy;
+    if (my $err = $trx->batch_buy) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => $err->get_type,
+            message_to_client => $err->{-message_to_client},
+        });
+    }
 
 
-...
+...;
 
     my $response = {
         transaction_id => $trx->transaction_id,
