@@ -9,6 +9,7 @@ use BOM::Product::Transaction;
 use BOM::Platform::Locale;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Platform::Static::Config;
 
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -64,11 +65,9 @@ print "<INPUT type=\"submit\" value=\"Go\"></form>
 <input type=submit value=\"CLIENT STATEMENT\" />
 </form><div style=\"clear:both\"></div>";
 
-if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
-    BOM::Product::Transaction::sell_expired_contracts({
-        client => $client,
-    });
-}
+BOM::Product::Transaction::sell_expired_contracts({
+    client => $client,
+});
 
 my $db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
