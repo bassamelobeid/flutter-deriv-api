@@ -16,8 +16,8 @@ GRANT SELECT ON oauth.user_scope_confirm TO read;
 DROP TABLE oauth.auth_code_scope;
 DROP TABLE oauth.auth_code;
 CREATE TABLE oauth.auth_code (
-    auth_code            char(32) NOT NULL PRIMARY KEY,
-    app_id            varchar(32) NOT NULL REFERENCES oauth.apps(id),
+    auth_code            varchar(32) NOT NULL PRIMARY KEY,
+    app_id               varchar(32) NOT NULL REFERENCES oauth.apps(id),
     loginid              character varying(12) NOT NULL,
     expires              timestamp NOT NULL,
     scopes           token_scopes[],
@@ -29,8 +29,8 @@ GRANT SELECT ON oauth.auth_code TO read;
 DROP TABLE oauth.access_token_scope;
 DROP TABLE oauth.access_token;
 CREATE TABLE oauth.access_token (
-    access_token         char(32) NOT NULL PRIMARY KEY,
-    app_id            varchar(32) NOT NULL REFERENCES oauth.apps(id),
+    access_token         varchar(32) NOT NULL PRIMARY KEY,
+    app_id               varchar(32) NOT NULL REFERENCES oauth.apps(id),
     loginid              character varying(12) NOT NULL,
     expires              timestamp NOT NULL,
     scopes           token_scopes[],
@@ -42,8 +42,8 @@ GRANT SELECT ON oauth.access_token TO read;
 DROP TABLE oauth.refresh_token_scope;
 DROP TABLE oauth.refresh_token;
 CREATE TABLE oauth.refresh_token (
-    refresh_token        char(32) NOT NULL PRIMARY KEY,
-    app_id            varchar(32) NOT NULL REFERENCES oauth.apps(id),
+    refresh_token        varchar(32) NOT NULL PRIMARY KEY,
+    app_id               varchar(32) NOT NULL REFERENCES oauth.apps(id),
     loginid              character varying(12) NOT NULL,
     scopes           token_scopes[],
     revoked BOOLEAN NOT NULL DEFAULT false
