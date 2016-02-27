@@ -31,11 +31,13 @@ sub authorize {
 
                 $c->stash(
                     loginid              => $response->{loginid},
+                    token                => $token,
                     token_type           => $token_type,
                     account_id           => delete $response->{account_id},
                     currency             => $response->{currency},
-                    landing_company_name => delete $response->{landing_company_name},
-                    country              => delete $response->{country});
+                    landing_company_name => $response->{landing_company_name},
+                    country              => delete $response->{country},
+                    is_virtual           => $response->{is_virtual});
                 return {
                     msg_type  => 'authorize',
                     authorize => $response,
@@ -58,15 +60,14 @@ sub logout {
         sub {
             my $response = shift;
 
-            # Invalidates token, but we can only do this if we have a cookie
-            $r->session_cookie->end_session if $r->session_cookie;
-
             $c->stash(
                 loginid              => undef,
+                token                => undef,
                 token_type           => undef,
                 account_id           => undef,
                 currency             => undef,
-                landing_company_name => undef
+                landing_company_name => undef,
+                country              => undef
             );
 
             return {
@@ -74,13 +75,14 @@ sub logout {
                 logout   => $response->{status}};
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            client_email   => $r->email,
-            client_ip      => $r->client_ip,
-            country_code   => $r->country_code,
-            language       => $r->language,
-            user_agent     => $c->req->headers->header('User-Agent')});
+            args         => $args,
+            token        => $c->stash('token'),
+            token_type   => $c->stash('token_type'),
+            client_email => $r->email,
+            client_ip    => $r->client_ip,
+            country_code => $r->country_code,
+            language     => $r->language,
+            user_agent   => $c->req->headers->header('User-Agent')});
     return;
 }
 

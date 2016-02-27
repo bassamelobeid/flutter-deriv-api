@@ -32,7 +32,7 @@ sub buy {
         },
         {
             args                => $args,
-            client_loginid      => $c->stash('loginid'),
+            token               => $c->stash('token'),
             source              => $c->stash('source'),
             contract_parameters => $contract_parameters
         });
@@ -57,9 +57,9 @@ sub sell {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            source         => $c->stash('source')});
+            args   => $args,
+            token  => $c->stash('token'),
+            source => $c->stash('source')});
     return;
 }
 
@@ -69,14 +69,9 @@ sub transaction {
     my $id;
     my $account_id = $c->stash('account_id');
     if ($account_id) {
-        my $redis              = $c->stash('redis');
-        my $channel            = 'TXNUPDATE::transaction_' . $account_id;
-        my $subscriptions      = $c->stash('transaction_channel');
-        my $already_subscribed = $subscriptions->{$channel};
-
         if (    exists $args->{subscribe}
             and $args->{subscribe} eq '1'
-            and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, $args)))
+            and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, 'transaction', $args)))
         {
             return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to transaction updates.'));
         }
@@ -85,77 +80,6 @@ sub transaction {
     return {
         msg_type => 'transaction',
         transaction => {$id ? (id => $id) : ''}};
-}
-
-sub send_transaction_updates {
-    my ($c, $message) = @_;
-
-    my $args;
-    my $channel;
-    my $subscriptions = $c->stash('transaction_channel');
-    if ($subscriptions) {
-        $channel = first { m/TXNUPDATE::transaction/ } keys %$subscriptions;
-        $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
-    }
-
-    if ($c->stash('account_id')) {
-        my $payload = JSON::from_json($message);
-
-        my $id;
-        $id = $subscriptions->{$channel}->{uuid} if ($channel and exists $subscriptions->{$channel}->{uuid});
-        my $details = {
-            msg_type => 'transaction',
-            $args ? (echo_req => $args) : (),
-            ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-            transaction => {
-                balance        => $payload->{balance_after},
-                action         => $payload->{action_type},
-                amount         => $payload->{amount},
-                transaction_id => $payload->{id},
-                $payload->{currency_code} ? (currency => $payload->{currency_code}) : (),
-                $id ? (id => $id) : ()}};
-
-        if (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
-            $details->{transaction}->{transaction_time} =
-                ($payload->{action_type} eq 'sell')
-                ? Date::Utility->new($payload->{sell_time})->epoch
-                : Date::Utility->new($payload->{purchase_time})->epoch;
-
-            BOM::WebSocketAPI::Websocket_v3::rpc(
-                $c,
-                'get_contract_details',
-                sub {
-                    my $response = shift;
-                    if (exists $response->{error}) {
-                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                        return $c->new_error('transaction', $response->{error}->{code}, $response->{error}->{message_to_client});
-                    } else {
-                        $details->{transaction}->{contract_id}   = $payload->{financial_market_bet_id};
-                        $details->{transaction}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
-                            if ($payload->{action_type} eq 'sell');
-                        $details->{transaction}->{longcode}     = $response->{longcode};
-                        $details->{transaction}->{symbol}       = $response->{symbol};
-                        $details->{transaction}->{display_name} = $response->{display_name};
-                        $details->{transaction}->{date_expiry}  = $response->{date_expiry};
-                        return $details;
-                    }
-                },
-                {
-                    args           => $args,
-                    client_loginid => $c->stash('loginid'),
-                    short_code     => $payload->{short_code},
-                    currency       => $payload->{currency_code},
-                    language       => $c->stash('request')->language
-                });
-        } else {
-            $details->{transaction}->{longcode}         = $payload->{payment_remark};
-            $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
-            $c->send({json => {%$details}});
-        }
-    } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
-        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
-    }
-    return;
 }
 
 1;

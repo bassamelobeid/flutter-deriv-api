@@ -24,8 +24,8 @@ sub payout_currencies {
             };
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token')});
     return;
 }
 
@@ -89,9 +89,9 @@ sub statement {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            source         => $c->stash('source')});
+            args   => $args,
+            token  => $c->stash('token'),
+            source => $c->stash('source')});
     return;
 }
 
@@ -113,9 +113,9 @@ sub profit_table {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            source         => $c->stash('source')});
+            args   => $args,
+            token  => $c->stash('token'),
+            source => $c->stash('source')});
     return;
 }
 
@@ -137,8 +137,9 @@ sub get_account_status {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token'),
+        });
     return;
 }
 
@@ -160,10 +161,10 @@ sub change_password {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token_type     => $c->stash('token_type'),
-            client_ip      => $r->client_ip
+            args       => $args,
+            token      => $c->stash('token'),
+            token_type => $c->stash('token_type'),
+            client_ip  => $r->client_ip
         });
     return;
 }
@@ -186,9 +187,9 @@ sub cashier_password {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            client_ip      => $r->client_ip
+            args      => $args,
+            token     => $c->stash('token'),
+            client_ip => $r->client_ip
         });
     return;
 }
@@ -211,9 +212,9 @@ sub get_settings {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            language       => $c->stash('request')->language
+            args     => $args,
+            token    => $c->stash('token'),
+            language => $c->stash('request')->language
         });
     return;
 }
@@ -236,12 +237,12 @@ sub set_settings {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            website_name   => $r->website->display_name,
-            client_ip      => $r->client_ip,
-            user_agent     => $c->req->headers->header('User-Agent'),
-            language       => $r->language
+            args         => $args,
+            token        => $c->stash('token'),
+            website_name => $r->website->display_name,
+            client_ip    => $r->client_ip,
+            user_agent   => $c->req->headers->header('User-Agent'),
+            language     => $r->language
         });
     return;
 }
@@ -264,8 +265,9 @@ sub get_self_exclusion {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token'),
+        });
     return;
 }
 
@@ -288,8 +290,9 @@ sub set_self_exclusion {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token'),
+        });
     return;
 }
 
@@ -301,7 +304,7 @@ sub balance {
     if (    $account_id
         and exists $args->{subscribe}
         and $args->{subscribe} eq '1'
-        and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'subscribe', $account_id, $args)))
+        and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, 'balance', $args)))
     {
         return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
     }
@@ -321,38 +324,9 @@ sub balance {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid')});
-    return;
-}
-
-sub send_realtime_balance {
-    my ($c, $message) = @_;
-
-    my $args = {};
-    my $channel;
-    my $subscriptions = $c->stash('balance_channel');
-
-    if ($subscriptions) {
-        $channel = first { m/TXNUPDATE::balance/ } keys %$subscriptions;
-        $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
-    }
-
-    if ($c->stash('loginid')) {
-        my $payload = JSON::from_json($message);
-        $c->send({
-                json => {
-                    msg_type => 'balance',
-                    $args ? (echo_req => $args) : (),
-                    ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    balance => {
-                        loginid  => $c->stash('loginid'),
-                        currency => $c->stash('currency'),
-                        balance  => $payload->{balance_after},
-                        ($channel and exists $subscriptions->{$channel}->{uuid}) ? (id => $subscriptions->{$channel}->{uuid}) : ()}}}) if $c->tx;
-    } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
-        BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
-    }
+            args  => $args,
+            token => $c->stash('token'),
+        });
     return;
 }
 
@@ -374,8 +348,10 @@ sub api_token {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid')});
+            args       => $args,
+            token      => $c->stash('token'),
+            account_id => $c->stash('account_id'),
+        });
     return;
 }
 
@@ -396,12 +372,35 @@ sub tnc_approval {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
+            args  => $args,
+            token => $c->stash('token'),
+        });
+
+    return;
+}
+
+sub login_history {
+    my ($c, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'login_history',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('login_history', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type      => 'login_history',
+                    login_history => $response->{records}};
+            }
+        },
+        {
+            args  => $args,
+            token => $c->stash('token'),
         });
 
     return;
 }
 
 1;
-

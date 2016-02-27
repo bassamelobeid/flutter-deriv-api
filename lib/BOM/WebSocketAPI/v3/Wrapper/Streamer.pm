@@ -218,60 +218,115 @@ sub _feed_channel {
     return $uuid;
 }
 
-sub _balance_channel {
-    my ($c, $action, $account_id, $args) = @_;
+sub _transaction_channel {
+    my ($c, $action, $account_id, $type, $args) = @_;
     my $uuid;
 
     my $redis              = $c->stash('redis');
-    my $channel            = 'TXNUPDATE::balance_' . $account_id;
-    my $subscriptions      = $c->stash('balance_channel');
-    my $already_subscribed = $subscriptions ? $subscriptions->{$channel} : undef;
+    my $channel            = $c->stash('transaction_channel');
+    my $already_subscribed = $channel ? exists $channel->{$type} : undef;
 
     if ($action) {
+        my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
             $uuid = Data::UUID->new->create_str();
-            $redis->subscribe([$channel], sub { });
-            $subscriptions->{$channel}->{args}       = $args if $args;
-            $subscriptions->{$channel}->{uuid}       = $uuid;
-            $subscriptions->{$channel}->{account_id} = $account_id;
-            $subscriptions->{$channel}->{type}       = 'balance';
-            $c->stash('balance_channel', $subscriptions);
+            $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
+            $channel->{$type}->{args}       = $args if $args;
+            $channel->{$type}->{uuid}       = $uuid;
+            $channel->{$type}->{account_id} = $account_id;
+            $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
-            $redis->unsubscribe([$channel], sub { });
-            delete $subscriptions->{$channel};
-            delete $c->stash->{balance_channel};
+            delete $channel->{$type};
+            unless (keys %$channel) {
+                $redis->unsubscribe([$channel_name], sub { });
+                delete $c->stash->{transaction_channel};
+            }
         }
     }
 
     return $uuid;
 }
 
-sub _transaction_channel {
-    my ($c, $action, $account_id, $args) = @_;
-    my $uuid;
+sub process_transaction_updates {
+    my ($c, $message) = @_;
+    my $channel = $c->stash('transaction_channel');
 
-    my $redis              = $c->stash('redis');
-    my $channel            = 'TXNUPDATE::transaction_' . $account_id;
-    my $subscriptions      = $c->stash('transaction_channel');
-    my $already_subscribed = $subscriptions ? $subscriptions->{$channel} : undef;
+    if ($channel) {
+        my $payload = JSON::from_json($message);
+        my $args    = {};
+        foreach my $type (keys %{$channel}) {
+            if ($payload and exists $payload->{error} and exists $payload->{error}->{code} and $payload->{error}->{code} eq 'TokenDeleted') {
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+            } else {
+                $args = (exists $channel->{$type}->{args}) ? $channel->{$type}->{args} : {};
 
-    if ($action) {
-        if ($action eq 'subscribe' and not $already_subscribed) {
-            $uuid = Data::UUID->new->create_str();
-            $redis->subscribe([$channel], sub { });
-            $subscriptions->{$channel}->{args}       = $args if $args;
-            $subscriptions->{$channel}->{uuid}       = $uuid;
-            $subscriptions->{$channel}->{account_id} = $account_id;
-            $subscriptions->{$channel}->{type}       = 'transaction';
-            $c->stash('transaction_channel', $subscriptions);
-        } elsif ($action eq 'unsubscribe' and $already_subscribed) {
-            $redis->unsubscribe([$channel], sub { });
-            delete $subscriptions->{$channel};
-            delete $c->stash->{transaction_channel};
+                my $id;
+                $id = ($channel and exists $channel->{$type}->{uuid}) ? $channel->{$type}->{uuid} : undef;
+
+                my $details = {
+                    msg_type => $type,
+                    $args ? (echo_req => $args) : (),
+                    ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
+                    $type => {$id ? (id => $id) : ()}};
+
+                if ($c->stash('account_id')) {
+                    if ($type eq 'balance') {
+                        $details->{$type}->{loginid}  = $c->stash('loginid');
+                        $details->{$type}->{currency} = $c->stash('currency');
+                        $details->{$type}->{balance}  = $payload->{balance_after};
+                        $c->send({json => $details}) if $c->tx;
+                    } elsif ($type eq 'transaction') {
+                        $details->{$type}->{balance}        = $payload->{balance_after};
+                        $details->{$type}->{action}         = $payload->{action_type};
+                        $details->{$type}->{amount}         = $payload->{amount};
+                        $details->{$type}->{transaction_id} = $payload->{id};
+                        $payload->{currency_code} ? ($details->{$type}->{currency} = $payload->{currency_code}) : ();
+
+                        if (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
+                            $details->{$type}->{transaction_time} =
+                                ($payload->{action_type} eq 'sell')
+                                ? Date::Utility->new($payload->{sell_time})->epoch
+                                : Date::Utility->new($payload->{purchase_time})->epoch;
+
+                            BOM::WebSocketAPI::Websocket_v3::rpc(
+                                $c,
+                                'get_contract_details',
+                                sub {
+                                    my $response = shift;
+                                    if (exists $response->{error}) {
+                                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                                        return $c->new_error('transaction', $response->{error}->{code}, $response->{error}->{message_to_client});
+                                    } else {
+                                        $details->{$type}->{contract_id}   = $payload->{financial_market_bet_id};
+                                        $details->{$type}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
+                                            if ($payload->{action_type} eq 'sell');
+                                        $details->{$type}->{longcode}     = $response->{longcode};
+                                        $details->{$type}->{symbol}       = $response->{symbol};
+                                        $details->{$type}->{display_name} = $response->{display_name};
+                                        $details->{$type}->{date_expiry}  = $response->{date_expiry};
+                                        return $details;
+                                    }
+                                },
+                                {
+                                    args       => $args,
+                                    token      => $c->stash('token'),
+                                    short_code => $payload->{short_code},
+                                    currency   => $payload->{currency_code},
+                                    language   => $c->stash('request')->language
+                                });
+                        } else {
+                            $details->{$type}->{longcode}         = $payload->{payment_remark};
+                            $details->{$type}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
+                            $c->send({json => $details});
+                        }
+                    }
+                } elsif ($channel and exists $channel->{$type}->{account_id}) {
+                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+                }
+            }
         }
     }
-
-    return $uuid;
+    return;
 }
 
 1;

@@ -21,8 +21,8 @@ sub __call_rpc {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
+            args  => $args,
+            token => $c->stash('token'),
         });
 }
 

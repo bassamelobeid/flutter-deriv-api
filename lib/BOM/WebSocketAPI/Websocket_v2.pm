@@ -183,12 +183,10 @@ sub __handle {
 
         ## sell expired
         if (grep { $_ eq $dispatch->[0] } ('portfolio', 'statement', 'profit_table')) {
-            if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
-                BOM::Product::Transaction::sell_expired_contracts({
-                    client => $c->stash('client'),
-                    source => $c->stash('source'),
-                });
-            }
+            BOM::Product::Transaction::sell_expired_contracts({
+                client => $c->stash('client'),
+                source => $c->stash('source'),
+            });
         }
 
         my $result = $dispatch->[1]->($c, $p1);

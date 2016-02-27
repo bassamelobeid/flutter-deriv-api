@@ -87,9 +87,6 @@ sub startup {
             my $c = shift;
             my ($msg_type, $code, $message, $details) = @_;
 
-            my $loginid = $c->stash('loginid') || '';
-            $c->app->log->info("Error: $loginid, $msg_type, $code, $message");
-
             my $error = {
                 code    => $code,
                 message => $message

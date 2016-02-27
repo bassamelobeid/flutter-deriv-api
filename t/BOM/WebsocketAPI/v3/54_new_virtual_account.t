@@ -19,42 +19,36 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
 $email_mocked->mock('send_email', sub { return 1 });
 
-my $t = build_mojo_test();
-
+my $t     = build_mojo_test();
 my $email = 'test@binary.com';
 
 subtest 'verify_email' => sub {
     $t = $t->send_ok({
             json => {
                 verify_email => $email,
-                type         => 'account_opening'
+                type         => 'some_garbage_value'
             }})->message_ok;
     my $res = decode_json($t->message->[1]);
+    is($res->{error}->{code}, 'InputValidationFailed', 'verify_email failed');
+    is($res->{msg_type},      'verify_email',          'Message type is correct in case of error');
+    test_schema('verify_email', $res);
+
+    $t = $t->send_ok({
+            json => {
+                verify_email => $email,
+                type         => 'account_opening'
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
     is($res->{verify_email}, 1, 'verify_email OK');
     test_schema('verify_email', $res);
 };
-
-my $redis = BOM::System::RedisReplicated::redis_read;
-my $tokens = $redis->execute('keys', 'LOGIN_SESSION::*');
-
-my $code;
-foreach my $key (@{$tokens}) {
-    my $value = JSON::from_json($redis->get($key));
-
-    if ($value->{email} eq $email) {
-        $key =~ /^LOGIN_SESSION::(\w+)$/;
-        $code = $1;
-        last;
-    }
-}
 
 my $create_vr = {
     new_account_virtual => 1,
     email               => $email,
     client_password     => 'Ac0+-_:@.',
     residence           => 'au',
-    verification_code   => $code
-};
+    verification_code   => _get_token()};
 
 subtest 'create Virtual account' => sub {
     $t = $t->send_ok({json => $create_vr})->message_ok;
@@ -80,8 +74,18 @@ subtest 'Invalid email verification code' => sub {
 subtest 'NO duplicate email' => sub {
     $create_vr->{email} = $email;
 
-    $t = $t->send_ok({json => $create_vr})->message_ok;
+    $t = $t->send_ok({
+            json => {
+                verify_email => $email,
+                type         => 'account_opening'
+            }})->message_ok;
     my $res = decode_json($t->message->[1]);
+    is($res->{verify_email}, 1, 'verify_email OK');
+    test_schema('verify_email', $res);
+
+    $create_vr->{verification_code} = _get_token();
+    $t = $t->send_ok({json => $create_vr})->message_ok;
+    $res = decode_json($t->message->[1]);
 
     is($res->{error}->{code},       'duplicate email', 'duplicate email err code');
     is($res->{new_account_virtual}, undef,             'NO account created');
@@ -92,9 +96,27 @@ subtest 'insufficient data' => sub {
 
     $t = $t->send_ok({json => $create_vr})->message_ok;
     my $res = decode_json($t->message->[1]);
+    note explain $res;
 
     is($res->{error}->{code}, 'InputValidationFailed', 'insufficient input');
     is($res->{new_account_virtual}, undef, 'NO account created');
 };
+
+sub _get_token {
+    my $redis = BOM::System::RedisReplicated::redis_read;
+    my $tokens = $redis->execute('keys', 'LOGIN_SESSION::*');
+
+    my $code;
+    foreach my $key (@{$tokens}) {
+        my $value = JSON::from_json($redis->get($key));
+
+        if ($value->{email} eq $email) {
+            $key =~ /^LOGIN_SESSION::(\w+)$/;
+            $code = $1;
+            last;
+        }
+    }
+    return $code;
+}
 
 $t->finish_ok;
