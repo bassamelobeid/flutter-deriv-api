@@ -22,8 +22,8 @@ run_bench:
 	/home/git/regentmarkets/bom-feed/bin/bom-feed-combinator.pl --no-pid-file &
 	/home/git/regentmarkets/bom-feed/bin/bom-feed-distributor.pl --no-pid-file &
 	/home/git/regentmarkets/stress/websocket-bench/bin/bom_tick_populator.pl --no-pid-file &
-	/home/git/regentmarkets/bom-market/bin/feed_notify_pub.pl &
-	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_server_ready localhost 5004 && bin/run_bench $(STRESS_NUM)
+	/home/git/regentmarkets/bom-market/bin/feed_notify_pub.pl
+	#cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_server_ready localhost 5004 && bin/run_bench $(STRESS_NUM)
 
 run_avg_stress:
 ifeq ($(INSTANCE_NO),1)
