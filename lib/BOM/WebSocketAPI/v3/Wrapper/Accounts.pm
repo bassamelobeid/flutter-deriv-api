@@ -440,7 +440,7 @@ sub financial_assessment {
             } else {
                 return {
                     msg_type             => 'financial_assessment',
-                    financial_assessment => %$response
+                    financial_assessment => $response
                 };
             }
         },
