@@ -202,12 +202,7 @@ sub new_account_maltainvest {
                 message_to_client => $error_map->{$err}});
     }
 
-    my $financial_data = {};
-    $financial_data->{$_} = $args->{$_} for qw (
-        forex_trading_experience forex_trading_frequency indices_trading_experience indices_trading_frequency
-        commodities_trading_experience commodities_trading_frequency stocks_trading_experience stocks_trading_frequency
-        other_derivatives_trading_experience other_derivatives_trading_frequency other_instruments_trading_experience
-        other_instruments_trading_frequency employment_industry education_level income_source net_income estimated_worth );
+    my $financial_data = map { $_ => $args->{$_} } for (keys %{BOM::Platform::Account::Real::maltainvest::get_financial_input_mapping()});
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         from_client    => $client,
