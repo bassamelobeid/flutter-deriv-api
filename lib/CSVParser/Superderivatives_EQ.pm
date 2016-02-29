@@ -11,6 +11,7 @@ use BOM::MarketData::VolSurface::Moneyness;
 use SetupDatasetTestFixture;
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
+use BOM::System::Chronicle;
 
 has file => (
     is       => 'ro',
@@ -131,12 +132,15 @@ sub _setup_quanto_rate {
     my $rates            = $args->{rates};
     my %applicable_rates = map { $_ => $rates->{$_} } grep { $_ <= 366 } keys %$rates;
 
-    my $rate = BOM::MarketData::InterestRate->new(
+    my $rate = Quant::Framework::InterestRate->new(
         symbol        => $symbol,
         rates         => \%applicable_rates,
         recorded_date => $date->datetime_iso8601,
         type          => 'market',
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );
+
     $rate->save;
 }
 
