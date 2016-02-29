@@ -26,20 +26,23 @@ bet_limits:
   maximum_payout_on_less_than_7day_indices_call_put: 5000
   minimum_payout_for_random: 0.7
   minimum_payout: 1
+  min_stake_maltainvest: 5
 
 client_limits:
   payout_per_symbol_and_bet_type_limit: 200000
   intraday_spot_index_turnover_limit: 30000
   smartfx_turnover_limit: 5000
   stocks_turnover_limit: 5000
-  max_balance: 300000
-  max_virtual_balance: 1000000
-  max_virtual_daily_turnover: 1000000
-  max_daily_turnover_authenticated: 500000
-  max_daily_turnover_unauthenticated: 200000
-  max_virtual_payout: 1000000
-  max_payout_authenticated: 500000
-  max_payout_unauthenticated: 200000
-  max_payout_maltainvest: 100000
-
+  max_balance:
+    virtual: 1000000
+    real: 300000
+  max_daily_turnover:
+    virtual: 1000000
+    real_authenticated: 500000
+    real_unauthenticated: 200000
+  max_payout:
+    virtual: 1000000
+    real_authenticated: 500000
+    real_unauthenticated: 200000
+    maltainvest: 100000
 
