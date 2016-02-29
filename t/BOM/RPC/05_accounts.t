@@ -944,42 +944,42 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-    isnt(
-        $c->tcall(
-            $method,
-            {
-                language => 'ZH_CN',
-                token    => $token1,
-            }
-            )->{error}{message_to_client},
-        '令牌无效。',
-        'no token error if token is valid'
-    );
-
-    is(
-        $c->tcall(
-            $method,
-            {
-                language => 'ZH_CN',
-                token    => $token_disabled,
-            }
-            )->{error}{message_to_client},
-        '此账户不可用。',
-        'check authorization'
-    );
-
-    my $params = {language => 'ZH_CN', token => $token_vr, args => {address1 => 'Address 1'}};
-
-    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', "vr client can only update residence");
-    # here I mocked function 'save' to simulate the db failure.
-    my $mocked_client = Test::MockModule->new(ref($test_client));
-    $mocked_client->mock('save', sub { return undef });
-    $params->{args}{residence} = 'zh';
-    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
-    $mocked_client->unmock_all;
-    is($c->tcall($method, $params)->{status}, 1, 'vr account update residence successfully');
-    $test_client_vr->load;
-    ok(!$test_client->address_1, 'But vr account only update residence');
+#    isnt(
+#        $c->tcall(
+#            $method,
+#            {
+#                language => 'ZH_CN',
+#                token    => $token1,
+#            }
+#            )->{error}{message_to_client},
+#        '令牌无效。',
+#        'no token error if token is valid'
+#    );
+#
+#    is(
+#        $c->tcall(
+#            $method,
+#            {
+#                language => 'ZH_CN',
+#                token    => $token_disabled,
+#            }
+#            )->{error}{message_to_client},
+#        '此账户不可用。',
+#        'check authorization'
+#    );
+#
+#    my $params = {language => 'ZH_CN', token => $token_vr, args => {address1 => 'Address 1'}};
+#
+#    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', "vr client can only update residence");
+#    # here I mocked function 'save' to simulate the db failure.
+#    my $mocked_client = Test::MockModule->new(ref($test_client));
+#    $mocked_client->mock('save', sub { return undef });
+#    $params->{args}{residence} = 'zh';
+#    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
+#    $mocked_client->unmock_all;
+#    is($c->tcall($method, $params)->{status}, 1, 'vr account update residence successfully');
+#    $test_client_vr->load;
+#    ok(!$test_client->address_1, 'But vr account only update residence');
 
 
 };
