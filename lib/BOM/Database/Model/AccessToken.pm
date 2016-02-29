@@ -12,10 +12,29 @@ sub _build_dbh {
     return BOM::Database::AuthDB::rose_db->dbh;
 }
 
-sub create_token {
-    my ($self, $loginid, $display_name) = @_;
+sub __parse_array {
+    my ($array_string) = @_;
+    return $array_string if ref($array_string) eq 'ARRAY';
+    return [] unless $array_string;
+    return BOM::Database::AuthDB::rose_db->parse_array($array_string);
+}
 
-    return $self->dbh->selectrow_array("SELECT auth.create_token(15, ?, ?)", undef, $loginid, $display_name);
+my @token_scopes = ('read', 'trade', 'payments', 'admin');
+my %available_scopes = map { $_ => 1 } @token_scopes;
+sub __filter_valid_scopes {
+    my (@s) = @_;
+    return grep { $available_scopes{$_} } @s;
+}
+
+sub create_token {
+    my ($self, $loginid, $display_name, @scopes) = @_;
+
+    @scopes = __filter_valid_scopes(@scopes);
+
+    my $dbh = $self->dbh;
+    my ($token) = $dbh->selectrow_array("SELECT auth.create_token(15, ?, ?, ?)", undef, $loginid, $display_name, \@scopes);
+
+    return $token;
 }
 
 sub get_loginid_by_token {
@@ -26,14 +45,35 @@ sub get_loginid_by_token {
     );
 }
 
+sub get_scopes_by_access_token {
+    my ($self, $access_token) = @_;
+
+    my $sth = $self->dbh->prepare("
+        SELECT scopes FROM auth.access_token
+        WHERE token = ?
+    ");
+    $sth->execute($access_token);
+    my $scopes = $sth->fetchrow_array;
+    $scopes = __parse_array($scopes);
+    return @$scopes;
+}
+
 sub get_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
-    return $self->dbh->selectall_arrayref("
+    my @tokens;
+    my $sth = $self->dbh->prepare("
         SELECT
-            token, display_name, last_used::timestamp(0)
+            token, display_name, scopes, last_used::timestamp(0)
         FROM auth.access_token WHERE client_loginid = ? ORDER BY display_name
-    ", { Slice => {} }, $loginid);
+    ");
+    $sth->execute($loginid);
+    while (my $r = $sth->fetchrow_hashref) {
+        $r->{scopes} = __parse_array($r->{scopes});
+        push @tokens, $r;
+    }
+
+    return wantarray ? @tokens : \@tokens;
 }
 
 sub get_token_count_by_loginid {
