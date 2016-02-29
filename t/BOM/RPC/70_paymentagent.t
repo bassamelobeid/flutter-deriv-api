@@ -57,15 +57,14 @@ subtest 'Initialization' => sub {
 };
 
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
-$mock_utility->mock('token_to_loginid', sub { return $client->loginid });
+$mock_utility->mock('token_to_loginid',            sub { return $client->loginid });
 $mock_utility->mock('is_verification_token_valid', sub { return 1 });
 
 # paymentagent_list
 my $res = BOM::RPC::v3::Cashier::paymentagent_list({
-    args => {
-        paymentagent_list => 'id',
-    }
-});
+        args => {
+            paymentagent_list => 'id',
+        }});
 ok(grep { $_->[0] eq 'id' } @{$res->{available_countries}});
 ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
 
@@ -77,15 +76,14 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
 
     my $code = 'mocked';
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-        token => 'blabla',
-        args => {
-            paymentagent_withdraw => 1,
-            paymentagent_loginid  => $pa_client->loginid,
-            currency              => 'USD',
-            amount                => 100,
-            verification_code     => $code
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_withdraw => 1,
+                paymentagent_loginid  => $pa_client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+                verification_code     => $code
+            }});
     is $res->{status}, 1, 'paymentagent_withdraw ok';
 
     ## after withdraw, check both balance
@@ -97,15 +95,14 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ## test for failure
     foreach my $amount (-1, 1, 2001) {
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            token => 'blabla',
-            args => {
-                paymentagent_withdraw => 1,
-                paymentagent_loginid  => $pa_client->loginid,
-                currency              => 'USD',
-                verification_code     => $code,
-                (defined $amount) ? (amount => $amount) : (),
-            }
-        });
+                token => 'blabla',
+                args  => {
+                    paymentagent_withdraw => 1,
+                    paymentagent_loginid  => $pa_client->loginid,
+                    currency              => 'USD',
+                    verification_code     => $code,
+                    (defined $amount) ? (amount => $amount) : (),
+                }});
         if (defined $amount and $amount ne '') {
             ok $res->{error}->{message_to_client} =~ /Invalid amount/, "test amount $amount";
         } else {
@@ -114,41 +111,38 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     }
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-        token => 'blabla',
-        args => {
-            paymentagent_withdraw => 1,
-            paymentagent_loginid  => 'VRTC000001',
-            currency              => 'USD',
-            amount                => 100,
-            verification_code     => $code
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_withdraw => 1,
+                paymentagent_loginid  => 'VRTC000001',
+                currency              => 'USD',
+                amount                => 100,
+                verification_code     => $code
+            }});
     ok $res->{error}->{message_to_client} =~ /the Payment Agent does not exist/, 'the Payment Agent does not exist';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-        token => 'blabla',
-        args => {
-            paymentagent_withdraw => 1,
-            paymentagent_loginid  => $pa_client->loginid,
-            currency              => 'RMB',
-            amount                => 100,
-            verification_code     => $code
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_withdraw => 1,
+                paymentagent_loginid  => $pa_client->loginid,
+                currency              => 'RMB',
+                amount                => 100,
+                verification_code     => $code
+            }});
     ok $res->{error}->{message_to_client} =~ /your currency of USD is unavailable/, 'your currency of USD is unavailable';
 
     $client->set_status('withdrawal_locked', 'test.t', "just for test");
     $client->save();
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-        token => 'blabla',
-        args => {
-            paymentagent_withdraw => 1,
+            token => 'blabla',
+            args  => {
+                paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 100,
                 verification_code     => $code
-        }
-    });
+            }});
     ok $res->{error}->{message_to_client} =~ /There was an error processing the request/, 'error';
 
     $client->clr_status('withdrawal_locked');
@@ -156,69 +150,64 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     $pa_client->set_status('cashier_locked', 'test.t', 'just for test');
     $pa_client->save();
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-        token => 'blabla',
-        args => {
-            paymentagent_withdraw => 1,
+            token => 'blabla',
+            args  => {
+                paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 100,
                 verification_code     => $code
-        }
-    });
+            }});
     ok $res->{error}->{message_to_client} =~ /This Payment Agent cashier section is locked/, 'This Payment Agent cashier section is locked';
 
     $pa_client->clr_status('cashier_locked');
     $pa_client->save();
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-        token => 'blabla',
-        args => {
-            paymentagent_withdraw => 1,
+            token => 'blabla',
+            args  => {
+                paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 500,
                 verification_code     => $code
-        }
-    });
+            }});
     ok $res->{error}->{message_to_client} =~ /you cannot withdraw./, 'you cannot withdraw.';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-        token => 'blabla',
-        args => {
-            paymentagent_withdraw => 1,
+            token => 'blabla',
+            args  => {
+                paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 100,
                 dry_run               => 1,
                 verification_code     => $code
-        }
-    });
+            }});
     is $res->{status}, 2, 'paymentagent_withdraw dry_run ok';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-        token => 'blabla',
-        args => {
-            paymentagent_withdraw => 1,
+            token => 'blabla',
+            args  => {
+                paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 100,
                 verification_code     => $code
-        }
-    });
+            }});
     ok $res->{error}->{message_to_client} =~ /An error occurred while processing request/, 'An error occurred while processing request';
 
     # need unfreeze_client after withdraw error
     BOM::Platform::Transaction->unfreeze_client($client->loginid);
     BOM::Platform::Transaction->unfreeze_client($pa_client->loginid);
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-        token => 'blabla',
-        args => {
-            paymentagent_withdraw => 1,
+            token => 'blabla',
+            args  => {
+                paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 100,
                 verification_code     => $code
-        }
-    });
+            }});
     is $res->{status}, 1, 'paymentagent_withdraw ok again';
 }
 
@@ -231,28 +220,26 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
 
     # from client to pa_client is not allowed
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-        token => 'blabla',
-        args => {
-            paymentagent_transfer => 1,
-            transfer_to           => $pa_client->loginid,
-            currency              => 'USD',
-            amount                => 100
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
+                transfer_to           => $pa_client->loginid,
+                currency              => 'USD',
+                amount                => 100
+            }});
     ok $res->{error}->{message_to_client} =~ /You are not a Payment Agent/, 'You are not a Payment Agent';
 
     # login as pa_client
     $mock_utility->mock('token_to_loginid', sub { return $pa_client->loginid });
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-        token => 'blabla',
-        args => {
-            paymentagent_transfer => 1,
-            transfer_to           => $client->loginid,
-            currency              => 'USD',
-            amount                => 100
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100
+            }});
     is $res->{status}, 1, 'paymentagent_transfer ok';
 
     ## after withdraw, check both balance
@@ -264,14 +251,13 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ## test for failure
     foreach my $amount (-1, 1, 2001) {
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => 'blabla',
-            args => {
-                paymentagent_transfer => 1,
-                transfer_to           => $client->loginid,
-                currency              => 'USD',
-                (defined $amount) ? (amount => $amount) : (),
-            }
-        });
+                token => 'blabla',
+                args  => {
+                    paymentagent_transfer => 1,
+                    transfer_to           => $client->loginid,
+                    currency              => 'USD',
+                    (defined $amount) ? (amount => $amount) : (),
+                }});
         if (defined $amount and $amount ne '') {
             ok $res->{error}->{message_to_client} =~ /Invalid amount/, "test amount $amount";
         } else {
@@ -280,39 +266,46 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     }
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-        token => 'blabla',
-        args => {
-            paymentagent_transfer => 1,
-            transfer_to           => 'VRTC000001',
-            currency              => 'USD',
-            amount                => 100
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
+                transfer_to           => 'VRTC000001',
+                currency              => 'USD',
+                amount                => 100
+            }});
     ok $res->{error}->{message_to_client} =~ /Login ID \(VRTC000001\) does not exist/, 'Login ID (VRTC000001) does not exist';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-        token => 'blabla',
-        args => {
-            paymentagent_transfer => 1,
-            transfer_to           => $client->loginid,
-            currency              => 'RMB',
-            amount                => 100
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'RMB',
+                amount                => 100
+            }});
     ok $res->{error}->{message_to_client} =~ /only USD is allowed/, 'only USD is allowed';
+
+    $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
+                transfer_to           => $pa_client->loginid,
+                currency              => 'USD',
+                amount                => 100
+            }});
+    ok $res->{error}->{message_to_client} =~ /it is not allowed/, 'self, it is not allowed';
 
     $client->set_status('disabled', 'test.t', "just for test");
     $client->save();
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-        token => 'blabla',
-        args => {
-            paymentagent_transfer => 1,
-            transfer_to           => $client->loginid,
-            currency              => 'USD',
-            amount                => 100,
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+            }});
     ok $res->{error}->{message_to_client} =~ /account is currently disabled/, 'error';
 
     $client->clr_status('disabled');
@@ -320,64 +313,59 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     $pa_client->set_status('cashier_locked', 'test.t', 'just for test');
     $pa_client->save();
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-        token => 'blabla',
-        args => {
-            paymentagent_transfer => 1,
-            transfer_to           => $client->loginid,
-            currency              => 'USD',
-            amount                => 100,
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+            }});
     ok $res->{error}->{message_to_client} =~ /Your cashier section is locked/, 'Your cashier section is locked';
 
     $pa_client->clr_status('cashier_locked');
     $pa_client->save();
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-        token => 'blabla',
-        args => {
-            paymentagent_transfer => 1,
-            transfer_to           => $client->loginid,
-            currency              => 'USD',
-            amount                => 1500,
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 1500,
+            }});
     ok $res->{error}->{message_to_client} =~ /you cannot withdraw./, 'you cannot withdraw.';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-        token => 'blabla',
-        args => {
-            paymentagent_transfer => 1,
-            transfer_to           => $client->loginid,
-            currency              => 'USD',
-            amount                => 100,
-            dry_run               => 1,
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+                dry_run               => 1,
+            }});
     is $res->{status}, 2, 'paymentagent_transfer dry_run ok';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-        token => 'blabla',
-        args => {
-            paymentagent_transfer => 1,
-            transfer_to           => $client->loginid,
-            currency              => 'USD',
-            amount                => 100,
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+            }});
     ok $res->{error}->{message_to_client} =~ /An error occurred while processing request/, 'An error occurred while processing request';
 
     # need unfreeze_client after transfer error
     BOM::Platform::Transaction->unfreeze_client($client->loginid);
     BOM::Platform::Transaction->unfreeze_client($pa_client->loginid);
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-        token => 'blabla',
-        args => {
-            paymentagent_transfer => 1,
-            transfer_to           => $client->loginid,
-            currency              => 'USD',
-            amount                => 100,
-        }
-    });
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+            }});
     is $res->{status}, 1, 'paymentagent_withdraw ok again';
 }
 

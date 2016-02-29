@@ -226,12 +226,12 @@ sub paymentagent_transfer {
         return $reject_error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
     }
 
-    if ($args->{dry_run}) {
-        return {status => 2};
-    }
-
     unless ($client_fm->landing_company->short eq $client_to->landing_company->short) {
         return $reject_error_sub->(localize('Cross-company payment agent transfers are not allowed.'));
+    }
+
+    if ($loginid_to eq $loginid_fm) {
+        return $reject_error_sub->(localize('Sorry, it is not allowed.'));
     }
 
     for ($currency) {
@@ -256,6 +256,10 @@ sub paymentagent_transfer {
 
     if ($client_fm->get_status('cashier_locked') || $client_fm->documents_expired) {
         return $reject_error_sub->(localize('There was an error processing the request.') . ' ' . localize('Your cashier section is locked.'));
+    }
+
+    if ($args->{dry_run}) {
+        return {status => 2};
     }
 
     # freeze loginID to avoid a race condition
