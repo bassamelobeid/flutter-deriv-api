@@ -21,7 +21,7 @@ sub authorize {
     $app_id or return $c->__bad_request('the request was missing app_id');
 
     my @scopes = $scope ? split(/[\s\,\+]/, $scope) : ();
-    unshift @scopes, 'user' unless grep { $_ eq 'user' } @scopes;
+    unshift @scopes, 'read' unless grep { $_ eq 'read' } @scopes;
 
     my $oauth_model = __oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
@@ -34,13 +34,8 @@ sub authorize {
         my ($response_type, $error, $state) = @_;
 
         my $uri = Mojo::URL->new($redirect_uri);
-        # if ($response_type eq 'token') {
         $uri .= '#error=' . $error;
         $uri .= '&state=' . $state if defined $state;
-        # } else {
-        #     $uri->query->append('error' => $error);
-        #     $uri->query->append(state => $state) if defined $state;
-        # }
         return $uri;
     };
 
@@ -83,77 +78,12 @@ sub authorize {
     }
 
     my $uri = Mojo::URL->new($redirect_uri);
-    # if ($response_type eq 'token') {
     my ($access_token, $expires_in) = $oauth_model->store_access_token_only($app_id, $loginid, @scopes);
     $uri .= '#token=' . $access_token . '&expires_in=' . $expires_in;
     $uri .= '&state=' . $state if defined $state;
-    # } else {
-    #     my $auth_code = $oauth_model->store_auth_code($app_id, $loginid, @scopes);
-    #     $uri->query->append(code => $auth_code);
-    #     $uri->query->append(state => $state) if defined $state;
-    # }
+
     $c->redirect_to($uri);
 }
-
-=pod
-
-sub access_token {
-    my $c = shift;
-
-    my ($app_id, $app_secret, $grant_type, $auth_code, $refresh_token) =
-        map { $c->param($_) // undef } qw/ app_id app_secret grant_type code refresh_token /;
-
-    $app_id or return $c->__bad_request('the request was missing app_id');
-
-    $grant_type ||= '';    # fix warnings
-    $app_secret ||= '';
-
-    # grant_type=authorization_code, plus auth_code
-    # grant_type=refresh_token, plus refresh_token
-    (grep { $_ eq $grant_type } ('authorization_code', 'refresh_token'))
-        or return $c->__bad_request('the request was missing valid grant_type');
-    ($grant_type eq 'authorization_code' and not $auth_code)
-        and return $c->__bad_request('the request was missing code');
-    ($grant_type eq 'refresh_token' and not $refresh_token)
-        and return $c->__bad_request('the request was missing refresh_token');
-
-    my $oauth_model = __oauth_model();
-
-    my $app = $oauth_model->verify_app($app_id);
-    unless ($app and $app->{secret} eq $app_secret) {
-        return $c->throw_error('invalid_app');
-    }
-
-    my $loginid;
-    if ($grant_type eq 'refresh_token') {
-        $loginid = $oauth_model->verify_refresh_token($app_id, $refresh_token);
-    } else {
-        ## authorization_code
-        $loginid = $oauth_model->verify_auth_code($app_id, $auth_code);
-    }
-    if (!$loginid) {
-        return $c->throw_error('invalid_grant');
-    }
-
-    my @scope_ids;
-    if ($grant_type eq 'refresh_token') {
-        @scope_ids = $oauth_model->get_scope_ids_by_refresh_token($refresh_token);
-    } else {
-        @scope_ids = $oauth_model->get_scope_ids_by_auth_code($auth_code);
-    }
-
-    my ($access_token, $refresh_token_new, $expires_in) = $oauth_model->store_access_token($app_id, $loginid, @scope_ids);
-
-    $c->render(
-        json => {
-            access_token  => $access_token,
-            token_type    => 'Bearer',
-            expires_in    => $expires_in,
-            refresh_token => $refresh_token_new,
-        });
-}
-
-=cut
 
 sub __get_client {
     my $c = shift;
