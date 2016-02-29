@@ -44,7 +44,7 @@ sub financial_market_bet_to_parameters {
 
     # don't bother to get legacy parameters; rather we can just use shortcode
     if ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_LEGACY_BET) {
-        return shortcode_to_parameters($fmb->short_code, $currency);
+        return shortcode_to_parameters($fmb->short_code, $currency, $fmb->is_sold);
     }
 
     my $underlying     = BOM::Market::Underlying->new($fmb->underlying_symbol);
@@ -54,6 +54,7 @@ sub financial_market_bet_to_parameters {
         amount_type => 'payout',
         amount      => $fmb->payout_price,
         currency    => $currency,
+        is_sold     => $fmb->is_sold
     };
 
     my $purchase_time       = Date::Utility->new($fmb->purchase_time);
@@ -107,7 +108,7 @@ Convert a shortcode and currency pair into parameters suitable for creating a BO
 =cut
 
 sub shortcode_to_parameters {
-    my ($shortcode, $currency) = @_;
+    my ($shortcode, $currency, $is_sold) = @_;
 
     my (
         $bet_type, $underlying_symbol, $payout,       $date_start,  $date_expiry,    $barrier,
@@ -154,6 +155,7 @@ sub shortcode_to_parameters {
             stop_profit      => $6,
             stop_type        => lc $7,
             currency         => $currency,
+            is_sold          => $is_sold
         };
     }
 
@@ -251,6 +253,7 @@ sub shortcode_to_parameters {
         fixed_expiry => $fixed_expiry,
         tick_expiry  => $tick_expiry,
         tick_count   => $how_many_ticks,
+        is_sold      => $is_sold,
         ($forward_start) ? (is_forward_starting => $forward_start) : (),
         %barriers,
     };
