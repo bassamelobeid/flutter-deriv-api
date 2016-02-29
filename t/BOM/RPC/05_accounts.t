@@ -12,7 +12,7 @@ use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::AccessToken;
 
@@ -80,7 +80,7 @@ my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test toke
 
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
@@ -89,7 +89,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 my $now        = Date::Utility->new('2005-09-21 06:46:00');
 my $underlying = BOM::Market::Underlying->new('R_50');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_50',
