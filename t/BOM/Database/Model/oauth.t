@@ -17,28 +17,34 @@ my $app = $m->verify_app($test_appid);
 is $app->{id}, $test_appid;
 
 $m->dbh->do("DELETE FROM oauth.user_scope_confirm");    # clear
-my $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'user', 'trade');
+my $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade');
 is $is_confirmed, 0, 'not confirmed';
 
-ok $m->confirm_scope($test_appid, $test_loginid, 'user', 'trade'), 'confirm scope';
-$is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'user', 'trade');
+ok $m->confirm_scope($test_appid, $test_loginid, 'read', 'trade'), 'confirm scope';
+$is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade');
 is $is_confirmed, 1, 'confirmed after confirm_scope';
 
+$is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade', 'admin');
+is $is_confirmed, 0, 'admin is not confirmed';
+ok $m->confirm_scope($test_appid, $test_loginid, 'admin'), 'confirm admin scope';
+$is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade', 'admin');
+is $is_confirmed, 1, 'admin is confirmed';
+
 # create then verify
-my $code = $m->store_auth_code($test_appid, $test_loginid, 'user', 'trade');
+my $code = $m->store_auth_code($test_appid, $test_loginid, 'read', 'trade');
 ok $code, 'code created';
 
 my $loginid = $m->verify_auth_code($test_appid, $code);
 is $loginid, $test_loginid, 'verify ok';
 
-my @scope_ids = $m->get_scope_ids_by_auth_code($code);
-is_deeply([sort @scope_ids], [1, 2], 'scope_ids by auth_code');
+my @scopes = $m->get_scopes_by_auth_code($code);
+ok((grep { $_ eq 'trade' } @scopes), 'trade scope is there');
 
 # you can't re-use the code
 ok(!$m->verify_auth_code($test_appid, $code), 'can not re-use');
 
 ## try access_token
-my ($access_token, $refresh_token) = $m->store_access_token($test_appid, $test_loginid, @scope_ids);
+my ($access_token, $refresh_token) = $m->store_access_token($test_appid, $test_loginid, @scopes);
 ok $access_token;
 ok $refresh_token;
 ok $access_token ne $refresh_token;
@@ -47,10 +53,10 @@ is $m->get_loginid_by_access_token($access_token), $test_loginid, 'get_loginid_b
 $loginid = $m->verify_refresh_token($test_appid, $refresh_token);
 is $loginid, $test_loginid, 'refresh_token ok';
 
-my @scope_ids_rf = $m->get_scope_ids_by_refresh_token($refresh_token);
-is_deeply(\@scope_ids, \@scope_ids_rf, 'scope_ids by refresh_token is same as auth_code');
-my @scopes = $m->get_scopes_by_access_token($access_token);
-is_deeply([sort @scopes], ['trade', 'user'], 'correct scope by access_token');
+@scopes = $m->get_scopes_by_refresh_token($refresh_token);
+is_deeply([sort @scopes], ['read', 'trade'], 'scopes by refresh_token is same as auth_code');
+@scopes = $m->get_scopes_by_access_token($access_token);
+is_deeply([sort @scopes], ['read', 'trade'], 'correct scope by access_token');
 
 ok(!$m->verify_refresh_token($test_appid, $refresh_token), 'can not re-use');
 ok(!$m->verify_refresh_token($test_appid, $access_token),  'access_token is not for refresh');
