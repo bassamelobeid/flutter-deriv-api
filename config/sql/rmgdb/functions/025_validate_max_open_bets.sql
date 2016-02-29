@@ -14,9 +14,9 @@ DECLARE
 BEGIN
     IF (p_limits -> 'max_open_bets') IS NOT NULL THEN
         SELECT INTO v_n count(*)
-          FROM bet.financial_market_bet
-         WHERE account_id=p_account.id
-           AND NOT is_sold;
+          FROM bet.financial_market_bet b
+         WHERE b.account_id=p_account.id
+           AND NOT b.is_sold;
 
         IF v_n+1 > (p_limits ->> 'max_open_bets')::BIGINT THEN
             RAISE EXCEPTION USING
