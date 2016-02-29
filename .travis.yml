@@ -66,3 +66,4 @@ install:
     - BOM_CACHE_SERVER='127.0.0.1:6385' REDIS_CACHE_SERVER='127.0.0.1:6385' /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
 script:
     - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
+
