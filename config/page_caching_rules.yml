@@ -24,9 +24,6 @@
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
   exclude_appcache: true
-"/resources/contract_guide":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/affiliate/signup":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -202,5 +199,8 @@
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/user-testing":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/new_account/japanws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
