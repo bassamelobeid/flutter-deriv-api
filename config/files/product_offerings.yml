@@ -395,6 +395,7 @@ R_75: *random_index
 SPC: *index_no_intraday
 SSMI: *limited_equities
 STI: *limited_callput
+ISEQ: *limited_callput
 TOP40: &forward_and_daily
   callput:
     daily:
