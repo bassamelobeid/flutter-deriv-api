@@ -266,7 +266,7 @@ sub calculate_limits {
     my $self = shift;
 
     my $app_config    = BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-    my $static_config = BOM::Platform::Static::Config::qnuants->{client_limits};
+    my $static_config = BOM::Platform::Static::Config::quants->{client_limits};
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
