@@ -94,11 +94,6 @@
       "description": "Estimated Net Worth",
       "required": 1
     },
-    "accept_risk" : {
-      "type": "integer",
-      "description": "client needs to accept risk disclaimer, boolean value 1 or 0",
-      "required": 1
-    },
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
