@@ -341,9 +341,9 @@ if the exchange does not trade on this day and 1 if there is no pseudo-holiday.
 sub weight_on {
     my ($self, $when) = @_;
 
-    return ($self->trades_on($when) && !(defined $self->holidays->{$when->days_since_epoch}))
-        ? 1
-        : 0;
+    return 0   if not $self->trades_on($when);
+    return 0.5 if exists $self->pseudo_holidays->{$when->days_since_epoch};
+    return 1;
 }
 
 =head2 has_holiday_on
