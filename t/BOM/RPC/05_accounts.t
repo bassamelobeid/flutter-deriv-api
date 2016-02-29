@@ -806,7 +806,6 @@ subtest $method => sub {
     clear_mailbox();
 
     # here I mocked function 'save' to simulate the db failure.
-    my $mocked_client = Test::MockModule->new(ref($test_client));
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{unlock_password} = $tmp_password;
     is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
@@ -973,6 +972,7 @@ subtest $method => sub {
 
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', "vr client can only update residence");
     # here I mocked function 'save' to simulate the db failure.
+    my $mocked_client = Test::MockModule->new(ref($test_client));
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{residence} = 'zh';
     is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
