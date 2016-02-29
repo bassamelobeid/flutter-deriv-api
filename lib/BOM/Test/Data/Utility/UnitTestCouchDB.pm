@@ -43,7 +43,8 @@ sub initialize_symbol_dividend {
         discrete_points => undef
     };
 
-    my $dv = Quant::Framework::Dividend->new(symbol => $symbol,
+    my $dv = Quant::Framework::Dividend->new(
+        symbol           => $symbol,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );
