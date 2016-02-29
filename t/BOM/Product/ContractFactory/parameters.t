@@ -22,7 +22,7 @@ use BOM::Product::ContractFactory::Parser qw(
 );
 
 subtest 'financial_market_bet_to_parameters' => sub {
-    plan tests => 10;
+    plan tests => 11;
 
     throws_ok {
         financial_market_bet_to_parameters('NotAFMBInstance.', 'USD');
@@ -43,6 +43,7 @@ subtest 'financial_market_bet_to_parameters' => sub {
     });
     $params = financial_market_bet_to_parameters($fmb, 'USD');
     is($params->{bet_type}, 'ONETOUCH', 'TouchBet is a ONETOUCH.');
+    is($params->{is_sold},  0,          'Have correct is_sold param');
 
     my $tick_expiry_fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type       => 'fmb_higher_lower',
@@ -63,7 +64,7 @@ subtest 'financial_market_bet_to_parameters' => sub {
 };
 
 subtest 'shortcode_to_parameters' => sub {
-    plan tests => 5;
+    plan tests => 6;
 
     my $frxUSDJPY = BOM::Market::Underlying->new('frxUSDJPY');
 
@@ -89,6 +90,7 @@ subtest 'shortcode_to_parameters' => sub {
         fixed_expiry => undef,
         tick_count   => undef,
         tick_expiry  => undef,
+        is_sold      => undef
     };
     cmp_deeply($call, $expected, 'CALL shortcode.');
 
@@ -110,8 +112,29 @@ subtest 'shortcode_to_parameters' => sub {
         fixed_expiry => undef,
         tick_count   => 9,
         tick_expiry  => 1,
+        is_sold      => undef
     };
     cmp_deeply($tickup, $expected, 'FLASH tick expiry shortcode.');
+
+    $call = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P', 'USD', 1);
+    $expected = {
+        underlying   => $frxUSDJPY,
+        high_barrier => 'S1P',
+        shortcode    => 'CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P',
+        low_barrier  => 'S2P',
+        date_expiry  => '1352354600',
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        date_start   => '1352351000',
+        prediction   => undef,
+        amount_type  => 'payout',
+        amount       => '100.00',
+        fixed_expiry => undef,
+        tick_count   => undef,
+        tick_expiry  => undef,
+        is_sold      => 1
+    };
+    cmp_deeply($call, $expected, 'CALL shortcode. for is_sold');
 };
 
 1;
