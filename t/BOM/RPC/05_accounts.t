@@ -944,29 +944,18 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
-#    isnt(
-#        $c->tcall(
-#            $method,
-#            {
-#                language => 'ZH_CN',
-#                token    => $token1,
-#            }
-#            )->{error}{message_to_client},
-#        '令牌无效。',
-#        'no token error if token is valid'
-#    );
-#
-#    is(
-#        $c->tcall(
-#            $method,
-#            {
-#                language => 'ZH_CN',
-#                token    => $token_disabled,
-#            }
-#            )->{error}{message_to_client},
-#        '此账户不可用。',
-#        'check authorization'
-#    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
 #
 #    my $params = {language => 'ZH_CN', token => $token_vr, args => {address1 => 'Address 1'}};
 #
