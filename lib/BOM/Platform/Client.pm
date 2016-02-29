@@ -451,7 +451,7 @@ sub get_limit_for_account_balance {
     my $self = shift;
 
     my @maxbalances = ();
-    my $max_bal = BOM::Platform::Static::Config::quants->{client_limits}->{max_balance};
+    my $max_bal     = BOM::Platform::Static::Config::quants->{client_limits}->{max_balance};
     push @maxbalances, $self->is_virtual ? $max_bal->{virtual} : $max_bal->{real};
 
     if ($self->get_self_exclusion and $self->get_self_exclusion->max_balance) {
@@ -550,7 +550,7 @@ sub get_limit_for_payout {
     my $val = $self->custom_max_payout;
     return $val if defined $val;
 
-    my $lc_limit = $self->landing_company_open_positions_payout_limit;
+    my $lc_limit   = $self->landing_company_open_positions_payout_limit;
     my $max_payout = BOM::Platform::Static::Config::quants->{client_limits}->{max_payout};
 
     $val =
