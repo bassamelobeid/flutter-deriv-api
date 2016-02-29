@@ -123,15 +123,25 @@ sub _build_holidays {
 
     my $ref = BOM::MarketData::Holiday::get_holidays_for($self->symbol, $self->for_date);
     my %exchange_holidays = map { Date::Utility->new($_)->days_since_epoch => $ref->{$_} } keys %$ref;
+
+    return \%exchange_holidays;
+}
+
+has pseudo_holidays => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_pseudo_holiday',
+);
+
+sub _build_pseudo_holidays {
+    my $self = shift;
+
     # pseudo-holidays for exchanges are 1 week before and after Christmas Day.
-    my $year            = $self->for_date ? $self->for_date->year : Date::Utility->new->year;
-    my $christmas_day   = Date::Utility->new('25-Dec-' . $year);
+    my $christmas_day   = Date::Utility->new('25-Dec-' . $self->for_date->year);
     my $pseudo_start    = $christmas_day->minus_time_interval('7d');
     my %pseudo_holidays = map { $pseudo_start->plus_time_interval($_ . 'd')->days_since_epoch => 'pseudo-holiday' } (0 .. 14);
 
-    my $holidays = {%pseudo_holidays, %exchange_holidays,};
-
-    return $holidays;
+    return \%pseudo_holidays;
 }
 
 has [qw(early_closes late_opens)] => (
@@ -348,8 +358,7 @@ Holidays named 'pseudo-holiday' are not considered real holidays, this sub will 
 sub has_holiday_on {
     my ($self, $when) = @_;
 
-    my $holiday = $self->holidays->{$when->days_since_epoch};
-    return defined $holiday && $holiday ne 'pseudo-holiday';
+    return $self->holidays->{$when->days_since_epoch};
 }
 
 =head2 trades_on
