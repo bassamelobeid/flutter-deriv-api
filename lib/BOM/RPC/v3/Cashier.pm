@@ -259,7 +259,11 @@ sub paymentagent_transfer {
     }
 
     if ($args->{dry_run}) {
-        return {status => 2};
+        return {
+            status               => 2,
+            client_to_first_name => $client_to->first_name,
+            client_to_last_name  => $client_to->last_name,
+        };
     }
 
     # freeze loginID to avoid a race condition
