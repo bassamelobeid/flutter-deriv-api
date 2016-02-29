@@ -26,6 +26,8 @@ HO:
 - HKF
 HS:
 - HKSE
+I1:
+- BIS
 IE:
 - ISE
 JA:
@@ -129,6 +131,8 @@ SW:
 - SEK
 SZ:
 - CHF
+TU:
+- TRY
 UA:
 - AED
 US:
