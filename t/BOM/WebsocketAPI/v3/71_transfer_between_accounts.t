@@ -53,7 +53,7 @@ $email_mocked->mock('send_email', sub { return 1 });
     $user->add_loginid({loginid => $cr_1});
     $user->save;
 
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'Test Token');
+    my $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'Test Token', 'read', 'payments');
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     $t = $t->send_ok({
@@ -104,7 +104,7 @@ $email_mocked->mock('send_email', sub { return 1 });
     $user->add_loginid({loginid => $cr_1});
     $user->save;
 
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'Test Token');
+    my $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'Test Token', 'read', 'payments');
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     $t = $t->send_ok({
