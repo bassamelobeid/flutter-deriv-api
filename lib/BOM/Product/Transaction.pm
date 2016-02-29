@@ -266,7 +266,7 @@ sub calculate_limits {
     my $self = shift;
 
     my $app_config    = BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-    my $static_config = BOM::Platform::Static::Config::quants->{client_limits};
+    my $static_config = BOM::Platform::Static::Config::qnuants->{client_limits};
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
@@ -1338,8 +1338,13 @@ sub _validate_stake_limit {
     my $client          = $self->client;
     my $contract        = $self->contract;
     my $landing_company = $client->landing_company;
-    my $stake_limit     = $landing_company->short eq 'maltainvest' ? 5 : $contract->staking_limits->{stake}->{min};
-    my $currency        = $contract->currency;
+
+    my $stake_limit =
+        $landing_company->short eq 'maltainvest'
+        ? BOM::Platform::Static::Config::quants->{bet_limits}->{min_stake_maltainvest}
+        : $contract->staking_limits->{stake}->{min};
+
+    my $currency = $contract->currency;
     if ($contract->ask_price < $stake_limit) {
         return Error::Base->cuss(
             -type => 'StakeTooLow',
@@ -1362,6 +1367,7 @@ Validate if payout is not over the client limits
 
 =cut
 
+# TODO: Checked with Quants, this is unused. Can be removed.
 sub _validate_payout_limit {
     my $self = shift;
 
