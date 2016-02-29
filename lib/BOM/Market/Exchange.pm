@@ -130,7 +130,7 @@ sub _build_holidays {
 has pseudo_holidays => (
     is      => 'ro',
     lazy    => 1,
-    builder => '_build_pseudo_holiday',
+    builder => '_build_pseudo_holidays',
 );
 
 sub _build_pseudo_holidays {
@@ -350,8 +350,6 @@ sub weight_on {
 
 Returns true if the exchange has a holiday on the day of a given Date::Utility
 object.
-
-Holidays named 'pseudo-holiday' are not considered real holidays, this sub will return 0 for them.
 
 =cut
 
