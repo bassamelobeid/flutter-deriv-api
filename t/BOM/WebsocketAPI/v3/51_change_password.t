@@ -122,7 +122,7 @@ foreach my $client ($user->clients) {
 }
 
 ## for api token, it's not allowed to change password
-$token = BOM::Database::Model::AccessToken->new->create_token($vr_1, 'Test Token');
+$token = BOM::Database::Model::AccessToken->new->create_token($vr_1, 'Test Token', 'read', 'admin');
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   $email;
