@@ -15,18 +15,27 @@ use BOM::Platform::SessionCookie;
 sub token_to_loginid {
     my $token = shift;
 
-    if ($token) {
-        if (length $token == 15) {    # access token
-            return BOM::Database::Model::AccessToken->new->get_loginid_by_token($token);
-        } elsif (length $token == 32 && $token =~ /^a1-/) {
-            return BOM::Database::Model::OAuth->new->get_loginid_by_access_token($token);
-        } else {
-            my $session = BOM::Platform::SessionCookie->new(token => $token);
-            return unless $session and $session->validate_session;
-            return $session->loginid;
-        }
+    return unless $token;
+
+    my $loginid;
+    my @scopes = qw/read trade admin payments/;    # scopes is everything for session token
+    if (length $token == 15) {                     # access token
+        my $m = BOM::Database::Model::AccessToken->new;
+        $loginid = $m->get_loginid_by_token($token);
+        return unless $loginid;
+        @scopes = $m->get_scopes_by_access_token($token);
+    } elsif (length $token == 32 && $token =~ /^a1-/) {
+        my $m = BOM::Database::Model::OAuth->new;
+        $loginid = $m->get_loginid_by_access_token($token);
+        return unless $loginid;
+        @scopes = $m->get_scopes_by_access_token($token);
+    } else {
+        my $session = BOM::Platform::SessionCookie->new(token => $token);
+        return unless $session and $session->validate_session;
+        $loginid = $session->loginid;
     }
-    return;
+
+    return wantarray ? ($loginid, @scopes) : $loginid;    # backwards
 }
 
 sub create_error {
