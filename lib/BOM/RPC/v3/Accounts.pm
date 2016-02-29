@@ -103,7 +103,7 @@ sub __build_landing_company {
         legal_allowed_currencies          => $lc->legal_allowed_currencies,
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
-        has_reality_check                 => $lc->has_reality_check
+        has_reality_check                 => $lc->has_reality_check ? 1 : 0
     };
 }
 
