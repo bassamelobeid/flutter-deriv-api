@@ -9,7 +9,7 @@ use TestHelper qw/test_schema build_mojo_test/;
 
 my $t = build_mojo_test();
 
-$t = $t->send_ok({json => {ping => '!!'}})->message_ok;
+$t = $t->send_ok({json => {ping => '†'}})->message_ok;
 my $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'SanityCheckFailed';
 test_schema('ping', $res);
