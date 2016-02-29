@@ -26,7 +26,7 @@ use BOM::Platform::Runtime;
 use BOM::MarketData::CorrelationMatrix;
 use Quant::Framework::ImpliedRate;
 use Quant::Framework::InterestRate;
-use BOM::MarketData::Dividend;
+use Quant::Framework::Dividend;
 use Bloomberg::CurrencyConfig;
 use Try::Tiny;
 
@@ -221,7 +221,10 @@ sub _collect_dividend_ages {
     );
 
     foreach my $index (@offer_indices) {
-        my $dividend_in_used = BOM::MarketData::Dividend->new(symbol => $index);
+        my $dividend_in_used = Quant::Framework::Dividend->new(symbol => $index,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
+
         my $dividend_age = (time - $dividend_in_used->recorded_date->epoch) / 3600;
         stats_gauge('dividend_rate_age', $dividend_age, {tags => ['tag:' . $index]});
     }

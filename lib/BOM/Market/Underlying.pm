@@ -1057,8 +1057,11 @@ sub dividend_rate_for {
     my $rate;
 
     if ($self->market->name eq 'random') {
-        my $div = BOM::MarketData::Dividend->new({symbol => $self->symbol});
-        my @rates = values %{$div->rates};
+        my $div = Quant::Framework::Dividend->new({symbol => $self->symbol,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        });
+    my @rates = values %{$div->rates};
         $rate = pop @rates;
     } elsif ($zero_rate{$self->submarket->name}) {
         $rate = 0;
@@ -1091,7 +1094,10 @@ sub get_discrete_dividend_for_period {
         map { Date::Utility->new($_) } @{$args}{'start', 'end'};
 
     my %valid_dividends;
-    my $discrete_points = BOM::MarketData::Dividend->new(symbol => $self->asset->symbol)->discrete_points;
+    my $discrete_points = Quant::Framework::Dividend->new(symbol => $self->asset->symbol,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    )->discrete_points;
 
     if ($discrete_points and %$discrete_points) {
         my @sorted_dates =
