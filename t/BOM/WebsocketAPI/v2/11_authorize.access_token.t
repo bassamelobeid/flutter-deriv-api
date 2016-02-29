@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $t = build_mojo_test();
 
-my $token = BOM::Database::Model::AccessToken->new->create_token('CR2002', 'Test Token');
+my $token = BOM::Database::Model::AccessToken->new->create_token('CR2002', 'Test Token', 'read');
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);

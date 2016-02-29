@@ -18,6 +18,7 @@ stress:
 
 run_bench:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	/home/git/regentmarkets/stress/websocket-bench/bin/r50_tick.pl &
 	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_server_ready localhost 5004 && bin/run_bench $(STRESS_NUM)
 
 run_avg_stress:

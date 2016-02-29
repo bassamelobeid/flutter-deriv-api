@@ -195,15 +195,16 @@ my @dispatch = (
         'landing_company_details',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company_details, 0
     ],
-    ['balance',   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,   1],
-    ['statement', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement, 1],
+
+    ['balance',   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,   1, 'read'],
+    ['statement', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement, 1, 'read'],
     [
         'profit_table',
-        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::profit_table, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::profit_table, 1, 'read'
     ],
     [
         'get_account_status',
-        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_account_status, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_account_status, 1, 'read'
     ],
     [
         'change_password',
@@ -211,88 +212,84 @@ my @dispatch = (
     ],
     [
         'get_settings',
-        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_settings, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_settings, 1, 'read'
     ],
     [
         'set_settings',
-        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_settings, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_settings, 1, 'admin'
     ],
     [
         'get_self_exclusion',
-        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_self_exclusion, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_self_exclusion, 1, 'read'
     ],
     [
         'set_self_exclusion',
-        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion, 1, 'admin'
     ],
     [
         'cashier_password',
-        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1, 'payments'
     ],
-    ['api_token',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,            1],
-    ['tnc_approval',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval,         1],
-    ['login_history',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history,        1],
-    ['set_account_currency', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency, 1],
-    ['financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::financial_assessment, 1],
-    [
-        'paymentagent_list',
-        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list, 0
-    ],
-    [
-        'verify_email',
-        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0
-    ],
+
+    ['api_token',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,            1, 'admin'],
+    ['tnc_approval',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval,         1, 'admin'],
+    ['login_history',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history,        1, 'read'],
+    ['set_account_currency', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency, 1, 'admin'],
+    ['financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::financial_assessment, 1, 'admin'],
+
+    ['verify_email', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0],
     [
         'new_account_virtual',
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0
     ],
 
     # authenticated calls
-    ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1],
-    ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1],
-    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1],
+    ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1, 'trade'],
+    ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1, 'trade'],
+    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
     [
         'portfolio',
-        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio, 1, 'read'
     ],
     [
         'proposal_open_contract',
         \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
-        1
+        1, 'read'
     ],
-    ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1],
+    ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1, 'trade'],
 
-    ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register, 1],
-    ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,     1],
-    ['app_get',      \&BOM::WebSocketAPI::v3::Wrapper::App::get,      1],
-    ['app_delete',   \&BOM::WebSocketAPI::v3::Wrapper::App::delete,   1],
+    ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register, 1, 'admin'],
+    ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,     1, 'admin'],
+    ['app_get',      \&BOM::WebSocketAPI::v3::Wrapper::App::get,      1, 'admin'],
+    ['app_delete',   \&BOM::WebSocketAPI::v3::Wrapper::App::delete,   1, 'admin'],
 
-    ['topup_virtual', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual, 1],
-    ['get_limits',    \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,    1],
+    ['topup_virtual',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual,     1, 'trade'],
+    ['get_limits',        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,        1, 'read'],
+    ['paymentagent_list', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list, 0],
     [
         'paymentagent_withdraw',
-        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw, 1, 'payments'
     ],
     [
         'paymentagent_transfer',
-        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer, 1, 'payments'
     ],
     [
         'transfer_between_accounts',
-        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::transfer_between_accounts, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::transfer_between_accounts, 1, 'payments'
     ],
     [
         'new_account_real',
-        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real, 1, 'admin'
     ],
     [
         'new_account_japan',
-        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_japan, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_japan, 1, 'admin'
     ],
     [
         'new_account_maltainvest',
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_maltainvest,
-        1
+        1, 'admin'
     ],
 );
 
@@ -303,6 +300,7 @@ my @dispatch = (
 #   - order         (integer)
 #   - in_validator  (JSON::Schema)
 #   - out_validator (JSON::Schema)
+#   - require_scope (string)
 
 my %dispatch_handler_for;
 for my $order (0 .. @dispatch - 1) {
@@ -318,6 +316,7 @@ for my $order (0 .. @dispatch - 1) {
         require_auth  => $dispatch->[2],
         out_validator => $out_validator,
         in_validator  => $in_validator,
+        require_scope => $dispatch->[3],
     };
 }
 
@@ -408,6 +407,11 @@ sub __handle {
             return $c->new_error($descriptor->{category}, 'AuthorizationRequired', $c->l('Please log in.'));
         }
 
+        if ($descriptor->{require_scope} and not(grep { $_ eq $descriptor->{require_scope} } @{$c->stash('token_scopes') || []})) {
+            return $c->new_error($descriptor->{category}, 'PermissionDenied',
+                $c->l('Permission denied, requiring [_1]', $descriptor->{require_scope}));
+        }
+
         if ($loginid) {
             my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
@@ -435,16 +439,15 @@ sub __handle {
 sub _failed_key_value {
     my ($key, $value) = @_;
 
-    # allow all printable ASCII char for password
-    state %pwd_field;
-    %pwd_field =
-        map { $_ => 1 } qw( client_password old_password new_password unlock_password lock_password )
-        if (not %pwd_field);
+    state $pwd_field = {map { $_ => 1 } qw( client_password old_password new_password unlock_password lock_password )};
 
-    if ($pwd_field{$key}) {
+    if ($pwd_field->{$key}) {
         return;
-    } elsif ($key !~ /^[A-Za-z0-9_-]{1,50}$/
-        or $value !~ /^[\s\.\w\@_:+-\/='&\$]{0,256}$/)
+    } elsif (
+        $key !~ /^[A-Za-z0-9_-]{1,50}$/
+        # !-~ to allow a range of acceptable characters. To find what is the range, look at ascii table
+        or $value !~ /^[\s\w\@_:!-~]{0,300}$/
+        )
     {
         return ($key, $value);
     }
