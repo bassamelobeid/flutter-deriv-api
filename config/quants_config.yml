@@ -24,8 +24,9 @@ bet_limits:
   maximum_payout: 100000
   maximum_payout_on_new_markets: 100
   maximum_payout_on_less_than_7day_indices_call_put: 5000
-  minimum_payout_for_random: 0.7
-  minimum_payout: 1
+  min_payout:
+    default: 1
+    random: 0.7
   min_stake_maltainvest: 5
 
 client_limits:
