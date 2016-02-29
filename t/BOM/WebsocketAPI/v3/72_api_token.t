@@ -11,6 +11,12 @@ use TestHelper qw/test_schema build_mojo_test/;
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
+# cleanup
+use BOM::Database::Model::AccessToken;
+BOM::Database::Model::AccessToken->new->dbh->do("
+    DELETE FROM $_
+") foreach ('auth.access_token');
+
 my $t = build_mojo_test();
 
 my $token = BOM::Platform::SessionCookie->new(
@@ -29,9 +35,9 @@ test_schema('api_token', $res);
 # create new token
 $t = $t->send_ok({
         json => {
-            api_token => 1,
-            new_token => 'Test Token'
-        }})->message_ok;
+            api_token        => 1,
+            new_token        => 'Test Token',
+            new_token_scopes => ['read']}})->message_ok;
 $res = decode_json($t->message->[1]);
 ok($res->{api_token});
 ok $res->{api_token}->{new_token};
@@ -71,11 +77,20 @@ $res = decode_json($t->message->[1]);
 ok $res->{error}->{message} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
 test_schema('api_token', $res);
 
+# $t = $t->send_ok({
+#         json => {
+#             api_token => 1,
+#             new_token => 'Test'
+#         }})->message_ok;
+# $res = decode_json($t->message->[1]);
+# ok $res->{error}->{message} =~ /new_token_scopes/, 'new_token_scopes is required';
+# test_schema('api_token', $res);
+
 $t = $t->send_ok({
         json => {
-            api_token => 1,
-            new_token => 'Test'
-        }})->message_ok;
+            api_token        => 1,
+            new_token        => 'Test',
+            new_token_scopes => ['read', 'admin']}})->message_ok;
 $res = decode_json($t->message->[1]);
 is scalar(@{$res->{api_token}->{tokens}}), 1, '1 token created';
 $test_token = $res->{api_token}->{tokens}->[0];
