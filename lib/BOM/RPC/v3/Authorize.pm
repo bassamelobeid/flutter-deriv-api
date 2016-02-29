@@ -15,7 +15,7 @@ use BOM::Platform::SessionCookie;
 sub authorize {
     my $params = shift;
 
-    my $loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my ($loginid, @scopes) = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $loginid});
@@ -32,6 +32,7 @@ sub authorize {
         account_id           => ($account ? $account->id : ''),
         landing_company_name => $client->landing_company->short,
         country              => $client->residence,
+        scopes               => \@scopes,
         is_virtual           => ($client->is_virtual ? 1 : 0),
     };
 }

@@ -860,7 +860,9 @@ sub api_token {
                 message_to_client => $display_name_err,
             });
         }
-        $m->create_token($client->loginid, $display_name);
+        ## for old API calls (we'll make it required on v4)
+        my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
+        $m->create_token($client->loginid, $display_name, @$scopes);
         $rtn->{new_token} = 1;
     }
 
