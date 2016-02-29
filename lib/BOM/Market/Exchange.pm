@@ -137,7 +137,8 @@ sub _build_pseudo_holidays {
     my $self = shift;
 
     # pseudo-holidays for exchanges are 1 week before and after Christmas Day.
-    my $christmas_day   = Date::Utility->new('25-Dec-' . $self->for_date->year);
+    my $year = $self->for_date ? $self->for_date->year : Date::Utility->new->year;
+    my $christmas_day   = Date::Utility->new('25-Dec-' . $year);
     my $pseudo_start    = $christmas_day->minus_time_interval('7d');
     my %pseudo_holidays = map { $pseudo_start->plus_time_interval($_ . 'd')->days_since_epoch => 'pseudo-holiday' } (0 .. 14);
 
