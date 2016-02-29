@@ -28,13 +28,12 @@ my $longterm_expiry  = Date::Utility->new($bet_start->epoch + 7 * 86400);
 my $shortterm_expiry = Date::Utility->new($bet_start->epoch + 23 * 3540);
 my $dm               = BOM::MarketData::Fetcher::VolSurface->new;
 
-
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
         recorded_date   => $bet_start,
-    }) for (qw/AUD EUR JPY USD/);
+    }) for (qw/AUD EUR JPY USD JPY-USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',

@@ -12,6 +12,7 @@ use Crypt::NamedKeys;
 use BOM::Platform::Client;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
+use BOM::Platform::Static::Config;
 
 use Date::Utility;
 use BOM::Product::Transaction;
@@ -1434,12 +1435,8 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
         });
 
         my $error = do {
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(payout_per_symbol_and_bet_type_limit =>
-                    sub { note "mocked app_config->quants->client_limits->payout_per_symbol_and_bet_type_limit returning 29.99"; 29.99 });
+            note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} to 29.99";
+            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
@@ -1472,12 +1469,8 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
 
         # retry with a slightly higher limit should succeed
         $error = do {
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(payout_per_symbol_and_bet_type_limit =>
-                    sub { note "mocked app_config->quants->client_limits->payout_per_symbol_and_bet_type_limit returning 30.00"; 30.00 });
+            note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} to 30";
+            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 30;
 
             my $contract_r100 = produce_contract({
                 underlying   => $underlying_r100,
@@ -1538,12 +1531,8 @@ subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way'
 
         my $txn_id_buy_expired_contract;
         my $error = do {
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(payout_per_symbol_and_bet_type_limit =>
-                    sub { note "mocked app_config->quants->client_limits->payout_per_symbol_and_bet_type_limit returning 29.99"; 29.99 });
+            note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} to 29.99";
+            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,

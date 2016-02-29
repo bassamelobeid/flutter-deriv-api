@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 13);
+use Test::More (tests => 5);
 use Test::NoWarnings;
 
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
@@ -22,9 +22,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 BOM::Market::AggTicks->new->flush;
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed');
 
-# DO NOT REMOVE THE COMMENT
-#pg_dump -T dbix_migration --disable-triggers -Fc -a -f intraday_index_ticks.dump -U postgres -h localhost -p5433 feed -W
-BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('intraday_index_ticks.dump');
 my @symbols = map { BOM::Market::Underlying->new($_) } BOM::Market::UnderlyingDB->instance->symbols_for_intraday_index;
 
 my $corr = {
@@ -869,7 +866,20 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 map { BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => $_->symbol, date => Date::Utility->new,}) } @symbols;
 
 
-my $data = Text::CSV::Slurp->load(file => '/home/git/regentmarkets/bom/t/data/test_intraday_index.csv');
+my $data = [
+    {
+        underlying => 'AS51',
+        bet_type => 'FLASHU',
+        date_start => 1428458885,
+        duration => 60,
+    },
+    {
+        underlying => 'AS51',
+        bet_type => 'FLASHU',
+        date_start => 1428458885,
+        duration => 30,
+    },
+];
 
 foreach my $d (@$data) {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -903,7 +913,7 @@ foreach my $d (@$data) {
 
     my $params = {
         bet_type     => $d->{bet_type},
-        currency     => $d->{currency},
+        currency     => 'USD',
         date_start   => $d->{date_start},
         date_pricing => $d->{date_start},
         payout       => 100,
@@ -921,7 +931,6 @@ foreach my $d (@$data) {
     );
 
     my $c = produce_contract($params);
-    is roundnear(0.01, $c->theo_probability->amount), roundnear(0.01, $d->{theo_probability}), 'theo prob checked';
-    is roundnear(0.01, $c->pricing_args->{iv}), roundnear(0.01, $d->{vol}), 'vol checked';
-    is roundnear($c->pricing_engine->intraday_trend->amount), roundnear($d->{trend}), 'trend checked';
+    is roundnear(0.01, $c->theo_probability->amount), 0.5, 'theo prob checked';
+    is roundnear(0.01, $c->pricing_engine->model_markup->amount), 0.05, 'model markup checked';
 }

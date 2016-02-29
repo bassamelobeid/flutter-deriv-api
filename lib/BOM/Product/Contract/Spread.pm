@@ -17,6 +17,7 @@ use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
 use BOM::Market::Types;
 use BOM::Utility::ErrorStrings qw( format_error_string );
+use BOM::Platform::Static::Config;
 
 with 'MooseX::Role::Validatable';
 
@@ -181,7 +182,7 @@ sub _build_spread_divisor {
 
 sub _build_spread_multiplier {
     my $self = shift;
-    return BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->spread_multiplier;
+    return BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{spread_multiplier};
 }
 
 sub _build_half_spread {
@@ -275,6 +276,12 @@ has [qw(is_valid_to_buy is_valid_to_sell may_settle_automatically)] => (
     lazy_build => 1,
 );
 
+has is_sold => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0
+);
+
 sub _build_is_valid_to_buy {
     my $self = shift;
     return $self->_report_validation_stats('buy', $self->confirm_validity);
@@ -282,6 +289,15 @@ sub _build_is_valid_to_buy {
 
 sub _build_is_valid_to_sell {
     my $self = shift;
+
+    if ($self->is_sold) {
+        $self->add_errors({
+            message           => 'Contract already sold',
+            severity          => 99,
+            message_to_client => localize("This contract has been sold."),
+        });
+        return 0;
+    }
     return $self->_report_validation_stats('sell', $self->confirm_validity);
 }
 

@@ -15,6 +15,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestPrice qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 
 my $at = BOM::Market::AggTicks->new;
 $at->flush;
@@ -41,6 +42,13 @@ $at->fill_from_historical_feed({
 });
 my $recorded_date = $date_start->truncate_to_day;
 BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency',
+    {
+        symbol        => 'JPY-USD',
+        recorded_date => $date_pricing,
+    });
 
 subtest 'prices without economic events' => sub {
     foreach my $contract_type (
