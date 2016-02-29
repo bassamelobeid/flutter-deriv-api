@@ -17,18 +17,15 @@ sub read_dbh {
 sub write_dbh {
     state $config = YAML::XS::LoadFile('/etc/rmg/feeddb.yml');
     return DBI->connect_cached(
-        "dbi:Pg:dbname=feed;port=5433;host=" . $config->{write}->{ip},
-        "write", $config->{password} )
+        "dbi:Pg:dbname=feed-write;port=6433;host=/var/run/postgresql",
+        "write", "" )
       || die($DBI::errstr);
 }
 
 sub any_event_connection_str {
     state $config = YAML::XS::LoadFile('/etc/rmg/feeddb.yml');
     return
-        'host='
-      . $config->{replica}->{ip}
-      . ' port=5433 dbname=feed user=write password='
-      . $config->{password};
+        'host=/var/run/postgresql port=6433 dbname=feed-write user=write';
 }
 
 1;
