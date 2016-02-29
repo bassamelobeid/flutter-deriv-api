@@ -513,10 +513,11 @@ sub set_settings {
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
 
-    # Virtual client is only allowed to update residence, if residence not set
+    my $residence = $args->{residence};
     if ($client->is_virtual) {
-        if ($args->{residence} and not $client->residence) {
-            $client->residence($args->{residence});
+        # Virtual client can only update residence, if residence not set. But not for Japan
+        if (not $client->residence and $residence and $residence ne 'jp') {
+            $client->residence($residence);
             if (not $client->save()) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError',
@@ -526,8 +527,9 @@ sub set_settings {
         }
         return BOM::RPC::v3::Utility::permission_error();
     } else {
-        # not allow real client to update residence
-        return BOM::RPC::v3::Utility::permission_error() if ($args->{residence});
+        # real client not allow to update residence
+        # Japanese client not allow to update settings
+        return BOM::RPC::v3::Utility::permission_error() if ($residence or $client->residence eq 'jp');
     }
 
     my $now             = Date::Utility->new;
