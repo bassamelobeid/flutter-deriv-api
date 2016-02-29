@@ -104,6 +104,42 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'PermissionDenied';
 
-$t->finish_ok;
+## VR with no residence, try set residence = 'jp' should fail
+$test_client_vr->residence('');
+$test_client_vr->save;
 
+$t = $t->send_ok({
+        json => {
+            set_settings => 1,
+            residence    => 'jp',
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'PermissionDenied';
+
+## JP client update setting should fail
+my $client_jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'JP',
+});
+$client_jp->residence('jp');
+$client_jp->save;
+
+$token = BOM::Platform::SessionCookie->new(
+    loginid => $client_jp->loginid,
+    email   => $client_jp->email,
+)->token;
+
+# authorize ok
+$t = $t->send_ok({json => {authorize => $token}})->message_ok;
+
+$t = $t->send_ok({
+        json => {
+            "set_settings"     => 1,
+            "address_line_1"   => "Test Address Line 1",
+            "address_line_2"   => "Test Address Line 2",
+            "phone"            => "1234567890"
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'PermissionDenied';
+
+$t->finish_ok;
 done_testing();
