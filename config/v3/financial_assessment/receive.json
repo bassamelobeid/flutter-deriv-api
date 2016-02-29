@@ -17,9 +17,9 @@
           "type": "integer",
           "description": "Financial assessment score based on answers"
         },
-        "is_appropriate": {
+        "is_professional": {
           "type": "integer",
-          "description": "On the basis of the information provided in relation to your knowledge and experience, we consider whether investments available are appropriate for you or not. 1: appropriate, 0: not appropriate",
+          "description": "On the basis of the information provided in relation to your knowledge and experience, we mark whether client is professional or not. 1: professional, 0: not professional",
           "pattern": "^(1|0)$"
         }
       }
