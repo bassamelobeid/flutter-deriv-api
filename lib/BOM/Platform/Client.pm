@@ -452,7 +452,8 @@ sub get_limit_for_account_balance {
 
     my @maxbalances = ();
     my $max_bal     = BOM::Platform::Static::Config::quants->{client_limits}->{max_balance};
-    push @maxbalances, $self->is_virtual ? $max_bal->{virtual} : $max_bal->{real};
+    my $curr        = $self->currency;
+    push @maxbalances, $self->is_virtual ? $max_bal->{virtual}->{$curr} : $max_bal->{real}->{$curr};
 
     if ($self->get_self_exclusion and $self->get_self_exclusion->max_balance) {
         push @maxbalances, $self->get_self_exclusion->max_balance;
@@ -476,11 +477,12 @@ sub get_limit_for_daily_turnover {
     my $val = $self->custom_max_daily_turnover;
     return $excl && $excl < $val ? $excl : $val if defined $val;
 
+    my $curr         = $self->currency;
     my $max_turnover = BOM::Platform::Static::Config::quants->{client_limits}->{max_daily_turnover};
     $val =
-          $self->is_virtual                 ? $max_turnover->{virtual}
-        : $self->client_fully_authenticated ? $max_turnover->{real_authenticated}
-        :                                     $max_turnover->{real_unauthenticated};
+          $self->is_virtual                 ? $max_turnover->{virtual}->{$curr}
+        : $self->client_fully_authenticated ? $max_turnover->{real_authenticated}->{$curr}
+        :                                     $max_turnover->{real_unauthenticated}->{$curr};
 
     return $excl && $excl < $val ? $excl : $val;
 }
@@ -552,12 +554,13 @@ sub get_limit_for_payout {
 
     my $lc_limit   = $self->landing_company_open_positions_payout_limit;
     my $max_payout = BOM::Platform::Static::Config::quants->{client_limits}->{max_payout};
+    my $curr       = $self->currency;
 
     $val =
-          $self->is_virtual                 ? $max_payout->{virtual}
+          $self->is_virtual                 ? $max_payout->{virtual}->{$curr}
         : $lc_limit                         ? $lc_limit
-        : $self->client_fully_authenticated ? $max_payout->{real_authenticated}
-        :                                     $max_payout->{real_unauthenticated};
+        : $self->client_fully_authenticated ? $max_payout->{real_authenticated}->{$curr}
+        :                                     $max_payout->{real_unauthenticated}->{$curr};
 
     return $val;
 }
@@ -566,7 +569,7 @@ sub landing_company_open_positions_payout_limit {
     my $self = shift;
 
     return if ($self->landing_company->short ne 'maltainvest');
-    return BOM::Platform::Static::Config::quants->{client_limits}->{max_payout}->{maltainvest};
+    return BOM::Platform::Static::Config::quants->{client_limits}->{max_payout}->{maltainvest}->{$self->currency};
 }
 
 sub get_limit {
