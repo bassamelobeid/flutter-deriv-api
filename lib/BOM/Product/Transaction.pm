@@ -1341,7 +1341,7 @@ sub _validate_stake_limit {
 
     my $stake_limit =
         $landing_company->short eq 'maltainvest'
-        ? BOM::Platform::Static::Config::quants->{bet_limits}->{min_stake_maltainvest}
+        ? BOM::Platform::Static::Config::quants->{bet_limits}->{min_stake}->{maltainvest}
         : $contract->staking_limits->{stake}->{min};
 
     my $currency = $contract->currency;
