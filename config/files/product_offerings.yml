@@ -1,4 +1,6 @@
 ---
+# This file contains all the underlying symbols that
+# we current offer contracts to.
 AEX: &limited_equities
   callput:
     daily:
