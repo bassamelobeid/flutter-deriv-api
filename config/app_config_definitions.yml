@@ -313,22 +313,22 @@ quants:
               global: 1
             EUR:
               description: 'in EUR'
-              isa: Int
+              isa: Num
               default: 5000
               global: 1
             AUD:
               description: 'in AUD'
-              isa: Int
+              isa: Num
               default: 5000
               global: 1
             GBP:
               description: 'in GBP'
-              isa: Int
+              isa: Num
               default: 5000
               global: 1
             JPY:
               description: 'in JPY'
-              isa: Int
+              isa: Num
               default: 500000
               global: 1
 
@@ -343,22 +343,22 @@ quants:
               global: 1
             EUR:
               description: 'in EUR'
-              isa: Int
+              isa: Num
               default: 20000
               global: 1
             AUD:
               description: 'in AUD'
-              isa: Int
+              isa: Num
               default: 20000
               global: 1
             GBP:
               description: 'in GBP'
-              isa: Int
+              isa: Num
               default: 20000
               global: 1
             JPY:
               description: 'in JPY'
-              isa: Int
+              isa: Num
               default: 2000000
               global: 1
 
@@ -373,22 +373,22 @@ quants:
               global: 1
             EUR:
               description: 'in EUR'
-              isa: Int
+              isa: Num
               default: 10000
               global: 1
             AUD:
               description: 'in AUD'
-              isa: Int
+              isa: Num
               default: 10000
               global: 1
             GBP:
               description: 'in GBP'
-              isa: Int
+              isa: Num
               default: 10000
               global: 1
             JPY:
               description: 'in JPY'
-              isa: Int
+              isa: Num
               default: 1000000
               global: 1
 
@@ -433,22 +433,22 @@ quants:
               global: 1
             EUR:
               description: 'in EUR'
-              isa: Int
+              isa: Num
               default: 1000
               global: 1
             AUD:
               description: 'in AUD'
-              isa: Int
+              isa: Num
               default: 1000
               global: 1
             GBP:
               description: 'in GBP'
-              isa: Int
+              isa: Num
               default: 1000
               global: 1
             JPY:
               description: 'in JPY'
-              isa: Int
+              isa: Num
               default: 100000
               global: 1
 
@@ -463,22 +463,22 @@ quants:
               global: 1
             EUR:
               description: 'in EUR'
-              isa: Int
+              isa: Num
               default: 5000
               global: 1
             AUD:
               description: 'in AUD'
-              isa: Int
+              isa: Num
               default: 5000
               global: 1
             GBP:
               description: 'in GBP'
-              isa: Int
+              isa: Num
               default: 5000
               global: 1
             JPY:
               description: 'in JPY'
-              isa: Int
+              isa: Num
               default: 500000
               global: 1
 
