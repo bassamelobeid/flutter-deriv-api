@@ -995,6 +995,9 @@ subtest $method => sub {
     delete $params->{args}{address_line_1};
     ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null' );
     $params->{args} = {%full_args};
+    $mocked_client->mock('save', sub { return undef });
+    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
+    $mocked_client->unmock_all;
     my $old_latest_environment = $test_client->latest_environment;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     $test_client->load();
