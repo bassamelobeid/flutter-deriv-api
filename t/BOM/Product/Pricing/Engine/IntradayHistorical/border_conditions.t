@@ -7,7 +7,6 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Market::AggTicks;
 
@@ -18,7 +17,6 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::MarketData::VolSurface::Utils;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-
 
 BOM::Market::AggTicks->new->flush;
 
