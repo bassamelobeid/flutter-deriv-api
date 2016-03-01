@@ -999,10 +999,15 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
     $mocked_client->unmock_all;
     my $old_latest_environment = $test_client->latest_environment;
+    clear_mailbox();
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     $test_client->load();
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
     like($test_client->latest_environment, qr/LANG=ZH_CN/, 'latest environment updated');
+    my %msg = get_email_by_address_subject('support@binary.com',qr/SYSTEM MESSAGE: Update Address Notification/);
+    ok(%msg, 'send a email to support address');
+    like($msg{body},qr/$test_loginid .* to \[address line 1 address line 2 address city address state 12345\]/s, 'email content correct');
+    clear_mailbox(); 
 };
 
 
