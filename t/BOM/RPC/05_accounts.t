@@ -972,7 +972,9 @@ subtest $method => sub {
     $test_client_vr->load;
     isnt($test_client->address_1,'Address 1', 'But vr account only update residence');
 
-
+    # test real account
+    $params->token => $token_21;
+    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'real account cannot update residence');
 };
 
 
