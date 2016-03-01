@@ -970,7 +970,7 @@ subtest $method => sub {
     my $result = $c->tcall($method, $params);
     is($result->{status}, 1, 'vr account update residence successfully');
     $test_client_vr->load;
-    ok(!$test_client->address_1, 'But vr account only update residence');
+    isnt($test_client->address_1,'Address 1', 'But vr account only update residence');
 
 
 };
