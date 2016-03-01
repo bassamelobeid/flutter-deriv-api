@@ -19,7 +19,7 @@ use BOM::Platform::Locale;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Static::Config;
-use BOM::Platform::Account::Real::maltainvest;
+use BOM::Platform::Account::Real::default;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -989,8 +989,8 @@ sub financial_assessment {
 
     my ($response, $subject, $message);
     try {
-        my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::maltainvest::get_financial_input_mapping()});
-        my $financial_evaluation = BOM::Platform::Account::Real::maltainvest::get_financial_assessment_score(\%financial_data);
+        my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
+        my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
 
         my $is_professional = $financial_evaluation->{total_score} < 60 ? 0 : 1;
         $client->financial_assessment({
