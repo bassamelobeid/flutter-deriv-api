@@ -49,7 +49,7 @@ sub result_is_deeply {
 sub result_hash_value_is {
     my ( $self, $get_compared_hash_value, $expected, $description ) = @_;
 
-    is( $get_compared_hash_value->( $self->response ), $expected, $description );
+    is( $get_compared_hash_value->( $self->response->result ), $expected, $description );
     return $self;
 }
 
