@@ -733,7 +733,7 @@ subtest $method => sub {
             token => $token1
         });
     cmp_ok($res->{score}, "<", 60, "Got correct score");
-    is($res->{is_professional}, 0, "As score is less than 60 so its markets as not professional");
+    is($res->{is_professional}, 0, "As score is less than 60 so its marked as not professional");
 };
 
 done_testing();
