@@ -309,27 +309,27 @@ quants:
             USD:
               description: 'in USD'
               isa: Num
-              default: 5000
+              default: 50000
               global: 1
             EUR:
               description: 'in EUR'
               isa: Num
-              default: 5000
+              default: 50000
               global: 1
             AUD:
               description: 'in AUD'
               isa: Num
-              default: 5000
+              default: 50000
               global: 1
             GBP:
               description: 'in GBP'
               isa: Num
-              default: 5000
+              default: 50000
               global: 1
             JPY:
               description: 'in JPY'
               isa: Num
-              default: 500000
+              default: 5000000
               global: 1
 
         intraday_forex_iv_turnover:
@@ -339,31 +339,91 @@ quants:
             USD:
               description: 'in USD'
               isa: Num
-              default: 20000
+              default: 30000
               global: 1
             EUR:
               description: 'in EUR'
               isa: Num
-              default: 20000
+              default: 30000
               global: 1
             AUD:
               description: 'in AUD'
               isa: Num
-              default: 20000
+              default: 30000
               global: 1
             GBP:
               description: 'in GBP'
               isa: Num
-              default: 20000
+              default: 30000
               global: 1
             JPY:
               description: 'in JPY'
               isa: Num
-              default: 2000000
+              default: 3000000
               global: 1
 
         intraday_forex_iv_realized_profit:
           description: "Limits on client activity for intraday realized profit on forex iv. Set any sub-value to 0 to disable limit"
+          isa: section
+          contains:
+            USD:
+              description: 'in USD'
+              isa: Num
+              default: 30000
+              global: 1
+            EUR:
+              description: 'in EUR'
+              isa: Num
+              default: 30000
+              global: 1
+            AUD:
+              description: 'in AUD'
+              isa: Num
+              default: 30000
+              global: 1
+            GBP:
+              description: 'in GBP'
+              isa: Num
+              default: 30000
+              global: 1
+            JPY:
+              description: 'in JPY'
+              isa: Num
+              default: 3000000
+              global: 1
+
+        intraday_forex_iv_potential_profit:
+          description: "Limits on client activity for intraday potential profit on forex iv. Set any sub-value to 0 to disable limit"
+          isa: section
+          contains:
+            USD:
+              description: 'in USD'
+              isa: Num
+              default: 30000
+              global: 1
+            EUR:
+              description: 'in EUR'
+              isa: Int
+              default: 30000
+              global: 1
+            AUD:
+              description: 'in AUD'
+              isa: Int
+              default: 30000
+              global: 1
+            GBP:
+              description: 'in GBP'
+              isa: Int
+              default: 30000
+              global: 1
+            JPY:
+              description: 'in JPY'
+              isa: Int
+              default: 3000000
+              global: 1
+
+        spreads_daily_profit:
+          description: "Daily profit limit for spreads per client"
           isa: section
           contains:
             USD:
@@ -392,66 +452,6 @@ quants:
               default: 1000000
               global: 1
 
-        intraday_forex_iv_potential_profit:
-          description: "Limits on client activity for intraday potential profit on forex iv. Set any sub-value to 0 to disable limit"
-          isa: section
-          contains:
-            USD:
-              description: 'in USD'
-              isa: Num
-              default: 25000
-              global: 1
-            EUR:
-              description: 'in EUR'
-              isa: Int
-              default: 25000
-              global: 1
-            AUD:
-              description: 'in AUD'
-              isa: Int
-              default: 25000
-              global: 1
-            GBP:
-              description: 'in GBP'
-              isa: Int
-              default: 25000
-              global: 1
-            JPY:
-              description: 'in JPY'
-              isa: Int
-              default: 2500000
-              global: 1
-
-        spreads_daily_profit:
-          description: "Daily profit limit for spreads per client"
-          isa: section
-          contains:
-            USD:
-              description: 'in USD'
-              isa: Num
-              default: 1000
-              global: 1
-            EUR:
-              description: 'in EUR'
-              isa: Num
-              default: 1000
-              global: 1
-            AUD:
-              description: 'in AUD'
-              isa: Num
-              default: 1000
-              global: 1
-            GBP:
-              description: 'in GBP'
-              isa: Num
-              default: 1000
-              global: 1
-            JPY:
-              description: 'in JPY'
-              isa: Num
-              default: 100000
-              global: 1
-
         tick_expiry_engine_daily_turnover:
           description: "Daily turnover limit for tick expiry engine per client"
           isa: section
@@ -459,27 +459,27 @@ quants:
             USD:
               description: 'in USD'
               isa: Num
-              default: 5000
+              default: 0.5
               global: 1
             EUR:
               description: 'in EUR'
               isa: Num
-              default: 5000
+              default: 0.5
               global: 1
             AUD:
               description: 'in AUD'
               isa: Num
-              default: 5000
+              default: 0.5
               global: 1
             GBP:
               description: 'in GBP'
               isa: Num
-              default: 5000
+              default: 0.5
               global: 1
             JPY:
               description: 'in JPY'
               isa: Num
-              default: 500000
+              default: 0.5
               global: 1
 
 system:
