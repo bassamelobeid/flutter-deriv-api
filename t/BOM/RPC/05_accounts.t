@@ -1016,7 +1016,7 @@ subtest $method => sub {
     # so I chopped them
     chop($subject);
     chop($subject);
-    %msg =  get_email_by_address_subject(email => $test_client->email,subject => qr/\Q$subject\E/);
+    my %msg =  get_email_by_address_subject(email => $test_client->email,subject => qr/\Q$subject\E/);
     ok(%msg, 'send a email to client');
     like($msg{body},qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
     clear_mailbox(); 
