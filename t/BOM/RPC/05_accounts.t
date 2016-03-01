@@ -958,9 +958,10 @@ subtest $method => sub {
     );
     my $mocked_client = Test::MockModule->new(ref($test_client));
     # in normal case the vr client's residence should not be null, so I mock it to simluate this case
-    $mocked_client->mock('residence',sub{my $self = shift; my $arg = shift; return $arg ? $mocked_client->original('residence')->($self, $arg) : undef});
+    #$mocked_client->mock('residence',sub{my $self = shift; my $arg = shift; return $arg ? $mocked_client->original('residence')->($self, $arg) : undef});
     my $params = {language => 'ZH_CN', token => $token_vr, args => {address1 => 'Address 1'}};
-
+    $test_client_vr->residence('');
+    $test_client_vr->save();
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', "vr client can only update residence");
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
