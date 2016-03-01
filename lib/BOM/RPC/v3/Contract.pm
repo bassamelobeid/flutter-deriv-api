@@ -132,12 +132,12 @@ sub get_ask {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency) = ($params->{short_code}, $params->{contract_id}, $params->{currency});
+    my ($short_code, $contract_id, $currency, $is_sold, $sell_time) = @{$params}{qw/short_code contract_id currency is_sold sell_time/};
 
     my $response;
     try {
         my $tv = [Time::HiRes::gettimeofday];
-        my $contract = produce_contract($short_code, $currency);
+        my $contract = produce_contract($short_code, $currency, $is_sold);
         $response = {
             ask_price           => sprintf('%.2f', $contract->ask_price),
             bid_price           => sprintf('%.2f', $contract->bid_price),
@@ -156,10 +156,9 @@ sub get_bid {
             longcode            => $contract->longcode,
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
-            purchase_time       => $params->{purchase_time},
         };
 
-        if (not $contract->is_valid_to_sell) {
+        if (not $contract->is_valid_to_sell and $contract->primary_validation_error) {
             $response->{validation_error} = $contract->primary_validation_error->message_to_client;
         }
 
@@ -170,6 +169,11 @@ sub get_bid {
             $response->{exit_tick_time}  = $contract->exit_tick->epoch  if $contract->exit_tick;
             $response->{current_spot}    = $contract->current_spot      if $contract->underlying->feed_license eq 'realtime';
             $response->{entry_spot}      = $contract->entry_spot        if $contract->entry_spot;
+
+            if ($sell_time and my $sell_tick = $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1})) {
+                $response->{sell_spot}      = $sell_tick->quote;
+                $response->{sell_spot_time} = $sell_tick->epoch;
+            }
 
             if ($contract->expiry_type eq 'tick') {
                 $response->{prediction} = $contract->prediction;

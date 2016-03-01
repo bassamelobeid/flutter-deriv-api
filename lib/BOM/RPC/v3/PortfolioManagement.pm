@@ -127,18 +127,25 @@ sub proposal_open_contract {
     my $response = {};
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
-            my $id  = $fmb->{id};
+            my $id = $fmb->{id};
+            my $sell_time;
+            $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
             my $bid = BOM::RPC::v3::Contract::get_bid({
-                short_code    => $fmb->{short_code},
-                contract_id   => $id,
-                currency      => $client->currency,
-                purchase_time => $fmb->{purchase_time},
+                short_code  => $fmb->{short_code},
+                contract_id => $id,
+                currency    => $client->currency,
+                is_sold     => $fmb->{is_sold},
+                sell_time   => $sell_time
             });
             if (exists $bid->{error}) {
                 $response->{$id} = $bid;
             } else {
                 $response->{$id} = {
-                    buy_price => $fmb->{buy_price},
+                    buy_price     => $fmb->{buy_price},
+                    purchase_time => Date::Utility->new($fmb->{purchase_time})->epoch,
+                    account_id    => $fmb->{account_id},
+                    is_sold       => $fmb->{is_sold},
+                    $sell_time ? (sell_time => $sell_time) : (),
                     defined $fmb->{sell_price}
                     ? (sell_price => sprintf('%.2f', $fmb->{sell_price}))
                     : (),
