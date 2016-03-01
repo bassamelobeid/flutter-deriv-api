@@ -1263,7 +1263,6 @@ subtest 'max_payout_open_bets validation', sub {
 
         my $error = do {
             note "Set max_payout_open_positions for MF Client => 29.99";
-            my $ori = BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{maltainvest}->{USD};
             BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{maltainvest}->{USD} = 29.99;
 
             is +BOM::Product::Transaction->new({
@@ -1283,7 +1282,6 @@ subtest 'max_payout_open_bets validation', sub {
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
-            BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{maltainvest}->{USD} = $ori;
         };
         SKIP: {
             skip 'no error', 5
