@@ -176,6 +176,11 @@ sub profit_table {
         return $auth_error;
     }
 
+    return {
+        transactions => [],
+        count        => 0
+    } unless ($client);
+
     BOM::RPC::v3::PortfolioManagement::_sell_expired_contracts($client, $params->{source});
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
