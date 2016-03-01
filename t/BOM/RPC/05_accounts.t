@@ -24,7 +24,7 @@ sub tcall {
     my $self   = shift;
     my $method = shift;
     my $params = shift;
-    my $r      = $self->call_response( $method, $params );
+    my $r      = $self->call_response($method, $params);
     ok($r->result,    'rpc response ok');
     ok(!$r->is_error, 'rpc response ok');
     if ($r->is_error) {
@@ -34,17 +34,17 @@ sub tcall {
 }
 
 sub call_response {
-     my $self   = shift;
-     my $method = shift;
-     my $params = shift;
-     my $r      = $self->call(
-                              "/$method",
-                              {
-                               id     => Data::UUID->new()->create_str(),
-                               method => $method,
-                               params => $params
-                              });
-     return $r;
+    my $self   = shift;
+    my $method = shift;
+    my $params = shift;
+    my $r      = $self->call(
+        "/$method",
+        {
+            id     => Data::UUID->new()->create_str(),
+            method => $method,
+            params => $params
+        });
+    return $r;
 }
 
 package main;
@@ -965,8 +965,11 @@ subtest $method => sub {
         'check authorization'
     );
     my $mocked_client = Test::MockModule->new(ref($test_client));
-   my $params = {language => 'ZH_CN', token => $token_vr, args => {address1 => 'Address 1'}};
-     # in normal case the vr client's residence should not be null, so I update is as '' to simulate null
+    my $params        = {
+        language => 'ZH_CN',
+        token    => $token_vr,
+        args     => {address1 => 'Address 1'}};
+    # in normal case the vr client's residence should not be null, so I update is as '' to simulate null
     $test_client_vr->residence('');
     $test_client_vr->save();
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', "vr client can only update residence");
@@ -978,22 +981,22 @@ subtest $method => sub {
     my $result = $c->tcall($method, $params);
     is($result->{status}, 1, 'vr account update residence successfully');
     $test_client_vr->load;
-    isnt($test_client->address_1,'Address 1', 'But vr account only update residence');
+    isnt($test_client->address_1, 'Address 1', 'But vr account only update residence');
 
     # test real account
     $params->{token} = $token1;
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'real account cannot update residence');
     my %full_args = (
-                address_line_1 => 'address line 1',
-                address_line_2 => 'address line 2',
-                address_city   => 'address city',
-                address_state  => 'address state',
-                address_postcode => '12345',
-                phone   => '2345678',
-               );
+        address_line_1   => 'address line 1',
+        address_line_2   => 'address line 2',
+        address_city     => 'address city',
+        address_state    => 'address state',
+        address_postcode => '12345',
+        phone            => '2345678',
+    );
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
-    ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null' );
+    ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
     is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
@@ -1002,25 +1005,27 @@ subtest $method => sub {
     # but it is disabled when the test is running on travis-ci
     # so I mocked this function to check it is called.
     my $add_note_called;
-    $mocked_client->mock('add_note',sub{$add_note_called = 1});
+    $mocked_client->mock('add_note', sub { $add_note_called = 1 });
     my $old_latest_environment = $test_client->latest_environment;
     clear_mailbox();
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-    ok($add_note_called,'add_note is called, so the email should be sent to support address');
+    ok($add_note_called, 'add_note is called, so the email should be sent to support address');
     $test_client->load();
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
     like($test_client->latest_environment, qr/LANG=ZH_CN/, 'latest environment updated');
     my $subject = '账户设置更改';
-        $subject = encode_qp(encode('UTF-8', $subject));
+    $subject = encode_qp(encode('UTF-8', $subject));
     # I don't know why encode_qp will append two characters "=\n"
     # so I chopped them
     chop($subject);
     chop($subject);
-    my %msg =  get_email_by_address_subject(email => $test_client->email,subject => qr/\Q$subject\E/);
+    my %msg = get_email_by_address_subject(
+        email   => $test_client->email,
+        subject => qr/\Q$subject\E/
+    );
     ok(%msg, 'send a email to client');
-    like($msg{body},qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
-    clear_mailbox(); 
+    like($msg{body}, qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
+    clear_mailbox();
 };
-
 
 done_testing();
