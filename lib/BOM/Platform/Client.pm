@@ -556,10 +556,10 @@ sub get_limit_for_payout {
     my $curr       = $self->currency;
 
     $val =
-          $self->is_virtual                                 ? $max_payout->{virtual}->{$curr}
-        : ($self->landing_company->short eq 'maltainvest')  ? $max_payout->{maltainvest}->{$curr}
-        : $self->client_fully_authenticated                 ? $max_payout->{real_authenticated}->{$curr}
-        :                                                     $max_payout->{real_unauthenticated}->{$curr};
+          $self->is_virtual                                ? $max_payout->{virtual}->{$curr}
+        : ($self->landing_company->short eq 'maltainvest') ? $max_payout->{maltainvest}->{$curr}
+        : $self->client_fully_authenticated                ? $max_payout->{real_authenticated}->{$curr}
+        :                                                    $max_payout->{real_unauthenticated}->{$curr};
 
     return $val;
 }
