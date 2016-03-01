@@ -1005,6 +1005,7 @@ subtest $method => sub {
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
     like($test_client->latest_environment, qr/LANG=ZH_CN/, 'latest environment updated');
     my %msg = get_email_by_address_subject(email => 'support@binary.com',subject => qr/SYSTEM MESSAGE: Update Address Notification/);
+    diag('cat /tmp/default.mailbox');
     ok(%msg, 'send a email to support address');
     like($msg{body},qr/address line 1 address line 2 address city address state 12345/s, 'email content correct');
     my $subject = '账户设置更改';
@@ -1016,7 +1017,7 @@ subtest $method => sub {
     %msg =  get_email_by_address_subject(email => $test_client->email,subject => qr/\Q$subject\E/);
     ok(%msg, 'send a email to client');
     like($msg{body},qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
-    clear_mailbox(); 
+    #clear_mailbox(); 
 };
 
 
