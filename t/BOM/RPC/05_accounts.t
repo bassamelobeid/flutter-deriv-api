@@ -957,9 +957,8 @@ subtest $method => sub {
         'check authorization'
     );
     my $mocked_client = Test::MockModule->new(ref($test_client));
-    # in normal case the vr client's residence should not be null, so I mock it to simluate this case
-    #$mocked_client->mock('residence',sub{my $self = shift; my $arg = shift; return $arg ? $mocked_client->original('residence')->($self, $arg) : undef});
-    my $params = {language => 'ZH_CN', token => $token_vr, args => {address1 => 'Address 1'}};
+   my $params = {language => 'ZH_CN', token => $token_vr, args => {address1 => 'Address 1'}};
+     # in normal case the vr client's residence should not be null, so I update is as '' to simulate null
     $test_client_vr->residence('');
     $test_client_vr->save();
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', "vr client can only update residence");
@@ -969,10 +968,9 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
     $mocked_client->unmock('save');
     my $result = $c->tcall($method, $params);
-    diag(Dumper($result));
-    #is($c->tcall($method, $params)->{status}, 1, 'vr account update residence successfully');
-    #$test_client_vr->load;
-    #ok(!$test_client->address_1, 'But vr account only update residence');
+    is($result->{status}, 1, 'vr account update residence successfully');
+    test_client_vr->load;
+    ok(!$test_client->address_1, 'But vr account only update residence');
 
 
 };
