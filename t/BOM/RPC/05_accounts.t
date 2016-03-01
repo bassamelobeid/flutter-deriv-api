@@ -966,7 +966,7 @@ subtest $method => sub {
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{residence} = 'zh';
     is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
-    $mocked_client->unmock_all;
+    $mocked_client->unmock('save');
     my $result = $c->tcall($method, $params);
     diag(Dumper($result));
     #is($c->tcall($method, $params)->{status}, 1, 'vr account update residence successfully');
