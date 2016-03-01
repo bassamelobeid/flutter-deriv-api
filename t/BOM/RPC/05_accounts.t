@@ -565,6 +565,7 @@ subtest $method => sub {
         '令牌无效。',
         'invalid token error'
     );
+
     is(
         $c->tcall(
             $method,
@@ -690,6 +691,98 @@ subtest $method => sub {
     );
     ok(%msg, "email received");
     clear_mailbox();
+};
+
+################################################################################
+# get_settings
+################################################################################
+$method = 'get_settings';
+subtest $method => sub {
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
+    my $params = {
+        token    => $token_21,
+        language => 'ZH_CN'
+    };
+    my $result = $c->tcall($method, $params);
+    is_deeply(
+        $result,
+        {
+            'country'                        => '澳大利亚',
+            'salutation'                     => 'Ms',
+            'is_authenticated_payment_agent' => '0',
+            'country_code'                   => 'au',
+            'date_of_birth'                  => '315532800',
+            'address_state'                  => '',
+            'address_postcode'               => '85010',
+            'phone'                          => '069782001',
+            'last_name'                      => 'tee',
+            'email'                          => 'shuwnyuan@regentmarkets.com',
+            'address_line_2'                 => 'Jln Address 2 Jln Address 3 Jln Address 4',
+            'address_city'                   => 'Segamat',
+            'address_line_1'                 => '53, Jln Address 1',
+            'first_name'                     => 'shuwnyuan'
+        });
+
+    $params->{token} = $token1;
+    $test_client->set_status('tnc_approval', 'system', 1);
+    $test_client->save;
+    is($c->tcall($method, $params)->{client_tnc_status}, 1, 'tnc status set');
+    $params->{token} = $token_vr;
+    is_deeply(
+        $c->tcall($method, $params),
+        {
+            'email'        => 'abc@binary.com',
+            'country'      => '印度尼西亚',
+            'country_code' => 'id',
+        },
+        'vr client return less messages'
+    );
 };
 
 ################################################################################
