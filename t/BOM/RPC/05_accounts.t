@@ -24,19 +24,27 @@ sub tcall {
     my $self   = shift;
     my $method = shift;
     my $params = shift;
-    my $r      = $self->call(
-        "/$method",
-        {
-            id     => Data::UUID->new()->create_str(),
-            method => $method,
-            params => $params
-        });
+    my $r      = $self->call_response( $method, $params );
     ok($r->result,    'rpc response ok');
     ok(!$r->is_error, 'rpc response ok');
     if ($r->is_error) {
         diag(Dumper($r));
     }
     return $r->result;
+}
+
+sub call_response {
+     my $self   = shift;
+     my $method = shift;
+     my $params = shift;
+     my $r      = $self->call(
+                              "/$method",
+                              {
+                               id     => Data::UUID->new()->create_str(),
+                               method => $method,
+                               params => $params
+                              });
+     return $r;
 }
 
 package main;
@@ -985,7 +993,7 @@ subtest $method => sub {
                );
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
-    $c->tcall($method, $params);
+    ok($c->call_response($method, $params)->is_error, 'have have because address line 1 cannot be null' );
 };
 
 
