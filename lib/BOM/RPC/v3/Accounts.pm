@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use JSON;
+use Try::Tiny;
 use Date::Utility;
 use Data::Password::Meter;
 
@@ -981,6 +982,8 @@ sub financial_assessment {
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
+
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
     my ($response, $subject, $message);
     try {

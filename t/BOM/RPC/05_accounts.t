@@ -692,4 +692,48 @@ subtest $method => sub {
     clear_mailbox();
 };
 
+################################################################################
+# financial_assessment
+################################################################################
+$method = 'financial_assessment';
+subtest $method => sub {
+    my $args = {
+        "financial_assessment"                 => 1,
+        "forex_trading_experience"             => "Over 3 years",
+        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
+        "indices_trading_experience"           => "1-2 years",
+        "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
+        "commodities_trading_experience"       => "1-2 years",
+        "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
+        "stocks_trading_experience"            => "1-2 years",
+        "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
+        "other_derivatives_trading_experience" => "Over 3 years",
+        "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
+        "other_instruments_trading_experience" => "Over 3 years",
+        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
+        "employment_industry"                  => "Finance",
+        "education_level"                      => "Secondary",
+        "income_source"                        => "Self-Employed",
+        "net_income"                           => '$25,000 - $100,000',
+        "estimated_worth"                      => '$100,000 - $250,000'
+    };
+
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token_vr,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token1
+        });
+    cmp_ok($res->{score}, "<", 60, "Got correct score");
+    is($res->{is_professional}, 0, "As score is less than 60 so its markets as not professional");
+};
+
 done_testing();
