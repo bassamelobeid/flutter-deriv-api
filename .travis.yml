@@ -47,5 +47,4 @@ install:
     - /tmp/travis-scripts/setup_postfix.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
-    #- forkprove --timer -lr t/
-    - perl t/BOM/RPC/05_accounts.t
+    - forkprove --timer -lr t/
