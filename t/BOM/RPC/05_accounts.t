@@ -1004,7 +1004,7 @@ subtest $method => sub {
     $test_client->load();
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
     like($test_client->latest_environment, qr/LANG=ZH_CN/, 'latest environment updated');
-    my %msg = get_email_by_address_subject('support@binary.com',qr/SYSTEM MESSAGE: Update Address Notification/);
+    my %msg = get_email_by_address_subject(email => 'support@binary.com',subject => qr/SYSTEM MESSAGE: Update Address Notification/);
     ok(%msg, 'send a email to support address');
     like($msg{body},qr/$test_loginid .* to \[address line 1 address line 2 address city address state 12345\]/s, 'email content correct');
     clear_mailbox(); 
