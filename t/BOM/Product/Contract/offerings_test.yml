@@ -420,7 +420,7 @@ RDBEAR: &4
         asian:
           max: 10
           min: 5
-          payout_limit: 10000
+          payout_limit:
             USD: 10000
             EUR: 10000
             GBP: 10000

@@ -71,6 +71,13 @@ subtest 'contract offerings' => sub {
             if (not $expected->{$underlying_symbol}) {
                 fail("underlying symbol [$underlying_symbol] not found");
             } else {
+
+                use Data::Dumper;
+                print "symbol [$underlying_symbol]...\n\n";
+                print "result ......" . Dumper(BOM::Market::Underlying->new($underlying_symbol)->contracts);
+                print "expected ...." . $expected->{$underlying_symbol};
+
+
                 is_deeply(
                     BOM::Market::Underlying->new($underlying_symbol)->contracts,
                     $expected->{$underlying_symbol},
