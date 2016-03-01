@@ -1,6 +1,9 @@
 use strict;
 use warnings;
 use Test::More;
+use FindBin qw/$Bin/;
+use lib "$Bin/lib";
+use TestHelper qw/create_test_user/;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -16,22 +19,7 @@ use BOM::Database::Model::AccessToken;
 my $dbh = BOM::Database::Model::OAuth->new->dbh;
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
 
-my $email       = 'abc@binary.com';
-my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::System::Password::hashpw($password);
-my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-});
-$test_client->email($email);
-$test_client->save;
-my $test_loginid = $test_client->loginid;
-my $user         = BOM::Platform::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
-$user->save;
-$user->add_loginid({loginid => $test_loginid});
-$user->save;
+my $test_loginid = create_test_user();
 
 # cleanup
 BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);

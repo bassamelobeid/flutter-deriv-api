@@ -407,6 +407,7 @@ sub cashier_password {
         }
 
         my $cashier_password = $client->cashier_setting_password;
+        my $salt = substr($cashier_password, 0, 2);
         if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
             BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
@@ -457,11 +458,7 @@ sub get_settings {
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
-    my $client;
-    if ($client_loginid) {
-        $client = BOM::Platform::Client->new({loginid => $client_loginid});
-    }
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -860,7 +857,9 @@ sub api_token {
                 message_to_client => $display_name_err,
             });
         }
-        $m->create_token($client->loginid, $display_name);
+        ## for old API calls (we'll make it required on v4)
+        my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
+        $m->create_token($client->loginid, $display_name, @$scopes);
         $rtn->{new_token} = 1;
     }
 
