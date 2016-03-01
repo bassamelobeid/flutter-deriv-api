@@ -21,29 +21,123 @@ market_data:
 bet_limits:
   holiday_blackout_start: 345
   holiday_blackout_end: 5
-  maximum_payout: 100000
-  maximum_payout_on_new_markets: 100
-  maximum_payout_on_less_than_7day_indices_call_put: 5000
+  maximum_payout:
+    USD: 100000
+    EUR: 100000
+    AUD: 100000
+    GBP: 100000
+    JPY: 10000000
+  maximum_payout_on_new_markets:
+    USD: 100
+    EUR: 100
+    AUD: 100
+    GBP: 100
+    JPY: 10000
+  maximum_payout_on_less_than_7day_indices_call_put:
+    USD: 5000
+    EUR: 5000
+    AUD: 5000
+    GBP: 5000
+    JPY: 500000
+  min_stake:
+    maltainvest:
+      USD: 5
+      EUR: 5
+      AUD: 5
+      GBP: 5
   min_payout:
-    default: 1
-    random: 0.7
-  min_stake_maltainvest: 5
+    default:
+      USD: 1
+      EUR: 1
+      AUD: 1
+      GBP: 1
+      JPY: 100
+    random:
+      USD: 0.7
+      EUR: 0.7
+      AUD: 0.7
+      GBP: 0.7
+      JPY: 70
 
 client_limits:
-  payout_per_symbol_and_bet_type_limit: 200000
-  intraday_spot_index_turnover_limit: 30000
-  smartfx_turnover_limit: 5000
-  stocks_turnover_limit: 5000
+  payout_per_symbol_and_bet_type_limit:
+    USD: 200000
+    EUR: 200000
+    AUD: 200000
+    GBP: 200000
+    JPY: 20000000
+  intraday_spot_index_turnover_limit:
+    USD: 30000
+    EUR: 30000
+    AUD: 30000
+    GBP: 30000
+    JPY: 3000000
+  smartfx_turnover_limit:
+    USD: 5000
+    EUR: 5000
+    AUD: 5000
+    GBP: 5000
+    JPY: 500000
+  stocks_turnover_limit:
+    USD: 5000
+    EUR: 5000
+    AUD: 5000
+    GBP: 5000
+    JPY: 500000
   max_balance:
-    virtual: 1000000
-    real: 300000
+    virtual:
+      USD: 1000000
+      EUR: 1000000
+      AUD: 1000000
+      GBP: 1000000
+      JPY: 100000000
+    real:
+      USD: 300000
+      EUR: 300000
+      AUD: 300000
+      GBP: 300000
+      JPY: 30000000
   max_daily_turnover:
-    virtual: 1000000
-    real_authenticated: 500000
-    real_unauthenticated: 200000
+    virtual:
+      USD: 1000000
+      EUR: 1000000
+      AUD: 1000000
+      GBP: 1000000
+      JPY: 100000000
+    real_authenticated:
+      USD: 500000
+      EUR: 500000
+      AUD: 500000
+      GBP: 500000
+      JPY: 50000000
+    real_unauthenticated:
+      USD: 200000
+      EUR: 200000
+      AUD: 200000
+      GBP: 200000
+      JPY: 20000000
   max_payout:
-    virtual: 1000000
-    real_authenticated: 500000
-    real_unauthenticated: 200000
-    maltainvest: 100000
+    virtual:
+      USD: 1000000
+      EUR: 1000000
+      AUD: 1000000
+      GBP: 1000000
+      JPY: 100000000
+    real_authenticated:
+      USD: 500000
+      EUR: 500000
+      AUD: 500000
+      GBP: 500000
+      JPY: 50000000
+    real_unauthenticated:
+      USD: 200000
+      EUR: 200000
+      AUD: 200000
+      GBP: 200000
+      JPY: 20000000
+    maltainvest:
+      USD: 100000
+      EUR: 100000
+      AUD: 100000
+      GBP: 100000
 
