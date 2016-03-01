@@ -1028,4 +1028,47 @@ subtest $method => sub {
     clear_mailbox();
 };
 
+################################################################################
+# set_self_exclution 
+################################################################################
+$method = 'set_self_exclution';
+subtest $method => sub{
+     is(
+        $c->tcall(
+                  $method,
+                  {
+                   language => 'ZH_CN',
+                   token    => '12345'
+                  }
+                 )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+       );
+
+     is(
+        $c->tcall(
+                  $method,
+                  {
+                   language => 'ZH_CN',
+                   token    => undef,
+                  }
+                 )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+       );
+
+     is(
+        $c->tcall(
+                  $method,
+                  {
+                   language => 'ZH_CN',
+                   token    => $token_disabled,
+                  }
+                 )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+       );
+   
+};
+
 done_testing();
