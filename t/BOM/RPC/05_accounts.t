@@ -956,14 +956,13 @@ subtest $method => sub {
         '此账户不可用。',
         'check authorization'
     );
-    diag('have it residence already? ' . $test_client_vr->residence);
-    $test_client_vr->residence(undef);
-    $test_client_vr->save();
+    my $mocked_client = Test::MockModule->new(ref($test_client));
+    # in normal case the vr client's residence should not be null, so I mock it to simluate this case
+    $mocked_client->mock('residence',sub{my $self = shift; my $arg = shift; return $arg ? $mocked_client->original('residence')->($self, $arg) : undef});
     my $params = {language => 'ZH_CN', token => $token_vr, args => {address1 => 'Address 1'}};
 
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', "vr client can only update residence");
     # here I mocked function 'save' to simulate the db failure.
-    my $mocked_client = Test::MockModule->new(ref($test_client));
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{residence} = 'zh';
     is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
