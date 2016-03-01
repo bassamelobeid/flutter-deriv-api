@@ -295,14 +295,18 @@ sub calculate_limits {
         and $self->limits->{max_30day_losses} = $lim;
 
     if ($client->loginid !~ /^VRT/ and $contract->market->name eq 'forex' and $contract->is_intraday and not $contract->is_atm_bet) {
-        $lim = $self->limits->{intraday_forex_iv_action} = from_json($app_config->intraday_forex_iv);
+        $lim = $self->limits->{intraday_forex_iv_action} = {
+            turnover         => $app_config->intraday_forex_iv_turnover->$currency,
+            realized_profit  => $app_config->intraday_forex_iv_realized_profit->$currency,
+            potential_profit => $app_config->intraday_forex_iv_potential_profit->$currency,
+        };
         for (keys %$lim) {
             delete $lim->{$_} if $lim->{$_} == 0;
         }
     }
 
     if ($contract->is_spread) {
-        $self->limits->{spread_bet_profit_limit} = $app_config->spreads_daily_profit_limit;
+        $self->limits->{spread_bet_profit_limit} = $app_config->spreads_daily_profit->$currency;
     }
 
     if ($contract->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
@@ -310,7 +314,7 @@ sub calculate_limits {
             +{
             bet_type => [map { {n => $_} } 'CALL', 'PUT'],
             name     => 'tick_expiry_engine_turnover_limit',
-            limit    => $app_config->tick_expiry_engine_turnover_limit,
+            limit    => $app_config->tick_expiry_engine_daily_turnover->$currency,
             symbols  => [
                 map { {n => $_} } get_offerings_with_filter(
                     'underlying_symbol',
@@ -355,7 +359,7 @@ sub calculate_limits {
             +{
             bet_type    => [map { {n => $_} } 'ASIANU', 'ASIAND'],
             name        => 'asian_turnover_limit',
-            limit       => $app_config->asian_turnover_limit,
+            limit       => $app_config->asian_daily_turnover->$currency,
             tick_expiry => 1,
             };
     }

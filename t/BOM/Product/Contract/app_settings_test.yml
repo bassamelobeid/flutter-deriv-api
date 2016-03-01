@@ -40,13 +40,30 @@ global:
       }
   quants:
     client_limits:
-      asian_turnover_limit: '50000'
-      intraday_forex_iv: |
-        {
-           "potential_profit" : 30000,
-           "realized_profit" : 30000,
-           "turnover" : 30000
-        }
+      asian_daily_turnover:
+        USD: 50000
+        EUR: 50000
+        AUD: 50000
+        GBP: 50000
+        JPY: 5000000
+      intraday_forex_iv_turnover:
+        USD: 30000
+        EUR: 30000
+        AUD: 30000
+        GBP: 30000
+        JPY: 3000000
+      intraday_forex_iv_realized_profit:
+        USD: 30000
+        EUR: 30000
+        AUD: 30000
+        GBP: 30000
+        JPY: 3000000
+      intraday_forex_iv_potential_profit:
+        USD: 30000
+        EUR: 30000
+        AUD: 30000
+        GBP: 30000
+        JPY: 3000000
     commission:
       adjustment:
         global_scaling: '100'

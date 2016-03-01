@@ -180,15 +180,12 @@ subtest 'IntradayLimitExceeded: turnover', sub {
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_turnover;
             (my $fname = $class) =~ s!::!/!g;
             $INC{$fname . '.pm'} = 1;
             my $mock_limits = Test::MockModule->new($class);
             $mock_limits->mock(
-                intraday_forex_iv => sub {
-                    note "mocked app_config->quants->client_limits->intraday_forex_iv returning '{\"turnover\":\"149.99\"}'";
-                    '{"turnover":"149.99"}';
-                });
+                USD => sub { note "mocked app_config->quants->client_limits->intraday_forex_iv_turnover->USD returning 149.99"; 149.99 });
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -230,15 +227,12 @@ subtest 'IntradayLimitExceeded: turnover', sub {
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_turnover;
             (my $fname = $class) =~ s!::!/!g;
             $INC{$fname . '.pm'} = 1;
             my $mock_limits = Test::MockModule->new($class);
             $mock_limits->mock(
-                intraday_forex_iv => sub {
-                    note "mocked app_config->quants->client_limits->intraday_forex_iv returning '{\"turnover\":\"150\"}'";
-                    '{"turnover":"150"}';
-                });
+                USD => sub { note "mocked app_config->quants->client_limits->intraday_forex_iv_turnover->USD returning 150"; 150 });
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
@@ -299,15 +293,12 @@ subtest 'IntradayLimitExceeded: potential profit', sub {
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_potential_profit;
             (my $fname = $class) =~ s!::!/!g;
             $INC{$fname . '.pm'} = 1;
             my $mock_limits = Test::MockModule->new($class);
             $mock_limits->mock(
-                intraday_forex_iv => sub {
-                    note "mocked app_config->quants->client_limits->intraday_forex_iv returning '{\"potential_profit\":\"149.99\"}'";
-                    '{"potential_profit":"149.99"}';
-                });
+                USD => sub { note "mocked app_config->quants->client_limits->intraday_forex_iv_potential_profit->USD returning 149.99"; 149.99 });
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -349,15 +340,12 @@ subtest 'IntradayLimitExceeded: potential profit', sub {
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_potential_profit;
             (my $fname = $class) =~ s!::!/!g;
             $INC{$fname . '.pm'} = 1;
             my $mock_limits = Test::MockModule->new($class);
             $mock_limits->mock(
-                intraday_forex_iv => sub {
-                    note "mocked app_config->quants->client_limits->intraday_forex_iv returning '{\"potential_profit\":\"150\"}'";
-                    '{"potential_profit":"150"}';
-                });
+                USD => sub { note "mocked app_config->quants->client_limits->intraday_forex_iv_potential_profit->USD returning 150"; 150 });
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
@@ -428,15 +416,12 @@ subtest 'IntradayLimitExceeded: realized profit', sub {
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_realized_profit;
             (my $fname = $class) =~ s!::!/!g;
             $INC{$fname . '.pm'} = 1;
             my $mock_limits = Test::MockModule->new($class);
             $mock_limits->mock(
-                intraday_forex_iv => sub {
-                    note "mocked app_config->quants->client_limits->intraday_forex_iv returning '{\"realized_profit\":\"59.99\"}'";
-                    '{"realized_profit":"59.99"}';
-                });
+                USD => sub { note "mocked app_config->quants->client_limits->intraday_forex_iv_realized_profit->USD returning 59.99"; 59.99 });
 
             is $txn->buy, undef, 'bought 1st contract';
 
@@ -495,15 +480,12 @@ subtest 'IntradayLimitExceeded: realized profit', sub {
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_realized_profit;
             (my $fname = $class) =~ s!::!/!g;
             $INC{$fname . '.pm'} = 1;
             my $mock_limits = Test::MockModule->new($class);
             $mock_limits->mock(
-                intraday_forex_iv => sub {
-                    note "mocked app_config->quants->client_limits->intraday_forex_iv returning '{\"realized_profit\":\"60\"}'";
-                    '{"realized_profit":"60"}';
-                });
+                USD => sub { note "mocked app_config->quants->client_limits->intraday_forex_iv_realized_profit->USD returning 60"; 60 });
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
