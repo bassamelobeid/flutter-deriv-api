@@ -975,6 +975,17 @@ subtest $method => sub {
     # test real account
     $params->token => $token_21;
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'real account cannot update residence');
+    my %full_args = (
+                address_line_1 => 'address line 1';
+                address_line_2 => 'address line 2';
+                address_city   => 'address city';
+                address_state  => 'address state';
+                address_postcode => '12345';
+                phone   => '2345678';
+               );
+    $params->{args} = {%full_args};
+    delete $params->{args}{address_line_1};
+    $c->tcall($method, $params);
 };
 
 
