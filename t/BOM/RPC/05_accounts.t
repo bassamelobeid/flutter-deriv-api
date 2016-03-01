@@ -16,6 +16,10 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::AccessToken;
 
+use FindBin qw/$Bin/;
+use lib "$Bin/lib";
+use Test::BOM::RPC::Client;
+
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Test::Most;
@@ -111,11 +115,21 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 my $t = Test::Mojo->new('BOM::RPC');
 my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
+my $rpc_t  = Test::BOM::RPC::Client->new( ua => $t->app->ua );
+
 ################################################################################
 # payout_currencies
 ################################################################################
 my $method = 'payout_currencies';
+my @params = (  $method, {
+                language => 'ZH_CN',
+                token    => '12345' } );
+
 subtest $method => sub {
+    $rpc_t->call_ok(@params)
+          ->has_no_error
+          ->result_is_deeply( [ qw/ USD EUR GBP AUD / ], 'invalid token will get all currencies' );
+
     is_deeply(
         $c->tcall(
             $method,
