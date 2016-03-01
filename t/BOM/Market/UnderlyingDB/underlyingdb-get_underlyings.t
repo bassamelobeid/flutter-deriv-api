@@ -31,7 +31,7 @@ eq_or_diff [sort $udb->symbols_for_intraday_fx], [
     ],
     'Correct list of intraday historical symbols.';
 
-my @ul_indices_on_flash = qw(AEX AS51 BFX FCHI GDAXI HSI SSMI STI);
+my @ul_indices_on_flash = qw(AEX AS51 BFX FCHI GDAXI HSI SSMI STI ISEQ);
 cmp_bag [
     sort $udb->get_symbols_for(
         market            => 'indices',
