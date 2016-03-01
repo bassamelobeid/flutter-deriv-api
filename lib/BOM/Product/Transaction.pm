@@ -277,7 +277,7 @@ sub calculate_limits {
     if (not $contract->tick_expiry) {
         $self->limits->{max_open_bets}                      = $client->get_limit_for_open_positions;
         $self->limits->{max_payout_open_bets}               = $client->get_limit_for_payout;
-        $self->limits->{max_payout_per_symbol_and_bet_type} = $static_config->{payout_per_symbol_and_bet_type_limit};
+        $self->limits->{max_payout_per_symbol_and_bet_type} = $static_config->{payout_per_symbol_and_bet_type_limit}->{$currency};
     }
 
     $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
@@ -327,7 +327,7 @@ sub calculate_limits {
             +{
             bet_type => [map { {n => $_} } 'CALL', 'PUT'],
             name     => 'intraday_spot_index_turnover_limit',
-            limit    => $static_config->{intraday_spot_index_turnover_limit},
+            limit    => $static_config->{intraday_spot_index_turnover_limit}->{$currency},
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => 'indices'})],
             };
     }
@@ -336,7 +336,7 @@ sub calculate_limits {
         push @{$self->limits->{specific_turnover_limits}},
             +{
             name    => 'smartfx_turnover_limit',
-            limit   => $static_config->{smartfx_turnover_limit},
+            limit   => $static_config->{smartfx_turnover_limit}->{$currency},
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => 'smart_fx'})],
             };
     }
@@ -345,7 +345,7 @@ sub calculate_limits {
         push @{$self->limits->{specific_turnover_limits}},
             +{
             name    => 'stocks_turnover_limit',
-            limit   => $static_config->{stocks_turnover_limit},
+            limit   => $static_config->{stocks_turnover_limit}->{$currency},
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => 'stocks'})],
             };
     }
@@ -1338,13 +1338,13 @@ sub _validate_stake_limit {
     my $client          = $self->client;
     my $contract        = $self->contract;
     my $landing_company = $client->landing_company;
+    my $currency        = $contract->currency;
 
     my $stake_limit =
         $landing_company->short eq 'maltainvest'
-        ? BOM::Platform::Static::Config::quants->{bet_limits}->{min_stake}->{maltainvest}
+        ? BOM::Platform::Static::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{$currency}
         : $contract->staking_limits->{stake}->{min};
 
-    my $currency = $contract->currency;
     if ($contract->ask_price < $stake_limit) {
         return Error::Base->cuss(
             -type => 'StakeTooLow',

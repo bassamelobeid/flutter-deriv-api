@@ -446,8 +446,8 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            note "mocked quants->{client_limits}->{intraday_spot_index_turnover_limit} returning 149.99";
-            BOM::Platform::Static::Config::quants->{client_limits}->{intraday_spot_index_turnover_limit} = 149.99;
+            note "mocked quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} returning 149.99";
+            BOM::Platform::Static::Config::quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} = 149.99;
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -495,8 +495,8 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            note "mocked quants->{client_limits}->{intraday_spot_index_turnover_limit} returning 150";
-            BOM::Platform::Static::Config::quants->{client_limits}->{intraday_spot_index_turnover_limit} = 150;
+            note "mocked quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} returning 150";
+            BOM::Platform::Static::Config::quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} = 150;
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
@@ -558,8 +558,8 @@ subtest 'smartfx_turnover_limit', sub {
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            note "mocked BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit} returning 149.99";
-            BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit} = 149.99;
+            note "mocked BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit}->{USD} returning 149.99";
+            BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit}->{USD} = 149.99;
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -601,8 +601,8 @@ subtest 'smartfx_turnover_limit', sub {
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            note "mocked BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit} returning 150";
-            BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit} = 150;
+            note "mocked BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit}->{USD} returning 150";
+            BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit}->{USD} = 150;
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
