@@ -1007,11 +1007,11 @@ subtest $method => sub {
     my %msg = get_email_by_address_subject(email => 'support@binary.com',subject => qr/SYSTEM MESSAGE: Update Address Notification/);
     ok(%msg, 'send a email to support address');
     like($msg{body},qr/address line 1 address line 2 address city address state 12345/s, 'email content correct');
-    #my $subject = 
+    my $subject = BOM::Platform::Context::localize('Change in account settings'); 
     %msg =  get_email_by_address_subject(email => $test_client->email,subject => qr/.*/);
     ok(%msg, 'send a email to client');
     #like($msg{body},qr/address line 1 address line 2 address city address state 12345/s, 'email content correct');
-    diag($msg{subject});
+    diag($subject);
     #clear_mailbox(); 
 };
 
