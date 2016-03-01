@@ -1,0 +1,20 @@
+<p>[% contract.longcode %]</p>
+<form action="" method="post">
+    <table>
+        <tr><td>Shortcode</td><td><input value="[% contract.shortcode %]" size="80" type="text" name="shortcode" id="shortcode"/></td></tr>
+        <tr><td>Currency</td><td><input value="[% contract.currency %]" size="4" type="text" name="currency" id="currency" style="none"/></td></tr>
+        <tr><td colspan=2><input type="submit" value="Graph it!"/></td></tr>
+</table>
+</form>
+<p>[% Contract's pricing details %]</p>
+<table id="dtr" border="1" cellpadding="1" cellspacing="0">
+     [% FOREACH keys IN pricing_parameters.keys %]
+     <tr><b> [% key %] <b></tr>
+        [% FOREACH sub_keys IN pricing_parameters.$key.keys %]
+        <tr>
+            <td>[% sub_keys]</td>
+            <td> [% pricing_parameters.$key.$sub_keys %]</td>
+        </tr>
+        [% END %]
+[% END %] 
+</table>
