@@ -956,7 +956,7 @@ subtest $method => sub {
         '此账户不可用。',
         'check authorization'
     );
-
+    diag('have it residence already? ' . $test_client_vr->residence);
     my $params = {language => 'ZH_CN', token => $token_vr, args => {address1 => 'Address 1'}};
 
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', "vr client can only update residence");
