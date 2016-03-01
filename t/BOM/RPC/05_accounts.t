@@ -1007,8 +1007,13 @@ subtest $method => sub {
     my %msg = get_email_by_address_subject(email => 'support@binary.com',subject => qr/SYSTEM MESSAGE: Update Address Notification/);
     ok(%msg, 'send a email to support address');
     like($msg{body},qr/address line 1 address line 2 address city address state 12345/s, 'email content correct');
-    my $subject = BOM::Platform::Context::localize('Change in account settings'); 
-    %msg =  get_email_by_address_subject(email => $test_client->email,subject => qr/.*/);
+    my $subject = '账户设置更改';
+        $subject = encode_qp(encode('UTF-8', $subject));
+    # I don't know why encode_qp will append two characters "=\n"
+    # so I chopped them
+    chop($subject);
+    chop($subject);
+    %msg =  get_email_by_address_subject(email => $test_client->email,subject => qr/\Q$subject\E/);
     ok(%msg, 'send a email to client');
     #like($msg{body},qr/address line 1 address line 2 address city address state 12345/s, 'email content correct');
     diag($subject);
