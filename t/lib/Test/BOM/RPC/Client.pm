@@ -40,9 +40,16 @@ sub has_no_error {
 }
 
 sub result_is_deeply {
-    my ( $self, $expected, $comment ) = @_;
+    my ( $self, $expected, $description ) = @_;
 
-    is_deeply( $self->response->result, $expected, $comment );
+    is_deeply( $self->response->result, $expected, $description );
+    return $self;
+}
+
+sub result_hash_value_is {
+    my ( $self, $get_compared_hash_value, $expected, $description ) = @_;
+
+    is( $get_compared_hash_value->( $self->response ), $expected, $description );
     return $self;
 }
 
