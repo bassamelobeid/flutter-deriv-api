@@ -81,14 +81,24 @@ BIS:
   display_name: Borsa Istanbul
   market_times:
     dst:
-      daily_close: 14h40m
-      daily_open: 06h30m
-      daily_settlement: 17h40m
-    partial_trading: {}
+      daily_close: 14h30m
+      daily_open: 6h35m
+      daily_settlement: 17h30m
+      trading_breaks:
+      - - 9h30m
+        - 10h30m
+    partial_trading:
+      dst_close: 9h30m
+      dst_open: 6h35m
+      standard_close: 10h30m
+      standard_open: 7h35m
     standard:
-      daily_close: 15h40m
-      daily_open: 07h30m
-      daily_settlement: 18h40m
+      daily_close: 15h30m
+      daily_open: 7h35m
+      daily_settlement: 18h30m
+      trading_breaks:
+      - - 10h30m
+        - 11h30m
   symbol: BIS
   tenfore_trading_timezone: Europe/Istanbul
   trading_days: weekdays
