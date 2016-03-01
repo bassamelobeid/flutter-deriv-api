@@ -25,7 +25,7 @@ AEX: &limited_equities
             GBP: 5000
             AUD: 5000
             EUR: 5000
-            JPY: 5000
+            JPY: 500000
   endsinout:
     daily:
       spot:
@@ -70,7 +70,7 @@ AS51: &limited_ao_equities
             GBP: 5000
             AUD: 5000
             EUR: 5000
-            JPY: 5000
+            JPY: 500000
   endsinout:
     daily:
       spot:
@@ -101,7 +101,7 @@ BBABI: &stocks
             GBP: 1000
             AUD: 1000
             EUR: 1000
-            JPY: 1000
+            JPY: 100000
     intraday:
       forward:
         euro_atm:
@@ -112,7 +112,7 @@ BBABI: &stocks
             GBP: 1000
             AUD: 1000
             EUR: 1000
-            JPY: 1000
+            JPY: 100000
 BBBELG: *stocks
 BBGBLB: *stocks
 BBKBC: *stocks
@@ -140,7 +140,7 @@ BFX: &limited_callput
             GBP: 5000
             AUD: 5000
             EUR: 5000
-            JPY: 5000
+            JPY: 500000
 BSESENSEX30: &forward_and_daily
   callput:
     daily:
@@ -271,7 +271,7 @@ RDBEAR: &random_daily_nightly
             GBP: 10000
             AUD: 10000
             EUR: 10000
-            JPY: 10000
+            JPY: 1000000
   callput:
     intraday:
       forward:
@@ -319,7 +319,7 @@ RDMARS: &reset_random
             GBP: 10000
             AUD: 10000
             EUR: 10000
-            JPY: 10000
+            JPY: 1000000
   callput:
     intraday:
       forward:
@@ -367,7 +367,7 @@ R_100: &random_index
             GBP: 10000
             AUD: 10000
             EUR: 10000
-            JPY: 10000
+            JPY: 1000000
   callput:
     daily:
       spot:
@@ -461,7 +461,7 @@ WLDAUD: &smart_fx
             GBP: 1000
             AUD: 1000
             EUR: 1000
-            JPY: 1000
+            JPY: 100000
 WLDEUR: *smart_fx
 WLDGBP: *smart_fx
 WLDUSD: *smart_fx
