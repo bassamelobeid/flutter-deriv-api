@@ -981,7 +981,7 @@ subtest $method => sub {
     isnt($test_client->address_1,'Address 1', 'But vr account only update residence');
 
     # test real account
-    $params->{token} = $token_21;
+    $params->{token} = $token1;
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'real account cannot update residence');
     my %full_args = (
                 address_line_1 => 'address line 1',
@@ -993,7 +993,13 @@ subtest $method => sub {
                );
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
-    ok($c->call_response($method, $params)->is_error, 'have have because address line 1 cannot be null' );
+    ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null' );
+    $params->{args} = {%full_args};
+    my $old_latest_environment = $test_client->latest_environment;
+    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    $test_client->load();
+    isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
+    like($test_client->latest_environment, qr/LANG=ZH_CN/, 'latest environment updated');
 };
 
 
