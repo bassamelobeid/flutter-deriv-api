@@ -15,6 +15,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::AccessToken;
+use BOM::RPC::v3::Accounts;
 
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
@@ -451,6 +452,26 @@ subtest $method => sub {
 ################################################################################
 $method = 'change_password';
 subtest $method => sub {
+    is (
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'new_password', 'user_password')->{message_to_client},
+        'Old password is wrong.',
+        'Old password is wrong.',
+    );
+    is (
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'old_password', 'old_password')->{message_to_client},
+        'New password is same as old password.',
+        'New password is same as old password.',
+    );
+    is (
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'newpassword', 'old_password')->{message_to_client},
+        'Password is not strong enough.',
+        'Password is not strong enough.',
+    );
+    is (
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'new#_password', 'old_password')->{message_to_client},
+        'Password should have letters and numbers.',
+        'Password should have letters and numbers.',
+    );
     is(
         $c->tcall(
             $method,
