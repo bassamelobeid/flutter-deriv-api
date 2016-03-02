@@ -51,7 +51,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
 
 subtest 'Basics.' => sub {
-    my $auf     = BOM::MarketData::AutoUpdater::Forex->new;
+    my $auf     = BOM::MarketData::AutoUpdater::Forex->new(file => ['t/data/bbdl/vol_points/2012-08-13/fx000000.csv']);
     my @symbols = @{$auf->symbols_to_update};
     ok(scalar(@symbols), 'symbols_to_update is non-empty by default.');
     cmp_ok(scalar(@symbols), '==', (grep { /^frx/ } @symbols), 'All symbols_to_udpate are FX.');
