@@ -32,13 +32,13 @@ my $original_contract =
     ? produce_contract(request()->param('shortcode'), request()->param('currency'))
     : '';
 }
-
+my $pricing_parameters;
+if ($original_contract){
 my $date_start = (request()->param('start')) ? Date::Utility->new(request()->param('start')) : $original_contract->date_start;
 my $contract = make_similar_contract($original_contract, {priced_at => $date_start});
 
-if ($contract){
 
-my $pricing_parameters = $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex' ? _get_pricing_parameter_from_IH_pricer($contract) : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope' ? _get_pricing_parameter_from_slope_pricer($contract ) : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
+$pricing_parameters = $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex' ? _get_pricing_parameter_from_IH_pricer($contract) : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope' ? _get_pricing_parameter_from_slope_pricer($contract ) : die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
 
 sub _get_pricing_parameter_from_IH_pricer {
@@ -127,7 +127,7 @@ map { $_ => $ask_probability->peek_amount($_)} qw(theoretical_probability risk_m
  BOM::Platform::Context::template->process(
    'backoffice/contract_details.html.tt',
     {
-        contract        => $contract,
+        contract        => $original_contract,
         pricing_parameters => $pricing_paramters,
     }) || die BOM::Platform::Context::template->error;
 
