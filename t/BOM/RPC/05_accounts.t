@@ -1109,13 +1109,24 @@ subtest 'get and set self_exclusion' => sub{
       is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "交易期持续时间限制不能大于 6周。",
                                                         'details' => 'session_duration_limit',
                                                         'code' => 'SetSelfExclusionError'});
+      $params->{args} = {
+                         set_self_exclusion     => 1,
+                         max_balance            => 9999,
+                         max_turnover           => 1000,
+                         max_open_bets          => 100,
+                         session_duration_limit => 1440,
+                         exclude_until          => '2010-01-01'
+                        };
+     is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "禁止时间必须在今日之后。",
+                                                       'details' => 'exclude_until',
+                                                       'code' => 'SetSelfExclusionError'});
      $params->{args} = {
                         set_self_exclusion     => 1,
                         max_balance            => 9999,
                         max_turnover           => 1000,
                         max_open_bets          => 100,
                         session_duration_limit => 1440,
-                                   exclude_until          => '2010-01-01'
+                        exclude_until          => DateTime->now()->add(months => 3)->ymd
                        };
        is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "禁止时间必须在今日之后。",
                                                          'details' => 'exclude_until',
