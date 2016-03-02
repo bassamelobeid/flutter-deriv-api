@@ -7,6 +7,7 @@
         <tr><td colspan=2><input type="submit" value="Price it!"/></td></tr>
 </table>
 </form>
+[% IF pricing_parameters %]
 <p>[% Contract's pricing details %]</p>
 <table id="dtr" border="1" cellpadding="1" cellspacing="0">
      [% FOREACH keys IN pricing_parameters.keys %]
@@ -17,5 +18,6 @@
             <td> [% pricing_parameters.$key.$sub_keys %]</td>
         </tr>
         [% END %]
-[% END %] 
+     [% END %] 
 </table>
+[% END %]
