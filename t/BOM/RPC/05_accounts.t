@@ -1146,7 +1146,7 @@ subtest 'get and set self_exclusion' => sub{
  my $exclude_until = DateTime->now()->add(months => 7)->ymd;
      $params->{args} = {
                         set_self_exclusion     => 1,
-                        max_balance            => 9999,
+                        max_balance            => 9998,
                         max_turnover           => 1000,
                         max_open_bets          => 100,
                         session_duration_limit => 1440,
