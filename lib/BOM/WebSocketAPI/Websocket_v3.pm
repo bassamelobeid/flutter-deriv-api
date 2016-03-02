@@ -208,7 +208,7 @@ my @dispatch = (
     ],
     [
         'change_password',
-        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::change_password, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::change_password, 1, 'admin'
     ],
     [
         'get_settings',
