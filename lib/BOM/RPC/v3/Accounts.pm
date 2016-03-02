@@ -801,7 +801,7 @@ sub set_self_exclusion {
         send_email({
             from    => $compliance_email,
             to      => $compliance_email . ',' . BOM::Platform::Static::Config::get_customer_support_email(),
-            subject => "Client set self-exclusion limits",
+            subject => localize("Client set self-exclusion limits"),
             message => [$message],
         });
     } else {
