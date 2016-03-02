@@ -137,8 +137,8 @@ sub save {
 
     # delete tentative event from tentative table after one month it happened
     foreach my $id (keys %$tentative_events) {
-        if ($tentative_event->{$id}->{release_date} && $tentative_event->{$id}->{release_date} < time - 60 * 60 * 24 * 31) {
-            delete $tentative_event->{$id};
+        if ($tentative_events->{$id}->{release_date} && $tentative_events->{$id}->{release_date} < time - 60 * 60 * 24 * 31) {
+            delete $tentative_events->{$id};
         }
     }
 
@@ -168,8 +168,8 @@ sub update {
                 $tentative_events->{$id} = {(%{$tentative_events->{$id}}, %{$new_events_hash{$id}})};
             }
             # delete tentative event from tentative table after one month it happened
-            if ($tentative_event->{$id}->{release_date} && $tentative_event->{$id}->{release_date} < time - 60 * 60 * 24 * 31) {
-                delete $tentative_event->{$id};
+            if ($tentative_events->{$id}->{release_date} && $tentative_events->{$id}->{release_date} < time - 60 * 60 * 24 * 31) {
+                delete $tentative_events->{$id};
             }
         }
     }
