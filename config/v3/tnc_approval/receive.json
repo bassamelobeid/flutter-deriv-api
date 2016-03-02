@@ -9,8 +9,8 @@
     },
     "tnc_approval": {
         "type": "integer",
-        "description": "Set terms and conditions 1: success, 0: failure",
-        "pattern": "^(1|0)$"
+        "description": "Set terms and conditions 1: success",
+        "pattern": "^1$"
     },
     "msg_type": {
         "type": "string",
