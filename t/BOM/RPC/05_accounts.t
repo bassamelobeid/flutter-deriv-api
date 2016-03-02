@@ -1098,7 +1098,7 @@ subtest 'get and set self_exclusion' => sub{
                         max_open_bets          => 100,
                         session_duration_limit => 1440 * 42 + 1,
                        };
-     diag($c->tcall($method, $params));
+     diag(Dumper $c->tcall($method, $params));
 };
 
 done_testing();
