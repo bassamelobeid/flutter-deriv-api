@@ -454,7 +454,7 @@ $method = 'change_password';
 subtest $method => sub {
     my $oldpass = '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjNQ=';
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'new_password', 'wrong_password')->{message_to_client},
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'new_password', '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ=')->{message_to_client},
         'Old password is wrong.',
         'Old password is wrong.',
     );
