@@ -1033,140 +1033,169 @@ subtest $method => sub {
 ################################################################################
 
 ################################################################################
-# set_self_exclusion 
+# set_self_exclusion
 ################################################################################
 $method = 'set_self_exclusion';
-subtest 'get and set self_exclusion' => sub{
-     is(
+subtest 'get and set self_exclusion' => sub {
+    is(
         $c->tcall(
-                  $method,
-                  {
-                   language => 'ZH_CN',
-                   token    => '12345'
-                  }
-                 )->{error}{message_to_client},
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
         '令牌无效。',
         'invalid token error'
-       );
+    );
 
-     is(
+    is(
         $c->tcall(
-                  $method,
-                  {
-                   language => 'ZH_CN',
-                   token    => undef,
-                  }
-                 )->{error}{message_to_client},
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
         '令牌无效。',
         'invalid token error'
-       );
+    );
 
-     is(
+    is(
         $c->tcall(
-                  $method,
-                  {
-                   language => 'ZH_CN',
-                   token    => $token_disabled,
-                  }
-                 )->{error}{message_to_client},
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
         '此账户不可用。',
         'check authorization'
-       );
-   
-     my $params = {language => 'ZH_CN', token => $token_vr, args => {}};
-     is($c->tcall($method, $params)->{error}{message_to_client}, "权限不足。", 'vr client cannot set exclusion');
-     $params->{token} = $token1;
-     is($c->tcall($method, $params)->{error}{message_to_client}, "请提供至少一个自我禁止设置。", "need one exclusion");
-     $params->{args} = {
-                                    set_self_exclusion => 1,
-                        max_balance        => 10000,
-                        max_open_bets      => 100,
-                        max_turnover       => undef, # null should be OK to pass
-                        max_7day_losses    => 0, # 0 is ok to pass but not saved
-                       };
-     clear_mailbox();
-     is($c->tcall($method, $params)->{status},1, "update self_exclusion ok");
-     delete $params->{args};
-     is_deeply($c->tcall('get_self_exclusion', $params), {'max_open_bets' => '100', 'max_balance' => '10000'},'get self_exclusion ok');
-     my %msg = get_email_by_address_subject(email => 'qa-alerts@regentmarkets.com,support@binary.com', subject => qr/Client set self-exclusion limits/);
-     ok(%msg, "msg sent to support email");
-     like($msg{body}, qr/Maximum number of open positions: 100.*Maximum account balance: 10000/s, 'email content is ok');
-     $params->{args} = {            set_self_exclusion => 1,
-                                    max_balance        => 10001,
-                                    max_turnover       => 1000,
-                                    max_open_bets      => 100,
-                       };
-     is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "请输入0和10000之间的数字。",
-               'details' => 'max_balance',
-               'code' => 'SetSelfExclusionError'});
-     $params->{args} = {
-                        set_self_exclusion     => 1,
-                        max_balance            => 9999,
-                        max_turnover           => 1000,
-                        max_open_bets          => 100,
-                        session_duration_limit => 1440 * 42 + 1,
-                       };
-      is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "交易期持续时间限制不能大于 6周。",
-                                                        'details' => 'session_duration_limit',
-                                                        'code' => 'SetSelfExclusionError'});
-      $params->{args} = {
-                         set_self_exclusion     => 1,
-                         max_balance            => 9999,
-                         max_turnover           => 1000,
-                         max_open_bets          => 100,
-                         session_duration_limit => 1440,
-                         exclude_until          => '2010-01-01'
-                        };
-     is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "禁止时间必须在今日之后。",
-                                                       'details' => 'exclude_until',
-                                                       'code' => 'SetSelfExclusionError'});
-     $params->{args} = {
-                        set_self_exclusion     => 1,
-                        max_balance            => 9999,
-                        max_turnover           => 1000,
-                        max_open_bets          => 100,
-                        session_duration_limit => 1440,
-                        exclude_until          => DateTime->now()->add(months => 3)->ymd
-                       };
-       is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "禁止时间不能少于6个月。",
-                                                         'details' => 'exclude_until',
-                                                         'code' => 'SetSelfExclusionError'});
- 
-     $params->{args} = {
-                        set_self_exclusion     => 1,
-                        max_balance            => 9999,
-                        max_turnover           => 1000,
-                        max_open_bets          => 100,
-                        session_duration_limit => 1440,
-                        exclude_until          => DateTime->now()->add(years => 6)->ymd
-                       };
-     is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "禁止时间不能超过五年。",
-                                                       'details' => 'exclude_until',
-                                                       'code' => 'SetSelfExclusionError'});
- my $exclude_until = DateTime->now()->add(months => 7)->ymd;
-     $params->{args} = {
-                        set_self_exclusion     => 1,
-                        max_balance            => 9998,
-                        max_turnover           => 1000,
-                        max_open_bets          => 100,
-                        session_duration_limit => 1440,
-                        exclude_until          => $exclude_until,
-                       };
-     is($c->tcall($method, $params)->{status},1, 'update self_exclusion ok');
+    );
 
-     delete $params->{args};diag(Dumper $c->tcall('get_self_exclusion', $params));
-     is($c->tcall('get_self_exclusion', $params)->{error}{message_to_client},'令牌无效。','this client is inivalid now');
+    my $params = {
+        language => 'ZH_CN',
+        token    => $token_vr,
+        args     => {}};
+    is($c->tcall($method, $params)->{error}{message_to_client}, "权限不足。", 'vr client cannot set exclusion');
+    $params->{token} = $token1;
+    is($c->tcall($method, $params)->{error}{message_to_client}, "请提供至少一个自我禁止设置。", "need one exclusion");
+    $params->{args} = {
+        set_self_exclusion => 1,
+        max_balance        => 10000,
+        max_open_bets      => 100,
+        max_turnover       => undef,    # null should be OK to pass
+        max_7day_losses    => 0,        # 0 is ok to pass but not saved
+    };
+    clear_mailbox();
+    is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
+    delete $params->{args};
+    is_deeply(
+        $c->tcall('get_self_exclusion', $params),
+        {
+            'max_open_bets' => '100',
+            'max_balance'   => '10000'
+        },
+        'get self_exclusion ok'
+    );
+    my %msg = get_email_by_address_subject(
+        email   => 'qa-alerts@regentmarkets.com,support@binary.com',
+        subject => qr/Client set self-exclusion limits/
+    );
+    ok(%msg, "msg sent to support email");
+    like($msg{body}, qr/Maximum number of open positions: 100.*Maximum account balance: 10000/s, 'email content is ok');
+    $params->{args} = {
+        set_self_exclusion => 1,
+        max_balance        => 10001,
+        max_turnover       => 1000,
+        max_open_bets      => 100,
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "请输入0和10000之间的数字。",
+            'details'           => 'max_balance',
+            'code'              => 'SetSelfExclusionError'
+        });
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9999,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440 * 42 + 1,
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "交易期持续时间限制不能大于 6周。",
+            'details'           => 'session_duration_limit',
+            'code'              => 'SetSelfExclusionError'
+        });
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9999,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440,
+        exclude_until          => '2010-01-01'
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "禁止时间必须在今日之后。",
+            'details'           => 'exclude_until',
+            'code'              => 'SetSelfExclusionError'
+        });
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9999,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440,
+        exclude_until          => DateTime->now()->add(months => 3)->ymd
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "禁止时间不能少于6个月。",
+            'details'           => 'exclude_until',
+            'code'              => 'SetSelfExclusionError'
+        });
 
-     $test_client->load();
-     my $self_excl = $test_client->get_self_exclusion;
-     is $self_excl->max_balance, 9998, 'set correct in db';
-     is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
-     is $self_excl->session_duration_limit, 1440, 'all good';
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9999,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440,
+        exclude_until          => DateTime->now()->add(years => 6)->ymd
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "禁止时间不能超过五年。",
+            'details'           => 'exclude_until',
+            'code'              => 'SetSelfExclusionError'
+        });
+    my $exclude_until = DateTime->now()->add(months => 7)->ymd;
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9998,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440,
+        exclude_until          => $exclude_until,
+    };
+    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
 
+    delete $params->{args};
+    is($c->tcall('get_self_exclusion', $params)->{error}{message_to_client}, '令牌无效。', 'this client is inivalid now');
 
-     #is_deeply($c->tcall('get_self_exclusion', $params), {},'get self_exclusion ok');
-  
- 
+    $test_client->load();
+    my $self_excl = $test_client->get_self_exclusion;
+    is $self_excl->max_balance, 9998, 'set correct in db';
+    is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
+    is $self_excl->session_duration_limit, 1440, 'all good';
 
 };
 
