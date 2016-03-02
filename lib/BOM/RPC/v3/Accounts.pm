@@ -276,16 +276,15 @@ sub _check_password {
     my ($old_password, $new_password, $user_pass) = @_;
 
     my $message;
-    $message = localize("Old password is wrong.")
-        unless BOM::System::Password::checkpw($old_password, $user_pass);
-    $message = localize('New password is same as old password.')
-        if $new_password eq $old_password;
-    $message = localize("Password is not strong enough.")
-        unless Data::Password::Meter->new(14)->strong($new_password);
-    $message = localize("Password should have letters and numbers and at least 6 characters.")
-        unless length($new_password) > 6
-        and $new_password =~ /[0-9]+/
-        and $new_password =~ /[a-zA-Z]+/;
+    if (not BOM::System::Password::checkpw($old_password, $user_pass)) {
+        localize("Old password is wrong.");
+    } elsif ($new_password ne $old_password) {
+        $message = localize('New password is same as old password.');
+    } elsif (not Data::Password::Meter->new(14)->strong($new_password)) {
+        localize("Password is not strong enough.");
+    } elsif (length($new_password) < 6 or  $new_password !~ /[0-9]+/) {
+        localize("Password should have letters and numbers and at least 6 characters.");
+    }
 
     if ($message) {
         return BOM::RPC::v3::Utility::create_error({
