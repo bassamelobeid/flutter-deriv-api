@@ -1069,6 +1069,8 @@ subtest $method => sub{
         'check authorization'
        );
    
+     my $params = {language => 'ZH_CN', token => $token_disabled};
+     is($c->tcall($method, $params)->{error}{message_to_client}, "权限不足。", 'vr client cannot set exclusion');
 };
 
 done_testing();
