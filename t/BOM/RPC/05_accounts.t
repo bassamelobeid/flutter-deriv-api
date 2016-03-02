@@ -1091,6 +1091,12 @@ subtest 'get and set self_exclusion' => sub{
      my %msg = get_email_by_address_subject(email => 'qa-alerts@regentmarkets.com,support@binary.com', subject => qr/Client set self-exclusion limits/);
      ok(%msg, "msg sent to support email");
      like($msg{body}, qr/Maximum number of open positions: 100.*Maximum account balance: 10000/s, 'email content is ok');
+     $params->{args} = {            set_self_exclusion => 1,
+                                    max_balance        => 10001,
+                                    max_turnover       => 1000,
+                                    max_open_bets      => 100,
+                       };
+      diag(Dumper $c->tcall($method, $params));
      $params->{args} = {
                         set_self_exclusion     => 1,
                         max_balance            => 9999,
