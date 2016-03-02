@@ -1,10 +1,10 @@
 package Test::BOM::RPC::Client;
 
-use Moose;
-
 use Data::Dumper;
 use Test::More;
 use MojoX::JSON::RPC::Client;
+use Moose;
+use namespace::autoclean;
 
 has 'ua' => (is => 'ro');
 has 'client' => (
