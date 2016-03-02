@@ -1075,7 +1075,7 @@ subtest $method => sub{
    
      my $params = {language => 'ZH_CN', token => $token_vr};
      is($c->tcall($method, $params)->{error}{message_to_client}, "权限不足。", 'vr client cannot set exclusion');
-     $params->{token => $token1};
+     $params->{token} = $token1;
      is($c->tcall($method, $params)->{error}{message_to_client}, "abc");
 };
 
