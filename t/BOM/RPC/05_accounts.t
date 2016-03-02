@@ -1096,7 +1096,7 @@ subtest 'get and set self_exclusion' => sub{
                                     max_turnover       => 1000,
                                     max_open_bets      => 100,
                        };
-     diag($c->tcall($method,$params)->{error});
+     diag(Dumper $c->tcall($method,$params)->{error});
      diag($c->tcall($method,$params)->{error}{message_to_client});
      is_deeply($c->tcall($method, $params)->{error},{});
      $params->{args} = {
