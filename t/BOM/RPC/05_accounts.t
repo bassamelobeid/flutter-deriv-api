@@ -1144,7 +1144,20 @@ subtest 'get and set self_exclusion' => sub{
                                                        'details' => 'exclude_until',
                                                        'code' => 'SetSelfExclusionError'});
  
+     $params->{args} = {
+                        set_self_exclusion     => 1,
+                        max_balance            => 9999,
+                        max_turnover           => 1000,
+                        max_open_bets          => 100,
+                        session_duration_limit => 1440,
+                        exclude_until          => DateTime->now()->add(months => 7)->ymd
+                       };
+     is($c->tcall($method, $params)->{status},1, 'update self_exclusion ok');
 
+     delete $params->{args};
+     is_deeply($c->tcall('get_self_exclusion', $params), {'max_open_bets' => '100', 'max_balance' => '10000'},'get self_exclusion ok');
+  
+ 
 
 };
 
