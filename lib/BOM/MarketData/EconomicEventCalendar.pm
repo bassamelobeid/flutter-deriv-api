@@ -130,12 +130,15 @@ sub save {
         if ($event->{id} && $tentative_events->{$event->{id}}) {
             my $is_tentative = $event->{is_tentative};
             $tentative_events->{$event->{id}} = $event = {(%{$tentative_events->{$event->{id}}}, %$event)};
-            #delete expired event from tentative hash
-            unless ($is_tentative) {
-                delete $tentative_events->{$event->{id}};
-            }
         } elsif ($event->{is_tentative}) {
             $tentative_events->{$event->{id}} = $event;
+        }
+    }
+
+    # delete tentative event from tentative table after one month it happened
+    foreach my $id (keys %$tentative_events) {
+        if ($tentative_event->{$id}->{release_date} && $tentative_event->{$id}->{release_date} < time - 60 * 60 * 24 * 31) {
+            delete $tentative_event->{$id};
         }
     }
 
@@ -163,6 +166,10 @@ sub update {
         foreach my $id (keys %$tentative_events) {
             if (defined($new_events_hash{$id})) {
                 $tentative_events->{$id} = {(%{$tentative_events->{$id}}, %{$new_events_hash{$id}})};
+            }
+            # delete tentative event from tentative table after one month it happened
+            if ($tentative_event->{$id}->{release_date} && $tentative_event->{$id}->{release_date} < time - 60 * 60 * 24 * 31) {
+                delete $tentative_event->{$id};
             }
         }
     }
