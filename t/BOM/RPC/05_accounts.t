@@ -454,27 +454,27 @@ $method = 'change_password';
 subtest $method => sub {
     my $oldpass = '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjNQ=';
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'new_password', '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ=')->{message_to_client},
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'new_password', '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ=')->{error}->{message_to_client},
         'Old password is wrong.',
         'Old password is wrong.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'old_password', $oldpass)->{message_to_client},
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'old_password', $oldpass)->{error}->{message_to_client},
         'New password is same as old password.',
         'New password is same as old password.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'newpassword', $oldpass)->{message_to_client},
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'newpassword', $oldpass)->{error}->{message_to_client},
         'Password is not strong enough.',
         'Password is not strong enough.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'new#_p$ssword', $oldpass)->{message_to_client},
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'new#_p$ssword', $oldpass)->{error}->{message_to_client},
         'Password should have letters and numbers and at least 6 characters.',
         'Password should have letters and numbers and at least 6 characters.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'pa$5A', $oldpass)->{message_to_client},
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'pa$5A', $oldpass)->{error}->{message_to_client},
         'Password should have letters and numbers and at least 6 characters.',
         'Password should have letters and numbers and at least 6 characters.',
     );
