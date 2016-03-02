@@ -224,7 +224,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 				<td align="center" width="50%">
 					<p><b>RETRIEVE CONTRACT DETAILS</b></p>
 					<form action="~ . request()->url_for('backoffice/quant/pricing/contract_details.cgi') . qq~" method="post"><font size=2>
-						<input type="submit" value="Retrieve contract's detail">
+						<input type="submit" value="RETRIEVE CONTRACT DETAILS">
 					</font></form>
 				</td>
 
