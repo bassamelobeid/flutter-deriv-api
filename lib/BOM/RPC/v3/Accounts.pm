@@ -272,6 +272,29 @@ sub get_account_status {
     return {status => \@status};
 }
 
+sub _check_password {
+    my ($old_password, $new_password, $user_pass) = @_;
+
+    my $message;
+    $message = localize("Old password is wrong.")
+        unless BOM::System::Password::checkpw(old_password, $user_pass);
+    $message = localize('New password is same as old password.')
+        if $new_password eq $old_password;
+    $message = localize("Password is not strong enough.")
+        unless (Data::Password::Meter->new(14)->strong($new_password));
+    $message = localize("Password should have letters and numbers.")
+        unless length($pass) > 6 and $pass =~ /[0-9]+/ and $pass =~ /[a-zA-Z]+/;
+
+    if $message {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ChangePasswordError',
+            message_to_client => $message
+        });
+    }
+
+    return;
+}
+
 sub change_password {
     my $params = shift;
 
@@ -291,23 +314,9 @@ sub change_password {
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    my $err = sub {
-        my ($message) = @_;
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ChangePasswordError',
-            message_to_client => $message
-        });
-    };
-
-    ## args validation is done with JSON::Schema in entry_point, here we do others
-    my $pwdm = Data::Password::Meter->new(14);
-
-    return $err->(localize("Old password is wrong."))
-        unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
-    return $err->(localize('New password is same as old password.'))
-        if $args->{new_password} eq $args->{old_password};
-    return $err->(localize("Password is not strong enough."))
-        unless ($pwdm->strong($args->{new_password}));
+    if (my $pass_error = _check_password($args->{old_password}, $args->{new_password}, $user->password)) {
+        return $pass_error;
+    }
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
     $user->password($new_password);
