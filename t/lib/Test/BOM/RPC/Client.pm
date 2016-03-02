@@ -100,6 +100,11 @@ sub result_value_is {
     return $self;
 }
 
+sub result {
+    my $self = shift;
+    return $self->resposne->result;
+}
+
 sub _tcall {
     my ($self, $method, $req_params) = @_;
 
