@@ -15,10 +15,9 @@ use Moose;
 with 'App::Base::Script';
 with 'BOM::Utility::Logging';
 
-use YAML::CacheLoader;
 use List::Util qw(first);
 use BOM::Market::Underlying;
-use BOM::MarketData::InterestRate;
+use Quant::Framework::InterestRate;
 use Date::Utility;
 
 use JSON qw(from_json);
@@ -58,15 +57,21 @@ sub script_run {
         next if $date->is_a_weekend;
         my @source = map {BOM::Market::Underlying->new($_)} @{$self->world_symbols->{$symbol}->{source}};
         my %world_rate;
-        for my $term (sort {$a <=> $b} keys %{BOM::MarketData::InterestRate->new({symbol => 'USD'})->rates}) {
+        for my $term (sort {$a <=> $b} keys %{Quant::Framework::InterestRate->new({
+            symbol => 'USD',
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            })->rates}) {
 	    my %rates = map {$_->symbol => $_->interest_rate_for($term/365) - $_->dividend_rate_for($term/365)} @source;
 	    my @rates_array = map {$neg{$_->symbol} ? -$rates{$_->symbol} : $rates{$_->symbol}} @source;
 	    $world_rate{$term} = ($rates_array[0] + $rates_array[1] + $rates_array[2] + $rates_array[3] + $rates_array[4])/5;
         }
-        my $ir      = BOM::MarketData::InterestRate->new({
+        my $ir      = Quant::Framework::InterestRate->new({
           symbol          => $symbol,
           rates             => \%world_rate,
-          recorded_date       => $date
+          recorded_date       => $date,
+          chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+          chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         });
         $ir->save;
     }
