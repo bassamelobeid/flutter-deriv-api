@@ -1143,19 +1143,26 @@ subtest 'get and set self_exclusion' => sub{
      is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "禁止时间不能超过五年。",
                                                        'details' => 'exclude_until',
                                                        'code' => 'SetSelfExclusionError'});
- 
+ my $exclude_until = DateTime->now()->add(months => 7)->ymd;
      $params->{args} = {
                         set_self_exclusion     => 1,
                         max_balance            => 9999,
                         max_turnover           => 1000,
                         max_open_bets          => 100,
                         session_duration_limit => 1440,
-                        exclude_until          => DateTime->now()->add(months => 7)->ymd
+                        exclude_until          => $exclude_until,
                        };
      is($c->tcall($method, $params)->{status},1, 'update self_exclusion ok');
 
      delete $params->{args};diag(Dumper $c->tcall('get_self_exclusion', $params));
-     diag($c->tcall('get_self_exclusion', $params)->{error}{message_to_client});
+     is($c->tcall('get_self_exclusion', $params)->{error}{message_to_client},'令牌无效。','this client is inivalid now');
+
+     $test_client->load();
+     my $self_excl = $client->get_self_exclusion;
+     is $self_excl->max_balance, 9998, 'set correct in db';
+     is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
+     is $self_excl->session_duration_limit, 1440, 'all good';
+
 
      #is_deeply($c->tcall('get_self_exclusion', $params), {},'get self_exclusion ok');
   
