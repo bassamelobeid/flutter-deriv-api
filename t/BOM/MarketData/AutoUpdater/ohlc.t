@@ -1,14 +1,14 @@
+use Test::MockTime qw( restore_time set_absolute_time );
 use Test::Most;
 use Test::FailWarnings;
 use File::Spec::Functions qw(rel2abs splitpath);
 use File::Temp qw(tempdir);
-
+use Date::Utility;
 use BOM::MarketData::AutoUpdater::OHLC;
 use Test::MockObject::Extends;
 use BOM::Utility::Log4perl;
 use Test::Log4perl;
 use Test::MockModule;
-
 my $abspath   = rel2abs((splitpath(__FILE__))[1]);
 my $data_path = $abspath . '/../../../data/bbdl/ohlc';
 my $module    = Test::MockModule->new('BOM::Market::Underlying');
@@ -96,12 +96,13 @@ subtest 'valid close' => sub {
         file              => [$data_path . '/close.csv'],
         directory_to_save => tempdir,
     );
-    $updater = Test::MockObject::Extends->new($updater);
-    $updater->mock('_passes_sanity_check', sub { '' });
+ 
     lives_ok {
-        $updater->run();
-        ok!$updater->report->{HSI}->{success}, 'HSI failed to be updated due to close >=5%';
-	like($updater->report->{reason}->[0],qr/OHLC big difference/i, 'sanity check for close');
+     set_absolute_time(Date::Utility->new('2016-02-24')->epoch); 
+     $updater->run();
+   
+    ok!$updater->report->{HSI}->{success}, 'HSI failed to be updated due to close >=5%';
+	like($updater->report->{HSI}->{reason}->[0],qr/OHLC big difference/i, 'sanity check for close');
     }
     'close for HSI updated successfully';
 };
