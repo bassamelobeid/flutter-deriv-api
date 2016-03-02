@@ -1132,7 +1132,18 @@ subtest 'get and set self_exclusion' => sub{
                                                          'details' => 'exclude_until',
                                                          'code' => 'SetSelfExclusionError'});
  
-
+     $params->{args} = {
+                        set_self_exclusion     => 1,
+                        max_balance            => 9999,
+                        max_turnover           => 1000,
+                        max_open_bets          => 100,
+                        session_duration_limit => 1440,
+                        exclude_until          => DateTime->now()->add(years => 6)->ymd
+                       };
+     is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "禁止时间不能少于6个月。",
+                                                       'details' => 'exclude_until',
+                                                       'code' => 'SetSelfExclusionError'});
+ 
 
 
 };
