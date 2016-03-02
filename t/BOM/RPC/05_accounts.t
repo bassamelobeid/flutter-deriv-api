@@ -1029,9 +1029,9 @@ subtest $method => sub {
 };
 
 ################################################################################
-# set_self_exclution 
+# set_self_exclusion 
 ################################################################################
-$method = 'set_self_exclution';
+$method = 'set_self_exclusion';
 subtest $method => sub{
      is(
         $c->tcall(
