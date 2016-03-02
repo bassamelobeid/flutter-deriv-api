@@ -277,7 +277,7 @@ sub _check_password {
 
     my $message;
     $message = localize("Old password is wrong.")
-        unless BOM::System::Password::checkpw(old_password, $user_pass);
+        unless BOM::System::Password::checkpw($old_password, $user_pass);
     $message = localize('New password is same as old password.')
         if $new_password eq $old_password;
     $message = localize("Password is not strong enough.")
