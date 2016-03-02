@@ -13,8 +13,8 @@
           [% FOREACH key =pricing_parameters.keys %]
              <tr><td><b> [% key %] </b></td></tr>
                  [% FOREACH sub_keys = pricing_parameters.$key.keys %]
-                     <tr> <td>[% sub_keys]</td>
-                          <td> [% pricing_parameters.$key.$sub_keys %]</td>
+                     <tr><td>[% sub_keys %]</td>
+                         <td> [% pricing_parameters.$key.$sub_keys %]</td>
                      </tr>
                  [% END %]
            [% END %] 
