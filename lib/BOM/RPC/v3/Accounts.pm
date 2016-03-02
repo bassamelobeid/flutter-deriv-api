@@ -277,13 +277,13 @@ sub _check_password {
 
     my $message;
     if (not BOM::System::Password::checkpw($old_password, $user_pass)) {
-        localize("Old password is wrong.");
+        $message= localize("Old password is wrong.");
     } elsif ($new_password ne $old_password) {
         $message = localize('New password is same as old password.');
     } elsif (not Data::Password::Meter->new(14)->strong($new_password)) {
-        localize("Password is not strong enough.");
+        $message= localize("Password is not strong enough.");
     } elsif (length($new_password) < 6 or $new_password !~ /[0-9]+/) {
-        localize("Password should have letters and numbers and at least 6 characters.");
+        $message= localize("Password should have letters and numbers and at least 6 characters.");
     }
 
     if ($message) {
