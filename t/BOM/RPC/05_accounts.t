@@ -464,7 +464,7 @@ subtest $method => sub {
         'New password is same as old password.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'newpassword', $oldpass)->{error}->{message_to_client},
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'water', $oldpass)->{error}->{message_to_client},
         'Password is not strong enough.',
         'Password is not strong enough.',
     );
