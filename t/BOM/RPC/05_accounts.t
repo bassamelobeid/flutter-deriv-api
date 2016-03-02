@@ -452,22 +452,22 @@ subtest $method => sub {
 ################################################################################
 $method = 'change_password';
 subtest $method => sub {
-    is (
+    is(
         BOM::RPC::v3::Accounts::_check_password('old_password', 'new_password', 'user_password')->{message_to_client},
         'Old password is wrong.',
         'Old password is wrong.',
     );
-    is (
+    is(
         BOM::RPC::v3::Accounts::_check_password('old_password', 'old_password', 'old_password')->{message_to_client},
         'New password is same as old password.',
         'New password is same as old password.',
     );
-    is (
+    is(
         BOM::RPC::v3::Accounts::_check_password('old_password', 'newpassword', 'old_password')->{message_to_client},
         'Password is not strong enough.',
         'Password is not strong enough.',
     );
-    is (
+    is(
         BOM::RPC::v3::Accounts::_check_password('old_password', 'new#_password', 'old_password')->{message_to_client},
         'Password should have letters and numbers.',
         'Password should have letters and numbers.',

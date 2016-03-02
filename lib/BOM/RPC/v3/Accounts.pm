@@ -283,16 +283,18 @@ sub _check_password {
     $message = localize("Password is not strong enough.")
         unless (Data::Password::Meter->new(14)->strong($new_password));
     $message = localize("Password should have letters and numbers.")
-        unless length($pass) > 6 and $pass =~ /[0-9]+/ and $pass =~ /[a-zA-Z]+/;
+        unless length($pass) > 6
+        and $pass =~ /[0-9]+/
+        and $pass =~ /[a-zA-Z]+/;
 
-    if $message {
+    if $message{
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ChangePasswordError',
             message_to_client => $message
         });
-    }
+        }
 
-    return;
+        return;
 }
 
 sub change_password {
