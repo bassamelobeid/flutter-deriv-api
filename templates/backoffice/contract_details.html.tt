@@ -5,19 +5,18 @@
         <tr><td>Currency</td><td><input value="[% contract.currency %]" size="4" type="text" name="currency" id="currency" style="none"/></td></tr>
         <tr><td>Start time</td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/></td></tr>
         <tr><td colspan=2><input type="submit" value="Price it!"/></td></tr>
-</table>
+    </table>
 </form>
-[% IF pricing_parameters %]
-<p>[% Contract's pricing details %]</p>
-<table id="dtr" border="1" cellpadding="1" cellspacing="0">
-     [% FOREACH keys IN pricing_parameters.keys %]
-     <tr><b> [% key %] <b></tr>
-        [% FOREACH sub_keys IN pricing_parameters.$key.keys %]
-        <tr>
-            <td>[% sub_keys]</td>
-            <td> [% pricing_parameters.$key.$sub_keys %]</td>
-        </tr>
-        [% END %]
-     [% END %] 
-</table>
+[% IF pricing_parameters.size > 0 %]
+   <p>Contract's pricing details</p>
+       <table id="dtr" border="1" cellpadding="1" cellspacing="0">
+          [% FOREACH key =pricing_parameters.keys %]
+             <tr><td><b> [% key %] </b></td></tr>
+                 [% FOREACH sub_keys = pricing_parameters.$key.keys %]
+                     <tr> <td>[% sub_keys]</td>
+                          <td> [% pricing_parameters.$key.$sub_keys %]</td>
+                     </tr>
+                 [% END %]
+           [% END %] 
+         </table>
 [% END %]

@@ -134,7 +134,7 @@ BOM::Platform::Context::template->process(
     {
         contract           => $original_contract,
         start              => $start ? $start->datetime : '',
-        pricing_parameters => $pricing_parameters ? $pricing_parameters : '',
+        pricing_parameters => $pricing_parameters,
     }) || die BOM::Platform::Context::template->error;
 code_exit_BO();
 
