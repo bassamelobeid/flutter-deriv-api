@@ -51,7 +51,7 @@ sub has_no_error {
     my $self   = shift;
     my $method = $self->params->[0];
 
-    my $result = $self->response->{result} || {};
+    my $result = $self->response->result || {};
     ok( ! $result->{error}, "response for /$method has no error" );
     return $self;
 }
@@ -60,21 +60,21 @@ sub has_error {
     my $self   = shift;
     my $method = $self->params->[0];
 
-    my $result = $self->response->{result} || {};
+    my $result = $self->response->result || {};
     ok( $result->{error}, "response for /$method has error" );
     return $self;
 }
 
 sub error_code_is {
     my ( $self, $expected, $description ) = @_;
-    my $result = $self->response->{result} || {};
+    my $result = $self->response->result || {};
     is( $result->{error}->{code}, $expected, $description );
     return $self;
 }
 
 sub error_message_is {
     my ( $self, $expected, $description ) = @_;
-    my $result = $self->response->{result} || {};
+    my $result = $self->response->result || {};
     is( $result->{error}->{message_to_client}, $expected, $description );
     return $self;
 }
