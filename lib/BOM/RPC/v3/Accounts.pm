@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use JSON;
+use Try::Tiny;
 use Date::Utility;
 use Data::Password::Meter;
 
@@ -889,14 +890,18 @@ sub tnc_approval {
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     my $client_tnc_status   = $client->get_status('tnc_approval');
 
+    my $status = 0;
     if (not $client_tnc_status
         or ($client_tnc_status->reason ne $current_tnc_version))
     {
-        $client->set_status('tnc_approval', 'system', $current_tnc_version);
-        $client->save;
+        try {
+            $client->set_status('tnc_approval', 'system', $current_tnc_version);
+            $client->save;
+            $status = 1;
+        };
     }
 
-    return {status => 1};
+    return {status => $status};
 }
 
 sub login_history {
