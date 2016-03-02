@@ -8,7 +8,7 @@
       "description":"Echo of the request made"
     },
     "tnc_approval": {
-        "type": "string",
+        "type": "integer",
         "description": "Set terms and conditions 1: success, 0: failure",
         "pattern": "^(1|0)$"
     },
