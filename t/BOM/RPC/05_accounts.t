@@ -1076,8 +1076,6 @@ subtest 'get and set self_exclusion' => sub{
      my $params = {language => 'ZH_CN', token => $token_vr, args => {}};
      is($c->tcall($method, $params)->{error}{message_to_client}, "权限不足。", 'vr client cannot set exclusion');
      $params->{token} = $token1;
-     diag(Dumper($c->tcall($method, $params)->{error}));
-     diag($c->tcall($method,$params)->{error}{message_to_client});
      is($c->tcall($method, $params)->{error}{message_to_client}, "请提供至少一个自我禁止设置。", "need one exclusion");
      $params->{args} = {
                                     set_self_exclusion => 1,
@@ -1098,7 +1096,9 @@ subtest 'get and set self_exclusion' => sub{
                                     max_turnover       => 1000,
                                     max_open_bets      => 100,
                        };
-      is_deeply($c->tcall($method, $params)->{error},{});
+     diag($c->tcall($method,$params)->{error});
+     diag($c->tcall($method,$params)->{error}{message_to_client});
+     is_deeply($c->tcall($method, $params)->{error},{});
      $params->{args} = {
                         set_self_exclusion     => 1,
                         max_balance            => 9999,
@@ -1106,6 +1106,7 @@ subtest 'get and set self_exclusion' => sub{
                         max_open_bets          => 100,
                         session_duration_limit => 1440 * 42 + 1,
                        };
+      diag($c->tcall($method,$params)->{error}{message_to_client});
      diag(Dumper $c->tcall($method, $params));
 };
 
