@@ -137,7 +137,8 @@ subtest 'recorded_date on Randoms.' => sub {
         underlying => BOM::Market::Underlying->new('R_100'),
         for_date   => $now->minus_time_interval('1d'),
     });
-    is($surface->recorded_date->datetime, $now->datetime, 'fetch_surface on a Random Index surface with given for_date.');
+    note ('Recorded date should be at most 2 seconds from ' . $now->datetime);
+    cmp_ok($surface->recorded_date->epoch - $now->epoch, '<=', 2, 'fetch_surface on a Random Index surface with given for_date.');
 
     $surface = $dm->fetch_surface({underlying => BOM::Market::Underlying->new('R_100')});
     is($surface->recorded_date->datetime, $now->datetime, 'fetch_surface on a Random Index surface "now".');
