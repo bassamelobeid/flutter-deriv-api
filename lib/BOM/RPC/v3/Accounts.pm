@@ -282,8 +282,8 @@ sub _check_password {
         if $new_password eq $old_password;
     $message = localize("Password is not strong enough.")
         unless Data::Password::Meter->new(14)->strong($new_password);
-    $message = localize("Password should have letters and numbers.")
-        unless length($pass) > 6
+    $message = localize("Password should have letters and numbers and at least 6 characters.")
+        unless length($new_password) > 6
         and $pass =~ /[0-9]+/
         and $pass =~ /[a-zA-Z]+/;
 

@@ -468,9 +468,14 @@ subtest $method => sub {
         'Password is not strong enough.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'new#_password', 'old_password')->{message_to_client},
-        'Password should have letters and numbers.',
-        'Password should have letters and numbers.',
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'new#_p$ssword', 'old_password')->{message_to_client},
+        'Password should have letters and numbers and at least 6 characters.',
+        'Password should have letters and numbers and at least 6 characters.',
+    );
+    is(
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'pa$5A', 'old_password')->{message_to_client},
+        'Password should have letters and numbers and at least 6 characters.',
+        'Password should have letters and numbers and at least 6 characters.',
     );
     is(
         $c->tcall(
