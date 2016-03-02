@@ -118,7 +118,7 @@ sub save {
     my $existing_tentatives = $self->get_tentative_events;
 
     for my $event (@{$self->events}) {
-        if ($event->{id} && $existing_tentatives->{$event->{id}} && and !$event->{is_tentative}) {
+        if ($event->{id} && $existing_tentatives->{$event->{id}} && !$event->{is_tentative}) {
             # When tentative events has occurred, we delete it from tentative.
             delete $existing_tentatives->{$event->{id}};
         } else {
@@ -127,7 +127,7 @@ sub save {
     }
 
     return (
-        $self->chronicle_writer->set(EE, EET, $tentative_events,        $self->recorded_date),
+        $self->chronicle_writer->set(EE, EET, $existing_tentatives,        $self->recorded_date),
         $self->chronicle_writer->set(EE, EE,  $self->_document_content, $self->recorded_date));
 }
 
