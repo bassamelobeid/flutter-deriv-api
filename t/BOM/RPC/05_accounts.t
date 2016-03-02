@@ -1128,7 +1128,7 @@ subtest 'get and set self_exclusion' => sub{
                         session_duration_limit => 1440,
                         exclude_until          => DateTime->now()->add(months => 3)->ymd
                        };
-       is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "禁止时间必须在今日之后。",
+       is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "禁止时间不能少于6个月。",
                                                          'details' => 'exclude_until',
                                                          'code' => 'SetSelfExclusionError'});
  
