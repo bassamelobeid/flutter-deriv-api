@@ -750,6 +750,25 @@ SSMI:
         american:
           max: 365d
           min: 7d
+ISEQ:
+  callput:
+    daily:
+      spot:
+        euro_atm:
+          max: 365d
+          min: 1d
+    intraday:
+      forward:
+        euro_atm:
+          max: 1d
+          min: 5m
+      spot:
+        euro_atm:
+          historical_pricer_max: 1h
+          historical_pricer_min: 15m
+          max: 1h
+          min: 15m
+          payout_limit: '5000'
 STI:
   callput:
     daily:
