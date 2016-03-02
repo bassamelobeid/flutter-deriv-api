@@ -278,7 +278,7 @@ sub _check_password {
     my $message;
     if (not BOM::System::Password::checkpw($old_password, $user_pass)) {
         $message = localize("Old password is wrong.");
-    } elsif ($new_password ne $old_password) {
+    } elsif ($new_password eq $old_password) {
         $message = localize('New password is same as old password.');
     } elsif (not Data::Password::Meter->new(14)->strong($new_password)) {
         $message = localize("Password is not strong enough.");
