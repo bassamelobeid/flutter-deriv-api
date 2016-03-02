@@ -1096,9 +1096,9 @@ subtest 'get and set self_exclusion' => sub{
                                     max_turnover       => 1000,
                                     max_open_bets      => 100,
                        };
-     diag(Dumper $c->tcall($method,$params)->{error});
-     diag($c->tcall($method,$params)->{error}{message_to_client});
-     is_deeply($c->tcall($method, $params)->{error},{});
+     is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "请输入0和10000之间的数字。",
+               'details' => 'max_balance',
+               'code' => 'SetSelfExclusionError'});
      $params->{args} = {
                         set_self_exclusion     => 1,
                         max_balance            => 9999,
@@ -1106,8 +1106,9 @@ subtest 'get and set self_exclusion' => sub{
                         max_open_bets          => 100,
                         session_duration_limit => 1440 * 42 + 1,
                        };
-      diag($c->tcall($method,$params)->{error}{message_to_client});
-     diag(Dumper $c->tcall($method, $params));
+      is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "交易期持续时间限制不能大于 6周。"
+                                                        'details' => 'max_balance',
+                                                        'code' => 'SetSelfExclusionError'});
 };
 
 done_testing();
