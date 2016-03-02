@@ -61,9 +61,8 @@ BEGIN
                                                     b_buy_price);
 
     PERFORM bet_v1.validate_max_balance(v_account, p_limits),
-            bet_v1.validate_max_open_bets(v_account, p_limits),
-            bet_v1.validate_max_payout( v_account, b_underlying_symbol,
-                                        b_bet_type, b_payout_price, p_limits),
+            bet_v1.validate_max_open_bets_and_payout(v_account, b_underlying_symbol,
+                                                     b_bet_type, b_payout_price, p_limits),
             bet_v1.validate_specific_turnover_limits(v_account,
                                                      b_purchase_time, b_buy_price, p_limits),
             bet_v1.validate_7day_limits(v_account,
