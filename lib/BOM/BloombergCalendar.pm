@@ -1,6 +1,5 @@
 package BOM::BloombergCalendar;
 
-use feature 'state';
 use strict;
 use warnings;
 
@@ -10,7 +9,9 @@ use BOM::Platform::Context;
 use Try::Tiny;
 use Text::CSV::Slurp;
 use Date::Utility;
-use YAML::CacheLoader qw(LoadFile);
+use YAML::XS qw(LoadFile);
+
+my $calendar_code_mapper = LoadFile('/home/git/regentmarkets/bom-backoffice/config/bloomberg_calendar_code_mapper.yml');
 
 sub save_calendar {
     my ($calendar, $calendar_type) = @_;
@@ -106,8 +107,6 @@ sub generate_holiday_upload_form {
 
 sub _process {
     my @data = @_;
-
-    state $calendar_code_mapper = LoadFile('/home/git/regentmarkets/bom-backoffice/config/bloomberg_calendar_code_mapper.yml');
 
     my $output;
     foreach my $data (@data) {

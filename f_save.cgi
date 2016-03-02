@@ -12,7 +12,8 @@ use Date::Utility;
 use BOM::System::Localhost;
 use BOM::Utility::Log4perl qw( get_logger );
 use Format::Util::Numbers qw( commas );
-use BOM::MarketData::InterestRate;
+use Quant::Framework::InterestRate;
+use Quant::Framework::ImpliedRate;
 use BOM::MarketData::VolSurface::Delta;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -41,7 +42,7 @@ my $file_broker_code;
 my @removed_lines = ();
 
 if ($filen eq 'editvol') { $ok = 1; }
-if ($filen =~ /^vol\/master(\w+)\.interest$/) { $ok = 1; }
+if ($filen =~ m!^vol/master\w{3}(?:-\w{3})?\.interest$!) { $ok = 1; }
 
 if ($ok == 0) {
     print "Wrong file<P>";
@@ -141,7 +142,7 @@ if ($filen eq 'editvol') {
     code_exit_BO();
 }
 
-if ($filen =~ /^vol\/master(\w+)\.(interest)$/) {
+if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
     my $symbol = $1;
     my $rates  = {};
 
@@ -172,14 +173,19 @@ if ($filen =~ /^vol\/master(\w+)\.(interest)$/) {
             $rates->{$tenor} = $rate;
         }
     }
+    
 
-    my $interest_rates = BOM::MarketData::InterestRate->new(
+    my $class = 'Quant::Framework::InterestRate';
+    $class = 'Quant::Framework::ImpliedRate' if $symbol =~ /-/;
+
+    my $rates_obj = $class->new(
         symbol => $symbol,
         rates  => $rates,
         date   => Date::Utility->new,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );
-    $interest_rates->save;
-
+    $rates_obj->save;
 }
 
 if (not $overridefilename) {
