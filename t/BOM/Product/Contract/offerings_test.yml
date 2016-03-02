@@ -768,7 +768,12 @@ ISEQ:
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            EUR: 5000
+            GBP: 5000
+            AUD: 5000
+            JPY: 500000
 STI:
   callput:
     daily:
