@@ -260,9 +260,8 @@ sub paymentagent_transfer {
 
     if ($args->{dry_run}) {
         return {
-            status               => 2,
-            client_to_first_name => $client_to->first_name,
-            client_to_last_name  => $client_to->last_name,
+            status              => 2,
+            client_to_full_name => $client_to->full_name,
         };
     }
 
@@ -363,7 +362,10 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
         'template_loginid'   => $client_to->loginid
     });
 
-    return {status => 1};
+    return {
+        status              => 1,
+        client_to_full_name => $client_to->full_name,
+    };
 }
 
 sub paymentagent_withdraw {
