@@ -279,6 +279,17 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
             token => 'blabla',
             args  => {
                 paymentagent_transfer => 1,
+                transfer_to           => 'OK992002',
+                currency              => 'USD',
+                amount                => 100,
+                dry_run               => 1
+            }});
+    ok $res->{error}->{message_to_client} =~ /Login ID \(OK992002\) does not exist/, 'Login ID (VRTC000001) does not exist';
+
+    $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
+            token => 'blabla',
+            args  => {
+                paymentagent_transfer => 1,
                 transfer_to           => $client->loginid,
                 currency              => 'RMB',
                 amount                => 100

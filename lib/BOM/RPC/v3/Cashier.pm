@@ -221,7 +221,7 @@ sub paymentagent_transfer {
         return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
     }
 
-    my $client_to = BOM::Platform::Client->new({loginid => $loginid_to});
+    my $client_to = try { BOM::Platform::Client->new({loginid => $loginid_to}) };
     unless ($client_to) {
         return $reject_error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
     }
