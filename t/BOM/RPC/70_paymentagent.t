@@ -377,7 +377,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 currency              => 'USD',
                 amount                => 100,
             }});
-    is $res->{status}, 1, 'paymentagent_withdraw ok again';
+    is $res->{status}, 1, 'paymentagent_transfer ok again';
 }
 
 done_testing();
