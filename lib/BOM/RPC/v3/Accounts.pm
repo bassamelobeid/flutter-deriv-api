@@ -284,8 +284,8 @@ sub _check_password {
         unless Data::Password::Meter->new(14)->strong($new_password);
     $message = localize("Password should have letters and numbers and at least 6 characters.")
         unless length($new_password) > 6
-        and $pass =~ /[0-9]+/
-        and $pass =~ /[a-zA-Z]+/;
+        and $new_password =~ /[0-9]+/
+        and $new_password =~ /[a-zA-Z]+/;
 
     if ($message) {
         return BOM::RPC::v3::Utility::create_error({
