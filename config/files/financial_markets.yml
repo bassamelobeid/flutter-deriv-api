@@ -93,6 +93,11 @@ forex:
               historical_pricer_max: '5h'
           forward:
             euro_atm: five_mins_to_eod
+        tick:
+          spot:
+            euro_atm:
+              min: 5
+              max: 10        
       staysinout:
         daily:
           spot:
