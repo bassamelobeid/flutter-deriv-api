@@ -21,8 +21,8 @@ use Pricing::Engine::EuropeanDigitalSlope;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
+
 PrintContentType();
-riginal_contract->date_start
 BrokerPresentation("Contract's details");
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
