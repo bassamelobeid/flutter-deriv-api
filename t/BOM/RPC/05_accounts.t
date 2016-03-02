@@ -1086,7 +1086,7 @@ subtest $method => sub{
                        };
      is($c->tcall($method, $params)->{status},1, "update self_exclusion ok");
      delete $params->{args};
-     diag(Dumper$c->tcall('get_exclusion', $params));
+     diag(Dumper$c->tcall('get_self_exclusion', $params));
 };
 
 done_testing();
