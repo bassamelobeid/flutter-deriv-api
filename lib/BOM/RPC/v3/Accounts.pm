@@ -887,6 +887,8 @@ sub tnc_approval {
         return $auth_error;
     }
 
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     my $client_tnc_status   = $client->get_status('tnc_approval');
 
