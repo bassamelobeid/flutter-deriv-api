@@ -1088,7 +1088,7 @@ subtest 'get and set self_exclusion' => sub{
      is($c->tcall($method, $params)->{status},1, "update self_exclusion ok");
      delete $params->{args};
      is_deeply($c->tcall('get_self_exclusion', $params), {'max_open_bets' => '100', 'max_balance' => '10000'},'get self_exclusion ok');
-     my %msg = get_email_by_address_subject(email => BOM::Platform::Runtime->instance->app_config->compliance->email, subject => qr/Client set self-exclusion limits/);
+     my %msg = get_email_by_address_subject(email => 'qa-alerts@regentmarkets.com,support@binary.com', subject => qr/Client set self-exclusion limits/);
      ok(%msg, "msg sent to support email");
      diag($msg{body});
      #like($msg{body}, qr//, 'email content is ok');
