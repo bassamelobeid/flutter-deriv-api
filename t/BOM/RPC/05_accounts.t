@@ -1076,7 +1076,17 @@ subtest $method => sub{
      my $params = {language => 'ZH_CN', token => $token_vr, args => {}};
      is($c->tcall($method, $params)->{error}{message_to_client}, "权限不足。", 'vr client cannot set exclusion');
      $params->{token} = $token1;
-     is($c->tcall($method, $params)->{error}{message_to_client}, "abc");
+     is($c->tcall($method, $params)->{error}{message_to_client}, "请提供至少一个自我禁止设置。", "need one exclusion");
+     $params->{args} = {
+                                    set_self_exclusion => 1,
+                        max_balance        => 10000,
+                        max_open_bets      => 100,
+                        max_turnover       => undef, # null should be OK to pass
+                        max_7day_losses    => 0, # 0 is ok to pass but not saved
+                       };
+     is($c->tcall($method, $params)->{status},1, "update self_exclusion ok");
+     delete $params->{args};
+     diag(Dumper$c->tcall('get_exclusion', $params));
 };
 
 done_testing();
