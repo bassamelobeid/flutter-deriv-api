@@ -110,35 +110,19 @@ Saves the calendar into Chronicle
 sub save {
     my $self = shift;
 
-    if (not defined $self->chronicle_reader->get(EE, EE)) {
-        $self->chronicle_writer->set(EE, EE, {});
-    }
-
-    if (not defined $self->get_tentative_events) {
-        $self->chronicle_writer->set(EE, EET, {});
+    for (EE, EET) {
+        $self->chronicle_writer->set(EE, $_, {}) unless defined $self->chronicle_reader->get(EE, $_);
     }
 
     #receive tentative events hash
-    my $tentative_events = $self->get_tentative_events;
+    my $existing_tentatives = $self->get_tentative_events;
 
     for my $event (@{$self->events}) {
-        if (ref($event->{release_date}) eq 'Date::Utility') {
-            $event->{release_date} = $event->{release_date}->datetime_iso8601;
-        }
-
-        #update event if it's tentative
-        if ($event->{id} && $tentative_events->{$event->{id}}) {
-            my $is_tentative = $event->{is_tentative};
-            $tentative_events->{$event->{id}} = $event = {(%{$tentative_events->{$event->{id}}}, %$event)};
-        } elsif ($event->{is_tentative}) {
-            $tentative_events->{$event->{id}} = $event;
-        }
-    }
-
-    # delete tentative event from tentative table after one month it happened
-    foreach my $id (keys %$tentative_events) {
-        if ($tentative_events->{$id}->{release_date} && $tentative_events->{$id}->{release_date} < time - 60 * 60 * 24 * 31) {
-            delete $tentative_events->{$id};
+        if ($event->{id} && $existing_tentatives->{$event->{id}} && and !$event->{is_tentative}) {
+            # When tentative events has occurred, we delete it from tentative.
+            delete $existing_tentatives->{$event->{id}};
+        } else {
+            $existing_tentatives->{$event->{id}} = $event;
         }
     }
 
