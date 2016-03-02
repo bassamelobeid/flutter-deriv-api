@@ -93,41 +93,8 @@ subtest "$method method" => sub {
               { count => 0 },
               'Auth with client token should be ok' );
 
-    # TODO aut with ses token and outh token
 
-    {
-        my $module = Test::MockModule->new('BOM::Platform::Client');
-        $module->mock( 'new', sub {} );
-        $rpc_ct->call_ok(@params)
-               ->has_no_error
-               ->result_is_deeply(
-                    {
-                        error => {
-                            message_to_client => 'Пожалуйста, войдите в систему.',
-                            code => 'AuthorizationRequired',
-                        }
-                    },
-                    'It should return error: AuthorizationRequired' );
-    }
 
-    $client->set_status( 'disabled', 'test', 'test' );
-    $client->save;
-    $rpc_ct->call_ok(@params)
-           ->has_no_error
-           ->result_is_deeply(
-                {
-                    error => {
-                        message_to_client => 'Данный счёт недоступен.',
-                        code => 'DisabledClient',
-                    }
-                },
-                'It should return error: DisabledClient' );
-
-    $client->set_status( 'ok', 'test', 'test' );
-    $client->save;
-    $rpc_ct->call_ok(@params)
-           ->has_no_error;
-    print Dumper $rpc_ct->response->result;
 };
 
 done_testing();
