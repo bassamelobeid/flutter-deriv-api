@@ -51,19 +51,14 @@ sub script_run {
         #the sorted array (by release date) in chronicle
         my @all_events = sort { $a->{release_date} <=> $b->{release_date} } @$events_received;
 
-        my $tentative_count = 0;
-        #now convert release_date to string to be storable in chronicle
-        foreach my $event_param (@all_events) {
-            $event_param->{release_date} = Date::Utility->new($event_param->{release_date})->datetime_iso8601;
-            $tentative_count++ if $event_param->{is_tentative};
-        }
+        my $tentative_count = grep {$_->{is_tentative}} @all_events;
 
         BOM::MarketData::EconomicEventCalendar->new({
                 events        => \@all_events,
                 recorded_date => Date::Utility->new(),
             })->save;
 
-        print "stored " . (scalar @all_events) . " events ($tentative_count - tentative) in chronicle...\n";
+        print "stored " . (scalar @all_events) . " events ($tentative_count are tentative events) in chronicle...\n";
     }
     catch {
         print 'Error occured while saving events: ' . $_;
