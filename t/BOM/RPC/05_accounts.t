@@ -1107,7 +1107,7 @@ subtest 'get and set self_exclusion' => sub{
                         session_duration_limit => 1440 * 42 + 1,
                        };
       is_deeply($c->tcall($method, $params)->{error},{  'message_to_client' => "交易期持续时间限制不能大于 6周。",
-                                                        'details' => 'max_balance',
+                                                        'details' => 'session_duration_limit',
                                                         'code' => 'SetSelfExclusionError'});
 };
 
