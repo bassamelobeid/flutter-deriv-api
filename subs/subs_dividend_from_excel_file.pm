@@ -109,7 +109,7 @@ sub read_discrete_forecasted_dividend_from_excel_files {
             $symbol = SuperDerivatives::UnderlyingConfig::sd_to_binary($symbol);
             # skipping these because SuperDerivatives doesn't provide dividend
             # information on these underlyings
-            if (not $symbol or grep { $symbol eq $_ } qw(STI)) {
+            if (not $symbol or grep { $symbol eq $_ } qw(STI IXIC)) {
                 next SHEET;
             }
         }
