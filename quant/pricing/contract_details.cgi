@@ -128,6 +128,7 @@ map { $_ => $ask_probability->peek_amount($_)} qw(theoretical_probability risk_m
    'backoffice/contract_details.html.tt',
     {
         contract        => $original_contract,
+        start           =>$start ? $start->datetime : '',
         pricing_parameters => $pricing_paramters,
     }) || die BOM::Platform::Context::template->error;
 
