@@ -282,7 +282,7 @@ sub _check_password {
         $message = localize('New password is same as old password.');
     } elsif (not Data::Password::Meter->new(14)->strong($new_password)) {
         localize("Password is not strong enough.");
-    } elsif (length($new_password) < 6 or  $new_password !~ /[0-9]+/) {
+    } elsif (length($new_password) < 6 or $new_password !~ /[0-9]+/) {
         localize("Password should have letters and numbers and at least 6 characters.");
     }
 
