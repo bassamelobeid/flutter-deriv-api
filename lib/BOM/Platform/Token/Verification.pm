@@ -33,7 +33,10 @@ use warnings;
 
 =cut
 
-sub new {    ## no critic RequireArgUnpack
+sub email { $_[0]->{email} if ref $_[0] }    ## no critic
+sub token { $_[0]->{token} if ref $_[0] }    ## no critic
+
+sub new {                                    ## no critic RequireArgUnpack
     my ($package) = shift;
 
     my $self = ref $_[0] ? $_[0] : {@_};
@@ -55,7 +58,6 @@ sub new {    ## no critic RequireArgUnpack
         )->string_from(join('', 'a' .. 'z', 'A' .. 'Z', '0' .. '9'), 48);
 
         my $key = md5_hex($self->{created_for} . $self->{email});
-
         if (my $token = BOM::System::RedisReplicated::redis_read()->get('VERIFICATION_TOKEN_INDEX::' . $key)) {
             BOM::System::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN::' . $token);
         }
