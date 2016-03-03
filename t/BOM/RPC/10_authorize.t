@@ -63,7 +63,7 @@ $expected_result->{currency} = 'USD';
 $expected_result->{balance} = '1000.0000';
 $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
 
-my $test_client_vr = = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                                   broker_code => 'VRTC',
                                                                                  });
 $test_client_vr->email($email);
