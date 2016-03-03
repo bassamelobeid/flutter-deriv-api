@@ -11,7 +11,7 @@
     },
     "score":{
       "type":"integer",
-      "pattern": "^\d{1,3}$",
+      "pattern": "^\\d{1,3}$",
       "description": "Total score for knowledge test.",
       "required": "1"
     },
