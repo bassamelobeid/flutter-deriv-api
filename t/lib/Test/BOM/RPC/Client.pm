@@ -4,6 +4,7 @@ use Data::Dumper;
 use Test::More;
 use MojoX::JSON::RPC::Client;
 use Moose;
+use Test::Builder;
 use namespace::autoclean;
 local $Test::Builder::Level = $Test::Builder::Level + 1;
 
