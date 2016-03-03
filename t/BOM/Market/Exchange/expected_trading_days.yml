@@ -1,4 +1,7 @@
 ---
+# This yaml stores the expected trading days for exchanges on 2013-12-08 (Sunday) to 2013-12-14 (Saturday)
+# 0 - trades
+# 1 - does not trade
 ASX:
 - 0
 - 1

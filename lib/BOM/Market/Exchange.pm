@@ -127,6 +127,12 @@ sub _build_holidays {
     return \%exchange_holidays;
 }
 
+=head2 pseudo_holidays
+
+These are holidays defined by us. During this period, market is still open but less volatile.
+
+=cut
+
 has pseudo_holidays => (
     is      => 'ro',
     lazy    => 1,
