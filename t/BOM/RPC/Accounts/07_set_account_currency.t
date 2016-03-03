@@ -53,6 +53,7 @@ $c->call_ok($method, $params)->has_no_error;
 is($c->result->{status}, 1, 'set currency ok');
 
 $test_client->load;
+isnt($test_client->default_account, undef, 'default account set');
 is($test_client->default_account->currency_code, 'EUR', 'default account updated');
 
 $params->{currency} = 'USD';
