@@ -959,7 +959,7 @@ sub set_account_currency {
             $response->{status} = 1;
           } else {
             use Data::Dumper;
-          print Dumper($client->default_account);
+          print Dumper($client);
           $response->{status} = 0;
         }
     } else {
