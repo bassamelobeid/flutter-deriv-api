@@ -105,6 +105,33 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         date   => $now,
     });
 
+$test_client2->payment_free_gift(
+    currency => 'USD',
+    amount   => 1000,
+    remark   => 'free gift',
+);
+
+my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 99,
+    underlying => 'R_50',
+    quote      => 76.5996,
+    bid        => 76.6010,
+    ask        => 76.2030,
+});
+
+my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 52,
+    underlying => 'R_50',
+    quote      => 76.6996,
+    bid        => 76.7010,
+    ask        => 76.3030,
+});
+
+my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch,
+    underlying => 'R_50',
+});
+
 ################################################################################
 # test begin
 ################################################################################
@@ -246,32 +273,6 @@ subtest $method => sub {
     );
     is($c->tcall($method, {token => $token_21})->{count}, 100, 'have 100 statements');
     is($c->tcall($method, {token => $token1})->{count},   0,   'have 0 statements if no default account');
-    $test_client2->payment_free_gift(
-        currency => 'USD',
-        amount   => 1000,
-        remark   => 'free gift',
-    );
-
-    my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 99,
-        underlying => 'R_50',
-        quote      => 76.5996,
-        bid        => 76.6010,
-        ask        => 76.2030,
-    });
-
-    my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 52,
-        underlying => 'R_50',
-        quote      => 76.6996,
-        bid        => 76.7010,
-        ask        => 76.3030,
-    });
-
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch,
-        underlying => 'R_50',
-    });
 
     my $contract_expired = produce_contract({
         underlying   => $underlying,
@@ -320,6 +321,136 @@ subtest $method => sub {
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
 
+};
+################################################################################
+# profit_table
+################################################################################
+
+$method = 'profit_table';
+subtest $method => sub {
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error if token undef'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
+    #create a new transaction for test
+    my $contract_expired = produce_contract({
+        underlying   => $underlying,
+        bet_type     => 'FLASHU',
+        currency     => 'USD',
+        stake        => 100,
+        date_start   => $now->epoch - 100,
+        date_expiry  => $now->epoch - 50,
+        current_tick => $tick,
+        entry_tick   => $old_tick1,
+        exit_tick    => $old_tick2,
+        barrier      => 'S0P',
+    });
+
+    my $txn = BOM::Product::Transaction->new({
+        client        => $test_client2,
+        contract      => $contract_expired,
+        price         => 100,
+        payout        => $contract_expired->payout,
+        amount_type   => 'stake',
+        purchase_date => $now->epoch - 101,
+    });
+
+    $txn->buy(skip_validation => 1);
+
+    my $result = $c->tcall($method, {token => $token_with_txn});
+    is($result->{count}, 2, 'the new transaction is sold so _sell_expired_contracts is called');
+
+    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+            client_loginid => $test_client2->loginid,
+            currency_code  => $test_client2->currency,
+            db             => BOM::Database::ClientDB->new({
+                    client_loginid => $test_client2->loginid,
+                    operation      => 'replica',
+                }
+            )->db,
+        });
+    my $args    = {};
+    my $data    = $fmb_dm->get_sold_bets_of_account($args);
+    my $expect0 = {
+        'sell_price'     => '100',
+        'contract_id'    => $txn->contract_id,
+        'transaction_id' => $txn->transaction_id,
+        'sell_time'      => Date::Utility->new($data->[0]{sell_time})->epoch,
+        'buy_price'      => '100',
+        'purchase_time'  => Date::Utility->new($data->[0]{purchase_time})->epoch,
+    };
+
+    is_deeply($result->{transactions}[0], $expect0, 'result is correct');
+    $expect0->{longcode}  = 'USD 100.00 payout if Random 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
+    $expect0->{shortcode} = $data->[0]{short_code};
+    $result               = $c->tcall(
+        $method,
+        {
+            token => $token_with_txn,
+            args  => {description => 1}});
+    is_deeply($result->{transactions}[0], $expect0, 'the result with description ok');
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => $token_with_txn,
+                args  => {after => '2006-01-01 01:01:01'}}
+            )->{count},
+        0,
+        'result is correct for arg after'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => $token_with_txn,
+                args  => {before => '2004-01-01 01:01:01'}}
+            )->{count},
+        0,
+        'result is correct for arg after'
+    );
 };
 
 ################################################################################
@@ -822,4 +953,9 @@ subtest $method => sub {
         'vr client return less messages'
     );
 };
+
+################################################################################
+#
+################################################################################
+
 done_testing();
