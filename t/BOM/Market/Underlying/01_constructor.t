@@ -6,7 +6,6 @@ use Test::Exception;
 use Test::NoWarnings;
 
 use Date::Utility;
-use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 use BOM::Market::Underlying;
 use BOM::Market::Registry;
