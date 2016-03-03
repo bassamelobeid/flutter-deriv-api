@@ -102,7 +102,7 @@ sub result_value_is {
 
 sub result {
     my $self = shift;
-    return $self->resposne->result;
+    return $self->response->result;
 }
 
 sub _tcall {
