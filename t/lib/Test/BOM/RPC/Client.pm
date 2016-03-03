@@ -5,7 +5,7 @@ use Test::More;
 use MojoX::JSON::RPC::Client;
 use Moose;
 use namespace::autoclean;
-local $Test::Builder::Level = Test::Builder::Level + 1;
+local $Test::Builder::Level = $Test::Builder::Level + 1;
 
 has 'ua' => (is => 'ro');
 has 'client' => (
