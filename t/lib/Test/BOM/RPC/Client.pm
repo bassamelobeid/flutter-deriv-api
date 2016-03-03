@@ -1,8 +1,9 @@
 package Test::BOM::RPC::Client;
 
 use Data::Dumper;
-use Test::More;
 use MojoX::JSON::RPC::Client;
+use Test::Builder;
+
 use Moose;
 use namespace::autoclean;
 
@@ -19,6 +20,14 @@ has 'params'   => (
     is  => 'rw',
     isa => 'ArrayRef'
 );
+has tb => (
+    is => 'ro',
+    builder => '_build_tb',
+);
+
+sub _build_tb {
+    return Test::Builder->new;
+}
 
 sub _build_client {
     my $self = shift;
@@ -29,57 +38,63 @@ sub call_ok {
     my $self = shift;
     my ($method, $req_params, $description) = @_;
 
+    $description ||= "called /$method";
+
     $self->_tcall(@_);
 
-    ok($self->response, $description || "called /$method");
+    $self->tb->ok($self->response, $description);
     return $self;
 }
 
 sub has_no_system_error {
     my ( $self, $description ) = @_;
     my $method = $self->params->[0];
+    $description ||= "response for /$method has no system error";
 
-    ok(!$self->response->is_error, $description || "response for /$method has no system error");
+    $self->tb->ok(!$self->response->is_error, $description);
     return $self;
 }
 
 sub has_system_error {
     my ( $self, $description ) = @_;
     my $method = $self->params->[0];
+    $description ||= "response for /$method has system error";
 
-    ok($self->response->is_error, $description || "response for /$method has system error");
+    $self->tb->ok($self->response->is_error, $description);
     return $self;
 }
 
 sub has_no_error {
     my ( $self, $description ) = @_;
     my $method = $self->params->[0];
+    $description ||= "response for /$method has no error";
 
-    my $result = $self->result || {};
-    ok(!$result->{error}, $description || "response for /$method has no error");
+    my $result = $self->result;
+    $self->tb->ok( $result && !$result->{error}, $description);
     return $self;
 }
 
 sub has_error {
     my ( $self, $description ) = @_;
     my $method = $self->params->[0];
+    $description ||= "response for /$method has error";
 
-    my $result = $self->result || {};
-    ok($result->{error}, $description || "response for /$method has error");
+    my $result = $self->result;
+    $self->tb->ok( $result && $result->{error}, $description);
     return $self;
 }
 
 sub error_code_is {
     my ($self, $expected, $description) = @_;
     my $result = $self->result || {};
-    is($result->{error}->{code}, $expected, $description);
+    $self->tb->is($result->{error}->{code}, $expected, $description);
     return $self;
 }
 
 sub error_message_is {
     my ($self, $expected, $description) = @_;
     my $result = $self->result || {};
-    is($result->{error}->{message_to_client}, $expected, $description);
+    $self->tb->is($result->{error}->{message_to_client}, $expected, $description);
     return $self;
 }
 
@@ -93,7 +108,7 @@ sub result_is_deeply {
 sub result_value_is {
     my ($self, $get_compared_hash_value, $expected, $description) = @_;
 
-    is($get_compared_hash_value->($self->result), $expected, $description);
+    $self->tb->is($get_compared_hash_value->($self->result), $expected, $description);
     return $self;
 }
 
@@ -111,7 +126,7 @@ sub _tcall {
         });
 
     $self->response($r);
-    $self->result($r->result);
+    $self->result($r->result) if $r;
 
     return $r;
 }
