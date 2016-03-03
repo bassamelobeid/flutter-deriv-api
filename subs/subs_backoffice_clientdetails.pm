@@ -117,11 +117,7 @@ sub print_client_details {
         state_options           => set_selected_item($client->state, $stateoptions),
         show_funds_message      => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         ukgc_funds_status       => $client->get_status('ukgc_funds_protection'),
-        show_tnc_status         => (
-                   $client->landing_company->short eq 'malta'
-                or $client->landing_company->short eq 'maltainvest'
-                or $client->landing_company->short eq 'iom'
-            ) ? 1 : 0,
+        show_tnc_status => ($client->is_virtual) ? 0 : 1,
         tnc_approval_status => $tnc_status,
         client_tnc_version  => $tnc_status ? $tnc_status->reason : '',
     };
