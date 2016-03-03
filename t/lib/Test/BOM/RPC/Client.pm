@@ -123,6 +123,5 @@ sub _tcall {
     return $r;
 }
 
-no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
