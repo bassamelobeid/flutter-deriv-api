@@ -8,15 +8,30 @@
     </table>
 </form>
 [% IF pricing_parameters.size > 0 %]
-   <p>Contract's pricing details</p>
-       <table id="dtr" border="1" cellpadding="1" cellspacing="0">
+   <p><b>Contract's pricing details</b></p>
+        <table id="dtr" border="1" cellpadding="1" cellspacing="0">
+            <tr><td><b> [% pricing_paramters.ask_probability %] </b></td></tr>
+                [% FOREACH ask_key =pricing_parameters.ask_probility.keys %]
+                <tr><td><b> [% ask_key %] </b></td></tr>
+                [% END %]
+        </table>
+       <p><table id="dtr" border="1" cellpadding="1" cellspacing="0">
           [% FOREACH key =pricing_parameters.keys %]
-             <tr><td><b> [% key %] </b></td></tr>
-                 [% FOREACH sub_keys = pricing_parameters.$key.keys %]
-                     <tr><td>[% sub_keys %]</td>
-                         <td> [% pricing_parameters.$key.$sub_keys %]</td>
-                     </tr>
-                 [% END %]
+             [% IF key != 'ask_probability' %]
+                <tr><td><b> [% key %] </b></td></tr>
+                    [% FOREACH sub_keys = pricing_parameters.$key.keys %]
+                       <tr><td>[% sub_keys %]</td>
+                           <td> [% pricing_parameters.$key.$sub_keys %]</td>
+                       </tr>
+                     [% END %]
+                        [% IF pricing_parameters.$key.$sub_keys.size >0 %]
+                            [% FOREACH sub_sub_keys = pricing_parameters.$key.$sub_keys.keys %]
+                                <tr><td>[% sub_sub_keys %]</td>
+                                <td> [% pricing_parameters.$key.$sub_keys.$sub_sub_keys %]</td>
+                             </tr>
+                              [% END %]    
+                        [% END %]
+             [% END %]
            [% END %] 
-         </table>
+         </table></p>
 [% END %]
