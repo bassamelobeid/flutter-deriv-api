@@ -18,7 +18,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                             });
 $test_client->email($email);
 $test_client->save;
-
+$test_client = BOM::Platform::Client->new({loginid => $test_client->loginid})->load;
 is $test_client->default_account, undef, 'new client has no default account';
 
 my $token = BOM::Platform::SessionCookie->new(
@@ -53,10 +53,7 @@ $c->call_ok($method, $params)->has_no_error;
 is($c->result->{status}, 1, 'set currency ok');
 
 $test_client->load;
-diag(Dumper($test_client));
-diag("default account:" . Dumper($test_client->default_account));
-isnt $test_client->default_account, undef, 'default account is set';
-#is($test_client->default_account, 'EUR', 'default account updated');
+is($test_client->default_account->currency_code, 'EUR', 'default account updated');
 
 $params->{currency} = 'USD';
 $c->call_ok($method, $params)->has_no_error;
