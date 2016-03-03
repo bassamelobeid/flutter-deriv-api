@@ -860,24 +860,22 @@ my $corr = {
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'correlation_matrix',
     {
-        correlations => $corr,
-        recorded_date         => Date::Utility->new()});
+        correlations  => $corr,
+        recorded_date => Date::Utility->new()});
 
 map { BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => $_->symbol, date => Date::Utility->new,}) } @symbols;
 
-
-my $data = [
-    {
+my $data = [{
         underlying => 'AS51',
-        bet_type => 'FLASHU',
+        bet_type   => 'FLASHU',
         date_start => 1428458885,
-        duration => 60,
+        duration   => 60,
     },
     {
         underlying => 'AS51',
-        bet_type => 'FLASHU',
+        bet_type   => 'FLASHU',
         date_start => 1428458885,
-        duration => 30,
+        duration   => 30,
     },
 ];
 
@@ -885,8 +883,8 @@ foreach my $d (@$data) {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
         {
-            symbol => $_,
-            recorded_date   => Date::Utility->new($d->{date_start}),
+            symbol        => $_,
+            recorded_date => Date::Utility->new($d->{date_start}),
         }) for (qw/USD GBP EUR AUD CHF/);
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -902,7 +900,6 @@ foreach my $d (@$data) {
             symbol        => $_,
             recorded_date => Date::Utility->new($d->{date_start}),
         }) for qw(frxEURUSD frxAUDUSD frxUSDCHF);
-
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_delta',
@@ -921,14 +918,18 @@ foreach my $d (@$data) {
         underlying   => $d->{underlying},
         barrier      => 'S0P',
     };
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => $d->{underlying}, recorded_date => Date::Utility->new($d->{date_start}),});
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol        => $d->{underlying},
+            recorded_date => Date::Utility->new($d->{date_start}),
+        });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'correlation_matrix',
         {
-            correlations => $corr,
-            recorded_date         => Date::Utility->new($params->{date_start}),
-        }
-    );
+            correlations  => $corr,
+            recorded_date => Date::Utility->new($params->{date_start}),
+        });
 
     my $c = produce_contract($params);
     is roundnear(0.01, $c->theo_probability->amount), 0.5, 'theo prob checked';

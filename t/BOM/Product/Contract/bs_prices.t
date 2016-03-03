@@ -48,8 +48,8 @@ foreach my $code (@codes) {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
         {
-            symbol => $_,
-            recorded_date   => $now,
+            symbol        => $_,
+            recorded_date => $now,
         }) for (qw/GBP USD/);
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -75,10 +75,10 @@ foreach my $code (@codes) {
     $bet_args{payout}       = 250;
     $bet_args{currency}     = $currency;
     $bet_args{current_tick} = BOM::Market::Data::Tick->new({
-            symbol => $underlying->symbol,
-            epoch  => $start_time->epoch + 300,
-            quote  => 1.6084
-        });
+        symbol => $underlying->symbol,
+        epoch  => $start_time->epoch + 300,
+        quote  => 1.6084
+    });
     $bet_args{q_rate}      = 0;
     $bet_args{r_rate}      = 0;
     $bet_args{pricing_vol} = 0.1;
@@ -89,6 +89,6 @@ foreach my $code (@codes) {
     };
 
     my $contract = produce_contract(\%bet_args);
-is(roundnear(0.001, $contract->bs_probability->amount), roundnear(0.001, $expected[$count]), 'bs probability for [' . $contract->code . ']');
-$count++;
+    is(roundnear(0.001, $contract->bs_probability->amount), roundnear(0.001, $expected[$count]), 'bs probability for [' . $contract->code . ']');
+    $count++;
 }

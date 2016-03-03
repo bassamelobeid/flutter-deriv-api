@@ -27,7 +27,7 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
 
-my $now       = Date::Utility->new;
+my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -43,11 +43,11 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_delta', {
-        symbol => 'frxUSDJPY',
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDJPY',
         recorded_date => $now,
-    }
-);
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',
     {
