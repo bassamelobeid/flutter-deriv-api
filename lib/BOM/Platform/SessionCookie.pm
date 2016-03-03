@@ -77,7 +77,7 @@ Creates a new session and stores it in redis.
 # default token parameters
 my $STRING       = join '', 'a' .. 'z', 'A' .. 'Z', '0' .. '9';
 my @REQUIRED     = qw(email);
-my @ALLOWED      = qw(email loginid token expires_in loginat created_for scopes clerk auth_token client_id expiration_time);
+my @ALLOWED      = qw(email loginid token expires_in loginat scopes clerk auth_token client_id expiration_time);
 my $EXPIRES_IN   = 3600 * 24;
 my $TOKEN_LENGTH = 48;
 
