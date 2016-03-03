@@ -54,6 +54,7 @@ is($c->result->{status}, 1, 'set currency ok');
 
 $test_client->load;
 diag("default account:" . Dumper($test_client->default_account));
+isnt $test_client->default_account, undef, 'default account is set';
 #is($test_client->default_account, 'EUR', 'default account updated');
 
 $params->{currency} = 'USD';
