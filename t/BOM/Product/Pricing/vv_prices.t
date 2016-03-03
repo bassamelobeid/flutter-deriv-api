@@ -40,18 +40,23 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         quote      => $spot,
         epoch      => $now->epoch,
     });
-    foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter('contract_category', {underlying_symbol => $ul->symbol})) {
+    foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter('contract_category', {underlying_symbol => $ul->symbol}))
+    {
         my $category_obj = BOM::Product::Contract::Category->new($contract_category);
         next if not $category_obj->is_path_dependent;
         my @duration = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
             my @barriers = @{
                 BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
-                        type              => ($category_obj->two_barriers ? 'double' : 'single'),
-                        underlying        => $ul,
-                        duration          => $duration,
-                        spot              => $spot,
-                        volatility        => BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul})->get_volatility({delta => 50, days => $duration /86400}),
+                        type => ($category_obj->two_barriers ? 'double' : 'single'),
+                        underlying => $ul,
+                        duration   => $duration,
+                        spot       => $spot,
+                        volatility => BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul})->get_volatility({
+                                delta => 50,
+                                days  => $duration / 86400
+                            }
+                        ),
                     })};
             foreach my $barrier (@barriers) {
                 foreach my $contract_type (get_offerings_with_filter('contract_type', {contract_category => $contract_category})) {
@@ -67,7 +72,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                     };
                     lives_ok {
                         my $c = produce_contract($args);
-                        my @codes = ($c->code,$c->underlying->symbol,$c->date_start->epoch,$c->date_expiry->epoch);
+                        my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch);
                         if ($c->category->two_barriers) {
                             push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);
                         } else {
@@ -76,7 +81,8 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
                         is $c->theo_probability->amount, $expectation->{$code}, 'theo probability matches [' . $code . ']';
-                    } 'survived';
+                    }
+                    'survived';
                 }
             }
         }

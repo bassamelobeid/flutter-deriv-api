@@ -18,20 +18,20 @@ my $now = Date::Utility->new('10-Mar-2015');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => 'USD',
-        recorded_date   => $now,
+        symbol        => 'USD',
+        recorded_date => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => 'JPY',
-        recorded_date   => $now,
+        symbol        => 'JPY',
+        recorded_date => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => 'JPY-USD',
-        recorded_date   => $now,
+        symbol        => 'JPY-USD',
+        recorded_date => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',

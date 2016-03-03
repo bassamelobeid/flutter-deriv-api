@@ -15,35 +15,34 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use Pricing::Engine::EuropeanDigitalSlope;
 
-
 my $date_pricing = 1352344145;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new($date_pricing),
+        symbol        => $_,
+        recorded_date => Date::Utility->new($date_pricing),
     }) for (qw/GBP JPY USD AUD EUR JPY-USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
-        symbol => 'FTSE',
-        recorded_date   => Date::Utility->new($date_pricing),
+        symbol        => 'FTSE',
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
-        recorded_date   => Date::Utility->new($date_pricing),
+        recorded_date => Date::Utility->new($date_pricing),
     }) for qw/frxUSDJPY frxGBPJPY frxGBPUSD/;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'FTSE',
-        recorded_date   => Date::Utility->new($date_pricing),
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -60,9 +59,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             186 => 0.1,
             365 => 0.13,
         },
-        type         => 'implied',
-        implied_from => 'USD',
-        recorded_date   => Date::Utility->new($date_pricing),
+        type          => 'implied',
+        implied_from  => 'USD',
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -79,9 +78,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             186 => 0.1,
             365 => 0.13,
         },
-        type         => 'implied',
-        implied_from => 'USD',
-        recorded_date   => Date::Utility->new($date_pricing),
+        type          => 'implied',
+        implied_from  => 'USD',
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -98,9 +97,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             186 => 0.1,
             365 => 0.13,
         },
-        type         => 'implied',
-        implied_from => 'EUR',
-        recorded_date   => Date::Utility->new($date_pricing),
+        type          => 'implied',
+        implied_from  => 'EUR',
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
 my %bet_params = (
