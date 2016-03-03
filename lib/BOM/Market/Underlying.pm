@@ -2,8 +2,6 @@ package BOM::Market::Underlying;
 use 5.010;
 use Moose;
 
-with 'BOM::Market::Role::ParsedOfferings';
-
 =head1 NAME
 
 BOM::Market::Underlying
@@ -44,9 +42,12 @@ use BOM::Platform::Context qw(request localize);
 use POSIX;
 use Try::Tiny;
 use BOM::Market::Types;
+use YAML::XS qw(LoadFile);
 use BOM::Platform::Static::Config;
 
 with 'BOM::Market::Role::ExpiryConventions';
+
+our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
 =head1 METHODS
 
@@ -238,8 +239,8 @@ has contracts => (
 sub _build_contracts {
     my $self = shift;
 
-    return ($self->quanto_only) ? {} : $self->parsed_contracts // $self->submarket->contracts;
-
+    return {} if $self->quanto_only;
+    return $PRODUCT_OFFERINGS->{$self->symbol} // {};
 }
 
 has submarket => (
@@ -1229,7 +1230,7 @@ sub _build_is_trading_suspended {
     my $self = shift;
 
     return (
-               not $self->market->contracts_offered
+               not keys %{$self->contracts}
             or $self->market->disabled
             or grep { $_ eq $self->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades}));
 }
@@ -1788,18 +1789,6 @@ sub pipsized_value {
         $value = sprintf '%.' . $display_decimals . 'f', $value;
     }
     return $value;
-}
-
-=head2 contracts_offered
-
-Is the contract category offered on this underlying?
-
-=cut
-
-sub contracts_offered {
-    my ($self, $contract_category) = @_;
-
-    return exists $self->contracts->{$contract_category};
 }
 
 =head2 price_at_intervals(\%args)
