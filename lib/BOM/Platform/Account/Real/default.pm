@@ -124,7 +124,7 @@ sub _after_register_client {
     my $args = shift;
     my ($client, $user, $details) = @{$args}{'client', 'user', 'details'};
 
-    if (any { $client->landing_company->short eq $_ } qw(malta maltainvest iom)) {
+    if (not $client->is_virtual) {
         $client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
         $client->save;
     }
