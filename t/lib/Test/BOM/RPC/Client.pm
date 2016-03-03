@@ -3,6 +3,7 @@ package Test::BOM::RPC::Client;
 use Data::Dumper;
 use MojoX::JSON::RPC::Client;
 use Test::Builder;
+use Test::More ();
 
 use Moose;
 use namespace::autoclean;
@@ -101,7 +102,8 @@ sub error_message_is {
 sub result_is_deeply {
     my ($self, $expected, $description) = @_;
 
-    $self->tb->is_deeply($self->result, $expected, $description);
+    $Test::Builder::Level += 1;
+    Test::More::is_deeply($self->result, $expected, $description);
     return $self;
 }
 
