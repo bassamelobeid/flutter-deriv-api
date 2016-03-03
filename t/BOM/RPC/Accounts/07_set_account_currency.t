@@ -46,10 +46,10 @@ $test_client->clr_status('disabled');
 $test_client->save;
 
 $params->{currency} = 'not_allowed';
-$c->call_ok($method, $params)->has_error->error_message_is('what', 'currency not applicable for this client')->error_code_is('InvalidCurrency', 'error code is correct');
+$c->call_ok($method, $params)->has_error->error_message_is('所提供的货币 not_allowed不可在此账户使用。', 'currency not applicable for this client')->error_code_is('InvalidCurrency', 'error code is correct');
 
 $params->{currency} = 'JPY';
-$c->call_ok($method, $params)->has_error->error_message_is('what', 'currency not applicable for this client')->error_code_is('InvalidCurrency', 'error code is correct');
+$c->call_ok($method, $params)->has_error->error_message_is('所提供的货币 JPY不可在此账户使用。', 'currency not applicable for this client')->error_code_is('InvalidCurrency', 'error code is correct');
 
 $params->{currency} = 'EUR';
 $c->call_ok($method, $params)->has_no_error;
