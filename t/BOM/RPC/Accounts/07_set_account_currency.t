@@ -51,10 +51,10 @@ $c->call_ok($method, $params)->has_error->error_message_is('所提供的货币 J
 $params->{currency} = 'EUR';
 $c->call_ok($method, $params)->has_no_error;
 is($c->result->{status}, 1, 'set currency ok');
+my $client = BOM::Platform::Client->new({loginid => $test_client->loginid});
 
-$test_client->load;
-isnt($test_client->default_account, undef, 'default account set');
-is($test_client->default_account->currency_code, 'EUR', 'default account updated');
+isnt($client->default_account, undef, 'default account set');
+is($client->default_account->currency_code, 'EUR', 'default account updated');
 
 $params->{currency} = 'USD';
 $c->call_ok($method, $params)->has_no_error;
