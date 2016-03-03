@@ -60,24 +60,16 @@ sub update_event {
         @b2 = ($1, $2);
     }
 
-    my @updated_events;
-    foreach my $id (keys %$events) {
-        if ($id eq $params->{id}) {
+    return "Tentative events not found in chronicle" unless $events->{$params->{id}};
 
-            my $blankout = Date::Utility->new($events->{$id}->{release_date});
-            $events->{$id}->{blankout}     = Date::Utility->new($events->{$id}->{release_date})->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
-            $events->{$id}->{blankout_end} = Date::Utility->new($events->{$id}->{release_date})->plus_time_interval("$b2[0]h$b2[1]m")->epoch;
-            if ($events->{$id}->{blankout} > $events->{$id}->{blankout_end}) {
-                return 'Blankout end time should be after blankout start time!';
-            }
-            $events->{$id}->{release_date} = int(($events->{$id}->{blankout}+$events->{$id}->{blankout_end})/2);
-            push @updated_events, $events->{$id};
-            last;
-        }
-    }
+    my $existing = $events->{$params->{id}};
+    my $rd       = Date::Utility->new($existing->{release_date});
+    $existing->{blankout}     = $rd->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
+    $existing->{blankout_end} = $rd->plus_time_interval("$b2[0]h$b2[1]m")->epoch;
+    $existing->{release_date} = int(($existing->{blankout} + $existing->{blankout_end}) / 2);
 
     return BOM::MarketData::EconomicEventCalendar->new({
-            events        => \@updated_events,
+            events        => [$existing],
             recorded_date => Date::Utility->new(),
         })->update ? 1 : 0;
 }
