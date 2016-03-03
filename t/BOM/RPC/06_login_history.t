@@ -55,7 +55,7 @@ my $method = 'login_history';
 my $params = {language => 'zh_CN', token => $token};
 
 my $res = $c->call_ok($method, $params)->result;
-is scalar(@{$res->{login_history}}), 1, 'got correct number of login history records';
-is $res->{login_history}->[0]->{action}, 'logout',     'login history record has action key';
-is $res->{login_history}->[0]->{environment}, 'dummy environment', 'login history record has environment key';
-ok $res->{login_history}->[0]->{time},        'login history record has time key';
+is scalar(@{$res->{records}}), 1, 'got correct number of login history records';
+is $res->{records}->[0]->{action}, 'logout',     'login history record has action key';
+is $res->{records}->[0]->{environment}, 'dummy environment', 'login history record has environment key';
+ok $res->{records}->[0]->{time},        'login history record has time key';
