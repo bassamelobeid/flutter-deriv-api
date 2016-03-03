@@ -24,7 +24,6 @@ $test_client->save;
 
 is $test_client->default_account, undef, 'new client has no default account';
 
-my $t     = build_mojo_test();
 my $token = BOM::Platform::SessionCookie->new(
                                               loginid => $test_client->loginid,
                                               email   => $email
