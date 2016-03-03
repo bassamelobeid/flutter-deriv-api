@@ -207,6 +207,6 @@
 "/user/tnc_approvalws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/user/historyws":
+"/user/history":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
