@@ -272,6 +272,30 @@ sub get_account_status {
     return {status => \@status};
 }
 
+sub _check_password {
+    my ($old_password, $new_password, $user_pass) = @_;
+
+    my $message;
+    if (not BOM::System::Password::checkpw($old_password, $user_pass)) {
+        $message = localize("Old password is wrong.");
+    } elsif ($new_password eq $old_password) {
+        $message = localize('New password is same as old password.');
+    } elsif (not Data::Password::Meter->new(14)->strong($new_password)) {
+        $message = localize("Password is not strong enough.");
+    } elsif (length($new_password) < 6 or $new_password !~ /[0-9]+/ or $new_password !~ /[a-z]+/ or $new_password !~ /[A-Z]+/) {
+        $message = localize("Password should have letters and numbers and at least 6 characters.");
+    }
+
+    if ($message) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ChangePasswordError',
+            message_to_client => $message
+        });
+    }
+
+    return;
+}
+
 sub change_password {
     my $params = shift;
 
@@ -291,23 +315,9 @@ sub change_password {
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    my $err = sub {
-        my ($message) = @_;
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ChangePasswordError',
-            message_to_client => $message
-        });
-    };
-
-    ## args validation is done with JSON::Schema in entry_point, here we do others
-    my $pwdm = Data::Password::Meter->new(14);
-
-    return $err->(localize("Old password is wrong."))
-        unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
-    return $err->(localize('New password is same as old password.'))
-        if $args->{new_password} eq $args->{old_password};
-    return $err->(localize("Password is not strong enough."))
-        unless ($pwdm->strong($args->{new_password}));
+    if (my $pass_error = _check_password($args->{old_password}, $args->{new_password}, $user->password)) {
+        return $pass_error;
+    }
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
     $user->password($new_password);
@@ -513,10 +523,11 @@ sub set_settings {
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
 
-    # Virtual client is only allowed to update residence, if residence not set
+    my $residence = $args->{residence};
     if ($client->is_virtual) {
-        if ($args->{residence} and not $client->residence) {
-            $client->residence($args->{residence});
+        # Virtual client can only update residence, if residence not set. But not for Japan
+        if (not $client->residence and $residence and $residence ne 'jp') {
+            $client->residence($residence);
             if (not $client->save()) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError',
@@ -526,8 +537,9 @@ sub set_settings {
         }
         return BOM::RPC::v3::Utility::permission_error();
     } else {
-        # not allow real client to update residence
-        return BOM::RPC::v3::Utility::permission_error() if ($args->{residence});
+        # real client not allow to update residence
+        # Japanese client not allow to update settings
+        return BOM::RPC::v3::Utility::permission_error() if ($residence or $client->residence eq 'jp');
     }
 
     my $now             = Date::Utility->new;
@@ -884,6 +896,8 @@ sub tnc_approval {
         return $auth_error;
     }
 
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     my $client_tnc_status   = $client->get_status('tnc_approval');
 
@@ -891,7 +905,11 @@ sub tnc_approval {
         or ($client_tnc_status->reason ne $current_tnc_version))
     {
         $client->set_status('tnc_approval', 'system', $current_tnc_version);
-        $client->save;
+        if (not $client->save()) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your request.')});
+        }
     }
 
     return {status => 1};
