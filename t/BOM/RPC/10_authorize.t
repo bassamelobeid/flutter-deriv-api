@@ -38,8 +38,8 @@ my $params = {
 $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'check invalid token');
 $params->{token} = $token;
 my $expected_result = {
-                       fullname => $client->full_name,
-                       loginid  => $client->loginid,
+                       fullname => $test_client->full_name,
+                       loginid  => $test_client->loginid,
                        balance => 0,
                        currency => '',
                        account_id => '',
