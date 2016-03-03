@@ -64,7 +64,7 @@ $c->call_ok($method, $params)->has_error->error_message_is('此账户不可用�
 $test_client->clr_status('disabled');
 $test_client->save;
 
-my $res = $c->call_ok($method, $params)->result;
+my $res = $c->call_ok($method, $params)->has_system_error->result;
 is scalar(@{$res->{records}}), 1, 'got correct number of login history records';
 is $res->{records}->[0]->{action},      'logout',            'login history record has action key';
 is $res->{records}->[0]->{environment}, 'dummy environment', 'login history record has environment key';
