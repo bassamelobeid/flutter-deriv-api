@@ -8,29 +8,31 @@
     </table>
 </form>
 [% IF pricing_parameters.size > 0 %]
-   <p><b>Contract's pricing details</b></p>
+        <p><b> Contract's Price = [% contract.currency  %][%pricing_parameters.ask_price %]</b></p>
         <table id="dtr" border="1" cellpadding="1" cellspacing="0">
-            <tr><td><b> [% pricing_paramters.ask_probability %] </b></td></tr>
-                [% FOREACH ask_key =pricing_parameters.ask_probility.keys %]
-                <tr><td><b> [% ask_key %] </b></td></tr>
+                <tr><b> Contract's probability </br></tr>
+                [% FOREACH ask_key =pricing_parameters.ask_probability.keys %]
+                <tr><td>[% ask_key %]</td>
+                    <td> [% pricing_parameters.ask_probability.$ask_key %]</td>
+                </tr>
                 [% END %]
         </table>
-       <p><table id="dtr" border="1" cellpadding="1" cellspacing="0">
           [% FOREACH key =pricing_parameters.keys %]
-             [% IF key != 'ask_probability' %]
+               <p><table id="dtr" border="1" cellpadding="1" cellspacing="0">
+               [% IF key != 'ask_probability' AND key != 'ask_price' %]
                 <tr><td><b> [% key %] </b></td></tr>
                     [% FOREACH sub_keys = pricing_parameters.$key.keys %]
-                       <tr><td>[% sub_keys %]</td>
+                         <tr><td>[% sub_keys %]</td>
+                          [% IF key != 'numeraire_probability' %]
                            <td> [% pricing_parameters.$key.$sub_keys %]</td>
-                       </tr>
-                     [% END %]
-                        [% IF pricing_parameters.$key.$sub_keys.size >0 %]
+                           [% END %]
+                         </tr>
                             [% FOREACH sub_sub_keys = pricing_parameters.$key.$sub_keys.keys %]
-                                <tr><td>[% sub_sub_keys %]</td>
+                                <tr><td><td>[% sub_sub_keys %]</td></td>
                                 <td> [% pricing_parameters.$key.$sub_keys.$sub_sub_keys %]</td>
                              </tr>
-                              [% END %]    
-                        [% END %]
+                              [% END %]  
+                     [% END %] 
              [% END %]
            [% END %] 
          </table></p>
