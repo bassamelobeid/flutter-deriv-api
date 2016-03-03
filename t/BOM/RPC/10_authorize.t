@@ -42,6 +42,7 @@ my $expected_result = {
                        loginid  => $test_client->loginid,
                        balance => 0,
                        currency => '',
+                       email => 'dummy@binary.com',
                        account_id => '',
                        landing_company_name => 'costarica',
                        country => 'id',
