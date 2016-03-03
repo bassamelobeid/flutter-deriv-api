@@ -5,6 +5,12 @@ use lib "$Bin/../../lib";
 use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Platform::User;
+use BOM::Platform::SessionCookie;
+use BOM::System::Password;
+
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua );
 
