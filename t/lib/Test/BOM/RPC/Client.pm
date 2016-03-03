@@ -101,7 +101,7 @@ sub error_message_is {
 sub result_is_deeply {
     my ($self, $expected, $description) = @_;
 
-    is_deeply($self->result, $expected, $description);
+    $self->tb->is_deeply($self->result, $expected, $description);
     return $self;
 }
 
