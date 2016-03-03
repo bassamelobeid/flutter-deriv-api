@@ -17,7 +17,6 @@ use f_brokerincludeall;
 
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
-use Pricing::Engine::EuropeanDigitalSlope;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -56,7 +55,7 @@ sub _get_pricing_parameter_from_IH_pricer {
         map { $_ => $ask_probability->peek_amount($_) } qw(intraday_delta_correction vega_correction risk_markup commission_markup),
     };
 
-    my @bs_keys = ('S', 'K', 't', 'r_q', 'mu', 'vol');
+    my @bs_keys = ('S', 'K', 't', 'discount_rate', 'mu', 'vol');
     my @formula_args = $contract->pricing_engine->_formula_args;
     $pricing_parameters->{bs_probability} = { map { $bs_keys[$_] => $formula_args[$_] } 0 .. $#bs_keys};
 
@@ -109,30 +108,44 @@ sub _get_pricing_parameter_from_slope_pricer {
           map { $_ => $ask_probability->peek_amount($_) } qw(risk_markup commission_markup),};
 
     my $theo_param = $debug_information->{$contract->code}{theo_probability}{parameters};
+    if ($theo_param->{base_vanilla_probability}) {  $theo_param->{vanilla_price} =  $theo_param->{base_vanilla_probability}; delete $theo_param->{base_vanilla_probability};}
     $pricing_parameters->{theoretical_probability} = {map { $_ => $theo_param->{$_}{amount} } keys $theo_param};
 
-    my $bs_probability =
-          $contract->priced_with ne 'base'
-        ? $theo_param->{bs_probability}{parameters}
-        : $theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters};
-    $pricing_parameters->{bs_probability} = {
-        'S'   => $bs_probability->{spot},
-        'K'   => $bs_probability->{strikes}[0],
-        't'   => $bs_probability->{_timeinyears},
-        'r_q' => $bs_probability->{discount_rate},
-        'mu'  => $bs_probability->{mu},
-        'vol' => $bs_probability->{vol},
-    };
+    if ($contract->priced_with ne 'base'){
+      $pricing_parameters->{bs_probability} = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters});
 
-    $pricing_parameters->{slope_adjustment} = {
+      $pricing_parameters->{slope_adjustment} = {
+        weight       => $contract->code ? 'CALL' : -1 : 1; 
         slope        => $theo_param->{slope_adjustment}{parameters}{slope},
         vanilla_vega => $theo_param->{slope_adjustment}{parameters}{vanilla_vega}{amount},
     };
+    }else {
+     $pricing_parameters->{numeraire_probability}->{bs_probability} = _get_bs_probability_parameters($theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters});
+     my $slope_param = $theo_param->{numeraire_probability}{parameters}{slope_adjustment}{parameters};
+     $pricing_parameters->{numeraire_probability}->{slope_adjustment} = {
+        weight       => $contract->code ? 'CALL' : -1 : 1; 
+        slope        => $slope_param->{slope},
+        vanilla_vega => $slope_param->{vanilla_vega}{amount},
+    };
+ 
+    $pricing_parameters->{vanilla_price} = _get_bs_probability_parameters($theo_param->{vanilla_price}{parameters});
 
+    }
     $pricing_parameters->{risk_markup} = $debug_information->{risk_markup}{parameters};
 
     return $pricing_parameters;
 }
+
+sub _get_bs_probability_parameters {
+   my $prob = shift;
+   my $bs_parameter = {
+        'K'   => $prob->{strikes}[0],
+        't'   => $prob->{_timeinyears},
+         map { $_ => $prob->{$_}} qw(spot discount_rate mu vol), 
+    };
+   return $bs_parameter;
+}
+
 
 BOM::Platform::Context::template->process(
     'backoffice/contract_details.html.tt',
