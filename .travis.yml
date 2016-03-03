@@ -43,7 +43,6 @@ install:
     - /tmp/travis-scripts/setup_clientdb.sh
     - /tmp/travis-scripts/setup_feeddb.sh
     - /tmp/travis-scripts/setup_authdb.sh
-    - netstat -natp |grep LISTEN
     - /tmp/travis-scripts/setup_usersdb.sh
     - /tmp/travis-scripts/setup_chronicledb.sh
 
