@@ -52,6 +52,13 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client->email($email);
 $test_client->save;
+
+my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+});
+$test_client_vr->email($email);
+$test_client_vr->save;
+
 my $test_loginid = $test_client->loginid;
 my $user         = BOM::Platform::User->create(
     email    => $email,
@@ -59,6 +66,7 @@ my $user         = BOM::Platform::User->create(
 );
 $user->save;
 $user->add_loginid({loginid => $test_loginid});
+$user->add_loginid({loginid => $test_client_vr->loginid});
 $user->save;
 clear_mailbox();
 
@@ -77,7 +85,7 @@ my $m              = BOM::Database::Model::AccessToken->new;
 my $token1         = $m->create_token($test_loginid, 'test token');
 my $token_21       = $m->create_token('CR0021', 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
-
+my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -540,4 +548,240 @@ subtest $method => sub {
     $password = $new_password;
 };
 
+################################################################################
+# cashier_password
+################################################################################
+$method = 'cashier_password';
+subtest $method => sub {
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_vr
+            }
+            )->{error}{message_to_client},
+        '权限不足。',
+        'need real money account'
+    );
+    my $params = {
+        language => 'ZH_CN',
+        token    => $token1,
+        args     => {}};
+    is($c->tcall($method, $params)->{status}, 0, 'no unlock_password && lock_password, and not set password before, status will be 0');
+    my $tmp_password     = 'sfjksfSFjsk78Sjlk';
+    my $tmp_new_password = 'bjxljkwFWf278xK';
+    $test_client->cashier_setting_password($tmp_password);
+    $test_client->save;
+    is($c->tcall($method, $params)->{status}, 1, 'no unlock_password && lock_password, and set password before, status will be 1');
+    $params->{args}{lock_password} = $tmp_new_password;
+    is($c->tcall($method, $params)->{error}{message_to_client}, '您的收银台已被锁定。', 'return error if already locked');
+    $test_client->cashier_setting_password('');
+    $test_client->save;
+    $params->{args}{lock_password} = $password;
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        '请使用与登录密码不同的密码。',
+        'return error if lock password same with user password'
+    );
+    $params->{args}{lock_password} = '1111111';
+    is($c->tcall($method, $params)->{error}{message_to_client}, '密码安全度不够。', 'check strong');
+    $params->{args}{lock_password} = $tmp_new_password;
+
+    clear_mailbox();
+    # here I mocked function 'save' to simulate the db failure.
+    my $mocked_client = Test::MockModule->new(ref($test_client));
+    $mocked_client->mock('save', sub { return undef });
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        '对不起，在处理您的账户时出错。',
+        'return error if cannot save password'
+    );
+    $mocked_client->unmock_all;
+
+    is($c->tcall($method, $params)->{status}, 1, 'set password success');
+    my $subject = 'cashier password updated';
+    my %msg     = get_email_by_address_subject(
+        email   => $email,
+        subject => qr/\Q$subject\E/
+    );
+    ok(%msg, "email received");
+    clear_mailbox();
+
+    # test unlock
+    $test_client->cashier_setting_password('');
+    $test_client->save;
+    delete $params->{args}{lock_password};
+    $params->{args}{unlock_password} = '123456';
+    is($c->tcall($method, $params)->{error}{message_to_client}, '您的收银台没有被锁定。', 'return error if not locked');
+
+    clear_mailbox();
+    $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
+    $test_client->save;
+    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，您输入的收银台密码不正确', 'return error if not correct');
+    $subject = 'Failed attempt to unlock cashier section';
+    %msg     = get_email_by_address_subject(
+        email   => $email,
+        subject => qr/\Q$subject\E/
+    );
+    ok(%msg, "email received");
+    clear_mailbox();
+
+    # here I mocked function 'save' to simulate the db failure.
+    $mocked_client->mock('save', sub { return undef });
+    $params->{args}{unlock_password} = $tmp_password;
+    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
+    $mocked_client->unmock_all;
+
+    clear_mailbox();
+    is($c->tcall($method, $params)->{status}, 0, 'unlock password ok');
+    $test_client->load;
+    ok(!$test_client->cashier_setting_password, 'cashier password unset');
+    $subject = 'cashier password updated';
+    %msg     = get_email_by_address_subject(
+        email   => $email,
+        subject => qr/\Q$subject\E/
+    );
+    ok(%msg, "email received");
+    clear_mailbox();
+};
+
+################################################################################
+# get_settings
+################################################################################
+$method = 'get_settings';
+subtest $method => sub {
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
+    my $params = {
+        token    => $token_21,
+        language => 'ZH_CN'
+    };
+    my $result = $c->tcall($method, $params);
+    is_deeply(
+        $result,
+        {
+            'country'                        => '澳大利亚',
+            'salutation'                     => 'Ms',
+            'is_authenticated_payment_agent' => '0',
+            'country_code'                   => 'au',
+            'date_of_birth'                  => '315532800',
+            'address_state'                  => '',
+            'address_postcode'               => '85010',
+            'phone'                          => '069782001',
+            'last_name'                      => 'tee',
+            'email'                          => 'shuwnyuan@regentmarkets.com',
+            'address_line_2'                 => 'Jln Address 2 Jln Address 3 Jln Address 4',
+            'address_city'                   => 'Segamat',
+            'address_line_1'                 => '53, Jln Address 1',
+            'first_name'                     => 'shuwnyuan'
+        });
+
+    $params->{token} = $token1;
+    $test_client->set_status('tnc_approval', 'system', 1);
+    $test_client->save;
+    is($c->tcall($method, $params)->{client_tnc_status}, 1, 'tnc status set');
+    $params->{token} = $token_vr;
+    is_deeply(
+        $c->tcall($method, $params),
+        {
+            'email'        => 'abc@binary.com',
+            'country'      => '印度尼西亚',
+            'country_code' => 'id',
+        },
+        'vr client return less messages'
+    );
+};
 done_testing();
