@@ -102,20 +102,7 @@ subtest 'holidays check' => sub {
     is $LSE->for_date->epoch, $date->epoch, 'for_date properly set in Exchange';
     my %expected_holidays = (
         15831 => 'Early May Bank Holiday',
-        16057 => 'pseudo-holiday',
-        16058 => 'pseudo-holiday',
-        16059 => 'pseudo-holiday',
-        16060 => 'pseudo-holiday',
-        16061 => 'pseudo-holiday',
-        16062 => 'pseudo-holiday',
-        16063 => 'pseudo-holiday',
         16064 => 'Christmas Day',
-        16065 => 'pseudo-holiday',
-        16066 => 'pseudo-holiday',
-        16067 => 'pseudo-holiday',
-        16068 => 'pseudo-holiday',
-        16069 => 'pseudo-holiday',
-        16070 => 'pseudo-holiday',
         16071 => 'New Year\'s Day',
         15796 => 'Easter Monday',
     );
