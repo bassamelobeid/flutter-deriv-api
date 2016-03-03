@@ -52,7 +52,7 @@ subtest "$method method" => sub {
     my @params = ( $method, { language => 'RU' } );
 
     $rpc_ct->call_ok(@params)
-           ->has_no_error
+           ->has_no_system_error
            ->result_is_deeply(
                 {
                     error => {
@@ -64,7 +64,7 @@ subtest "$method method" => sub {
 
     $params[1]->{token} = 'wrong token';
     $rpc_ct->call_ok(@params)
-           ->has_no_error
+           ->has_no_system_error
            ->result_is_deeply(
                 {
                     error => {
@@ -76,7 +76,7 @@ subtest "$method method" => sub {
 
     $params[1]->{token} = undef;
     $rpc_ct->call_ok(@params)
-           ->has_no_error
+           ->has_no_system_error
            ->result_is_deeply(
                 {
                     error => {
@@ -88,7 +88,7 @@ subtest "$method method" => sub {
 
     $params[1]->{token} = $client_token;
     $rpc_ct->call_ok(@params)
-           ->has_no_error
+           ->has_no_system_error
            ->result_is_deeply(
               { count => 0 },
               'Auth with client token should be ok' );
