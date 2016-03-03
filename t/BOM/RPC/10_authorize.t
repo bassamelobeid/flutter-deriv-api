@@ -62,3 +62,15 @@ $expected_result->{account_id} = $test_client->default_account->id;
 $expected_result->{currency} = 'USD';
 $expected_result->{balance} = '1000.0000';
 $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
+
+my $test_client_vr = = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                                                                                  broker_code => 'VRTC',
+                                                                                 });
+$test_client_vr->email($email);
+$test_client_vr->save;
+$token2 = BOM::Platform::SessionCookie->new(
+                                              loginid => $test_client_vr->loginid,
+                                              email   => $email
+                                             )->token;
+is($c->call_ok($method, $params)->has_no_error->result->{is_virtual}, 1, "is_virtual is true if client is virtual");
+done_testing();
