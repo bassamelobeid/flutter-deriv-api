@@ -237,8 +237,8 @@ sub _sample_bet {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
         {
-            symbol => $_,
-            recorded_date   => $overrides{date_pricing},
+            symbol        => $_,
+            recorded_date => $overrides{date_pricing},
         }) for (qw/GBP JPY USD JPY-USD/);
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -255,15 +255,15 @@ sub _sample_bet {
                 186 => 0.1,
                 365 => 0.13,
             },
-            recorded_date   => $overrides{date_pricing},
-            type         => 'implied',
-            implied_from => 'USD'
+            recorded_date => $overrides{date_pricing},
+            type          => 'implied',
+            implied_from  => 'USD'
         });
 
     $underlying->set_combined_realtime({
-            epoch => $overrides{date_pricing}->epoch,
-            quote => 99.840
-        });
+        epoch => $overrides{date_pricing}->epoch,
+        quote => 99.840
+    });
 
     my $start_epoch = Date::Utility->new($overrides{date_start})->epoch;
     my %bet_args    = ((

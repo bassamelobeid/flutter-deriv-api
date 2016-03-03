@@ -122,10 +122,11 @@ sub available_contracts_for_symbol {
     }
 
     return {
-        available => \@offerings,
-        hit_count => scalar(@offerings),
-        open      => $open,
-        close     => $close,
+        available    => \@offerings,
+        hit_count    => scalar(@offerings),
+        open         => $open,
+        close        => $close,
+        feed_license => $underlying->feed_license
     };
 }
 

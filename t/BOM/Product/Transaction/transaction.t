@@ -27,7 +27,7 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
 
-my $now       = Date::Utility->new;
+my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -43,11 +43,11 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_delta', {
-        symbol => 'frxUSDJPY',
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDJPY',
         recorded_date => $now,
-    }
-);
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',
     {
@@ -1263,7 +1263,8 @@ subtest 'max_payout_open_bets validation', sub {
 
         my $error = do {
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-            $mock_client->mock(landing_company_open_positions_payout_limit => sub { note "mocked Client->landing_company_open_positions_payout_limit returning 29.99"; 29.99 });
+            $mock_client->mock(landing_company_open_positions_payout_limit =>
+                    sub { note "mocked Client->landing_company_open_positions_payout_limit returning 29.99"; 29.99 });
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,

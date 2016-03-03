@@ -19,7 +19,6 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
-
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',
     {
