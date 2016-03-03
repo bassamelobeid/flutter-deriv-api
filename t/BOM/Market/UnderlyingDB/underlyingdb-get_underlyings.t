@@ -31,7 +31,7 @@ eq_or_diff [sort $udb->symbols_for_intraday_fx], [
     ],
     'Correct list of intraday historical symbols.';
 
-my @ul_indices_on_flash = qw(AEX AS51 BFX FCHI GDAXI HSI ISEQ SPTSX60 SSMI STI SX5E SYNAEX SYNDJI SYNFCHI SYNFTSE SYNGDAXI SYNSX5E);
+my @ul_indices_on_flash = qw(AEX AS51 BFX FCHI GDAXI HSI SSMI STI ISEQ);
 cmp_bag [
     sort $udb->get_symbols_for(
         market            => 'indices',
@@ -76,7 +76,7 @@ eq_or_diff [
     \@ul_forex_on_endsinout, "Correct list of endsinout for forex on virtual accounts";
 
 my @ul_indices_on_endsinout = qw(
-    AEX AS51 DJI FCHI FTSE GDAXI HSI N225  SPC SSMI SX5E
+    AEX AS51 DJI FCHI GDAXI HSI N225  SPC SSMI
 );
 eq_or_diff [
     sort $udb->get_symbols_for(
