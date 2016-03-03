@@ -39,7 +39,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 my @currencies =
     map { $_->market->name =~ /(forex|commodities)/ ? ($_->asset_symbol, $_->quoted_currency_symbol) : ($_->quoted_currency_symbol) } @underlyings;
 
-for (@currencies, 'AUD-JPY', 'AUD-CAD', 'JPY-AUD', 'CAD-AUD') {
+
+my @payout_curr = qw(USD GBP EUR AUD);
+for (@currencies, @payout_curr, 'AUD-JPY', 'AUD-CAD', 'JPY-AUD', 'CAD-AUD') {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
         {

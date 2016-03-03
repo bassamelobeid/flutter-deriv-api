@@ -77,9 +77,6 @@ subtest "available contracts for symbol" => sub {
             staysinout   => 2,
             endsinout    => 2,
         },
-        SYNAEX => {
-            callput => 4,
-        },
         FPCS => {
             callput => 4,
         },
