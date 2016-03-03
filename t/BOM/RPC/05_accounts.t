@@ -472,12 +472,22 @@ subtest $method => sub {
     is(
         BOM::RPC::v3::Accounts::_check_password('old_password', 'new#_p$ssword', $oldpass)->{error}->{message_to_client},
         'Password should have letters and numbers and at least 6 characters.',
-        'Password should have letters and numbers and at least 6 characters.',
+        'no number.',
     );
     is(
         BOM::RPC::v3::Accounts::_check_password('old_password', 'pa$5A', $oldpass)->{error}->{message_to_client},
         'Password should have letters and numbers and at least 6 characters.',
+        'to short.',
+    );
+    is(
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'pass$5ss', $oldpass)->{error}->{message_to_client},
         'Password should have letters and numbers and at least 6 characters.',
+        'no upper case.',
+    );
+    is(
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'PASS$5SS', $oldpass)->{error}->{message_to_client},
+        'Password should have letters and numbers and at least 6 characters.',
+        'no lower case.',
     );
     is(
         $c->tcall(
