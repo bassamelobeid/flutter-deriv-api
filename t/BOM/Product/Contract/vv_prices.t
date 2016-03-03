@@ -20,9 +20,9 @@ my $now = Date::Utility->new('2014-11-11');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => $_,
-        rates  => {8 => 0},
-        recorded_date   => $now,
+        symbol        => $_,
+        rates         => {8 => 0},
+        recorded_date => $now,
     }) for (qw/JPY USD JPY-USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -57,7 +57,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             },
         }});
 
-
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch - 2,
@@ -91,14 +90,14 @@ is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0299, 'co
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
-        symbol => 'AEX',
-        recorded_date   => Date::Utility->new($params->{date_pricing}),
+        symbol        => 'AEX',
+        recorded_date => Date::Utility->new($params->{date_pricing}),
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => 'EUR',
-        recorded_date   => $now,
+        symbol        => 'EUR',
+        recorded_date => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',

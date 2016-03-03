@@ -15,7 +15,7 @@ use BOM::System::Chronicle;
 
 # test wriiten date.
 note('Underlying-Contract offerings on 22-Feb-2016');
-ok (BOM::System::Chronicle::set('app_settings','binary', LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Contract/app_settings_test.yml')));
+ok(BOM::System::Chronicle::set('app_settings', 'binary', LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Contract/app_settings_test.yml')));
 note('app_settings configuration as of 22-Feb-2016');
 
 subtest 'markets' => sub {
