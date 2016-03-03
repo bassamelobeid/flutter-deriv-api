@@ -19,14 +19,14 @@ my $now = Date::Utility->new('2014-11-11');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => 'USD',
-        recorded_date   => $now,
+        symbol        => 'USD',
+        recorded_date => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
-        symbol => 'R_100',
-        recorded_date   => $now,
+        symbol        => 'R_100',
+        recorded_date => $now,
     });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_100',

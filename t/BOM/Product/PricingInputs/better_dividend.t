@@ -29,8 +29,8 @@ my $end   = Date::Utility->new('15-Mar-13');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => $start,
+        symbol        => $_,
+        recorded_date => $start,
     }) for (qw/USD JPY EUR/);
 
 subtest 'discrete points on forex' => sub {
@@ -62,7 +62,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             5 => 0.543
         },
         discrete_points => {'2013-03-14' => 2.5},
-        recorded_date            => $start
+        recorded_date   => $start
     });
 
 my $cur_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -74,7 +74,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'DEDAI',
-        recorded_date   => $start,
+        recorded_date => $start,
     });
 subtest 'discrete dividend on stocks' => sub {
     plan tests => 7;
