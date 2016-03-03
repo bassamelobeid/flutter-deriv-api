@@ -18,7 +18,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                             });
 $test_client->email($email);
 $test_client->save;
-$test_client = BOM::Platform::Client->new({loginid => $test_client->loginid})->load;
+
 is $test_client->default_account, undef, 'new client has no default account';
 
 my $token = BOM::Platform::SessionCookie->new(
