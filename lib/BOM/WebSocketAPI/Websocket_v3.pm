@@ -208,7 +208,7 @@ my @dispatch = (
     ],
     [
         'change_password',
-        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::change_password, 1
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::change_password, 1, 'admin'
     ],
     [
         'get_settings',
@@ -441,16 +441,15 @@ sub __handle {
 sub _failed_key_value {
     my ($key, $value) = @_;
 
-    # allow all printable ASCII char for password
-    state %pwd_field;
-    %pwd_field =
-        map { $_ => 1 } qw( client_password old_password new_password unlock_password lock_password )
-        if (not %pwd_field);
+    state $pwd_field = {map { $_ => 1 } qw( client_password old_password new_password unlock_password lock_password )};
 
-    if ($pwd_field{$key}) {
+    if ($pwd_field->{$key}) {
         return;
-    } elsif ($key !~ /^[A-Za-z0-9_-]{1,50}$/
-        or $value !~ /^[\s\.\w\@_:+-\/='&\$]{0,256}$/)
+    } elsif (
+        $key !~ /^[A-Za-z0-9_-]{1,50}$/
+        # !-~ to allow a range of acceptable characters. To find what is the range, look at ascii table
+        or $value !~ /^[\s\w\@_:!-~]{0,300}$/
+        )
     {
         return ($key, $value);
     }
