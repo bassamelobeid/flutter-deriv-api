@@ -886,6 +886,8 @@ sub tnc_approval {
         return $auth_error;
     }
 
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     my $client_tnc_status   = $client->get_status('tnc_approval');
 
@@ -893,7 +895,11 @@ sub tnc_approval {
         or ($client_tnc_status->reason ne $current_tnc_version))
     {
         $client->set_status('tnc_approval', 'system', $current_tnc_version);
-        $client->save;
+        if (not $client->save()) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your request.')});
+        }
     }
 
     return {status => 1};
