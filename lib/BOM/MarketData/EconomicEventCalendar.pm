@@ -1,6 +1,7 @@
 package BOM::MarketData::EconomicEventCalendar;
 #Chornicle Economic Event
 
+use Carp qw(croak);
 use BOM::System::Chronicle;
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
@@ -138,29 +139,25 @@ sub save {
 }
 
 sub update {
-
     my $self             = shift;
     my $events           = $self->chronicle_reader->get(EE, EE);
     my $tentative_events = $self->get_tentative_events;
 
     if ($events and ref($events->{events}) eq 'ARRAY' and $tentative_events) {
-
-        my %new_events_hash = map { $_->{id} => $_ } @{$self->{events}};
+        # update happens one at a time.
+        my $new_events_hash = $self->events->[0];
 
         for my $event (@{$events->{events}}) {
-            if (defined $new_events_hash{$event->{id}}) {
-                $event = {(%$event, %{$new_events_hash{$event->{id}}})};
+            if ($event->{id} eq $new_events_hash->{id}) {
+                $event = {(%$event, %$new_events_hash)};
+                last;
             }
         }
 
-        foreach my $id (keys %$tentative_events) {
-            if (defined($new_events_hash{$id})) {
-                $tentative_events->{$id} = {(%{$tentative_events->{$id}}, %{$new_events_hash{$id}})};
-            }
-            # delete tentative event from tentative table after one month it happened
-            if ($tentative_events->{$id}->{release_date} && $tentative_events->{$id}->{release_date} < time - 60 * 60 * 24 * 31) {
-                delete $tentative_events->{$id};
-            }
+        if (my $to_update = $tentative_events->{$new_events_hash->{id}}) {
+            $to_update = {(%$to_update, %$new_events_hash)};
+        } else {
+            croak "could not find $new_events_hash->{id} in tentative table";
         }
     }
 
@@ -181,12 +178,12 @@ sub get_latest_events_for_period {
     die "No economic events" if not defined $document;
 
     #extract first event from current document to check whether we need to get back to historical data
-    my $events           = $document->{events};
+    my $events = $document->{events};
 
     #for live pricing, following condition should be satisfied
     #release date is now an epoch and not a date string.
     if ($from >= $events->[0]->{release_date}) {
-        return [grep {$_->{release_date} >= $from and $_->{release_date} <= $to} @$events];
+        return [grep { $_->{release_date} >= $from and $_->{release_date} <= $to } @$events];
     }
 
     #if the requested period lies outside the current Redis data, refer to historical data
