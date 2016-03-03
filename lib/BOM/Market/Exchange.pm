@@ -123,15 +123,32 @@ sub _build_holidays {
 
     my $ref = BOM::MarketData::Holiday::get_holidays_for($self->symbol, $self->for_date);
     my %exchange_holidays = map { Date::Utility->new($_)->days_since_epoch => $ref->{$_} } keys %$ref;
+
+    return \%exchange_holidays;
+}
+
+=head2 pseudo_holidays
+
+These are holidays defined by us. During this period, market is still open but less volatile.
+
+=cut
+
+has pseudo_holidays => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_pseudo_holidays',
+);
+
+sub _build_pseudo_holidays {
+    my $self = shift;
+
     # pseudo-holidays for exchanges are 1 week before and after Christmas Day.
     my $year            = $self->for_date ? $self->for_date->year : Date::Utility->new->year;
     my $christmas_day   = Date::Utility->new('25-Dec-' . $year);
     my $pseudo_start    = $christmas_day->minus_time_interval('7d');
     my %pseudo_holidays = map { $pseudo_start->plus_time_interval($_ . 'd')->days_since_epoch => 'pseudo-holiday' } (0 .. 14);
 
-    my $holidays = {%pseudo_holidays, %exchange_holidays,};
-
-    return $holidays;
+    return \%pseudo_holidays;
 }
 
 has [qw(early_closes late_opens)] => (
@@ -331,9 +348,9 @@ if the exchange does not trade on this day and 1 if there is no pseudo-holiday.
 sub weight_on {
     my ($self, $when) = @_;
 
-    return ($self->trades_on($when) && !(defined $self->holidays->{$when->days_since_epoch}))
-        ? 1
-        : 0;
+    return 0   if not $self->trades_on($when);
+    return 0.5 if exists $self->pseudo_holidays->{$when->days_since_epoch};
+    return 1;
 }
 
 =head2 has_holiday_on
@@ -341,15 +358,12 @@ sub weight_on {
 Returns true if the exchange has a holiday on the day of a given Date::Utility
 object.
 
-Holidays named 'pseudo-holiday' are not considered real holidays, this sub will return 0 for them.
-
 =cut
 
 sub has_holiday_on {
     my ($self, $when) = @_;
 
-    my $holiday = $self->holidays->{$when->days_since_epoch};
-    return defined $holiday && $holiday ne 'pseudo-holiday';
+    return $self->holidays->{$when->days_since_epoch};
 }
 
 =head2 trades_on
