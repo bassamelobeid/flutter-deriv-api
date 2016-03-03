@@ -4,6 +4,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
 use Test::BOM::RPC::Client;
 use Test::Most;
+use Test::Mojo;
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua );
 
