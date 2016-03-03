@@ -182,21 +182,11 @@ sub get_latest_events_for_period {
 
     #extract first event from current document to check whether we need to get back to historical data
     my $events           = $document->{events};
-    my $first_event      = $events->[0];
-    my $first_event_date = Date::Utility->new($first_event->{release_date});
 
     #for live pricing, following condition should be satisfied
-    if ($from >= $first_event_date->epoch) {
-        my @matching_events;
-
-        for my $event (@{$events}) {
-            $event->{release_date} = Date::Utility->new($event->{release_date});
-            my $epoch = $event->{release_date}->epoch;
-
-            push @matching_events, $event if ($epoch >= $from and $epoch <= $to);
-        }
-
-        return \@matching_events;
+    #release date is now an epoch and not a date string.
+    if ($from >= $events->[0]->{release_date}) {
+        return [grep {$_->{release_date} >= $from and $_->{release_date} <= $to} @$events];
     }
 
     #if the requested period lies outside the current Redis data, refer to historical data
