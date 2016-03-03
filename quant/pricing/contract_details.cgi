@@ -49,14 +49,16 @@ sub _get_pricing_parameter_from_IH_pricer {
     my $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $contract});
     my $ask_probability = $contract->ask_probability;
 
-    $pricing_parameters->{probability} = {
+    $pricing_parameters->{ask_probability} = {
+        total          => $ask_probability->amount,
+        ask_price      => $contract->ask_price,
         bs_probability => $ask_probability->peek_amount(lc($contract->code) . '_theoretical_probability'),
         map { $_ => $ask_probability->peek_amount($_) } qw(intraday_delta_correction vega_correction risk_markup commission_markup),
     };
 
     my @bs_keys = ('S', 'K', 't', 'r_q', 'mu', 'vol');
     my @formula_args = $contract->pricing_engine->_formula_args;
-    $pricing_parameters->{bs_probability} = map { $bs_keys[$_] => $formula_args[$_] } 0 .. $#bs_keys;
+    $pricing_parameters->{bs_probability} = { map { $bs_keys[$_] => $formula_args[$_] } 0 .. $#bs_keys};
 
     $pricing_parameters->{vega_correction} = {
         historical_vol_mean_reversion => BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_vol_meanrev},
@@ -73,9 +75,9 @@ sub _get_pricing_parameter_from_IH_pricer {
     };
 
     $pricing_parameters->{risk_markup} = {
+        intraday_historical_iv_risk =>  $contract->is_atm_bet ?  0 : $ask_probability->peek_amount('intraday_historical_iv_risk'), 
         map { $_ => $ask_probability->peek_amount($_) } qw(economic_events_markup eod_market_risk_markup),
-        intraday_historical_iv_risk => not $contract->is_atm_bet ? $ask_probability->peek_amount('intraday_historical_iv_risk') : 0,
-    };
+        };
 
     $pricing_parameters->{economic_events_markup} =
         {map { $_ => $ask_probability->peek_amount($_) } qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup),};
@@ -100,8 +102,11 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $debug_information = $contract->pricing_engine->debug_information;
     my $pricing_parameters;
 
-    $pricing_parameters->{probability} =
-        {map { $_ => $ask_probability->peek_amount($_) } qw(theoretical_probability risk_markup commission_markup),};
+    $pricing_parameters->{ask_probability} =
+        { total => $contract->ask_probability->amount,
+          ask_price => $contract->ask_price,
+          theoretical_probability => $ask_probability->peek_amount('theo_probability'),
+          map { $_ => $ask_probability->peek_amount($_) } qw(risk_markup commission_markup),};
 
     my $theo_param = $debug_information->{$contract->code}{theo_probability}{parameters};
     $pricing_parameters->{theoretical_probability} = {map { $_ => $theo_param->{$_}{amount} } keys $theo_param};
