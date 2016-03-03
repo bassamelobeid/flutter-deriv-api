@@ -176,7 +176,6 @@ sub get_bid {
             }
 
             if ($contract->expiry_type eq 'tick') {
-                $response->{prediction} = $contract->prediction;
                 $response->{tick_count} = $contract->tick_count;
             }
 
