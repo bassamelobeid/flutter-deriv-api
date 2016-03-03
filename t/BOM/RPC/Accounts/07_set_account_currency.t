@@ -51,6 +51,9 @@ $c->call_ok($method, $params)->has_error->error_message_is('所提供的货币 J
 $params->{currency} = 'EUR';
 $c->call_ok($method, $params)->has_no_error;
 is($c->result->{status}, 1, 'set currency ok');
+
+# here I tried $test_client->load directly but failed
+# But recreating the client will work. weird
 my $client = BOM::Platform::Client->new({loginid => $test_client->loginid});
 
 isnt($client->default_account, undef, 'default account set');
