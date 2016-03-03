@@ -54,8 +54,13 @@ my $token = BOM::Platform::SessionCookie->new(
 my $method = 'login_history';
 my $params = {language => 'zh_CN', token => 12345};
 $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'check invalid token');
-
 $params->{token} = $token;
+$test_client->set_status('disabled', 1, 'test disabled');
+$test_client->save;
+$c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'check invalid token');
+$test_client->clr_status('disabled');
+$test_client->save;
+
 my $res = $c->call_ok($method, $params)->result;
 is scalar(@{$res->{records}}), 1, 'got correct number of login history records';
 is $res->{records}->[0]->{action}, 'logout',     'login history record has action key';
