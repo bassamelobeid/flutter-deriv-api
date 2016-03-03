@@ -153,4 +153,28 @@ sub new_account_japan {
     return;
 }
 
+sub knowledge_test {
+    my ($c, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'knowledge_test',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('knowledge_test', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type       => 'knowledge_test',
+                    knowledge_test => $response
+                };
+            }
+        },
+        {
+            args  => $args,
+            token => $c->stash('token'),
+        });
+    return;
+}
+
 1;
