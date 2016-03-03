@@ -40,9 +40,7 @@ sub script_run {
     #this will be an array of all extracted economic events. Later we will store
 
     foreach my $event_param (@$events_received) {
-        $event_param->{release_date}  = $event_param->{release_date}->epoch;
         $event_param->{recorded_date} = Date::Utility->new->epoch;
-
         Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param) . "\n");
     }
 
