@@ -60,5 +60,5 @@ $test_client->payment_free_gift(
                                );
 $expected_result->{account_id} = $test_client->default_account->id;
 $expected_result->{currency} = 'USD';
-$expected_result->{balance} = 1000;
+$expected_result->{balance} = '1000.0000';
 $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
