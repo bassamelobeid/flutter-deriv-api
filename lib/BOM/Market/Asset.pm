@@ -38,8 +38,8 @@ sub rate_for {
     my ($self, $tiy) = @_;
 
     return Quant::Framework::Dividend->new(
-        symbol   => $self->symbol,
-        for_date => $self->for_datem,
+        symbol           => $self->symbol,
+        for_date         => $self->for_date,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     )->rate_for($tiy);
