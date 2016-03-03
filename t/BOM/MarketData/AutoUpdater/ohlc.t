@@ -1,4 +1,5 @@
 use Test::MockTime qw( restore_time set_absolute_time );
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Test::Most;
 use Test::FailWarnings;
 use File::Spec::Functions qw(rel2abs splitpath);
@@ -116,13 +117,23 @@ subtest 'valid close' => sub {
     );
 
     lives_ok {
+
+	BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+	underlying => 'HSI',
+	epoch => 1456272000,
+	open  => 19282.34,
+	high  => 19360.80,
+	low   => 19060.16,
+	close => 19192.45,
+	});
+
         set_absolute_time( Date::Utility->new('2016-02-24')->epoch );
         $updater->run();
 
         ok !$updater->report->{HSI}->{success},
           'HSI failed to be updated due to close >=5%';
         like(
-            $updater->report->{HSI}->{reason}->[0],
+            $updater->report->{HSI}->{reason},
             qr/OHLC big difference/i,
             'sanity check for close'
         );
