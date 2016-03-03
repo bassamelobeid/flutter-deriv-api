@@ -59,3 +59,25 @@ is scalar(@{$res->{records}}), 1, 'got correct number of login history records';
 is $res->{records}->[0]->{action}, 'logout',     'login history record has action key';
 is $res->{records}->[0]->{environment}, 'dummy environment', 'login history record has environment key';
 ok $res->{records}->[0]->{time},        'login history record has time key';
+
+#create 100 history items for testing the limit
+for (1.. 100) {
+  $user->add_login_history({
+                            environment => 'dummy environment',
+                            successful  => 't',
+                            action      => 'logout',
+                           });
+}
+$user->save;
+
+$res = $c->call_ok($method, $params)->result;
+is scalar(@{$res->{records}}), 10, 'default limit 10';
+$params->{args} = {limit => 15};
+$res = $c->call_ok($method, $params)->result;
+is scalar(@{$res->{records}}), 15, 'limit ok';
+
+$params->{args} = {limit => 60};
+$res = $c->call_ok($method, $params)->result;
+is scalar(@{$res->{records}}), 50, 'max limit is 50';
+
+done_testing();
