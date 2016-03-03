@@ -63,7 +63,7 @@ sub update_event {
     return "Tentative events not found in chronicle" unless $events->{$params->{id}};
 
     my $existing = $events->{$params->{id}};
-    my $rd       = Date::Utility->new($existing->{release_date});
+    my $rd       = Date::Utility->new($existing->{estimated_release_date});
     $existing->{blankout}     = $rd->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
     $existing->{blankout_end} = $rd->plus_time_interval("$b2[0]h$b2[1]m")->epoch;
     $existing->{release_date} = int(($existing->{blankout} + $existing->{blankout_end}) / 2);
