@@ -87,11 +87,22 @@ subtest "$method method" => sub {
                 'It should return error: InvalidToken' );
 
     $params[1]->{token} = $client_token;
+
+    {
+        my $module = Test::MockModule->new('BOM::Platform::Client');
+        $module->mock( 'new', sub {} );
+
+        $rpc_ct->call_ok(@params)
+               ->has_no_system_error
+               ->error_code_is( 'AuthorizationRequired', 'It should check auth' );
+    }
+
+
     $rpc_ct->call_ok(@params)
            ->has_no_system_error
            ->result_is_deeply(
               { count => 0 },
-              'Auth with client token should be ok' );
+              'It should return 0' );
 
 
 
