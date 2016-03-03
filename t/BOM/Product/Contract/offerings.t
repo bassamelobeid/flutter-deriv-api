@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 5;
 use Test::Deep;
 use Test::Exception;
 use Test::NoWarnings;
@@ -15,8 +15,6 @@ use BOM::System::Chronicle;
 
 # test wriiten date.
 note('Underlying-Contract offerings on 22-Feb-2016');
-ok(BOM::System::Chronicle::set('app_settings', 'binary', LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Contract/app_settings_test.yml')));
-note('app_settings configuration as of 22-Feb-2016');
 
 subtest 'markets' => sub {
     my @expected = (qw(forex commodities stocks indices random));
@@ -47,7 +45,7 @@ subtest 'underlying symbols' => sub {
         stocks      => [
             qw( BBABI BBBELG BBGBLB BBKBC BBUCB FPACA FPAI FPAIR FPBN FPBNP FPCA FPCS FPDG FPEDF FPEI FPFP FPGLE FPGSZ FPKER FPMC FPOR FPORA FPRI FPRNO FPSAF FPSAN FPSGO FPSU FPVIV NAASML NAHEIA NAINGA NARDSA NAUNA)
         ],
-        indices => [qw( AEX AS51 BFX BSESENSEX30 DFMGI DJI FCHI GDAXI HSI JCI N225 OBX SPC SSMI STI TOP40)],
+        indices => [qw( AEX AS51 BFX BSESENSEX30 DFMGI DJI FCHI GDAXI HSI JCI N225 OBX SPC SSMI STI TOP40 ISEQ)],
         random  => [qw( RDBEAR RDBULL RDMARS RDMOON RDSUN RDVENUS RDYANG RDYIN R_100 R_25 R_50 R_75)],
     );
 

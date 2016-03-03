@@ -1137,19 +1137,19 @@ subtest 'spot reference check' => sub {
     my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'FTSE',
+            symbol         => 'DJI',
             recorded_date  => $now,
             spot_reference => 94.9,
         });
     my $tick_params = {
-        symbol => 'FTSE',
+        symbol => 'DJI',
         epoch  => $now->epoch,
         quote  => 100
     };
 
     my $tick       = BOM::Market::Data::Tick->new($tick_params);
     my $bet_params = {
-        underlying   => 'FTSE',
+        underlying   => 'DJI',
         bet_type     => 'CALL',
         currency     => 'USD',
         payout       => 100,
@@ -1163,8 +1163,8 @@ subtest 'spot reference check' => sub {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'index',
         {
-            symbol        => 'FTSE',
-            recorded_date => Date::Utility->new($bet_params->{date_pricing}),
+            symbol          => 'DJI',
+            recorded_date   => Date::Utility->new($bet_params->{date_pricing}),
         });
     my $c                = produce_contract($bet_params);
     my $expected_reasons = [qr/spot too far from surface reference/];
