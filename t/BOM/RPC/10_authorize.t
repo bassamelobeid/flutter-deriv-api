@@ -72,6 +72,6 @@ my $token_vr = BOM::Platform::SessionCookie->new(
                                               loginid => $test_client_vr->loginid,
                                               email   => $email
                                              )->token;
-$parmas->{token} = $token_vr;
+$params->{token} = $token_vr;
 is($c->call_ok($method, $params)->has_no_error->result->{is_virtual}, 1, "is_virtual is true if client is virtual");
 done_testing();
