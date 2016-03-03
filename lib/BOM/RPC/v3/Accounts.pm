@@ -957,8 +957,10 @@ sub set_account_currency {
         # no change in default account currency if default account is already set
         if (not $client->default_account and $client->set_default_account($currency)) {
             $response->{status} = 1;
-        } else {
-            $response->{status} = 0;
+          } else {
+            use Data::Dumper;
+          print Dumper($client->default_account);
+          $response->{status} = 0;
         }
     } else {
         $response = BOM::RPC::v3::Utility::create_error({
