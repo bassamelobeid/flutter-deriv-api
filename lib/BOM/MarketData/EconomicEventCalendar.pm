@@ -119,12 +119,17 @@ sub save {
     my $existing_tentatives = $self->get_tentative_events;
 
     for my $event (@{$self->events}) {
-        if ($event->{id} && $existing_tentatives->{$event->{id}}) {
+        my $id = $event->{id};
+        next unless $id;
+
+        if ($existing_tentatives->{$id}) {
+            # update actual release_date
+            $event->{actual_release_date} = $event->{release_date} unless $event->{is_tentative} and $event->{release_date};
             # We need to do this because we need a full transition record
             # of a tentative event in both EE and EET tables
-            $existing_tentatives->{$event->{id}} = $event = {(%{$existing_tentatives->{$event->{id}}}, %$event)};
+            $existing_tentatives->{$id} = $event = {(%{$existing_tentatives->{$id}}, %$event)};
         } elsif ($event->{is_tentative}) {
-            $existing_tentatives->{$event->{id}} = $event;
+            $existing_tentatives->{$id} = $event;
         }
     }
 
