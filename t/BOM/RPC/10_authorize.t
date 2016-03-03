@@ -37,4 +37,27 @@ my $params = {
 
 $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'check invalid token');
 $params->{token} = $token;
-diag(Dumper($c->call_ok($method, $params)->has_error->result));
+my $expected_result = {
+                       fullname => $client->full_name,
+                       loginid  => $client->loginid,
+                       balance => 0,
+                       currency => '',
+                       account_id => '',
+                       landing_company_name => 'costarica',
+                       country => 'id',
+                       scopes => [qw(read trade admin payments)],
+                       is_virtual => 0,
+                      };
+$c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
+
+$test_client->set_default_account('USD');
+$test_client->save;
+$test_client->payment_free_gift(
+                                currency => 'USD',
+                                amount   => 1000,
+                                remark   => 'free gift',
+                               );
+$expected_result->{account_id} = $test_client->default_account->id;
+$expected_result->{currency} = 'USD';
+$expected_result->{balance} = 1000;
+$c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
