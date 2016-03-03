@@ -118,15 +118,18 @@ sub save {
     my $existing_tentatives = $self->get_tentative_events;
 
     for my $event (@{$self->events}) {
-        if ($event->{id} && $existing_tentatives->{$event->{id}} && !$event->{is_tentative}) {
-            # When tentative events has occurred, we delete it from tentative.
-            my $tentative_record = delete $existing_tentatives->{$event->{id}};
-            $event->{is_tentative} = 1;
-            $event->{blankout}     = $tentative_record->{blankout};
-            $event->{blankout_end} = $tentative_record->{blankout_end};
-        } else {
+        if ($event->{id} && $existing_tentatives->{$event->{id}}) {
+            # We need to do this because we need a full transition record
+            # of a tentative event in both EE and EET tables
+            $existing_tentatives->{$event->{id}} = $event = {(%{$existing_tentatives->{$event->{id}}}, %$event)};
+        } elsif ($event->{is_tentative}) {
             $existing_tentatives->{$event->{id}} = $event;
         }
+    }
+
+    #delete tentative events in EET one month after its release date.
+    foreach my $id (keys %$existing_tentatives) {
+        delete $existing_tentatives->{$id} if time > $existing_tentatives->{$id}->{release_date} + 30 * 86400;
     }
 
     return (
