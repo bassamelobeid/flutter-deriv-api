@@ -9,13 +9,10 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
 use BOM::Platform::SessionCookie;
-use BOM::System::Password;
 use utf8;
 use Data::Dumper;
 
 my $email       = 'dummy@binary.com';
-my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::System::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                              broker_code => 'CR',
                                                                             });
