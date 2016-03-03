@@ -2,7 +2,6 @@ package Test::BOM::RPC::Client;
 
 use Data::Dumper;
 use MojoX::JSON::RPC::Client;
-use Test::Builder;
 use Test::More ();
 
 use Moose;
@@ -21,14 +20,6 @@ has 'params'   => (
     is  => 'rw',
     isa => 'ArrayRef'
 );
-has tb => (
-    is => 'ro',
-    builder => '_build_tb',
-);
-
-sub _build_tb {
-    return Test::Builder->new;
-}
 
 sub _build_client {
     my $self = shift;
@@ -43,7 +34,7 @@ sub call_ok {
 
     $self->_tcall(@_);
 
-    $self->tb->ok($self->response, $description);
+    $self->_test( 'ok', $self->response, $description );
     return $self;
 }
 
@@ -52,7 +43,7 @@ sub has_no_system_error {
     my $method = $self->params->[0];
     $description ||= "response for /$method has no system error";
 
-    $self->tb->ok(!$self->response->is_error, $description);
+    $self->_test( 'ok', !$self->response->is_error, $description );
     return $self;
 }
 
@@ -61,7 +52,7 @@ sub has_system_error {
     my $method = $self->params->[0];
     $description ||= "response for /$method has system error";
 
-    $self->tb->ok($self->response->is_error, $description);
+    $self->_test( 'ok', $self->response->is_error, $description );
     return $self;
 }
 
@@ -71,7 +62,7 @@ sub has_no_error {
     $description ||= "response for /$method has no error";
 
     my $result = $self->result;
-    $self->tb->ok( $result && !$result->{error}, $description);
+    $self->_test( 'ok', $result && !$result->{error}, $description );
     return $self;
 }
 
@@ -81,36 +72,35 @@ sub has_error {
     $description ||= "response for /$method has error";
 
     my $result = $self->result;
-    $self->tb->ok( $result && $result->{error}, $description);
+    $self->_test( 'ok', $result && $result->{error}, $description );
     return $self;
 }
 
 sub error_code_is {
     my ($self, $expected, $description) = @_;
     my $result = $self->result || {};
-    $self->tb->is($result->{error}->{code}, $expected, $description);
+    $self->_test( 'is', $result->{error}->{code}, $expected, $description );
     return $self;
 }
 
 sub error_message_is {
     my ($self, $expected, $description) = @_;
     my $result = $self->result || {};
-    $self->tb->is($result->{error}->{message_to_client}, $expected, $description);
+    $self->_test( 'is', $result->{error}->{message_to_client}, $expected, $description );
     return $self;
 }
 
 sub result_is_deeply {
     my ($self, $expected, $description) = @_;
 
-    $Test::Builder::Level += 1;
-    Test::More::is_deeply($self->result, $expected, $description);
+    $self->_test( 'is_deeply', $self->result, $expected, $description );
     return $self;
 }
 
 sub result_value_is {
     my ($self, $get_compared_hash_value, $expected, $description) = @_;
 
-    $self->tb->is($get_compared_hash_value->($self->result), $expected, $description);
+    $self->_test( 'is', $get_compared_hash_value->($self->result), $expected, $description );
     return $self;
 }
 
@@ -131,6 +121,13 @@ sub _tcall {
     $self->result($r->result) if $r;
 
     return $r;
+}
+
+sub _test {
+  my ($self, $name, @args) = @_;
+
+  local $Test::Builder::Level += 3;
+  Test::More->can($name)->(@args);
 }
 
 __PACKAGE__->meta->make_immutable;
