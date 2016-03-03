@@ -336,4 +336,32 @@ sub _get_client_details {
     return {details => $details};
 }
 
+sub knowledge_test {
+    my $params = shift;
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my $response  = 'knowledge_test';
+    my $args      = $params->{args};
+    my $error_map = BOM::Platform::Locale::error_map();
+
+    #TODO:
+    #   1) Save into DB: score + status + date => decide which table ??
+    #   2) client should already in status: KNOWLEDGE_TEST_PENDING
+    #   3) If pass:
+    #       - remove status KNOWLEDGE_TEST_PENDING, add new status ACTIVATION_PENDING
+    #       - system send email to client: mentioned pls reply & send doc to us for identity / address verification
+    #   4) If fail, update client_status KNOWLEDGE_TEST_PENDING -> last_modified_date to now()
+    #   5) On success => return 1. Else return undef
+
+
+    return 1;
+}
+
 1;

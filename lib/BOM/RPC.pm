@@ -146,6 +146,7 @@ sub startup {
                 '/portfolio'                 => register('portfolio',                 \&BOM::RPC::v3::PortfolioManagement::portfolio),
                 '/sell_expired'              => register('sell_expired',              \&BOM::RPC::v3::PortfolioManagement::sell_expired),
                 '/proposal_open_contract'    => register('proposal_open_contract',    \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract),
+                '/knowledge_test'            => register('knowledge_test',            \&BOM::RPC::v3::NewAccount::knowledge_test),
 
                 '/app_register' => register('app_register', \&BOM::RPC::v3::App::register),
                 '/app_list'     => register('app_list',     \&BOM::RPC::v3::App::list),
