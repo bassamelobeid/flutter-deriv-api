@@ -10,7 +10,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
 use BOM::Platform::SessionCookie;
 use BOM::System::Password;
-
+use Data::Dumper;
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua );
 
