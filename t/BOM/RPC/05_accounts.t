@@ -470,7 +470,7 @@ subtest $method => sub {
         'Password is not strong enough.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'new#_p$ssword', $oldpass)->{error}->{message_to_client},
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'New#_p$ssword', $oldpass)->{error}->{message_to_client},
         'Password should have letters and numbers and at least 6 characters.',
         'no number.',
     );
