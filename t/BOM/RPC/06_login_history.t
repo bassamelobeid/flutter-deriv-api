@@ -54,4 +54,4 @@ my $token = BOM::Platform::SessionCookie->new(
 my $method = 'login_history';
 my $params = {language => 'zh_CN', token => $token};
 
-diag( Dumper $c->call_ok($method, $params)->result);
+diag( Dumper( $c->call_ok($method, $params)->result));
