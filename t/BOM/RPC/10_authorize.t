@@ -18,6 +18,12 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client->email($email);
 $test_client->save;
+my $user  = BOM::Platform::User->create(
+                                                 email    => $email,
+                                                );
+$user->add_loginid({loginid => $test_client->loginid});
+$user->save;
+
 
 my $token = BOM::Platform::SessionCookie->new(
     loginid => $test_client->loginid,
@@ -75,6 +81,10 @@ subtest $method => sub {
 
     $params->{token} = $token_vr;
     is($c->call_ok($method, $params)->has_no_error->result->{is_virtual}, 1, "is_virtual is true if client is virtual");
+};
+
+subtest 'logout' => sub {
+  $c->call_ok('logout', {client_email => $email})->has_no_error->result_is_deeply({status=>1});
 };
 
 done_testing();
