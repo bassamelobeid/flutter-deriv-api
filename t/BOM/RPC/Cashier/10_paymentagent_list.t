@@ -10,6 +10,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::SessionCookie;
 use Test::MockModule;
 use utf8;
+use Data::Dumper;
 
 ################################################################################
 # init test data
