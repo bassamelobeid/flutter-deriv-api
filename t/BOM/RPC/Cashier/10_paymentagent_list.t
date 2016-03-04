@@ -51,7 +51,7 @@ $pa_client->payment_agent({
                            currency_code_2       => 'USD',
                            target_country        => 'id',
                           });
-my $pa_client->save;
+$pa_client->save;
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 ################################################################################
