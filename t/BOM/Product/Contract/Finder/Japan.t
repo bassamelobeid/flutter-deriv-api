@@ -19,7 +19,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 
 subtest "predefined contracts for symbol" => sub {
     my $now = Date::Utility->new('2015-08-21 05:30:00');
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'holiday',
         {
             recorded_date => $now,
