@@ -16,8 +16,6 @@ use utf8;
 ################################################################################
 
 my $email       = 'raunak@binary.com';
-my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::System::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
