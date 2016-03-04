@@ -77,9 +77,6 @@ subtest "available contracts for symbol" => sub {
             staysinout   => 2,
             endsinout    => 2,
         },
-        SYNAEX => {
-            callput => 4,
-        },
         FPCS => {
             callput => 4,
         },
@@ -101,6 +98,8 @@ subtest "available contracts for symbol" => sub {
                 quote      => 100
             });
             my $f = available_contracts_for_symbol({symbol => $u});
+            ok $f->{feed_license}, 'has feed license key available';
+            is($f->{feed_license}, 'realtime', 'correct feed license key available') if ($market eq 'random');
             my %got;
             $got{$_->{contract_category}}++ for (@{$f->{available}});
             cmp_ok $got{$_}, '==', $expected{$u}{$_}, "expected outcome for $u-$_" for (keys %{$expected{$u}});

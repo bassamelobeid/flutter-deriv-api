@@ -47,6 +47,7 @@ my @test_cases = ({
         ],
     },
 );
+
 foreach my $t (@test_cases) {
     my $u        = $t->{underlying};
     my @duration = ('24h', '1h1s', '1h', '15s');
@@ -63,8 +64,15 @@ foreach my $t (@test_cases) {
             quote  => 100,
             epoch  => $ds->epoch,
         });
+<<<<<<< HEAD
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {
                 symbol => 'USD',
+=======
+        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+            'currency',
+            {
+                symbol        => 'USD',
+>>>>>>> origin/master
                 recorded_date => $ds,
             });
 

@@ -35,7 +35,7 @@ subtest 'Check BOM::Product::Contract for memory cycles' => sub {
         'volsurface_delta',
         {
             symbol        => 'frxEURUSD',
-            recorded_date   => Date::Utility->new(),
+            recorded_date => Date::Utility->new(),
         });
 
     my $bet = produce_contract($params);

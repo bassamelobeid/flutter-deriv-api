@@ -31,8 +31,8 @@ my $dm               = BOM::MarketData::Fetcher::VolSurface->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => $bet_start,
+        symbol        => $_,
+        recorded_date => $bet_start,
     }) for (qw/AUD EUR JPY USD JPY-USD/);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -49,9 +49,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             186 => 0.1,
             365 => 0.13,
         },
-        recorded_date         => $bet_start,
-        type         => 'implied',
-        implied_from => 'USD'
+        recorded_date => $bet_start,
+        type          => 'implied',
+        implied_from  => 'USD'
     });
 my $spot = 79.08;
 

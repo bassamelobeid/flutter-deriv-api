@@ -19,8 +19,12 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
+<<<<<<< HEAD
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+=======
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+>>>>>>> origin/master
     'randomindex',
     {
         symbol => 'R_100',

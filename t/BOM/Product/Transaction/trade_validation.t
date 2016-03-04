@@ -34,16 +34,20 @@ initialize_realtime_ticks_db();
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new,
+        symbol        => $_,
+        recorded_date => Date::Utility->new,
     }) for (qw/USD JPY GBP JPY-USD/);
 
+<<<<<<< HEAD
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+=======
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+>>>>>>> origin/master
     'randomindex',
     {
-        symbol => 'R_50',
-        recorded_date   => Date::Utility->new
+        symbol        => 'R_50',
+        recorded_date => Date::Utility->new
     });
 
 my $now         = Date::Utility->new;
@@ -271,31 +275,31 @@ subtest 'Is contract valid to sell' => sub {
 subtest 'contract date pricing Validation' => sub {
     plan tests => 3;
 
-    my $now      = Date::Utility->new;
+    my $now = Date::Utility->new;
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
-            symbol => $_,
-            recorded_date   => Date::Utility->new($now->epoch + 300),
+            symbol        => $_,
+            recorded_date => Date::Utility->new($now->epoch + 300),
         }) for (qw/USD JPY GBP JPY-USD/);
 
     my $contract = produce_contract({
-            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
-            bet_type     => 'FLASHU',
-            currency     => 'GBP',
-            payout       => 100,
-            date_start   => $now,
-            date_expiry  => $now->epoch + 300,
-            date_pricing => Date::Utility->new($now->epoch - 100),
-        });
+        underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+        bet_type     => 'FLASHU',
+        currency     => 'GBP',
+        payout       => 100,
+        date_start   => $now,
+        date_expiry  => $now->epoch + 300,
+        date_pricing => Date::Utility->new($now->epoch - 100),
+    });
 
     my $error;
     lives_ok {
         my $transaction = BOM::Product::Transaction->new({
-                client   => $client,
-                contract => $contract,
-            });
+            client   => $client,
+            contract => $contract,
+        });
         $error = $transaction->_validate_date_pricing;
     }
     'validate date pricing';
@@ -315,24 +319,24 @@ subtest 'valid currency test' => sub {
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
             {
-                symbol => $_,
-                recorded_date   => Date::Utility->new($now->epoch - 100),
+                symbol        => $_,
+                recorded_date => Date::Utility->new($now->epoch - 100),
             }) for (qw/USD JPY GBP JPY-USD/);
 
         my $contract = produce_contract({
-                underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
-                bet_type     => 'FLASHU',
-                currency     => 'ABC',
-                payout       => 100,
-                date_start   => $now,
-                date_expiry  => $now->epoch + 300,
-                date_pricing => Date::Utility->new($now->epoch - 100),
-            });
+            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            bet_type     => 'FLASHU',
+            currency     => 'ABC',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $now->epoch + 300,
+            date_pricing => Date::Utility->new($now->epoch - 100),
+        });
 
         my $transaction = BOM::Product::Transaction->new({
-                client   => $client,
-                contract => $contract,
-            });
+            client   => $client,
+            contract => $contract,
+        });
 
         my $error = $transaction->_validate_currency;
 
@@ -344,27 +348,36 @@ subtest 'valid currency test' => sub {
     subtest 'illegal currency for landing company' => sub {
         $mock_contract->mock('currency', sub { 'AUD' });
 
+<<<<<<< HEAD
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol => $_,
             recorded_date   => Date::Utility->new($now->epoch - 100),
         }) for (qw/USD JPY GBP JPY-USD/);
+=======
+        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+            'currency',
+            {
+                symbol        => $_,
+                recorded_date => Date::Utility->new($now->epoch - 100),
+            }) for (qw/USD JPY GBP JPY-USD/);
+>>>>>>> origin/master
 
         my $contract = produce_contract({
-                underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
-                bet_type     => 'FLASHU',
-                currency     => 'AUD',
-                payout       => 100,
-                date_start   => $now,
-                date_expiry  => $now->epoch + 300,
-                date_pricing => Date::Utility->new($now->epoch - 100),
-            });
+            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            bet_type     => 'FLASHU',
+            currency     => 'AUD',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $now->epoch + 300,
+            date_pricing => Date::Utility->new($now->epoch - 100),
+        });
 
         my $transaction = BOM::Product::Transaction->new({
-                client   => $client,
-                contract => $contract,
-            });
+            client   => $client,
+            contract => $contract,
+        });
 
         my $error = $transaction->_validate_currency;
 
@@ -384,24 +397,24 @@ subtest 'valid currency test' => sub {
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
             {
-                symbol => $_,
-                recorded_date   => Date::Utility->new($now->epoch - 100),
+                symbol        => $_,
+                recorded_date => Date::Utility->new($now->epoch - 100),
             }) for (qw/USD JPY GBP JPY-USD/);
 
         my $contract = produce_contract({
-                underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
-                bet_type     => 'FLASHU',
-                currency     => 'AUD',
-                payout       => 100,
-                date_start   => $now,
-                date_expiry  => $now->epoch + 300,
-                date_pricing => Date::Utility->new($now->epoch - 100),
-            });
+            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            bet_type     => 'FLASHU',
+            currency     => 'AUD',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $now->epoch + 300,
+            date_pricing => Date::Utility->new($now->epoch - 100),
+        });
 
         my $transaction = BOM::Product::Transaction->new({
-                client   => $client,
-                contract => $contract,
-            });
+            client   => $client,
+            contract => $contract,
+        });
 
         my $error = $transaction->_validate_currency;
 
@@ -420,32 +433,32 @@ subtest 'BUY - trade pricing adjustment' => sub {
     subtest 'do not allow move if recomputed is 1' => sub {
         $mock_contract->mock('ask_price', sub { 100 });
         my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'model_markup',
-                description => 'fake model markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0,
-            });
+            name        => 'model_markup',
+            description => 'fake model markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0,
+        });
         my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'commission_markup',
-                description => 'fake commission markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0.01,
-            });
+            name        => 'commission_markup',
+            description => 'fake commission markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0.01,
+        });
         my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'risk_markup',
-                description => 'fake risk markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0,
-            });
+            name        => 'risk_markup',
+            description => 'fake risk markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0,
+        });
         $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
         $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
         $mock_contract->mock('model_markup', sub { $fake_model_markup });
         my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'ask_probability',
-                description => 'fake ask prov',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 1
-            });
+            name        => 'ask_probability',
+            description => 'fake ask prov',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 1
+        });
         $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         my $allowed_move = 0.01 * 0.50;
@@ -453,29 +466,29 @@ subtest 'BUY - trade pricing adjustment' => sub {
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
             {
-                symbol => $_,
-                recorded_date   => Date::Utility->new($now->epoch - 100),
+                symbol        => $_,
+                recorded_date => Date::Utility->new($now->epoch - 100),
             }) for (qw/USD JPY GBP JPY-USD/);
 
         my $contract = produce_contract({
-                underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
-                bet_type     => 'FLASHU',
-                currency     => 'GBP',
-                payout       => 100,
-                date_start   => $now,
-                date_expiry  => $now->epoch + 300,
-                date_pricing => Date::Utility->new($now->epoch - 100),
-                current_tick => $tick,
-                barrier      => 'S0P',
-            });
+            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            bet_type     => 'FLASHU',
+            currency     => 'GBP',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $now->epoch + 300,
+            date_pricing => Date::Utility->new($now->epoch - 100),
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
 
         my $price = $contract->ask_price - ($allowed_move * $contract->payout) + 0.1;
         my $transaction = BOM::Product::Transaction->new({
-                client   => $client,
-                contract => $contract,
-                action   => 'BUY',
-                price    => $price,
-            });
+            client   => $client,
+            contract => $contract,
+            action   => 'BUY',
+            price    => $price,
+        });
         my $error = $transaction->_validate_trade_pricing_adjustment;
         is($error, undef, 'no error');
         cmp_ok($transaction->price, '==', 100, 'BUY at the recomputed price');
@@ -484,56 +497,56 @@ subtest 'BUY - trade pricing adjustment' => sub {
     subtest 'check price move' => sub {
         $mock_contract->mock('ask_price', sub { 10 });
         my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'model_markup',
-                description => 'fake model markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0,
-            });
+            name        => 'model_markup',
+            description => 'fake model markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0,
+        });
         my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'commission_markup',
-                description => 'fake commission markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0.01,
-            });
+            name        => 'commission_markup',
+            description => 'fake commission markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0.01,
+        });
         my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'risk_markup',
-                description => 'fake risk markup',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0,
-            });
+            name        => 'risk_markup',
+            description => 'fake risk markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0,
+        });
         $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
         $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
         $mock_contract->mock('model_markup', sub { $fake_model_markup });
         my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'ask_probability',
-                description => 'fake ask prov',
-                set_by      => 'BOM::Product::Contract',
-                base_amount => 0.1
-            });
+            name        => 'ask_probability',
+            description => 'fake ask prov',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0.1
+        });
         $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
 
         my $allowed_move = 0.01 * 0.50;
 
         my $contract = produce_contract({
-                underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
-                bet_type     => 'FLASHU',
-                currency     => 'GBP',
-                payout       => 100,
-                date_start   => $now,
-                date_expiry  => $now->epoch + 300,
-                date_pricing => Date::Utility->new($now->epoch - 100),
-                current_tick => $tick,
-                barrier      => 'S0P',
-            });
+            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            bet_type     => 'FLASHU',
+            currency     => 'GBP',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $now->epoch + 300,
+            date_pricing => Date::Utility->new($now->epoch - 100),
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
 
         # amount_type = payout, price increase > allowed move
         my $transaction = BOM::Product::Transaction->new({
-                client   => $client,
-                contract => $contract,
-                action   => 'BUY',
-                price    => $contract->ask_price - ($allowed_move * $contract->payout + 0.1),
-            });
+            client   => $client,
+            contract => $contract,
+            action   => 'BUY',
+            price    => $contract->ask_price - ($allowed_move * $contract->payout + 0.1),
+        });
         my $error = $transaction->_validate_trade_pricing_adjustment;
         is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
         like(
@@ -545,11 +558,11 @@ subtest 'BUY - trade pricing adjustment' => sub {
         # amount_type = payout, price increase < allowed move
         my $price = $contract->ask_price - ($allowed_move * $contract->payout / 2);
         $transaction = BOM::Product::Transaction->new({
-                client   => $client,
-                contract => $contract,
-                action   => 'BUY',
-                price    => $price,
-            });
+            client   => $client,
+            contract => $contract,
+            action   => 'BUY',
+            price    => $price,
+        });
 
         $error = $transaction->_validate_trade_pricing_adjustment;
         is($error, undef, 'BUY price increase within allowable move');

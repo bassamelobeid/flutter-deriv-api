@@ -74,11 +74,12 @@ subtest 'invalid operation' => sub {
             type           => 'DVD_STOCK',
         }};
 
-    Quant::Framework::Utils::Test::create_doc('corporate_action',
+    Quant::Framework::Utils::Test::create_doc(
+        'corporate_action',
         {
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-            actions => $invalid_action
+            actions          => $invalid_action
         });
 
     lives_ok {
@@ -114,11 +115,12 @@ subtest 'valid action during bet pricing' => sub {
             type           => 'DVD_STOCK',
         }};
 
-    Quant::Framework::Utils::Test::create_doc('corporate_action',
+    Quant::Framework::Utils::Test::create_doc(
+        'corporate_action',
         {
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-            actions => $invalid_action
+            actions          => $invalid_action
         });
 
     lives_ok {
@@ -186,13 +188,13 @@ subtest 'one action' => sub {
             type           => 'DVD_STOCK',
         }};
 
-    Quant::Framework::Utils::Test::create_doc('corporate_action',
+    Quant::Framework::Utils::Test::create_doc(
+        'corporate_action',
         {
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-            actions => $one_action,
+            actions          => $one_action,
         });
-
 
     lives_ok {
         my $closing_time = $starting->plus_time_interval('1d')->truncate_to_day->plus_time_interval('23h59m59s');
@@ -287,11 +289,12 @@ subtest 'two actions' => sub {
         },
     };
 
-    Quant::Framework::Utils::Test::create_doc('corporate_action',
+    Quant::Framework::Utils::Test::create_doc(
+        'corporate_action',
         {
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-            actions => $two_actions
+            actions          => $two_actions
         });
 
     my $date_pricing = $starting->plus_time_interval('2d');
@@ -361,13 +364,13 @@ subtest 'order check' => sub {
     lives_ok {
         my $two_actions = \%corp_args;
 
-
-        Quant::Framework::Utils::Test::create_doc('corporate_action',
+        Quant::Framework::Utils::Test::create_doc(
+            'corporate_action',
             {
                 chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-                actions => $two_actions,
-                symbol  => 'USPM'
+                actions          => $two_actions,
+                symbol           => 'USPM'
             });
         $underlying = BOM::Market::Underlying->new('USPM');
         throws_ok { $underlying->corporate_actions } qr/Could not determine order of corporate actions/,
@@ -380,12 +383,13 @@ subtest 'order check' => sub {
         $corp_args{$id_2}->{action_code} = 2003;
         my $two_actions = \%corp_args;
 
-        Quant::Framework::Utils::Test::create_doc('corporate_action',
+        Quant::Framework::Utils::Test::create_doc(
+            'corporate_action',
             {
                 chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-                actions => $two_actions,
-                symbol  => 'USPM'
+                actions          => $two_actions,
+                symbol           => 'USPM'
             });
 
         $underlying = BOM::Market::Underlying->new('USPM');
@@ -412,12 +416,13 @@ subtest 'order check' => sub {
         $corp_args{$id_2}->{action_code} = 2000;
         my $actions = {%corp_args, %new};
 
-        Quant::Framework::Utils::Test::create_doc('corporate_action',
+        Quant::Framework::Utils::Test::create_doc(
+            'corporate_action',
             {
                 chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-                actions => $actions,
-                symbol  => 'USPM'
+                actions          => $actions,
+                symbol           => 'USPM'
             });
 
         $underlying = BOM::Market::Underlying->new('USPM');

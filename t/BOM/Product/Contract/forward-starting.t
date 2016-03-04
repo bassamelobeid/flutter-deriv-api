@@ -21,15 +21,15 @@ use BOM::Test::Data::Utility::UnitTestMarketData;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol          => $_,
-        recorded_date   => $now->minus_time_interval('5m'),
+        symbol        => $_,
+        recorded_date => $now->minus_time_interval('5m'),
     }) for qw(USD JPY JPY-USD);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date   => $now->minus_time_interval('5m'),
+        recorded_date => $now->minus_time_interval('5m'),
     });
 
 subtest 'forward starting with payout/stake' => sub {

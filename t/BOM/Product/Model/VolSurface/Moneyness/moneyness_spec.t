@@ -30,8 +30,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol           => 'IBEX35',
-        recorded_date    => Date::Utility->new('12-Sep-12'),
+        symbol        => 'IBEX35',
+        recorded_date => Date::Utility->new('12-Sep-12'),
     });
 
 subtest creates_moneyness_object => sub {
@@ -65,15 +65,15 @@ subtest fetching_volsurface_data_from_db => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol           => 'IBEX35',
-            surface          => $fake_surface,
-            recorded_date    => $fake_date,
+            symbol        => 'IBEX35',
+            surface       => $fake_surface,
+            recorded_date => $fake_date,
         });
 
     my $u = BOM::Market::Underlying->new('IBEX35');
     my $vs = BOM::MarketData::VolSurface::Moneyness->new(underlying => $u);
 
-    is_deeply($vs->surface,          $fake_surface,          'surface is fetched correctly');
+    is_deeply($vs->surface, $fake_surface, 'surface is fetched correctly');
     is($vs->recorded_date->epoch, $fake_date->epoch, 'surface recorded_date is fetched correctly');
 };
 

@@ -17,7 +17,6 @@ use YAML::XS qw(LoadFile);
 use BOM::Market::Underlying;
 use Storable qw(dclone);
 
-
 subtest 'tuesday to friday close' => sub {
     my $expiry = Date::Utility->new('2016-01-22 21:00:00');
     my $data   = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/vol_expiry_test.yml');
@@ -33,7 +32,7 @@ subtest 'tuesday to friday close' => sub {
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
-                underlying        => BOM::Market::Underlying->new('frxUSDJPY'),
+                underlying    => BOM::Market::Underlying->new('frxUSDJPY'),
                 surface       => $surface_data,
                 recorded_date => $now
             });
@@ -57,4 +56,4 @@ subtest 'tuesday to friday close' => sub {
         is $c->ask_probability->amount, $data->{$now->datetime}{ask_probability}, 'ask_probability';
         is $c->timeindays->amount,      $data->{$now->datetime}{timeindays},      'timeindays';
     }
-}
+    }

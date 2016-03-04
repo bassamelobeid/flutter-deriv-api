@@ -24,8 +24,8 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new,
+        symbol        => $_,
+        recorded_date => Date::Utility->new,
     }) for (qw/EUR JPY USD/);
 
 initialize_realtime_ticks_db();
@@ -260,7 +260,7 @@ subtest 'object creaion error check' => sub {
     my $surface       = {1 => {smile => {50 => 0.1}}};
     throws_ok { BOM::MarketData::VolSurface::Delta->new(surface => $surface, recorded_date => $recorded_date) }
     qr/Attribute \(symbol\) is required/,
-    'Cannot create volsurface without underlying';
+        'Cannot create volsurface without underlying';
     throws_ok { BOM::MarketData::VolSurface::Delta->new(surface => $surface, underlying => $underlying) }
     qr/Must pass both "surface" and "recorded_date" if passing either/, 'Cannot create volsurface without recorded_date';
     lives_ok { BOM::MarketData::VolSurface::Delta->new(surface => $surface, underlying => $underlying, recorded_date => $recorded_date) }

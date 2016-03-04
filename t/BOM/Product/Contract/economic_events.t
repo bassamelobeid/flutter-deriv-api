@@ -21,15 +21,15 @@ my $now = Date::Utility->new('7-Jan-14 12:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => $now->minus_time_interval('10m'),
+        symbol        => $_,
+        recorded_date => $now->minus_time_interval('10m'),
     }) for (qw/JPY USD JPY-USD/);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date   => $now->minus_time_interval('10m'),
+        recorded_date => $now->minus_time_interval('10m'),
     });
 
 my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
@@ -46,9 +46,9 @@ $mocked->mock(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
-        symbol       => 'USD',
-        release_date => $now,
-        recorded_date         => Date::Utility->new(),
+        symbol        => 'USD',
+        release_date  => $now,
+        recorded_date => Date::Utility->new(),
     },
 );
 
