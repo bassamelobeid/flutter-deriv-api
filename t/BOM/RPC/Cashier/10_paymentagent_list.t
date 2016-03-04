@@ -29,6 +29,30 @@ my $token = BOM::Platform::SessionCookie->new(
                                               loginid => $test_client->loginid,
                                               email   => $email
                                              )->token;
+
+
+my $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                                                                        broker_code => 'CR',
+                                                                       });
+$pa_client->set_default_account('USD');
+
+# make him a payment agent
+$pa_client->payment_agent({
+                           payment_agent_name    => 'Joe',
+                           url                   => 'http://www.example.com/',
+                           email                 => 'joe@example.com',
+                           phone                 => '+12345678',
+                           information           => 'Test Info',
+                           summary               => 'Test Summary',
+                           commission_deposit    => 0,
+                           commission_withdrawal => 0,
+                           is_authenticated      => 't',
+                           currency_code         => 'USD',
+                           currency_code_2       => 'USD',
+                           target_country        => 'id',
+                          });
+my $pa_client->save;
+
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 ################################################################################
 # start test
