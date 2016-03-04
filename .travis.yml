@@ -7,6 +7,7 @@ env:
     - TEST_SUITE=unit_test_product_all
     - TEST_SUITE=unit_test_validation
     - TEST_SUITE=unit_test_pricing
+    - TEST_SUITE=unit_test_intraday
 
 services:
     - redis-server
