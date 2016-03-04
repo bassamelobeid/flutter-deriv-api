@@ -134,11 +134,12 @@ subtest 'Initialization contract' => sub {
         my $start = DateTime->now()->subtract( minutes => 7 );
         my $expire = $start->clone->add( DateTime::Duration->new( minutes     => 2 ) );
 
-        BOM::Test::Data::Utility::FeedTestDatabase::create_ticks_range({
-            from => $start->epoch,
-            to   => $expire->epoch,
-            underlying => 'R_100',
-        });
+        for my $epoch ( $start->epoch .. $expire->epoch ) {
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                epoch      => $epoch,
+                underlying => 'R_100',
+            });
+        }
 
         my $short_code = 'CALL_R_100_26.49_'
                        . $start->epoch() . '_'
