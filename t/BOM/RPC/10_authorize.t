@@ -85,7 +85,7 @@ subtest $method => sub {
 };
 
 subtest 'logout' => sub {
-  my $params = {client_email => $email, client_ip => '1.1.1.1',contry_code => 'id', language => 'ZH_CN', ua => 'firefox'};
+  my $params = {client_email => $email, client_ip => '1.1.1.1',country_code => 'id', language => 'ZH_CN', ua => 'firefox', token_type => 'session_token'};
   $c->call_ok('logout', $params)->has_no_error->result_is_deeply({status=>1});
 };
 
