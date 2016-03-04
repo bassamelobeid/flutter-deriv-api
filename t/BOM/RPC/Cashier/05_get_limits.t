@@ -73,9 +73,20 @@ my $expected_result = {
 $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
 # It is difficult to set client as fully authenticated, so I mocked it here
-my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
-$mocked_client->mock('client_fully_authenticated', sub{1});
-diag(Dumper($c->call_ok($method, $params)->has_no_error->result));
+#my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
+#$mocked_client->mock('client_fully_authenticated', sub{1});
+$test_client->set_authentication('ID_192')->status('pass');
+$test_client->save;
+$expected_result = {
+           'lifetime_limit' => '99999999',
+           'account_balance' => '300000',
+           'num_of_days_limit' => '99999999',
+           'num_of_days' => '30',
+           'daily_turnover' => '500000',
+           'open_positions' => '60',
+           'payout' => '50000'
+                   };
+$c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
 
 done_testing();
 
