@@ -95,7 +95,7 @@ subtest 'logout' => sub {
   $c->call_ok('logout', $params)->has_no_error->result_is_deeply({status=>1});
 
   #check login history
-  my $history_records = $c->call_ok('login_history',{token => $new_token, args => {limit => 2}})->has_no_error->result->{records};
+  my $history_records = $c->call_ok('login_history',{token => $new_token, args => {limit => 2}})->response;#->has_no_error->result->{records};
   diag(Dumper($history_records));
 
 
