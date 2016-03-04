@@ -85,7 +85,7 @@ $expected_result = {
            'daily_turnover' => '500000',
            'open_positions' => '60',
            'payout' => '500000'
-         }
+         };
 
 $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
 
