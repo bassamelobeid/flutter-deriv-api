@@ -56,6 +56,25 @@ $test_client->save;
 $c->call_ok($method, $params)->has_error->error_message_is('对不起，此功能不可用。', 'invalid token');
 $test_client->clr_status('cashier_locked');
 $test_client->save;
+my $expected_result = {
+           'account_balance' => '300000',
+           'num_of_days' => '30',
+           'withdrawal_for_x_days_monetary' => '0',
+           'remainder' => '10000',
+           'open_positions' => '60',
+           'lifetime_limit' => '10000',
+           'num_of_days_limit' => '10000',
+           'withdrawal_since_inception_monetary' => '0',
+           'daily_turnover' => '200000',
+           'payout' => '200000'
+                      };
+
+$c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+
+# It is difficult to set client as fully authenticated, so I mocked it here
+my $mocked_client = Test::MockModule('BOM::Platform::Client');
+$mocked_client->mock('client_fully_authenticated', sub{1});
 diag(Dumper($c->call_ok($method, $params)->has_no_error->result));
+
 done_testing();
 
