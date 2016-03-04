@@ -51,7 +51,7 @@ $test_client->save;
 $params->{token} = $token;
 $c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'invalid token');
 $test_client->clr_status('disabled');
-$test_client->set_status('cashier_locked',1 'test');
+$test_client->set_status('cashier_locked',1, 'test');
 $test_client->save;
 $c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'invalid token');
 
