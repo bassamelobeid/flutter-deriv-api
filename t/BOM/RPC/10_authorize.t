@@ -96,7 +96,7 @@ subtest 'logout' => sub {
 
   #check login history
   my $history_records = $c->call_ok('login_history',{token => $token, args => {limit => 1}})->response->has_no_error->result->{records};
-  is($hisotory_records->[0]{action}, 'logout', 'the last history is logout');
+  is($history_records->[0]{action}, 'logout', 'the last history is logout');
   like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=ZH_CN/, 'environment is correct');
 
   $c->call_ok('authorize',{language => 'ZH_CN',token => $new_token})->has_error->error_message_is('令牌无效。','session token is invalid after logout');
