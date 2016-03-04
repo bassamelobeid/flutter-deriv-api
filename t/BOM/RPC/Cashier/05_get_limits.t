@@ -84,9 +84,10 @@ $expected_result = {
            'num_of_days' => '30',
            'daily_turnover' => '500000',
            'open_positions' => '60',
-           'payout' => '50000'
-                   };
-diag(Dumper($c->call_ok($method, $params)->has_no_error->result));#_is_deeply($expected_result, 'result is ok for fully authenticated client');
+           'payout' => '500000'
+         }
+
+$c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
 
 done_testing();
 
