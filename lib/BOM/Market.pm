@@ -14,8 +14,6 @@ my $forex = BOM::Market->new({name => 'forex'});
 
 use Moose;
 
-with 'BOM::Market::Role::ParsedOfferings';
-
 use BOM::Platform::Runtime;
 use BOM::Market::Markups;
 use BOM::Market::Types;
@@ -105,24 +103,6 @@ has 'explanation' => (
     is => 'ro',
 );
 
-=head2 contracts_offered
-
-Are contracts offered on this market
-
-=cut
-
-has 'contracts_offered' => (
-    is         => 'ro',
-    isa        => 'Bool',
-    lazy_build => 1
-);
-
-sub _build_contracts_offered {
-    my $self = shift;
-
-    return (scalar keys %{$self->contracts}) ? 1 : 0;
-}
-
 =head2 volatility_surface_type
 Type of surface this financial market should have.
 =cut
@@ -130,18 +110,6 @@ Type of surface this financial market should have.
 has volatility_surface_type => (
     is      => 'ro',
     default => '',
-);
-
-=head2 contracts
-
-A HashRef of the contracts available on this market
-
-=cut
-
-has contracts => (
-    is      => 'ro',
-    isa     => 'HashRef',
-    default => sub { shift->parsed_contracts // {} },
 );
 
 =head2 markups
@@ -426,34 +394,6 @@ has deep_otm_threshold => (
     isa     => 'Num',
     default => 0.10,
 );
-
-sub default_underlying {
-    my ($self, $submarket) = @_;
-
-    my %args = (
-        broker            => request()->broker_code,
-        market            => $self->name,
-        exclude_disabled  => 1,
-        contract_category => 'ANY',
-    );
-    $args{submarket} = $submarket if ($submarket);
-
-    my $udb              = BOM::Market::UnderlyingDB->instance;
-    my @symbols          = $udb->get_symbols_for(%args);
-    my @things_to_remove = qw(submarket bet_type exclude_disabled);
-    while (not scalar @symbols and scalar @things_to_remove) {
-        delete $args{shift @things_to_remove};
-        @symbols = $udb->get_symbols_for(%args);
-    }
-
-    die "Could not find a default underlying for " . $self->name . ",$submarket.  Giving up."
-        unless (scalar @symbols);
-
-    my $underlying = first { $_->is_open and (keys %{$_->contracts} > 0) }
-    map { BOM::Market::Underlying->new($_) } @symbols;
-
-    return ($underlying) ? $underlying->symbol : $symbols[0];
-}
 
 =head2 providers
 

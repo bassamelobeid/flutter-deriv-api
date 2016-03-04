@@ -598,22 +598,6 @@ subtest combined_realtime => sub {
     is $ticks, undef, "Tick for SPC is not defined";
 };
 
-subtest 'contracts_offered' => sub {
-    subtest 'R_100' => sub {
-        my $underlying = BOM::Market::Underlying->new({symbol => 'R_100'});
-        foreach my $bet_type (qw(callput touchnotouch staysinout endsinout)) {
-            ok $underlying->contracts_offered($bet_type), $bet_type . ' offered on R_100';
-        }
-    };
-
-    subtest 'frxUSDJPY' => sub {
-        my $underlying = BOM::Market::Underlying->new({symbol => 'frxUSDJPY'});
-        foreach my $bet_type (qw(callput staysinout touchnotouch endsinout)) {
-            ok $underlying->contracts_offered($bet_type), $bet_type . ' offered on frxUSDJPY';
-        }
-    };
-};
-
 subtest 'daily close crossing intradays' => sub {
     plan tests => 6;
     my %expectations = (
