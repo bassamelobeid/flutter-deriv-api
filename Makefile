@@ -14,10 +14,10 @@ unit_test_product_contract:
 	@$(PROVE) -r t/BOM/Product/Contract/ -r t/BOM/Product/ContractFactory/
 
 unit_test_product_all:
-	@$(PROVE) -r $$(ls -1d t/BOM/Persistence/* t/BOM/*.t t/BOM/Product/* | grep -v -e Product/Contract -e Product/Validation)
+	@$(PROVE) -r $$(ls -1d t/BOM/Persistence/* t/BOM/*.t t/BOM/Product/* | grep -v -e Product/Contract -e Product/Validation -e Product/Pricing/Engine/IntradayHistorical)
 
 unit_test_validation:
-	@$(PROVE) -r t/BOM/Product/Validation
+	@$(PROVE) -r t/BOM/Product/Validation -r t/BOM/Product/Pricing/Engine/IntradayHistorical
 
 tidy:
 	find . -name '*.p?.bak' -delete
