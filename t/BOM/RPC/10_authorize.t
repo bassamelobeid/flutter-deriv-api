@@ -85,9 +85,23 @@ subtest $method => sub {
 };
 
 subtest 'logout' => sub {
-  my $params = {client_email => $email, client_ip => '1.1.1.1',country_code => 'id', language => 'ZH_CN', ua => 'firefox', token_type => 'session_token', token => $token};
+
+  $my $new_token = BOM::Platform::SessionCookie->new(
+                                             loginid => $test_client->loginid,
+                                             email   => $email
+                                            )->token;
+
+  my $params = {client_email => $email, client_ip => '1.1.1.1',country_code => 'id', language => 'ZH_CN', ua => 'firefox', token_type => 'session_token', token => $new_token};
   $c->call_ok('logout', $params)->has_no_error->result_is_deeply({status=>1});
-  $c->call_ok('authorize',{language => 'ZH_CN',token => $token})->has_error->error_message_is('令牌无效。','token is invalid');
+
+  #check login history
+  my $history_records = $c->call_ok('login_history',{token => $new_token, args => {limit => 2}})->has_no_error->result->{records};
+  diag(Dumper($history_records));
+
+
+  $c->call_ok('authorize',{language => 'ZH_CN',token => $new_token})->has_error->error_message_is('令牌无效。','token is invalid');
+
+
 };
 
 done_testing();
