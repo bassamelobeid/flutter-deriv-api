@@ -63,7 +63,7 @@ my $params = {
               token    => '12345',
               args     => {paymentagent_list => 'id'},
              };
-
-diag(Dumper($c->call_ok($method, $params)->has_no_error->result));
-
+my $result = $c->call_ok($method, $params)->has_no_error->result;
+diag(Dumper($result));
+diag($result->{available_countries}[0][1]);
 
