@@ -11,6 +11,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
 use BOM::Platform::SessionCookie;
 use BOM::System::Password;
+use Test::MockModule;
 use utf8;
 use Data::Dumper;
 
