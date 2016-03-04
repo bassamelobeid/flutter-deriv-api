@@ -73,7 +73,7 @@ my $expected_result = {
 $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
 # It is difficult to set client as fully authenticated, so I mocked it here
-my $mocked_client = Test::MockModule('BOM::Platform::Client');
+my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
 $mocked_client->mock('client_fully_authenticated', sub{1});
 diag(Dumper($c->call_ok($method, $params)->has_no_error->result));
 
