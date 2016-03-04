@@ -7,13 +7,9 @@ use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::User;
 use BOM::Platform::SessionCookie;
-use BOM::System::Password;
 use Test::MockModule;
 use utf8;
-use Data::Dumper;
 
 ################################################################################
 # init test data
@@ -33,11 +29,6 @@ my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client_vr->email($email);
 $test_client_vr->save;
 my $test_loginid = $test_client->loginid;
-my $user         = BOM::Platform::User->create(
-    email    => $email,
-    password => $hash_pwd
-);
-$user->save;
 
 my $token = BOM::Platform::SessionCookie->new(
     loginid => $test_loginid,
