@@ -28,7 +28,7 @@ my $token = BOM::Platform::SessionCookie->new(
                                               loginid => $test_client->loginid,
                                               email   => $email
                                              )->token;
-
+my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 ################################################################################
 # start test
 ################################################################################
