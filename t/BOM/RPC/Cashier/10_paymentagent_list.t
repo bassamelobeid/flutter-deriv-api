@@ -11,11 +11,33 @@ use BOM::Platform::SessionCookie;
 use Test::MockModule;
 use utf8;
 
+################################################################################
+# init test data
+################################################################################
+
 my $email       = 'raunak@binary.com';
 my $password    = 'jskjd8292922';
 my $hash_pwd    = BOM::System::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                                                                             broker_code => 'CR',
+                                                                             broker_code => 'MF',
                                                                             });
 $test_client->email($email);
 $test_client->save;
+
+my $token = BOM::Platform::SessionCookie->new(
+                                              loginid => $test_client->loginid,
+                                              email   => $email
+                                             )->token;
+
+################################################################################
+# start test
+################################################################################
+my $method = 'paymentagent_list';
+my $params = {
+              language => 'zh_CN',
+              token    => '12345'
+             };
+
+diag(Dumper($c->call_ok($method, $params)->has_no_error->result));
+
+
