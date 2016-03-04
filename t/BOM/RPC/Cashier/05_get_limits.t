@@ -27,7 +27,11 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                             });
 $test_client->email($email);
 $test_client->save;
-
+my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                                                                                broker_code => 'VRTC',
+                                                                               });
+$test_client_vr->email($email);
+$test_client_vr->save;
 my $test_loginid = $test_client->loginid;
 my $user         = BOM::Platform::User->create(
                                                email    => $email,
@@ -39,7 +43,10 @@ my $token = BOM::Platform::SessionCookie->new(
                                               loginid => $test_loginid,
                                               email   => $email
                                              )->token;
-
+my $token_vr = BOM::Platform::SessionCookie->new(
+                                                 loginid => $test_client_vr->loginid,
+                                                 email   => $email
+                                                )->token;
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 ################################################################################
 # start test
@@ -88,6 +95,20 @@ $expected_result = {
          };
 
 $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
+
+#add an expired document
+           my ($doc) = $test_client->add_client_authentication_document({
+                document_type              => "Passport",
+                document_format            => "PDF",
+                document_path              => '/tmp/test.pdf',
+                expiration_date            => '2008-10-10',
+                authentication_method_code => 'ID_DOCUMENT'
+            });
+            $test_client->save;
+$c->call_ok($method, $params)->has_error->error_message_is('对不起，此功能不可用。', 'invalid token');
+
+$params->{token} = $token_vr;
+$c->call_ok($method, $params)->has_error->error_message_is('对不起，此功能不可用。', 'invalid token');
 
 done_testing();
 
