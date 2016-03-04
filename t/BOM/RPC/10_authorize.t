@@ -86,7 +86,7 @@ subtest $method => sub {
 
 subtest 'logout' => sub {
 
-  $my $new_token = BOM::Platform::SessionCookie->new(
+  my $new_token = BOM::Platform::SessionCookie->new(
                                              loginid => $test_client->loginid,
                                              email   => $email
                                             )->token;
