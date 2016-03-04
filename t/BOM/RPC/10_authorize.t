@@ -18,13 +18,12 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client->email($email);
 $test_client->save;
-my $user  = BOM::Platform::User->create(
-                                        email    => $email,
-                                        password => '1234',
-                                                );
+my $user = BOM::Platform::User->create(
+    email    => $email,
+    password => '1234',
+);
 $user->add_loginid({loginid => $test_client->loginid});
 $user->save;
-
 
 my $token = BOM::Platform::SessionCookie->new(
     loginid => $test_client->loginid,
@@ -86,21 +85,37 @@ subtest $method => sub {
 
 subtest 'logout' => sub {
 
-  my $new_token = BOM::Platform::SessionCookie->new(
-                                             loginid => $test_client->loginid,
-                                             email   => $email
-                                            )->token;
+    my $new_token = BOM::Platform::SessionCookie->new(
+        loginid => $test_client->loginid,
+        email   => $email
+    )->token;
 
-  my $params = {client_email => $email, client_ip => '1.1.1.1',country_code => 'id', language => 'ZH_CN', ua => 'firefox', token_type => 'session_token', token => $new_token};
-  $c->call_ok('logout', $params)->has_no_error->result_is_deeply({status=>1});
+    my $params = {
+        client_email => $email,
+        client_ip    => '1.1.1.1',
+        country_code => 'id',
+        language     => 'ZH_CN',
+        ua           => 'firefox',
+        token_type   => 'session_token',
+        token        => $new_token
+    };
+    $c->call_ok('logout', $params)->has_no_error->result_is_deeply({status => 1});
 
-  #check login history
-  my $history_records = $c->call_ok('login_history',{token => $token, args => {limit => 1}})->has_no_error->result->{records};
-  is($history_records->[0]{action}, 'logout', 'the last history is logout');
-  like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=ZH_CN/, 'environment is correct');
+    #check login history
+    my $history_records = $c->call_ok(
+        'login_history',
+        {
+            token => $token,
+            args  => {limit => 1}})->has_no_error->result->{records};
+    is($history_records->[0]{action}, 'logout', 'the last history is logout');
+    like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=ZH_CN/, 'environment is correct');
 
-  $c->call_ok('authorize',{language => 'ZH_CN',token => $new_token})->has_error->error_message_is('令牌无效。','session token is invalid after logout');
-
+    $c->call_ok(
+        'authorize',
+        {
+            language => 'ZH_CN',
+            token    => $new_token
+        })->has_error->error_message_is('令牌无效。', 'session token is invalid after logout');
 
 };
 
