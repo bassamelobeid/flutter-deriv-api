@@ -60,7 +60,8 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $method = 'paymentagent_list';
 my $params = {
               language => 'zh_CN',
-              token    => '12345'
+              token    => '12345',
+              args     => {paymentagent_list => 'id'};
              };
 
 diag(Dumper($c->call_ok($method, $params)->has_no_error->result));
