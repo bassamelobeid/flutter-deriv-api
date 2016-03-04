@@ -19,7 +19,8 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client->email($email);
 $test_client->save;
 my $user  = BOM::Platform::User->create(
-                                                 email    => $email,
+                                        email    => $email,
+                                        password => '1234',
                                                 );
 $user->add_loginid({loginid => $test_client->loginid});
 $user->save;
