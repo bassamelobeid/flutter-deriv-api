@@ -1,8 +1,6 @@
 use strict;
 use warnings;
 
-use FindBin qw/$Bin/;
-use lib "$Bin/../../../lib";
 use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
