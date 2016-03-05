@@ -25,6 +25,7 @@ sub __parse_array {
 
 my @token_scopes = ('read', 'trade', 'payments', 'admin');
 my %available_scopes = map { $_ => 1 } @token_scopes;
+
 sub __filter_valid_scopes {
     my (@s) = @_;
     return grep { $available_scopes{$_} } @s;
@@ -59,8 +60,8 @@ sub confirm_scope {
             UPDATE oauth.user_scope_confirm SET scopes = ? WHERE app_id = ? AND loginid = ?
         ", undef, \@scopes, $app_id, $loginid);
     } else {
-        $dbh->do("INSERT INTO oauth.user_scope_confirm (app_id, loginid, scopes) VALUES (?, ?, ?)", undef,
-            $app_id, $loginid, [ __filter_valid_scopes(@scopes) ] );
+        $dbh->do("INSERT INTO oauth.user_scope_confirm (app_id, loginid, scopes) VALUES (?, ?, ?)",
+            undef, $app_id, $loginid, [__filter_valid_scopes(@scopes)]);
     }
 
     return 1;
@@ -93,7 +94,7 @@ sub store_auth_code {
     $dbh->do("
         INSERT INTO oauth.auth_code (auth_code, app_id, loginid, expires, scopes, verified)
         VALUES (?, ?, ?, ?, ?, false)
-    ", undef, $auth_code, $app_id, $loginid, $expires_time, [ __filter_valid_scopes(@scopes) ]);
+    ", undef, $auth_code, $app_id, $loginid, $expires_time, [__filter_valid_scopes(@scopes)]);
 
     return $auth_code;
 }
@@ -135,19 +136,21 @@ sub store_access_token {
     my $expires_in    = 3600;
     my $access_token  = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
     my $refresh_token = 'r1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
-    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
+    my $expires_time  = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
 
     @scopes = __filter_valid_scopes(@scopes);
 
     $dbh->begin_work;
     try {
         $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, scopes, expires) VALUES (?, ?, ?, ?, ?)",
-        undef, $access_token, $app_id, $loginid, \@scopes, $expires_time);
+            undef, $access_token, $app_id, $loginid, \@scopes, $expires_time);
 
-        $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, app_id, loginid, scopes) VALUES (?, ?, ?, ?)", undef, $refresh_token, $app_id, $loginid, \@scopes);
+        $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, app_id, loginid, scopes) VALUES (?, ?, ?, ?)",
+            undef, $refresh_token, $app_id, $loginid, \@scopes);
 
         $dbh->commit;
-    } catch {
+    }
+    catch {
         $dbh->rollback;
     };
 
@@ -157,9 +160,9 @@ sub store_access_token {
 sub store_access_token_only {
     my ($self, $app_id, $loginid, @scopes) = @_;
 
-    my $dbh           = $self->dbh;
-    my $expires_in    = 3600;
-    my $access_token  = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
+    my $dbh          = $self->dbh;
+    my $expires_in   = 86400;                                                     # for one day
+    my $access_token = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
     @scopes = __filter_valid_scopes(@scopes);
 
@@ -173,9 +176,8 @@ sub store_access_token_only {
 sub get_loginid_by_access_token {
     my ($self, $token) = @_;
 
-    return $self->dbh->selectrow_array(
-        "UPDATE oauth.access_token SET last_used=NOW() WHERE access_token = ? AND expires > NOW() RETURNING loginid", undef, $token
-    );
+    return $self->dbh->selectrow_array("UPDATE oauth.access_token SET last_used=NOW() WHERE access_token = ? AND expires > NOW() RETURNING loginid",
+        undef, $token);
 }
 
 sub get_scopes_by_access_token {
@@ -226,7 +228,7 @@ sub is_name_taken {
 sub create_app {
     my ($self, $app) = @_;
 
-    my $id     = $app->{id}     || 'id-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
+    my $id = $app->{id} || 'id-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.apps
@@ -235,20 +237,21 @@ sub create_app {
             (? ,?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $sth->execute(
-        $id, $app->{name},
+        $id,
+        $app->{name},
         $app->{scopes},
-        $app->{homepage}   || '',
-        $app->{github}     || '',
-        $app->{appstore}   || '',
-        $app->{googleplay} || '',
+        $app->{homepage}     || '',
+        $app->{github}       || '',
+        $app->{appstore}     || '',
+        $app->{googleplay}   || '',
         $app->{redirect_uri} || '',
         $app->{user_id});
 
     return {
-        app_id     => $id,
-        name          => $app->{name},
-        scopes        => $app->{scopes},
-        redirect_uri  => $app->{redirect_uri},
+        app_id       => $id,
+        name         => $app->{name},
+        scopes       => $app->{scopes},
+        redirect_uri => $app->{redirect_uri},
     };
 }
 
