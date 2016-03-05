@@ -34,9 +34,13 @@ sub __filter_valid_scopes {
 sub verify_app {
     my ($self, $app_id) = @_;
 
-    return $self->dbh->selectrow_hashref("
-        SELECT id, name, redirect_uri FROM oauth.apps WHERE id = ? AND active
+    my $app = $self->dbh->selectrow_hashref("
+        SELECT id, name, redirect_uri, scopes FROM oauth.apps WHERE id = ? AND active
     ", undef, $app_id);
+    return unless $app;
+
+    $app->{scopes} = __parse_array($app->{scopes});
+    return $app;
 }
 
 sub confirm_scope {
@@ -226,12 +230,13 @@ sub create_app {
 
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.apps
-            (id, name, homepage, github, appstore, googleplay, redirect_uri, binary_user_id)
+            (id, name, scopes, homepage, github, appstore, googleplay, redirect_uri, binary_user_id)
         VALUES
-            (? ,?, ?, ?, ?, ?, ?, ?)
+            (? ,?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $sth->execute(
         $id, $app->{name},
+        $app->{scopes},
         $app->{homepage}   || '',
         $app->{github}     || '',
         $app->{appstore}   || '',
@@ -242,7 +247,8 @@ sub create_app {
     return {
         app_id     => $id,
         name          => $app->{name},
-        redirect_uri  => $app->{redirect_uri}
+        scopes        => $app->{scopes},
+        redirect_uri  => $app->{redirect_uri},
     };
 }
 
@@ -250,10 +256,11 @@ sub get_app {
     my ($self, $user_id, $app_id) = @_;
 
     my $app = $self->dbh->selectrow_hashref("
-        SELECT id as app_id, name, redirect_uri FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
+        SELECT id as app_id, name, redirect_uri, scopes FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
     ", undef, $app_id, $user_id);
     return unless $app;
 
+    $app->{scopes} = __parse_array($app->{scopes});
     return $app;
 }
 
@@ -262,10 +269,14 @@ sub get_apps_by_user_id {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            id as app_id, name, redirect_uri
+            id as app_id, name, redirect_uri, scopes
         FROM oauth.apps WHERE binary_user_id = ? AND active ORDER BY name
     ", {Slice => {}}, $user_id);
     return [] unless $apps;
+
+    foreach (@$apps) {
+        $_->{scopes} = __parse_array($_->{scopes});
+    }
 
     return $apps;
 }
