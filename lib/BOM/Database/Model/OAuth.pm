@@ -133,7 +133,7 @@ sub store_access_token {
     my ($self, $app_id, $loginid, @scopes) = @_;
 
     my $dbh           = $self->dbh;
-    my $expires_in    = 3600;
+    my $expires_in    = 86400;
     my $access_token  = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
     my $refresh_token = 'r1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
     my $expires_time  = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
