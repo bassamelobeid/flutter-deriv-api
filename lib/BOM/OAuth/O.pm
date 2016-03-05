@@ -13,15 +13,12 @@ sub __oauth_model {
 sub authorize {
     my $c = shift;
 
-    my ($app_id, $scope, $state, $response_type) = map { $c->param($_) // undef } qw/ app_id scope state response_type /;
+    my ($app_id, $state, $response_type) = map { $c->param($_) // undef } qw/ app_id state response_type /;
 
     # $response_type ||= 'code';    # default to Authorization Code
     $response_type = 'token';    # only support token
 
     $app_id or return $c->__bad_request('the request was missing app_id');
-
-    my @scopes = $scope ? split(/[\s\,\+]/, $scope) : ();
-    unshift @scopes, 'read' unless grep { $_ eq 'read' } @scopes;
 
     my $oauth_model = __oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
@@ -29,6 +26,7 @@ sub authorize {
         return $c->__bad_request('the request was missing valid app_id');
     }
 
+    my @scopes          = @{$app->{scopes}};
     my $redirect_uri    = $app->{redirect_uri};
     my $redirect_handle = sub {
         my ($response_type, $error, $state) = @_;

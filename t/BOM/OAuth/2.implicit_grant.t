@@ -53,7 +53,4 @@ ok $code, 'got access code';
 $t = $t->get_ok("/authorize?app_id=binarycom&response_type=token");
 ok $t->tx->res->headers->location =~ 'https://www.binary.com/', 'redirect to localhost';
 
-## but new scope will require confirm_scopes again
-$t = $t->get_ok("/authorize?app_id=binarycom&scope=trade&response_type=token")->content_like(qr/confirm_scopes/);
-
 done_testing();
