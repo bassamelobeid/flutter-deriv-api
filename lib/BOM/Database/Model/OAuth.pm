@@ -70,6 +70,8 @@ sub confirm_scope {
 sub is_scope_confirmed {
     my ($self, $app_id, $loginid, @scopes) = @_;
 
+    return 1 if $app_id eq 'binarycom'; # our app is all confirmed
+
     my $dbh = $self->dbh;
 
     my ($confirmed_scopes) = $dbh->selectrow_array("
