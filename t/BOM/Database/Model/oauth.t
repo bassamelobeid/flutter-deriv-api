@@ -30,36 +30,9 @@ ok $m->confirm_scope($test_appid, $test_loginid, 'admin'), 'confirm admin scope'
 $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade', 'admin');
 is $is_confirmed, 1, 'admin is confirmed';
 
-# create then verify
-my $code = $m->store_auth_code($test_appid, $test_loginid, 'read', 'trade');
-ok $code, 'code created';
-
-my $loginid = $m->verify_auth_code($test_appid, $code);
-is $loginid, $test_loginid, 'verify ok';
-
-my @scopes = $m->get_scopes_by_auth_code($code);
-ok((grep { $_ eq 'trade' } @scopes), 'trade scope is there');
-
-# you can't re-use the code
-ok(!$m->verify_auth_code($test_appid, $code), 'can not re-use');
-
-## try access_token
-my ($access_token, $refresh_token) = $m->store_access_token($test_appid, $test_loginid, @scopes);
+my ($access_token) = $m->store_access_token_only($test_appid, $test_loginid);
 ok $access_token;
-ok $refresh_token;
-ok $access_token ne $refresh_token;
 is $m->get_loginid_by_access_token($access_token), $test_loginid, 'get_loginid_by_access_token';
-
-$loginid = $m->verify_refresh_token($test_appid, $refresh_token);
-is $loginid, $test_loginid, 'refresh_token ok';
-
-@scopes = $m->get_scopes_by_refresh_token($refresh_token);
-is_deeply([sort @scopes], ['read', 'trade'], 'scopes by refresh_token is same as auth_code');
-@scopes = $m->get_scopes_by_access_token($access_token);
-is_deeply([sort @scopes], ['read', 'trade'], 'correct scope by access_token');
-
-ok(!$m->verify_refresh_token($test_appid, $refresh_token), 'can not re-use');
-ok(!$m->verify_refresh_token($test_appid, $access_token),  'access_token is not for refresh');
 
 ### get app_register/app_list/app_get
 my $test_user_id = 999;

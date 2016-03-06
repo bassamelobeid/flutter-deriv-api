@@ -84,91 +84,16 @@ sub is_scope_confirmed {
     return 1;
 }
 
-## store auth code
-sub store_auth_code {
-    my ($self, $app_id, $loginid, @scopes) = @_;
-
-    my $dbh          = $self->dbh;
-    my $auth_code    = String::Random::random_regex('[a-zA-Z0-9]{32}');
-    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + 600)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
-    $dbh->do("
-        INSERT INTO oauth.auth_code (auth_code, app_id, loginid, expires, scopes, verified)
-        VALUES (?, ?, ?, ?, ?, false)
-    ", undef, $auth_code, $app_id, $loginid, $expires_time, [__filter_valid_scopes(@scopes)]);
-
-    return $auth_code;
-}
-
-## validate auth code
-sub verify_auth_code {
-    my ($self, $app_id, $auth_code) = @_;
-
-    my $dbh = $self->dbh;
-
-    my $auth_row = $dbh->selectrow_hashref("
-        SELECT * FROM oauth.auth_code WHERE auth_code = ? AND app_id = ? AND NOT verified
-    ", undef, $auth_code, $app_id);
-
-    return unless $auth_row;
-    return unless Date::Utility->new->is_before(Date::Utility->new($auth_row->{expires}));
-
-    # set verified to avoid code-reuse
-    $dbh->do("UPDATE oauth.auth_code SET verified=true WHERE auth_code = ?", undef, $auth_code);
-
-    return $auth_row->{loginid};
-}
-
-sub get_scopes_by_auth_code {
-    my ($self, $auth_code) = @_;
-
-    my $sth = $self->dbh->prepare("SELECT scopes FROM oauth.auth_code WHERE auth_code = ?");
-    $sth->execute($auth_code);
-    my $scopes = $sth->fetchrow_array;
-    $scopes = __parse_array($scopes);
-    return @$scopes;
-}
-
-## store access token
-sub store_access_token {
-    my ($self, $app_id, $loginid, @scopes) = @_;
-
-    my $dbh           = $self->dbh;
-    my $expires_in    = 86400;
-    my $access_token  = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
-    my $refresh_token = 'r1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
-    my $expires_time  = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
-
-    @scopes = __filter_valid_scopes(@scopes);
-
-    $dbh->begin_work;
-    try {
-        $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, scopes, expires) VALUES (?, ?, ?, ?, ?)",
-            undef, $access_token, $app_id, $loginid, \@scopes, $expires_time);
-
-        $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, app_id, loginid, scopes) VALUES (?, ?, ?, ?)",
-            undef, $refresh_token, $app_id, $loginid, \@scopes);
-
-        $dbh->commit;
-    }
-    catch {
-        $dbh->rollback;
-    };
-
-    return ($access_token, $refresh_token, $expires_in);
-}
-
 sub store_access_token_only {
-    my ($self, $app_id, $loginid, @scopes) = @_;
+    my ($self, $app_id, $loginid) = @_;
 
     my $dbh          = $self->dbh;
     my $expires_in   = 86400;                                                     # for one day
     my $access_token = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
-    @scopes = __filter_valid_scopes(@scopes);
-
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
-    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, scopes, expires) VALUES (?, ?, ?, ?, ?)",
-        undef, $access_token, $app_id, $loginid, \@scopes, $expires_time);
+    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires) VALUES (?, ?, ?, ?)",
+        undef, $access_token, $app_id, $loginid, $expires_time);
 
     return ($access_token, $expires_in);
 }
@@ -178,45 +103,6 @@ sub get_loginid_by_access_token {
 
     return $self->dbh->selectrow_array("UPDATE oauth.access_token SET last_used=NOW() WHERE access_token = ? AND expires > NOW() RETURNING loginid",
         undef, $token);
-}
-
-sub get_scopes_by_access_token {
-    my ($self, $access_token) = @_;
-
-    my $sth = $self->dbh->prepare("
-        SELECT scopes FROM oauth.access_token
-        WHERE access_token = ?
-    ");
-    $sth->execute($access_token);
-    my $scopes = $sth->fetchrow_array;
-    $scopes = __parse_array($scopes);
-    return @$scopes;
-}
-
-sub verify_refresh_token {
-    my ($self, $app_id, $refresh_token) = @_;
-
-    my $dbh = $self->dbh;
-
-    my ($loginid) = $dbh->selectrow_array("
-        SELECT loginid FROM oauth.refresh_token WHERE refresh_token = ? AND app_id = ? AND NOT revoked
-    ", undef, $refresh_token, $app_id);
-    return unless $loginid;
-
-    # set revoked to avoid code-reuse
-    $dbh->do("UPDATE oauth.refresh_token SET revoked=true WHERE refresh_token = ?", undef, $refresh_token);
-
-    return $loginid;
-}
-
-sub get_scopes_by_refresh_token {
-    my ($self, $refresh_token) = @_;
-
-    my $sth = $self->dbh->prepare("SELECT scopes FROM oauth.refresh_token WHERE refresh_token = ?");
-    $sth->execute($refresh_token);
-    my $scopes = $sth->fetchrow_array;
-    $scopes = __parse_array($scopes);
-    return @$scopes;
 }
 
 sub is_name_taken {
@@ -293,7 +179,7 @@ sub delete_app {
     my $dbh = $self->dbh;
 
     ## delete real delete
-    foreach my $table ('user_scope_confirm', 'auth_code', 'access_token', 'refresh_token') {
+    foreach my $table ('user_scope_confirm', 'access_token') {
         $dbh->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id);
     }
 
