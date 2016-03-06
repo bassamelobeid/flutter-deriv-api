@@ -70,7 +70,7 @@ sub confirm_scope {
 sub is_scope_confirmed {
     my ($self, $app_id, $loginid, @scopes) = @_;
 
-    return 1 if $app_id eq 'binarycom'; # our app is all confirmed
+    return 1 if $app_id eq 'binarycom';    # our app is all confirmed
 
     my $dbh = $self->dbh;
 
@@ -105,6 +105,20 @@ sub get_loginid_by_access_token {
 
     return $self->dbh->selectrow_array("UPDATE oauth.access_token SET last_used=NOW() WHERE access_token = ? AND expires > NOW() RETURNING loginid",
         undef, $token);
+}
+
+sub get_scopes_by_access_token {
+    my ($self, $access_token) = @_;
+
+    my $sth = $self->dbh->prepare("
+        SELECT app.scopes FROM oauth.access_token at
+        JOIN oauth.apps app ON app.id=at.app_id
+        WHERE access_token = ?
+    ");
+    $sth->execute($access_token);
+    my $scopes = $sth->fetchrow_array;
+    $scopes = __parse_array($scopes);
+    return @$scopes;
 }
 
 sub is_name_taken {
