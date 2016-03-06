@@ -19,6 +19,8 @@ my $t = build_mojo_test();
 
 # cleanup
 my $dbh = BOM::Database::Model::OAuth->new->dbh;
+$dbh->do("DELETE FROM oauth.access_token");
+$dbh->do("DELETE FROM oauth.user_scope_confirm");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
 
 my $email     = 'abc@binary.com';
