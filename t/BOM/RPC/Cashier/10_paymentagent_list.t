@@ -90,9 +90,11 @@ $c->call_ok($method, $params)->has_no_error->result_is_deeply(
                        'paymentagent_loginid' => 'CR170000'
                      }
                    ]
-         }, 'result is ok'
-
+         }, 'If token is invalid, then the paymentagents are from broker "CR"'
                                                              );
+
+$params->{token} = $token;
+diag(Dumper($c->call_ok($method, $params)->has_no_error->result));
 
 done_testing();
 
