@@ -134,9 +134,10 @@ $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->er
         purchase_date => $now->epoch,
     });
 
+
+    $txn->buy(skip_validation => 1);
 $account->load;
 diag("now accunt is:" . $account->balance);
 
-    $txn->buy(skip_validation => 1);
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('您的余款已超出允许金额。', 'blance is higher');
 done_testing();
