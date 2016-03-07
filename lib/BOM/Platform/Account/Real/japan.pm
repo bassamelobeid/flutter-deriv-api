@@ -53,6 +53,7 @@ sub create_account {
     });
 
     $client->set_exclusion->max_losses($daily_loss_limit);
+    $client->set_status('knowledge_test_pending');
     $client->save;
 
     return BOM::Platform::Account::Real::default::_after_register_client({
