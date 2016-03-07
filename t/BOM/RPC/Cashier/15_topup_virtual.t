@@ -12,7 +12,7 @@ use utf8;
 ################################################################################
 # init test data
 ################################################################################
-
+my $email       = 'raunak@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                              broker_code => 'CR',
                                                                             });
