@@ -7,7 +7,6 @@ use Test::MockModule;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
-use DateTime;
 use RateLimitations qw(within_rate_limits);
 
 use Test::BOM::RPC::Client;
@@ -128,7 +127,7 @@ subtest 'Auth client' => sub {
 
 subtest 'Sell expired contract' => sub {
     lives_ok {
-        create_bet( $client, is_expired => 1 );
+        create_contract( $client, is_expired => 1 );
     } 'Create expired contract for sell';
 
     $rpc_ct->call_ok(@params)
@@ -139,7 +138,7 @@ subtest 'Sell expired contract' => sub {
               'It should return counts of sold contracts' );
 
     lives_ok {
-        create_bet( $client );
+        create_contract( $client );
     } 'Create expired contract for sell';
 
     $rpc_ct->call_ok(@params)
@@ -163,7 +162,7 @@ subtest 'Sell virtual client expired contract' => sub {
     $params[1]->{token} = $vclient_token;
 
     lives_ok {
-        create_bet( $vclient, is_expired => 1 );
+        create_contract( $vclient, is_expired => 1 );
     } 'Create expired contract for sell';
 
     {
@@ -179,7 +178,7 @@ subtest 'Sell virtual client expired contract' => sub {
     }
 
     lives_ok {
-        create_bet( $vclient, is_expired => 1 );
+        create_contract( $vclient, is_expired => 1 );
     } 'Create expired contract for sell';
 
     for (0..8) {
@@ -203,44 +202,16 @@ subtest 'Sell virtual client expired contract' => sub {
 
 done_testing();
 
-sub create_bet {
+sub create_contract {
     my ( $client, %params ) = @_;
 
-    my $is_expired = $params{is_expired} || '';
-
-    my $start = DateTime->now();
-    $start = $start->subtract( minutes => 7, hours => 1 ) if $is_expired;
-    my $expire = $start->clone->add( DateTime::Duration->new( minutes => 2 ) );
-
-    for my $epoch ( $start->epoch, $start->epoch + 1, $expire->epoch ) {
-        my $api = BOM::Market::Data::DatabaseAPI->new( underlying => 'R_100' );
-        my $tick = $api->tick_at({ end_time => $epoch });
-        next if $tick;
-
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            epoch      => $epoch,
-            underlying => 'R_100',
-        });
-    }
-
-    my $short_code = 'CALL_R_100_26.49_'
-                   . $start->epoch() . '_'
-                   . $expire->epoch()
-                   . '_S0P_0';
-
     my $account = $client->set_default_account('USD');
-    my $bet = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
-        short_code => $short_code,
-        type => 'fmb_higher_lower_call_buy',
-        account_id => $account->id,
-        purchase_time => $start->strftime('%Y-%m-%d %H:%M:%S'),
-        transaction_time => $start->strftime('%Y-%m-%d %H:%M:%S'),
-        start_time => $start->strftime('%Y-%m-%d %H:%M:%S'),
-        expiry_time => $expire->strftime('%Y-%m-%d %H:%M:%S'),
-        settlement_time => $expire->strftime('%Y-%m-%d %H:%M:%S'),
-        is_expired => $is_expired,
-        buy_bet => 0,
+    return BOM::Test::Data::Utility::UnitTestDatabase::create_valid_contract({
+        %params,
+        type               => 'fmb_higher_lower_call_buy',
+        short_code_prefix  => 'CALL_R_100_26.49',
+        short_code_postfix => 'S0P_0',
+        account_id         => $account->id,
+        buy_bet            => 0,
     });
-
-    return $bet;
 }
