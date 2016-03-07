@@ -26,6 +26,8 @@ use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Static::Config;
 use BOM::Platform::Runtime;
+use BOM::System::AuditLog;
+use BOM::Platform::Email qw(send_email);
 
 sub new_account_virtual {
     my $params = shift;
@@ -415,7 +417,14 @@ sub knowledge_test {
     }
 
     if ($status eq 'pass') {
-        # trigger system to client: mentioning pls reply & send doc to us for identity / address verification
+        send_email({
+            from               => BOM::Platform::Static::Config::get_customer_support_email(),
+            to                 => $client->email,
+            subject            => localize('Please send us documents for verification.'),
+            message            => [localize('Please reply to this email to send us documents for verification.')],
+            use_email_template => 1,
+        });
+        BOM::System::AuditLog::log('Knowledge test pass for ' . $jp_client->loginid . ' . System email sent to require for docs.', $client->loginid);
     }
     return 1;
 }
