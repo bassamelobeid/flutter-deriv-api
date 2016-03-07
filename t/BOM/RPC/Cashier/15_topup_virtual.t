@@ -48,7 +48,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         date   => Date::Utility->new,
     }) for qw(JPY USD JPY-USD);
 
-my $now        = Date::Utility->new('2005-09-21 06:46:00');
+my $now        = Date::Utility->new();
 my $underlying = BOM::Market::Underlying->new('R_50');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',
@@ -77,6 +77,11 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     underlying => 'R_50',
 });
+
+my $tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                                    epoch      => $now->epoch + 100,
+                                                                    underlying => 'R_50',
+                                                                   });
 
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
@@ -107,7 +112,7 @@ is($old_balance + 10000, $account->balance + 0, 'balance is right');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('您的余款已超出允许金额。', 'blance is higher');
 
 # buy a contract to test the error of 'Please close out all open positions before requesting additional funds.'
-    my $contract_expired = produce_contract({
+    my $contract = produce_contract({
         underlying   => $underlying,
         bet_type     => 'FLASHU',
         currency     => 'USD',
@@ -116,7 +121,7 @@ $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->er
         date_expiry  => $now->epoch - 50,
         current_tick => $tick,
         entry_tick   => $old_tick1,
-        exit_tick    => $old_tick2,
+        exit_tick    => $tick2,
         barrier      => 'S0P',
     });
 
@@ -126,7 +131,7 @@ $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->er
         price         => 100,
         payout        => $contract_expired->payout,
         amount_type   => 'stake',
-        purchase_date => $now->epoch - 101,
+        purchase_date => $now->epoch,
     });
 
     $txn->buy(skip_validation => 1);
