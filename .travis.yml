@@ -3,7 +3,7 @@ perl:
     - "5.14.2"
 env:
     - TEST_SUITE=unit_test_product_contract
-    - TEST_SUITE=unit_test_product_contract_ex
+    - TEST_SUITE=unit_test_product_contract_extended
     - TEST_SUITE=unit_test_product_all
     - TEST_SUITE=unit_test_validation
     - TEST_SUITE=unit_test_pricing
