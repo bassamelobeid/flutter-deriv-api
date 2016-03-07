@@ -63,7 +63,38 @@ my $params = {
               token    => '12345',
               args     => {paymentagent_list => 'id'},
              };
-my $result = $c->call_ok($method, $params)->has_no_error->result;
-diag(Dumper($result));
-diag($result->{available_countries}[0][1]);
+$c->call_ok($method, $params)->has_no_error->result_is_deeply(
+{
+           'available_countries' => [
+                                    [
+                                      'id',
+                                     '印度尼西亚';
+                                    ],
+                                    [
+                                      '',
+                                      undef
+                                    ]
+                                  ],
+           'list' => [
+                     {
+                       'telephone' => '+12345678',
+                       'supported_banks' => undef,
+                       'name' => 'Joe',
+                       'further_information' => 'Test Info',
+                       'deposit_commission' => '0',
+                       'withdrawal_commission' => '0',
+                       'currencies' => 'USD',
+                       'email' => 'joe@example.com',
+                       'summary' => 'Test Summary',
+                       'url' => 'http://www.example.com/',
+                       'paymentagent_loginid' => 'CR170000'
+                     }
+                   ]
+         }, 'result is ok'
+
+                                                             );
+#is_deeply($result->{available_countries}[0],[qw(id 印度尼西亚)]);
+#is_deeply($result->)
+#diag(Dumper($result));
+#diag($result->{available_countries}[0][1]);
 
