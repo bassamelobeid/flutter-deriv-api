@@ -11,6 +11,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::SessionCookie;
+use BOM::Platform::Token::Verification;
 
 sub token_to_loginid {
     my $token = shift;
@@ -129,13 +130,13 @@ sub check_authorization {
 sub is_verification_token_valid {
     my ($token, $email) = @_;
 
-    my $session = BOM::Platform::SessionCookie->new({token => $token});
-    return unless $session;
+    my $verification_token = BOM::Platform::Token::Verification->new({token => $token});
+    return unless $verification_token;
     my $response;
-    if ($session->email and $session->email eq $email) {
+    if ($verification_token->email and $verification_token->email eq $email) {
         $response = 1;
     }
-    $session->end_session;
+    $verification_token->delete_token;
 
     return $response;
 }
