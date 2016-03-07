@@ -48,8 +48,9 @@ sub new {                                    ## no critic RequireArgUnpack
         croak "Error creating new verification token, missing: " . join(',', @valid)
             if @valid;
 
-        my @passed = keys %$self;
-        @valid = array_minus(@passed, qw(email token expires_in created_for));
+        my @allowed = qw(email token expires_in created_for);
+        my @passed  = keys %$self;
+        @valid = array_minus(@passed, @allowed);
         croak "Error adding new verification token, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
 
         $self->{token} = Bytes::Random::Secure->new(
