@@ -5,8 +5,6 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 
-use FindBin;
-use lib "$FindBin::Bin/../../lib";
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use DateTime;
@@ -41,8 +39,6 @@ my @params = (
 );
 
 subtest 'Initialization' => sub {
-    plan tests => 2;
-
     lives_ok {
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
@@ -135,7 +131,7 @@ subtest 'Auth client' => sub {
 
 subtest 'Sell expired contract' => sub {
     lives_ok {
-        create_bet( $client );
+        create_bet( $client, is_expired => 1 );
     } 'Create expired contract for sell';
 
     $rpc_ct->call_ok(@params)
@@ -146,7 +142,7 @@ subtest 'Sell expired contract' => sub {
               'It should return counts of sold contrancts' );
 
     lives_ok {
-        create_bet( $client, is_expired => '' );
+        create_bet( $client );
     } 'Create expired contract for sell';
 
     $rpc_ct->call_ok(@params)
@@ -161,8 +157,7 @@ subtest 'Sell virtual client expired contract' => sub {
     $params[1]->{token} = $vclient_token;
 
     lives_ok {
-        create_bet( $vclient );
-        # BOM::Test::Data::Utility::FeedTestDatabase->truncate_tables;
+        create_bet( $vclient, is_expired => 1 );
     } 'Create expired contract for sell and clear ticks';
 
     {
@@ -178,14 +173,14 @@ subtest 'Sell virtual client expired contract' => sub {
     }
 
     lives_ok {
-        create_bet( $vclient );
+        create_bet( $vclient, is_expired => 1 );
     } 'Create expired contract for sell';
 
     ok within_rate_limits({
             service  => 'virtual_batch_sell',
             consumer => $vclient->loginid
         }), 'Virtual client has no lookup';
-    for my $i (0..9) {
+    for (0..9) {
         within_rate_limits({
             service  => 'virtual_batch_sell',
             consumer => $vclient->loginid
@@ -209,7 +204,7 @@ done_testing();
 sub create_bet {
     my ( $client, %params ) = @_;
 
-    my $is_expired = $params{is_expired} // 1;
+    my $is_expired = $params{is_expired} || '';
 
     my $start = DateTime->now();
     $start = $start->subtract( minutes => 7, hours => 1 ) if $is_expired;
