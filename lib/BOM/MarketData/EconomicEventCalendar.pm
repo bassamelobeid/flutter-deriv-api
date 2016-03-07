@@ -165,19 +165,11 @@ sub update {
     if ($events and ref($events->{events}) eq 'ARRAY' and $tentative_events) {
         # update happens one at a time.
         my $new_events_hash = $self->events->[0];
+        croak "release date is not set" unless $new_events_hash->{release_date};
+        push @{$events->{events}}, $new_events_hash;
 
-        for my $event (@{$events->{events}}) {
-            if ($event->{id} eq $new_events_hash->{id}) {
-                $event = {(%$event, %$new_events_hash)};
-                last;
-            }
-        }
-
-        if (my $to_update = $tentative_events->{$new_events_hash->{id}}) {
-            $to_update = {(%$to_update, %$new_events_hash)};
-        } else {
-            croak "could not find $new_events_hash->{id} in tentative table";
-        }
+        croak "could not find $new_events_hash->{id} in tentative table" unless $tentative_events->{$new_events_hash->{id}};
+        $tentative_events->{$new_events_hash->{id}} = {(%{$tentative_events->{$new_events_hash->{id}}}, %$new_events_hash)};
     }
 
     return (
