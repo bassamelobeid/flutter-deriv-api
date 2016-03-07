@@ -363,10 +363,10 @@ sub knowledge_test {
     my $now = Date::Utility->new;
     my ($client_status, $status_ok);
 
-    if ($client_status = $jp_client->get_status('knowledge_test_pending')) {
+    if ($client_status = $jp_client->get_status('jp_knowledge_test_pending')) {
         # client haven't taken any test before
         $status_ok = 1;
-    } elsif ($client_status = $jp_client->get_status('knowledge_test_fail')) {
+    } elsif ($client_status = $jp_client->get_status('jp_knowledge_test_fail')) {
         # can't take test more than once per day
         my $last_test_date = Date::Utility->new($client_status->last_modified_date);
 
@@ -393,8 +393,8 @@ sub knowledge_test {
         $jp_client->clr_status($client_status->status_code);
         $jp_client->set_status('activation_pending', 'system', 'pending verification documents from client.');
     } else {
-        $jp_client->clr_status($client_status->status_code) if ($client_status->status_code eq 'knowledge_test_pending');
-        $jp_client->set_status('knowledge_test_fail', 'system', "Failed test with score: $score.");
+        $jp_client->clr_status($client_status->status_code) if ($client_status->status_code eq 'jp_knowledge_test_pending');
+        $jp_client->set_status('jp_knowledge_test_fail', 'system', "Failed test with score: $score.");
     }
 
     # append result in financial_assessment record
