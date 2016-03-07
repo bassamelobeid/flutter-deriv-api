@@ -170,7 +170,7 @@ $balance = $account->balance + 0;
 is($balance, $limit, 'now balance is minimum_topup_balance');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('对不起，您还有未平仓的头寸。在请求额外资金前，请了结所有未平仓头寸。', 'have opened bets');
 my $res = BOM::Product::Transaction::sell_expired_contracts({
-                                                             client => $client,
+                                                             client => $test_client_vr,
                                                             });
 use Data::Dumper;
 diag(Dumper($res));
