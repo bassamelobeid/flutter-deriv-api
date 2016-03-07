@@ -265,9 +265,27 @@ sub get_account_status {
         push @status, $s if $client->get_status($s);
     }
 
+    my ($jp_status, $test_date);
+    if (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual') {
+        my $jp_client = ($client->siblings)[0];
+        if (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($jp_client->broker)->short eq 'japan') {
+            foreach my $s ('jp_knowledge_test_pending', 'jp_knowledge_test_fail', 'jp_activation_pending') {
+                my $status;
+                if ($status = $jp_client->get_status($s) {
+                    $jp_status = $s;
+                    # deal with last test date ??
+                    $test_date = $status->last_modified_date if ($s eq 'jp_knowledge_test_fail');
+                    last;
+                }
+            }
+        }
+    }
+
     if (scalar(@status) == 0) {
         push @status, 'active';
     }
+
+    push @status, $jp_status if ($jp_status);
 
     return {status => \@status};
 }
