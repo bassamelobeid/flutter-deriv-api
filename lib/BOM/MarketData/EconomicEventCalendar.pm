@@ -168,7 +168,8 @@ sub update {
 
     $params->{release_date} = int(($params->{blankout} + $params->{blankout_end}) / 2);
     $existing_events->{events} = [] unless $existing_events->{events};
-    if (my $index = firstidx { $params->{id} eq $_->{id} } @{$existing_events->{events}}) {
+    my $index = firstidx { $params->{id} eq $_->{id} } @{$existing_events->{events}};
+    if ($index != -1) {
         $existing_events->{events}->[$index] = $params;
     } else {
         push @{$existing_events->{events}}, $params;
