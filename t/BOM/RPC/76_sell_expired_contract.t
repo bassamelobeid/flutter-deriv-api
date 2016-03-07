@@ -91,7 +91,7 @@ subtest 'Auth client' => sub {
                 },
                 'It should return error: InvalidToken' );
 
-    $params[1]->{token} = undef;
+    delete $params[1]->{token};
     $rpc_ct->call_ok(@params)
            ->has_no_system_error
            ->result_is_deeply(
