@@ -25,10 +25,10 @@ my %skip_category = (
     spreads => 1,
 );
 
-my $expectation = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/intraday_index_config.yml');
+my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/intraday_index_config.yml');
 my @underlying_symbols = ('AEX');
-my $payout_currency = 'USD';
-my $spot            = 100;
+my $payout_currency    = 'USD';
+my $spot               = 100;
 
 foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
     BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
@@ -37,12 +37,23 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         quote      => $spot,
         epoch      => $now->epoch,
     });
-    foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter('contract_category', {underlying_symbol => $ul->symbol, expiry_type => 'intraday', start_type => 'spot'})) {
+    foreach my $contract_category (
+        grep { not $skip_category{$_} } get_offerings_with_filter(
+            'contract_category',
+            {
+                underlying_symbol => $ul->symbol,
+                expiry_type       => 'intraday',
+                start_type        => 'spot'
+            }))
+    {
         my $category_obj = BOM::Product::Contract::Category->new($contract_category);
         next if $category_obj->is_path_dependent;
-        my @duration = map { $_ * 60 } (15,20,25,40,60);
+        my @duration = map { $_ * 60 } (15, 20, 25, 40, 60);
         foreach my $duration (@duration) {
-            my $vol = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul})->get_volatility({delta => 50, days => $duration / 24});
+            my $vol = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul})->get_volatility({
+                delta => 50,
+                days  => $duration / 24
+            });
             foreach my $contract_type (get_offerings_with_filter('contract_type', {contract_category => $contract_category})) {
                 my $args = {
                     bet_type     => $contract_type,
@@ -57,7 +68,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
 
                 lives_ok {
                     my $c = produce_contract($args);
-                    my @codes = ($c->code,$c->underlying->symbol,$c->date_start->epoch,$c->date_expiry->epoch);
+                    my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch);
                     if ($c->category->two_barriers) {
                         push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);
                     } else {
@@ -66,7 +77,8 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                     my $code = join '_', @codes;
                     isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Index';
                     is $c->theo_probability->amount, $expectation->{$code}, 'theo probability matches [' . $code . ']';
-                } 'survived';
+                }
+                'survived';
             }
         }
     }
