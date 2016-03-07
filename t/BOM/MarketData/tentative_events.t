@@ -89,6 +89,16 @@ subtest 'update tentative events' => sub {
         'tentative event';
     }
     'updating tentative event';
+    lives_ok {
+        $new_tentative{blankout}     = $blackout - 1;
+        $new_tentative{blankout_end} = $blackout_end + 1;
+        my $eco = BOM::MarketData::EconomicEventCalendar->new(
+            recorded_date => Date::Utility->new,
+        );
+        ok $eco->update(\%new_tentative);
+        my $ref = $c_read->get('economic_events', 'economic_events');
+        is scalar(@{$ref->{events}}), 2, 'number of events is still two';
+    } 'update again with different blockout time';
 };
 
 subtest 'retry with same events' => sub {
