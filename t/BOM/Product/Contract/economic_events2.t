@@ -50,13 +50,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $now->minus_time_interval('3h'),
         events        => [{
                 symbol       => 'USD',
-                release_date => $now->minus_time_interval('3h'),
+                release_date => $now->minus_time_interval('3h')->epoch,
                 impact       => 5,
                 event_name   => 'Unemployment Rate',
             },
             {
                 symbol       => 'USD',
-                release_date => $now,
+                release_date => $now->epoch,
                 impact       => 5,
                 event_name   => 'Unemployment Rate',
             }
