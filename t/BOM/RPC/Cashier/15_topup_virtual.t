@@ -85,6 +85,7 @@ my $tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+my $amount = BOM::Platform::Runtime->instance->app_config->payments->virtual->topup_amount->USD;
 
 # start test topup_virtual
 my $method = 'topup_virtual';
@@ -106,38 +107,55 @@ $test_client->save;
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('对不起，此功能仅适用虚拟账户', 'topup virtual error');
 
 $params->{token} = $token_vr;
-$c->call_ok($method, $params)->has_no_error->result_is_deeply({currency => 'USD', amount => 10000}, 'topup account successfully');
+$c->call_ok($method, $params)->has_no_error->result_is_deeply({currency => 'USD', amount => $amount}, 'topup account successfully');
 $account->load;
-is($old_balance + 10000, $account->balance + 0, 'balance is right');
+my $balance = $account->balance + 0;
+is($old_balance + $amount, $balance, 'balance is right');
+$old_balance = $balance;
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('您的余款已超出允许金额。', 'blance is higher');
 
 # buy a contract to test the error of 'Please close out all open positions before requesting additional funds.'
-    my $contract = produce_contract({
-        underlying   => $underlying,
-        bet_type     => 'FLASHU',
-        currency     => 'USD',
-        stake        => 5000,
-        date_start   => $now->epoch,
-        date_expiry  => $now->epoch + 50,
-        current_tick => $tick,
-        entry_tick   => $old_tick1,
-        exit_tick    => $tick2,
-        barrier      => 'S0P',
-    });
+my $limit = BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->USD;
+my $price = $balance - $limit + 1;
+my $contract_data = {
+                     underlying   => $underlying,
+                     bet_type     => 'FLASHU',
+                     currency     => 'USD',
+                     stake        => $price,
+                     date_start   => $now->epoch,
+                     date_expiry  => $now->epoch + 50,
+                     current_tick => $tick,
+                     entry_tick   => $old_tick1,
+                     exit_tick    => $tick2,
+                     barrier      => 'S0P',
+                    };
+    my $contract = produce_contract($contract_data);
 
-    my $txn = BOM::Product::Transaction->new({
-        client        => $test_client_vr,
-        contract      => $contract,
-        price         => 5000,
-        payout        => $contract->payout,
-        amount_type   => 'stake',
-        purchase_date => $now->epoch,
-    });
+my $txn_data = {
+                client        => $test_client_vr,
+                contract      => $contract,
+                price         => $price,
+                payout        => $contract->payout,
+                amount_type   => 'stake',
+                purchase_date => $now->epoch,
+               };
+    my $txn = BOM::Product::Transaction->new($txn);
 
 
 is($txn->buy(skip_validation => 1),undef, 'buy contract without error');
 $account->load;
-diag("now accunt is:" . $account->balance);
+$balance = $account->balance;
+is($balance, $limit + 1, 'banace is a little more the minimum_topup_balance');
+$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('您的余款已超出允许金额。', 'blance is still higher');
+$old_balance = $balance;
 
-$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('您的余款已超出允许金额。', 'blance is higher');
+$price = 1;
+$contract_data->{price} = $price;
+$txn_data->{price} = $price;
+is($txn->buy(skip_validation => 1),undef, 'buy contract without error');
+$account->load;
+$balance = $account->balance;
+is($balance, $limit, 'now balance is minimum_topup_balance');
+$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('您的余款已超出允许金额。', 'blance is still higher');
+
 done_testing();
