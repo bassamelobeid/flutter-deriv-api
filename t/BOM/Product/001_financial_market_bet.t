@@ -27,8 +27,8 @@ initialize_realtime_ticks_db;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new
+        symbol        => $_,
+        recorded_date => Date::Utility->new
     }) for qw(EUR USD);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -197,33 +197,33 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new($start_time_5),
+        symbol        => $_,
+        recorded_date => Date::Utility->new($start_time_5),
     }) for qw(EUR USD);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
-        symbol => 'GDAXI',
-        recorded_date   => Date::Utility->new($start_time_5),
+        symbol        => 'GDAXI',
+        recorded_date => Date::Utility->new($start_time_5),
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'GDAXI',
-        recorded_date   => Date::Utility->new($start_time_5),
+        recorded_date => Date::Utility->new($start_time_5),
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxEURUSD',
-        recorded_date   => Date::Utility->new($start_time_5),
+        recorded_date => Date::Utility->new($start_time_5),
     });
 
-my $end_time_5   = $start_time_5 + 900;
-my $contract_5   = produce_contract('FLASHU_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
-my $p_5          = $contract_5->build_parameters;
+my $end_time_5 = $start_time_5 + 900;
+my $contract_5 = produce_contract('FLASHU_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
+my $p_5        = $contract_5->build_parameters;
 
 my $tick_params_5 = {
     symbol => 'not_checked',
