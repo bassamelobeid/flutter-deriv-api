@@ -94,7 +94,8 @@ sub delete_token {    ## no critic
     my $self = shift;
     return unless $self->{token};
     BOM::System::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN::' . $self->{token});
-    BOM::System::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN_INDEX::' . md5_hex($self->{created_for} . $self->{email}));
+    BOM::System::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN_INDEX::' . md5_hex($self->{created_for} . $self->{email}))
+        if ($self->{created_for} and $self->{email});
 }
 
 1;
