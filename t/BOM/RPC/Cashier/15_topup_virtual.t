@@ -7,6 +7,11 @@ use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::SessionCookie;
 use Test::MockModule;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
 use utf8;
 
 # init test data
