@@ -33,7 +33,7 @@ my $token_vr = BOM::Platform::SessionCookie->new(
                                                  loginid => $test_client_vr->loginid,
                                                  email   => $email
                                                 )->token;
-my $account = $client_vr->default_account;
+my $account = $test_client_vr->default_account;
 my $old_balance = $account->balance;
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
