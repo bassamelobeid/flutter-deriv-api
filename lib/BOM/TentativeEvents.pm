@@ -66,12 +66,8 @@ sub update_event {
     my $rd       = Date::Utility->new($existing->{estimated_release_date});
     $existing->{blankout}     = $rd->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
     $existing->{blankout_end} = $rd->plus_time_interval("$b2[0]h$b2[1]m")->epoch;
-    $existing->{release_date} = int(($existing->{blankout} + $existing->{blankout_end}) / 2);
 
-    return BOM::MarketData::EconomicEventCalendar->new({
-            events        => [$existing],
-            recorded_date => Date::Utility->new(),
-        })->update ? 1 : 0;
+    return BOM::MarketData::EconomicEventCalendar->new(recorded_date => Date::Utility->new())->update($existing);
 }
 
 1;
