@@ -129,7 +129,7 @@ sub save {
 
     #receive tentative events hash
     my $existing_tentatives = $self->get_tentative_events;
-    my @new_tentative_events = grep {$_->{is_tentative}} @{$self->events};
+    my @new_tentative_events = grep { $_->{is_tentative} } @{$self->events};
 
     foreach my $tentative (@new_tentative_events) {
         my $id = $tentative->{id};
@@ -149,7 +149,8 @@ sub save {
 
     # events sorted by release date are regular events that
     # will impact contract pricing.
-    my @regular_events = sort {$a->{release_date} <=> $b->{release_date}} grep {$_->{release_date}} (@{$self->events}, values %$existing_tentatives);
+    my @regular_events =
+        sort { $a->{release_date} <=> $b->{release_date} } grep { $_->{release_date} } (@{$self->events}, values %$existing_tentatives);
     $self->_events(\@regular_events);
 
     return (
