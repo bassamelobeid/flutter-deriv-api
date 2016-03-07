@@ -116,7 +116,7 @@ $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->er
         underlying   => $underlying,
         bet_type     => 'FLASHU',
         currency     => 'USD',
-        stake        => 100,
+        stake        => 5000,
         date_start   => $now->epoch,
         date_expiry  => $now->epoch + 50,
         current_tick => $tick,
@@ -128,16 +128,14 @@ $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->er
     my $txn = BOM::Product::Transaction->new({
         client        => $test_client_vr,
         contract      => $contract,
-        price         => 100,
+        price         => 5000,
         payout        => $contract->payout,
         amount_type   => 'stake',
         purchase_date => $now->epoch,
     });
 
 
-my $buy_result = $txn->buy(skip_validation => 1);
-use Data::Dumper;
-diag(Dumper($buy_result));
+is($txn->buy(skip_validation => 1),undef, 'buy contract without error');
 $account->load;
 diag("now accunt is:" . $account->balance);
 
