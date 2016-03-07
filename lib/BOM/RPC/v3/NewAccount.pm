@@ -363,7 +363,7 @@ sub knowledge_test {
     my $now = Date::Utility->new;
     my ($client_status, $status_ok);
 
-    if ($client_status = $jp_client->get_status('knowledge_test_pending') {
+    if ($client_status = $jp_client->get_status('knowledge_test_pending')) {
         # client haven't taken any test before
         $status_ok = 1;
     } elsif ($client_status = $jp_client->get_status('knowledge_test_fail')) {
