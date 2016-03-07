@@ -159,23 +159,23 @@ sub save {
 }
 
 sub update {
-    my $self             = shift;
-    my $events           = $self->chronicle_reader->get(EE, EE);
-    my $tentative_events = $self->get_tentative_events;
+    my ($self, $params) = @_;
 
-    if ($events and ref($events->{events}) eq 'ARRAY' and $tentative_events) {
-        # update happens one at a time.
-        my $new_events_hash = $self->events->[0];
-        croak "release date is not set" unless $new_events_hash->{release_date};
-        push @{$events->{events}}, $new_events_hash;
+    my $existing_events = $self->chronicle_reader->get(EE, EE) || {};
+    my $tentative_events = $self->get_tentative_events || {};
 
-        croak "could not find $new_events_hash->{id} in tentative table" unless $tentative_events->{$new_events_hash->{id}};
-        $tentative_events->{$new_events_hash->{id}} = {(%{$tentative_events->{$new_events_hash->{id}}}, %$new_events_hash)};
-    }
+    croak "Specify a blackout start and end to update tentative event" unless ($params->{blankout} and $params->{blankout_end});
+
+    $params->{release_date} = int(($params->{blankout} + $params->{blankout_end}) / 2);
+    $existing_events->{events} = [] unless $existing_events->{events};
+    push @{$existing_events->{events}}, $params;
+
+    croak "could not find $params->{id} in tentative table" unless $tentative_events->{$params->{id}};
+    $tentative_events->{$params->{id}} = {(%{$tentative_events->{$params->{id}}}, %$params)};
 
     return (
         $self->chronicle_writer->set(EE, EET, $tentative_events, $self->recorded_date),
-        $self->chronicle_writer->set(EE, EE,  $events,           $self->recorded_date));
+        $self->chronicle_writer->set(EE, EE,  $existing_events,  $self->recorded_date));
 }
 
 sub get_latest_events_for_period {
