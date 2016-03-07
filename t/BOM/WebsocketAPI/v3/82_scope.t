@@ -16,25 +16,21 @@ my $t    = build_mojo_test();
 my $cr_1 = create_test_user();
 
 # cleanup
-my $dbh = BOM::Database::Model::OAuth->new->dbh;
+my $oauth = BOM::Database::Model::OAuth->new();
+my $dbh = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
 
-## app register/list/get
-$t = $t->send_ok({
-        json => {
-            app_register => 1,
-            name         => 'App 1',
-            scopes       => ['read'],
-            redirect_uri => 'https://www.example.com/',
-        }})->message_ok;
-my $res = decode_json($t->message->[1]);
-test_schema('app_register', $res);
-my $app1   = $res->{app_register};
-my $app_id = $app1->{app_id};
+## create test app for scopes
+my $app = $oauth->create_app({
+    name => 'Test App',
+    scopes => ['read'],
+    user_id => 999
+});
+my $app_id = $app->{app_id};
 
-my ($token) = BOM::Database::Model::OAuth->new()->store_access_token_only($app_id, $cr_1);
+my ($token) = $oauth->store_access_token_only($app_id, $cr_1);
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{loginid}, $cr_1;
@@ -50,7 +46,7 @@ $t = $t->send_ok({json => {get_account_status => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{get_account_status}, 'get_account_status is read scope';
 
-($token) = BOM::Database::Model::OAuth->new()->store_access_token_only($app_id, $cr_1);
+($token) = $oauth->store_access_token_only($app_id, $cr_1);
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{loginid}, $cr_1;
