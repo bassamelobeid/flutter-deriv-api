@@ -56,5 +56,5 @@ $test_client->save;
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('对不起，此功能仅适用虚拟账户', 'topup virtual error');
 
 $params->{token} = $token_vr;
-$c->call_ok($method, $params)->has_no_error->result_is_deeply({status => 1});
+$c->call_ok($method, $params)->has_no_error->result_is_deeply({currency => 'USD', amount => 3000});
 done_testing();
