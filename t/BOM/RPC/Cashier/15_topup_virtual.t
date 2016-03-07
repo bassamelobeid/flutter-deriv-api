@@ -135,9 +135,9 @@ $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->er
     });
 
 
-my $result = $txn->buy(skip_validation => 1);
+my $buy_result = $txn->buy(skip_validation => 1);
 use Data::Dumper;
-diag(Dumper($error));
+diag(Dumper($buy_result));
 $account->load;
 diag("now accunt is:" . $account->balance);
 
