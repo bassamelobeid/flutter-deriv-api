@@ -210,18 +210,17 @@ sub get_latest_events_for_period {
         my $doc_events = $doc->{events};
 
         for my $doc_event (@{$doc_events}) {
-
-            $doc_event->{release_date} = Date::Utility->new($doc_event->{release_date});
-            my $epoch = $doc_event->{release_date}->epoch;
-
             $doc_event->{id} = substr(
                 md5_hex(
-                    $doc_event->{release_date}->truncate_to_day()->epoch . $doc_event->{event_name} . $doc_event->{symbol} . $doc_event->{impact}
+                          Date::Utility->new($doc_event->{release_date})->truncate_to_day()->epoch
+                        . $doc_event->{event_name}
+                        . $doc_event->{symbol}
+                        . $doc_event->{impact}
                 ),
                 0, 16
             ) unless defined $doc_event->{id};
 
-            $all_events{$doc_event->{id}} = $doc_event if ($epoch >= $from and $epoch <= $to);
+            $all_events{$doc_event->{id}} = $doc_event if ($doc_event->{release_date} >= $from and $doc_event->{release_date} <= $to);
         }
     }
 
