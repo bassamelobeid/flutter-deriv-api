@@ -143,7 +143,7 @@ sub is_verification_token_valid {
 sub _check_password {
     my ($new_password, $message);
     if (@_ == 3) {
-        (my $old_passwrd, $new_password, my $user_pass) = @_;
+        (my $old_password, $new_password, my $user_pass) = @_;
 
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ChangePasswordError',
