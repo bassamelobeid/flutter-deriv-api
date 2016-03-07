@@ -8,33 +8,6 @@ commodities:
     display_name: "Commodities"
     display_order: 4
     max_suspend_trading_feed_delay: '2m'
-    contracts:
-      callput:
-        daily:
-          spot:
-            euro_non_atm: day_to_year
-            euro_atm: day_to_year
-        intraday:
-          spot:
-            euro_atm:
-                min: '5m'
-                max: '1d'
-                historical_pricer_min: '5m'
-                historical_pricer_max: '5h'
-          forward:
-            euro_atm: five_mins_to_eod
-      staysinout:
-        daily:
-          spot:
-            american: week_to_year
-      touchnotouch:
-        daily:
-          spot:
-            american: day_to_year
-      endsinout:
-        daily:
-          spot:
-            euro_non_atm: week_to_year
     eod_blackout_expiry: '1m'
     eod_blackout_start: '0s'
     sod_blackout_start: '10m'
@@ -73,50 +46,6 @@ forex:
     deep_otm_threshold: 0.05
     display_name: "Forex"
     display_order: 1
-    contracts:
-      callput:
-        daily:
-          spot:
-            euro_non_atm: day_to_year
-            euro_atm: day_to_year
-        intraday:
-          spot:
-            euro_non_atm:
-              min: '15m'
-              max: '5h'
-              historical_pricer_min: '15m'
-              hostircal_pricer_max: '5h'
-            euro_atm:
-              min: '15s'
-              max: '1d'
-              historical_pricer_min: '15s'
-              historical_pricer_max: '5h'
-          forward:
-            euro_atm: five_mins_to_eod
-        tick:
-          spot:
-            euro_atm:
-              min: 5
-              max: 10        
-      staysinout:
-        daily:
-          spot:
-            american: day_to_year
-      touchnotouch:
-        intraday:
-          spot:
-            american:
-              min: '1h'
-              max: '5h'
-              historical_pricer_min: '15m'
-              historical_pricer_max: '5h'
-        daily:
-          spot:
-            american: day_to_year
-      endsinout:
-        daily:
-          spot:
-            euro_non_atm: day_to_year
     eod_blackout_expiry: '0s'
     eod_blackout_start: '0s'
     sod_blackout_start: '0s'
@@ -185,27 +114,6 @@ indices:
     eod_blackout_start: '15m'
     sod_blackout_start: '10m'
     intradays_must_be_same_day: 1
-    contracts:
-      endsinout:
-        daily:
-          spot:
-            euro_non_atm: week_to_year
-      callput:
-        intraday:
-          forward:
-            euro_atm: five_mins_to_eod
-        daily:
-          spot:
-            euro_atm: day_to_year
-            euro_non_atm: week_to_year
-      touchnotouch:
-        daily:
-          spot:
-            american: week_to_year
-      staysinout:
-        daily:
-          spot:
-            american: week_to_year
     asset_type: 'index'
     equity: 1
     explanation: 'Indices represent the weighted value of a basket of companies, typically traded on the same exchange.'
@@ -244,20 +152,6 @@ stocks:
     absolute_barrier_multiplier: 1
     prefer_discrete_dividend: 1
     affected_by_corporate_actions: 1
-    contracts:
-      callput:
-        intraday:
-          forward:
-            euro_atm:
-              min: '5m'
-              max: '1d'
-              payout_limit: 1000
-        daily:
-          spot:
-            euro_atm:
-              min: '1d'
-              max: '365d'
-              payout_limit: 1000
     equity: 1
     explanation: 'Stocks (or shares) represent the value of partial ownership in a single company.'
     license: "daily"
@@ -295,39 +189,6 @@ random:
     sod_blackout_start: '0s'
     display_order: 5
     asset_type: 'synthetic'
-    contracts:
-      touchnotouch:
-        intraday:
-          spot:
-            american: two_mins_to_eod
-      callput:
-        intraday:
-          spot:
-            euro_non_atm: two_mins_to_eod
-            euro_atm: fifteen_secs_to_eod
-          forward:
-            euro_atm: two_mins_to_eod
-        tick:
-          spot:
-            euro_atm:
-              min: 5
-              max: 10
-      staysinout:
-        intraday:
-          spot:
-            american: two_mins_to_eod
-      endsinout:
-        intraday:
-          spot:
-            euro_non_atm: two_mins_to_eod
-      digits: standard_digits
-      asian:
-        tick:
-          spot:
-            asian:
-              min: 5
-              max: 10
-              payout_limit: 10000
     generation_interval: '2s'
     reduced_display_decimals: 1
     absolute_barrier_multiplier: 1
@@ -358,7 +219,6 @@ synthetic:
     eod_blackout_start: '0s'
     sod_blackout_start: '0s'
     intradays_must_be_same_day: 1
-    contracts: none
     asset_type: 'index'
     equity: 1
     explanation: 'Synthetic represents the empirical simulation of cash index from futures.'
@@ -367,6 +227,5 @@ synthetic:
         - 'synthetic'
 #This is just a fake market to default to when market is not found.
 config:
-    contracts: none
     license: "realtime"
     outlier_tick: 0.10
