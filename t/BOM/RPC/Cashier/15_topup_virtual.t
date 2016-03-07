@@ -33,7 +33,8 @@ my $token_vr = BOM::Platform::SessionCookie->new(
                                                  loginid => $test_client_vr->loginid,
                                                  email   => $email
                                                 )->token;
-
+my $account = $client_vr->default_account;
+my $old_balance = $account->balance;
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 # start test topup_virtual
@@ -56,5 +57,7 @@ $test_client->save;
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('对不起，此功能仅适用虚拟账户', 'topup virtual error');
 
 $params->{token} = $token_vr;
-$c->call_ok($method, $params)->has_no_error->result_is_deeply({currency => 'USD', amount => 10000});
+$c->call_ok($method, $params)->has_no_error->result_is_deeply({currency => 'USD', amount => 10000}, 'topup account successfully');
+$account->load;
+is($old_balance + 10000, $account->balance, 'balance is right');
 done_testing();
