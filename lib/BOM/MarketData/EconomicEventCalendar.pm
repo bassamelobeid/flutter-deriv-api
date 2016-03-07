@@ -28,7 +28,7 @@ use Digest::MD5 qw(md5_hex);
 extends 'BOM::MarketData';
 
 use Date::Utility;
-
+use List::MoreUtils qw(first_idx);
 use BOM::Market::Types;
 
 use constant EE  => 'economic_events';
@@ -168,7 +168,11 @@ sub update {
 
     $params->{release_date} = int(($params->{blankout} + $params->{blankout_end}) / 2);
     $existing_events->{events} = [] unless $existing_events->{events};
-    push @{$existing_events->{events}}, $params;
+    if (my $index = first_idx { $params->{id} eq $_->{id} } @{$existing_events->{events}}) {
+        $existing_events->{events}->[$index] = $params;
+    } else {
+        push @{$existing_events->{events}}, $params;
+    }
 
     croak "could not find $params->{id} in tentative table" unless $tentative_events->{$params->{id}};
     $tentative_events->{$params->{id}} = {(%{$tentative_events->{$params->{id}}}, %$params)};
