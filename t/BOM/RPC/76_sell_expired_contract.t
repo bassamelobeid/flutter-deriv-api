@@ -158,7 +158,7 @@ subtest 'Sell virtual client expired contract' => sub {
 
     lives_ok {
         create_bet( $vclient, is_expired => 1 );
-    } 'Create expired contract for sell and clear ticks';
+    } 'Create expired contract for sell';
 
     {
         my $module = Test::MockModule->new('BOM::Product::Contract');
@@ -176,16 +176,12 @@ subtest 'Sell virtual client expired contract' => sub {
         create_bet( $vclient, is_expired => 1 );
     } 'Create expired contract for sell';
 
-    ok within_rate_limits({
+    for (0..8) {
+        ok within_rate_limits({
             service  => 'virtual_batch_sell',
             consumer => $vclient->loginid
         }), 'Virtual client has no lookup';
-    for (0..9) {
-        within_rate_limits({
-            service  => 'virtual_batch_sell',
-            consumer => $vclient->loginid
-        });
-    }
+    } # 9 times because we had one from previous test
     ok !within_rate_limits({
             service  => 'virtual_batch_sell',
             consumer => $vclient->loginid
