@@ -27,16 +27,10 @@ my @underlyings = map { BOM::Market::Underlying->new($_) } map { (get_offerings_
 my $all                     = Finance::Asset->all_parameters;
 my @market_data_underlyings = map { BOM::Market::Underlying->new($_) } keys %$all;
 my @exchanges               = map { Finance::Asset->get_parameters_for($_->symbol)->{exchange_name} } @market_data_underlyings;
-<<<<<<< HEAD
-my %known_surfaces = map {$_ => 1} qw(moneyness delta);
-my %volsurfaces = map { $_->symbol => 'volsurface_' . $_->volatility_surface_type } grep { $known_surfaces{$_->volatility_surface_type} } @market_data_underlyings;
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-=======
 my %known_surfaces          = map { $_ => 1 } qw(moneyness delta);
 my %volsurfaces =
     map { $_->symbol => 'volsurface_' . $_->volatility_surface_type } grep { $known_surfaces{$_->volatility_surface_type} } @market_data_underlyings;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
->>>>>>> origin/master
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol        => $_->symbol,
@@ -45,15 +39,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 my @currencies =
     map { $_->market->name =~ /(forex|commodities)/ ? ($_->asset_symbol, $_->quoted_currency_symbol) : ($_->quoted_currency_symbol) } @underlyings;
 
-<<<<<<< HEAD
-for (@currencies, 'AUD-JPY', 'AUD-CAD', 'JPY-AUD', 'CAD-AUD') {
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-=======
-
 my @payout_curr = qw(USD GBP EUR AUD);
 for (@currencies, @payout_curr, 'AUD-JPY', 'AUD-CAD', 'JPY-AUD', 'CAD-AUD') {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
->>>>>>> origin/master
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol        => $_,
