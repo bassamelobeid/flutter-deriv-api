@@ -42,7 +42,7 @@ my $params = {
              };
 
 
-$c->call_ok($method, $params)->has_error->error_code_is('InvalidCleint') error_message_is('令牌无效。', 'invalid token');
+$c->call_ok($method, $params)->has_error->error_code_is('InvalidCleint')->error_message_is('令牌无效。', 'invalid token');
 
 $test_client->set_status('disabled',1, 'test status');
 $test_client->save;
