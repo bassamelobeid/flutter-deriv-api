@@ -76,7 +76,7 @@ my $expected_result = {
             'email'                 => 'joe@example.com',
             'summary'               => 'Test Summary',
             'url'                   => 'http://www.example.com/',
-            'paymentagent_loginid'  => 'CR170000'
+            'paymentagent_loginid'  => $pa_client->loginid,
         }]};
 $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'If token is invalid, then the paymentagents are from broker "CR"');
 
