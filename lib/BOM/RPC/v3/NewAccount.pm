@@ -3,6 +3,8 @@ package BOM::RPC::v3::NewAccount;
 use strict;
 use warnings;
 
+use JSON qw(from_json encode_json);
+use Date::Utility;
 use DateTime;
 use Try::Tiny;
 use List::MoreUtils qw(any);
@@ -23,6 +25,7 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Static::Config;
+use BOM::Platform::Runtime;
 
 sub new_account_virtual {
     my $params = shift;
@@ -347,20 +350,73 @@ sub knowledge_test {
         return $auth_error;
     }
 
-    my $response  = 'knowledge_test';
-    my $args      = $params->{args};
-    my $error_map = BOM::Platform::Locale::error_map();
+    # only allowed for VRTJ client, upgrading to JP
+    my $jp_client = ($client->siblings)[0];
+    unless (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual'
+            and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($jp_client->broker)->short eq 'japan'
+    ) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
-    #TODO:
-    #   1) Save into DB: score + status + date => decide which table ??
-    #   2) client should already in status: KNOWLEDGE_TEST_PENDING
-    #   3) If pass:
-    #       - remove status KNOWLEDGE_TEST_PENDING, add new status ACTIVATION_PENDING
-    #       - system send email to client: mentioned pls reply & send doc to us for identity / address verification
-    #   4) If fail, update client_status KNOWLEDGE_TEST_PENDING -> last_modified_date to now()
-    #   5) On success => return 1. Else return undef
+    my $now = Date::Utility->new;
+    my ($client_status, $status_ok);
 
+    if ($client_status = $jp_client->get_status('knowledge_test_pending') {
+        # client haven't taken any test before
+        $status_ok = 1;
+    } elsif ($client_status = $jp_client->get_status('knowledge_test_fail')) {
+        # can't take test more than once per day
+        my $last_test_date = Date::Utility->new($client_status->last_modified_date);
 
+        if ($now->days_between($last_test_date) <= 0) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'KnowledgeTest',
+                message_to_client => localize('You are not allowed to take Knowledge Test more than once per day.'),
+            });
+        }
+        $status_ok = 1;
+    }
+
+    unless ($status_ok) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'KnowledgeTest',
+            message_to_client => localize('You are not eligible for Knowledge Test.'),
+        });
+    }
+
+    my $args             = $params->{args};
+    my ($score, $status) = @{$args}{'score', 'status'};
+
+    if ($status eq 'pass') {
+        $jp_client->clr_status($client_status->status_code);
+        $jp_client->set_status('activation_pending', 'system', 'pending verification documents from client.');
+    } else {
+        $jp_client->clr_status($client_status->status_code) if ($client_status->status_code eq 'knowledge_test_pending');
+        $jp_client->set_status('knowledge_test_fail', 'system', "Failed test with score: $score.");
+    }
+
+    # append result in financial_assessment record
+    my $financial_data = from_json $jp_client->financial_assessment->data;
+
+    my $results;
+    $results = $financial_data->{knowledge_test} if (exists $financial_data->{knowledge_test});
+    push @{$results}, {
+            score    => $score,
+            status   => $status,
+            datetime => $now->datetime_ddmmmyy_hhmmss,
+        };
+    $financial_data->{knowledge_test} = $results;
+    $client->financial_assessment({ data => encode_json($financial_data) });
+
+    if (not $jp_client->save()) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InternalServerError',
+                message_to_client => localize('Sorry, an error occurred while processing your request.')});
+    }
+
+    if ($status eq 'pass') {
+        # trigger system to client: mentioning pls reply & send doc to us for identity / address verification
+    }
     return 1;
 }
 
