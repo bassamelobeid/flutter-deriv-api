@@ -194,7 +194,7 @@ sub get_latest_events_for_period {
 
     #for live pricing, following condition should be satisfied
     #release date is now an epoch and not a date string.
-    if ($from >= $events->[0]->{release_date}) {
+    if (@$events and $from >= $events->[0]->{release_date}) {
         return [grep { $_->{release_date} >= $from and $_->{release_date} <= $to } @$events];
     }
 
