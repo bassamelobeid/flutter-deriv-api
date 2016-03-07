@@ -53,7 +53,7 @@ sub create_account {
     });
 
     $client->set_exclusion->max_losses($daily_loss_limit);
-    $client->set_status('knowledge_test_pending');
+    $client->set_status('jp_knowledge_test_pending');
     $client->set_status('disabled');
     $client->save;
 

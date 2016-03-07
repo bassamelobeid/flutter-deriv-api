@@ -35,15 +35,18 @@ use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 my $CLIENT_STATUS_TYPES = {
-    age_verification      => 1,
-    can_authenticate      => 1,
-    cashier_locked        => 1,
-    disabled              => 1,
-    ok                    => 1,
-    unwelcome             => 1,
-    withdrawal_locked     => 1,
-    ukgc_funds_protection => 1,    # UKGC License condition 4.2.1 for UK clients only
-    tnc_approval          => 1     # MGA License condition 2.7.1.10 for MLT clients only
+    age_verification            => 1,
+    can_authenticate            => 1,
+    cashier_locked              => 1,
+    disabled                    => 1,
+    ok                          => 1,
+    unwelcome                   => 1,
+    withdrawal_locked           => 1,
+    ukgc_funds_protection       => 1,    # UKGC License condition 4.2.1 for UK clients only
+    tnc_approval                => 1     # MGA License condition 2.7.1.10 for MLT clients only
+    jp_knowledge_test_pending   => 1,
+    jp_knowledge_test_fail      => 1,
+    activation_pending          => 1,
 };
 
 sub client_status_types { return $CLIENT_STATUS_TYPES }
