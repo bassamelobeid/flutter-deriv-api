@@ -59,6 +59,7 @@ $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->er
 $params->{token} = $token_vr;
 $c->call_ok($method, $params)->has_no_error->result_is_deeply({currency => 'USD', amount => 10000}, 'topup account successfully');
 $account->load;
-is($old_balance + 10000, $account->balance, 'balance is right');
-$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('hello', 'blance is higher');
+is($old_balance + 10000, $account->balance + 0, 'balance is right');
+$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('您的余款已超出允许金额。', 'blance is higher');
+
 done_testing();
