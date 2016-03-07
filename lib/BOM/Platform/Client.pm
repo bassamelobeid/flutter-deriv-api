@@ -46,7 +46,7 @@ my $CLIENT_STATUS_TYPES = {
     tnc_approval                => 1     # MGA License condition 2.7.1.10 for MLT clients only
     jp_knowledge_test_pending   => 1,
     jp_knowledge_test_fail      => 1,
-    activation_pending          => 1,
+    jp_activation_pending       => 1,
 };
 
 sub client_status_types { return $CLIENT_STATUS_TYPES }
