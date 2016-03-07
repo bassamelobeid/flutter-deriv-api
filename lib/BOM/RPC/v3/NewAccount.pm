@@ -391,7 +391,7 @@ sub knowledge_test {
 
     if ($status eq 'pass') {
         $jp_client->clr_status($client_status->status_code);
-        $jp_client->set_status('activation_pending', 'system', 'pending verification documents from client.');
+        $jp_client->set_status('jp_activation_pending', 'system', 'pending verification documents from client.');
     } else {
         $jp_client->clr_status($client_status->status_code) if ($client_status->status_code eq 'jp_knowledge_test_pending');
         $jp_client->set_status('jp_knowledge_test_fail', 'system', "Failed test with score: $score.");
