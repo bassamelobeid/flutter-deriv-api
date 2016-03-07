@@ -10,9 +10,9 @@
     },
     "get_account_status": {
       "type": "array",
-      "title": "Account status, sample: disabled, unwelcome, cashier locked, etc, active",
+      "title": "Account status",
       "items": {
-        "type": "string"
+        "enum": ["age_verification", "can_authenticate", "cashier_locked", "disabled", "ok", "unwelcome", "withdrawal_locked", "ukgc_funds_protection", "tnc_approval", "jp_knowledge_test_pending", "jp_knowledge_test_fail", "jp_activation_pending"]
       }
     },
     "msg_type": {
