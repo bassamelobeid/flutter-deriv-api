@@ -42,15 +42,15 @@ my $params = {
              };
 
 
-$c->call_ok($method, $params)->has_error->error_code_is('InvalidCleint')->error_message_is('令牌无效。', 'invalid token');
+$c->call_ok($method, $params)->has_error->error_code_is('InvalidToken')->error_message_is('令牌无效。', 'invalid token');
 
 $test_client->set_status('disabled',1, 'test status');
 $test_client->save;
 $params->{token} = $token;
-$c->call_ok($method, $params)->has_error->error_code_is('invalid')->error_message_is('此账户不可用。', 'invalid token');
+$c->call_ok($method, $params)->has_error->error_code_is('DisabledClient')->error_message_is('此账户不可用。', 'invalid token');
 
 $test_client->clr_status('disabled');
 $test_client->save;
-$c->call_ok($method, $params)->has_error->error_code_is('abc')->error_message_is('令牌无效。', 'invalid token');
+$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('对不起，此功能仅适用虚拟账户', 'topup virtual error');
 
 done_testing();
