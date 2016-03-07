@@ -140,4 +140,35 @@ sub is_verification_token_valid {
     return $response;
 }
 
+sub _check_password {
+    my ($new_password, $message);
+    if (@_ == 3) {
+        (my $old_passwrd, $new_password, my $user_pass) = @_;
+
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ChangePasswordError',
+            message_to_client => localize('Old password is wrong.')
+        }) if (not BOM::System::Password::checkpw($old_password, $user_pass));
+
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ChangePasswordError',
+            message_to_client => localize('New password is same as old password.')
+        }) if ($new_password eq $old_password);
+    } else {
+        ($new_password) = @_;
+    }
+
+    return BOM::RPC::v3::Utility::create_error({
+        code              => 'ChangePasswordError',
+        message_to_client => localize('Password is not strong enough.')
+    }) if (not Data::Password::Meter->new(14)->strong($new_password));
+    
+    return BOM::RPC::v3::Utility::create_error({
+        code              => 'ChangePasswordError',
+        message_to_client => localize('Password should have lower and uppercase letters with numbers.')
+    }) if ($new_password !~ /[0-9]+/ or $new_password !~ /[a-z]+/ or $new_password !~ /[A-Z]+/);
+
+    return;
+}
+
 1;
