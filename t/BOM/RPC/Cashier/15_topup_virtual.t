@@ -52,12 +52,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         date   => $now,
     });
 
-$test_client2->payment_free_gift(
-    currency => 'USD',
-    amount   => 1000,
-    remark   => 'free gift',
-);
-
 my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch - 99,
     underlying => 'R_50',
