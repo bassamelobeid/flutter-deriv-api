@@ -18,7 +18,10 @@ has shutting_down => (
     default => 0,
 );
 
-use ExpiryQueue qw( dequeue_expired_contract );
+use ExpiryQueue qw( dequeue_expired_contract get_queue_id);
+use List::Util qw(max);
+use Cache::RedisDB;
+use Time::HiRes;
 use Try::Tiny;
 
 use BOM::Platform::Client;
@@ -60,9 +63,13 @@ sub _daemon_run {
     my $self = shift;
 
     $self->warn("Starting as PID $$.");
+    my $redis = Cache::RedisDB->redis;
     while (1) {
+        my $now = time;
+        my $next_time = $now + 1; # we want this to execute every second
+        my $iterator = dequeue_expired_contract();
         # Outer `while` to live through possible redis disconnects/restarts
-        while (my $info = dequeue_expired_contract(1)) {    # Blocking for next available.
+        while (my $info = $iterator->()) {    # Blocking for next available.
             try {
                 my $contract_id = $info->{contract_id};
                 my $client = BOM::Platform::Client->new({loginid => $info->{held_by}});
@@ -77,12 +84,22 @@ sub _daemon_run {
                 }
                 # This returns a result which might be useful for reporting
                 # but for now we will ignore it.
-                BOM::Product::Transaction::sell_expired_contracts({
+                my $is_sold = BOM::Product::Transaction::sell_expired_contracts({
                         client       => $client,
                         source       => 1063,            # Third party application 'binaryexpiryd'
                         contract_ids => [$contract_id]});
+
+                if (not $is_sold or $is_sold->{number_of_sold_bets} == 0) {
+                    $info->{sell_failure}++;
+                    my $cid = get_queue_id($info);
+                    if ($info->{sell_failure} <= 5) {
+                        my $future_epoch = $now + 2;
+                        $redis->rpush('EXPIRYQUEUE::SELL_FAILURE_' . $future_epoch, $cid);
+                    }
+                }
             };    # No catch, let MtM pick up the pieces.
         }
+        Time::HiRes::sleep(max(0,$next_time - Time::HiRes::time));
     }
 }
 
