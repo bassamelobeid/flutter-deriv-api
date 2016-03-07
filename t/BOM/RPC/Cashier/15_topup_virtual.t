@@ -48,7 +48,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         date   => Date::Utility->new,
     }) for qw(JPY USD JPY-USD);
 
-my $now        = Date::Utility->new();
+my $now        = Date::Utility->new('2005-09-21 06:46:00');
 my $underlying = BOM::Market::Underlying->new('R_50');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',
