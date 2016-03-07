@@ -160,6 +160,6 @@ is($txn->buy(skip_validation => 1),undef, 'buy contract without error');
 $account->load;
 $balance = $account->balance;
 is($balance, $limit, 'now balance is minimum_topup_balance');
-$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('您的余款已超出允许金额。', 'blance is still higher');
+$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('对不起，您还有未平仓的头寸。在请求额外资金前，请了结所有未平仓头寸。', 'have opened bets');
 
 done_testing();
