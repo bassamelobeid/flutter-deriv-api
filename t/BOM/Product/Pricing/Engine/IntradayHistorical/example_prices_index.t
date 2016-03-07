@@ -901,12 +901,8 @@ foreach my $d (@$data) {
             recorded_date => Date::Utility->new($d->{date_start}),
         }) for qw(frxEURUSD frxAUDUSD frxUSDCHF);
 
-<<<<<<< HEAD
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-=======
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
->>>>>>> origin/master
         'volsurface_delta',
         {
             symbol        => 'ISEQ',
@@ -923,18 +919,13 @@ foreach my $d (@$data) {
         underlying   => $d->{underlying},
         barrier      => 'S0P',
     };
-<<<<<<< HEAD
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('index', {symbol => $d->{underlying}, recorded_date => Date::Utility->new($d->{date_start}),});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-=======
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'index',
         {
             symbol        => $d->{underlying},
             recorded_date => Date::Utility->new($d->{date_start}),
         });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
->>>>>>> origin/master
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'correlation_matrix',
         {
             correlations  => $corr,

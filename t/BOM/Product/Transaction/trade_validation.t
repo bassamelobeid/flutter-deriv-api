@@ -38,12 +38,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => Date::Utility->new,
     }) for (qw/USD JPY GBP JPY-USD/);
 
-<<<<<<< HEAD
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-=======
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
->>>>>>> origin/master
     'randomindex',
     {
         symbol        => 'R_50',
@@ -348,21 +343,12 @@ subtest 'valid currency test' => sub {
     subtest 'illegal currency for landing company' => sub {
         $mock_contract->mock('currency', sub { 'AUD' });
 
-<<<<<<< HEAD
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'currency',
-        {
-            symbol => $_,
-            recorded_date   => Date::Utility->new($now->epoch - 100),
-        }) for (qw/USD JPY GBP JPY-USD/);
-=======
-        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             'currency',
             {
                 symbol        => $_,
                 recorded_date => Date::Utility->new($now->epoch - 100),
             }) for (qw/USD JPY GBP JPY-USD/);
->>>>>>> origin/master
 
         my $contract = produce_contract({
             underlying   => BOM::Market::Underlying->new('frxUSDJPY'),

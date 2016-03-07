@@ -64,15 +64,10 @@ foreach my $t (@test_cases) {
             quote  => 100,
             epoch  => $ds->epoch,
         });
-<<<<<<< HEAD
-        BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {
-                symbol => 'USD',
-=======
-        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
             {
                 symbol        => 'USD',
->>>>>>> origin/master
                 recorded_date => $ds,
             });
 

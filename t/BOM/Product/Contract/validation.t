@@ -628,14 +628,8 @@ subtest 'invalid start times' => sub {
         {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
-<<<<<<< HEAD
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})
-        });
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-=======
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
->>>>>>> origin/master
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/underlying.*in starting blackout/];
@@ -659,14 +653,8 @@ subtest 'invalid start times' => sub {
         {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
-<<<<<<< HEAD
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})
-        });
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-=======
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
->>>>>>> origin/master
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/Daily duration.*is outside/];
@@ -689,14 +677,8 @@ subtest 'invalid start times' => sub {
         {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
-<<<<<<< HEAD
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})
-        });
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-=======
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
->>>>>>> origin/master
+    BOM::Test::Data::Utility::UnitTestMareketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/underlying.*closed/];
@@ -852,14 +834,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
         {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
-<<<<<<< HEAD
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})
-        });
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-=======
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
->>>>>>> origin/master
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet = produce_contract($bet_params);
 
@@ -873,14 +849,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
         {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
-<<<<<<< HEAD
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})
-        });
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-=======
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
->>>>>>> origin/master
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
@@ -927,14 +897,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
         {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
-<<<<<<< HEAD
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})
-        });
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-=======
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
->>>>>>> origin/master
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/enough trading.*calendar days/];
@@ -975,14 +939,8 @@ subtest 'underlying with critical corporate actions' => sub {
         {
             symbol        => 'FPFP',
             date          => Date::Utility->new,
-<<<<<<< HEAD
-        recorded_date => Date::Utility->new($bet_params->{date_pricing})
-    });
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-=======
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
->>>>>>> origin/master
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
             symbol         => 'FPFP',
@@ -1214,13 +1172,8 @@ subtest 'spot reference check' => sub {
 };
 
 subtest 'zero vol' => sub {
-<<<<<<< HEAD
-    my $now = Date::Utility->new('2016-01-27');
-    my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-=======
     my $now        = Date::Utility->new('2016-01-27');
-    my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
->>>>>>> origin/master
+    my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol  => 'frxUSDJPY',

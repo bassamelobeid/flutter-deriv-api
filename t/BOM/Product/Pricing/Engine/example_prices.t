@@ -35,103 +35,7 @@ my $recorded_date = Date::Utility->new($date_start);
 my $mocked = Test::MockModule->new('BOM::Market::Underlying');
 $mocked->mock('uses_implied_rate', sub { return 0 });
 
-<<<<<<< HEAD
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('holiday', {
-    recorded_date => $recorded_date,
-    calendar => {
-    '2014-04-18' => {
-        'Good Friday' => ['EUR','GBP', 'USD', 'FSE', 'LSE'],
-    },
-    '2014-04-21' => {
-        'Easter Monday' => ['EUR','GBP', 'FSE', 'LSE'],
-    },
-    '2014-04-29' => {
-        "Showa Day" => ['JPY'],
-    },
-    '2014-05-01' => {
-        'Labour Day' => ['EUR','FSE'],
-    },
-    '2014-05-05' => {
-        "Children's Day" => ['JPY'],
-        "Early May Bank Holiday" => ['GBP', 'LSE'],
-    },
-    '2014-05-06' => {
-        'Greenery Day' => ['JPY'],
-    },
-    '2014-05-26' => {
-        'Late May Bank Holiday' => ['GBP', 'LSE'],
-        'Memorial Day' => ['USD'],
-    },
-    '2014-07-04' => {
-        "Independence Day" => ['USD'],
-    },
-    '2014-07-21' => {
-        'Marine Day' => ['JPY'],
-    },
-    '2014-08-25' => {
-        'Summer Bank Holiday' => ['GBP', 'LSE'],
-    },
-    '2014-09-01' => {
-        "Labor Day" => ['USD'],
-    },
-    '2014-09-15' => {
-        'Respect for the aged Day' => ['JPY'],
-    },
-    '2014-09-23' => {
-        'Autumnal Equinox Day' => ['JPY'],
-    },
-    '2014-10-03' => {
-        'Day Of German Unity' => ['FSE'],
-    },
-    '2014-10-13' => {
-        'Health Sport Day' => ['JPY'],
-        'Columbus Day' => ['USD'],
-    },
-    '2014-11-03' => {
-        'Culture Day' => ['JPY'],
-    },
-    '2014-11-11' => {
-        "Veterans' Day" => ['USD'],
-    },
-    '2014-11-24' => {
-        'Labor Thanksgiving' => ['JPY'],
-    },
-    '2014-11-27' => {
-        "Thanksgiving Day" => ['USD'],
-    },
-    '2014-12-23' => {
-        "Emperor's Birthday" => ['JPY'],
-    },
-    '2014-12-24' => {
-        'pseudo-holiday' => ['JPY','EUR','GBP','USD'],
-        'Christmas Eve' => ['FSE'],
-    },
-    '2014-12-25' => {
-        'Christmas Day' => ['USD', 'EUR','GBP', 'FSE', 'LSE', 'FOREX', 'SAS'],
-    },
-    '2014-12-26' => {
-        'Christmas Day' => ['EUR'],
-        'Christmas Holiday' => ['FSE'],
-        'Boxing Day' => ['GBP', 'LSE'],
-    },
-    '2014-12-31' => {
-        "New Year's eve" => ['JPY','FSE'],
-        "pseudo-holiday" => ['EUR','GBP', 'USD'],
-    },
-    '2015-01-01' => {
-        "New Year's Day" => ['FSE', 'LSE'],
-    },
-    '2015-04-03' => {
-        'Good Friday' => ['FSE', 'LSE'],
-    },
-    '2015-04-06' => {
-        'Easter Monday' => ['FSE','LSE'],
-    },
-},
-});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-=======
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'holiday',
     {
         recorded_date => $recorded_date,
@@ -227,7 +131,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         },
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
->>>>>>> origin/master
     'currency',
     {
         symbol        => $_,

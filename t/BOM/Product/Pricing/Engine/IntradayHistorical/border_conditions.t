@@ -7,12 +7,7 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-<<<<<<< HEAD
-
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-=======
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
->>>>>>> origin/master
 use BOM::Market::AggTicks;
 
 use BOM::Test::Runtime qw(:normal);

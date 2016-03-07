@@ -115,21 +115,8 @@ subtest 'atm prices without economic events' => sub {
 };
 
 subtest 'prices with economic events' => sub {
-<<<<<<< HEAD
-   my $event_date = $date_start->minus_time_interval('15m');
-   BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-       'economic_events',
-       {
-           recorded_date => $event_date,
-           events        => [{
-                   symbol       => 'USD',
-                   impact       => 5,
-                   release_date => $event_date,
-                   event_name   => 'Construction Spending m/m'
-               }]});
-=======
     my $event_date = $date_start->minus_time_interval('15m');
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'economic_events',
         {
             recorded_date => $event_date,
@@ -139,7 +126,6 @@ subtest 'prices with economic events' => sub {
                     release_date => $event_date,
                     event_name   => 'Construction Spending m/m'
                 }]});
->>>>>>> origin/master
     foreach my $contract_type (
         get_offerings_with_filter(
             'contract_type',

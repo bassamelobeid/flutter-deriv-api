@@ -27,13 +27,8 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
 
-<<<<<<< HEAD
-my $now       = Date::Utility->new;
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-=======
 my $now = Date::Utility->new;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
->>>>>>> origin/master
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
@@ -47,23 +42,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => Date::Utility->new
     });
 
-<<<<<<< HEAD
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_delta', {
-        symbol => 'frxUSDJPY',
-        recorded_date => $now,
-    }
-);
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-=======
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
         recorded_date => $now,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
->>>>>>> origin/master
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_100',
