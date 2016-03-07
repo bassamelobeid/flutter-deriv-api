@@ -17,9 +17,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::Database::ClientDB;
-use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;
-use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Database::DataMapper::FinancialMarketBet;
 
 use utf8;
 
@@ -151,6 +148,15 @@ subtest 'Sell expired contract' => sub {
            ->result_is_deeply(
               { count => 0 },
               'It should return 0 if there are not expired contrancts' );
+};
+
+subtest 'Emergency error while sell contract' => sub {
+    my $module = Test::MockModule->new('BOM::Product::Transaction');
+    $module->mock( 'sell_expired_contracts', sub { die } );
+
+    $rpc_ct->call_ok(@params)
+           ->has_error
+           ->error_code_is('SellExpiredError');
 };
 
 subtest 'Sell virtual client expired contract' => sub {
