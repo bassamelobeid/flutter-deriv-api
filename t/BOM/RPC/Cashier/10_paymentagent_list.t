@@ -8,9 +8,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::SessionCookie;
 use utf8;
 
-################################################################################
 # init test data
-################################################################################
 
 my $email       = 'raunak@binary.com';
 my $password    = 'jskjd8292922';
@@ -49,9 +47,8 @@ $pa_client->payment_agent({
 $pa_client->save;
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-################################################################################
+
 # start test
-################################################################################
 my $method = 'paymentagent_list';
 my $params = {
     language => 'zh_CN',
