@@ -79,6 +79,12 @@ has for_date => (
     default => undef,
 );
 
+=head2 events
+
+Array reference of Economic events. Potentially contains tentative events.
+
+=cut
+
 has events => (
     is         => 'ro',
     lazy_build => 1,
@@ -89,6 +95,12 @@ sub _build_events {
     return $self->document->{events};
 }
 
+# economic events to be recorded to chronicle after processing.
+# tentative events without release_date will not be including in this list.
+has _events => (
+    is => 'rw',
+);
+
 around _document_content => sub {
     my $orig = shift;
     my $self = shift;
@@ -96,7 +108,7 @@ around _document_content => sub {
     #this will contain symbol, date and events
     my $data = {
         %{$self->$orig},
-        events => $self->events,
+        events => $self->_events,
     };
 
     return $data;
@@ -117,26 +129,28 @@ sub save {
 
     #receive tentative events hash
     my $existing_tentatives = $self->get_tentative_events;
+    my @new_tentative_events = grep {$_->{is_tentative}} @{$self->events};
 
-    for my $event (@{$self->events}) {
-        my $id = $event->{id};
+    foreach my $tentative (@new_tentative_events) {
+        my $id = $tentative->{id};
         next unless $id;
-
+        # update existing tentative events
         if ($existing_tentatives->{$id}) {
-            # update actual release_date
-            $event->{actual_release_date} = $event->{release_date} unless $event->{is_tentative} and $event->{release_date};
-            # We need to do this because we need a full transition record
-            # of a tentative event in both EE and EET tables
-            $existing_tentatives->{$id} = $event = {(%{$existing_tentatives->{$id}}, %$event)};
-        } elsif ($event->{is_tentative}) {
-            $existing_tentatives->{$id} = $event;
+            $existing_tentatives->{$id} = {(%{$existing_tentatives->{$id}}, %$tentative)};
+        } else {
+            $existing_tentatives->{$id} = $tentative;
         }
     }
 
-    #delete tentative events in EET one month after its release date.
+    #delete tentative events in EET one month after its estimated release date.
     foreach my $id (keys %$existing_tentatives) {
-        delete $existing_tentatives->{$id} if time > $existing_tentatives->{$id}->{release_date} + 30 * 86400;
+        delete $existing_tentatives->{$id} if time > $existing_tentatives->{$id}->{estimated_release_date} + 30 * 86400;
     }
+
+    # events sorted by release date are regular events that
+    # will impact contract pricing.
+    my @regular_events = sort {$a->{release_date} <=> $b->{release_date}} grep {$_->{release_date}} (@{$self->events}, values %$existing_tentatives);
+    $self->_events(\@regular_events);
 
     return (
         $self->chronicle_writer->set(EE, EET, $existing_tentatives,     $self->recorded_date),

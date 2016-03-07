@@ -45,18 +45,15 @@ sub script_run {
     }
 
     try {
-        #here we need epochs to sort events
-        #the sorted array (by release date) in chronicle
-        my @all_events = sort { $a->{release_date} <=> $b->{release_date} } @$events_received;
 
-        my $tentative_count = grep {$_->{is_tentative}} @all_events;
+        my $tentative_count = grep {$_->{is_tentative}} @$events_received;
 
         BOM::MarketData::EconomicEventCalendar->new({
-                events        => \@all_events,
+                events        => $events_received,
                 recorded_date => Date::Utility->new(),
             })->save;
 
-        print "stored " . (scalar @all_events) . " events ($tentative_count are tentative events) in chronicle...\n";
+        print "stored " . (scalar @$events_received) . " events ($tentative_count are tentative events) in chronicle...\n";
     }
     catch {
         print 'Error occured while saving events: ' . $_;
