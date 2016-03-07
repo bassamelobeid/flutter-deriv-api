@@ -678,7 +678,7 @@ subtest 'invalid start times' => sub {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestMareketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/underlying.*closed/];

@@ -130,7 +130,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             },
         },
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
