@@ -9,9 +9,7 @@ use BOM::Platform::SessionCookie;
 use Test::MockModule;
 use utf8;
 
-################################################################################
 # init test data
-################################################################################
 my $email       = 'raunak@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                              broker_code => 'CR',
@@ -36,9 +34,7 @@ my $token_vr = BOM::Platform::SessionCookie->new(
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
-################################################################################
 # start test topup_virtual
-################################################################################
 my $method = 'topup_virtual';
 my $params = {
               language => 'zh_CN',
