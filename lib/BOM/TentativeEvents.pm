@@ -67,7 +67,11 @@ sub update_event {
     $existing->{blankout}     = $rd->plus_time_interval("$b1[0]h$b1[1]m")->epoch;
     $existing->{blankout_end} = $rd->plus_time_interval("$b2[0]h$b2[1]m")->epoch;
 
-    return BOM::MarketData::EconomicEventCalendar->new(recorded_date => Date::Utility->new())->update($existing);
+    my $diff = $existing->{blankout_end} - $existing->{blankout};
+    return "Blackout start and Blackout end must be 2 hours apart. E.g. 5pm - 7pm" if ($diff != 7200);
+
+    my $update = BOM::MarketData::EconomicEventCalendar->new(recorded_date => Date::Utility->new())->update($existing);
+    return $update ? 1 : 0;
 }
 
 1;
