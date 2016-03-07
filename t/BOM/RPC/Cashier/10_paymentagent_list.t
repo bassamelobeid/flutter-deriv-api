@@ -68,7 +68,7 @@ $c->call_ok($method, $params)->has_no_error->result_is_deeply(
            'available_countries' => [
                                     [
                                       'id',
-                                     '印度尼西亚';
+                                     '印度尼西亚',
                                     ],
                                     [
                                       '',
