@@ -52,3 +52,5 @@ $c->call_ok($method, $params)->has_error->error_code_is('invalid')->error_messag
 $test_client->clr_status('disabled');
 $test_client->save;
 $c->call_ok($method, $params)->has_error->error_code_is('abc')->error_message_is('令牌无效。', 'invalid token');
+
+done_testing();
