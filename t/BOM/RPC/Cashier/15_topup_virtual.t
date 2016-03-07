@@ -116,7 +116,7 @@ $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->er
 
 # buy a contract to test the error of 'Please close out all open positions before requesting additional funds.'
 my $limit = BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->USD;
-my $price = $balance - $limit 1 1;
+my $price = $balance - $limit - 1;
 my $contract_data = {
                      underlying   => $underlying,
                      bet_type     => 'FLASHU',
