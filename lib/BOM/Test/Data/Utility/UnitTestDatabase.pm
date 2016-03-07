@@ -9,6 +9,8 @@ use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;
 
+use Date::Utility;
+
 sub _db_name {
     return 'regentmarkets';
 }
@@ -253,6 +255,46 @@ sub create_fmb {
     }
 
     return $fmb;
+}
+
+sub create_valid_contract {
+    my $args = shift;
+
+    my $is_expired = $args->{is_expired};
+    my $start = Date::Utility->new( $args->{start_time} );
+    $start = $start->minus_time_interval('1h 2m') if $is_expired;
+    my $expire = $start->plus_time_interval('2m');
+
+    for my $epoch ( $start->epoch, $start->epoch + 1, $expire->epoch ) {
+        my $api = BOM::Market::Data::DatabaseAPI->new( underlying => 'R_100' );
+        my $tick = $api->tick_at({ end_time => $epoch });
+        next if $tick;
+
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            epoch      => $epoch,
+            underlying => $args->{underlying} || 'R_100',
+        });
+    }
+
+    my $short_code;
+    $short_code =
+        join( '_', $args->{short_code_prefix},
+                   $start->epoch(),
+                   $expire->epoch(),
+                   $args->{short_code_postfix},
+        ) if $args->{short_code_prefix} && $args->{short_code_postfix};
+
+    my $bet = create_fmb({
+        $short_code ? ( short_code => $short_code ) : (),
+        purchase_time    => $start->datetime_yyyymmdd_hhmmss,
+        transaction_time => $start->datetime_yyyymmdd_hhmmss,
+        start_time       => $start->datetime_yyyymmdd_hhmmss,
+        expiry_time      => $expire->datetime_yyyymmdd_hhmmss,
+        settlement_time  => $expire->datetime_yyyymmdd_hhmmss,
+        %$args,
+    });
+
+    return $bet;
 }
 
 with 'BOM::Test::Data::Utility::TestDatabaseSetup';
