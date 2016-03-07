@@ -1,16 +1,12 @@
 use strict;
 use warnings;
 
-use FindBin qw/$Bin/;
-use lib "$Bin/../../../lib";
 use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::SessionCookie;
-use Test::MockModule;
 use utf8;
-use Data::Dumper;
 
 ################################################################################
 # init test data
