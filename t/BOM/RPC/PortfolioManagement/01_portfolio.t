@@ -119,7 +119,7 @@ subtest 'Auth client' => sub {
            ->has_no_error('It should be success using session');
 };
 
-subtest 'Return client portfolio' => sub {
+subtest 'Return empty client portfolio' => sub {
     $rpc_ct->call_ok(@params)
            ->has_no_system_error
            ->has_no_error
