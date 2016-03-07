@@ -9,7 +9,7 @@ use namespace::autoclean;
 
 has 'ua' => (
     is => 'ro',
-    required > 1,
+    required => 1,
 );
 has 'client' => (
     is         => 'ro',
