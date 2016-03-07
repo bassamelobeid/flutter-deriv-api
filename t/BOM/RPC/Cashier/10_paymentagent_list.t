@@ -93,8 +93,9 @@ $c->call_ok($method, $params)->has_no_error->result_is_deeply(
          }, 'result is ok'
 
                                                              );
-#is_deeply($result->{available_countries}[0],[qw(id 印度尼西亚)]);
-#is_deeply($result->)
-#diag(Dumper($result));
-#diag($result->{available_countries}[0][1]);
+
+done_testing();
+
+
+
 
