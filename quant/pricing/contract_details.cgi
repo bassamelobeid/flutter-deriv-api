@@ -17,23 +17,23 @@ use f_brokerincludeall;
 
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
-
 PrintContentType();
 BrokerPresentation("Contract's details");
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
 Bar("Contract's Parameters");
+my %params = %{request()->params};
 my $original_contract =
-    (request()->param('shortcode') and request()->param('currency'))
-    ? produce_contract(request()->param('shortcode'), request()->param('currency'))
+    ($params{shortcode} and $params{currency})
+    ? produce_contract($params{shortcode} , $params{currency})
     : '';
 
 my ($pricing_parameters, $start);
 if ($original_contract) {
-    $start = (request()->param('start')) ? Date::Utility->new(request()->param('start')) : $original_contract->date_start;
+    $start = $params{start} ? Date::Utility->new($param{start}) : $original_contract->date_start;
     my $contract = make_similar_contract($original_contract, {priced_at => $start});
 
     $pricing_parameters =
@@ -43,6 +43,7 @@ if ($original_contract) {
     $pricing_parameters->{ask_price} = $contract->ask_price;
 
 }
+
 
 sub _get_pricing_parameter_from_IH_pricer {
     my $contract = shift;

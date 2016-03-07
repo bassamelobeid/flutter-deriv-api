@@ -4,7 +4,8 @@
         <tr><td>Shortcode</td><td><input value="[% contract.shortcode %]" size="80" type="text" name="shortcode" id="shortcode"/></td></tr>
         <tr><td>Currency</td><td><input value="[% contract.currency %]" size="4" type="text" name="currency" id="currency" style="none"/></td></tr>
         <tr><td>Start time</td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/></td></tr>
-        <tr><td colspan=2><input type="submit" value="Price it!"/></td></tr>
+        <tr><td colspan=2><input type="submit" name="price" value="View in Table"/></td></tr>
+        <tr><td colspan=2><input type="submit" name="download" value="Download as CSV file"/></td></tr>
     </table>
 </form>
 [% IF pricing_parameters.size > 0 %]
