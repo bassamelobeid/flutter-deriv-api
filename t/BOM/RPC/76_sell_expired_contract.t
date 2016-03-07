@@ -136,7 +136,7 @@ subtest 'Sell expired contract' => sub {
            ->has_no_error
            ->result_is_deeply(
               { count => 1 },
-              'It should return counts of sold contrancts' );
+              'It should return counts of sold contracts' );
 
     lives_ok {
         create_bet( $client );
@@ -147,7 +147,7 @@ subtest 'Sell expired contract' => sub {
            ->has_no_error
            ->result_is_deeply(
               { count => 0 },
-              'It should return 0 if there are not expired contrancts' );
+              'It should return 0 if there are not expired contracts' );
 };
 
 subtest 'Emergency error while sell contract' => sub {
