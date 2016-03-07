@@ -11,7 +11,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
+use BOM::Product::ContractFactory qw( produce_contract );
 use utf8;
 
 # init test data
