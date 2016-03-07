@@ -15,12 +15,26 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::AccessToken;
+use BOM::RPC::v3::Accounts;
 
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Test::Most;
 
 sub tcall {
+    my $self   = shift;
+    my $method = shift;
+    my $params = shift;
+    my $r      = $self->call_response($method, $params);
+    ok($r->result,    'rpc response ok');
+    ok(!$r->is_error, 'rpc response ok');
+    if ($r->is_error) {
+        diag(Dumper($r));
+    }
+    return $r->result;
+}
+
+sub call_response {
     my $self   = shift;
     my $method = shift;
     my $params = shift;
@@ -31,12 +45,7 @@ sub tcall {
             method => $method,
             params => $params
         });
-    ok($r->result,    'rpc response ok');
-    ok(!$r->is_error, 'rpc response ok');
-    if ($r->is_error) {
-        diag(Dumper($r));
-    }
-    return $r->result;
+    return $r;
 }
 
 package main;
@@ -103,6 +112,33 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol => 'R_50',
         date   => $now,
     });
+
+$test_client2->payment_free_gift(
+    currency => 'USD',
+    amount   => 1000,
+    remark   => 'free gift',
+);
+
+my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 99,
+    underlying => 'R_50',
+    quote      => 76.5996,
+    bid        => 76.6010,
+    ask        => 76.2030,
+});
+
+my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 52,
+    underlying => 'R_50',
+    quote      => 76.6996,
+    bid        => 76.7010,
+    ask        => 76.3030,
+});
+
+my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch,
+    underlying => 'R_50',
+});
 
 ################################################################################
 # test begin
@@ -245,32 +281,6 @@ subtest $method => sub {
     );
     is($c->tcall($method, {token => $token_21})->{count}, 100, 'have 100 statements');
     is($c->tcall($method, {token => $token1})->{count},   0,   'have 0 statements if no default account');
-    $test_client2->payment_free_gift(
-        currency => 'USD',
-        amount   => 1000,
-        remark   => 'free gift',
-    );
-
-    my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 99,
-        underlying => 'R_50',
-        quote      => 76.5996,
-        bid        => 76.6010,
-        ask        => 76.2030,
-    });
-
-    my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 52,
-        underlying => 'R_50',
-        quote      => 76.6996,
-        bid        => 76.7010,
-        ask        => 76.3030,
-    });
-
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch,
-        underlying => 'R_50',
-    });
 
     my $contract_expired = produce_contract({
         underlying   => $underlying,
@@ -319,6 +329,136 @@ subtest $method => sub {
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
 
+};
+################################################################################
+# profit_table
+################################################################################
+
+$method = 'profit_table';
+subtest $method => sub {
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error if token undef'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token1,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'no token error if token is valid'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
+    #create a new transaction for test
+    my $contract_expired = produce_contract({
+        underlying   => $underlying,
+        bet_type     => 'FLASHU',
+        currency     => 'USD',
+        stake        => 100,
+        date_start   => $now->epoch - 100,
+        date_expiry  => $now->epoch - 50,
+        current_tick => $tick,
+        entry_tick   => $old_tick1,
+        exit_tick    => $old_tick2,
+        barrier      => 'S0P',
+    });
+
+    my $txn = BOM::Product::Transaction->new({
+        client        => $test_client2,
+        contract      => $contract_expired,
+        price         => 100,
+        payout        => $contract_expired->payout,
+        amount_type   => 'stake',
+        purchase_date => $now->epoch - 101,
+    });
+
+    $txn->buy(skip_validation => 1);
+
+    my $result = $c->tcall($method, {token => $token_with_txn});
+    is($result->{count}, 2, 'the new transaction is sold so _sell_expired_contracts is called');
+
+    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+            client_loginid => $test_client2->loginid,
+            currency_code  => $test_client2->currency,
+            db             => BOM::Database::ClientDB->new({
+                    client_loginid => $test_client2->loginid,
+                    operation      => 'replica',
+                }
+            )->db,
+        });
+    my $args    = {};
+    my $data    = $fmb_dm->get_sold_bets_of_account($args);
+    my $expect0 = {
+        'sell_price'     => '100',
+        'contract_id'    => $txn->contract_id,
+        'transaction_id' => $txn->transaction_id,
+        'sell_time'      => Date::Utility->new($data->[0]{sell_time})->epoch,
+        'buy_price'      => '100',
+        'purchase_time'  => Date::Utility->new($data->[0]{purchase_time})->epoch,
+    };
+
+    is_deeply($result->{transactions}[0], $expect0, 'result is correct');
+    $expect0->{longcode}  = 'USD 100.00 payout if Random 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
+    $expect0->{shortcode} = $data->[0]{short_code};
+    $result               = $c->tcall(
+        $method,
+        {
+            token => $token_with_txn,
+            args  => {description => 1}});
+    is_deeply($result->{transactions}[0], $expect0, 'the result with description ok');
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => $token_with_txn,
+                args  => {after => '2006-01-01 01:01:01'}}
+            )->{count},
+        0,
+        'result is correct for arg after'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => $token_with_txn,
+                args  => {before => '2004-01-01 01:01:01'}}
+            )->{count},
+        0,
+        'result is correct for arg after'
+    );
 };
 
 ################################################################################
@@ -451,6 +591,43 @@ subtest $method => sub {
 ################################################################################
 $method = 'change_password';
 subtest $method => sub {
+    my $oldpass = '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjNQ=';
+    is(
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'new_password', '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ=')
+            ->{error}->{message_to_client},
+        'Old password is wrong.',
+        'Old password is wrong.',
+    );
+    is(
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'old_password', $oldpass)->{error}->{message_to_client},
+        'New password is same as old password.',
+        'New password is same as old password.',
+    );
+    is(
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'water', $oldpass)->{error}->{message_to_client},
+        'Password is not strong enough.',
+        'Password is not strong enough.',
+    );
+    is(
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'New#_p$ssword', $oldpass)->{error}->{message_to_client},
+        'Password should have letters and numbers and at least 6 characters.',
+        'no number.',
+    );
+    is(
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'pa$5A', $oldpass)->{error}->{message_to_client},
+        'Password should have letters and numbers and at least 6 characters.',
+        'to short.',
+    );
+    is(
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'pass$5ss', $oldpass)->{error}->{message_to_client},
+        'Password should have letters and numbers and at least 6 characters.',
+        'no upper case.',
+    );
+    is(
+        BOM::RPC::v3::Accounts::_check_password('old_password', 'PASS$5SS', $oldpass)->{error}->{message_to_client},
+        'Password should have letters and numbers and at least 6 characters.',
+        'no lower case.',
+    );
     is(
         $c->tcall(
             $method,
@@ -784,4 +961,109 @@ subtest $method => sub {
         'vr client return less messages'
     );
 };
+
+################################################################################
+# set_settings
+################################################################################
+$method = 'set_settings';
+subtest $method => sub {
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+    my $mocked_client = Test::MockModule->new(ref($test_client));
+    my $params        = {
+        language => 'ZH_CN',
+        token    => $token_vr,
+        args     => {address1 => 'Address 1'}};
+    # in normal case the vr client's residence should not be null, so I update is as '' to simulate null
+    $test_client_vr->residence('');
+    $test_client_vr->save();
+    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', "vr client can only update residence");
+    # here I mocked function 'save' to simulate the db failure.
+    $mocked_client->mock('save', sub { return undef });
+    $params->{args}{residence} = 'zh';
+    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
+    $mocked_client->unmock('save');
+    my $result = $c->tcall($method, $params);
+    is($result->{status}, 1, 'vr account update residence successfully');
+    $test_client_vr->load;
+    isnt($test_client->address_1, 'Address 1', 'But vr account only update residence');
+
+    # test real account
+    $params->{token} = $token1;
+    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'real account cannot update residence');
+    my %full_args = (
+        address_line_1   => 'address line 1',
+        address_line_2   => 'address line 2',
+        address_city     => 'address city',
+        address_state    => 'address state',
+        address_postcode => '12345',
+        phone            => '2345678',
+    );
+    $params->{args} = {%full_args};
+    delete $params->{args}{address_line_1};
+    ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
+    $params->{args} = {%full_args};
+    $mocked_client->mock('save', sub { return undef });
+    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
+    $mocked_client->unmock_all;
+    # add_note should send an email to support address,
+    # but it is disabled when the test is running on travis-ci
+    # so I mocked this function to check it is called.
+    my $add_note_called;
+    $mocked_client->mock('add_note', sub { $add_note_called = 1 });
+    my $old_latest_environment = $test_client->latest_environment;
+    clear_mailbox();
+    is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    ok($add_note_called, 'add_note is called, so the email should be sent to support address');
+    $test_client->load();
+    isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
+    like($test_client->latest_environment, qr/LANG=ZH_CN/, 'latest environment updated');
+    my $subject = '账户设置更改';
+    $subject = encode_qp(encode('UTF-8', $subject));
+    # I don't know why encode_qp will append two characters "=\n"
+    # so I chopped them
+    chop($subject);
+    chop($subject);
+    my %msg = get_email_by_address_subject(
+        email   => $test_client->email,
+        subject => qr/\Q$subject\E/
+    );
+    ok(%msg, 'send a email to client');
+    like($msg{body}, qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
+    clear_mailbox();
+};
+
 done_testing();
