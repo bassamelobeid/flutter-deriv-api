@@ -76,12 +76,20 @@ my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     underlying => 'R_50',
-});
+                                                                    quote      => 76.5996,
+                                                                    bid        => 76.7010,
+                                                                    ask        => 76.3030,
+
+
+                                                                   });
 
 my $tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                                                                     epoch      => $now->epoch + 100,
                                                                     underlying => 'R_50',
-                                                                   });
+                                                                     quote      => 76.6996,
+                                                                     bid        => 76.7010,
+                                                                     ask        => 76.3030,
+                                                                    });
 
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
@@ -161,5 +169,12 @@ $account->load;
 $balance = $account->balance + 0;
 is($balance, $limit, 'now balance is minimum_topup_balance');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('对不起，您还有未平仓的头寸。在请求额外资金前，请了结所有未平仓头寸。', 'have opened bets');
-
+my $res = BOM::Product::Transaction::sell_expired_contracts({
+                                                             client => $client,
+                                                            });
+use Data::Dumper;
+diag(Dumper($res));
+$account->load;
+$balance = $account->balance + 0;
+is($balance, $limit, 'now balance is minimum_topup_balance');
 done_testing();
