@@ -47,5 +47,5 @@ $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'i
 $test_client->set_status('disabled',1, 'test status');
 $test_client->save;
 $params->{token} = $token;
-$c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'invalid token');
+$c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'invalid token');
 
