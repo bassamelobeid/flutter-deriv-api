@@ -127,9 +127,9 @@ $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->er
 
     my $txn = BOM::Product::Transaction->new({
         client        => $test_client_vr,
-        contract      => $contract_expired,
+        contract      => $contract,
         price         => 100,
-        payout        => $contract_expired->payout,
+        payout        => $contract->payout,
         amount_type   => 'stake',
         purchase_date => $now->epoch,
     });
