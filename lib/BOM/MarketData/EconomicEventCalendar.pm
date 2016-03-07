@@ -129,16 +129,16 @@ sub save {
 
     #receive tentative events hash
     my $existing_tentatives = $self->get_tentative_events;
-    my @new_tentative_events = grep { $_->{is_tentative} } @{$self->events};
 
-    foreach my $tentative (@new_tentative_events) {
-        my $id = $tentative->{id};
+    foreach my $event (@{$self->events}) {
+        my $id = $event->{id};
         next unless $id;
         # update existing tentative events
         if ($existing_tentatives->{$id}) {
-            $existing_tentatives->{$id} = {(%{$existing_tentatives->{$id}}, %$tentative)};
-        } else {
-            $existing_tentatives->{$id} = $tentative;
+            $event->{actual_release_date} = $event->{release_date} if (not $event->{is_tentative} and $event->{release_date});
+            $existing_tentatives->{$id} = {(%{$existing_tentatives->{$id}}, %$event)};
+        } elsif ($event->{is_tentative}) {
+            $existing_tentatives->{$id} = $event;
         }
     }
 
