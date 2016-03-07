@@ -15,11 +15,13 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                              broker_code => 'CR',
                                                                             });
 $test_client->email($email);
+$test_client->set_default_account('USD');
 $test_client->save;
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                                 broker_code => 'VRTC',
                                                                                });
 $test_client_vr->email($email);
+$test_client_vr->set_default_account('USD');
 $test_client_vr->save;
 my $test_loginid = $test_client->loginid;
 
