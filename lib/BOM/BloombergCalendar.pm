@@ -3,7 +3,7 @@ package BOM::BloombergCalendar;
 use strict;
 use warnings;
 
-use BOM::MarketData::Holiday;
+use Quant:Framework::Holiday;
 use BOM::MarketData::PartialTrading;
 use BOM::Platform::Context;
 use Try::Tiny;
@@ -19,9 +19,11 @@ sub save_calendar {
     my $recorded_date = Date::Utility->new;
     my $updated;
     if ($calendar_type eq 'exchange_holiday' or $calendar_type eq 'country_holiday') {
-        $updated = BOM::MarketData::Holiday->new(
+        $updated = Quant::Framework::Holiday->new(
             recorded_date => $recorded_date,
             calendar      => $calendar,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         )->save;
     } else {
         $updated = BOM::MarketData::PartialTrading->new(
