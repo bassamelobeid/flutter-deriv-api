@@ -144,9 +144,9 @@ sub _check_password {
     my ($new_password, $message);
     my $args = shift;
     if (keys %$args == 3) {
-        my $old_password = shift;
-        $new_password = shift;
-        my $user_pass = shift;
+        my $old_password = $args->{old_password};
+        $new_password = $args->{new_password};
+        my $user_pass = $args->{user_pass};
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'ChangePasswordError',
@@ -158,7 +158,6 @@ sub _check_password {
     } else {
         $new_password = shift;
     }
-
     return BOM::RPC::v3::Utility::create_error({
             code              => 'ChangePasswordError',
             message_to_client => localize('Password is not strong enough.')}) if (not Data::Password::Meter->new(14)->strong($new_password));
