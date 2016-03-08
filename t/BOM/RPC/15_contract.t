@@ -21,9 +21,10 @@ subtest 'validate_symbol' => sub{
 };
 
 subtest 'validate_license' => sub {
-  for my $sym ('frxUSDZAR', 'GDAXI', 'HSI', 'FRXUSDJPY', 'frxEURUSD', 'frxXAUUSD', 'R_100', 'frxHKDUSD', 'frxUSDEUR', 'HEARTB', 'FUTHSI_BOM', 'frxNZDAUD'){
-    is(BOM::RPC::v3::Contract::validate_license($sym), undef, "return undef if symbol $sym is valid");
-  }
+  is(BOM::RPC::v3::Contract::validate_license('R_50'), undef, "return undef if symbol $sym is is realtime ");
+  
+  diag(Dumper(BOM::RPC::v3::Contract::validate_license('FUTHSI_BOM')));#, undef, "return undef if symbol $sym is realtime");
+  
 };
 
 
