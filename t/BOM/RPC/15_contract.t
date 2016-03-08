@@ -27,10 +27,10 @@ subtest 'validate_license' => sub {
     is(BOM::RPC::v3::Contract::validate_license('R_50'), undef, "return undef if symbol is is realtime ");
 
     is_deeply(
-        BOM::RPC::v3::Contract::validate_license('FUTHSI_BOM'),
+        BOM::RPC::v3::Contract::validate_license('JCI'),
         {
             error => {
-                message_to_client => '实时报价不可用于FUTHSI_BOM',
+                message_to_client => '实时报价不可用于JCI',
                 code              => 'NoRealtimeQuotes'
             }
         },
@@ -55,7 +55,7 @@ subtest 'validate_underlying' => sub {
         BOM::RPC::v3::Contract::validate_underlying('JCI'),
         {
             error => {
-                message_to_client => '实时报价不可用于FUTHSI_BOM',
+                message_to_client => '实时报价不可用于JCI',
                 code              => 'NoRealtimeQuotes'
             }
         },
