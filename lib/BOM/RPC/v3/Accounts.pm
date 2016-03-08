@@ -376,7 +376,9 @@ sub cashier_password {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
 
-        return $error_sub if ($error_sub = BOM::RPC::v3::Utility::_check_password({new_password => $lock_password}));
+        if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $lock_password})) {
+            return $pass_error;
+        }
 
         $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
         if (not $client->save()) {
