@@ -19,6 +19,17 @@ Returns a set of available contracts for a particular contract which included pr
 
 =cut
 
+my %ALLOWED_CONTRACT_TYPES = (
+    CALLE        => 1,
+    PUTE         => 1,
+    EXPIRYMISSE  => 1,
+    EXPIRYRANGEE => 1,
+    RANGE        => 1,
+    UPORDOWN     => 1,
+    ONETOUCH     => 1,
+    NOTOUCH      => 1,
+);
+
 sub available_contracts_for_symbol {
     my $args         = shift;
     my $symbol       = $args->{symbol} || die 'no symbol';
@@ -45,6 +56,7 @@ sub available_contracts_for_symbol {
         });
 
         for my $o (@offerings) {
+            next unless $ALLOWED_CONTRACT_TYPES{$o->{contract_type}};
             my $cc = $o->{contract_category};
             my $bc = $o->{barrier_category};
 
