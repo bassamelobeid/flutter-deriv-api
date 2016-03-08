@@ -119,7 +119,47 @@ subtest 'Auth client' => sub {
            ->has_no_error('It should be success using session');
 };
 
+subtest $method => sub {
+    my $fmb;
+    lives_ok {
+        $fmb = create_contract( $client, buy_bet => 1 )->financial_market_bet_record;
+    } 'Initial bet';
 
+    my $expected_contract_data;
+    lives_ok {
+        my $bid = BOM::RPC::v3::Contract::get_bid({
+            short_code  => $fmb->{short_code},
+            contract_id => $fmb->id,
+            currency    => $client->currency,
+            is_sold     => $fmb->{is_sold},
+        });
+
+        $expected_contract_data = {
+            buy_price     => $fmb->{buy_price},
+            purchase_time => Date::Utility->new($fmb->{purchase_time})->epoch,
+            account_id    => $fmb->{account_id},
+            is_sold       => $fmb->{is_sold},
+            %$bid,
+        };
+    } 'Initial extected data';
+
+    $rpc_ct->call_ok(@params)
+            ->has_no_system_error
+            ->has_no_error
+            ->result_is_deeply(
+                { $fmb->id => $expected_contract_data },
+                'Should return contract and bid data' );
+
+    $params[1]->{contract_id} = $fmb->id;
+    $rpc_ct->call_ok(@params)
+            ->has_no_system_error
+            ->has_no_error
+            ->result_is_deeply(
+                { $fmb->id => $expected_contract_data },
+                'Should return contract and bid data' );
+
+    # TODO test with not valid bid
+};
 
 done_testing();
 
