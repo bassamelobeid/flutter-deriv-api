@@ -26,6 +26,15 @@ throws_ok {
 }
 qr/email /, 'email parameter is mandatory';
 
+throws_ok {
+    my $lc = BOM::Platform::SessionCookie->new({
+        loginid     => $loginid,
+        email       => $email,
+        created_for => 'verify_email'
+    });
+}
+qr/contains keys:created_for that are outside allowed/, 'created_for is not allowed';
+
 my $value = $session_cookie->token;
 ok !BOM::Platform::SessionCookie->new(token => "${value}a")->token, "Couldn't create instance from invalid value";
 $session_cookie = BOM::Platform::SessionCookie->new(token => $value);
