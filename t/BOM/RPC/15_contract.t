@@ -9,8 +9,14 @@ use BOM::RPC::v3::Contract;
 use Data::Dumper;
 
 subtest 'validate_symbol' => sub{
-  diag(Dumper(BOM::RPC::v3::Contract::validate_symbol('R_50')));
-  diag(Dumper(BOM::RPC::v3::Contract::validate_symbol('abcd')));
+  is(BOM::RPC::v3::Contract::validate_symbol('R_50'), undef, "return undef if symbol is valid");
+  is_deeply(BOM::RPC::v3::Contract::validate_symbol('invalid_symbol'),  {
+               'error' => {
+                            'message_to_client' => 'Symbol invalid_symbol invalid',
+                            'code' => 'InvalidSymbol'
+                          }
+                                                                         }, 'return error if symbol is invalid'
+             );
   ok(1);
 };
 
