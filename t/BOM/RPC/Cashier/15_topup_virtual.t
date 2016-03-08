@@ -140,7 +140,11 @@ $balance = $account->balance + 0;
 is($balance, $limit + $amount, 'balance is topuped');
 
 # buy a contract to test the error of 'Please close out all open positions before requesting additional funds.'
-my $price = $balance - $limit - 1;
+$test_client_vr->payment_legacy_payment(currency => 'USD', amount => -$amount , payment_type => 'virtual_credit', remark => 'virtual money withdrawal');
+$account->load;
+$balance = $account->balance + 0;
+is($balance, $limit, 'balance is equal to limit');
+my $price = 100
 my $contract_data = {
                      underlying   => $underlying,
                      bet_type     => 'FLASHD',
@@ -169,28 +173,6 @@ my $txn_data = {
 is($txn->buy(skip_validation => 1),undef, 'buy contract without error');
 $account->load;
 $balance = $account->balance + 0;
-is($balance, $limit + 1, 'banace is a little more the minimum_topup_balance');
-$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('您的余款已超出允许金额。', 'blance is still higher');
-$old_balance = $balance;
-
-$price = 1;
-$contract_data->{price} = $price;
-$txn_data->{price} = $price;
-$txn_data->{contract} = $contract;
-$txn_data->{payout} = $contract->payout;
-$contract = produce_contract($contract_data);
-$txn = BOM::Product::Transaction->new($txn_data);
-is($txn->buy(skip_validation => 1),undef, 'buy contract without error');
-$account->load;
-$balance = $account->balance + 0;
-is($balance, $limit, 'now balance is minimum_topup_balance');
+is($balance, $limit - $price, 'balance is reduced for buying contract');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('对不起，您还有未平仓的头寸。在请求额外资金前，请了结所有未平仓头寸。', 'have opened bets');
-my $res = BOM::Product::Transaction::sell_expired_contracts({
-                                                             client => $test_client_vr,
-                                                            });
-use Data::Dumper;
-diag(Dumper($res));
-$account->load;
-$balance = $account->balance + 0;
-is($balance, $limit, 'now balance is minimum_topup_balance');
 done_testing();
