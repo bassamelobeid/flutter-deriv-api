@@ -138,12 +138,10 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
-
 # test begin
 my $t = Test::Mojo->new('BOM::RPC');
 my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
-# payout_currencies
 my $method = 'payout_currencies';
 subtest $method => sub {
     is_deeply(
@@ -173,8 +171,6 @@ subtest $method => sub {
     is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies if no token");
 };
 
-
-# landing_company
 $method = 'landing_company';
 subtest $method => sub {
     is_deeply(
@@ -199,7 +195,6 @@ subtest $method => sub {
     ok(!$c->tcall($method, {args => {landing_company => 'hk'}})->{financial_company}, "hk have no financial_company");
 };
 
-# landing_company_details
 $method = 'landing_company_details';
 subtest $method => sub {
     is_deeply(
@@ -220,9 +215,6 @@ subtest $method => sub {
     is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name}, 'Binary (C.R.) S.A.', "details result ok");
 };
 
-################################################################################
-# statement
-################################################################################
 $method = 'statement';
 subtest $method => sub {
     is(
@@ -450,7 +442,6 @@ subtest $method => sub {
     );
 };
 
-# balance
 $method = 'balance';
 subtest $method => sub {
     is(
@@ -513,7 +504,6 @@ subtest $method => sub {
     );
 };
 
-# get_account_status
 $method = 'get_account_status';
 subtest $method => sub {
     is(
@@ -571,7 +561,6 @@ subtest $method => sub {
 
 };
 
-# change_password
 $method = 'change_password';
 subtest $method => sub {
     my $oldpass = '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjNQ=';
@@ -708,7 +697,6 @@ subtest $method => sub {
     $password = $new_password;
 };
 
-# cashier_password
 $method = 'cashier_password';
 subtest $method => sub {
 
@@ -851,7 +839,6 @@ subtest $method => sub {
     clear_mailbox();
 };
 
-# get_settings
 $method = 'get_settings';
 subtest $method => sub {
     is(
@@ -941,7 +928,47 @@ subtest $method => sub {
     );
 };
 
-# set_settings
+$method = 'set_financial_assessment';
+subtest $method => sub {
+    my $args = {
+        "set_financial_assessment"             => 1,
+        "forex_trading_experience"             => "Over 3 years",
+        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
+        "indices_trading_experience"           => "1-2 years",
+        "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
+        "commodities_trading_experience"       => "1-2 years",
+        "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
+        "stocks_trading_experience"            => "1-2 years",
+        "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
+        "other_derivatives_trading_experience" => "Over 3 years",
+        "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
+        "other_instruments_trading_experience" => "Over 3 years",
+        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
+        "employment_industry"                  => "Finance",
+        "education_level"                      => "Secondary",
+        "income_source"                        => "Self-Employed",
+        "net_income"                           => '$25,000 - $100,000',
+        "estimated_worth"                      => '$100,000 - $250,000'
+    };
+
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token_vr,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token1
+        });
+    cmp_ok($res->{score}, "<", 60, "Got correct score");
+    is($res->{is_professional}, 0, "As score is less than 60 so its marked as not professional");
+};
+
 $method = 'set_settings';
 subtest $method => sub {
     is(
