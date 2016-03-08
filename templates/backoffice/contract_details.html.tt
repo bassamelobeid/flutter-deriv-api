@@ -9,9 +9,9 @@
     </table>
 </form>
 [% IF pricing_parameters.size > 0 %]
-        <p><b> Contract's Price = [% contract.currency  %][%pricing_parameters.ask_price %]</b></p>
+        <p><b> Contract's Ask Price = [% contract.currency  %][%pricing_parameters.ask_price %]</b></p>
         <table id="dtr" border="1" cellpadding="1" cellspacing="0">
-                <tr><b> Contract's probability </br></tr>
+                <tr><b> Contract's ask probability </br></tr>
                 [% FOREACH ask_key =pricing_parameters.ask_probability.keys %]
                 <tr><td>[% ask_key %]</td>
                     <td> [% pricing_parameters.ask_probability.$ask_key %]</td>

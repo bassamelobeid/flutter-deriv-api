@@ -14,24 +14,18 @@ package main;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
-
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
-PrintContentType();
-BrokerPresentation("Contract's details");
-BOM::Backoffice::Auth0::can_access(['Quants']);
-
-Bar("Contract's Parameters");
 my %params = %{request()->params};
+my ($pricing_parameters, $start);
 my $original_contract =
     ($params{shortcode} and $params{currency})
-    ? produce_contract($params{shortcode} , $params{currency})
+    ? produce_contract($params{shortcode}, $params{currency})
     : '';
 
-my ($pricing_parameters, $start);
 if ($original_contract) {
     $start = $params{start} ? Date::Utility->new($params{start}) : $original_contract->date_start;
     my $contract = make_similar_contract($original_contract, {priced_at => $start});
@@ -41,9 +35,42 @@ if ($original_contract) {
         : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'          ? _get_pricing_parameter_from_slope_pricer($contract)
         :   die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
     $pricing_parameters->{ask_price} = $contract->ask_price;
-
 }
 
+my $display = $params{download} ? 'download' : 'display';
+if ($display ne 'download') {
+    PrintContentType();
+    BrokerPresentation("Contract's details");
+    BOM::Backoffice::Auth0::can_access(['Quants']);
+    Bar("Contract's Parameters");
+
+} elsif ($display eq 'download') {
+    output_as_csv($pricing_parameters);
+    return;
+}
+
+sub output_as_csv {
+    my $param    = shift;
+    my $csv_name = 'contract.xls';
+    PrintContentType_excel($csv_name);
+    print "ASK_PRICE " . $param->{ask_price} . "\n";
+    foreach my $key (keys %{$param}) {
+        if ($key eq 'ask_price') { next; }
+        print uc($key) . "\n";
+        foreach my $subkey (keys %{$param->{$key}}) {
+            if ($key ne 'numeraire_probability') {
+                print "$subkey " . $param->{$key}->{$subkey} . "\n";
+            }
+            {
+                foreach my $subsubkey (keys %{$param->{$key}->{$subkey}}) {
+                    print "$subkey $subsubkey " . $param->{$key}->{$subkey}->{$subsubkey} . "\n";
+                }
+            }
+        }
+        print "\n";
+    }
+
+}
 
 sub _get_pricing_parameter_from_IH_pricer {
     my $contract = shift;
