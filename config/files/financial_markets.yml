@@ -31,6 +31,8 @@ commodities:
             PUT: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             DIGITMATCH: 4
             DIGITDIFF: 4
             ASIANU: 4
@@ -70,6 +72,8 @@ forex:
             PUTE: 3.5
             CALL: 3.5
             PUT: 3.5
+            EXPIRYMISSE: 3.5
+            EXPIRYRANGEE: 3.5
             EXPIRYMISS: 3.5
             EXPIRYRANGE: 3.5
             DIGITMATCH: 3.5
@@ -100,6 +104,8 @@ futures:
             PUTE: 4
             CALL: 4
             PUT: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
             DIGITMATCH: 4
@@ -136,6 +142,8 @@ indices:
             PUTE: 4
             CALL: 4
             PUT: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
             DIGITMATCH: 4
@@ -177,6 +185,8 @@ stocks:
             PUTE: 4
             CALL: 4
             PUT: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
             DIGITMATCH: 4
@@ -212,6 +222,8 @@ random:
             PUTE: 3
             CALL: 3
             PUT: 3
+            EXPIRYMISSE: 3
+            EXPIRYRANGEE: 3
             EXPIRYMISS: 3
             EXPIRYRANGE: 3
             DIGITMATCH: 3
