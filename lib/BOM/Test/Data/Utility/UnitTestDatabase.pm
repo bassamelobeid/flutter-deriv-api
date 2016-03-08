@@ -284,8 +284,9 @@ sub create_valid_contract {
                    $args->{short_code_postfix},
         ) if $args->{short_code_prefix} && $args->{short_code_postfix};
 
+    $args->{short_code} = $short_code if $short_code;
+
     my $bet = create_fmb({
-        $short_code ? ( short_code => $short_code ) : (),
         purchase_time    => $start->datetime_yyyymmdd_hhmmss,
         transaction_time => $start->datetime_yyyymmdd_hhmmss,
         start_time       => $start->datetime_yyyymmdd_hhmmss,
