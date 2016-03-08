@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use JSON;
+use Try::Tiny;
 use Date::Utility;
 use Data::Password::Meter;
 
@@ -18,6 +19,7 @@ use BOM::Platform::Locale;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Static::Config;
+use BOM::Platform::Account::Real::default;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -102,6 +104,7 @@ sub __build_landing_company {
         legal_allowed_currencies          => $lc->legal_allowed_currencies,
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
+        has_reality_check                 => $lc->has_reality_check ? 1 : 0
     };
 }
 
@@ -1002,6 +1005,55 @@ sub set_account_currency {
                 code              => 'InvalidCurrency',
                 message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)});
     }
+
+    return $response;
+}
+
+sub set_financial_assessment {
+    my $params = shift;
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
+    my ($response, $subject, $message);
+    try {
+        my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
+        my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
+
+        my $is_professional = $financial_evaluation->{total_score} < 60 ? 0 : 1;
+        $client->financial_assessment({
+            data            => encode_json $financial_evaluation->{user_data},
+            is_professional => $is_professional
+        });
+        $client->save;
+        $response = {
+            score           => $financial_evaluation->{total_score},
+            is_professional => $is_professional
+        };
+        $subject = $client_loginid . ' assessment test details have been updated';
+        $message = ["$client_loginid score is " . $financial_evaluation->{total_score}];
+    }
+    catch {
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'UpdateAssessmentError',
+                message_to_client => localize("Sorry, an error occurred while processing your request.")});
+        $subject = "$client_loginid - assessment test details error";
+        $message = ["An error occurred while updating assessment test details for $client_loginid. Please handle accordingly."];
+    };
+
+    send_email({
+        from    => BOM::Platform::Static::Config::get_customer_support_email(),
+        to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
+        subject => $subject,
+        message => $message,
+    });
 
     return $response;
 }
