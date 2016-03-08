@@ -614,14 +614,6 @@ index:
       180: 2.11
       365: 1.04
 
-holiday:
-  class_name: 'BOM::MarketData::Holiday'
-  data:
-    calendar:
-        1420070400:
-          'New Year':
-            - EURONEXT
-            - USD
 partial_trading:
   class_name: 'BOM::MarketData::PartialTrading'
   data:
