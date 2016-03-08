@@ -179,7 +179,7 @@ sub _passes_sanity_check {
     } elsif ($close < $open * (1 - $suspicious_move)) {
         return "OHLC suspicious data $symbol/$today: Suspicious : close ($close) < open ($open) - \%$p_suspicious_move";
     } elsif (abs(($spot_eod - $close) / $spot_eod) > 0.05) {
-        return "OHLC big difference between official [$close] and unofficial [$spot_eod] with percentage diff [abs(($spot_eod-$close)/$spot_eod)]";
+        return "OHLC big difference between official [$close] and unofficial [$spot_eod] with percentage diff".abs(($spot_eod-$close)/$spot_eod);
     }
     return;
 }
