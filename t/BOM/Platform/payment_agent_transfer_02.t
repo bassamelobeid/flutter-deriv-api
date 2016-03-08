@@ -14,9 +14,9 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use_ok('BOM::Database::DataMapper::Payment::PaymentAgentTransfer');
 
-my $pa          = BOM::Platform::Client::PaymentAgent->new({loginid => 'CR0020'});
-my $pa_client   = $pa->client;
-my $client      = BOM::Platform::Client->new({loginid => 'CR0021'});
+my $pa        = BOM::Platform::Client::PaymentAgent->new({loginid => 'CR0020'});
+my $pa_client = $pa->client;
+my $client    = BOM::Platform::Client->new({loginid => 'CR0021'});
 
 subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
     my $payment_agent_transfer_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({client_loginid => $pa_client->loginid});
@@ -40,7 +40,7 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
     # for payment.payment table, remark field length is VARCHAR(800)
     lives_ok {
         my $remark;
-        $remark .= 'x'x800;
+        $remark .= 'x' x 800;
 
         $client->payment_account_transfer(
             toClient => $pa_client,
@@ -48,11 +48,12 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
             amount   => 1000,
             remark   => $remark
         );
-    } "OK with remark length = 800";
+    }
+    "OK with remark length = 800";
 
     throws_ok {
         my $remark;
-        $remark .= 'x'x801;
+        $remark .= 'x' x 801;
 
         $client->payment_account_transfer(
             toClient => $pa_client,
@@ -60,7 +61,8 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
             amount   => 1000,
             remark   => $remark
         );
-    } qr/value too long for type character varying\(800\)/, 'remark length cannot > 800';
+    }
+    qr/value too long for type character varying\(800\)/, 'remark length cannot > 800';
 };
 
 done_testing();
