@@ -144,7 +144,7 @@ $test_client_vr->payment_legacy_payment(currency => 'USD', amount => -$amount , 
 $account->load;
 $balance = $account->balance + 0;
 is($balance, $limit, 'balance is equal to limit');
-my $price = 100
+my $price = 100;
 my $contract_data = {
                      underlying   => $underlying,
                      bet_type     => 'FLASHD',
