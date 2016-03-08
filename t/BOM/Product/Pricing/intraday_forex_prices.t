@@ -50,16 +50,20 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $date_pricing,
     });
 
-subtest 'prices without economic events' => sub {
-    foreach my $contract_type (
-        get_offerings_with_filter(
-            'contract_type',
-            {
-                underlying_symbol => $underlying->symbol,
-                expiry_type       => 'intraday',
-                start_type        => 'spot'
-            }))
+my %equal = (
+    CALLE => 1,
+    PUTE  => 1,
+);
+my @ct = grep { !$equal{$_} } get_offerings_with_filter(
+    'contract_type',
     {
+        underlying_symbol => $underlying->symbol,
+        expiry_type       => 'intraday',
+        start_type        => 'spot'
+    });
+subtest 'prices without economic events' => sub {
+
+    foreach my $contract_type (@ct) {
         my $vol = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying})->get_volatility({
             delta => 50,
             days  => $duration / 86400
@@ -126,15 +130,7 @@ subtest 'prices with economic events' => sub {
                     release_date => $event_date,
                     event_name   => 'Construction Spending m/m'
                 }]});
-    foreach my $contract_type (
-        get_offerings_with_filter(
-            'contract_type',
-            {
-                underlying_symbol => $underlying->symbol,
-                expiry_type       => 'intraday',
-                start_type        => 'spot'
-            }))
-    {
+    foreach my $contract_type (@ct) {
         my $vol = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying})->get_volatility({
             delta => 50,
             days  => $duration / 86400

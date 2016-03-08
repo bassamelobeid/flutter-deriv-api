@@ -35,7 +35,7 @@ subtest 'get_offerings_flyby' => sub {
     subtest 'example queries' => sub {
         is(scalar $fb->query('"start_type" IS "forward" -> "market"'),          5,  'Forward-starting is offered on 6 markets.');
         is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 12, 'Tick expiries are offered on 28 underlyings.');
-        is(scalar $fb->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'), 10, 'Twelve callput options on frxUSDJPY');
+        is(scalar $fb->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'), 20, 'Twelve callput options on frxUSDJPY');
         is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 8,  'Eight underlyings trade on the RANDOM exchange');
         is(scalar $fb->query('"market" IS "random" -> "underlying_symbol"'),        12, '...out of 12 total random market symbols.');
     };
@@ -54,19 +54,19 @@ subtest 'get_offerings_with_filter' => sub {
     };
     my $to = 'contract_type';
 
-    eq_or_diff([sort(get_offerings_with_filter($to, $filtration))], [sort qw(CALL PUT)], 'Full filter match');
+    eq_or_diff([sort(get_offerings_with_filter($to, $filtration))], [sort qw(CALL CALLE PUT PUTE)], 'Full filter match');
     delete $filtration->{start_type};
-    eq_or_diff([sort(get_offerings_with_filter($to, $filtration))], [sort qw(CALL PUT)], '... same without start_type');
+    eq_or_diff([sort(get_offerings_with_filter($to, $filtration))], [sort qw(CALL CALLE PUT PUTE)], '... same without start_type');
     delete $filtration->{contract_category};
     eq_or_diff(
         [sort(get_offerings_with_filter($to, $filtration))],
-        [sort qw(CALL PUT EXPIRYMISS EXPIRYRANGE ONETOUCH NOTOUCH RANGE SPREADD SPREADU UPORDOWN)],
+        [sort qw(CALL CALLE PUT PUTE EXPIRYMISS EXPIRYMISSE EXPIRYRANGE EXPIRYRANGEE ONETOUCH NOTOUCH RANGE SPREADD SPREADU UPORDOWN)],
         '... explodes without a contract category'
     );
     $filtration->{expiry_type} = 'tick';
     eq_or_diff(
         [sort(get_offerings_with_filter($to, $filtration))],
-        [sort qw(CALL PUT ASIAND ASIANU DIGITMATCH DIGITDIFF DIGITODD DIGITEVEN DIGITOVER DIGITUNDER)],
+        [sort qw(CALL CALLE PUT PUTE ASIAND ASIANU DIGITMATCH DIGITDIFF DIGITODD DIGITEVEN DIGITOVER DIGITUNDER)],
         '... and switches up for tick expiries.'
     );
 

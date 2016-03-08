@@ -142,14 +142,14 @@ subtest 'expiry conditions' => sub {
     ok $c->is_expired, 'expired';
     ok $c->exit_tick,  'has exit tick';
     ok $c->exit_tick->quote == $c->barrier->as_absolute;
-    cmp_ok $c->value,  '==', $c->payout, 'full payout';
+    cmp_ok $c->value, '==', $c->payout, 'full payout';
 };
 
 subtest 'shortcodes' => sub {
     lives_ok {
         my $c =
-            produce_contract('CALLE_FRXUSDJPY_10_' . $now->plus_time_interval('10m')->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0',
-            'USD');
+            produce_contract(
+            'CALLE_FRXUSDJPY_10_' . $now->plus_time_interval('10m')->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0', 'USD');
         isa_ok $c, 'BOM::Product::Contract::Calle';
         ok $c->is_forward_starting;
     }

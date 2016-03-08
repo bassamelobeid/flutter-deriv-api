@@ -142,7 +142,7 @@ subtest 'expiry conditions' => sub {
     ok $c->is_expired, 'expired';
     ok $c->exit_tick,  'has exit tick';
     ok $c->exit_tick->quote > $c->barrier->as_absolute;
-    cmp_ok $c->value,  '==', $c->payout, 'full payout';
+    cmp_ok $c->value, '==', $c->payout, 'full payout';
 };
 
 subtest 'shortcodes' => sub {
