@@ -153,20 +153,20 @@ sub new_account_japan {
     return;
 }
 
-sub knowledge_test {
+sub jp_knowledge_test {
     my ($c, $args) = @_;
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
-        'knowledge_test',
+        'jp_knowledge_test',
         sub {
             my $response = shift;
             if (exists $response->{error}) {
-                return $c->new_error('knowledge_test', $response->{error}->{code}, $response->{error}->{message_to_client});
+                return $c->new_error('jp_knowledge_test', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 return {
-                    msg_type       => 'knowledge_test',
-                    knowledge_test => $response
+                    msg_type          => 'jp_knowledge_test',
+                    jp_knowledge_test => $response
                 };
             }
         },

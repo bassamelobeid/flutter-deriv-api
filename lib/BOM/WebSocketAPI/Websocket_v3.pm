@@ -294,8 +294,8 @@ my @dispatch = (
         1, 'admin'
     ],
     [
-        'knowledge_test',
-        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::knowledge_test, 1, 'admin'
+        'jp_knowledge_test',
+        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::jp_knowledge_test, 1, 'admin'
     ],
 );
 
