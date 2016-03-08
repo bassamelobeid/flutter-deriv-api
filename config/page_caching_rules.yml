@@ -207,3 +207,6 @@
 "/user/tnc_approvalws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/new_account/maltainvestws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
