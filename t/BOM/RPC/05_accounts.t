@@ -593,38 +593,72 @@ $method = 'change_password';
 subtest $method => sub {
     my $oldpass = '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjNQ=';
     is(
-        BOM::RPC::v3::Utility::_check_password('old_password', 'new_password', '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ=')
-            ->{error}->{message_to_client},
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'new_password',
+                user_pass    => '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ='
+            }
+            )->{error}->{message_to_client},
         'Old password is wrong.',
         'Old password is wrong.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password('old_password', 'old_password', $oldpass)->{error}->{message_to_client},
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'old_password',
+                user_pass    => $oldpass;
+            }
+            )->{error}->{message_to_client},
         'New password is same as old password.',
         'New password is same as old password.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password('old_password', 'water', $oldpass)->{error}->{message_to_client},
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'water',
+                user_pass    => $oldpass
+            }
+            )->{error}->{message_to_client},
         'Password is not strong enough.',
         'Password is not strong enough.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password('old_password', 'New#_p$ssword', $oldpass)->{error}->{message_to_client},
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'New#_p$ssword',
+                user_pass    => $oldpass
+            }
+            )->{error}->{message_to_client},
         'Password should have lower and uppercase letters with numbers.',
         'no number.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password('old_password', 'pa$5A', $oldpass)->{error}->{message_to_client},
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'pa$5A',
+                user_pass    => $oldpass
+            }
+            )->{error}->{message_to_client},
         'Password should have lower and uppercase letters with numbers.',
         'to short.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password('old_password', 'pass$5ss', $oldpass)->{error}->{message_to_client},
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'pass$5ss',
+                user_pass    => $oldpass
+            }
+            )->{error}->{message_to_client},
         'Password should have letters and numbers and at least 6 characters.',
         'no upper case.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password('old_password', 'PASS$5SS', $oldpass)->{error}->{message_to_client},
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'PASS$5SS',
+                user_pass    => $oldpass
+            }
+            )->{error}->{message_to_client},
         'Password should have letters and numbers and at least 6 characters.',
         'no lower case.',
     );
@@ -708,8 +742,8 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
     my $subject = '您的密码已更改。';
     $subject = encode_qp(encode('UTF-8', $subject));
-    # I don't know why encode_qp will append two characters "=\n"
-    # so I chopped them
+# I don't know why encode_qp will append two characters "=\n"
+# so I chopped them
     chop($subject);
     chop($subject);
     my %msg = get_email_by_address_subject(
