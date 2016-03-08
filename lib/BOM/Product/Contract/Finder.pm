@@ -52,10 +52,9 @@ sub available_contracts_for_symbol {
     }
 
     my $flyby = BOM::Product::Offerings::get_offerings_flyby;
-    my @offerings = $flyby->query({underlying_symbol => $symbol});
+    my @offerings = grep { $ALLOWED_CONTRACT_TYPES{$_->{contract_type}} } $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {
-        next unless $ALLOWED_CONTRACT_TYPES{$o->{contract_type}};
         my $cc = $o->{contract_category};
         my $bc = $o->{barrier_category};
 

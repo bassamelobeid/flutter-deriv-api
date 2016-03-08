@@ -40,14 +40,9 @@ sub available_contracts_for_symbol {
     my $exchange = $underlying->exchange;
     my ($open, $close, @offerings);
     if ($exchange->trades_on($now)) {
-        $open  = $exchange->opening_on($now)->epoch;
-        $close = $exchange->closing_on($now)->epoch;
-        my $flyby = BOM::Product::Offerings::get_offerings_flyby;
-        @offerings = $flyby->query({
-                underlying_symbol => $symbol,
-                start_type        => 'spot',
-                expiry_type       => ['daily', 'intraday'],
-                barrier_category  => ['euro_non_atm', 'american']});
+        $open      = $exchange->opening_on($now)->epoch;
+        $close     = $exchange->closing_on($now)->epoch;
+        @offerings = @{_get_offerings($symbol)};
         @offerings = _predefined_trading_period({
             offerings => \@offerings,
             exchange  => $exchange,
@@ -56,7 +51,6 @@ sub available_contracts_for_symbol {
         });
 
         for my $o (@offerings) {
-            next unless $ALLOWED_CONTRACT_TYPES{$o->{contract_type}};
             my $cc = $o->{contract_category};
             my $bc = $o->{barrier_category};
 
@@ -81,6 +75,19 @@ sub available_contracts_for_symbol {
         close        => $close,
         feed_license => $underlying->feed_license
     };
+}
+
+sub _get_offerings {
+    my $symbol = shift;
+
+    my $flyby = BOM::Product::Offerings::get_offerings_flyby;
+    my @offerings = grep { $ALLOWED_CONTRACT_TYPES{$_->{contract_type}} } $flyby->query({
+            underlying_symbol => $symbol,
+            start_type        => 'spot',
+            expiry_type       => ['daily', 'intraday'],
+            barrier_category  => ['euro_non_atm', 'american']});
+
+    return \@offerings;
 }
 
 =head2 _predefined_trading_period
