@@ -50,7 +50,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $args = {
-    bet_type     => 'CALL',
+    bet_type     => 'PUT',
     underlying   => 'frxUSDJPY',
     date_start   => $now,
     date_pricing => $now,
@@ -60,11 +60,11 @@ my $args = {
     barrier      => 'S0P',
 };
 
-subtest 'call variations' => sub {
+subtest 'PUT variations' => sub {
     lives_ok {
         my $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Call';
-        is $c->code,        'CALL';
+        isa_ok $c, 'BOM::Product::Contract::Put';
+        is $c->code,        'PUT';
         ok $c->is_intraday, 'is intraday';
         ok !$c->expiry_daily, 'not expiry daily';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
@@ -75,19 +75,19 @@ subtest 'call variations' => sub {
     'generic';
     lives_ok {
         my $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Call';
+        isa_ok $c, 'BOM::Product::Contract::Put';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
 
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Call';
+        isa_ok $c, 'BOM::Product::Contract::Put';
         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{duration}     = '10m';
         $args->{date_pricing} = $now->plus_time_interval('10m');
         $args->{date_start}   = $now->plus_time_interval('20m');
         $c                    = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Call';
+        isa_ok $c, 'BOM::Product::Contract::Put';
         ok $c->is_forward_starting, 'forward starting';
         isa_ok $c->pricing_engine,  'Pricing::Engine::EuropeanDigitalSlope';
 
@@ -96,12 +96,12 @@ subtest 'call variations' => sub {
         $args->{duration}     = '15m';
         $args->{barrier}      = 'S10P';
         $c                    = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Call';
+        isa_ok $c, 'BOM::Product::Contract::Put';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
 
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
-        isa_ok $c, 'BOM::Product::Contract::Call';
+        isa_ok $c, 'BOM::Product::Contract::Put';
         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
     }
     'pricing engine selection';
@@ -127,7 +127,7 @@ subtest 'expiry conditions' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
         epoch      => $now->epoch + 509,
-        quote      => 101,
+        quote      => 100,
     });
     $c = produce_contract($args);
     ok !$c->exit_tick,  'no exit tick';
@@ -141,28 +141,28 @@ subtest 'expiry conditions' => sub {
     $c = produce_contract($args);
     ok $c->is_expired, 'expired';
     ok $c->exit_tick,  'has exit tick';
-    ok $c->exit_tick->quote > $c->barrier->as_absolute;
+    ok $c->exit_tick->quote < $c->barrier->as_absolute;
     cmp_ok $c->value,  '==', $c->payout, 'full payout';
 };
 
 subtest 'shortcodes' => sub {
     lives_ok {
         my $c =
-            produce_contract('CALL_FRXUSDJPY_10_' . $now->plus_time_interval('10m')->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0',
+            produce_contract('PUT_FRXUSDJPY_10_' . $now->plus_time_interval('10m')->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0',
             'USD');
-        isa_ok $c, 'BOM::Product::Contract::Call';
+        isa_ok $c, 'BOM::Product::Contract::Put';
         ok $c->is_forward_starting;
     }
-    'builds forward starting call from shortcode';
+    'builds forward starting put from shortcode';
     lives_ok {
-        my $c = produce_contract('CALL_FRXUSDJPY_10_' . $now->epoch . '_' . $now->plus_time_interval('20m')->epoch . '_S0P_0', 'USD');
-        isa_ok $c, 'BOM::Product::Contract::Call';
+        my $c = produce_contract('PUT_FRXUSDJPY_10_' . $now->epoch . '_' . $now->plus_time_interval('20m')->epoch . '_S0P_0', 'USD');
+        isa_ok $c, 'BOM::Product::Contract::Put';
         ok !$c->is_forward_starting;
     }
-    'builds spot call from shortcode';
+    'builds spot put from shortcode';
     lives_ok {
         my $c = produce_contract({
-            bet_type     => 'CALL',
+            bet_type     => 'PUT',
             date_start   => $now,
             date_pricing => $now->minus_time_interval('10m'),
             duration     => '20m',
@@ -171,14 +171,14 @@ subtest 'shortcodes' => sub {
             currency     => 'USD',
             payout       => 10,
         });
-        isa_ok $c, 'BOM::Product::Contract::Call';
-        my $expected_shortcode = 'CALL_FRXUSDJPY_10_' . $now->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
+        isa_ok $c, 'BOM::Product::Contract::Put';
+        my $expected_shortcode = 'PUT_FRXUSDJPY_10_' . $now->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
         is $c->shortcode, $expected_shortcode, 'shortcode matches';
     }
-    'builds shortcode from params for forward starting call';
+    'builds shortcode from params for forward starting put';
     lives_ok {
         my $c = produce_contract({
-            bet_type     => 'CALL',
+            bet_type     => 'PUT',
             date_start   => $now,
             date_pricing => $now,
             duration     => '20m',
@@ -187,9 +187,9 @@ subtest 'shortcodes' => sub {
             currency     => 'USD',
             payout       => 10,
         });
-        isa_ok $c, 'BOM::Product::Contract::Call';
-        my $expected_shortcode = 'CALL_FRXUSDJPY_10_' . $now->epoch . '_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
+        isa_ok $c, 'BOM::Product::Contract::Put';
+        my $expected_shortcode = 'PUT_FRXUSDJPY_10_' . $now->epoch . '_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
         is $c->shortcode, $expected_shortcode, 'shortcode matches';
     }
-    'builds shortcode from params for spot call';
+    'builds shortcode from params for spot put';
 };
