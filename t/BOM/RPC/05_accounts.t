@@ -629,7 +629,7 @@ subtest $method => sub {
                 user_pass    => $oldpass
             }
             )->{error}->{message_to_client},
-        'Password should have lower and uppercase letters with numbers.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'no number.',
     );
     is(
@@ -639,7 +639,7 @@ subtest $method => sub {
                 user_pass    => $oldpass
             }
             )->{error}->{message_to_client},
-        'Password should have lower and uppercase letters with numbers.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'to short.',
     );
     is(
@@ -649,7 +649,7 @@ subtest $method => sub {
                 user_pass    => $oldpass
             }
             )->{error}->{message_to_client},
-        'Password should have letters and numbers and at least 6 characters.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'no upper case.',
     );
     is(
@@ -659,7 +659,7 @@ subtest $method => sub {
                 user_pass    => $oldpass
             }
             )->{error}->{message_to_client},
-        'Password should have letters and numbers and at least 6 characters.',
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'no lower case.',
     );
     is(

@@ -164,8 +164,8 @@ sub _check_password {
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'ChangePasswordError',
-            message_to_client => localize('Password should have lower and uppercase letters with numbers.')}
-    ) if ($new_password !~ /[0-9]+/ or $new_password !~ /[a-z]+/ or $new_password !~ /[A-Z]+/);
+            message_to_client => localize('Password should be at least six characters, including lower and uppercase letters with numbers.')}
+    ) if ($new_password < 6 or $new_password !~ /[0-9]+/ or $new_password !~ /[a-z]+/ or $new_password !~ /[A-Z]+/);
 
     return;
 }
