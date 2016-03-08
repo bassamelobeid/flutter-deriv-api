@@ -13,6 +13,7 @@ use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing);
+use Data::Dumper;
 
 sub validate_symbol {
     my $symbol    = shift;
@@ -211,8 +212,11 @@ sub send_ask {
     my %details = %{$args};
     my $response;
     try {
+      print "args: " . Dumper(\%details);
+
         $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
-        if (exists $response->{error}) {
+      print "result: " . Dumper($response);
+      if (exists $response->{error}) {
             $response = BOM::RPC::v3::Utility::create_error({
                 code              => $response->{error}->{code},
                 message_to_client => $response->{error}->{message},
