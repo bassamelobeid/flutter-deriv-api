@@ -18,7 +18,12 @@ subtest 'validate_symbol' => sub{
                           }
                                                                          }, 'return error if symbol is invalid'
              );
-  ok(1);
 };
+
+subtest 'validate_license' => sub {
+  is(BOM::RPC::v3::Contract::validate_license('R_50'), undef, "return undef if symbol is valid");
+};
+
+
 
 done_testing();
