@@ -835,7 +835,7 @@ my %known_errors = (
         my $retry = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($self->client->get_limit_for_account_balance, 1);
+        my $limit = to_monetary_number_format($self->client->get_limit_for_account_balance, 1);
 
         my $account = BOM::Database::DataMapper::Account->new({
             client_loginid => $self->client->loginid,
@@ -866,7 +866,7 @@ my %known_errors = (
         }
 
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($self->client->get_limit_for_payout, 1);
+        my $limit = to_monetary_number_format($self->client->get_limit_for_payout, 1);
 
         return Error::Base->cuss(
             -type              => 'OpenPositionPayoutLimit',
