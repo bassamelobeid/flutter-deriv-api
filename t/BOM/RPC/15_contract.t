@@ -13,7 +13,7 @@ subtest 'validate_symbol' => sub{
   is(BOM::RPC::v3::Contract::validate_symbol('R_50'), undef, "return undef if symbol is valid");
   is_deeply(BOM::RPC::v3::Contract::validate_symbol('invalid_symbol'),  {
                'error' => {
-                            'message_to_client' => 'Symbol invalid_symbol invalid',
+                            'message_to_client' => 'invalid_symbol 符号无效',
                             'code' => 'InvalidSymbol'
                           }
                                                                          }, 'return error if symbol is invalid'
