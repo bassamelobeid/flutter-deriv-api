@@ -16,45 +16,40 @@ $email_mocked->mock('send_email', sub { return 1 });
 
 my ($client,         $pa_client);
 my ($client_account, $pa_account);
-subtest 'Initialization' => sub {
-    plan tests => 1;
+{
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_account = $client->set_default_account('USD');
 
-    lives_ok {
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-        });
-        $client_account = $client->set_default_account('USD');
+    $client->payment_free_gift(
+        currency => 'USD',
+        amount   => 500,
+        remark   => 'free gift',
+    );
 
-        $client->payment_free_gift(
-            currency => 'USD',
-            amount   => 500,
-            remark   => 'free gift',
-        );
+    $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $pa_account = $pa_client->set_default_account('USD');
 
-        $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-        });
-        $pa_account = $pa_client->set_default_account('USD');
-
-        # make him a payment agent, this will turn the transfer into a paymentagent transfer.
-        $pa_client->payment_agent({
-            payment_agent_name    => 'Joe',
-            url                   => 'http://www.example.com/',
-            email                 => 'joe@example.com',
-            phone                 => '+12345678',
-            information           => 'Test Info',
-            summary               => 'Test Summary',
-            commission_deposit    => 0,
-            commission_withdrawal => 0,
-            is_authenticated      => 't',
-            currency_code         => 'USD',
-            currency_code_2       => 'USD',
-            target_country        => 'id',
-        });
-        $pa_client->save;
-    }
-    'Initial accounts to test deposit & withdrawal via PA';
-};
+    # make him a payment agent, this will turn the transfer into a paymentagent transfer.
+    $pa_client->payment_agent({
+        payment_agent_name    => 'Joe',
+        url                   => 'http://www.example.com/',
+        email                 => 'joe@example.com',
+        phone                 => '+12345678',
+        information           => 'Test Info',
+        summary               => 'Test Summary',
+        commission_deposit    => 0,
+        commission_withdrawal => 0,
+        is_authenticated      => 't',
+        currency_code         => 'USD',
+        currency_code_2       => 'USD',
+        target_country        => 'id',
+    });
+    $pa_client->save;
+}
 
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
 $mock_utility->mock('token_to_loginid',            sub { return $client->loginid });
