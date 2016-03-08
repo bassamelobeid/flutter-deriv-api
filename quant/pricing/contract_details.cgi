@@ -80,7 +80,6 @@ sub _get_pricing_parameter_from_IH_pricer {
     my $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $contract});
     my $ask_probability = $contract->ask_probability;
     $pricing_parameters->{ask_probability} = {
-        TOTAL            => $ask_probability->amount,
         theo_probability => $ask_probability->peek_amount(lc($contract->code) . '_theoretical_probability'),
         bs_probability   => $contract->bs_probability->amount,
         map { $_ => $ask_probability->peek_amount($_) } qw(intraday_delta_correction vega_correction risk_markup commission_markup),
@@ -134,7 +133,6 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $pricing_parameters;
 
     $pricing_parameters->{ask_probability} = {
-        TOTAL                   => $contract->ask_probability->amount,
         theoretical_probability => $ask_probability->peek_amount('theo_probability'),
         map { $_ => $ask_probability->peek_amount($_) } qw(risk_markup commission_markup),
     };
