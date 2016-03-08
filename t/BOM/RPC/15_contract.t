@@ -23,7 +23,7 @@ subtest 'validate_symbol' => sub{
 subtest 'validate_license' => sub {
   is(BOM::RPC::v3::Contract::validate_license('R_50'), undef, "return undef if symbol is is realtime ");
   
-  diag((BOM::RPC::v3::Contract::validate_license('FUTHSI_BOM')->{error}{message_to_client}));#, undef, "return error if symbol is realtime");
+  is_deeply(BOM::RPC::v3::Contract::validate_license('FUTHSI_BOM'),{error => {message_to_client => '实时报价不可用于FUTHSI_BOM', code => 'NoRealtimeQuotes'}}, "return error if symbol is realtime");
   
 };
 
