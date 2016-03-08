@@ -141,7 +141,7 @@ sub is_verification_token_valid {
 }
 
 sub _check_password {
-    my ($new_password, $message);
+    my ($new_password, $message, $args);
     if (keys %$args == 3) {
         my $old_password = shift;
         $new_password = shift;
