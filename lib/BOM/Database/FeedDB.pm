@@ -10,7 +10,7 @@ use feature "state";
 sub read_dbh {
     return DBI->connect_cached(
         "dbi:Pg:dbname=feed-replica;port=6433;host=/var/run/postgresql",
-        "read", "" )
+        "read", "", {pg_server_prepare => 0} )
       || die($DBI::errstr);
 }
 
