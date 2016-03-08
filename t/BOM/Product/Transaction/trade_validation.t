@@ -770,6 +770,8 @@ subtest 'Purchase Sell Contract' => sub {
         exit_tick    => $current_tick,
         barrier      => 'S0P',
     });
+    my $mocked = Test::MockModule->new('BOM::Product::Transaction');
+    $mocked->mock('_validate_trade_pricing_adjustment', sub {});
     $error = BOM::Product::Transaction->new({
             client      => $client,
             contract    => $contract,

@@ -611,10 +611,9 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _validate_iom_withdrawal_limit
             _validate_payout_limit
             _is_valid_to_sell
-            _validate_currency/,
-            # always sell at market price -- must be called after _is_valid_to_sell
-            sub { $_[0]->price($_[0]->contract->bid_price); return },
-            '_validate_date_pricing',
+            _validate_currency
+            _validate_trade_pricing_adjustment
+            _validate_date_pricing/
             );
 
         $self->comment($self->_build_pricing_comment) unless defined $self->comment;
@@ -1408,9 +1407,9 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    my %legal_allowed_cc =
-        map { $_ => 1 } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_contract_categories};
-    if (not $legal_allowed_cc{$contract->category_code}) {
+    my %legal_allowed_ct =
+        map { $_ => 1 } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_contract_types};
+    if (not $legal_allowed_ct{$contract->code}) {
         return Error::Base->cuss(
             -type              => 'NotLegalContractCategory',
             -mesg              => 'Clients are not allowed to trade on this contract category as its restricted for this landing company',
