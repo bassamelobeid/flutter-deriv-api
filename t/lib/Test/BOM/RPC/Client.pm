@@ -7,7 +7,10 @@ use Test::More ();
 use Moose;
 use namespace::autoclean;
 
-has 'ua' => (is => 'ro');
+has 'ua' => (
+    is => 'ro',
+    required => 1,
+);
 has 'client' => (
     is         => 'ro',
     isa        => 'MojoX::JSON::RPC::Client',
