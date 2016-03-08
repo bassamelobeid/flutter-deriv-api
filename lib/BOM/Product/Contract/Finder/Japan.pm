@@ -12,6 +12,7 @@ use base qw( Exporter );
 use BOM::Product::ContractFactory qw(produce_contract);
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 use Math::CDF qw(qnorm);
+use BOM::Platform::Runtime::LandingCompany::Registry;
 
 =head1 available_contracts_for_symbol
 
@@ -19,16 +20,9 @@ Returns a set of available contracts for a particular contract which included pr
 
 =cut
 
-my %ALLOWED_CONTRACT_TYPES = (
-    CALLE        => 1,
-    PUTE         => 1,
-    EXPIRYMISSE  => 1,
-    EXPIRYRANGEE => 1,
-    RANGE        => 1,
-    UPORDOWN     => 1,
-    ONETOUCH     => 1,
-    NOTOUCH      => 1,
-);
+my $jp                         = BOM::Platform::Runtime::LandingCompany::Registry->new->get('japan');
+my %ALLOWED_CONTRACT_TYPES     = map { $_ => 1 } @{$jp->legal_allowed_contract_types};
+my %ALLOWED_UNDERLYING_SYMBOLS = map { $_ => 1 } @{$jp->legal_allowed_underlyings};
 
 sub available_contracts_for_symbol {
     my $args         = shift;
@@ -40,32 +34,34 @@ sub available_contracts_for_symbol {
     my $exchange = $underlying->exchange;
     my ($open, $close, @offerings);
     if ($exchange->trades_on($now)) {
-        $open      = $exchange->opening_on($now)->epoch;
-        $close     = $exchange->closing_on($now)->epoch;
-        @offerings = @{_get_offerings($symbol)};
-        @offerings = _predefined_trading_period({
-            offerings => \@offerings,
-            exchange  => $exchange,
-            symbol    => $symbol,
-            date      => $now,
-        });
-
-        for my $o (@offerings) {
-            my $cc = $o->{contract_category};
-            my $bc = $o->{barrier_category};
-
-            my $cat = BOM::Product::Contract::Category->new($cc);
-            $o->{contract_category_display} = $cat->display_name;
-
-            $o->{barriers} = $cat->two_barriers ? 2 : 1;
-
-            _set_predefined_barriers({
-                underlying   => $underlying,
-                current_tick => $current_tick,
-                contract     => $o,
-                date         => $now,
+        $open  = $exchange->opening_on($now)->epoch;
+        $close = $exchange->closing_on($now)->epoch;
+        if ($ALLOWED_UNDERLYING_SYMBOLS{$symbol}) {
+            @offerings = @{_get_offerings($symbol)};
+            @offerings = _predefined_trading_period({
+                offerings => \@offerings,
+                exchange  => $exchange,
+                symbol    => $symbol,
+                date      => $now,
             });
 
+            for my $o (@offerings) {
+                my $cc = $o->{contract_category};
+                my $bc = $o->{barrier_category};
+
+                my $cat = BOM::Product::Contract::Category->new($cc);
+                $o->{contract_category_display} = $cat->display_name;
+
+                $o->{barriers} = $cat->two_barriers ? 2 : 1;
+
+                _set_predefined_barriers({
+                    underlying   => $underlying,
+                    current_tick => $current_tick,
+                    contract     => $o,
+                    date         => $now,
+                });
+
+            }
         }
     }
     return {
