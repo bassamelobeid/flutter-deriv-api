@@ -33,7 +33,7 @@ my $original_contract =
 
 my ($pricing_parameters, $start);
 if ($original_contract) {
-    $start = $params{start} ? Date::Utility->new($param{start}) : $original_contract->date_start;
+    $start = $params{start} ? Date::Utility->new($params{start}) : $original_contract->date_start;
     my $contract = make_similar_contract($original_contract, {priced_at => $start});
 
     $pricing_parameters =
