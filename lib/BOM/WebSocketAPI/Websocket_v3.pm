@@ -231,16 +231,13 @@ my @dispatch = (
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1, 'payments'
     ],
 
-    ['api_token',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,            1, 'admin'],
-    ['tnc_approval',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval,         1, 'admin'],
-    ['login_history',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history,        1, 'read'],
-    ['set_account_currency', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency, 1, 'admin'],
+    ['api_token',                \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,                1, 'admin'],
+    ['tnc_approval',             \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval,             1, 'admin'],
+    ['login_history',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history,            1, 'read'],
+    ['set_account_currency',     \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency,     1, 'admin'],
+    ['set_financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_financial_assessment, 1, 'admin'],
 
-    ['paymentagent_list', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list, 0],
-    [
-        'verify_email',
-        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0
-    ],
+    ['verify_email', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0],
     [
         'new_account_virtual',
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0
@@ -266,8 +263,9 @@ my @dispatch = (
     ['app_get',      \&BOM::WebSocketAPI::v3::Wrapper::App::get,      1, 'admin'],
     ['app_delete',   \&BOM::WebSocketAPI::v3::Wrapper::App::delete,   1, 'admin'],
 
-    ['topup_virtual', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual, 1, 'trade'],
-    ['get_limits',    \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,    1, 'read'],
+    ['topup_virtual',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual,     1, 'trade'],
+    ['get_limits',        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,        1, 'read'],
+    ['paymentagent_list', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list, 0],
     [
         'paymentagent_withdraw',
         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw, 1, 'payments'
