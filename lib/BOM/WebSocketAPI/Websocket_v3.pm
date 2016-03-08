@@ -386,7 +386,7 @@ sub __handle {
         # None are much helpful in a well prepared DDoS.
         my $consumer = $c->stash('loginid') || $c->stash('connection_id');
 
-        if (_reached_limit_check($c->stash('connection_id'), $descriptor->{category}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
+        if (_reached_limit_check($consumer, $descriptor->{category}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
             return $c->new_error($descriptor->{category}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $descriptor->{category}));
         }
 
