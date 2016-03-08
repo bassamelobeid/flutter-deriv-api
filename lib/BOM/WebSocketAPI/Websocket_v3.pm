@@ -381,11 +381,16 @@ sub __handle {
             $c->stash('connection_id' => Data::UUID->new()->create_str());
         }
 
+        my $t0 = [Time::HiRes::gettimeofday];
+
+        # For authorized calls that are heavier we will limit based on loginid
+        # For unauthorized calls that are less heavy we will use connection id.
+        # None are much helpful in a well prepared DDoS.
+        my $consumer = $c->stash('loginid') || $c->stash('connection_id');
+
         if (_reached_limit_check($c->stash('connection_id'), $descriptor->{category}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
             return $c->new_error($descriptor->{category}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $descriptor->{category}));
         }
-
-        my $t0 = [Time::HiRes::gettimeofday];
 
         my $input_validation_result = $descriptor->{in_validator}->validate($p1);
         if (not $input_validation_result) {
