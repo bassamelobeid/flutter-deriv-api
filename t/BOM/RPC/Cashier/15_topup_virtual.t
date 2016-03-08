@@ -123,21 +123,21 @@ $old_balance = $balance;
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('您的余款已超出允许金额。', 'blance is higher');
 #withdraw some money to test critical limit value
 my $limit = BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->USD;
-my $withdrawal_money = $balance - $limit;
+my $withdrawal_money = $balance - $limit - 1;
 $test_client_vr->payment_legacy_payment(currency => 'USD', amount => - $withdrawal_money, payment_type => 'virtual_credit', remark => 'virtual money withdrawal');
 $account->load;
 $balance = $account->balance + 0;
-is($balance, $limit, 'balance is the value of limit');
+is($balance, $limit + 1, 'balance is a little less than the value of limit');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')->error_message_is('您的余款已超出允许金额。', 'blance is higher');
 
 $test_client_vr->payment_legacy_payment(currency => 'USD', amount => -1 , payment_type => 'virtual_credit', remark => 'virtual money withdrawal');
 $account->load;
 $balance = $account->balance + 0;
-is($balance, $limit - 1, 'balance less than limit');
+is($balance, $limit, 'balance is equal to limit');
 $c->call_ok($method, $params)->has_no_error->result_is_deeply({currency => 'USD', amount => $amount}, 'topup account successfully');
 $account->load;
 $balance = $account->balance + 0;
-is($balance, $limit - 1 + $amount, 'balance is topuped');
+is($balance, $limit + $amount, 'balance is topuped');
 
 # buy a contract to test the error of 'Please close out all open positions before requesting additional funds.'
 my $price = $balance - $limit - 1;
