@@ -70,6 +70,7 @@ has symbols_to_update => (
 );
 
 sub _build_symbols_to_update {
+    my $self  = shift;
     my @forex = BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market            => ['forex'],
         submarket         => ['major_pairs', 'minor_pairs'],
@@ -91,9 +92,10 @@ sub _build_symbols_to_update {
         @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
         qw(frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR)
         );
-
-    my @symbols = grep { !$skip_list{$_} } (@forex, @commodities, @quanto_currencies);
-
+    my @symbols =
+        (grep { $_ =~ /vol_points/ } (@{$self->file}))
+        ? grep { !$skip_list{$_} } (@forex, @commodities, @quanto_currencies)
+        : grep { !$skip_list{$_} } (@quanto_currencies);
     return \@symbols;
 }
 
@@ -174,7 +176,6 @@ sub run {
             }
         }
     }
-
     $self->_logger->debug(ref($self) . ' update complete.');
     $self->SUPER::run();
     return 1;
