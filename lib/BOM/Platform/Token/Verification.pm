@@ -63,10 +63,11 @@ sub new {                                    ## no critic RequireArgUnpack
             BOM::System::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN::' . $token);
         }
 
-        BOM::System::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN::' . $self->{token}, JSON::to_json($self));
         $self->{expires_in} ||= 3600;
-        BOM::System::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN_INDEX::' . $key, $self->{token});
+        BOM::System::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN::' . $self->{token}, JSON::to_json($self));
         BOM::System::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN::' . $self->{token}, $self->{expires_in});
+        BOM::System::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN_INDEX::' . $key, $self->{token});
+        BOM::System::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN_INDEX::' . $key, $self->{expires_in});
     }
     return bless $self, $package;
 }
