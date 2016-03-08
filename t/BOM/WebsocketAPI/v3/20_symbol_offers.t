@@ -59,6 +59,7 @@ $t = $t->send_ok({json => {contracts_for => 'R_50'}})->message_ok;
 my $contracts_for = decode_json($t->message->[1]);
 ok($contracts_for->{contracts_for});
 ok($contracts_for->{contracts_for}->{available});
+is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
 test_schema('contracts_for', $contracts_for);
 # test contracts_for japan
 $t = $t->send_ok({
@@ -69,6 +70,7 @@ $t = $t->send_ok({
 my $contracts_for_japan = decode_json($t->message->[1]);
 ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
+is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
 test_schema('contracts_for', $contracts_for_japan);
 
 $t = $t->send_ok({json => {trading_times => Date::Utility->new->date_yyyymmdd}})->message_ok;
