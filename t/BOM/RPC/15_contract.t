@@ -40,7 +40,7 @@ subtest 'validate_underlying' => sub{
 
   is_deeply(BOM::RPC::v3::Contract::validate_underlying('R_50'),{status => 1}, 'status 1 if everything ok');
   
-}
+};
 
 
 
