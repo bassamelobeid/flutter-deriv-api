@@ -23,8 +23,8 @@ sub get_duplicate_client() {
     FROM
         betonmarkets.client
     WHERE
-        UPPER(TRIM(BOTH ' ' FROM first_name))=(TRIM(BOTH ' ' FROM ?) AND
-        UPPER((TRIM(BOTH ' ' FROM last_name))=(TRIM(BOTH ' ' FROM ?) AND
+        UPPER(TRIM(BOTH ' ' FROM first_name))=(TRIM(BOTH ' ' FROM ?)) AND
+        UPPER(TRIM(BOTH ' ' FROM last_name))=(TRIM(BOTH ' ' FROM ?)) AND
         date_of_birth=? AND
         broker_code=?
 ";
