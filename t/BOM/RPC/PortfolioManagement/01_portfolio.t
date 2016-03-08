@@ -126,4 +126,44 @@ subtest 'Return empty client portfolio' => sub {
            ->result_is_deeply({ contracts => [] });
 };
 
+subtest 'Sell expired contracts' => sub {
+    lives_ok {
+        create_contract( $client, buy_bet => 1, is_expired => 1 );
+    } 'Create expired contract for sell';
+
+    $rpc_ct->call_ok(@params)
+           ->has_no_system_error
+           ->has_no_error
+           ->result_is_deeply({ contracts => [] });
+};
+
+subtest 'Return not expired client contracts' => sub {
+    my $contract;
+    lives_ok {
+        $contract = create_contract( $client, buy_bet => 1 );
+    } 'Create not expired contract';
+
+    $rpc_ct->call_ok(@params)
+           ->has_no_system_error
+           ->has_no_error
+           ->result_value_is(
+               sub { shift->{contracts}->[0]->{contract_id} },
+               $contract->financial_market_bet_record->id
+           );
+};
+
 done_testing();
+
+sub create_contract {
+    my ( $client, %params ) = @_;
+
+    my $account = $client->set_default_account('USD');
+    return BOM::Test::Data::Utility::UnitTestDatabase::create_valid_contract({
+        type               => 'fmb_higher_lower_call_buy',
+        short_code_prefix  => 'CALL_R_100_26.49',
+        short_code_postfix => 'S0P_0',
+        account_id         => $account->id,
+        buy_bet            => 0,
+        %params,
+    });
+}
