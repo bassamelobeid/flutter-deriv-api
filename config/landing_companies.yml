@@ -242,6 +242,16 @@
       - JPY
     legal_allowed_markets:
       - forex
+    legal_allowed_underlyings:
+      - frxAUDJPY
+      - frxAUDUSD
+      - frxEURGBP
+      - frxEURJPY
+      - frxEURUSD
+      - frxGBPJPY
+      - frxGBPUSD
+      - frxUSDCAD
+      - frxUSDJPY
     legal_allowed_contract_categories:
       - callput
       - endsinout
