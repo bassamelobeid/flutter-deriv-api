@@ -64,14 +64,6 @@ my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     ask        => 76.2030,
 });
 
-my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => $now->epoch - 52,
-    underlying => 'R_50',
-    quote      => 76.6996,
-    bid        => 76.7010,
-    ask        => 76.3030,
-});
-
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         underlying => 'R_50',
