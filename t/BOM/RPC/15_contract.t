@@ -21,9 +21,9 @@ subtest 'validate_symbol' => sub{
 };
 
 subtest 'validate_license' => sub {
-  is(BOM::RPC::v3::Contract::validate_license('R_50'), undef, "return undef if symbol $sym is is realtime ");
+  is(BOM::RPC::v3::Contract::validate_license('R_50'), undef, "return undef if symbol is is realtime ");
   
-  diag(Dumper(BOM::RPC::v3::Contract::validate_license('FUTHSI_BOM')));#, undef, "return undef if symbol $sym is realtime");
+  diag(Dumper(BOM::RPC::v3::Contract::validate_license('FUTHSI_BOM')));#, undef, "return error if symbol is realtime");
   
 };
 
