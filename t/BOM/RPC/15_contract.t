@@ -10,6 +10,7 @@ use Data::Dumper;
 
 subtest 'validate_symbol' => sub{
   diag(Dumper(BOM::RPC::v3::Contract::validate_symbol('R_50')));
+  diag(Dumper(BOM::RPC::v3::Contract::validate_symbol('abcd')));
   ok(1);
 };
 
