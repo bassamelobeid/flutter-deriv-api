@@ -29,7 +29,6 @@ my @params = (
         language => 'RU',
         source => 1,
         country => 'ru',
-        args => { sell_expired => 1 },
     }
 );
 
