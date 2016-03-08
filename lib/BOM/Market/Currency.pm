@@ -18,7 +18,7 @@ use Scalar::Util qw(looks_like_number);
 use List::Util qw(first);
 
 use Date::Utility;
-use BOM::MarketData::Holiday;
+use Quant::Framework::Holiday;
 use Quant::Framework::InterestRate;
 use Quant::Framework::ImpliedRate;
 
@@ -61,8 +61,9 @@ has holidays => (
 
 sub _build_holidays {
     my $self = shift;
+    my $chronicle_reader = BOM::System::Chronicle::get_chronicle_reader();
 
-    my $holidays_ref = BOM::MarketData::Holiday::get_holidays_for($self->symbol, $self->for_date);
+    my $holidays_ref = Quant::Framework::Holiday::get_holidays_for($chronicle_reader, $self->symbol, $self->for_date);
     my %holidays = map { Date::Utility->new($_)->days_since_epoch => $holidays_ref->{$_} } keys %$holidays_ref;
     my $year = $self->for_date ? $self->for_date->year : Date::Utility->new->year;
     # pseudo-holiday for country is on 24-Dec and 31-Dec annually
