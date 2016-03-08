@@ -60,7 +60,7 @@ is $res->{get_limits}->{open_positions}, 60;
 test_schema('get_limits', $res);
 
 my $args = {
-    "financial_assessment"                 => 1,
+    "set_financial_assessment"             => 1,
     "forex_trading_experience"             => "Over 3 years",
     "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
     "indices_trading_experience"           => "1-2 years",
@@ -86,8 +86,8 @@ is($res->{error}->{code}, 'InputValidationFailed', 'Missing required field: esti
 $args->{estimated_worth} = '$100,000 - $250,000';
 $t = $t->send_ok({json => $args})->message_ok;
 $res = decode_json($t->message->[1]);
-cmp_ok($res->{financial_assessment}->{score}, "<", 60, "Correct score");
-is($res->{financial_assessment}->{is_professional}, 0, "Marked correctly as is_professional");
+cmp_ok($res->{set_financial_assessment}->{score}, "<", 60, "Correct score");
+is($res->{set_financial_assessment}->{is_professional}, 0, "Marked correctly as is_professional");
 
 $t->finish_ok;
 

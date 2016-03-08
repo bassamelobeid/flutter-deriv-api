@@ -231,11 +231,11 @@ my @dispatch = (
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1, 'payments'
     ],
 
-    ['api_token',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,            1, 'admin'],
-    ['tnc_approval',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval,         1, 'admin'],
-    ['login_history',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history,        1, 'read'],
-    ['set_account_currency', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency, 1, 'admin'],
-    ['financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::financial_assessment, 1, 'admin'],
+    ['api_token',                \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,                1, 'admin'],
+    ['tnc_approval',             \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval,             1, 'admin'],
+    ['login_history',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history,            1, 'read'],
+    ['set_account_currency',     \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency,     1, 'admin'],
+    ['set_financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_financial_assessment, 1, 'admin'],
 
     ['verify_email', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0],
     [

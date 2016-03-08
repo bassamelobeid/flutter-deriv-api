@@ -1,14 +1,14 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Financial Assessment Receive",
-  "description": "Financial Assessment Receive",
+  "title": "Set Financial Assessment Receive",
+  "description": "Set Financial Assessment Receive",
   "properties": {
     "echo_req": {
       "title": "Echo request",
       "description": "Echo of the request made"
     },
-    "financial_assessment": {
+    "set_financial_assessment": {
       "type": "object",
       "title": "Financial Assessment Details",
       "description": "Financial Assessment score and appropriate status",
@@ -26,7 +26,7 @@
     },
     "msg_type": {
       "type": "string",
-      "description": "financial_assessment"
+      "description": "set_financial_assessment"
     },
     "req_id": {
       "type": "integer",

@@ -1,10 +1,10 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Financial assessment details send",
+  "title": "Save Financial assessment details send",
   "description": "This call sets the financial assessement details based on the client's answers to analyse whether he possess the experience and knowledge to understand the risks involved with binary options trading.",
   "properties": {
-    "financial_assessment": {
+    "set_financial_assessment": {
       "type": "integer",
       "description": "Must be 1",
       "pattern": "^1$"
