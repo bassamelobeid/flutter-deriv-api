@@ -606,7 +606,7 @@ subtest $method => sub {
         BOM::RPC::v3::Utility::_check_password({
                 old_password => 'old_password',
                 new_password => 'old_password',
-                user_pass    => $oldpass;
+                user_pass    => $oldpass
             }
             )->{error}->{message_to_client},
         'New password is same as old password.',
