@@ -183,7 +183,6 @@ my $contract_data = {
     barrier      => 'S0P',
 };
 my $contract = produce_contract($contract_data);
-
 my $txn_data = {
     client        => $test_client_vr,
     contract      => $contract,
@@ -193,11 +192,11 @@ my $txn_data = {
     purchase_date => $now->epoch,
 };
 my $txn = BOM::Product::Transaction->new($txn_data);
-
 is($txn->buy(skip_validation => 1), undef, 'buy contract without error');
 $account->load;
 $balance = $account->balance + 0;
 is($balance, $limit - $price, 'balance is reduced for buying contract');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
     ->error_message_is('对不起，您还有未平仓的头寸。在请求额外资金前，请了结所有未平仓头寸。', 'have opened bets');
+
 done_testing();
