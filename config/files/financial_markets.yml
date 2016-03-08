@@ -25,6 +25,8 @@ commodities:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
             EXPIRYMISS: 4
@@ -64,6 +66,8 @@ forex:
         apply_traded_markets_markup: 1
         apply_butterfly_markup: 1
         digital_spread:
+            CALLE: 3.5
+            PUTE: 3.5
             CALL: 3.5
             PUT: 3.5
             EXPIRYMISS: 3.5
@@ -92,6 +96,8 @@ futures:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
             EXPIRYMISS: 4
@@ -126,6 +132,8 @@ indices:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
             EXPIRYMISS: 4
@@ -165,6 +173,8 @@ stocks:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
             EXPIRYMISS: 4
@@ -198,6 +208,8 @@ random:
         - 'random'
     markups:
         digital_spread:
+            CALLE: 3
+            PUTE: 3
             CALL: 3
             PUT: 3
             EXPIRYMISS: 3
