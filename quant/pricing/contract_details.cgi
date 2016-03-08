@@ -28,7 +28,9 @@ my $original_contract =
 
 if ($original_contract) {
     $start = $params{start} ? Date::Utility->new($params{start}) : $original_contract->date_start;
-    my $contract = make_similar_contract($original_contract, {priced_at => $start});
+    my $pricing_args = $original_contract->build_parameters;
+    $pricing_args->{date_pricing} = $start;
+    my $contract = produce_contract($pricing_args);
 
     $pricing_parameters =
           $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex' ? _get_pricing_parameter_from_IH_pricer($contract)
@@ -79,7 +81,7 @@ sub _get_pricing_parameter_from_IH_pricer {
     my $ask_probability = $contract->ask_probability;
     $pricing_parameters->{ask_probability} = {
         TOTAL          => $ask_probability->amount,
-        bs_probability => $ask_probability->peek_amount(lc($contract->code) . '_theoretical_probability'),
+        theo_probability => $ask_probability->peek_amount(lc($contract->code) . '_theoretical_probability'),
         map { $_ => $ask_probability->peek_amount($_) } qw(intraday_delta_correction vega_correction risk_markup commission_markup),
     };
 
