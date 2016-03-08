@@ -12,23 +12,23 @@
         <p><b> Contract's Ask Price = [% contract.currency  %][%pricing_parameters.ask_price %]</b></p>
         <table id="dtr" border="1" cellpadding="1" cellspacing="0">
                 <tr><b> Contract's ask probability </br></tr>
-                [% FOREACH ask_key =pricing_parameters.ask_probability.keys %]
+                [% FOREACH ask_key =pricing_parameters.ask_probability.keys.sort%]
                 <tr><td>[% ask_key %]</td>
                     <td> [% pricing_parameters.ask_probability.$ask_key %]</td>
                 </tr>
                 [% END %]
         </table>
-          [% FOREACH key =pricing_parameters.keys %]
+          [% FOREACH key =pricing_parameters.keys.sort %]
                <p><table id="dtr" border="1" cellpadding="1" cellspacing="0">
                [% IF key != 'ask_probability' AND key != 'ask_price' %]
                 <tr><td><b> [% key %] </b></td></tr>
-                    [% FOREACH sub_keys = pricing_parameters.$key.keys %]
+                    [% FOREACH sub_keys = pricing_parameters.$key.keys.sort %]
                          <tr><td>[% sub_keys %]</td>
                           [% IF key != 'numeraire_probability' %]
                            <td> [% pricing_parameters.$key.$sub_keys %]</td>
                            [% END %]
                          </tr>
-                            [% FOREACH sub_sub_keys = pricing_parameters.$key.$sub_keys.keys %]
+                            [% FOREACH sub_sub_keys = pricing_parameters.$key.$sub_keys.keys.sort %]
                                 <tr><td><td>[% sub_sub_keys %]</td></td>
                                 <td> [% pricing_parameters.$key.$sub_keys.$sub_sub_keys %]</td>
                              </tr>
