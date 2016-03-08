@@ -420,6 +420,11 @@ WLDAUD: &smart_fx
           max: 10h
           min: 2m
           payout_limit: 1000
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
 WLDEUR: *smart_fx
 WLDGBP: *smart_fx
 WLDUSD: *smart_fx
