@@ -925,10 +925,10 @@ subtest $method => sub {
     );
 };
 
-$method = 'financial_assessment';
+$method = 'set_financial_assessment';
 subtest $method => sub {
     my $args = {
-        "financial_assessment"                 => 1,
+        "set_financial_assessment"             => 1,
         "forex_trading_experience"             => "Over 3 years",
         "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
         "indices_trading_experience"           => "1-2 years",

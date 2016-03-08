@@ -990,7 +990,7 @@ sub set_account_currency {
     return $response;
 }
 
-sub financial_assessment {
+sub set_financial_assessment {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
