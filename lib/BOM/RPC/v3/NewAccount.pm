@@ -341,7 +341,7 @@ sub _get_client_details {
     return {details => $details};
 }
 
-sub knowledge_test {
+sub jp_knowledge_test {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
@@ -372,7 +372,7 @@ sub knowledge_test {
 
         if ($now->days_between($last_test_date) <= 0) {
             return BOM::RPC::v3::Utility::create_error({
-                code              => 'KnowledgeTest',
+                code              => 'JPKnowledgeTest',
                 message_to_client => localize('You are not allowed to take Knowledge Test more than once per day.'),
             });
         }
@@ -381,7 +381,7 @@ sub knowledge_test {
 
     unless ($status_ok) {
         return BOM::RPC::v3::Utility::create_error({
-            code              => 'KnowledgeTest',
+            code              => 'JPKnowledgeTest',
             message_to_client => localize('You are not eligible for Knowledge Test.'),
         });
     }
@@ -401,13 +401,13 @@ sub knowledge_test {
     my $financial_data = from_json $jp_client->financial_assessment->data;
 
     my $results;
-    $results = $financial_data->{knowledge_test} if (exists $financial_data->{knowledge_test});
+    $results = $financial_data->{jp_knowledge_test} if (exists $financial_data->{jp_knowledge_test});
     push @{$results}, {
             score    => $score,
             status   => $status,
             datetime => $now->datetime_ddmmmyy_hhmmss,
         };
-    $financial_data->{knowledge_test} = $results;
+    $financial_data->{jp_knowledge_test} = $results;
     $client->financial_assessment({ data => encode_json($financial_data) });
 
     if (not $jp_client->save()) {
@@ -424,7 +424,7 @@ sub knowledge_test {
             message            => [localize('Please reply to this email to send us documents for verification.')],
             use_email_template => 1,
         });
-        BOM::System::AuditLog::log('Knowledge test pass for ' . $jp_client->loginid . ' . System email sent to require for docs.', $client->loginid);
+        BOM::System::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to require for docs.', $client->loginid);
     }
     return 1;
 }
