@@ -18,7 +18,7 @@ use BOM::Platform::Client;
 my $t = build_mojo_test();
 
 my $email    = 'abc@binary.com';
-my $password = 'jskjd8292922';
+my $password = 'jskjP8292922';
 my $hash_pwd = BOM::System::Password::hashpw($password);
 
 my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -59,7 +59,7 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $vr_1;
 
-my $new_password = 'jskjd8292923';
+my $new_password = 'jskjD8292923';
 my $new_hash_pwd = BOM::System::Password::hashpw($new_password);
 
 # change password wrongly
