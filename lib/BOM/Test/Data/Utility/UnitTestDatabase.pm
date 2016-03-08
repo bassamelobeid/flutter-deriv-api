@@ -261,13 +261,15 @@ sub create_valid_contract {
     my $args = shift;
 
     my $is_expired = $args->{is_expired};
-    my $start = Date::Utility->new( $args->{start_time} );
+    my $start_time = $args->{start_time};
+
+    my $start = Date::Utility->new($start_time);
     $start = $start->minus_time_interval('1h 2m') if $is_expired;
     my $expire = $start->plus_time_interval('2m');
 
-    for my $epoch ( $start->epoch, $start->epoch + 1, $expire->epoch ) {
-        my $api = BOM::Market::Data::DatabaseAPI->new( underlying => 'R_100' );
-        my $tick = $api->tick_at({ end_time => $epoch });
+    for my $epoch ($start->epoch, $start->epoch + 1, $expire->epoch) {
+        my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'R_100');
+        my $tick = $api->tick_at({end_time => $epoch});
         next if $tick;
 
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -277,12 +279,9 @@ sub create_valid_contract {
     }
 
     my $short_code;
-    $short_code =
-        join( '_', $args->{short_code_prefix},
-                   $start->epoch(),
-                   $expire->epoch(),
-                   $args->{short_code_postfix},
-        ) if $args->{short_code_prefix} && $args->{short_code_postfix};
+    if ($args->{short_code_prefix} && $args->{short_code_postfix}) {
+        $short_code = join('_', $args->{short_code_prefix}, $start->epoch(), $expire->epoch(), $args->{short_code_postfix});
+    }
 
     $args->{short_code} = $short_code if $short_code;
 
