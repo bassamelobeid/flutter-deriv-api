@@ -29,7 +29,7 @@ sub new_account_virtual {
     my $args   = $params->{args};
     my $err_code;
 
-    if ($err_code = BOM::RPC::v3::Utility::_check_password($args->{client_password})) {
+    if ($err_code = BOM::RPC::v3::Utility::_check_password({new_password => $args->{client_password}})) {
         return $err_code;
     }
 

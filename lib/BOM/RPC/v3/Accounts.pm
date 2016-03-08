@@ -291,7 +291,13 @@ sub change_password {
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    if (my $pass_error = BOM::RPC::v3::Utility::_check_password($args->{old_password}, $args->{new_password}, $user->password)) {
+    if (
+        my $pass_error = BOM::RPC::v3::Utility::_check_password({
+                old_password => $args->{old_password},
+                new_password => $args->{new_password},
+                user_pass    => $user->password
+            }))
+    {
         return $pass_error;
     }
 
@@ -367,7 +373,7 @@ sub cashier_password {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
 
-        return $error_sub if ($error_sub = BOM::RPC::v3::Utility::_check_password($user->password));
+        return $error_sub if ($error_sub = BOM::RPC::v3::Utility::_check_password({new_password => $lock_password}));
 
         $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
         if (not $client->save()) {
