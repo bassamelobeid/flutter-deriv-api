@@ -156,7 +156,7 @@ sub _check_password {
                 code              => 'ChangePasswordError',
                 message_to_client => localize('New password is same as old password.')}) if ($new_password eq $old_password);
     } else {
-        $new_password = shift;
+        $new_password = $args->{new_password};
     }
     return BOM::RPC::v3::Utility::create_error({
             code              => 'ChangePasswordError',
