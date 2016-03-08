@@ -56,6 +56,7 @@ sub output_as_csv {
     my $csv_name = 'contract.xls';
     PrintContentType_excel($csv_name);
     print "ASK_PRICE " . $param->{ask_price} . "\n";
+    print "\n";
     foreach my $key (keys %{$param}) {
         if ($key eq 'ask_price') { next; }
         print uc($key) . "\n";
