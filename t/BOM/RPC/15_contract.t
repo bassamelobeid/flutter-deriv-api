@@ -6,6 +6,7 @@ use Test::Most;
 use Test::Mojo;
 
 use BOM::RPC::v3::Contract;
+use BOM::Platform::Context qw (request);
 use Data::Dumper;
 request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
 subtest 'validate_symbol' => sub{
