@@ -360,9 +360,9 @@ sub _set_predefined_barriers {
     }
 
     if ($contract->{barriers} == 1) {
-        my @available_barriers = values %$available_barriers;
-        $contract->{available_barriers} = \@available_barriers;
-        $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @available_barriers;
+        my @barriers = sort values %$available_barriers;
+        $contract->{available_barriers} = \@barriers;
+        $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @barriers;
     } elsif ($contract->{barriers} == 2) {
         $contract->{available_barriers} = _get_barriers_pair({
             contract_category  => $contract->{contract_category},
