@@ -135,6 +135,7 @@ sub startup {
                 '/api_token'                 => register('api_token',                 \&BOM::RPC::v3::Accounts::api_token),
                 '/login_history'             => register('login_history',             \&BOM::RPC::v3::Accounts::login_history),
                 '/set_account_currency'      => register('set_account_currency',      \&BOM::RPC::v3::Accounts::set_account_currency),
+                '/set_financial_assessment'  => register('set_financial_assessment',  \&BOM::RPC::v3::Accounts::set_financial_assessment),
                 '/verify_email'              => register('verify_email',              \&BOM::RPC::v3::NewAccount::verify_email),
                 '/send_ask'                  => register('send_ask',                  \&BOM::RPC::v3::Contract::send_ask),
                 '/get_bid'                   => register('get_bid',                   \&BOM::RPC::v3::Contract::get_bid),
