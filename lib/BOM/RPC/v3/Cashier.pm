@@ -914,7 +914,6 @@ sub topup_virtual {
 
     my $currency = $client->default_account->currency_code;
     if ($client->default_account->balance > BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->$currency) {
-      print "max: " . BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->$currency, "\n";
         return $error_sub->(localize('Your balance is higher than the permitted amount.'));
     }
 
