@@ -8,10 +8,9 @@ use DBI;
 use feature "state";
 
 sub read_dbh {
-    state $config = YAML::XS::LoadFile('/etc/rmg/feeddb.yml');
     return DBI->connect_cached(
-        "dbi:Pg:dbname=feed;port=5433;host=" . $config->{replica}->{ip},
-        "read", $config->{password} )
+        "dbi:Pg:dbname=feed-replica;port=6433;host=/var/run/postgresql",
+        "read", "", {pg_server_prepare => 0} )
       || die($DBI::errstr);
 }
 
