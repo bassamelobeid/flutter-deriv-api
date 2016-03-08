@@ -37,12 +37,6 @@ sub get_duplicate_client() {
     $dupe_sth->execute();
     my @dupe_record = $dupe_sth->fetchrow_array();
 
-    if (@dupe_record) {
-        warn "Possible duplicate registration attempted.  "
-            . "Attempt matches - loginid: $dupe_record[0], firstname: $dupe_record[1], "
-            . "lastname: $dupe_record[2], email: $dupe_record[4]";
-    }
-
     return @dupe_record;
 }
 
