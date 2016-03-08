@@ -7,7 +7,7 @@ use Test::Mojo;
 
 use BOM::RPC::v3::Contract;
 use Data::Dumper;
-
+my $request = BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'});
 subtest 'validate_symbol' => sub{
   is(BOM::RPC::v3::Contract::validate_symbol('R_50'), undef, "return undef if symbol is valid");
   is_deeply(BOM::RPC::v3::Contract::validate_symbol('invalid_symbol'),  {
