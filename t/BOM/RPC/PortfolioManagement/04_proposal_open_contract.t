@@ -122,7 +122,7 @@ subtest 'Auth client' => sub {
 subtest $method => sub {
     my $fmb;
     lives_ok {
-        $fmb = create_contract( $client, buy_bet => 1 )->financial_market_bet_record;
+        $fmb = create_fmb ( $client, buy_bet => 1 )->financial_market_bet_record;
     } 'Initial bet';
 
     my $expected_contract_data;
@@ -163,11 +163,11 @@ subtest $method => sub {
 
 done_testing();
 
-sub create_contract {
+sub create_fmb {
     my ( $client, %params ) = @_;
 
     my $account = $client->set_default_account('USD');
-    return BOM::Test::Data::Utility::UnitTestDatabase::create_valid_contract({
+    return BOM::Test::Data::Utility::UnitTestDatabase::create_fmb_with_ticks({
         type               => 'fmb_higher_lower_call_buy',
         short_code_prefix  => 'CALL_R_100_26.49',
         short_code_postfix => 'S0P_0',
