@@ -140,5 +140,60 @@ subtest 'asian' => sub {
         is $c->underlying->pip_size, 0.0001, 'underlying pip size';
         cmp_ok $c->barrier->as_absolute, '==', 101.50000, 'correct barrier with one more decimal in pip size';
     }
-    'build from shortcode';
+    'build from shortcode'; 
+};
+
+subtest '2000GMT FX Blackout' => sub {
+    lives_ok{
+        my $time_22GMT = Date::Utility->new('2016-03-09 22:00:00');
+        
+        #Case 1: FX Tick expiry
+        my $arg = {
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'CALL',
+        date_start   => $time_22GMT,
+        date_pricing => $time_22GMT,
+        duration     => '5t',
+        currency     => 'USD',
+        payout       => 100,
+        };
+        my $c = produce_contract($arg);
+        ok ($c->_validate_start_date=~"Tick Expiry Blackout")
+        
+        #Case 2: FX Non-Tick Expiry 
+        #my $arg = {
+        #underlying   => 'frxUSDJPY',
+        #bet_type     => 'CALL',
+        #date_start   => $time_22GMT,
+        #date_pricing => $time_22GMT,
+        #duration     => '2m',
+        #currency     => 'USD',
+        #payout       => 100,
+        #};
+        #my $c = produce_contract($arg);
+        
+        #Case 3: Non-FX Tick Expiry 
+        #my $arg = {
+        #underlying   => 'R_100',
+        #bet_type     => 'CALL',
+        #date_start   => $time_22GMT,
+        #date_pricing => $time_22GMT,
+        #duration     => '5t',
+        #currency     => 'USD',
+        #payout       => 100,
+        #};
+        #my $c = produce_contract($arg);
+        
+        #Case 4: Non-FX Non-Tick Expiry
+        #my $arg = {
+          # underlying   => 'R_100',
+          # bet_type     => 'CALL',
+         #  date_start   => $time_22GMT,
+        #   date_pricing => $time_22GMT,
+        #   duration     => '2m',
+        #   currency     => 'USD',
+        #   payout       => 100,
+        #   };
+        #my $c = produce_contract($arg);
+};
 };
