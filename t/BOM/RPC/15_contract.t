@@ -94,7 +94,24 @@ subtest 'prepare_ask' => sub {
   $p->{barrier} = 'S0P';
   $p->{barrier2} = 'S1P';
 
-  diag(Dumper(BOM::RPC::v3::Contract::prepare_ask($p)));
+  is_deeply(BOM::RPC::v3::Contract::prepare_ask($p),  {
+               'fixed_expiry' => 1,
+               'high_barrier' => 'S0P',
+               'subscribe' => 1,
+               'low_barrier' => 'S1P',
+               'duration' => '2',
+               'date_expiry' => '2015-01-01',
+               'amount_type' => 'payout',
+               'bet_type' => 'CALL',
+               'underlying' => 'R_50',
+               'currency' => 'USD',
+               'amount' => '2',
+               'proposal' => 1,
+               'date_start' => 0,
+               'duration_unit' => 'm'
+                                                      }, 'result is ok after added date_expiry and barrier and barrier2');
+
+  
 
 };
 
