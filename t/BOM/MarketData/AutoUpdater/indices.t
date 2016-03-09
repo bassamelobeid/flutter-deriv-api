@@ -7,26 +7,26 @@ use Test::More tests => 5;
 use Test::Exception;
 use Test::NoWarnings;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 use Date::Utility;
 use File::Temp;
 use File::Basename qw(dirname);
 use BOM::MarketData::AutoUpdater::Indices;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'ZAR',
         date   => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'TOP40',
         date   => Date::Utility->new,
     });
-my $test_surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+my $test_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'TOP40',
@@ -57,7 +57,7 @@ subtest 'surface data not found' => sub {
 
 subtest 'surface has not change' => sub {
     my $test_file        = dirname(__FILE__) . '/combined_without_DJI.xls';
-    my $existing_surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $existing_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
             symbol        => 'TOP40',

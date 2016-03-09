@@ -11,7 +11,6 @@ use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
 use Date::Utility;
 use BOM::Market::Underlying;
