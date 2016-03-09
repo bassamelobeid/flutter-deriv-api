@@ -157,8 +157,9 @@ subtest 'get_ask' => sub {
   "duration_unit"=> "s",
   "symbol"=> "R_50",
                };
-  BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
-  diag(Dumper(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params))));
+  #BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
+  my $result = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+  diag(Dumper($result));
   ok(1);
 };
 
