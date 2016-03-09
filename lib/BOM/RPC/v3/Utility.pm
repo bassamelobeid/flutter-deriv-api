@@ -141,11 +141,11 @@ sub is_verification_token_valid {
 }
 
 sub _check_password {
-    my ($new_password, $message);
+    my $message;
     my $args = shift;
+    my $new_password = $args->{new_password};
     if (keys %$args == 3) {
         my $old_password = $args->{old_password};
-        $new_password = $args->{new_password};
         my $user_pass = $args->{user_pass};
 
         return BOM::RPC::v3::Utility::create_error({
@@ -155,8 +155,6 @@ sub _check_password {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'ChangePasswordError',
                 message_to_client => localize('New password is same as old password.')}) if ($new_password eq $old_password);
-    } else {
-        $new_password = $args->{new_password};
     }
     return BOM::RPC::v3::Utility::create_error({
             code              => 'ChangePasswordError',
