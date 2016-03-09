@@ -1008,9 +1008,11 @@ subtest $method => sub {
     );
     my $mocked_client = Test::MockModule->new(ref($test_client));
     my $params        = {
-        language => 'ZH_CN',
-        token    => $token_vr,
-        args     => {address1 => 'Address 1'}};
+        language   => 'ZH_CN',
+        token      => $token_vr,
+        client_ip  => '127.0.0.1',
+        user_agent => 'agent',
+        args       => {address1 => 'Address 1'}};
     # in normal case the vr client's residence should not be null, so I update is as '' to simulate null
     $test_client_vr->residence('');
     $test_client_vr->save();
@@ -1038,13 +1040,13 @@ subtest $method => sub {
     );
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
-    print STDERR "here?\n";
+
     {
-      open(my $fh, ">/dev/null");
-      local *STDERR = $fh;
-      ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
+        #suppress stderr error
+        open(my $fh, ">/dev/null");
+        local *STDERR = $fh;
+        ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
     }
-    print STDERR "end\n";
 
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
