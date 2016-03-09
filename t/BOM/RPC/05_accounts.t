@@ -12,7 +12,7 @@ use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Accounts;
@@ -50,9 +50,7 @@ sub call_response {
 
 package main;
 
-################################################################################
 # init db
-################################################################################
 my $email       = 'abc@binary.com';
 my $password    = 'jskjd8292922';
 my $hash_pwd    = BOM::System::Password::hashpw($password);
@@ -97,7 +95,7 @@ my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test toke
 my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
@@ -106,7 +104,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 my $now        = Date::Utility->new('2005-09-21 06:46:00');
 my $underlying = BOM::Market::Underlying->new('R_50');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_50',
@@ -140,16 +138,10 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
-################################################################################
 # test begin
-################################################################################
-
 my $t = Test::Mojo->new('BOM::RPC');
 my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
-################################################################################
-# payout_currencies
-################################################################################
 my $method = 'payout_currencies';
 subtest $method => sub {
     is_deeply(
@@ -179,9 +171,6 @@ subtest $method => sub {
     is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies if no token");
 };
 
-################################################################################
-# landing_company
-################################################################################
 $method = 'landing_company';
 subtest $method => sub {
     is_deeply(
@@ -206,9 +195,6 @@ subtest $method => sub {
     ok(!$c->tcall($method, {args => {landing_company => 'hk'}})->{financial_company}, "hk have no financial_company");
 };
 
-################################################################################
-# landing_company_details
-################################################################################
 $method = 'landing_company_details';
 subtest $method => sub {
     is_deeply(
@@ -229,9 +215,6 @@ subtest $method => sub {
     is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name}, 'Binary (C.R.) S.A.', "details result ok");
 };
 
-################################################################################
-# statement
-################################################################################
 $method = 'statement';
 subtest $method => sub {
     is(
@@ -330,10 +313,8 @@ subtest $method => sub {
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
 
 };
-################################################################################
-# profit_table
-################################################################################
 
+# profit_table
 $method = 'profit_table';
 subtest $method => sub {
     is(
@@ -461,9 +442,6 @@ subtest $method => sub {
     );
 };
 
-################################################################################
-# balance
-################################################################################
 $method = 'balance';
 subtest $method => sub {
     is(
@@ -526,9 +504,6 @@ subtest $method => sub {
     );
 };
 
-################################################################################
-# get_account_status
-################################################################################
 $method = 'get_account_status';
 subtest $method => sub {
     is(
@@ -586,9 +561,6 @@ subtest $method => sub {
 
 };
 
-################################################################################
-# change_password
-################################################################################
 $method = 'change_password';
 subtest $method => sub {
     my $oldpass = '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjNQ=';
@@ -725,9 +697,6 @@ subtest $method => sub {
     $password = $new_password;
 };
 
-################################################################################
-# cashier_password
-################################################################################
 $method = 'cashier_password';
 subtest $method => sub {
 
@@ -870,9 +839,6 @@ subtest $method => sub {
     clear_mailbox();
 };
 
-################################################################################
-# get_settings
-################################################################################
 $method = 'get_settings';
 subtest $method => sub {
     is(
@@ -962,9 +928,47 @@ subtest $method => sub {
     );
 };
 
-################################################################################
-# set_settings
-################################################################################
+$method = 'set_financial_assessment';
+subtest $method => sub {
+    my $args = {
+        "set_financial_assessment"             => 1,
+        "forex_trading_experience"             => "Over 3 years",
+        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
+        "indices_trading_experience"           => "1-2 years",
+        "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
+        "commodities_trading_experience"       => "1-2 years",
+        "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
+        "stocks_trading_experience"            => "1-2 years",
+        "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
+        "other_derivatives_trading_experience" => "Over 3 years",
+        "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
+        "other_instruments_trading_experience" => "Over 3 years",
+        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
+        "employment_industry"                  => "Finance",
+        "education_level"                      => "Secondary",
+        "income_source"                        => "Self-Employed",
+        "net_income"                           => '$25,000 - $100,000',
+        "estimated_worth"                      => '$100,000 - $250,000'
+    };
+
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token_vr,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token1
+        });
+    cmp_ok($res->{score}, "<", 60, "Got correct score");
+    is($res->{is_professional}, 0, "As score is less than 60 so its marked as not professional");
+};
+
 $method = 'set_settings';
 subtest $method => sub {
     is(
@@ -1064,6 +1068,171 @@ subtest $method => sub {
     ok(%msg, 'send a email to client');
     like($msg{body}, qr/>address line 1, address line 2, address city, address state, 12345, Indonesia/s, 'email content correct');
     clear_mailbox();
+};
+
+# set_self_exclusion && get_self_exclusion
+$method = 'set_self_exclusion';
+subtest 'get and set self_exclusion' => sub {
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => '12345'
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => undef,
+            }
+            )->{error}{message_to_client},
+        '令牌无效。',
+        'invalid token error'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                language => 'ZH_CN',
+                token    => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        '此账户不可用。',
+        'check authorization'
+    );
+
+    my $params = {
+        language => 'ZH_CN',
+        token    => $token_vr,
+        args     => {}};
+    is($c->tcall($method, $params)->{error}{message_to_client}, "权限不足。", 'vr client cannot set exclusion');
+    $params->{token} = $token1;
+    is($c->tcall($method, $params)->{error}{message_to_client}, "请提供至少一个自我禁止设置。", "need one exclusion");
+    $params->{args} = {
+        set_self_exclusion => 1,
+        max_balance        => 10000,
+        max_open_bets      => 100,
+        max_turnover       => undef,    # null should be OK to pass
+        max_7day_losses    => 0,        # 0 is ok to pass but not saved
+    };
+    clear_mailbox();
+    is($c->tcall($method, $params)->{status}, 1, "update self_exclusion ok");
+    delete $params->{args};
+    is_deeply(
+        $c->tcall('get_self_exclusion', $params),
+        {
+            'max_open_bets' => '100',
+            'max_balance'   => '10000'
+        },
+        'get self_exclusion ok'
+    );
+    my %msg = get_email_by_address_subject(
+        email   => 'qa-alerts@regentmarkets.com,support@binary.com',
+        subject => qr/Client set self-exclusion limits/
+    );
+    ok(%msg, "msg sent to support email");
+    like($msg{body}, qr/Maximum number of open positions: 100.*Maximum account balance: 10000/s, 'email content is ok');
+    $params->{args} = {
+        set_self_exclusion => 1,
+        max_balance        => 10001,
+        max_turnover       => 1000,
+        max_open_bets      => 100,
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "请输入0和10000之间的数字。",
+            'details'           => 'max_balance',
+            'code'              => 'SetSelfExclusionError'
+        });
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9999,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440 * 42 + 1,
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "交易期持续时间限制不能大于 6周。",
+            'details'           => 'session_duration_limit',
+            'code'              => 'SetSelfExclusionError'
+        });
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9999,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440,
+        exclude_until          => '2010-01-01'
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "禁止时间必须在今日之后。",
+            'details'           => 'exclude_until',
+            'code'              => 'SetSelfExclusionError'
+        });
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9999,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440,
+        exclude_until          => DateTime->now()->add(months => 3)->ymd
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "禁止时间不能少于6个月。",
+            'details'           => 'exclude_until',
+            'code'              => 'SetSelfExclusionError'
+        });
+
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9999,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440,
+        exclude_until          => DateTime->now()->add(years => 6)->ymd
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "禁止时间不能超过五年。",
+            'details'           => 'exclude_until',
+            'code'              => 'SetSelfExclusionError'
+        });
+    my $exclude_until = DateTime->now()->add(months => 7)->ymd;
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9998,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440,
+        exclude_until          => $exclude_until,
+    };
+    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
+
+    delete $params->{args};
+    is($c->tcall('get_self_exclusion', $params)->{error}{message_to_client}, '令牌无效。', 'this client is inivalid now');
+
+    $test_client->load();
+    my $self_excl = $test_client->get_self_exclusion;
+    is $self_excl->max_balance, 9998, 'set correct in db';
+    is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
+    is $self_excl->session_duration_limit, 1440, 'all good';
+
 };
 
 done_testing();
