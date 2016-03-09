@@ -158,42 +158,51 @@ subtest '2000GMT FX Blackout' => sub {
         payout       => 100,
         };
         my $c = produce_contract($arg);
-        ok ($c->_validate_start_date=~"Tick Expiry Blackout")
-        
+        my @error = $c->_validate_start_date;
+        ok @error, 'has error';
+        is scalar(@error), 1, 'one error received';
+        ok $error[0]->{message} =~ /Tick Expiry Blackout/, 'correct error received';
+
         #Case 2: FX Non-Tick Expiry 
-        #my $arg = {
-        #underlying   => 'frxUSDJPY',
-        #bet_type     => 'CALL',
-        #date_start   => $time_22GMT,
-        #date_pricing => $time_22GMT,
-        #duration     => '2m',
-        #currency     => 'USD',
-        #payout       => 100,
-        #};
-        #my $c = produce_contract($arg);
-        
+        my $arg = {
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'CALL',
+        date_start   => $time_22GMT,
+        date_pricing => $time_22GMT,
+        duration     => '2m',
+        currency     => 'USD',
+        payout       => 100,
+        };
+        my $c = produce_contract($arg);
+        my @error = $c->_validate_start_date;
+        ok !@error, 'has error';
+         
         #Case 3: Non-FX Tick Expiry 
-        #my $arg = {
-        #underlying   => 'R_100',
-        #bet_type     => 'CALL',
-        #date_start   => $time_22GMT,
-        #date_pricing => $time_22GMT,
-        #duration     => '5t',
-        #currency     => 'USD',
-        #payout       => 100,
-        #};
-        #my $c = produce_contract($arg);
+        my $arg = {
+        underlying   => 'R_100',
+        bet_type     => 'CALL',
+        date_start   => $time_22GMT,
+        date_pricing => $time_22GMT,
+        duration     => '5t',
+        currency     => 'USD',
+        payout       => 100,
+        };
+        my $c = produce_contract($arg);
+        my @error = $c->_validate_start_date;
+        ok !@error, 'has error';
         
         #Case 4: Non-FX Non-Tick Expiry
-        #my $arg = {
-          # underlying   => 'R_100',
-          # bet_type     => 'CALL',
-         #  date_start   => $time_22GMT,
-        #   date_pricing => $time_22GMT,
-        #   duration     => '2m',
-        #   currency     => 'USD',
-        #   payout       => 100,
-        #   };
-        #my $c = produce_contract($arg);
+        my $arg = {
+           underlying   => 'R_100',
+           bet_type     => 'CALL',
+           date_start   => $time_22GMT,
+           date_pricing => $time_22GMT,
+           duration     => '2m',
+           currency     => 'USD',
+           payout       => 100,
+           };
+        my $c = produce_contract($arg);
+        my @error = $c->_validate_start_date;
+        ok !@error, 'has error';
 };
 };
