@@ -230,7 +230,7 @@ foreach my $client (@clients) {
         sort_by => 'history_date desc',
         limit   => 1,
     );
-    $client_ip = 'no ip';
+    my $client_ip = 'no ip';
     if (@$login_history > 0) {
         if ($login_history->[0]->environment =~ /(\d+\.\d+\.\d+\.\d+)/) {
             $client_ip = $1;
