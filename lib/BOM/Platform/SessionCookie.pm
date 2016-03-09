@@ -142,6 +142,20 @@ sub end_session {    ## no critic
     my $self = shift;
     return unless $self->{token};
     BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION::' . $self->{token});
+    BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $self->{token});
+}
+
+sub end_other_sessions {    ## no critic
+    my $self = shift;
+    return unless $self->{token};
+    my $all_sessions = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}));
+    # end all other session except current one
+    for my $session (@$all_sessions) {
+        unless ($session eq $self->{token}) {
+            BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION::' . $session);
+            BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $session);
+        }
+    }
 }
 
 1;
