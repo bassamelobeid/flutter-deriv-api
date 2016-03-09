@@ -16,6 +16,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::Database::ClientDB;
+use BOM::Product::ContractFactory qw(simple_contract_info);
 
 use utf8;
 
@@ -122,7 +123,7 @@ subtest 'Return empty client portfolio' => sub {
     $rpc_ct->call_ok(@params)
            ->has_no_system_error
            ->has_no_error
-           ->result_is_deeply({ contracts => [] });
+           ->result_is_deeply({ contracts => [] }, 'It should return empty array');
 };
 
 subtest 'Sell expired contracts' => sub {
@@ -133,21 +134,49 @@ subtest 'Sell expired contracts' => sub {
     $rpc_ct->call_ok(@params)
            ->has_no_system_error
            ->has_no_error
-           ->result_is_deeply({ contracts => [] });
+           ->result_is_deeply({ contracts => [] }, 'It should return empty array');
 };
 
 subtest 'Return not expired client contracts' => sub {
-    my $contract;
+    my $fmb;
+    my $expected_contract_data;
     lives_ok {
-        $contract = create_contract( $client, buy_bet => 1 );
-    } 'Create not expired contract';
+        create_contract( $client, buy_bet => 1 );
+
+        my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+                client_loginid => $client->loginid,
+                currency_code  => $client->currency,
+                db             => BOM::Database::ClientDB->new({
+                        client_loginid => $client->loginid,
+                        operation      => 'replica',
+                    }
+                )->db,
+            });
+
+        $fmb = $fmb_dm->get_open_bets_of_account()->[0];
+
+        $expected_contract_data = {
+            contract_id    => $fmb->{id},
+            transaction_id => $fmb->{buy_id},
+            purchase_time  => Date::Utility->new($fmb->{purchase_time})->epoch,
+            symbol         => $fmb->{underlying_symbol},
+            payout         => $fmb->{payout_price},
+            buy_price      => $fmb->{buy_price},
+            date_start     => Date::Utility->new($fmb->{start_time})->epoch,
+            expiry_time    => Date::Utility->new($fmb->{expiry_time})->epoch,
+            contract_type  => $fmb->{bet_type},
+            currency       => $client->currency,
+            shortcode      => $fmb->{short_code},
+            longcode       => (simple_contract_info($fmb->{short_code}, $client->currency))[0] // '',
+        };
+    } 'Create not expired contract and expected data';
 
     $rpc_ct->call_ok(@params)
            ->has_no_system_error
            ->has_no_error
-           ->result_value_is(
-               sub { shift->{contracts}->[0]->{contract_id} },
-               $contract->financial_market_bet_record->id
+           ->result_is_deeply(
+               { contracts => [ $expected_contract_data ] },
+               'Should return contract data',
            );
 };
 
