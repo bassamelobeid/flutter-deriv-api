@@ -1,21 +1,21 @@
 BEGIN;
 
-CREATE OR REPLACE FUNCTION bet.sell_bet(a_loginid          VARCHAR(12),                --  1
-                                        a_currency         VARCHAR(3),                 --  2
-                                        -- FMB stuff
-                                        p_id               BIGINT,                     --  3
-                                        p_sell_price       NUMERIC,                    --  4
-                                        p_sell_time        TIMESTAMP,                  --  5
-                                        p_chld             JSON,                       --  6
-                                        -- transaction stuff
-                                        p_transaction_time TIMESTAMP,                  --  7
-                                        p_staff_loginid    VARCHAR(24),                --  8
-                                        p_remark           VARCHAR(800),               --  9
-                                        p_source           BIGINT,                     -- 10
-                                        -- quants_bets_variables
-                                        p_qv               JSON,                       -- 11
-                                    OUT v_fmb              bet.financial_market_bet,   -- 12
-                                    OUT v_trans            transaction.transaction)    -- 13
+CREATE OR REPLACE FUNCTION bet_v1.sell_bet( a_loginid          VARCHAR(12),                --  1
+                                            a_currency         VARCHAR(3),                 --  2
+                                            -- FMB stuff
+                                            p_id               BIGINT,                     --  3
+                                            p_sell_price       NUMERIC,                    --  4
+                                            p_sell_time        TIMESTAMP,                  --  5
+                                            p_chld             JSON,                       --  6
+                                            -- transaction stuff
+                                            p_transaction_time TIMESTAMP,                  --  7
+                                            p_staff_loginid    VARCHAR(24),                --  8
+                                            p_remark           VARCHAR(800),               --  9
+                                            p_source           BIGINT,                     -- 10
+                                            -- quants_bets_variables
+                                            p_qv               JSON,                       -- 11
+                                        OUT v_fmb              bet.financial_market_bet,   -- 12
+                                        OUT v_trans            transaction.transaction)    -- 13
 RETURNS SETOF RECORD AS $def$
 DECLARE
     v_r          RECORD;
@@ -30,8 +30,8 @@ BEGIN
        FOR UPDATE;
 
     SELECT INTO v_r *
-      FROM bet.sell_bet(v_r.id, a_currency, p_id, p_sell_price, p_sell_time, p_chld,
-                        p_transaction_time, p_staff_loginid, p_remark, p_source, p_qv);
+      FROM bet_v1.sell_bet( v_r.id, a_currency, p_id, p_sell_price, p_sell_time, p_chld,
+                            p_transaction_time, p_staff_loginid, p_remark, p_source, p_qv);
 
     IF FOUND THEN
         v_fmb   := v_r.v_fmb;

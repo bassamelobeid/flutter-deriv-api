@@ -1,12 +1,10 @@
 BEGIN;
 
-CREATE OR REPLACE FUNCTION bet.calculate_potential_losses(p_loginid VARCHAR(12))
+CREATE OR REPLACE FUNCTION bet_v1.calculate_potential_losses(p_account transaction.account)
 RETURNS NUMERIC AS $def$
-    SELECT coalesce(sum(b.buy_price * e.rate), 0)
+    SELECT coalesce(sum(b.buy_price), 0)
       FROM bet.financial_market_bet b
-      JOIN transaction.account a ON b.account_id=a.id
-     CROSS JOIN data_collection.exchangeToUSD_rate(a.currency_code) e
-     WHERE a.client_loginid=p_loginid
+     WHERE b.account_id=p_account.id
        AND NOT b.is_sold;
 $def$ LANGUAGE sql STABLE;
 
