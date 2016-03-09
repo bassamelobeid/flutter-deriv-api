@@ -6,35 +6,28 @@ SELECT r.*
   ) dat(code, explanation)
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
 
--- Returns the account record complemented with the exchange rate to USD if there is enough
--- balance to withdraw b_buy_price. Otherwise an exception is thrown.
+-- Returns the account record if there is enough balance to withdraw b_buy_price.
+-- Otherwise an exception is thrown.
 -- Upon return, the account record is locked FOR UPDATE.
-CREATE OR REPLACE FUNCTION bet.validate_balance_and_lock_account(-- account
-                                                                 a_loginid           VARCHAR(12),
-                                                                 a_currency          VARCHAR(3),
-                                                                 -- how much to withdraw
-                                                                 b_buy_price         NUMERIC,
-                                                                 -- time needed to get the exchange rate
-                                                                 b_purchase_time     TIMESTAMP DEFAULT now(),
-                                                             OUT account             transaction.account,
-                                                             OUT rate                NUMERIC)
-RETURNS RECORD AS $def$
+CREATE OR REPLACE FUNCTION bet_v1.validate_balance_and_lock_account( -- account
+                                                                     a_loginid           VARCHAR(12),
+                                                                     a_currency          VARCHAR(3),
+                                                                     -- how much to withdraw
+                                                                     b_buy_price         NUMERIC,
+                                                                 OUT account             transaction.account)
+RETURNS transaction.account AS $def$
 DECLARE
     v_r RECORD;
 BEGIN
     -- This query not only fetches the account balance. It also works as lock
     -- to prevent deadlocks. It MUST BE THE FIRST QUERY in the function and
     -- it must use FOR UPDATE (instead of FOR NO KEY UPDATE).
-    -- NOTE: this does not lock the row from data_collection.exchange_rate
-    --       due to the function call. A normal JOIN would lock that as well.
-    SELECT INTO v_r a AS acc, e.rate AS rate
+    SELECT * INTO account
       FROM transaction.account a
-     CROSS JOIN data_collection.exchangeToUSD_rate(a.currency_code, b_purchase_time) e(rate)
      WHERE a.client_loginid=a_loginid
        AND a.currency_code=a_currency
+       AND a.is_default
        FOR UPDATE;
-    account := v_r.acc;
-    rate    := coalesce(v_r.rate, 1);
     account.balance := coalesce(account.balance, 0);
 
     -- This is not really necessary because we have a constraint that ensures
