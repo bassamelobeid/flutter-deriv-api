@@ -212,10 +212,11 @@ sub send_ask {
     my %details = %{$args};
     my $response;
     try {
-      print "args: " . Dumper(\%details);
+      open(my $fh, ">>/tmp/a.log");
+      print $fh "args: " . Dumper(\%details);
 
         $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
-      print "result: " . Dumper($response);
+      print $fh "result: " . Dumper($response);
       if (exists $response->{error}) {
             $response = BOM::RPC::v3::Utility::create_error({
                 code              => $response->{error}->{code},
