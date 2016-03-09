@@ -66,4 +66,20 @@ subtest 'validate_underlying' => sub {
 
 };
 
+subtest 'prepare_ask' => sub {
+  my $p = {
+           "proposal"      => 1,
+           "subscribe"     => 1,
+           "amount"        => "2",
+           "basis"         => "payout",
+           "contract_type" => "CALL",
+           "currency"      => "USD",
+           "symbol"        => "R_50",
+           "duration"      => "2",
+           "duration_unit" => "m"
+          };
+  diag(Dumper(BOM::RPC::v3::Contract::prepare_ask($p)));
+};
+
+
 done_testing();
