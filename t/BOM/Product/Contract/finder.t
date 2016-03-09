@@ -60,7 +60,7 @@ subtest "available contracts for symbol" => sub {
             asian        => 2,
         },
         frxUSDJPY => {
-            callput      => 10,
+            callput      => 12,
             touchnotouch => 4,    # intraday and daily separated
             staysinout   => 2,
             endsinout    => 2,
@@ -69,7 +69,7 @@ subtest "available contracts for symbol" => sub {
             callput => 6,
         },
         WLDUSD => {
-            callput => 2,
+            callput => 4,
         },
         AEX => {
             callput      => 8,
