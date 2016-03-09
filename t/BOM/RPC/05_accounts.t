@@ -1038,11 +1038,13 @@ subtest $method => sub {
     );
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
+    print STDERR "here?\n";
     {
-      print STDERR "here?\n";
+      local STDERR = undef;
       ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
-      print STDERR "end\n";
     }
+    print STDERR "end\n";
+
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
     is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
