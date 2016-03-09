@@ -43,7 +43,7 @@ subtest 'get' => sub {
         is $attribute->value, 'b', 'Got from app_config';
     };
 
-    subtest 'from global(couch)' => sub {
+    subtest 'from global(data)' => sub {
         my $data = {tests => {get => 'c'}};
         my $global = Data::Hash::DotNotation->new(data => $data);
 
