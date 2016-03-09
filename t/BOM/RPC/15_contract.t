@@ -11,9 +11,21 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
+use BOM::System::RedisReplicated;
 
 use Data::Dumper;
+
+initialize_realtime_ticks_db();
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for qw(USD);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+                                                      'randomindex',
+                                                      {
+                                                       symbol => 'R_50',
+                                                       date   => Date::Utility->new
+                                                      });
+
+
 request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
 subtest 'validate_symbol' => sub {
     is(BOM::RPC::v3::Contract::validate_symbol('R_50'), undef, "return undef if symbol is valid");
@@ -145,6 +157,7 @@ subtest 'get_ask' => sub {
   "duration_unit"=> "s",
   "symbol"=> "R_100",
                };
+  BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
   diag(Dumper(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params))));
   ok(1);
 };
