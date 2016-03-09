@@ -454,7 +454,7 @@ sub get_limit_for_account_balance {
     push @maxbalances, $self->is_virtual ? 1000000 : 300000;
 
     if ($self->get_self_exclusion and $self->get_self_exclusion->max_balance) {
-        push @maxbalances, in_USD($self->get_self_exclusion->max_balance, $self->currency);
+        push @maxbalances, $self->get_self_exclusion->max_balance;
     }
 
     if ($self->custom_max_acbal) {
@@ -467,10 +467,9 @@ sub get_limit_for_account_balance {
 sub get_limit_for_daily_turnover {
     my $self = shift;
 
-    my $excl = $self->get_self_exclusion;
-    if ($excl) {
-        $excl = $excl->max_turnover;
-        $excl = in_USD($excl, $self->currency) if $excl;
+    my $excl;
+    if ($self->get_self_exclusion && $self->get_self_exclusion->max_turnover) {
+        $excl = $self->get_self_exclusion->max_turnover;
     }
 
     my $val = $self->custom_max_daily_turnover;
@@ -488,50 +487,50 @@ sub get_limit_for_daily_losses {
     my $self = shift;
 
     my $excl = $self->get_self_exclusion;
-    return unless $excl;
-    $excl = $excl->max_losses;
-    return unless $excl;
-    return in_USD($excl, $self->currency);
+    if ($excl && $excl->max_losses) {
+        return $excl->max_losses;
+    }
+    return;
 }
 
 sub get_limit_for_7day_turnover {
     my $self = shift;
 
     my $excl = $self->get_self_exclusion;
-    return unless $excl;
-    $excl = $excl->max_7day_turnover;
-    return unless $excl;
-    return in_USD($excl, $self->currency);
+    if ($excl && $excl->max_7day_turnover) {
+        return $excl->max_7day_turnover;
+    }
+    return;
 }
 
 sub get_limit_for_7day_losses {
     my $self = shift;
 
     my $excl = $self->get_self_exclusion;
-    return unless $excl;
-    $excl = $excl->max_7day_losses;
-    return unless $excl;
-    return in_USD($excl, $self->currency);
+    if ($excl && $excl->max_7day_losses) {
+        return $excl->max_7day_losses;
+    }
+    return;
 }
 
 sub get_limit_for_30day_turnover {
     my $self = shift;
 
     my $excl = $self->get_self_exclusion;
-    return unless $excl;
-    $excl = $excl->max_30day_turnover;
-    return unless $excl;
-    return in_USD($excl, $self->currency);
+    if ($excl && $excl->max_30day_turnover) {
+        return $excl->max_30day_turnover;
+    }
+    return;
 }
 
 sub get_limit_for_30day_losses {
     my $self = shift;
 
     my $excl = $self->get_self_exclusion;
-    return unless $excl;
-    $excl = $excl->max_30day_losses;
-    return unless $excl;
-    return in_USD($excl, $self->currency);
+    if ($excl && $excl->max_30day_losses) {
+        return $excl->max_30day_losses;
+    }
+    return;
 }
 
 sub get_limit_for_open_positions {
