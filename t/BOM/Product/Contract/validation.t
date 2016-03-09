@@ -1237,6 +1237,9 @@ subtest 'tentative events' => sub {
     ok $c->_validate_expiry_date, 'throws error if contract expiring on the tentative event\'s blackout period';
     cmp_ok(($c->_validate_expiry_date)[0]->{message}, 'eq', 'tentative economic events blackout period', 'correct error message');
 
+    $c = produce_contract({%$contract_args, underlying => 'frxGBPJPY'});
+    ok !$c->_validate_expiry_date, 'no error if event is not affecting the underlying';
+
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_end;
     $c = produce_contract($contract_args);
     ok $c->_validate_start_date, 'throws error if contract starts on tentative event\'s blackout end';
