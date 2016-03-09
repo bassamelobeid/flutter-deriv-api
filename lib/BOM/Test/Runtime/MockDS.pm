@@ -1,4 +1,4 @@
-package BOM::Test::Runtime::MockCouchDS;
+package BOM::Test::Runtime::MockDS;
 
 use Moose;
 

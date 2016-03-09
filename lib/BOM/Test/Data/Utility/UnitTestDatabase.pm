@@ -73,7 +73,7 @@ sub create_client {
 
     my $broker_code = delete $args->{broker_code};
 
-    my $fixture     = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/couch_unit_test.yml');
+    my $fixture     = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/market_unit_test.yml');
     my $client_data = $fixture->{client}{data};
     $client_data->{email}       = 'unit_test@binary.com';
     $client_data->{broker_code} = $broker_code;
@@ -120,7 +120,7 @@ sub create_client {
 sub create_fmb {
     my $args = shift;
 
-    my $fixture   = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/couch_unit_test.yml');
+    my $fixture   = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/market_unit_test.yml');
     my $type      = delete $args->{type};
     my $fmb_data  = $fixture->{$type}{data};
     my $fmb_class = $fixture->{$type}{class_name};
