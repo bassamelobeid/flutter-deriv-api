@@ -156,9 +156,24 @@ subtest $method => sub {
             ->has_no_error
             ->result_is_deeply(
                 { $fmb->id => $expected_contract_data },
-                'Should return contract and bid data' );
+                'Should return contract and bid data by contract_id' );
 
-    # TODO test with not valid bid
+    my $contract_factory = Test::MockModule->new('BOM::Product::ContractFactory');
+    $contract_factory->mock('produce_contract', sub { die });
+
+    $rpc_ct->call_ok(@params)
+            ->has_no_system_error
+            ->result_is_deeply(
+                {
+                    $fmb->id => {
+                        error => {
+                            message_to_client => 'Извините, при обработке Вашего запроса произошла ошибка.',
+                            code => 'GetProposalFailure',
+                        },
+                    },
+                },
+                'Should return error insted contract data',
+            );
 };
 
 done_testing();
