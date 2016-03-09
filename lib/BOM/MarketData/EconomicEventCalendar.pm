@@ -126,7 +126,6 @@ sub save {
     for (EE, EET) {
         $self->chronicle_writer->set(EE, $_, {}) unless defined $self->chronicle_reader->get(EE, $_);
     }
-
     #receive tentative events hash
     my $existing_tentatives = $self->get_tentative_events;
 
@@ -134,9 +133,16 @@ sub save {
         my $id = $event->{id};
         next unless $id;
         # update existing tentative events
-        if ($existing_tentatives->{$id}) {
-            $event->{actual_release_date} = $event->{release_date} if (not $event->{is_tentative} and $event->{release_date});
-            $existing_tentatives->{$id} = {(%{$existing_tentatives->{$id}}, %$event)};
+        if (my $ete = $existing_tentatives->{$id}) {
+            if (not $event->{is_tentative}) {
+                $event->{actual_release_date} = $event->{release_date} if $event->{release_date};
+            } else {
+                for my $key (grep { $ete->{$_} } qw(blankout blankout_end estimated_release_date release_date)) {
+                    $event->{$key} = $ete->{$key};
+                }
+            }
+
+            #    $existing_tentatives->{$id} = {(%{$existing_tentatives->{$id}}, %$event)};
         } elsif ($event->{is_tentative}) {
             $existing_tentatives->{$id} = $event;
         }
@@ -150,7 +156,7 @@ sub save {
     # events sorted by release date are regular events that
     # will impact contract pricing.
     my @regular_events =
-        sort { $a->{release_date} <=> $b->{release_date} } grep { $_->{release_date} } (@{$self->events}, values %$existing_tentatives);
+        sort { $a->{release_date} <=> $b->{release_date} } grep { $_->{release_date} } @{$self->events};
     $self->_events(\@regular_events);
 
     return (

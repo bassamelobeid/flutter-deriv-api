@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::NoWarnings;
 use Test::Exception;
 use Test::MockModule;
@@ -58,8 +58,8 @@ subtest 'saving tentative events' => sub {
     'saving regular and tentative events';
 };
 
+my %new_tentative = %$tentative;
 subtest 'update tentative events' => sub {
-    my %new_tentative = %$tentative;
     my $blackout      = 1456876900 - 3600;
     my $blackout_end  = 1456876900 + 3600;
     $new_tentative{blankout}     = $blackout;
@@ -98,13 +98,16 @@ subtest 'update tentative events' => sub {
         ok $eco->update(\%new_tentative);
         my $ref = $c_read->get('economic_events', 'economic_events');
         is scalar(@{$ref->{events}}), 2, 'number of events is still two';
+        my $te = (grep {$_->{id} eq $new_tentative{id}} @{$ref->{events}})[0];
+        is $te->{blankout}, $new_tentative{blankout}, 'updated blankout';
+        is $te->{blankout_end}, $new_tentative{blankout_end}, 'updated blankout_end';
     } 'update again with different blockout time';
 };
 
 subtest 'retry with same events' => sub {
     lives_ok {
         my $eco = BOM::MarketData::EconomicEventCalendar->new(
-            events        => [$tentative, $regular],
+            events        => [\%new_tentative, $regular],
             recorded_date => Date::Utility->new,
         );
         ok $eco->save, 'saves economic events';
@@ -112,19 +115,45 @@ subtest 'retry with same events' => sub {
             my $ref = $c_read->get('economic_events', 'economic_events');
             is scalar(@{$ref->{events}}), 2, 'one event retrieved';
             is $ref->{events}->[0]->{event_name}, $regular->{event_name},   'saved the correct event';
-            is $ref->{events}->[1]->{event_name}, $tentative->{event_name}, 'saved the correct event';
+            is $ref->{events}->[1]->{event_name}, $new_tentative{event_name}, 'saved the correct event';
             ok $ref->{events}->[1]->{release_date};
         }
         'regular event';
         lives_ok {
             my $ref = $c_read->get('economic_events', 'economic_events_tentative');
             is scalar(keys %$ref), 1, 'one tentative event retrieved';
-            ok $ref->{$tentative->{id}}, 'saved the correct tentative event';
-            ok $ref->{$tentative->{id}}->{release_date}, 'has release date';
-            ok $ref->{$tentative->{id}}->{blankout},     'has blankout';
-            ok $ref->{$tentative->{id}}->{blankout_end}, 'has blankout_end';
+            ok $ref->{$new_tentative{id}}, 'saved the correct tentative event';
+            ok $ref->{$new_tentative{id}}->{release_date}, 'has release date';
+            ok $ref->{$new_tentative{id}}->{blankout},     'has blankout';
+            ok $ref->{$new_tentative{id}}->{blankout_end}, 'has blankout_end';
         }
         'tentative event';
     }
     'retry saving regular and tentative events';
+};
+
+subtest 'tentative event happened' => sub {
+    my $now = time;
+    my %happened = %{$tentative};
+    delete $happened{is_tentative};
+    $happened{release_date} = $now;
+    lives_ok {
+        my $eco = BOM::MarketData::EconomicEventCalendar->new(
+            events        => [\%happened, $regular],
+            recorded_date => Date::Utility->new,
+        );
+        ok $eco->save, 'saves economic events';
+        lives_ok {
+            my $ref = $c_read->get('economic_events', 'economic_events');
+            is scalar(@{$ref->{events}}), 2, 'one event retrieved';
+            my $updated_tentative = (grep {$_->{id} eq $happened{id}} @{$ref->{events}})[0];
+            is $updated_tentative->{actual_release_date}, $now, 'updated actual_release_date';
+            is $updated_tentative->{estimated_release_date}, $happened{estimated_release_date}, 'estimated_release_date unchanged';
+            is $updated_tentative->{release_date}, $now, 'updated release_date';
+            ok !$updated_tentative->{blankout};
+            ok !$updated_tentative->{blankout_end};
+            ok !$updated_tentative->{is_tentative};
+        }
+        'regular event';
+    }
 };
