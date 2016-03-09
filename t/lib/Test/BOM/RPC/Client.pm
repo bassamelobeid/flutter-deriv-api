@@ -82,14 +82,16 @@ sub has_error {
 sub error_code_is {
     my ($self, $expected, $description) = @_;
     my $result = $self->result || {};
-    $self->_test( 'is', $result->{error}->{code}, $expected, $description );
+    my $error  = $result->{error} || {};
+    $self->_test( 'is', $error->{code}, $expected, $description );
     return $self;
 }
 
 sub error_message_is {
     my ($self, $expected, $description) = @_;
     my $result = $self->result || {};
-    $self->_test( 'is', $result->{error}->{message_to_client}, $expected, $description );
+    my $error  = $result->{error} || {};
+    $self->_test( 'is', $error->{message_to_client}, $expected, $description );
     return $self;
 }
 
