@@ -128,4 +128,18 @@ subtest 'prepare_ask' => sub {
 
 };
 
+subtest 'get_ask' => sub {
+  my $params = {
+  "proposal"=> 1,
+  "amount"=> "100",
+  "basis"=> "payout",
+  "contract_type"=> "CALL",
+  "currency"=> "USD",
+  "duration"=> "60",
+  "duration_unit"=> "s",
+  "symbol"=> "R_100",
+               }
+    diag(Dumper(BOM::RPC::v3::Contract::prepare_ask($params)));
+};
+
 done_testing();
