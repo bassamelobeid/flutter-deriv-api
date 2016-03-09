@@ -89,7 +89,12 @@ subtest "predefined trading_period" => sub {
         },
     );
 
-    my @offerings = @{BOM::Product::Contract::Finder::Japan::_get_offerings('frxUSDJPY')};
+    my @offerings = BOM::Product::Offerings::get_offerings_flyby->query({
+            landing_company   => 'japan',
+            underlying_symbol => 'frxUSDJPY',
+            start_type        => 'spot',
+            expiry_type       => ['intraday','daily'],
+            barrier_category  => ['euro_non_atm', 'american']});
     is(scalar(@offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
     my $exchange = BOM::Market::Underlying->new('frxUSDJPY')->exchange;
     my $now      = Date::Utility->new('2015-09-04 17:00:00');
@@ -174,6 +179,7 @@ subtest "check_intraday trading_period_JPY" => sub {
     );
 
     my @i_offerings = BOM::Product::Offerings::get_offerings_flyby->query({
+            landing_company   => 'japan',
             underlying_symbol => 'frxUSDJPY',
             start_type        => 'spot',
             expiry_type       => ['intraday'],
@@ -222,6 +228,7 @@ subtest "check_intraday trading_period_non_JPY" => sub {
     );
 
     my @e_offerings = BOM::Product::Offerings::get_offerings_flyby->query({
+            landing_company   => 'japan',
             underlying_symbol => 'frxEURUSD',
             start_type        => 'spot',
             expiry_type       => ['intraday'],

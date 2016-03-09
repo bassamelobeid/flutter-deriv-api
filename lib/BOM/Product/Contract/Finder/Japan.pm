@@ -12,17 +12,12 @@ use base qw( Exporter );
 use BOM::Product::ContractFactory qw(produce_contract);
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 use Math::CDF qw(qnorm);
-use BOM::Platform::Runtime::LandingCompany::Registry;
 
 =head1 available_contracts_for_symbol
 
 Returns a set of available contracts for a particular contract which included predefined trading period and 20 predefined barriers associated with the trading period
 
 =cut
-
-my $jp                         = BOM::Platform::Runtime::LandingCompany::Registry->new->get('japan');
-my %ALLOWED_CONTRACT_TYPES     = map { $_ => 1 } @{$jp->legal_allowed_contract_types};
-my %ALLOWED_UNDERLYING_SYMBOLS = map { $_ => 1 } @{$jp->legal_allowed_underlyings};
 
 sub available_contracts_for_symbol {
     my $args         = shift;
@@ -36,32 +31,35 @@ sub available_contracts_for_symbol {
     if ($exchange->trades_on($now)) {
         $open  = $exchange->opening_on($now)->epoch;
         $close = $exchange->closing_on($now)->epoch;
-        if ($ALLOWED_UNDERLYING_SYMBOLS{$symbol}) {
-            @offerings = @{_get_offerings($symbol)};
-            @offerings = _predefined_trading_period({
-                offerings => \@offerings,
-                exchange  => $exchange,
-                symbol    => $symbol,
-                date      => $now,
+        my $flyby = BOM::Product::Offerings::get_offerings_flyby;
+        @offerings = $flyby->query({
+                landing_company   => 'japan',
+                underlying_symbol => $symbol,
+                start_type        => 'spot',
+                expiry_type       => ['daily', 'intraday'],
+                barrier_category  => ['euro_non_atm', 'american']});
+        @offerings = _predefined_trading_period({
+            offerings => \@offerings,
+            exchange  => $exchange,
+            symbol    => $symbol,
+            date      => $now,
+        });
+
+        for my $o (@offerings) {
+            my $cc = $o->{contract_category};
+            my $bc = $o->{barrier_category};
+
+            my $cat = BOM::Product::Contract::Category->new($cc);
+            $o->{contract_category_display} = $cat->display_name;
+
+            $o->{barriers} = $cat->two_barriers ? 2 : 1;
+
+            _set_predefined_barriers({
+                underlying   => $underlying,
+                current_tick => $current_tick,
+                contract     => $o,
+                date         => $now,
             });
-
-            for my $o (@offerings) {
-                my $cc = $o->{contract_category};
-                my $bc = $o->{barrier_category};
-
-                my $cat = BOM::Product::Contract::Category->new($cc);
-                $o->{contract_category_display} = $cat->display_name;
-
-                $o->{barriers} = $cat->two_barriers ? 2 : 1;
-
-                _set_predefined_barriers({
-                    underlying   => $underlying,
-                    current_tick => $current_tick,
-                    contract     => $o,
-                    date         => $now,
-                });
-
-            }
         }
     }
     return {
@@ -71,19 +69,6 @@ sub available_contracts_for_symbol {
         close        => $close,
         feed_license => $underlying->feed_license
     };
-}
-
-sub _get_offerings {
-    my $symbol = shift;
-
-    my $flyby = BOM::Product::Offerings::get_offerings_flyby;
-    my @offerings = grep { $ALLOWED_CONTRACT_TYPES{$_->{contract_type}} } $flyby->query({
-            underlying_symbol => $symbol,
-            start_type        => 'spot',
-            expiry_type       => ['daily', 'intraday'],
-            barrier_category  => ['euro_non_atm', 'american']});
-
-    return \@offerings;
 }
 
 =head2 _predefined_trading_period
