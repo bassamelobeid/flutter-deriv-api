@@ -4,12 +4,12 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Date::Utility;
 use BOM::MarketData::VolSurface::Delta;
 use BOM::Market::Underlying;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'USD',

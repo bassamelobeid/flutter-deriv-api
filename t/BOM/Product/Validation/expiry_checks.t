@@ -8,13 +8,13 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Test::Runtime qw(:normal);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use BOM::Product::ContractFactory qw( produce_contract );
 use Cache::RedisDB;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',

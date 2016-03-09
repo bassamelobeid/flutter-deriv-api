@@ -10,30 +10,30 @@ use JSON qw(decode_json);
 
 use BOM::Market::Data::Tick;
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
         recorded_date => Date::Utility->new,
     }) for qw/frxUSDJPY R_100/;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/JPY USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_100',
         date   => Date::Utility->new
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'JPY',
