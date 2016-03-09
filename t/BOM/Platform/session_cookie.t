@@ -1,7 +1,10 @@
 use Test::Most;
 use Test::FailWarnings;
+use Digest::MD5 qw(md5_hex);
+
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Context::Request;
+use BOM::System::RedisReplicated;
 
 my $loginid  = 'VRTC10001';
 my $password = 'abc123';
