@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Deep;
 use Test::Exception;
 use Test::NoWarnings;
@@ -15,26 +15,26 @@ my @expected_lc   = qw(japan-virtual fog costarica maltainvest japan malta iom);
 my %expected_type = (
     'japan-virtual' => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUTE', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISSE'],
     fog             => [
-        'ASIAND',    'ASIANU',     'CALL',       'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD',
-        'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',
-        'RANGE',     'SPREADD',    'SPREADU',    'UPORDOWN',
+        'ASIAND',   'ASIANU',    'CALL',       'DIGITDIFF',  'DIGITEVEN',   'DIGITMATCH',
+        'DIGITODD', 'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',
+        'ONETOUCH', 'PUT',       'RANGE',      'SPREADD',    'SPREADU',     'UPORDOWN',
     ],
     costarica => [
-        'ASIAND',    'ASIANU',     'CALL',       'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD',
-        'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',
-        'RANGE',     'SPREADD',    'SPREADU',    'UPORDOWN'
+        'ASIAND',   'ASIANU',    'CALL',       'DIGITDIFF',  'DIGITEVEN',   'DIGITMATCH',
+        'DIGITODD', 'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',
+        'ONETOUCH', 'PUT',       'RANGE',      'SPREADD',    'SPREADU',     'UPORDOWN'
     ],
-    maltainvest => ['CALL',   'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'RANGE', 'UPORDOWN'],
-    japan       => ['CALLE', 'NOTOUCH', 'ONETOUCH',   'PUTE',        'RANGE',   'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISSE'],
+    maltainvest => ['CALL',  'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH', 'ONETOUCH', 'PUT',      'RANGE',        'UPORDOWN'],
+    japan       => ['CALLE', 'NOTOUCH',    'ONETOUCH',    'PUTE',    'RANGE',    'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISSE'],
     malta       => [
-        'ASIAND',    'ASIANU',     'CALL',       'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD',
-        'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',
-        'RANGE',     'SPREADD',    'SPREADU',    'UPORDOWN'
+        'ASIAND',   'ASIANU',    'CALL',       'DIGITDIFF',  'DIGITEVEN',   'DIGITMATCH',
+        'DIGITODD', 'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',
+        'ONETOUCH', 'PUT',       'RANGE',      'SPREADD',    'SPREADU',     'UPORDOWN'
     ],
     iom => [
-        'ASIAND',    'ASIANU',     'CALL',       'DIGITDIFF', 'DIGITEVEN', 'DIGITMATCH', 'DIGITODD',
-        'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',   'ONETOUCH',  'PUT',
-        'RANGE',     'SPREADD',    'SPREADU',    'UPORDOWN'
+        'ASIAND',   'ASIANU',    'CALL',       'DIGITDIFF',  'DIGITEVEN',   'DIGITMATCH',
+        'DIGITODD', 'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',
+        'ONETOUCH', 'PUT',       'RANGE',      'SPREADD',    'SPREADU',     'UPORDOWN'
     ],
 
 );
@@ -131,5 +131,114 @@ subtest 'offerings check' => sub {
                 });
             }
         }
+    }
+};
+
+subtest 'legal allowed underlyings' => sub {
+    my @random     = qw(R_75 RDBEAR RDVENUS RDBULL R_25 RDMARS R_100 RDYIN RDMOON RDYANG R_50 RDSUN);
+    my @non_random = qw(
+        FCHI
+        frxAUDJPY
+        FPEDF
+        FPDG
+        frxUSDJPY
+        FPCA
+        frxAUDCAD
+        TOP40
+        NAASML
+        FPFP
+        WLDUSD
+        FPCS
+        frxAUDPLN
+        GDAXI
+        FPBN
+        BBABI
+        FPKER
+        BBUCB
+        STI
+        frxAUDNZD
+        frxEURNZD
+        BBGBLB
+        frxUSDCAD
+        FPSAF
+        OBX
+        NARDSA
+        JCI
+        frxEURAUD
+        NAUNA
+        frxGBPJPY
+        frxEURCHF
+        frxEURJPY
+        NAHEIA
+        frxXPDUSD
+        FPVIV
+        BBKBC
+        FPSU
+        frxGBPUSD
+        WLDGBP
+        FPRI
+        FPAI
+        DJI
+        frxGBPNZD
+        FPEI
+        FPOR
+        frxXAGUSD
+        FPACA
+        frxAUDCHF
+        BBBELG
+        frxUSDPLN
+        frxUSDCHF
+        frxNZDJPY
+        frxGBPCAD
+        frxBROUSD
+        FPGSZ
+        SPC
+        WLDEUR
+        FPMC
+        FPORA
+        N225
+        frxXPTUSD
+        DFMGI
+        FPRNO
+        frxUSDNOK
+        frxEURCAD
+        FPGLE
+        SSMI
+        frxGBPNOK
+        frxXAUUSD
+        NAINGA
+        FPAIR
+        FPBNP
+        BFX
+        frxGBPPLN
+        frxGBPAUD
+        frxUSDSEK
+        ISEQ
+        HSI
+        frxUSDMXN
+        frxAUDUSD
+        frxGBPCHF
+        FPSAN
+        AS51
+        frxEURUSD
+        FPSGO
+        frxEURGBP
+        BSESENSEX30
+        WLDAUD
+        frxNZDUSD
+        AEX
+    );
+    my %expected_list = (
+        japan           => [qw(frxAUDJPY frxAUDUSD frxEURGBP frxEURJPY frxEURUSD frxGBPJPY frxGBPUSD frxUSDCAD frxUSDJPY)],
+        'japan-virtual' => [qw(frxAUDJPY frxAUDUSD frxEURGBP frxEURJPY frxEURUSD frxGBPJPY frxGBPUSD frxUSDCAD frxUSDJPY)],
+        malta           => [@random],
+        maltainvest     => [@non_random],
+        iom             => [@random, @non_random],
+        costarica       => [@random, @non_random],
+    );
+
+    foreach my $lc (keys %expected_list) {
+        my @got = get_offerings_with_filter('underlying_symbol', {landing_company => $lc});
+        cmp_bag(\@got, $expected_list{$lc}, 'underlying list for ' . $lc);
     }
 };
