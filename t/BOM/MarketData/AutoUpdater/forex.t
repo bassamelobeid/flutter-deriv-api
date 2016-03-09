@@ -14,7 +14,7 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketData::AutoUpdater::Forex;
 initialize_realtime_ticks_db;
@@ -23,7 +23,7 @@ initialize_realtime_ticks_db;
 my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
 set_absolute_time($fake_date->epoch);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
@@ -35,7 +35,7 @@ BOM::Market::Underlying->new({symbol => 'frxGBPINR'})->set_combined_realtime({
     quote => 100,
 });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('holiday', {
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('holiday', {
     recorded_date => $fake_date,
     calendar => {
         '2013-01-01' => {
@@ -43,7 +43,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('holiday', {
         }
     },
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
@@ -51,7 +51,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
 
 subtest 'Basics.' => sub {
-    my $auf     = BOM::MarketData::AutoUpdater::Forex->new;
+    my $auf     = BOM::MarketData::AutoUpdater::Forex->new(file => ['t/data/bbdl/vol_points/2012-08-13/fx000000.csv']);
     my @symbols = @{$auf->symbols_to_update};
     ok(scalar(@symbols), 'symbols_to_update is non-empty by default.');
     cmp_ok(scalar(@symbols), '==', (grep { /^frx/ } @symbols), 'All symbols_to_udpate are FX.');
@@ -75,7 +75,7 @@ my $data = {
         vol_spread => {50 => 0.1}
     },
 };
-my $fake_surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+my $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -124,7 +124,7 @@ $data = {
     },
 };
 
-$fake_surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+$fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -145,7 +145,7 @@ subtest 'big jump' => sub {
 my $clone = dclone($data);
 $clone->{14}->{smile}->{25} = 1.3;
 
-$fake_surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+$fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -164,7 +164,7 @@ subtest 'big difference' => sub {
     like $au->report->{frxUSDJPY}->{reason}, qr/big jump/, 'reason: big jump';
 };
 
-$fake_surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+$fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -210,7 +210,7 @@ subtest "Friday after close, weekend, won't open check." => sub {
     );
 
     while (my ($name, $details) = each %test_data) {
-        my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
                 recorded_date => Date::Utility->new($details->{datetime}),
