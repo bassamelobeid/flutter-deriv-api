@@ -3,13 +3,9 @@ use Test::Warn;
 
 use BOM::Platform::Runtime::AppConfig;
 use BOM::Platform::Runtime;
-use Test::MockObject;
 
 my $app_config;
 lives_ok {
-    my $couch = Test::MockObject->new();
-    my $data = {_rev => 'a'};
-    $couch->set_always('document', $data);
     $app_config = BOM::Platform::Runtime::AppConfig->new();
 }
 'We are living';
