@@ -61,7 +61,9 @@ sub trading_times {
 sub asset_index {
     my $params = shift;
 
-    my $asset_index = BOM::Product::Contract::Offerings->new->decorate_tree(
+    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
+
+    my $asset_index = BOM::Product::Contract::Offerings->new(landing_company => $landing_company_name)->decorate_tree(
         markets => {
             code => sub { $_->name },
             name => sub { $_->translated_display_name }
