@@ -41,7 +41,7 @@ Readonly our $BET_CLASS_TO_TYPE_MAP => {
         'RUNBET_DOUBLEUP',   'RUNBET_DOUBLEDOWN',
     ],
 
-    'range_bet' => ['RANGE', 'UPORDOWN', 'EXPIRYRANGE', 'EXPIRYMISS', 'EXPIRYRANGEE', 'EXPIRMISSE'],
+    'range_bet' => ['RANGE', 'UPORDOWN', 'EXPIRYRANGE', 'EXPIRYMISS', 'EXPIRYRANGEE', 'EXPIRYMISSE'],
 
     'touch_bet' => ['ONETOUCH',   'NOTOUCH'],
     'digit_bet' => ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
