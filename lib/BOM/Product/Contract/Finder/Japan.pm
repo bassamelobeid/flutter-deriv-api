@@ -108,11 +108,11 @@ sub _predefined_trading_period {
     my $now_hour          = $now->hour;
     my $now_minute        = $now->minute;
     my $now_date          = $now->date;
-    my $trading_key       = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
+    my $trading_key       = join($cache_sep, $symbol, $now_date, $now_hour);
     my $today_close       = $exchange->closing_on($now);
     my $today_close_epoch = $today_close->epoch;
-    my $today             = $now->truncate_to_day;                                       # Start of the day object.
-    my $trading_periods;                                                                 #= Cache::RedisDB->get($cache_keyspace, $trading_key);
+    my $today             = $now->truncate_to_day;                                # Start of the day object.
+    my $trading_periods   = Cache::RedisDB->get($cache_keyspace, $trading_key);
 
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
@@ -350,34 +350,63 @@ sub _set_predefined_barriers {
                 vol        => 0.1,
             });
         } qw(0.05 0.95);
-
-        @$available_barriers = _split_boundaries_barriers({
+        $available_barriers = _split_boundaries_barriers({
             pip_size           => $underlying->pip_size,
             start_tick         => $start_tick->quote,
             boundaries_barrier => \@boundaries_barrier
         });
-
         # Expires at the end of the available period.
         Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - $now->epoch);
     }
+
     if ($contract->{barriers} == 1) {
-        $contract->{available_barriers} = $available_barriers;
-        $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @{$available_barriers};
+        my @barriers = sort values %$available_barriers;
+        $contract->{available_barriers} = \@barriers;
+        $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @barriers;
     } elsif ($contract->{barriers} == 2) {
-        my @lower_barriers  = grep { $current_tick_quote > $_ } @{$available_barriers};
-        my @higher_barriers = grep { $current_tick_quote < $_ } @{$available_barriers};
-        $contract->{available_barriers} = [\@lower_barriers, \@higher_barriers];
-        $contract->{high_barrier}       = $higher_barriers[0];
-        $contract->{low_barrier}        = $lower_barriers[0];
+        $contract->{available_barriers} = _get_barriers_pair({
+            contract_category  => $contract->{contract_category},
+            available_barriers => $available_barriers,
+        });
+
     }
 
     return;
 }
 
+=head2 _get_barriers_pair
+
+- For staysinout contract, we need to pair the barriers symmetry, ie ( 45, 55), (40,60), (35,65), (20,80), (5,95) 
+- For endsinout contract, we need to pair barriers as follow: (45,55), (40,50), (50,60), (35,45), (55,65), (20,40), (60,80)
+
+Note: 45 is -5d from the spot at start and 55 is +5d from spot at start
+where d is the minimum increment that determine by divided the distance of boundaries by 90 (45 each side) 
+
+
+=cut
+
+sub _get_barriers_pair {
+    my $args = shift;
+
+    my $contract_category  = $args->{contract_category};
+    my $available_barriers = $args->{available_barriers};
+    my @keys =
+        $contract_category eq 'staysinout'
+        ? ((45, 55), (40, 60), (35, 65), (20, 80), (5, 95))
+        : ((45, 55), (40, 50), (50, 60), (35, 45), (55, 65), (20, 40), (60, 80));
+    my @barriers;
+    for (my $i = 0; $i < (scalar @keys); $i += 2) {
+
+        push @barriers, [$available_barriers->{$keys[$i]}, $available_barriers->{$keys[$i + 1]}];
+    }
+
+    return \@barriers;
+
+}
+
 =head2 _split_boundaries_barriers
 
-
--Split the boundaries barriers into 20 barriers.
+-Split the boundaries barriers into 10 barriers by divided the distance of boundaries by 90 (45 each side) - to be used as increment.
 The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
 - Included entry spot as well
 
@@ -390,11 +419,11 @@ sub _split_boundaries_barriers {
     my $spot_at_start               = $args->{start_tick};
     my @boundaries_barrier          = @{$args->{boundaries_barrier}};
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
-    my @steps                       = (1, 2, 3, 4, 5, 7, 9, 14, 24, 44);
+    my @steps                       = (5, 10, 15, 30, 45);
     my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
-    my @barriers                    = map { ($spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step) } @steps;
-    push @barriers, $spot_at_start;
-    return @barriers;
+    my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
+    $barriers{50} = $spot_at_start;
+    return \%barriers;
 }
 
 =head2 _get_strike_from_call_bs_price
