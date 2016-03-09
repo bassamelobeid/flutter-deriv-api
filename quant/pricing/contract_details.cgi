@@ -81,14 +81,16 @@ sub _get_pricing_parameter_from_IH_pricer {
     my $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $contract});
     my $ask_probability = $contract->ask_probability;
     $pricing_parameters->{ask_probability} = {
-        theo_probability => $ask_probability->peek_amount(lc($contract->code) . '_theoretical_probability'),
-        bs_probability   => $contract->bs_probability->amount,
+        bs_probability => $contract->bs_probability->amount,
         map { $_ => $ask_probability->peek_amount($_) } qw(intraday_delta_correction vega_correction risk_markup commission_markup),
     };
 
     my @bs_keys = ('S', 'K', 't', 'discount_rate', 'mu', 'vol');
     my @formula_args = $contract->pricing_engine->_formula_args;
-    $pricing_parameters->{bs_probability} = {map { $bs_keys[$_] => $formula_args[$_] } 0 .. $#bs_keys};
+    $pricing_parameters->{bs_probability} = {
+        payout => $contract->payout,
+        map { $bs_keys[$_] => $formula_args[$_] } 0 .. $#bs_keys
+    };
 
     $pricing_parameters->{vega_correction} = {
         historical_vol_mean_reversion => BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_vol_meanrev},
@@ -110,24 +112,9 @@ sub _get_pricing_parameter_from_IH_pricer {
     };
 
     $pricing_parameters->{commission_markup} = {
-        base_commission => $ask_probability->peek_amount('intraday_historical_fixed'),
-        quite_period_adjustment => $ask_probability->peek_amount('quiet_period_markup') ?  $ask_probability->peek_amount('quiet_period_markup') : 0,
+        base_commission         => $ask_probability->peek_amount('intraday_historical_fixed'),
+        quite_period_adjustment => $ask_probability->peek_amount('quiet_period_markup') ? $ask_probability->peek_amount('quiet_period_markup') : 0,
         map { $_ => $ask_probability->peek_amount($_) } qw(digital_spread_percentage dsp_scaling),
-    };
-
-
-    $pricing_parameters->{economic_events_markup} =
-        {map { $_ => $ask_probability->peek_amount($_) } qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup),};
-
-    $pricing_parameters->{economic_events_volatility_risk_markup} = {
-        theoretical_price_with_vol_adjusted_for_news => $pe->clone({
-                pricing_vol    => $pe->news_adjusted_pricing_vol,
-                intraday_trend => $pe->intraday_trend,
-            }
-            )->probability->amount,
-        volatility_adjusted_for_economic_event => $pe->news_adjusted_pricing_vol,
-        theoretical_price_with_normal_vol      => $pe->probability->amount,
-        normal_volatility                      => $contract->pricing_vol,
     };
 
     return $pricing_parameters;
@@ -145,37 +132,29 @@ sub _get_pricing_parameter_from_slope_pricer {
         map { $_ => $ask_probability->peek_amount($_) } qw(risk_markup commission_markup),
     };
 
-    my $theo_param = $debug_information->{$contract->code}{theo_probability}{parameters};
-    if ($theo_param->{base_vanilla_probability}) {
-        $theo_param->{vanilla_price} = $theo_param->{base_vanilla_probability};
-        delete $theo_param->{base_vanilla_probability};
-    }
-    $pricing_parameters->{theoretical_probability} = {map { $_ => $theo_param->{$_}{amount} } keys $theo_param};
-
     $pricing_parameters->{commission_markup} = {digital_spread_percentage => 0.035};
 
+    my $theo_param = $debug_information->{$contract->code}{theo_probability}{parameters};
 
     if ($contract->priced_with ne 'base') {
-        $pricing_parameters->{bs_probability} = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters});
-
+        $pricing_parameters->{bs_probability}   = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters});
         $pricing_parameters->{slope_adjustment} = {
             weight => $contract->code eq 'CALL' ? -1 : 1,
             slope => $theo_param->{slope_adjustment}{parameters}{slope},
             vanilla_vega => $theo_param->{slope_adjustment}{parameters}{vanilla_vega}{amount},
         };
     } else {
-        $pricing_parameters->{numeraire_probability}->{bs_probability} =
+        $pricing_parameters->{bs_probability} =
             _get_bs_probability_parameters($theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters});
         my $slope_param = $theo_param->{numeraire_probability}{parameters}{slope_adjustment}{parameters};
-        $pricing_parameters->{numeraire_probability}->{slope_adjustment} = {
+        $pricing_parameters->{slope_adjustment} = {
             weight => $contract->code eq 'CALL' ? -1 : 1,
             slope => $slope_param->{slope},
             vanilla_vega => $slope_param->{vanilla_vega}{amount},
         };
 
-        $pricing_parameters->{vanilla_price} = _get_bs_probability_parameters($theo_param->{vanilla_price}{parameters});
-
     }
+    $pricing_parameters->{bs_probability}->{payout} = $contract->payout;
     $pricing_parameters->{risk_markup} = $debug_information->{risk_markup}{parameters};
 
     return $pricing_parameters;
