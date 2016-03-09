@@ -8,14 +8,14 @@ use Test::Exception;
 use Test::NoWarnings;
 use Test::MockModule;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 
 my $now = Date::Utility->new;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => 'USD'});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD'});
 my $params = {
     bet_type         => 'SPREADU',
     underlying       => 'R_100',

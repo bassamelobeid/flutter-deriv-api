@@ -11,7 +11,7 @@ use File::Spec;
 use JSON qw(decode_json);
 use Date::Utility;
 use BOM::Market::Underlying;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 
 use BOM::Market::Data::Tick;

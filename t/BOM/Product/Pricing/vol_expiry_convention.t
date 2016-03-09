@@ -7,7 +7,7 @@ use Test::More tests => 2;
 use Test::Exception;
 use Test::NoWarnings;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
@@ -23,13 +23,13 @@ subtest 'tuesday to friday close' => sub {
 
     foreach my $now (map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [Date::Utility->new($_)->epoch, Date::Utility->new($_)] } keys $data) {
         my $surface_data = $data->{$now->datetime}{surface_data};
-        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
             {
                 symbol        => $_,
                 recorded_date => $now
             }) for qw(USD JPY JPY-USD);
-        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
                 underlying    => BOM::Market::Underlying->new('frxUSDJPY'),

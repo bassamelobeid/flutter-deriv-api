@@ -15,7 +15,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestPrice qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 my $at = BOM::Market::AggTicks->new;
 $at->flush;
@@ -43,7 +43,7 @@ $at->fill_from_historical_feed({
 my $recorded_date = $date_start->truncate_to_day;
 BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($underlying->symbol, $payout_currency, $recorded_date);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => 'JPY-USD',
@@ -120,7 +120,7 @@ subtest 'atm prices without economic events' => sub {
 
 subtest 'prices with economic events' => sub {
     my $event_date = $date_start->minus_time_interval('15m');
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'economic_events',
         {
             recorded_date => $event_date,

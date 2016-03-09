@@ -10,23 +10,23 @@ use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'SPC',
         recorded_date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'USD',
         date   => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'SPC',
@@ -82,7 +82,7 @@ subtest "can get volatility for strike, delta, and moneyness" => sub {
 
 subtest "cannot get volatility when underlying spot is undef" => sub {
     plan tests => 4;
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
             symbol         => 'SPC',
@@ -107,7 +107,7 @@ subtest "cannot get volatility when underlying spot is undef" => sub {
         );
     }
     'creates moneyness surface without spot reference';
-    is($v_new2->spot_reference, 101, 'spot reference retrieved from couch');
+    is($v_new2->spot_reference, 101, 'spot reference retrieved from database');
     lives_ok { $v_new2->get_volatility({days => 7, delta => 35}) } "can get_volatility";
 };
 
