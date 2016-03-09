@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Exception;
 use Test::MockModule;
 use JSON qw(decode_json);
