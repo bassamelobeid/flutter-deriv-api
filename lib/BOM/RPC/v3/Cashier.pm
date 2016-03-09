@@ -314,6 +314,11 @@ sub paymentagent_transfer {
         return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
+    my $limit = roundnear(0.01, amount_from_to_currency($client->get_limit_for_account_balance, USD => $currency_code));
+    if ($amount + $client->default_account->balance > $limit) {
+        return $reject_error_sub->(localize('Sorry, client balance will exceed limits with this payment.'));
+    }
+
     # execute the transfer
     my $now       = Date::Utility->new;
     my $today     = $now->datetime_ddmmmyy_hhmmss_TZ;
