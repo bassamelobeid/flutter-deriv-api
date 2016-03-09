@@ -104,7 +104,8 @@ subtest 'prepare_ask' => sub {
                duration_unit => 'm',
                duration => '2',
               };
-  
+  delete $expected->{barrier};
+  delete $expected->{barrier2};
   is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'result is ok after added date_expiry and barrier and barrier2');
 
 #  delete $params->{barrier};
