@@ -109,6 +109,8 @@ sub new {    ## no critic RequireArgUnpack
         )->string_from($STRING, $TOKEN_LENGTH);
         $self->{loginat} ||= time;
         BOM::System::RedisReplicated::redis_write()->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
+        # clear collection for expired sessions
+        _clear_session_collection($self);
         BOM::System::RedisReplicated::redis_write()->sadd('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $self->{token});
     }
     $self->{expires_in} ||= $EXPIRES_IN;
@@ -143,11 +145,15 @@ sub end_session {    ## no critic
     return unless $self->{token};
     BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION::' . $self->{token});
     BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $self->{token});
+    # delete only if no session left
+    BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}))
+        unless (scalar @{BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}))});
 }
 
-sub end_other_sessions {    ## no critic
+sub end_other_sessions {
     my $self = shift;
     return unless $self->{token};
+
     my $all_sessions = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}));
     # end all other session except current one
     for my $session (@$all_sessions) {
@@ -156,6 +162,17 @@ sub end_other_sessions {    ## no critic
             BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $session);
         }
     }
+    return;
+}
+
+sub _clear_session_collection {
+    my $self         = shift;
+    my $all_sessions = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}));
+    for my $session (@$all_sessions) {
+        BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $session)
+            unless BOM::System::RedisReplicated::redis_read()->get('LOGIN_SESSION::' . $session);
+    }
+    return;
 }
 
 1;
