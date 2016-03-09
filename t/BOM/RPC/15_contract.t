@@ -108,9 +108,15 @@ subtest 'prepare_ask' => sub {
   delete $expected->{barrier2};
   is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'result is ok after added date_expiry and barrier and barrier2');
 
-#  delete $params->{barrier};
-#  my $r = BOM::RPC::v3::Contract::prepare_ask($params);
-#  is($r->{barrier},'S0P', 'barrier is S0P if contract type is SPREAD.*');
+  delete $params->{barrier};
+  $expected->{barrier} = 'S0P';
+    is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'will set barrier default value and delete barrier2 if contract type is not like SPREAD and ASIAN');
+
+  delete $params->{barrier2};
+  for my $t qw(SPREAD ASIAN){
+    $params->{contract_type} = $t;
+    is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'will not set barrier if contract type is like SPREAD and ASIAN ');
+  }
 
 };
 
