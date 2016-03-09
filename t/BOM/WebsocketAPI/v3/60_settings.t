@@ -133,10 +133,10 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
 $t = $t->send_ok({
         json => {
-            "set_settings"     => 1,
-            "address_line_1"   => "Test Address Line 1",
-            "address_line_2"   => "Test Address Line 2",
-            "phone"            => "1234567890"
+            "set_settings"   => 1,
+            "address_line_1" => "Test Address Line 1",
+            "address_line_2" => "Test Address Line 2",
+            "phone"          => "1234567890"
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'PermissionDenied';
