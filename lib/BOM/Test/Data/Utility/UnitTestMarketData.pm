@@ -1,8 +1,8 @@
-package BOM::Test::Data::Utility::UnitTestCouchDB;
+package BOM::Test::Data::Utility::UnitTestMarketData;
 
 =head1 NAME
 
-BOM::Test::Data::Utility::UnitTestCouchDB
+BOM::Test::Data::Utility::UnitTestMarketData
 
 =head1 DESCRIPTION
 
@@ -10,7 +10,7 @@ To be used by an RMG unit test.
 
 =head1 SYNOPSIS
 
-  use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+  use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 =cut
 
@@ -157,7 +157,7 @@ sub create_doc {
     }
 
     # get data to insert
-    my $fixture = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/couch_unit_test.yml');
+    my $fixture = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/market_unit_test.yml');
     my $data    = $fixture->{$yaml_db}{data};
 
     die "Invalid yaml db name: $yaml_db" if not defined $data;
