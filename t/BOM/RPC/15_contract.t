@@ -139,7 +139,7 @@ subtest 'get_ask' => sub {
   "duration_unit"=> "s",
   "symbol"=> "R_100",
                };
-  diag(Dumper(BOM::RPC::v3::Contract::get_ask($params)));
+  diag(Dumper(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params))));
   ok(1);
 };
 
