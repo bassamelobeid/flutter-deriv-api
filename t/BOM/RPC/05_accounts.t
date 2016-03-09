@@ -1045,7 +1045,7 @@ subtest $method => sub {
       my @warn_strings;
         local $SIG{'__WARN__'} = sub {push @warn_strings, @_; };
       ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
-      diag(Dumper($warn_strings));
+      diag(Dumper(\@warn_strings));
     }
 
     $params->{args} = {%full_args};
