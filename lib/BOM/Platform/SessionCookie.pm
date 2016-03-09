@@ -1,3 +1,4 @@
+package BOM::Platform::SessionCookie;
 
 =head1 NAME
 
@@ -13,11 +14,11 @@ BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
 
 =cut
 
-package BOM::Platform::SessionCookie;
 use Bytes::Random::Secure;
 use JSON;
 use Carp;
 use Array::Utils qw (array_minus);
+use Digest::MD5 qw(md5_hex);
 
 use BOM::System::RedisReplicated;
 
@@ -108,10 +109,12 @@ sub new {    ## no critic RequireArgUnpack
         )->string_from($STRING, $TOKEN_LENGTH);
         $self->{loginat} ||= time;
         BOM::System::RedisReplicated::redis_write()->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
+        BOM::System::RedisReplicated::redis_write()->sadd('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $self->{token});
     }
     $self->{expires_in} ||= $EXPIRES_IN;
     $self->{issued_at} = time;
-    BOM::System::RedisReplicated::redis_write()->expire('LOGIN_SESSION::' . $self->{token}, $self->{expires_in});
+    BOM::System::RedisReplicated::redis_write()->expire('LOGIN_SESSION::' . $self->{token},                     $self->{expires_in});
+    BOM::System::RedisReplicated::redis_write()->expire('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $self->{expires_in});
     return bless $self, $package;
 }
 
