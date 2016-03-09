@@ -11,7 +11,7 @@ use Data::Dumper;
 
 use Date::Utility;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::System::Password;
@@ -54,8 +54,8 @@ sub test_schema {
 sub build_test_R_50_data {
     initialize_realtime_ticks_db();
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for qw(USD);
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'randomindex',
         {
             symbol => 'R_50',
