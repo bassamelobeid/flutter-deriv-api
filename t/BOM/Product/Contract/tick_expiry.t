@@ -164,7 +164,7 @@ subtest '2000GMT FX Blackout' => sub {
         ok $error[0]->{message} =~ /Tick Expiry Blackout/, 'correct error received';
 
         #Case 2: FX Non-Tick Expiry 
-        my $arg = {
+        $arg = {
         underlying   => 'frxUSDJPY',
         bet_type     => 'CALL',
         date_start   => $time_22GMT,
@@ -173,12 +173,12 @@ subtest '2000GMT FX Blackout' => sub {
         currency     => 'USD',
         payout       => 100,
         };
-        my $c = produce_contract($arg);
-        my @error = $c->_validate_start_date;
+        $c = produce_contract($arg);
+        @error = $c->_validate_start_date;
         ok !@error, 'has error';
          
         #Case 3: Non-FX Tick Expiry 
-        my $arg = {
+        $arg = {
         underlying   => 'R_100',
         bet_type     => 'CALL',
         date_start   => $time_22GMT,
@@ -187,12 +187,12 @@ subtest '2000GMT FX Blackout' => sub {
         currency     => 'USD',
         payout       => 100,
         };
-        my $c = produce_contract($arg);
-        my @error = $c->_validate_start_date;
+        $c = produce_contract($arg);
+        @error = $c->_validate_start_date;
         ok !@error, 'has error';
         
         #Case 4: Non-FX Non-Tick Expiry
-        my $arg = {
+        $arg = {
            underlying   => 'R_100',
            bet_type     => 'CALL',
            date_start   => $time_22GMT,
@@ -201,8 +201,8 @@ subtest '2000GMT FX Blackout' => sub {
            currency     => 'USD',
            payout       => 100,
            };
-        my $c = produce_contract($arg);
-        my @error = $c->_validate_start_date;
+        $c = produce_contract($arg);
+        @error = $c->_validate_start_date;
         ok !@error, 'has error';
 };
 };
