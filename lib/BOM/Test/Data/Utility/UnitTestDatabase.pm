@@ -257,7 +257,7 @@ sub create_fmb {
     return $fmb;
 }
 
-sub create_valid_contract {
+sub create_fmb_with_ticks {
     my $args = shift;
 
     my $is_expired = $args->{is_expired};
