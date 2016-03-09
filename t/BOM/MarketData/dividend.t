@@ -7,6 +7,7 @@ use Test::More tests => 2;
 use Test::Exception;
 use Test::NoWarnings;
 
+#we need this import here so the market-data db will be fresh for the test
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 use BOM::MarketData::Dividend;
