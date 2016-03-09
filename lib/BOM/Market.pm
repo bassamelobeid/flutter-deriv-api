@@ -337,7 +337,7 @@ has '_recheck_appconfig' => (
 
 =head2 disabled
 
-Is this market disabled in couch
+Is this market disabled 
 
 =cut
 

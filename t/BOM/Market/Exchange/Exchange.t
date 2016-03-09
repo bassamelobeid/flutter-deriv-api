@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use Test::MockTime qw( :all );
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 use Test::Most;
@@ -19,7 +19,7 @@ Readonly::Scalar my $HKSE_TRADE_DURATION_DAY => ((2 * 3600 + 29 * 60) + (2 * 360
 Readonly::Scalar my $HKSE_TRADE_DURATION_MORNING => 2 * 3600 + 29 * 60;
 Readonly::Scalar my $HKSE_TRADE_DURATION_EVENING => 2 * 3600 + 40 * 60;
 my $date = Date::Utility->new('2013-12-01');    # first of December 2014
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
     {
         recorded_date => $date,
@@ -39,7 +39,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         },
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('partial_trading', {
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('partial_trading', {
     recorded_date => $date,
     type => 'early_closes',
     calendar => {
@@ -54,7 +54,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('partial_trading', {
         },
     },
 });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('partial_trading', {
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('partial_trading', {
     recorded_date => $date,
     type => 'late_opens',
     calendar => {
@@ -63,7 +63,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('partial_trading', {
         },
     },
 });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(AUD GBP EUR USD HKD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency',        {symbol => $_}) for qw(AUD GBP EUR USD HKD);
 
 use BOM::Market::Exchange;
 use BOM::Market::Underlying;
