@@ -110,6 +110,8 @@ subtest 'prepare_ask' => sub {
 
   delete $params->{barrier};
   $expected->{barrier} = 'S0P';
+  delete $expected->{high_barrier};
+  delete $expected->{low_barrier};
     is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'will set barrier default value and delete barrier2 if contract type is not like SPREAD and ASIAN');
 
   delete $params->{barrier2};
