@@ -109,6 +109,13 @@ sub _get_pricing_parameter_from_IH_pricer {
         map { $_ => $ask_probability->peek_amount($_) } qw(economic_events_markup eod_market_risk_markup),
     };
 
+    $pricing_parameters->{commission_markup} = {
+        base_commission => $ask_probability->peek_amount('intraday_historical_fixed'),
+        quite_period_adjustment => $ask_probability->peek_amount('quiet_period_markup') ?  $ask_probability->peek_amount('quiet_period_markup') : 0,
+        map { $_ => $ask_probability->peek_amount($_) } qw(digital_spread_percentage dsp_scaling),
+    };
+
+
     $pricing_parameters->{economic_events_markup} =
         {map { $_ => $ask_probability->peek_amount($_) } qw(economic_events_volatility_risk_markup economic_events_spot_risk_markup),};
 
@@ -144,6 +151,9 @@ sub _get_pricing_parameter_from_slope_pricer {
         delete $theo_param->{base_vanilla_probability};
     }
     $pricing_parameters->{theoretical_probability} = {map { $_ => $theo_param->{$_}{amount} } keys $theo_param};
+
+    $pricing_parameters->{commission_markup} = {digital_spread_percentage => 0.035};
+
 
     if ($contract->priced_with ne 'base') {
         $pricing_parameters->{bs_probability} = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters});
