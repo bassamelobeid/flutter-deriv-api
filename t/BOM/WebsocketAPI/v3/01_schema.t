@@ -8,7 +8,8 @@ use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 use Finance::Asset;
-use BOM::Test::Data::Utility::UnitTestCouchDB;
+#we need this import here so the market-data db will be fresh for the test
+use BOM::Test::Data::Utility::UnitTestMarketData;
 use Date::Utility;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
