@@ -1,0 +1,6 @@
+BEGIN;
+
+CREATE SCHEMA bet_v1;
+GRANT USAGE ON SCHEMA bet_v1 to read, write;
+
+COMMIT;
