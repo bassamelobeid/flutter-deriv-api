@@ -29,13 +29,11 @@ sub account_GET {
         return $c->status_bad_request("No $currency_code account for client $client");
     }
 
-    my $limit = amount_from_to_currency $client->get_limit_for_account_balance, USD => $currency_code;
-
     return {
         client_loginid => $client->loginid,
         currency_code  => $currency_code,
         balance        => sprintf("%0.2f", $account->balance),
-        limit          => sprintf("%0.2f", $limit),
+        limit          => sprintf("%0.2f", $client->get_limit_for_account_balance),
     };
 }
 
