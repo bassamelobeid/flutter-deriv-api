@@ -7,6 +7,12 @@ use Test::Mojo;
 
 use BOM::RPC::v3::Contract;
 use BOM::Platform::Context qw (request);
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
+
 use Data::Dumper;
 request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
 subtest 'validate_symbol' => sub {
