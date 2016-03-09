@@ -1631,7 +1631,7 @@ sub _pricing_parameters {
         mu                => $self->mu,
         vol               => $self->pricing_vol,
         payouttime_code   => $self->payouttime_code,
-        contract_type     => $self->code,
+        contract_type     => $self->pricing_code,
         underlying_symbol => $self->underlying->symbol,
         market_data       => $self->_market_data,
         market_convention => $self->_market_convention,
