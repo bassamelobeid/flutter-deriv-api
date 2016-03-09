@@ -1440,7 +1440,11 @@ has tentative_events => (
 sub _build_tentative_events {
     my $self = shift;
 
-    return [grep { $_->{is_tentative} } @{$self->applicable_economic_events}];
+    my %affected_currency = (
+        $self->underlying->asset_symbol           => 1,
+        $self->underlying->quoted_currency_symbol => 1,
+    );
+    return [grep { $_->{is_tentative} and $affected_currency{$_->{symbol}} } @{$self->applicable_economic_events}];
 }
 
 sub _build_news_adjusted_pricing_vol {
