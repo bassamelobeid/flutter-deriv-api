@@ -78,7 +78,18 @@ subtest 'prepare_ask' => sub {
            "duration"      => "2",
            "duration_unit" => "m"
           };
-  diag(Dumper(BOM::RPC::v3::Contract::prepare_ask($p)));
+  is_deeply(BOM::RPC::v3::Contract::prepare_ask($p),   {
+               'barrier' => 'S0P',
+               'subscribe' => 1,
+               'duration' => '2m',
+               'amount_type' => 'payout',
+               'bet_type' => 'CALL',
+               'underlying' => 'R_50',
+               'currency' => 'USD',
+               'amount' => '2',
+               'proposal' => 1,
+               'date_start' => 0
+             }, 'prepare_ask result ok');
 };
 
 
