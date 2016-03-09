@@ -1042,10 +1042,10 @@ subtest $method => sub {
     delete $params->{args}{address_line_1};
 
     {
-        #suppress stderr error
-        open(my $fh, ">/dev/null");
-        local *STDERR = $fh;
-        ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
+      my @warn_strings;
+        local $SIG{'__WARN__'} = sub {push @warn_strings, @_; };
+      ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
+      diag(Dumper($warn_strings));
     }
 
     $params->{args} = {%full_args};
