@@ -106,29 +106,19 @@ subtest 'prepare_ask' => sub {
               };
   delete $expected->{barrier};
   delete $expected->{barrier2};
-  diag(__LINE__ . "\n");
-  diag(Dumper($params));
-  diag(Dumper($expected));
   is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'result is ok after added date_expiry and barrier and barrier2');
 
   delete $params->{barrier};
   $expected->{barrier} = 'S0P';
   delete $expected->{high_barrier};
   delete $expected->{low_barrier};
-  diag(__LINE__ . "\n");
-  diag(Dumper($params));
-  diag(Dumper($expected));
-
-  is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'will set barrier default value and delete barrier2 if contract type is not like SPREAD and ASIAN');
+    is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'will set barrier default value and delete barrier2 if contract type is not like SPREAD and ASIAN');
 
   delete $expected->{barrier};
   $expected->{barrier2} = 'S1P';
   for my $t (qw(SPREAD ASIAN)){
     $params->{contract_type} = $t;
     $expected->{bet_type} = $t;
-    diag(__LINE__ . "\n");
-    diag(Dumper($params));
-    diag(Dumper($expected));
     is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected, 'will not set barrier if contract type is like SPREAD and ASIAN ');
 
   }
