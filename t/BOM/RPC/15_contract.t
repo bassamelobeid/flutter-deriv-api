@@ -96,14 +96,14 @@ subtest 'prepare_ask' => sub {
                  barrier => 'S0P',
                  barrier2 => 'S1P',
                 };
-  $expected = (%$expected,
+  $expected = {%$expected,
               fixed_expiry => 1,
               high_barrier => 'S0P',
               low_barrier => 'S1P',
                date_expiry => '2015-01-01',
                duration_unit => 'm',
                duration => '2',
-              );
+              };
   
   is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected 'result is ok after added date_expiry and barrier and barrier2');
 
