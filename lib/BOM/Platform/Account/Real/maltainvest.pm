@@ -37,7 +37,7 @@ sub create_account {
         return $error;
     }
 
-    my $financial_assessment = get_financial_assessment_score($financial_data);
+    my $financial_assessment = BOM::Platform::Account::Real::default::get_financial_assessment_score($financial_data);
     if (not $accept_risk and $financial_assessment->{total_score} < 60) {
         return {error => 'show risk disclaimer'};
     }
@@ -69,140 +69,6 @@ sub create_account {
         });
     }
     return $status;
-}
-
-sub get_financial_input_mapping {
-    my $experience_possible_answer = {
-        '0-1 year'     => 0,
-        '1-2 years'    => 1,
-        'Over 3 years' => 2
-    };
-    my $frequency_possible_answer = {
-        '0-5 transactions in the past 12 months'        => 0,
-        '6-10 transactions in the past 12 months'       => 1,
-        '40 transactions or more in the past 12 months' => 2
-    };
-
-    my $financial_mapping = {
-        forex_trading_experience => {
-            'label'           => 'Forex trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        forex_trading_frequency => {
-            'label'           => 'Forex trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        indices_trading_experience => {
-            'label'           => 'Indices trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        indices_trading_frequency => {
-            'label'           => 'Indices trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        commodities_trading_experience => {
-            'label'           => 'Commodities trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        commodities_trading_frequency => {
-            'label'           => 'Commodities trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        stocks_trading_experience => {
-            'label'           => 'Stocks trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        stocks_trading_frequency => {
-            'label'           => 'Stocks trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        other_derivatives_trading_experience => {
-            'label'           => 'Binary options or other financial derivatives trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        other_derivatives_trading_frequency => {
-            'label'           => 'Binary options or other financial derivatives trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        other_instruments_trading_experience => {
-            'label'           => 'Other financial instruments trading experience',
-            'possible_answer' => $experience_possible_answer
-        },
-        other_instruments_trading_frequency => {
-            'label'           => 'Other financial instruments trading frequency',
-            'possible_answer' => $frequency_possible_answer
-        },
-        employment_industry => {
-            'label'           => 'Industry of Employment',
-            'possible_answer' => {
-                'Construction' => 0,
-                'Education'    => 0,
-                'Finance'      => 23,
-                'Health'       => 0,
-                'Tourism'      => 0,
-                'Other'        => 0
-            }
-        },
-        education_level => {
-            'label'           => 'Level of Education',
-            'possible_answer' => {
-                'Primary'   => 0,
-                'Secondary' => 1,
-                'Tertiary'  => 3
-            }
-        },
-        income_source => {
-            'label'           => 'Income Source',
-            'possible_answer' => {
-                'Salaried Employee'       => 0,
-                'Self-Employed'           => 0,
-                'Investments & Dividends' => 4,
-                'Pension'                 => 0,
-                'Other'                   => 0
-            }
-        },
-        net_income => {
-            'label'           => 'Net Annual Income',
-            'possible_answer' => {
-                'Less than $25,000'   => 0,
-                '$25,000 - $100,000'  => 1,
-                '$100,000 - $500,000' => 2,
-                'Over $500,000'       => 3
-            }
-        },
-        estimated_worth => {
-            'label'           => 'Estimated Net Worth',
-            'possible_answer' => {
-                'Less than $100,000'    => 0,
-                '$100,000 - $250,000'   => 1,
-                '$250,000 - $1,000,000' => 2,
-                'Over $1,000,000'       => 3
-            }}};
-    return $financial_mapping;
-}
-
-sub get_financial_assessment_score {
-    my $details = shift;
-
-    my $evaluated_data    = {};
-    my $financial_mapping = get_financial_input_mapping();
-    my $json_data         = {};
-    my $total_score       = 0;
-
-    foreach my $key (keys %{$financial_mapping}) {
-        if (my $answer = $details->{$key}) {
-            my $score = $financial_mapping->{$key}->{possible_answer}->{$answer};
-            $json_data->{$key}->{label}  = $financial_mapping->{$key}->{label};
-            $json_data->{$key}->{answer} = $answer;
-            $json_data->{$key}->{score}  = $score;
-            $total_score += $score;
-        }
-    }
-    $json_data->{total_score}      = $total_score;
-    $evaluated_data->{total_score} = $total_score;
-    $evaluated_data->{user_data}   = $json_data;
-
-    return $evaluated_data;
 }
 
 1;
