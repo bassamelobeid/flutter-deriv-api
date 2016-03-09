@@ -127,7 +127,7 @@ subtest 'Auth client' => sub {
 
 subtest 'Sell expired contract' => sub {
     lives_ok {
-        create_contract( $client, is_expired => 1 );
+        create_fmb( $client, is_expired => 1 );
     } 'Create expired contract for sell';
 
     $rpc_ct->call_ok(@params)
@@ -138,7 +138,7 @@ subtest 'Sell expired contract' => sub {
               'It should return counts of sold contracts' );
 
     lives_ok {
-        create_contract( $client );
+        create_fmb( $client );
     } 'Create expired contract for sell';
 
     $rpc_ct->call_ok(@params)
@@ -162,7 +162,7 @@ subtest 'Sell virtual client expired contract' => sub {
     $params[1]->{token} = $vclient_token;
 
     lives_ok {
-        create_contract( $vclient, is_expired => 1 );
+        create_fmb( $vclient, is_expired => 1 );
     } 'Create expired contract for sell';
 
     {
@@ -178,7 +178,7 @@ subtest 'Sell virtual client expired contract' => sub {
     }
 
     lives_ok {
-        create_contract( $vclient, is_expired => 1 );
+        create_fmb( $vclient, is_expired => 1 );
     } 'Create expired contract for sell';
 
     for (0..8) {
@@ -202,11 +202,11 @@ subtest 'Sell virtual client expired contract' => sub {
 
 done_testing();
 
-sub create_contract {
+sub create_fmb {
     my ( $client, %params ) = @_;
 
     my $account = $client->set_default_account('USD');
-    return BOM::Test::Data::Utility::UnitTestDatabase::create_valid_contract({
+    return BOM::Test::Data::Utility::UnitTestDatabase::create_fmb_with_ticks({
         %params,
         type               => 'fmb_higher_lower_call_buy',
         short_code_prefix  => 'CALL_R_100_26.49',
