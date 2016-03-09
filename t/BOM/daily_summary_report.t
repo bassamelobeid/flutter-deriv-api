@@ -16,13 +16,13 @@ use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Client::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => 'USD'});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index',    {symbol => 'R_100'});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD'});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('index',    {symbol => 'R_100'});
 
 my $today    = Date::Utility->new->truncate_to_day;
 my $next_day = $today->plus_time_interval('1d');
