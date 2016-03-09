@@ -727,8 +727,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_daily_turnover, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_daily_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your daily turnover limit of [_1][_2].',
@@ -780,9 +779,7 @@ my %known_errors = (
         }
 
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($self->client->get_limit_for_account_balance, USD => $currency)), 1);
-        my $account = BOM::Database::DataMapper::Account->new({
+        my $account  = BOM::Database::DataMapper::Account->new({
             client_loginid => $self->client->loginid,
             currency_code  => $currency,
         });
@@ -837,8 +834,7 @@ my %known_errors = (
         my $retry = shift;
 
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($self->client->get_limit_for_account_balance, USD => $currency)), 1);
+        my $limit = to_monetary_number_format($self->client->get_limit_for_account_balance, 1);
 
         my $account = BOM::Database::DataMapper::Account->new({
             client_loginid => $self->client->loginid,
@@ -869,15 +865,14 @@ my %known_errors = (
         }
 
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($self->client->get_limit_for_payout, USD => $currency)), 1);
+        my $limit = to_monetary_number_format($self->client->get_limit_for_payout, 1);
 
         return Error::Base->cuss(
             -type              => 'OpenPositionPayoutLimit',
             -mesg              => 'Client has reached maximum net payout for open positions',
             -message_to_client => BOM::Platform::Context::localize(
-                'Sorry, the aggregate payouts of contracts on your account cannot exceed [_2][_1].',
-                $limit, $currency
+                'Sorry, the aggregate payouts of contracts on your account cannot exceed [_1][_2].',
+                $currency, $limit
             ),
         );
     },
@@ -906,8 +901,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_daily_losses, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_daily_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your daily limit on losses of [_1][_2].', $currency, $limit);
 
@@ -922,8 +916,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_7day_turnover, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_7day_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 7-day turnover limit of [_1][_2].',
@@ -940,8 +933,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_7day_losses, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_7day_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 7-day limit on losses of [_1][_2].', $currency, $limit);
 
@@ -965,8 +957,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_30day_turnover, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_30day_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 30-day turnover limit of [_1][_2].',
@@ -983,8 +974,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_30day_losses, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_30day_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 30-day limit on losses of [_1][_2].', $currency, $limit);
 
