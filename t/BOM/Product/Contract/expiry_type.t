@@ -9,7 +9,7 @@ use Test::More tests => 3;
 use Test::Exception;
 use Test::NoWarnings;
 use Date::Utility;
-use BOM::Test::Data::Utility::UnitTestCouchDB;
+use BOM::Test::Data::Utility::UnitTestMarketData;
 my $time   = time;
 my $params = {
     bet_type     => 'CALL',
