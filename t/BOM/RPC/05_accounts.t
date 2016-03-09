@@ -1040,7 +1040,7 @@ subtest $method => sub {
     delete $params->{args}{address_line_1};
     print STDERR "here?\n";
     {
-      local STDERR = undef;
+      local *STDERR = undef;
       ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
     }
     print STDERR "end\n";
