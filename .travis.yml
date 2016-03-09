@@ -20,8 +20,6 @@ before_install:
     - sudo mkdir -p /home/git/regentmarkets
     - sudo cp -a $HOME/build/regentmarkets/bom-postgres /home/git/regentmarkets/
 
-    - /tmp/travis-scripts/couchdb.sh
-
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
