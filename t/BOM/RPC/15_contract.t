@@ -67,7 +67,7 @@ subtest 'validate_underlying' => sub {
 };
 
 subtest 'prepare_ask' => sub {
-  my $p = {
+  my $params = {
            "proposal"      => 1,
            "subscribe"     => 1,
            "amount"        => "2",
@@ -78,40 +78,38 @@ subtest 'prepare_ask' => sub {
            "duration"      => "2",
            "duration_unit" => "m"
           };
-  is_deeply(BOM::RPC::v3::Contract::prepare_ask($p),   {
-               'barrier' => 'S0P',
-               'subscribe' => 1,
-               'duration' => '2m',
-               'amount_type' => 'payout',
-               'bet_type' => 'CALL',
-               'underlying' => 'R_50',
-               'currency' => 'USD',
-               'amount' => '2',
-               'proposal' => 1,
-               'date_start' => 0
-                                                       }, 'prepare_ask result ok');
-  $p->{date_expiry} = '2015-01-01';
-  $p->{barrier} = 'S0P';
-  $p->{barrier2} = 'S1P';
-
-  is_deeply(BOM::RPC::v3::Contract::prepare_ask($p),  {
-               'fixed_expiry' => 1,
-               'high_barrier' => 'S0P',
-               'subscribe' => 1,
-               'low_barrier' => 'S1P',
-               'duration' => '2',
-               'date_expiry' => '2015-01-01',
-               'amount_type' => 'payout',
-               'bet_type' => 'CALL',
-               'underlying' => 'R_50',
-               'currency' => 'USD',
-               'amount' => '2',
-               'proposal' => 1,
-               'date_start' => 0,
-               'duration_unit' => 'm'
-                                                      }, 'result is ok after added date_expiry and barrier and barrier2');
-
+  my $expected =  {
+                          'barrier' => 'S0P',
+                          'subscribe' => 1,
+                          'duration' => '2m',
+                          'amount_type' => 'payout',
+                          'bet_type' => 'CALL',
+                          'underlying' => 'R_50',
+                          'currency' => 'USD',
+                          'amount' => '2',
+                          'proposal' => 1,
+                          'date_start' => 0
+                         };
+  is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected , 'prepare_ask result ok');
+  $params =  {%$params,
+                 date_expiry => '2015-01-01',
+                 barrier => 'S0P',
+                 barrier2 => 'S1P',
+                };
+  $expected = (%$expected,
+              fixed_expiry => 1,
+              high_barrier => 'S0P',
+              low_barrier => 'S1P',
+               date_expiry => '2015-01-01',
+               duration_unit => 'm',
+               duration => '2',
+              );
   
+  is_deeply(BOM::RPC::v3::Contract::prepare_ask($params), $expected 'result is ok after added date_expiry and barrier and barrier2');
+
+#  delete $params->{barrier};
+#  my $r = BOM::RPC::v3::Contract::prepare_ask($params);
+#  is($r->{barrier},'S0P', 'barrier is S0P if contract type is SPREAD.*');
 
 };
 
