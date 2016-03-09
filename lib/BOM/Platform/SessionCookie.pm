@@ -143,23 +143,26 @@ Deletes from redis
 sub end_session {    ## no critic
     my $self = shift;
     return unless $self->{token};
+
+    my $key = md5_hex($self->{email});
     BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION::' . $self->{token});
-    BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $self->{token});
+    BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . $key, $self->{token});
     # delete only if no session left
-    BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}))
-        unless (scalar @{BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}))});
+    BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION_COLLECTION::' . $key)
+        unless (scalar @{BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . $key)});
 }
 
 sub end_other_sessions {
     my $self = shift;
     return unless $self->{token};
 
-    my $all_sessions = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}));
+    my $key          = md5_hex($self->{email});
+    my $all_sessions = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . $key);
     # end all other session except current one
     for my $session (@$all_sessions) {
         unless ($session eq $self->{token}) {
             BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION::' . $session);
-            BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $session);
+            BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . $key, $session);
         }
     }
     return;
@@ -167,9 +170,10 @@ sub end_other_sessions {
 
 sub _clear_session_collection {
     my $self         = shift;
-    my $all_sessions = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}));
+    my $key          = md5_hex($self->{email});
+    my $all_sessions = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . $key);
     for my $session (@$all_sessions) {
-        BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $session)
+        BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . $key, $session)
             unless BOM::System::RedisReplicated::redis_read()->get('LOGIN_SESSION::' . $session);
     }
     return;
