@@ -89,7 +89,13 @@ subtest 'prepare_ask' => sub {
                'amount' => '2',
                'proposal' => 1,
                'date_start' => 0
-             }, 'prepare_ask result ok');
+                                                       }, 'prepare_ask result ok');
+  $p->{date_expiry} = '2015-01-01';
+  $p->{barrier} = 'S0P';
+  $p->{barrier2} = 'S1P';
+
+  diag(Dumper(BOM::RPC::v3::Contract::prepare_ask($p)));
+
 };
 
 
