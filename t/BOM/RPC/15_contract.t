@@ -190,7 +190,7 @@ subtest 'get_ask' => sub {
     #TODO I should  tesk the error of 'ContractBuyValidationError', But I don't know how to build a scenario to get there.
 
 
-    is_deeply(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask({})),{error =>
+    is_deeply(BOM::RPC::v3::Contract::get_ask({}),{error =>
                                                                                              {
                                                                                               message => '无法创建合约',
                                                                                               code => "ContractCreationFailure",
