@@ -16,11 +16,12 @@ use BOM::System::RedisReplicated;
 use Data::Dumper;
 # Test::MockModule cannot mock an imported function if that module use namespace::autoclean
 # so we disable it
+BEGIN {
+  use namespace::autoclean;
+  no warnings "redefine";
 
-use namespace::autoclean;
-no warnings "redefine";
-
-sub namespace::autoclean::import {
+  sub namespace::autoclean::import {
+  }
 }
 
 
