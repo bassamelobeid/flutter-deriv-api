@@ -19,20 +19,20 @@ use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/USD JPY GBP/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,

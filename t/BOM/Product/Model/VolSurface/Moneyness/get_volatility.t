@@ -13,17 +13,17 @@ use Date::Utility;
 use Scalar::Util qw(looks_like_number);
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Moneyness;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'SPC',
         recorded_date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
@@ -92,7 +92,7 @@ subtest "get_vol for term structure that exists on surface" => sub {
 subtest 'Interpolating down.' => sub {
     plan tests => 1;
 
-    my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
             recorded_date => Date::Utility->new,
@@ -112,7 +112,7 @@ subtest 'Interpolating down.' => sub {
 subtest "get_vol for interpolated term structure" => sub {
     plan tests => 7;
 
-    my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
             surface => {
