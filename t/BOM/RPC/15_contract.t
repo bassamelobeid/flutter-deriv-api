@@ -170,33 +170,23 @@ subtest 'get_ask' => sub {
     is_deeply($result, $expected, 'the left values are all right');
 
     $params->{symbol} = "invalid symbol";
-    is_deeply(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),{error =>
-                                                                                             {
-                                                                                              message => '不在此段期间提供交易。',
-                                                                                              code => "ContractBuyValidationError",
-                                                                                             }});
-
-    # I don't want to mock this module, but I don't know how to construct a scenario so that the code will return 'ContractValidationError'
-    #my $mocked_contract = Test::MockModule->new('BOM::Product::Contract');
-    #my $called = 0;
-    #$mocked_contract->mock('primary_validation_error', sub{$called = 1; return undef});
-    #is_deeply(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),{error =>
-    #                                                                                         {
-    #                                                                                          message => '不在此段期间提供交易。',
-    #                                                                                          code => "ContractValidationError",
-    #                                                                                         }});
-    #ok($called, 'called ?');
+    is_deeply(
+        BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
+        {
+            error => {
+                message => '不在此段期间提供交易。',
+                code    => "ContractBuyValidationError",
+            }});
 
     #TODO I should  tesk the error of 'ContractBuyValidationError', But I don't know how to build a scenario to get there.
 
-
-    is_deeply(BOM::RPC::v3::Contract::get_ask({}),{error =>
-                                                                                             {
-                                                                                              message => '无法创建合约',
-                                                                                              code => "ContractCreationFailure",
-                                                                                             }});
-
-
+    is_deeply(
+        BOM::RPC::v3::Contract::get_ask({}),
+        {
+            error => {
+                message => '无法创建合约',
+                code    => "ContractCreationFailure",
+            }});
 
 };
 
