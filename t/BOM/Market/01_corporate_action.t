@@ -9,7 +9,7 @@ use Test::NoWarnings;
 
 use BOM::MarketData::Fetcher::CorporateAction;
 use Quant::Framework::Utils::Test;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 Quant::Framework::Utils::Test::create_doc('corporate_action',
     {

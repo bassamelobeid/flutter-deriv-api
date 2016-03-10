@@ -134,7 +134,7 @@ sub _build_recorded_date {
 
 # Instances of this class are able to auto-reload themselves to ensure
 # that long-lived objects keep themselves up to date with change to the
-# underlying CouchDB document.
+# underlying data.
 #
 # This auto-reloading only occurs when the document is the
 # live_document however, as if it is not, the instance is essentially
