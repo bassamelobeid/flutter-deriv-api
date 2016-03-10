@@ -121,51 +121,60 @@ subtest 'Auth client' => sub {
 
 subtest $method => sub {
     my $fmb;
+    my $contract_id;
+    my @expected_contract_fields;
+
     lives_ok {
         $fmb = create_fmb ( $client, buy_bet => 1 )->financial_market_bet_record;
     } 'Initial bet';
 
-    my $expected_contract_data;
+    $rpc_ct->call_ok(@params)
+            ->has_no_system_error
+            ->has_no_error;
     lives_ok {
         my $bid = BOM::RPC::v3::Contract::get_bid({
             short_code  => $fmb->{short_code},
-            contract_id => $fmb->id,
+            contract_id => $fmb->{id},
             currency    => $client->currency,
             is_sold     => $fmb->{is_sold},
         });
 
-        $expected_contract_data = {
-            buy_price     => $fmb->{buy_price},
-            purchase_time => Date::Utility->new($fmb->{purchase_time})->epoch,
-            account_id    => $fmb->{account_id},
-            is_sold       => $fmb->{is_sold},
-            %$bid,
-        };
-    } 'Initial extected data';
+        @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold /;
+        push @expected_contract_fields, keys %$bid;
+    } 'Get extected data';
+    is_deeply(
+        [ sort keys %{ $rpc_ct->result->{ $fmb->{id} } } ],
+        [ sort @expected_contract_fields ],
+        'Should return contract and bid data' );
 
+    $params[1]->{contract_id} = $fmb->{id};
     $rpc_ct->call_ok(@params)
             ->has_no_system_error
-            ->has_no_error
-            ->result_is_deeply(
-                { $fmb->id => $expected_contract_data },
-                'Should return contract and bid data' );
+            ->has_no_error;
+    lives_ok {
+        my $bid = BOM::RPC::v3::Contract::get_bid({
+            short_code  => $fmb->{short_code},
+            contract_id => $fmb->{id},
+            currency    => $client->currency,
+            is_sold     => $fmb->{is_sold},
+        });
 
-    $params[1]->{contract_id} = $fmb->id;
-    $rpc_ct->call_ok(@params)
-            ->has_no_system_error
-            ->has_no_error
-            ->result_is_deeply(
-                { $fmb->id => $expected_contract_data },
-                'Should return contract and bid data by contract_id' );
+        @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold /;
+        push @expected_contract_fields, keys %$bid;
+    } 'Get extected data';
+    is_deeply(
+        [ sort keys %{ $rpc_ct->result->{ $fmb->{id} } } ],
+        [ sort @expected_contract_fields ],
+        'Should return contract and bid data by contract_id' );
 
-    my $contract_factory = Test::MockModule->new('BOM::Product::ContractFactory');
+    my $contract_factory = Test::MockModule->new('BOM::RPC::v3::Contract');
     $contract_factory->mock('produce_contract', sub { die });
 
     $rpc_ct->call_ok(@params)
             ->has_no_system_error
             ->result_is_deeply(
                 {
-                    $fmb->id => {
+                    $fmb->{id} => {
                         error => {
                             message_to_client => 'Извините, при обработке Вашего запроса произошла ошибка.',
                             code => 'GetProposalFailure',
