@@ -7,7 +7,8 @@ use Test::More tests => 2;
 use Test::Exception;
 use Test::NoWarnings;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+#we need this import here so the market-data db will be fresh for the test
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 use BOM::MarketData::Dividend;
 use Date::Utility;
@@ -22,7 +23,7 @@ subtest 'save dividend' => sub {
             symbol          => 'AEX',
         );
         ok $dvd->save, 'save without error';
-        lives_ok { BOM::MarketData::Dividend->new(symbol => 'AEX')->document } 'successfully retrieved saved document from couch';
+        lives_ok { BOM::MarketData::Dividend->new(symbol => 'AEX')->document } 'successfully retrieved saved document from data-store';
     }
     'sucessfully save dividend for AEX';
 };
