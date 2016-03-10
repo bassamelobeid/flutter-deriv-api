@@ -14,7 +14,7 @@ use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 
 use utf8;
 
-my ( $user, $client, $email );
+my $email = 'test'. rand(999) .'@binary.com';
 my ( $t, $rpc_ct );
 my $method;
 
@@ -26,13 +26,6 @@ my $params = {
 };
 
 subtest 'Initialization' => sub {
-    lives_ok {
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-        });
-        $email = 'test@binary.com';
-    } 'Initial client';
-
     lives_ok {
         $t = Test::Mojo->new('BOM::RPC');
         $rpc_ct = Test::BOM::RPC::Client->new( ua => $t->app->ua );
@@ -58,6 +51,28 @@ subtest $method => sub {
             ->error_code_is('email unverified', 'If email verification_code is wrong it should return error')
             ->error_message_is('Ваш электронный адрес не подтвержден.', 'If email verification_code is wrong it should return error_message');
 
+    $params->{args}->{verification_code} =
+        BOM::Platform::SessionCookie->new(
+            email => $email,
+        )->token;
+    $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error
+            ->has_error
+            ->error_code_is('invalid', 'If could not be created account it should return error')
+            ->error_message_is('Извините, но открытие счёта недоступно.', 'If could not be created account it should return error_message');
+
+    $params->{args}->{verification_code} =
+        BOM::Platform::SessionCookie->new(
+            email => $email,
+        )->token;
+    $params->{args}->{residence} = 'id';
+    $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error
+            ->has_no_error('If verification code is ok - account created successful');
+
+    is_deeply   [sort keys %{ $rpc_ct->result }],
+                [sort qw/ currency balance client_id /],
+                'It should return new account data';
 };
 
 done_testing();
