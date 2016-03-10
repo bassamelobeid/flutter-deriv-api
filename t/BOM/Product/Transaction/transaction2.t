@@ -236,7 +236,6 @@ SKIP: {
 
                 $txn->buy;
             };
-
             SKIP: {
                 skip 'no error', 6
                     unless (defined $error and (isa_ok $error, 'Error::Base'));
