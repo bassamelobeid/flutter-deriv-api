@@ -39,7 +39,6 @@ get email by address and subject(regexp)
 
 =cut
 
-use Data::Dumper;
 sub get_email_by_address_subject {
     my %cond = @_;
 
@@ -57,7 +56,7 @@ sub get_email_by_address_subject {
             my $address = $tmsg->header('To');
             #my $address = $to[0]->address();
             my $subject = $tmsg->header('Subject');
-            if ( $subject =~ /=\?UTF\-8/) {
+            if ($subject =~ /=\?UTF\-8/) {
                 $subject = decode('MIME-Header', $subject);
             }
 
