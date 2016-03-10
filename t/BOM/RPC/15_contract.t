@@ -170,8 +170,21 @@ subtest 'get_ask' => sub {
     is_deeply($result, $expected, 'the left values are all right');
 
     $params->{symbol} = "invalid symbol";
-    diag(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params))->{error}{message});
+    is_deeply(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),{error =>
+                                                                                             {
+                                                                                              message => '不在此段期间提供交易。',
+                                                                                              code => "ContractBuyValidationError",
+                                                                                             }});
 
+    # I don't want to mock this module, but I don't know how to construct a scenario so that the code will return 'ContractValidationError'
+    my $mocked_contract = Test::MockModule('BOM::Product::Contract');
+    $mocked_contract->mock('prmary_validation_error', sub{undef});
+    is_deeply(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),{error =>
+                                                                                             {
+                                                                                              message => '不在此段期间提供交易。',
+                                                                                              code => "ContractValidationError",
+                                                                                             }});
+    
 };
 
 done_testing();
