@@ -191,7 +191,7 @@ subtest 'get_ask' => sub {
 };
 
 subtest 'send_ask' => sub {
-  my $params = {langauge => 'ZH_CN', args => {
+  my $params = {language => 'ZH_CN', args => {
                 "proposal"      => 1,
                 "amount"        => "100",
                 "basis"         => "payout",
