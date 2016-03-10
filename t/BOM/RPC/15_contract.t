@@ -1,6 +1,13 @@
 use strict;
 use warnings;
 use utf8;
+#BEGIN {
+#use Test::MockModule;
+#my $namespace = Test::MockModule->new('namespace::autoclean');
+#$namespace->mock('import', sub{});
+#  use BOM::Product::Contract;
+#};
+
 use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
@@ -16,15 +23,12 @@ use BOM::System::RedisReplicated;
 use Data::Dumper;
 # Test::MockModule cannot mock an imported function if that module use namespace::autoclean
 # so we disable it
-#BEGIN
-{
-  use namespace::autoclean;
-  no warnings "redefine";
-
-  sub namespace::autoclean::import {
-  }
-  use BOM::Product::Contract;
-}
+#BEGIN {
+#use Test::MockModule;
+#my $namespace = Test::MockModule->new('namespace::autoclean');
+#$namespace->mock('import', sub{});
+#  use BOM::Product::Contract;
+#};
 
 
 initialize_realtime_ticks_db();
@@ -191,7 +195,7 @@ subtest 'get_ask' => sub {
     # I don't want to mock this module, but I don't know how to construct a scenario so that the code will return 'ContractValidationError'
     my $mocked_contract = Test::MockModule->new('BOM::Product::Contract');
     my $called = 0;
-    $mocked_contract->mock('prmary_validation_error', sub{$called = 1; return undef});
+    $mocked_contract->mock('primary_validation_error', sub{$called = 1; return undef});
     is_deeply(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),{error =>
                                                                                              {
                                                                                               message => '不在此段期间提供交易。',
