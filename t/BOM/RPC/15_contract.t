@@ -202,7 +202,7 @@ subtest 'send_ask' => sub {
                 "symbol"        => "R_50",
                };
   my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-  diag(Dumper($c->call_ok('send_ask', $params)));
+  diag(Dumper($c->call_ok('send_ask', $params)->result));
 };
 
 done_testing();
