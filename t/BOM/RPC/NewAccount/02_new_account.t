@@ -10,7 +10,6 @@ use Data::Dumper;
 
 use Test::BOM::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
-use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 
 use utf8;
 
