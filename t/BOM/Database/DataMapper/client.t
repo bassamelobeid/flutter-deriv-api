@@ -7,7 +7,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $res;
 my $details = {
-	first_name => 'Bond', # Adding space to check
+	first_name => 'Bond',
 	last_name => 'Lim',
 	date_of_birth => '1932-09-07',
 };
