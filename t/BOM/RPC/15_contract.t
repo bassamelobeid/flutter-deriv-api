@@ -170,7 +170,7 @@ subtest 'get_ask' => sub {
     is_deeply($result, $expected, 'the left values are all right');
 
     $params->{symbol} = "invalid symbol";
-    diag(Dumper BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params)));
+    diag(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params))->{error}{message});
 
 };
 
