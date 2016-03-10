@@ -25,7 +25,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => Date::Utility->new
     });
 
-request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
+request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN', client_ip => '127.0.0.1'}));
 subtest 'validate_symbol' => sub {
     is(BOM::RPC::v3::Contract::validate_symbol('R_50'), undef, "return undef if symbol is valid");
     is_deeply(
