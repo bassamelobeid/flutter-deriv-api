@@ -10,11 +10,11 @@ use Test::NoWarnings;
 use BOM::Market::Exchange;
 use Date::Utility;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 my $date = Date::Utility->new('2013-12-01');
 note("Exchange tests for_date " . $date->date);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
     {
         recorded_date => $date,

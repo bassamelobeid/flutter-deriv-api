@@ -6,7 +6,7 @@ use warnings;
 use Test::More tests => 3;
 use Test::NoWarnings;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Market::Exchange;
 use Test::MockModule;
 use YAML::XS qw(LoadFile);
@@ -26,7 +26,7 @@ subtest 'trading days' => sub {
     }
 };
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
     {
         recorded_date => $date,
