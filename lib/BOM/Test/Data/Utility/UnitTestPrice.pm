@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use Date::Utility;
 use BOM::Market::Underlying;
@@ -43,7 +43,7 @@ sub create_pricing_data {
     foreach my $underlying (@underlying_list) {
         if (grep { $underlying->volatility_surface_type eq $_ } qw(delta moneyness)) {
             next unless $underlying->volatility_surface_type;
-            BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+            BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 'volsurface_' . $underlying->volatility_surface_type,
                 {
                     symbol        => $underlying->symbol,
@@ -62,13 +62,13 @@ sub create_pricing_data {
     @currencies       = uniq(grep { defined } @currencies);
     @dividend_symbols = uniq(grep { defined } @dividend_symbols);
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
             symbol        => $_,
             recorded_date => $for_date
         }) for @dividend_symbols;
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol        => $_,
@@ -103,7 +103,7 @@ sub create_pricing_data {
                     '12M' => 0.307,
                 },
             }};
-        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'correlation_matrix',
             {
                 symbol        => 'indices',
