@@ -1397,8 +1397,9 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    my %legal_allowed_ct =
-        map { $_ => 1 } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_contract_types};
+    my $lc = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid);
+
+    my %legal_allowed_ct = map { $_ => 1 } @{$lc->legal_allowed_contract_types};
     if (not $legal_allowed_ct{$contract->code}) {
         return Error::Base->cuss(
             -type              => 'NotLegalContractCategory',
@@ -1407,7 +1408,7 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    if (not grep { $market_name eq $_ } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_markets}) {
+    if (not grep { $market_name eq $_ } @{$lc->legal_allowed_markets}) {
         return Error::Base->cuss(
             -type              => 'NotLegalMarket',
             -mesg              => 'Clients are not allowed to trade on this markets as its restricted for this landing company',
@@ -1421,6 +1422,15 @@ sub _validate_jurisdictional_restrictions {
             -mesg => 'Clients are not allowed to place Random contracts as their country is restricted.',
             -message_to_client =>
                 BOM::Platform::Context::localize('Sorry, contracts on Random Indices are not available in your country of residence'),
+        );
+    }
+
+    my %legal_allowed_underlyings = map { $_ => 1 } @{$lc->legal_allowed_underlyings};
+    if (not $legal_allowed_underlyings{all} and not $legal_allowed_underlyings{$contract->underlying->symbol}) {
+        return Error::Base->cuss(
+            -type              => 'NotLegalUnderlying',
+            -mesg              => 'Clients are not allowed to trade on this underlying as its restricted for this landing company',
+            -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this underlying.'),
         );
     }
 

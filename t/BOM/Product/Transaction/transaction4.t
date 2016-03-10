@@ -108,6 +108,98 @@ subtest 'validate legal allowed contract categories' => sub {
     is $error->{'-type'}, 'NotLegalContractCategory', 'error for MF';
 };
 
+subtest 'Validate legal_allowed_underlyings' => sub {
+    my $jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'JP'});
+
+    my $loginid       = $jp->loginid;
+    my $account       = $jp->default_account;
+    my $contract_args = {
+        underlying => 'frxUSDJPY',
+        bet_type   => 'CALLE',
+        currency   => 'JPY',
+        date_start => $now,
+        duration   => '5h',
+        payout     => 10,
+        barrier    => 'S0P',
+    };
+    my $c           = produce_contract($contract_args);
+    my $transaction = BOM::Product::Transaction->new({
+        client   => $jp,
+        contract => $c,
+    });
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for frxUSDJPY for JP account';
+
+    $contract_args->{underlying} = 'frxAUDCAD';
+    $c                           = produce_contract($contract_args);
+    $transaction                 = BOM::Product::Transaction->new({
+        client   => $jp,
+        contract => $c,
+    });
+    my $error = $transaction->_validate_jurisdictional_restrictions;
+    is $error->{'-type'}, 'NotLegalUnderlying', 'error for frxAUDCAD for JP account';
+
+    my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $cr->default_account;
+    $contract_args->{currency} = 'USD';
+    $contract_args->{bet_type} = 'CALL';
+    $c                         = produce_contract($contract_args);
+    $transaction               = BOM::Product::Transaction->new({
+        client   => $cr,
+        contract => $c,
+    });
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for frxUSDJPY for CR account';
+};
+
+subtest 'Validate legal allowed contract types' => sub {
+    my $jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'JP'});
+
+    my $loginid       = $jp->loginid;
+    my $account       = $jp->default_account;
+    my $contract_args = {
+        underlying => 'frxUSDJPY',
+        bet_type   => 'CALLE',
+        currency   => 'JPY',
+        date_start => $now,
+        duration   => '5h',
+        payout     => 10,
+        barrier    => 'S0P',
+    };
+    my $c           = produce_contract($contract_args);
+    my $transaction = BOM::Product::Transaction->new({
+        client   => $jp,
+        contract => $c,
+    });
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for CALLE for JP account';
+
+    $contract_args->{bet_type} = 'CALL';
+    $c                         = produce_contract($contract_args);
+    $transaction               = BOM::Product::Transaction->new({
+        client   => $jp,
+        contract => $c,
+    });
+    my $error = $transaction->_validate_jurisdictional_restrictions;
+    is $error->{'-type'}, 'NotLegalContractCategory', 'error for CALL for JP account';
+
+    my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $cr->default_account;
+    $contract_args->{currency} = 'USD';
+    $c                         = produce_contract($contract_args);
+    $transaction               = BOM::Product::Transaction->new({
+        client   => $cr,
+        contract => $c,
+    });
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for CALL for CR account';
+
+    $contract_args->{bet_type} = 'CALLE';
+    $c                         = produce_contract($contract_args);
+    $transaction               = BOM::Product::Transaction->new({
+        client   => $cr,
+        contract => $c,
+    });
+    $error = $transaction->_validate_jurisdictional_restrictions;
+    is $error->{'-type'}, 'NotLegalContractCategory', 'error for CALLE for CR account';
+};
+
 subtest 'Validate Jurisdiction Restriction' => sub {
     plan tests => 27;
     lives_ok { $client->residence('') } 'set residence to null to test jurisdiction validation';
