@@ -16,14 +16,15 @@ use BOM::System::RedisReplicated;
 use Data::Dumper;
 # Test::MockModule cannot mock an imported function if that module use namespace::autoclean
 # so we disable it
-#BEGIN {
-#  use namespace::autoclean;
-#  no warnings "redefine";
-#
-#  sub namespace::autoclean::import {
-#  }
-#  use BOM::Product::Contract;
-#}
+#BEGIN
+{
+  use namespace::autoclean;
+  no warnings "redefine";
+
+  sub namespace::autoclean::import {
+  }
+  use BOM::Product::Contract;
+}
 
 
 initialize_realtime_ticks_db();
