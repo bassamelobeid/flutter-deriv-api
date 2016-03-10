@@ -181,7 +181,7 @@ subtest $method => sub {
                         },
                     },
                 },
-                'Should return error insted contract data',
+                'Should return error instead contract data',
             );
 };
 
