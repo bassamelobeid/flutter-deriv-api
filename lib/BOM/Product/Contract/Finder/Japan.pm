@@ -96,7 +96,7 @@ Daily contract:
 
 =cut
 
-my $cache_keyspace = 'FINDER_PREDEFINED_TRADING';
+my $cache_keyspace = 'FINDER_PREDEFINED_SET';
 my $cache_sep      = '==';
 
 sub _predefined_trading_period {
