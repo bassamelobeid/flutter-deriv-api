@@ -234,83 +234,21 @@ SKIP: {
                     amount_type => 'payout',
                 });
 
-                my $error = do {
-                    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-                    $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+                $txn->buy;
+            };
 
-                    my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
-                    # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-                    $mock_transaction->mock(
-                        _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () }
-                    );
-                    $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            SKIP: {
+                skip 'no error', 6
+                    unless (defined $error and (isa_ok $error, 'Error::Base'));
 
-                    my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-                    (my $fname = $class) =~ s!::!/!g;
-                    $INC{$fname . '.pm'} = 1;
-                    my $mock_limits = Test::MockModule->new($class);
-                    $mock_limits->mock(tick_expiry_engine_turnover_limit =>
-                            sub { note "mocked app_config->quants->client_limits->tick_expiry_engine_turnover_limit returning 149.99"; 149.99 });
+                is $error->get_type, 'tick_expiry_engine_turnover_limitExceeded', 'error is tick_expiry_engine_turnover_limit';
 
-                    is $txn->buy, undef, 'bought 1st contract';
-                    is $txn->buy, undef, 'bought 2nd contract';
+                is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
+                is $error->{-mesg},              'Exceeds turnover limit on tick_expiry_engine_turnover_limit',   'mesg';
 
-                    # create a new transaction object to get pristine (undef) contract_id and the like
-                    $txn = BOM::Product::Transaction->new({
-                        client      => $cl,
-                        contract    => $contract,
-                        price       => 50.00,
-                        payout      => $contract->payout,
-                        amount_type => 'payout',
-                    });
-
-                    $txn->buy;
-                };
-                SKIP: {
-                    skip 'no error', 6
-                        unless (defined $error and (isa_ok $error, 'Error::Base'));
-
-                    is $error->get_type, 'tick_expiry_engine_turnover_limitExceeded', 'error is tick_expiry_engine_turnover_limit';
-
-                    is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-                    is $error->{-mesg},              'Exceeds turnover limit on tick_expiry_engine_turnover_limit',   'mesg';
-
-                    is $txn->contract_id,    undef, 'txn->contract_id';
-                    is $txn->transaction_id, undef, 'txn->transaction_id';
-                    is $txn->balance_after,  undef, 'txn->balance_after';
-                }
-
-                # now matching exactly the limit -- should succeed
-                $error = do {
-                    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-                    $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
-
-                    my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
-                    # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-                    $mock_transaction->mock(
-                        _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () }
-                    );
-                    $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
-
-                    my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-                    (my $fname = $class) =~ s!::!/!g;
-                    $INC{$fname . '.pm'} = 1;
-                    my $mock_limits = Test::MockModule->new($class);
-                    $mock_limits->mock(tick_expiry_engine_turnover_limit =>
-                            sub { note "mocked app_config->quants->client_limits->tick_expiry_engine_turnover_limit returning 150"; 150 });
-
-                    # create a new transaction object to get pristine (undef) contract_id and the like
-                    $txn = BOM::Product::Transaction->new({
-                        client      => $cl,
-                        contract    => $contract,
-                        price       => 50.00,
-                        payout      => $contract->payout,
-                        amount_type => 'payout',
-                    });
-
-                    $txn->buy;
-                };
-                is $error, undef, 'exactly matching the limit ==> successful buy';
+                is $txn->contract_id,    undef, 'txn->contract_id';
+                is $txn->transaction_id, undef, 'txn->transaction_id';
+                is $txn->balance_after,  undef, 'txn->balance_after';
             }
 
             # now matching exactly the limit -- should succeed
