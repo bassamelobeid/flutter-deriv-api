@@ -36,7 +36,7 @@ sub new_account_virtual {
         $err_code = 'Password is not strong enough.';
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err_code,
-                message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
+                message_to_client => localize($err_code)});
     }
 
     if (exists $args->{affiliate_token}) {
