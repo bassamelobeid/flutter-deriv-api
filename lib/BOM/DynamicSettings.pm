@@ -160,7 +160,7 @@ sub generate_settings_branch {
     };
 }
 
-#Contains the grouping of couch variables for displaying it on the Backoffice.
+#Contains the grouping of chronicle variables for displaying it on the Backoffice.
 sub get_settings_by_group {
     my $group          = shift;
     my $group_settings = {
