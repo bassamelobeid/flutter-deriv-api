@@ -1008,9 +1008,11 @@ subtest $method => sub {
     );
     my $mocked_client = Test::MockModule->new(ref($test_client));
     my $params        = {
-        language => 'ZH_CN',
-        token    => $token_vr,
-        args     => {address1 => 'Address 1'}};
+        language   => 'ZH_CN',
+        token      => $token_vr,
+        client_ip  => '127.0.0.1',
+        user_agent => 'agent',
+        args       => {address1 => 'Address 1'}};
     # in normal case the vr client's residence should not be null, so I update is as '' to simulate null
     $test_client_vr->residence('');
     $test_client_vr->save();
@@ -1038,7 +1040,14 @@ subtest $method => sub {
     );
     $params->{args} = {%full_args};
     delete $params->{args}{address_line_1};
-    ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
+
+    {
+        my $warn_string;
+        local $SIG{'__WARN__'} = sub { $warn_string = shift; };
+        ok($c->call_response($method, $params)->is_error, 'has error because address line 1 cannot be null');
+        like($warn_string, qr/ERROR:  null value in column "address_line_1" violates not-null/, 'address line 1 cannot be null');
+    }
+
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
     is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
