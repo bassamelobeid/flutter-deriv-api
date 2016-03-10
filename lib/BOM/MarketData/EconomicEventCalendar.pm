@@ -141,8 +141,6 @@ sub save {
                     $event->{$key} = $ete->{$key};
                 }
             }
-
-            #    $existing_tentatives->{$id} = {(%{$existing_tentatives->{$id}}, %$event)};
         } elsif ($event->{is_tentative}) {
             $existing_tentatives->{$id} = $event;
         }
@@ -153,8 +151,11 @@ sub save {
         delete $existing_tentatives->{$id} if time > $existing_tentatives->{$id}->{estimated_release_date} + 30 * 86400;
     }
 
-    # events sorted by release date are regular events that
-    # will impact contract pricing.
+    # We are only interest in events with a release_date so that we can actually act on it
+    # when we price contracts. $self->events could potentially contain:
+    # 1) regular scheduled events
+    # 2) tentative events that we do not care. (those that we don't add blockout times for them, we treat it as if they don't exist)
+    # 3) tentative events that we care. (with blockout time and release_date)
     my @regular_events =
         sort { $a->{release_date} <=> $b->{release_date} } grep { $_->{release_date} } @{$self->events};
     $self->_events(\@regular_events);
@@ -171,6 +172,7 @@ sub update {
     my $tentative_events = $self->get_tentative_events || {};
 
     croak "Specify a blackout start and end to update tentative event" unless ($params->{blankout} and $params->{blankout_end});
+    croak "could not find $params->{id} in tentative table" unless $tentative_events->{$params->{id}};
 
     $params->{release_date} = int(($params->{blankout} + $params->{blankout_end}) / 2);
     $existing_events->{events} = [] unless $existing_events->{events};
@@ -181,7 +183,6 @@ sub update {
         push @{$existing_events->{events}}, $params;
     }
 
-    croak "could not find $params->{id} in tentative table" unless $tentative_events->{$params->{id}};
     $tentative_events->{$params->{id}} = {(%{$tentative_events->{$params->{id}}}, %$params)};
 
     return (
