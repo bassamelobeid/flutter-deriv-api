@@ -6,7 +6,6 @@ use Test::Exception;
 use Test::NoWarnings;
 
 use Date::Utility;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
 use BOM::Market::Underlying;
 use BOM::Market::Registry;

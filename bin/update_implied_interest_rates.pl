@@ -8,7 +8,7 @@ with 'BOM::Utility::Logging';
 use BOM::MarketData::AutoUpdater::ImpliedInterestRates;
 use BOM::Platform::Runtime;
 
-sub documentation { return 'This is a cron that updates interest rates info from Bloomberg to CouchDB.'; }
+sub documentation { return 'This is a cron that updates interest rates info from Bloomberg to Chronicle.'; }
 
 sub script_run {
     my $self = shift;
