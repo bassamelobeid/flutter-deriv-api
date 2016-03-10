@@ -14,7 +14,7 @@ use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 
 use utf8;
 
-my ( $client, $client_email );
+my ( $user, $client, $email );
 my ( $t, $rpc_ct );
 my $method = 'verify_email';
 
@@ -29,13 +29,24 @@ my @params = (
 
 subtest 'Initialization' => sub {
     lives_ok {
+        my $password = 'jskjd8292922';
+        my $hash_pwd = BOM::System::Password::hashpw($password);
+
+        $email = 'exists_email' . rand(999) . '@binary.com';
+
+        $user = BOM::Platform::User->create(
+            email    => $email,
+            password => $hash_pwd
+        );
+        $user->save;
+
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
         });
-        $client_email = 'some_email@binary.com';
-        $client->email($client_email);
-        $client->save;
-    } 'Initial client';
+
+        $user->add_loginid({loginid => $client->loginid});
+        $user->save;
+    } 'Initial user and client';
 
     lives_ok {
         $t = Test::Mojo->new('BOM::RPC');
@@ -52,18 +63,19 @@ subtest 'Account opening request with email does not exist' => sub {
     $params[1]->{link} = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->has_no_error
-           ->result_is_deeply({ status => 1 }, "It always should return 1, so not to leak client's email");
+          ->has_no_system_error
+          ->has_no_error
+          ->result_is_deeply({ status => 1 }, "It always should return 1, so not to leak client's email");
 
     my %msg = get_email_by_address_subject(email => $params[1]->{email}, subject => qr/Подтвердите свой электронный адрес/);
     ok keys %msg, 'Email sent successful';
+    clear_mailbox();
 };
 
 subtest 'Account opening request with email exists' => sub {
     clear_mailbox();
 
-    $params[1]->{email} = $client_email;
+    $params[1]->{email} = $email;
     $params[1]->{type}  = 'account_opening';
     $params[1]->{website_name} = 'binary.com';
     $params[1]->{link} = 'binary.com/some_url';
@@ -73,8 +85,9 @@ subtest 'Account opening request with email exists' => sub {
            ->has_no_error
            ->result_is_deeply({ status => 1 }, "It always should return 1, so not to leak client's email");
 
-    my %msg = get_email_by_address_subject(email => $params[1]->{email}, subject => qr/\s/);
+    my %msg = get_email_by_address_subject(email => $params[1]->{email}, subject => qr/Предоставлен дублирующий Email/);
     ok keys %msg, 'Email sent successful';
+    clear_mailbox();
 };
 
 done_testing();
