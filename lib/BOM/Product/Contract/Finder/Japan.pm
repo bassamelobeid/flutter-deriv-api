@@ -46,7 +46,6 @@ sub available_contracts_for_symbol {
 
         for my $o (@offerings) {
             my $cc = $o->{contract_category};
-            my $bc = $o->{barrier_category};
 
             my $cat = BOM::Product::Contract::Category->new($cc);
             $o->{contract_category_display} = $cat->display_name;
@@ -360,11 +359,13 @@ sub _set_predefined_barriers {
     }
 
     if ($contract->{barriers} == 1) {
-        my @barriers = sort values %$available_barriers;
+        my @keys = keys %$available_barrier;
+        my @barriers = sort map {$available_barrier->{$_}->{barrier}} @keys ;
+        $contract->{expired_barriers} = $contract->{barrier_category} ne 'american' ? [] : sort map {$available_barrier->{$_}->{barrier}} grep { not $available_barrier->{$_}->{expired}} @keys;
         $contract->{available_barriers} = \@barriers;
         $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @barriers;
     } elsif ($contract->{barriers} == 2) {
-        $contract->{available_barriers} = _get_barriers_pair({
+        ($contract->{available_barriers}, $contract->{expired_barriers}) = _get_barriers_pair({
             contract_category  => $contract->{contract_category},
             available_barriers => $available_barriers,
         });
@@ -395,12 +396,21 @@ sub _get_barriers_pair {
         ? ((45, 55), (40, 60), (35, 65), (20, 80), (5, 95))
         : ((45, 55), (40, 50), (50, 60), (35, 45), (55, 65), (20, 40), (60, 80));
     my @barriers;
+    my @expired_barriers = [];
     for (my $i = 0; $i < (scalar @keys); $i += 2) {
 
-        push @barriers, [$available_barriers->{$keys[$i]}, $available_barriers->{$keys[$i + 1]}];
+       if ($contract_category eq 'staysinout'){
+           if ($available_barriers->{$keys[$i]}->{expired} or  $available_barriers->{$keys[$i + 1]}->{expired}){
+           push @expired_barriers, [$available_barriers->{$keys[$i]}->{barrier}, $available_barriers->{$keys[$i + 1]}->{barrier}];
+           }
+
+       }
+
+
+        push @barriers, [$available_barriers->{$keys[$i]}->{barrier}, $available_barriers->{$keys[$i + 1]}->{barrier}];
     }
 
-    return \@barriers;
+    return [\@barriers, \@expired_barriers];
 
 }
 
@@ -421,8 +431,8 @@ sub _split_boundaries_barriers {
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
     my @steps                       = (5, 10, 15, 30, 45);
     my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
-    my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
-    $barriers{50} = $spot_at_start;
+    my %barriers                    = map { (50 - $_ => {barrier => $spot_at_start - $_ * $minimum_step}, 50 + $_ => {barrier =>$spot_at_start + $_ * $minimum_step}) } @steps;
+    $barriers{50}{barrier} = $spot_at_start;
     return \%barriers;
 }
 
