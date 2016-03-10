@@ -1207,7 +1207,7 @@ subtest 'tentative events' => sub {
     my $now = Date::Utility->new;
     my $blackout_start = $now->minus_time_interval('1h');
     my $blackout_end = $now->plus_time_interval('1h');
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'economic_events',
         {
             recorded_date => Date::Utility->new(),
