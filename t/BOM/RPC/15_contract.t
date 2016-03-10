@@ -190,4 +190,19 @@ subtest 'get_ask' => sub {
 
 };
 
+subtest 'send_ask' => sub {
+  my $params = {
+                "proposal"      => 1,
+                "amount"        => "100",
+                "basis"         => "payout",
+                "contract_type" => "CALL",
+                "currency"      => "USD",
+                "duration"      => "60",
+                "duration_unit" => "s",
+                "symbol"        => "R_50",
+               };
+  my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+  diag(Dumper($c->call_ok('send_ask', $params)));
+};
+
 done_testing();
