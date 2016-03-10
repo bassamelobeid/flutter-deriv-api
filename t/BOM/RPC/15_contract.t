@@ -192,7 +192,7 @@ subtest 'get_ask' => sub {
 
     is_deeply(BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask({})),{error =>
                                                                                              {
-                                                                                              message => '不在此段期间提供交易。',
+                                                                                              message => '无法创建合约',
                                                                                               code => "ContractCreationFailure",
                                                                                              }});
 
