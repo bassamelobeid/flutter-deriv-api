@@ -1,13 +1,6 @@
 use strict;
 use warnings;
 use utf8;
-#BEGIN {
-#use Test::MockModule;
-#my $namespace = Test::MockModule->new('namespace::autoclean');
-#$namespace->mock('import', sub{});
-#  use BOM::Product::Contract;
-#};
-
 use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
@@ -21,15 +14,6 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::System::RedisReplicated;
 
 use Data::Dumper;
-# Test::MockModule cannot mock an imported function if that module use namespace::autoclean
-# so we disable it
-#BEGIN {
-#use Test::MockModule;
-#my $namespace = Test::MockModule->new('namespace::autoclean');
-#$namespace->mock('import', sub{});
-#  use BOM::Product::Contract;
-#};
-
 
 initialize_realtime_ticks_db();
 
