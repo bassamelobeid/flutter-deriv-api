@@ -14,6 +14,15 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::System::RedisReplicated;
 
 use Data::Dumper;
+# Test::MockModule cannot mock an imported function if that module use namespace::autoclean
+# so we disable it
+
+use namespace::autoclean;
+no warnings "redefine";
+
+sub namespace::autoclean::import {
+}
+
 
 initialize_realtime_ticks_db();
 
