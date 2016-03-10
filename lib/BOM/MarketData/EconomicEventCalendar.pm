@@ -23,7 +23,7 @@ Represents an economic event in the financial market
 
 use Moose;
 use JSON;
-use Digest::MD5 qw(md5_hex);
+use ForexFactory;
 
 extends 'BOM::MarketData';
 
@@ -220,17 +220,13 @@ sub get_latest_events_for_period {
     for my $doc (@{$documents}) {
         #combine $doc->{events} with current $events
         my $doc_events = $doc->{events};
-
         for my $doc_event (@{$doc_events}) {
-            $doc_event->{id} = substr(
-                md5_hex(
-                          Date::Utility->new($doc_event->{release_date})->truncate_to_day()->epoch
-                        . $doc_event->{event_name}
-                        . $doc_event->{symbol}
-                        . $doc_event->{impact}
-                ),
-                0, 16
-            ) unless defined $doc_event->{id};
+            $doc_event->{id} =
+                ForexFactory::generate_id(Date::Utility->new($doc_event->{release_date})->truncate_to_day()->epoch
+                    . $doc_event->{event_name}
+                    . $doc_event->{symbol}
+                    . $doc_event->{impact})
+                unless defined $doc_event->{id};
 
             $all_events{$doc_event->{id}} = $doc_event if ($doc_event->{release_date} >= $from and $doc_event->{release_date} <= $to);
         }

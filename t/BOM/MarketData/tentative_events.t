@@ -11,7 +11,7 @@ use Test::MockModule;
 use Date::Utility;
 use BOM::System::Chronicle;
 use BOM::MarketData::EconomicEventCalendar;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 my $c_read = BOM::System::Chronicle::get_chronicle_reader;
 
