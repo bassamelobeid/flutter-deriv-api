@@ -7,7 +7,6 @@ use Data::Dumper;
 
 use BOM::Platform::Runtime::AppConfig;
 use BOM::Platform::Runtime::LandingCompany::Registry;
-use BOM::Platform::Data::Sources;
 use BOM::Platform::Runtime::Broker::Codes;
 use BOM::Platform::Runtime::Website::List;
 use YAML::XS;
@@ -57,18 +56,6 @@ Returns an reference to an BOM::Platform::Runtime::Broker::Codes object.
 =cut
 
 has 'broker_codes' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-=head2 datasources
-
-Returns an reference to an BOM::Platform::Data::Sources object.
-You can get access to various datasources with this.
-
-=cut
-
-has 'datasources' => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -189,11 +176,6 @@ sub _build_broker_codes {
     return BOM::Platform::Runtime::Broker::Codes->new(
         landing_companies  => $self->landing_companies,
         broker_definitions => YAML::XS::LoadFile('/etc/rmg/broker_codes.yml'));
-}
-
-sub _build_datasources {
-    my $self = shift;
-    return BOM::Platform::Data::Sources->new();
 }
 
 sub _build_landing_companies {
