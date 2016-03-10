@@ -78,29 +78,30 @@ sub prepare_ask {
 
 sub get_ask {
     my $p2 = shift;
+
     my $response;
     try {
         my $tv       = [Time::HiRes::gettimeofday];
         my $contract = produce_contract({%$p2});
-        print "line: " . __LINE__, "\n";
-        if (!$contract->is_valid_to_buy) {        print "line: " . __LINE__, "\n";
-            if (my $pve = $contract->primary_validation_error) {        print "line: " . __LINE__, "\n";
+
+        if (!$contract->is_valid_to_buy) {
+            if (my $pve = $contract->primary_validation_error) {
                 $response = {
                     error => {
                         message => $pve->message_to_client,
                         code    => "ContractBuyValidationError"
-                    }};        print "line: " . __LINE__, "\n";
-            } else {        print "line: " . __LINE__, "\n";
+                    }};
+            } else {
                 $response = {
                     error => {
                         message => BOM::Platform::Context::localize("Cannot validate contract"),
                         code    => "ContractValidationError"
-                    }};        print "line: " . __LINE__, "\n";
-            }        print "line: " . __LINE__, "\n";
-        } else {        print "line: " . __LINE__, "\n";
+                    }};
+            }
+        } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
-                        print "line: " . __LINE__, "\n";
+
             $response = {
                 longcode      => $contract->longcode,
                 payout        => $contract->payout,
@@ -108,17 +109,17 @@ sub get_ask {
                 display_value => $display_value,
                 spot_time     => $contract->current_tick->epoch,
                 date_start    => $contract->date_start->epoch
-            };        print "line: " . __LINE__, "\n";
-            if ($contract->underlying->feed_license eq 'realtime') {        print "line: " . __LINE__, "\n";
+            };
+            if ($contract->underlying->feed_license eq 'realtime') {
                 $response->{spot} = $contract->current_spot;
-            }        print "line: " . __LINE__, "\n";
+            }
             $response->{spread} = $contract->spread if $contract->is_spread;
-        }        print "line: " . __LINE__, "\n";
+        }
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
         stats_timing('compute_price.buy.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
-    catch {        print "line: " . __LINE__, "\n";
+    catch {
         $response = {
             error => {
                 message => BOM::Platform::Context::localize("Cannot create contract"),
