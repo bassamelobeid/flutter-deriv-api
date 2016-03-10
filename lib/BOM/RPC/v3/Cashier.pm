@@ -314,7 +314,7 @@ sub paymentagent_transfer {
         return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
-    if ($amount + $client->default_account->balance > $client->get_limit_for_account_balance) {
+    if ($amount + $client_to->default_account->balance > $client_to->get_limit_for_account_balance) {
         return $reject_error_sub->(localize('Sorry, client balance will exceed limits with this payment.'));
     }
 
