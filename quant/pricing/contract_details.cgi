@@ -19,6 +19,7 @@ use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
+BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
 my ($pricing_parameters, $start);
 my $original_contract =
@@ -40,16 +41,14 @@ if ($original_contract) {
 }
 
 my $display = $params{download} ? 'download' : 'display';
-if ($display ne 'download') {
-    PrintContentType();
-    BrokerPresentation("Contract's details");
-    BOM::Backoffice::Auth0::can_access(['Quants']);
-    Bar("Contract's Parameters");
-
-} elsif ($display eq 'download') {
+if ($display eq 'download') {
     output_as_csv($pricing_parameters);
     return;
 }
+
+PrintContentType();
+BrokerPresentation("Contract's details");
+Bar("Contract's Parameters");
 
 sub output_as_csv {
     my $param    = shift;
