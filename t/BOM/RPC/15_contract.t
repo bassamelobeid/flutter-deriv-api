@@ -160,7 +160,6 @@ subtest 'get_ask' => sub {
     my $result = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
-    diag($result->{longcode});
     my $expected = {
         'display_value' => '51.49',
         'ask_price'     => '51.49',
