@@ -6,7 +6,7 @@ use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
 
 subtest 'BOM::Product::Contract::Invalid' => sub {
