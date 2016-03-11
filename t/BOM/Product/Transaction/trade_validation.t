@@ -823,7 +823,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
         is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
         like(
             $error->{-message_to_client},
-            qr/The underlying market has moved too much since you priced the contract. The contract sell price has changed from GBP10.60 to GBP10.00./,
+            qr/The underlying market has moved too much since you priced the contract. The contract sell price has changed from GBP10.90 to GBP10.00./,
             'price move - msg to client'
         );
 
