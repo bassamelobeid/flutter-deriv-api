@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Knowledge Test Receive",
-  "description": "A message with Knowledge Test",
+  "title": "Japan Knowledge Test Receive",
+  "description": "Receive message for Japan Knowledge Test",
   "properties": {
     "echo_req": {
       "title":"Echo request",
@@ -13,9 +13,9 @@
       "title": "Japan Knowledge Test",
       "description": "Knowledge Test for Japan real money account opening",
       "properties": {
-        "test_taken_time": {
+        "test_taken_epoch": {
           "type": "integer",
-          "description": "Test taken time in epoch"
+          "description": "Test taken time in epoch, as store in database."
         }
       }
     },
