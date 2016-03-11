@@ -612,7 +612,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _validate_payout_limit
             _is_valid_to_sell
             _validate_currency
-            _validate_trade_pricing_adjustment
+            _validate_sell_pricing_adjustment
             _validate_date_pricing/
             );
 
@@ -1077,6 +1077,71 @@ sub _build_pricing_comment {
     }
 
     return sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
+}
+
+sub _validate_sell_pricing_adjustment {
+    my $self = shift;
+
+    # spreads and digits prices don't jump
+    return if $self->contract->is_spread;
+
+    my $contract = $self->contract;
+    my $currency = $contract->currency;
+
+    my $requested         = $self->price / $self->payout;
+    my $recomputed        = $contract->bid_probability->amount;
+    my $move              = $recomputed - $requested;
+    my $commission_markup = 0;
+    if (not $contract->is_expired) {
+        if ($contract->new_interface_engine) {
+            $commission_markup = $contract->pricing_engine->commission_markup;
+        } else {
+            $commission_markup = $contract->bid_probability->peek_amount('commission_markup') || 0;
+        }
+    }
+    my $allowed_move = $commission_markup * 0.5;
+    $allowed_move = 0 if $recomputed == 1;
+    my ($amount, $recomputed_amount) = ($self->price, $contract->bid_price);
+
+    if ($move != 0) {
+        my $final_value;
+        if ($contract->is_expired) {
+            return Error::Base->cuss(
+                -type              => 'BetExpired',
+                -mesg              => 'Bet expired with a new price[' . $recomputed_amount . '] (old price[' . $amount . '])',
+                -message_to_client => BOM::Platform::Context::localize('The contract has expired'),
+            );
+        } elsif ($allowed_move == 0) {
+            $final_value = $recomputed_amount;
+        } elsif ($move < -$allowed_move) {
+            my $market_moved = BOM::Platform::Context::localize('The underlying market has moved too much since you priced the contract. ');
+            $market_moved .= BOM::Platform::Context::localize(
+                'The contract [_4] has changed from [_1][_2] to [_1][_3].',
+                $currency,
+                to_monetary_number_format($amount),
+                to_monetary_number_format($recomputed_amount),
+                'sell price'
+            );
+
+            return Error::Base->cuss(
+                -type => 'PriceMoved',
+                -mesg =>
+                    "Difference between submitted and newly calculated bet price: currency $currency, amount: $amount, recomputed amount: $recomputed_amount",
+                -message_to_client => $market_moved,
+            );
+        } else {
+            if ($move <= $allowed_move and $move >= -$allowed_move) {
+                $final_value = $amount;
+            } elsif ($move > $allowed_move) {
+                $self->execute_at_better_price(1);
+                $final_value = $recomputed_amount;
+            }
+        }
+
+        $self->price($final_value);
+    }
+
+    return;
 }
 
 sub _validate_trade_pricing_adjustment {
