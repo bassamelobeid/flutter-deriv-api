@@ -390,7 +390,7 @@ sub jp_knowledge_test {
         $jp_client->set_status('jp_activation_pending', 'system', 'pending verification documents from client.');
     } else {
         $jp_client->clr_status($client_status->status_code) if ($client_status->status_code eq 'jp_knowledge_test_pending');
-        $jp_client->set_status('jp_knowledge_test_fail', 'system', "Failed test with score: $score.");
+        $jp_client->set_status('jp_knowledge_test_fail', 'system', "Failed test with score: $score.", $now->datetime_ddmmmyy_hhmmss);
     }
 
     # append result in financial_assessment record
@@ -419,9 +419,10 @@ sub jp_knowledge_test {
             message            => [localize('Please reply to this email to send us documents for verification.')],
             use_email_template => 1,
         });
-        BOM::System::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to require for docs.', $client->loginid);
+        BOM::System::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to request for docs.', $client->loginid);
     }
-    return 1;
+
+    return { test_taken_epoch => $now->epoch };
 }
 
 1;
