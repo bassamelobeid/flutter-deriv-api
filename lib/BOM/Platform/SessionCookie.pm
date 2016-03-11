@@ -147,9 +147,6 @@ sub end_session {    ## no critic
     my $key = md5_hex($self->{email});
     BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION::' . $self->{token});
     BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . $key, $self->{token});
-    # delete only if no session left
-    BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION_COLLECTION::' . $key)
-        unless (scalar @{BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . $key)});
 }
 
 sub end_other_sessions {

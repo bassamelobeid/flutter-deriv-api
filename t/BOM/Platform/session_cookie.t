@@ -94,4 +94,24 @@ is $old_session->token, undef, 'Cannot access old token';
 $old_session = BOM::Platform::SessionCookie->new({token => $session_cookie2->token});
 is $old_session->token, undef, 'Cannot access old token';
 
+$session_cookie3->end_session();
+$all_session = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($email));
+
+$session_cookie3->end_session();
+$all_session = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($email));
+is scalar @$all_session, 0, 'All session ended correctly';
+
+$session_cookie3 = BOM::Platform::SessionCookie->new(
+    loginid    => $loginid,
+    email      => $email,
+    expires_in => 1
+);
+ok $session_cookie3->token, 'token not expired yet';
+
+# make sure token expires so sleeping
+sleep(4);
+
+$session_cookie3 = BOM::Platform::SessionCookie->new({token => $session_cookie3->token});
+is $session_cookie3->token, undef, 'token already expired';
+
 done_testing();
