@@ -15,9 +15,9 @@ use utf8;
 
 my $email = 'test'. rand(999) .'@binary.com';
 my ( $t, $rpc_ct );
-my $method;
+my ( $method, $params );
 
-my $params = {
+$params = {
     language => 'RU',
     source => 1,
     country => 'ru',
@@ -72,6 +72,67 @@ subtest $method => sub {
     is_deeply   [sort keys %{ $rpc_ct->result }],
                 [sort qw/ currency balance client_id /],
                 'It should return new account data';
+};
+
+$method = 'new_account_real';
+$params = {
+    language => 'RU',
+    source => 1,
+    country => 'ru',
+    args => {},
+};
+
+subtest $method => sub {
+    my ( $client, $auth_token, $session );
+
+    subtest 'Initialization' => sub {
+        lives_ok {
+            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+            });
+
+            $auth_token = BOM::Database::Model::AccessToken->new->create_token( $client->loginid, 'test token' );
+
+            $session = BOM::Platform::SessionCookie->new(
+                loginid => $client->loginid,
+                email   => $client->email,
+            )->token;
+        } 'Initial client';
+    };
+
+    subtest 'Auth client' => sub {
+        $rpc_ct->call_ok($method, $params)
+               ->has_no_system_error
+               ->error_code_is( 'InvalidToken',
+                                'It should return error: InvalidToken' );
+
+        $params->{token} = 'wrong token';
+        $rpc_ct->call_ok($method, $params)
+               ->has_no_system_error
+               ->error_code_is( 'InvalidToken',
+                                'It should return error: InvalidToken' );
+
+        delete $params->{token};
+        $rpc_ct->call_ok($method, $params)
+               ->has_no_system_error
+               ->error_code_is( 'InvalidToken',
+                                'It should return error: InvalidToken' );
+
+        $params->{token} = $auth_token;
+
+        {
+            my $module = Test::MockModule->new('BOM::Platform::Client');
+            $module->mock( 'new', sub {} );
+
+            $rpc_ct->call_ok($method, $params)
+                  ->has_no_system_error
+                  ->has_error
+                  ->error_code_is( 'AuthorizationRequired', 'It should check auth' );
+        }
+    };
+
+
+
 };
 
 done_testing();
