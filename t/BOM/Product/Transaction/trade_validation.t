@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 11;
+use Test::Most tests => 12;
 use Test::NoWarnings;
 use File::Spec;
 use JSON qw(decode_json);
@@ -811,7 +811,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
             barrier      => 'S0P',
         });
 
-        # amount_type = payout, price increase > allowed move
+        # amount_type = payout, sell price increase > allowed move
         my $transaction = BOM::Product::Transaction->new({
             client   => $client,
             contract => $contract,
@@ -823,12 +823,12 @@ subtest 'SELL - sell pricing adjustment' => sub {
         is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
         like(
             $error->{-message_to_client},
-            qr/The underlying market has moved too much since you priced the contract. The contract price has changed from GBP9.40 to GBP10.00./,
+            qr/The underlying market has moved too much since you priced the contract. The contract sell price has changed from GBP10.60 to GBP10.00./,
             'price move - msg to client'
         );
 
-        # amount_type = payout, price increase < allowed move
-        my $price = $contract->bid_price + ($allowed_move * $contract->payout / 2);
+        # amount_type = payout, sell price decrease < allowed move
+        my $price = $contract->bid_price + ($allowed_move * $contract->payout - 0.1);
         $transaction = BOM::Product::Transaction->new({
             client   => $client,
             contract => $contract,
@@ -837,10 +837,10 @@ subtest 'SELL - sell pricing adjustment' => sub {
         });
 
         $error = $transaction->_validate_sell_pricing_adjustment;
-        is($error, undef, 'SELL price increase within allowable move');
-        cmp_ok($transaction->price, '==', $contract->bid_price, 'SELL with bid price');
+        is($error, undef, 'SELL price descrease within allowable move');
+        cmp_ok($transaction->price, '==', $price, 'SELL with original price');
 
-        # amount_type = payout, price decrease => better execution price
+        # amount_type = payout, sell price increase => better execution price
         $price = $contract->bid_price - ($allowed_move * $contract->payout * 2);
         $transaction = BOM::Product::Transaction->new({
             client   => $client,
@@ -849,8 +849,8 @@ subtest 'SELL - sell pricing adjustment' => sub {
             price    => $price,
         });
         $error = $transaction->_validate_sell_pricing_adjustment;
-        is($error, undef, 'SELL price decrease, better execution price');
-        cmp_ok($transaction->price, '>', $contract->bid_price, 'SELL with higher price');
+        is($error, undef, 'SELL price increase, better execution price');
+        cmp_ok($transaction->price, '>', $price, 'SELL with higher price');
 
         $mock_contract->unmock_all;
     };
