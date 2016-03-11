@@ -191,35 +191,79 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 #};
 
 subtest 'send_ask' => sub {
-  my $params = {language => 'ZH_CN', client_ip => '127.0.0.1', args => {
-                "proposal"      => 1,
-                "amount"        => "100",
-                "basis"         => "payout",
-                "contract_type" => "CALL",
-                "currency"      => "USD",
-                "duration"      => "60",
-                "duration_unit" => "s",
-                "symbol"        => "R_50",
-                                                                       }};
-  #TODO:  Here it will print 2 warnings:
-  # Use of uninitialized value $country in hash element at /home/git/regentmarkets/bom-platform/lib/BOM/Platform/Runtime.pm line 130.
-  #Use of uninitialized value $country in hash element at /home/git/regentmarkets/bom-platform/lib/BOM/Platform/Runtime.pm line 122.
-  # That's because the request has no country_code. I don't know why the function _build_country_code doesn't run yet.
-  my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-  my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
-  my $expected_keys = [sort (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout))];
-  is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
-  is($result->{longcode},'如果随机 50 指数在合约开始时间之后到1 分钟时严格高于入市现价，将获得USD100.00的赔付额。', 'long code  is correct');
-  $c->call_ok('send_ask', {language => 'ZH_CN', args => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
+    my $params = {
+        language  => 'ZH_CN',
+        client_ip => '127.0.0.1',
+        args      => {
+            "proposal"      => 1,
+            "amount"        => "100",
+            "basis"         => "payout",
+            "contract_type" => "CALL",
+            "currency"      => "USD",
+            "duration"      => "60",
+            "duration_unit" => "s",
+            "symbol"        => "R_50",
+        }};
+    #TODO:  Here it will print 2 warnings:
+    # Use of uninitialized value $country in hash element at /home/git/regentmarkets/bom-platform/lib/BOM/Platform/Runtime.pm line 130.
+    #Use of uninitialized value $country in hash element at /home/git/regentmarkets/bom-platform/lib/BOM/Platform/Runtime.pm line 122.
+    # That's because the request has no country_code. I don't know why the function _build_country_code doesn't run yet.
+    my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
+    my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
+    my $expected_keys = [sort (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout))];
+    is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
+    is(
+        $result->{longcode},
+        '如果随机 50 指数在合约开始时间之后到1 分钟时严格高于入市现价，将获得USD100.00的赔付额。',
+        'long code  is correct'
+    );
+    $c->call_ok(
+        'send_ask',
+        {
+            language => 'ZH_CN',
+            args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
 
-  my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
-  $mock_contract->mock('get_ask', sub{die});
-  $c->call_ok('send_ask', {language => 'ZH_CN', args => {}})->has_error->error_code_is('pricing error')->error_message_is('无法提供合约售价。');
+    my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
+    $mock_contract->mock('get_ask', sub { die });
+    $c->call_ok(
+        'send_ask',
+        {
+            language => 'ZH_CN',
+            args     => {}})->has_error->error_code_is('pricing error')->error_message_is('无法提供合约售价。');
 
 };
 
 subtest 'get_bid' => sub {
-  
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    $fmb = create_fmb(
+        $client,
+        buy_bet    => 1,
+        underlying => 'R_50'
+    )->financial_market_bet_record;
+    my $params = {
+        language    => 'ZH_CN',
+        short_code  => $fmb->{short_code},
+        contract_id => $fmb->{id},
+        currency    => $client->currency,
+        is_sold     => $fmb->{is_sold},
+    };
+    diag(Dumper($t->call_ok('get_bid', $params)->result));
 };
 
 done_testing();
+
+sub create_fmb {
+    my ($client, %params) = @_;
+
+    my $account = $client->set_default_account('USD');
+    return BOM::Test::Data::Utility::UnitTestDatabase::create_fmb_with_ticks({
+        type               => 'fmb_higher_lower_call_buy',
+        short_code_prefix  => 'CALL_R_50_26.49',
+        short_code_postfix => 'S0P_0',
+        account_id         => $account->id,
+        buy_bet            => 0,
+        %params,
+    });
+}
