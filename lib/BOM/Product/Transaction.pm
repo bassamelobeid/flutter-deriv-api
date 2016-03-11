@@ -1099,7 +1099,7 @@ sub _validate_sell_pricing_adjustment {
             $commission_markup = $contract->bid_probability->peek_amount('commission_markup') || 0;
         }
     }
-    my $allowed_move = $commission_markup * 0.5;
+    my $allowed_move = $commission_markup * 0.8;
     $allowed_move = 0 if $recomputed == 1;
     my ($amount, $recomputed_amount) = ($self->price, $contract->bid_price);
 

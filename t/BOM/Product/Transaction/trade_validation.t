@@ -739,7 +739,7 @@ subtest 'SELL - sell pricing adjustment' => sub {
         });
         $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('bid_probability', sub { $ask_cv });
-        my $allowed_move = 0.01 * 0.50;
+        my $allowed_move = 0.01 * 0.80;
 
         my $contract = produce_contract({
             underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
