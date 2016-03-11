@@ -8,6 +8,8 @@ use BOM::Platform::Plack qw( PrintContentType );
 use SuperDerivatives::Correlation qw( upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
 use BOM::Platform::Sysinit ();
+use BOM::MarketData::EconomicEventCalendar;
+use Try::Tiny;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -78,6 +80,7 @@ my $source              = request()->param('source');
 my $add_news_event      = request()->param('add_news_event');
 my $save_economic_event = request()->param('save_economic_event');
 my $autoupdate          = request()->param('autoupdate');
+my $is_tentative        = request()->param('is_tentative');
 
 if ($autoupdate) {
     eval {
@@ -97,21 +100,28 @@ if ($autoupdate) {
         get_logger->error("Error while updating news calendar: $error");
     }
 } elsif ($save_economic_event) {
-    eval { Date::Utility->new($release_date); };
-
-    if ($@) {
-        print 'The economic event was not saved. Please enter a valid date (2012-11-19T23:00:00Z)</br></br>';
-    } else {
+    try {
+        $release_date = Date::Utility->new($release_date)->epoch if ($release_date);
+        my $ref = BOM::MarketData::EconomicEventCalendar::chronicle_reader()->get('economic_events', 'economic_events');
         my $event_param = {
             event_name   => $event_name,
             source       => $source,
-            release_date => $release_date,
+            ($release_date) ? (release_date => $release_date) : (),
             impact       => $impact,
             symbol       => $symbol,
+            is_tentative => $is_tentative,
         };
-        print 'Econmic Announcement NOT saved!</br></br>';
+        push @{$ref->{events}}, $event_param;
+        BOM::MarketData::EconomicEventCalendar->new(
+            events => $ref->{events},
+            recorded_date => Date::Utility->new,
+        )->save;
+
+        print 'Econmic Announcement saved!</br></br>';
         $save_economic_event = 0;
-    }
+    } catch {
+        print 'The economic event was not saved. Please enter a valid date (2012-11-19T23:00:00Z)</br></br>';
+    };
 }
 
 code_exit_BO();

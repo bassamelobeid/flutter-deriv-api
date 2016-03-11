@@ -22,6 +22,9 @@
                     <option value=5>5</option>
                   </select>
             </td></tr>
+        <tr>
+            <td>Tentative</td>
+            <td> : <input type="checkbox" name="is_tentative" value="1"\>
             <tr><INPUT type="hidden" name="save_economic_event" value="1"></tr>
         <tr><td></td><td><INPUT type="submit" name="submit_eco" value="Save"></td></tr>
     </table>
