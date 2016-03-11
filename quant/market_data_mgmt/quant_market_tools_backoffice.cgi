@@ -9,6 +9,7 @@ use SuperDerivatives::Correlation qw( upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
 use BOM::Platform::Sysinit ();
 use BOM::MarketData::EconomicEventCalendar;
+use BOM::System::Chronicle;
 use Try::Tiny;
 BOM::Platform::Sysinit::init();
 
@@ -102,7 +103,7 @@ if ($autoupdate) {
     try {
         $release_date           = Date::Utility->new($release_date)->epoch           if ($release_date);
         $estimated_release_date = Date::Utility->new($estimated_release_date)->epoch if ($estimated_release_date);
-        my $ref         = BOM::MarketData::EconomicEventCalendar::chronicle_reader()->get('economic_events', 'economic_events');
+        my $ref         = BOM::System::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
         my @events      = @{$ref->{events}};
         my $event_param = {
             event_name => $event_name,

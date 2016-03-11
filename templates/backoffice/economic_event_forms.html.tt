@@ -24,7 +24,7 @@
             </td></tr>
         <tr>
             <td>Tentative</td>
-            <td> : <input type="checkbox" name="is_tentative" value="1"\> <\td>
+            <td> : <input type="checkbox" name="is_tentative" value="1"\> </td>
         </tr>
         <tr><td>Estimated Announcement Date</td><td> : <INPUT type="text" name="estimated_release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The tentative date given on forexfactory is GMT-4)</td></tr>
             <tr><INPUT type="hidden" name="save_economic_event" value="1"></tr>
