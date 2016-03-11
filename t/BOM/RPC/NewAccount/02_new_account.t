@@ -67,7 +67,7 @@ subtest $method => sub {
     $params->{args}->{residence} = 'id';
     $rpc_ct->call_ok($method, $params)
             ->has_no_system_error
-            ->has_no_error('If verification code is ok - account created successful');
+            ->has_no_error('If verification code is ok - account created successfully');
 
     is_deeply   [sort keys %{ $rpc_ct->result }],
                 [sort qw/ currency balance client_id /],
