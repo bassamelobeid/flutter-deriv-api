@@ -6,7 +6,8 @@ Contract's pricing details
 
 =head1 DESCRIPTION
 
-A b/o tool that output contract's pricing details.
+A b/o tool that output contract's pricing parameters that will be used to replicate the contract price with an excel template.
+This is a Japanese regulatory requirements.
 
 =cut
 
