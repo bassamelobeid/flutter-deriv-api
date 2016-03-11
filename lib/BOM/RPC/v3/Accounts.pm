@@ -275,30 +275,6 @@ sub get_account_status {
     return {status => \@status};
 }
 
-sub _check_password {
-    my ($old_password, $new_password, $user_pass) = @_;
-
-    my $message;
-    if (not BOM::System::Password::checkpw($old_password, $user_pass)) {
-        $message = localize("Old password is wrong.");
-    } elsif ($new_password eq $old_password) {
-        $message = localize('New password is same as old password.');
-    } elsif (not Data::Password::Meter->new(14)->strong($new_password)) {
-        $message = localize("Password is not strong enough.");
-    } elsif (length($new_password) < 6 or $new_password !~ /[0-9]+/ or $new_password !~ /[a-z]+/ or $new_password !~ /[A-Z]+/) {
-        $message = localize("Password should have letters and numbers and at least 6 characters.");
-    }
-
-    if ($message) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ChangePasswordError',
-            message_to_client => $message
-        });
-    }
-
-    return;
-}
-
 sub change_password {
     my $params = shift;
 
@@ -318,7 +294,13 @@ sub change_password {
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    if (my $pass_error = _check_password($args->{old_password}, $args->{new_password}, $user->password)) {
+    if (
+        my $pass_error = BOM::RPC::v3::Utility::_check_password({
+                old_password => $args->{old_password},
+                new_password => $args->{new_password},
+                user_pass    => $user->password
+            }))
+    {
         return $pass_error;
     }
 
@@ -394,9 +376,9 @@ sub cashier_password {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
 
-        my $pwdm = Data::Password::Meter->new(14);
-        return $error_sub->(localize("Password is not strong enough."))
-            unless ($pwdm->strong($lock_password));
+        if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $lock_password})) {
+            return $pass_error;
+        }
 
         $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
         if (not $client->save()) {
