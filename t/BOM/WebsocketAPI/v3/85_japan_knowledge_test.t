@@ -122,6 +122,7 @@ subtest 'First Test taken: fail test' => sub {
         my $test_1 = $tests->[0];
         is $test_1->{score}, 10, 'correct score';
         is $test_1->{status}, 'fail', 'correct status';
+        like $test_1->{epoch}, qr/^\d+$/, 'correct epoch format';
     };
 };
 
@@ -181,6 +182,7 @@ subtest 'Test is allowed after 1 day' => sub {
         my $test_2 = $tests->[1];
         is $test_2->{score}, 18, 'Test 2: correct score';
         is $test_2->{status}, 'pass', 'Test 2: correct status';
+        like $test_2->{epoch}, qr/^\d+$/, 'Test 2: correct epoch format';
     };
 };
 
