@@ -480,11 +480,11 @@ sub get_settings {
         my $jp_client = $siblings[0];
 
         if (@siblings > 1 and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($jp_client->broker)->short eq 'japan') {
-            my $status;
-            if ($status = $jp_client->get_status('disabled')) {
+            if ($jp_client->get_status('disabled')) {
                 $jp_account_status->{status} = 'disabled';
 
                 foreach ('jp_knowledge_test_pending', 'jp_knowledge_test_fail', 'jp_activation_pending') {
+                    my $status;
                     if ($status = $jp_client->get_status($_)) {
                         $jp_account_status->{status} = $_;
                         $jp_account_status->{epoch} = Date::Utility->new($status->last_modified_date)->epoch if ($_ eq 'jp_knowledge_test_fail');
