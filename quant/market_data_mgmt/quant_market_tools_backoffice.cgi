@@ -50,8 +50,8 @@ if (request()->param('whattodo') eq 'process_dividend') {
 
 Bar("Upload Correlations");
 print generate_correlations_upload_form({
-      broker     => $broker,
-      upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+    broker     => $broker,
+    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
 });
 
 if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
@@ -59,7 +59,7 @@ if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
     my $filetoupload = $cgi->param('filetoupload');
     local $CGI::POST_MAX        = 1024 * 100 * 8;    # max 800K posts
     local $CGI::DISABLE_UPLOADS = 0;                 # enable uploads
-    my ($data, @to_print) =upload_and_process_correlations($filetoupload);
+    my ($data, @to_print) = upload_and_process_correlations($filetoupload);
     my $correlation_matrix = BOM::MarketData::CorrelationMatrix->new({
         symbol        => 'indices',
         recorded_date => Date::Utility->new
@@ -72,20 +72,19 @@ if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
 Bar("Update the news events database");
 
 # Input fields
-my $symbol              = request()->param('symbol');
-my $impact              = request()->param('impact');
-my $event_name          = request()->param('event_name');
-my $release_date        = request()->param('release_date');
-my $source              = request()->param('source');
-my $add_news_event      = request()->param('add_news_event');
-my $save_economic_event = request()->param('save_economic_event');
-my $autoupdate          = request()->param('autoupdate');
-my $is_tentative        = request()->param('is_tentative');
+my $symbol                 = request()->param('symbol');
+my $impact                 = request()->param('impact');
+my $event_name             = request()->param('event_name');
+my $release_date           = request()->param('release_date');
+my $source                 = request()->param('source');
+my $add_news_event         = request()->param('add_news_event');
+my $save_economic_event    = request()->param('save_economic_event');
+my $autoupdate             = request()->param('autoupdate');
+my $is_tentative           = request()->param('is_tentative');
+my $estimated_release_date = request()->param('estimated_release_date');
 
 if ($autoupdate) {
-    eval {
-        print "Not implemented yet";
-    };
+    eval { print "Not implemented yet"; };
     if (my $error = $@) {
         my $msg    = 'Error while fetching economic events on date [' . Date::Utility->new->datetime . ']';
         my $sender = Mail::Sender->new({
@@ -101,26 +100,33 @@ if ($autoupdate) {
     }
 } elsif ($save_economic_event) {
     try {
-        $release_date = Date::Utility->new($release_date)->epoch if ($release_date);
-        my $ref = BOM::MarketData::EconomicEventCalendar::chronicle_reader()->get('economic_events', 'economic_events');
+        $release_date           = Date::Utility->new($release_date)->epoch           if ($release_date);
+        $estimated_release_date = Date::Utility->new($estimated_release_date)->epoch if ($estimated_release_date);
+        my $ref         = BOM::MarketData::EconomicEventCalendar::chronicle_reader()->get('economic_events', 'economic_events');
+        my @events      = @{$ref->{events}};
         my $event_param = {
-            event_name   => $event_name,
-            source       => $source,
-            ($release_date) ? (release_date => $release_date) : (),
+            event_name => $event_name,
+            source     => $source,
+            ($release_date)           ? (release_date           => $release_date)           : (),
+            ($estimated_release_date) ? (estimated_release_date => $estimated_release_date) : (),
             impact       => $impact,
             symbol       => $symbol,
             is_tentative => $is_tentative,
         };
+        my $id_date = $release_date || $estimated_release_date;
+        my $event_param->{id} = ForexFactory::generate_id(Date::Utility->new($id_date)->truncate_to_day()->epoch . $event_name . $symbol . $impact);
         push @{$ref->{events}}, $event_param;
         BOM::MarketData::EconomicEventCalendar->new(
-            events => $ref->{events},
+            events        => $ref->{events},
             recorded_date => Date::Utility->new,
         )->save;
 
         print 'Econmic Announcement saved!</br></br>';
         $save_economic_event = 0;
-    } catch {
-        print 'The economic event was not saved. Please enter a valid date (2012-11-19T23:00:00Z)</br></br>';
+    }
+    catch {
+
+        print 'Error: ' . $_;
     };
 }
 
