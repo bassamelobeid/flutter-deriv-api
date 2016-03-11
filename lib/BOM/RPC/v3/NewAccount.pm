@@ -198,7 +198,7 @@ sub new_account_maltainvest {
                 message_to_client => $error_map->{$err}});
     }
 
-    my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
+    my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::maltainvest::get_financial_input_mapping()});
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         from_client    => $client,
@@ -236,6 +236,7 @@ sub new_account_japan {
     my $response  = 'new_account_japan';
     my $error_map = BOM::Platform::Locale::error_map();
 
+use Data::Dumper;
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'invalid',

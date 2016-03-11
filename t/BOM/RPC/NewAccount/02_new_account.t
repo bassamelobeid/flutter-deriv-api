@@ -15,7 +15,22 @@ use utf8;
 
 my $email = 'test'. rand(999) .'@binary.com';
 my ( $t, $rpc_ct );
-my ( $method, $params );
+my ( $method, $params, $client_details );
+
+$client_details = {
+    salutation => 'hello',
+    last_name => 'Vostrov' . rand(999),
+    first_name => 'Evgeniy' . rand(999),
+    date_of_birth => '1987-09-04',
+    address_line_1 => 'Sovetskaya street',
+    address_line_2 => 'home 1',
+    address_city => 'Samara',
+    address_state => 'Samara',
+    address_postcode => '112233',
+    phone => '+79272075932',
+    secret_question => 'test',
+    secret_answer => 'test',
+};
 
 $params = {
     language => 'RU',
@@ -83,7 +98,7 @@ $params = {
 };
 
 subtest $method => sub {
-    my ( $user, $client, $vclient, $auth_token, $session );
+    my ( $user, $client, $vclient, $auth_token );
 
     subtest 'Initialization' => sub {
         lives_ok {
@@ -93,10 +108,6 @@ subtest $method => sub {
                 email => 'new_email' . rand(999) . '@binary.com',
             });
             $auth_token = BOM::Database::Model::AccessToken->new->create_token( $client->loginid, 'test token' );
-            $session = BOM::Platform::SessionCookie->new(
-                loginid => $client->loginid,
-                email   => $client->email,
-            )->token;
 
             # Make virtual client with user
             my $password = 'jskjd8292922';
@@ -166,17 +177,8 @@ subtest $method => sub {
                                  'It should return error when try to create account without residence');
 
         $params->{args}->{residence} = 'id';
-        $params->{args}->{salutation} = 'hello';
-        $params->{args}->{last_name} = 'Vostrov' . rand(999);
-        $params->{args}->{date_of_birth} = '1987-09-04';
-        $params->{args}->{address_line_1} = 'Sovetskaya street';
-        $params->{args}->{address_line_2} = 'home 1';
-        $params->{args}->{address_city} = 'Samara';
-        $params->{args}->{address_state} = 'Samara';
-        $params->{args}->{address_postcode} = '112233';
-        $params->{args}->{phone} = '+79272075932';
-        $params->{args}->{secret_question} = 'test';
-        $params->{args}->{secret_answer} = 'test';
+        @{ $params->{args} }{ keys %$client_details } = values %$client_details;
+        delete $params->{args}->{first_name};
 
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
@@ -185,7 +187,7 @@ subtest $method => sub {
               ->error_message_is('Извините, но открытие счёта недоступно.',
                                  'It should return error if missing any details');
 
-        $params->{args}->{first_name} = 'Evgeniy' . rand(999);
+        $params->{args}->{first_name} = $client_details->{first_name};
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
               ->has_error
@@ -203,6 +205,254 @@ subtest $method => sub {
                     'It should return new client data if creation ended successfully';
     };
 
+};
+
+$method = 'new_account_maltainvest';
+$params = {
+    language => 'RU',
+    source => 1,
+    country => 'ru',
+    args => {},
+};
+
+subtest $method => sub {
+    my ( $user, $client, $auth_token );
+
+    subtest 'Initialization' => sub {
+        lives_ok {
+            my $password = 'jskjd8292922';
+            my $hash_pwd = BOM::System::Password::hashpw($password);
+            $email = 'new_email' . rand(999) . '@binary.com';
+            $user = BOM::Platform::User->create(
+                email    => $email,
+                password => $hash_pwd
+            );
+            $user->save;
+            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'VRTC',
+                email => $email,
+            });
+            $auth_token = BOM::Database::Model::AccessToken->new->create_token( $client->loginid, 'test token' );
+
+            $user->add_loginid({loginid => $client->loginid});
+            $user->save;
+        } 'Initial users and clients';
+    };
+
+    subtest 'Auth client' => sub {
+        $rpc_ct->call_ok($method, $params)
+               ->has_no_system_error
+               ->error_code_is( 'InvalidToken',
+                                'It should return error: InvalidToken' );
+
+        $params->{token} = 'wrong token';
+        $rpc_ct->call_ok($method, $params)
+               ->has_no_system_error
+               ->error_code_is( 'InvalidToken',
+                                'It should return error: InvalidToken' );
+
+        delete $params->{token};
+        $rpc_ct->call_ok($method, $params)
+               ->has_no_system_error
+               ->error_code_is( 'InvalidToken',
+                                'It should return error: InvalidToken' );
+
+        $params->{token} = $auth_token;
+
+        {
+            my $module = Test::MockModule->new('BOM::Platform::Client');
+            $module->mock( 'new', sub {} );
+
+            $rpc_ct->call_ok($method, $params)
+                  ->has_no_system_error
+                  ->has_error
+                  ->error_code_is( 'AuthorizationRequired', 'It should check auth' );
+        }
+    };
+
+    subtest 'Create new account maltainvest' => sub {
+        $params->{args}->{accept_risk} = 1;
+        $params->{token} = $auth_token;
+
+        $rpc_ct->call_ok($method, $params)
+              ->has_no_system_error
+              ->has_error
+              ->error_code_is('invalid', 'It should return error if client residense does not fit for maltainvest')
+              ->error_message_is('Извините, но открытие счёта недоступно.',
+                                 'It should return error if client residense does not fit for maltainvest');
+
+        $client->residence('de');
+        $client->save;
+        delete $params->{args}->{accept_risk};
+
+        $rpc_ct->call_ok($method, $params)
+              ->has_no_system_error
+              ->has_error
+              ->error_code_is('invalid', 'It should return error if client does not accept risk')
+              ->error_message_is('Извините, но открытие счёта недоступно.',
+                                 'It should return error if client does not accept risk');
+
+        $params->{args}->{residence} = 'de';
+        @{ $params->{args} }{ keys %$client_details } = values %$client_details;
+        delete $params->{args}->{first_name};
+
+        $rpc_ct->call_ok($method, $params)
+              ->has_no_system_error
+              ->has_error
+              ->error_code_is('invalid', 'It should return error if missing any details')
+              ->error_message_is('Извините, но открытие счёта недоступно.',
+                                 'It should return error if missing any details');
+
+        $params->{args}->{first_name} = $client_details->{first_name};
+
+        $params->{args}->{residence} = 'id';
+        $rpc_ct->call_ok($method, $params)
+              ->has_no_system_error
+              ->has_error
+              ->error_code_is('invalid', 'It should return error if residence does not fit with maltainvest')
+              ->error_message_is('Извините, но открытие счёта недоступно.',
+                                 'It should return error if residence does not fit with maltainvest');
+
+        $params->{args}->{residence} = 'de';
+        $params->{args}->{accept_risk} = 1;
+        $rpc_ct->call_ok($method, $params)
+              ->has_no_system_error
+              ->has_error
+              ->error_code_is('email unverified', 'It should return error if email unverified')
+              ->error_message_is('Ваш электронный адрес не подтвержден.',
+                                 'It should return error if email unverified');
+
+        $user->email_verified(1);
+        $user->save;
+        $rpc_ct->call_ok($method, $params)
+              ->has_no_system_error
+              ->has_no_error;
+        is_deeply   [sort keys %{$rpc_ct->result}],
+                    [sort qw/ landing_company landing_company_shortcode client_id /],
+                    'It should return new client data if creation ended successfully';
+    };
+};
+
+$method = 'new_account_japan';
+$params = {
+    language => 'RU',
+    source => 1,
+    country => 'ru',
+    args => {},
+};
+
+subtest $method => sub {
+    my ( $user, $client, $auth_token );
+
+    subtest 'Initialization' => sub {
+        lives_ok {
+            my $password = 'jskjd8292922';
+            my $hash_pwd = BOM::System::Password::hashpw($password);
+            $email = 'new_email' . rand(999) . '@binary.com';
+            $user = BOM::Platform::User->create(
+                email    => $email,
+                password => $hash_pwd
+            );
+            $user->save;
+            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'VRTC',
+                email => $email,
+            });
+            $auth_token = BOM::Database::Model::AccessToken->new->create_token( $client->loginid, 'test token' );
+
+            $user->add_loginid({loginid => $client->loginid});
+            $user->save;
+        } 'Initial users and clients';
+    };
+
+    subtest 'Auth client' => sub {
+        $rpc_ct->call_ok($method, $params)
+               ->has_no_system_error
+               ->error_code_is( 'InvalidToken',
+                                'It should return error: InvalidToken' );
+
+        $params->{token} = 'wrong token';
+        $rpc_ct->call_ok($method, $params)
+               ->has_no_system_error
+               ->error_code_is( 'InvalidToken',
+                                'It should return error: InvalidToken' );
+
+        delete $params->{token};
+        $rpc_ct->call_ok($method, $params)
+               ->has_no_system_error
+               ->error_code_is( 'InvalidToken',
+                                'It should return error: InvalidToken' );
+
+        $params->{token} = $auth_token;
+
+        {
+            my $module = Test::MockModule->new('BOM::Platform::Client');
+            $module->mock( 'new', sub {} );
+
+            $rpc_ct->call_ok($method, $params)
+                  ->has_no_system_error
+                  ->has_error
+                  ->error_code_is( 'AuthorizationRequired', 'It should check auth' );
+        }
+    };
+
+    subtest 'Create new account maltainvest' => sub {
+        $params->{token} = $auth_token;
+
+        $rpc_ct->call_ok($method, $params)
+              ->has_no_system_error
+              ->has_error
+              ->error_code_is('invalid', 'It should return error if client residense does not fit for japan')
+              ->error_message_is('Извините, но открытие счёта недоступно.',
+                                 'It should return error if client residense does not fit for japan');
+
+        $client->residence('jp');
+        $client->save;
+
+        $params->{args}->{residence} = 'jp';
+        @{ $params->{args} }{ keys %$client_details } = values %$client_details;
+        delete $params->{args}->{first_name};
+
+        $rpc_ct->call_ok($method, $params)
+              ->has_no_system_error
+              ->has_error
+              ->error_code_is('invalid', 'It should return error if missing any details')
+              ->error_message_is('Извините, но открытие счёта недоступно.',
+                                 'It should return error if missing any details');
+
+        $params->{args}->{first_name} = $client_details->{first_name};
+        $rpc_ct->call_ok($method, $params)
+              ->has_no_system_error
+              ->has_error
+              ->error_code_is('email unverified', 'It should return error if email unverified')
+              ->error_message_is('Ваш электронный адрес не подтвержден.',
+                                 'It should return error if email unverified');
+
+        $user->email_verified(1);
+        $user->save;
+        $params->{args}->{annual_income} = '50-100 million JPY';
+        $params->{args}->{trading_experience_public_bond} = 'Over 5 years';
+        $params->{args}->{trading_experience_margin_fx} = 'Over 5 years';
+
+        $params->{args}->{agree_use_electronic_doc} = 1;
+        $params->{args}->{agree_warnings_and_policies} = 1;
+        $params->{args}->{confirm_understand_own_judgment} = 1;
+        $params->{args}->{confirm_understand_trading_mechanism} = 1;
+        $params->{args}->{confirm_understand_total_loss} = 1;
+        $params->{args}->{confirm_understand_judgment_time} = 1;
+        $params->{args}->{confirm_understand_sellback_loss} = 1;
+        $params->{args}->{confirm_understand_shortsell_loss} = 1;
+        $params->{args}->{confirm_understand_company_profit} = 1;
+        $params->{args}->{confirm_understand_expert_knowledge} = 1;
+        $params->{args}->{declare_not_fatca} = 1;
+
+        $rpc_ct->call_ok($method, $params)
+              ->has_no_system_error
+              ->has_no_error;
+        is_deeply   [sort keys %{$rpc_ct->result}],
+                    [sort qw/ landing_company landing_company_shortcode client_id /],
+                    'It should return new client data if creation ended successfully';
+    };
 };
 
 done_testing();
