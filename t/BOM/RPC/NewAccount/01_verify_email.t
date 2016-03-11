@@ -68,7 +68,7 @@ subtest 'Account opening request with email does not exist' => sub {
           ->result_is_deeply({ status => 1 }, "It always should return 1, so not to leak client's email");
 
     my %msg = get_email_by_address_subject(email => $params[1]->{email}, subject => qr/Подтвердите свой электронный адрес/);
-    ok keys %msg, 'Email sent successful';
+    ok keys %msg, 'Email sent successfully';
     clear_mailbox();
 };
 
@@ -86,7 +86,7 @@ subtest 'Account opening request with email exists' => sub {
            ->result_is_deeply({ status => 1 }, "It always should return 1, so not to leak client's email");
 
     my %msg = get_email_by_address_subject(email => $params[1]->{email}, subject => qr/Предоставлен дублирующий Email/);
-    ok keys %msg, 'Email sent successful';
+    ok keys %msg, 'Email sent successfully';
     clear_mailbox();
 };
 
@@ -104,7 +104,7 @@ subtest 'Reset password for exists user' => sub {
            ->result_is_deeply({ status => 1 }, "It always should return 1, so not to leak client's email");
 
     my %msg = get_email_by_address_subject(email => $params[1]->{email}, subject => qr/Запрос нового пароля/);
-    ok keys %msg, 'Email sent successful';
+    ok keys %msg, 'Email sent successfully';
     clear_mailbox();
 };
 
@@ -134,7 +134,7 @@ subtest 'Payment agent withdraw' => sub {
            ->result_is_deeply({ status => 1 }, "It always should return 1, so not to leak client's email");
 
     my %msg = get_email_by_address_subject(email => $params[1]->{email}, subject => qr/Подтвердите свой запрос на вывод/);
-    ok keys %msg, 'Email sent successful';
+    ok keys %msg, 'Email sent successfully';
     clear_mailbox();
 };
 
