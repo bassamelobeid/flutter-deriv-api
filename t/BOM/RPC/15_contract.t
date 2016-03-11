@@ -251,6 +251,7 @@ subtest 'get_bid' => sub {
         is_sold     => $fmb->{is_sold},
     };
     diag(Dumper($c->call_ok('get_bid', $params)->result));
+    ok(1);
 };
 
 done_testing();
