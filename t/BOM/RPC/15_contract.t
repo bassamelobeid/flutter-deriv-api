@@ -211,6 +211,15 @@ subtest 'send_ask' => sub {
   is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
   is($result->{longcode},'如果随机 50 指数在合约开始时间之后到1 分钟时严格高于入市现价，将获得USD100.00的赔付额。', 'long code  is correct');
   $c->call_ok('send_ask', {language => 'ZH_CN', args => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
+
+  my $mock_contract = Test::MockModule('BOM::RPC::v3::Contract');
+  $mock_contract->mock('get_ask', sub{die});
+  $c->call_ok('send_ask', {language => 'ZH_CN', args => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
+
+};
+
+subtest 'get_bid' => sub {
+  
 };
 
 done_testing();
