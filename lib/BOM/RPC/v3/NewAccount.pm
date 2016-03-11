@@ -236,7 +236,6 @@ sub new_account_japan {
     my $response  = 'new_account_japan';
     my $error_map = BOM::Platform::Locale::error_map();
 
-use Data::Dumper;
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'invalid',
