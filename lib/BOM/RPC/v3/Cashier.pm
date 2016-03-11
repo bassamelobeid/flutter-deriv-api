@@ -50,7 +50,7 @@ sub get_limits {
 
     my $limit = +{
         map ({
-                $_ => amount_from_to_currency($client->get_limit({'for' => $_}), 'USD', $client->currency);
+                $_ => $client->get_limit({'for' => $_});
             } (qw/account_balance daily_turnover payout/)),
         open_positions => $client->get_limit_for_open_positions,
     };
