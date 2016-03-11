@@ -368,7 +368,9 @@ sub _set_predefined_barriers {
     if ($contract->{barriers} == 1) {
         my @keys = keys %$available_barriers;
         my @barriers = sort map { $available_barriers->{$_}->{barrier} } @keys;
-        $contract->{expired_barriers} = $contract->{barrier_category} ne 'american' ? [] : sort map { $available_barriers->{$_}->{barrier} } grep { $available_barriers->{$_}->{expired} } @keys;
+
+        $contract->{expired_barriers} = $contract->{barrier_category} ne 'american' ? [] : map { $available_barriers->{$_}->{barrier} }
+            grep { $available_barriers->{$_}->{expired} } @keys;
         $contract->{available_barriers} = \@barriers;
         $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @barriers;
     } elsif ($contract->{barriers} == 2) {
@@ -400,13 +402,12 @@ sub _check_expired_barriers {
                 start => $start,
                 end   => $end,
             })}{'high', 'low'};
-
     foreach my $key (keys %$available_barriers) {
         my $barrier = $available_barriers->{$key}->{barrier};
         $available_barriers->{$key}->{expired} = ($barrier < $high or $barrier > $low) ? 1 : 0;
     }
 
-   return ;
+    return;
 
 }
 
@@ -431,7 +432,7 @@ sub _get_barriers_pair {
         ? ((45, 55), (40, 60), (35, 65), (20, 80), (5, 95))
         : ((45, 55), (40, 50), (50, 60), (35, 45), (55, 65), (20, 40), (60, 80));
     my @barriers;
-    my @expired_barriers ;
+    my @expired_barriers;
     for (my $i = 0; $i < (scalar @keys); $i += 2) {
 
         if ($contract_category eq 'staysinout') {

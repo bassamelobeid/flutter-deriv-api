@@ -50,10 +50,15 @@ subtest "predefined contracts for symbol" => sub {
     );
     foreach my $u (keys %expected) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => $u,
-            epoch      => $now->epoch,
-            quote      => 100
-        });
+                underlying => $u,
+                epoch      => Date::Utility->new($_)->epoch,
+                quote      => 100,
+            })
+            for (
+            "2015-01-01",          "2015-07-01",          "2015-08-03",          "2015-08-17", "2015-08-21",
+            "2015-08-21 00:45:00", "2015-08-21 03:45:00", "2015-08-21 04:45:00", "2015-08-21 05:30:00"
+            );
+
         my $f = available_contracts_for_symbol({
             symbol => $u,
             date   => $now
@@ -291,15 +296,17 @@ subtest "predefined barriers" => sub {
             },
             duration => '5h15m',
         },
-        barriers => 1,
+        barriers         => 1,
+        barrier_category => 'euro_non_atm',
     };
     my $underlying = BOM::Market::Underlying->new('frxEURUSD');
-    my $now        = Date::Utility->new('2015-08-24 00:00:00');
+    my $now        = Date::Utility->new('2015-08-24 00:10:00');
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxEURUSD',
-        epoch      => $now->epoch,
-        quote      => 1.15591,
-    });
+            underlying => 'frxEURUSD',
+            epoch      => Date::Utility->new($_)->epoch,
+            quote      => 1.15591,
+        }) for ("2015-08-24 00:00:00", "2015-08-24 00:10:00");
+
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
@@ -312,11 +319,7 @@ subtest "predefined barriers" => sub {
         current_tick => $underlying->tick_at($now),
         date         => $now
     });
-    cmp_bag(
-        $contract->{available_barriers},
-        $expected_barriers{call_intraday}{available_barriers},
-        "Expected available barriers for intraday call"
-    );
+    cmp_bag($contract->{available_barriers}, $expected_barriers{call_intraday}{available_barriers}, "Expected available barriers for intraday call");
     is($contract->{barrier}, $expected_barriers{call_intraday}{barrier}, "Expected default barrier for intraday call");
 
     my $contract_2 = {
