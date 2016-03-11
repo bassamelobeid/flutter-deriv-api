@@ -348,7 +348,8 @@ sub jp_knowledge_test {
     my $jp_client = $siblings[0];
 
     # only allowed for VRTJ client, upgrading to JP
-    unless (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual'
+    unless (@siblings > 1
+            and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual'
             and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($jp_client->broker)->short eq 'japan'
     ) {
         return BOM::RPC::v3::Utility::permission_error();
