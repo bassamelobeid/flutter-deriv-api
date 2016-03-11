@@ -271,7 +271,6 @@ sub get_account_status {
     if (scalar(@status) == 0) {
         push @status, 'active';
     }
-    push @status, $jp_status if ($jp_status);
 
     return {status => \@status};
 }
