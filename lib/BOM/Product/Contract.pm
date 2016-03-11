@@ -2499,7 +2499,7 @@ sub _validate_start_date {
 
     }
 
-    if ($self->is_intraday) {
+    if ($self->is_intraday and $self->underlying->market->name eq 'forex') {
         my $start_epoch = $self->effective_start->epoch;
         if (my $tentative = first { $start_epoch >= $_->{blankout} and $start_epoch <= $_->{blankout_end} } @{$self->tentative_events}) {
             push @errors,
@@ -2578,16 +2578,18 @@ sub _validate_expiry_date {
             }
         }
 
-        my $expiry_epoch = $self->date_expiry->epoch;
-        if (my $tentative = first { $expiry_epoch >= $_->{blankout} and $expiry_epoch <= $_->{blankout_end} } @{$self->tentative_events}) {
-            push @errors,
-                {
-                message           => format_error_string('tentative economic events blackout period'),
-                message_to_client => localize(
-                    "Trading is suspended for [_1] from [_2] to [_3]",     $self->underlying->translated_display_name,
-                    Date::Utility->new($tentative->{blankout})->time_hhmm, Date::Utility->new($tentative->{blankout_end})->time_hhmm
-                ),
-                };
+        if ($self->underlying->market->name eq 'forex') {
+            my $expiry_epoch = $self->date_expiry->epoch;
+            if (my $tentative = first { $expiry_epoch >= $_->{blankout} and $expiry_epoch <= $_->{blankout_end} } @{$self->tentative_events}) {
+                push @errors,
+                    {
+                    message           => format_error_string('tentative economic events blackout period'),
+                    message_to_client => localize(
+                        "Trading is suspended for [_1] from [_2] to [_3]",     $self->underlying->translated_display_name,
+                        Date::Utility->new($tentative->{blankout})->time_hhmm, Date::Utility->new($tentative->{blankout_end})->time_hhmm
+                    ),
+                    };
+            }
         }
     } elsif ($self->expiry_daily) {
         my $close = $self->underlying->exchange->closing_on($self->date_expiry);
