@@ -39,17 +39,13 @@ has document => (
     lazy_build => 1,
 );
 
-has chronicle_reader => (
-    is      => 'ro',
-    isa     => 'Data::Chronicle::Reader',
-    default => sub { BOM::System::Chronicle::get_chronicle_reader() },
-);
+sub chronicle_reader {
+    return BOM::System::Chronicle::get_chronicle_reader();
+}
 
-has chronicle_writer => (
-    is      => 'ro',
-    isa     => 'Data::Chronicle::Writer',
-    default => sub { BOM::System::Chronicle::get_chronicle_writer() },
-);
+sub chronicle_writer {
+    return BOM::System::Chronicle::get_chronicle_writer();
+)
 
 #this sub needs to be removed as it is no loger used.
 #we use `get_latest_events_for_period` to read economic events.
