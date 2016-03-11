@@ -17,7 +17,7 @@
     },
     "status":{
       "enum": ["pass", "fail"],
-      "description": "Indicating result of knowledge test, whether pass / fail.",
+      "description": "Result status of knowledge test, whether pass / fail.",
       "required": "1"
     },
     "passthrough": {
