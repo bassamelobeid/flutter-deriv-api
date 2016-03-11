@@ -17,6 +17,38 @@
           "type": "integer",
           "description": "Total score based on client's answer for financial assessment"
         },
+        "forex_trading_frequency": {
+          "type": "string",
+          "description": "Forex trading frequency"
+        },
+        "forex_trading_experience": {
+          "type": "string",
+          "description": "Forex trading experience"
+        },
+        "indices_trading_frequency": {
+          "type": "string",
+          "description": "Indices trading frequency"
+        },
+        "indices_trading_experience": {
+          "type": "string",
+          "description": "Indices trading experience"
+        },
+        "commodities_trading_frequency": {
+          "type": "string",
+          "description": "Commodities trading frequency"
+        },
+        "commodities_trading_experience": {
+          "type": "string",
+          "description": "Commodities trading experience"
+        },
+        "stocks_trading_experience": {
+          "type": "string",
+          "description": "Stocks trading experience"
+        },
+        "stocks_trading_frequency": {
+          "type": "string",
+          "description": "Stocks trading frequency"
+        },
         "other_derivatives_trading_frequency": {
           "type": "string",
           "description": "Binary options or other financial derivatives trading frequency"
@@ -33,57 +65,25 @@
           "type": "string",
           "description": "Other financial instruments trading experience"
         },
-        "stocks_trading_experience": {
+        "employment_industry": {
           "type": "string",
-          "description": "Stocks trading experience"
-        },
-        "stocks_trading_frequency": {
-          "type": "string",
-          "description": "Stocks trading frequency"
-        },
-        "forex_trading_frequency": {
-          "type": "string",
-          "description": "Forex trading frequency"
-        },
-        "forex_trading_experience": {
-          "type": "string",
-          "description": "Forex trading experience"
-        },
-        "commodities_trading_frequency": {
-          "type": "string",
-          "description": "Commodities trading frequency"
-        },
-        "commodities_trading_experience": {
-          "type": "string",
-          "description": "Commodities trading experience"
-        },
-        "indices_trading_frequency": {
-          "type": "string",
-          "description": "Indices trading frequency"
-        },
-        "indices_trading_experience": {
-          "type": "string",
-          "description": "Indices trading experience"
+          "description": "Industry of Employment"
         },
         "education_level": {
           "type": "string",
           "description": "Level of Education"
         },
-        "employment_industry": {
-          "type": "string",
-          "description": "Industry of Employment"
-        },
         "income_source": {
           "type": "string",
           "description": "Income Source"
         },
-        "estimated_worth": {
-          "type": "string",
-          "description": "Estimated Net Worth"
-        },
         "net_income": {
           "type": "string",
           "description": "Net Annual Income"
+        },
+        "estimated_worth": {
+          "type": "string",
+          "description": "Estimated Net Worth"
         }
       }
     },
