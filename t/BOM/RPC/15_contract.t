@@ -238,12 +238,17 @@ subtest 'get_bid' => sub {
   diag(__LINE__);
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
-    });diag(__LINE__);
-    my $fmb = create_fmb(
-        $client,
-        buy_bet    => 1,
-        underlying => 'R_50',
-    )->financial_market_bet_record;diag(__LINE__);
+                                                                           });
+  $client->deposit_virtual_funds;
+  my $fmb;
+  lives_ok {
+    $fmb = create_fmb(
+                         $client,
+                         buy_bet    => 1,
+                         underlying => 'R_50',
+                        )->financial_market_bet_record;
+  }
+    
     my $params = {
         language    => 'ZH_CN',
         short_code  => $fmb->{short_code},
