@@ -74,27 +74,44 @@ subtest 'Japan Knowledge Test' => sub {
                 email_verified => 1
             });
         $vr_client = $acc->{client};
+        print "VRTJ [" . $vr_client->loginid . "]..\n";
 
         # authorize
         $token = BOM::Platform::SessionCookie->new(
             loginid => $vr_client->loginid,
             email   => $vr_client->email,
         )->token;
+        print "token [$token]...\n\n";
         $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
         # create JP acc
         $t = $t->send_ok({json => \%client_details})->message_ok;
         my $res = decode_json($t->message->[1]);
         $jp_loginid = $res->{new_account_japan}->{client_id};
+
+        print "JP loginid [$jp_loginid]\n\n";
     };
+
+    use Data::Dumper;
 
     subtest 'knowledge test' => sub {
         $t = $t->send_ok({json => {get_settings => 1}})->message_ok;
         my $res = decode_json($t->message->[1]);
-        my $jp_status = $res->{get_settings}->{jp_account_status};
+        print "get_settings res[" . Dumper($res) . "]\n\n";
 
-        use Data::Dumper;
-        print Dumper($jp_status);
+        is $res->{get_settings}->{jp_account_status}->{status}, 'jp_knowledge_test_pending';
+
+        subtest 'knowledge test taken' => sub {
+            $t = $t->send_ok({json => {
+                jp_knowledge_test   => 1,
+                score               => 10,
+                status              => 'fail',
+            }})->message_ok;
+            my $res = decode_json($t->message->[1]);
+            my $epoch = $res->{jp_knowledge_test}->{test_taken_epoch};
+            like $epoch, qr/^\d+$/, "test taken time is epoch: $epoch";
+
+        };
 
     };
 };
