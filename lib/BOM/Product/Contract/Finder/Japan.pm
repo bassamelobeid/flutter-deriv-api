@@ -355,15 +355,21 @@ sub _set_predefined_barriers {
             boundaries_barrier => \@boundaries_barrier
         });
 
-        _check_expired_barriers({available_barriers => $available_barriers, start => $date_start, end => $now->epoch, underlying => $underlying});
+        _check_expired_barriers({
+            available_barriers => $available_barriers,
+            start              => $date_start,
+            end                => $now->epoch,
+            underlying         => $underlying
+        });
         # Expires at the end of the available period.
         Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - $now->epoch);
     }
 
     if ($contract->{barriers} == 1) {
         my @keys = keys %$available_barriers;
-        my @barriers = sort map {$available_barriers->{$_}->{barrier}} @keys ;
-        $contract->{expired_barriers} = $contract->{barrier_category} ne 'american' ? [] : sort map {$available_barriers->{$_}->{barrier}} grep { $available_barriers->{$_}->{expired}} @keys;
+        my @barriers = sort map { $available_barriers->{$_}->{barrier} } @keys;
+        $contract->{expired_barriers} = $contract->{barrier_category} ne 'american' ? [] : sort map { $available_barriers->{$_}->{barrier} }
+            grep { $available_barriers->{$_}->{expired} } @keys;
         $contract->{available_barriers} = \@barriers;
         $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @barriers;
     } elsif ($contract->{barriers} == 2) {
@@ -387,21 +393,22 @@ sub _check_expired_barriers {
     my $args = shift;
 
     my $available_barriers = $args->{available_barriers};
-    my $start = $args->{start};
-    my $end = $args->{end};
-    my $underlying = $args->{underlying};
+    my $start              = $args->{start};
+    my $end                = $args->{end};
+    my $underlying         = $args->{underlying};
     my ($high, $low) = @{
-       $underlying->get_high_low_for_period({
-       start => $start,
-       end => $end, 
-       })}{'high', 'low'};
+        $underlying->get_high_low_for_period({
+                start => $start,
+                end   => $end,
+            })}{'high', 'low'};
 
-     foreach my $key (keys %$available_barrier){
+    foreach my $key (keys %$available_barrier) {
         my $barrier = $available_barrier->{$key}->{barrier};
-        $available_barrier->{$key}->{expired} =  ($barrier < $high or $barrier > $low) ? 1 : 0 ;
-    }   
+        $available_barrier->{$key}->{expired} = ($barrier < $high or $barrier > $low) ? 1 : 0;
+    }
 
 }
+
 =head2 _get_barriers_pair
 
 - For staysinout contract, we need to pair the barriers symmetry, ie ( 45, 55), (40,60), (35,65), (20,80), (5,95) 
@@ -426,14 +433,14 @@ sub _get_barriers_pair {
     my @expired_barriers = [];
     for (my $i = 0; $i < (scalar @keys); $i += 2) {
 
-       if ($contract_category eq 'staysinout'){
-           if ($available_barriers->{$keys[$i]}->{expired} or  $available_barriers->{$keys[$i + 1]}->{expired}){
-           push @expired_barriers, [$available_barriers->{$keys[$i]}->{barrier}, $available_barriers->{$keys[$i + 1]}->{barrier}];
-           }
+        if ($contract_category eq 'staysinout') {
+            if ($available_barriers->{$keys[$i]}->{expired} or $available_barriers->{$keys[$i + 1]}->{expired}) {
+                push @expired_barriers, [$available_barriers->{$keys[$i]}->{barrier}, $available_barriers->{$keys[$i + 1]}->{barrier}];
+            }
 
-       }
-        
-      push @barriers, [$available_barriers->{$keys[$i]}->{barrier}, $available_barriers->{$keys[$i + 1]}->{barrier}];
+        }
+
+        push @barriers, [$available_barriers->{$keys[$i]}->{barrier}, $available_barriers->{$keys[$i + 1]}->{barrier}];
     }
 
     return [\@barriers, \@expired_barriers];
@@ -457,7 +464,8 @@ sub _split_boundaries_barriers {
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
     my @steps                       = (5, 10, 15, 30, 45);
     my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
-    my %barriers                    = map { (50 - $_ => {barrier => $spot_at_start - $_ * $minimum_step}, 50 + $_ => {barrier =>$spot_at_start + $_ * $minimum_step}) } @steps;
+    my %barriers =
+        map { (50 - $_ => {barrier => $spot_at_start - $_ * $minimum_step}, 50 + $_ => {barrier => $spot_at_start + $_ * $minimum_step}) } @steps;
     $barriers{50}{barrier} = $spot_at_start;
     return \%barriers;
 }
