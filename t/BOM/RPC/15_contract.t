@@ -249,7 +249,7 @@ subtest 'get_bid' => sub {
         currency    => $client->currency,
         is_sold     => $fmb->{is_sold},
     };
-    diag(Dumper($t->call_ok('get_bid', $params)->result));
+    diag(Dumper($c->call_ok('get_bid', $params)->result));
 };
 
 done_testing();
