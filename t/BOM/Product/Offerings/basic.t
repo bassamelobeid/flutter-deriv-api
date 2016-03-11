@@ -34,7 +34,7 @@ subtest 'get_offerings_flyby' => sub {
     eq_or_diff([$fb->values_for_key('expiry_type')], [qw( daily intraday tick )], '..with, at least, the expected values for expiry_type');
     subtest 'example queries' => sub {
         is(scalar $fb->query('"start_type" IS "forward" -> "market"'),          5,  'Forward-starting is offered on 6 markets.');
-        is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 12, 'Tick expiries are offered on 28 underlyings.');
+        is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 30, 'Tick expiries are offered on 30 underlyings.');
         is(scalar $fb->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'), 12, 'Twelve callput options on frxUSDJPY');
         is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 8,  'Eight underlyings trade on the RANDOM exchange');
         is(scalar $fb->query('"market" IS "random" -> "underlying_symbol"'),        12, '...out of 12 total random market symbols.');
