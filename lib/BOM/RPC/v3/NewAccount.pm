@@ -198,7 +198,7 @@ sub new_account_maltainvest {
                 message_to_client => $error_map->{$err}});
     }
 
-    my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::maltainvest::get_financial_input_mapping()});
+    my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         from_client    => $client,
