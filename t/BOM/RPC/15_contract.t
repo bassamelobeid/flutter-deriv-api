@@ -210,7 +210,7 @@ subtest 'send_ask' => sub {
   my $expected_keys = [sort (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout))];
   is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
   is($result->{longcode},'如果随机 50 指数在合约开始时间之后到1 分钟时严格高于入市现价，将获得USD100.00的赔付额。', 'long code  is correct');
-  diag(Dumper $c->call_ok('send_ask', {}));
+  diag(Dumper $c->call_ok('send_ask', {})->result);
 };
 
 done_testing();
