@@ -28,15 +28,10 @@ use BOM::Platform::Static::Config;
 sub new_account_virtual {
     my $params = shift;
     my $args   = $params->{args};
-
     my $err_code;
-    my $pwdm = Data::Password::Meter->new(14);
 
-    unless ($pwdm->strong($args->{client_password})) {
-        $err_code = 'Password is not strong enough.';
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $err_code,
-                message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
+    if ($err_code = BOM::RPC::v3::Utility::_check_password({new_password => $args->{client_password}})) {
+        return $err_code;
     }
 
     if (exists $args->{affiliate_token}) {
