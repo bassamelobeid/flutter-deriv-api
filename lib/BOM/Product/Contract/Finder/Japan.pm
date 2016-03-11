@@ -407,6 +407,8 @@ sub _check_expired_barriers {
         $available_barrier->{$key}->{expired} = ($barrier < $high or $barrier > $low) ? 1 : 0;
     }
 
+   return ;
+
 }
 
 =head2 _get_barriers_pair
