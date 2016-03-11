@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Database::Model::AccessToken;
-use BOM::RPC::v3::Accounts;
+use BOM::RPC::v3::Utility;
 
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
@@ -564,39 +564,73 @@ $method = 'change_password';
 subtest $method => sub {
     my $oldpass = '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjNQ=';
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'new_password', '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ=')
-            ->{error}->{message_to_client},
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'new_password',
+                user_pass    => '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ='
+            }
+            )->{error}->{message_to_client},
         'Old password is wrong.',
         'Old password is wrong.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'old_password', $oldpass)->{error}->{message_to_client},
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'old_password',
+                user_pass    => $oldpass
+            }
+            )->{error}->{message_to_client},
         'New password is same as old password.',
         'New password is same as old password.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'water', $oldpass)->{error}->{message_to_client},
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'water',
+                user_pass    => $oldpass
+            }
+            )->{error}->{message_to_client},
         'Password is not strong enough.',
         'Password is not strong enough.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'New#_p$ssword', $oldpass)->{error}->{message_to_client},
-        'Password should have letters and numbers and at least 6 characters.',
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'New#_p$ssword',
+                user_pass    => $oldpass
+            }
+            )->{error}->{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'no number.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'pa$5A', $oldpass)->{error}->{message_to_client},
-        'Password should have letters and numbers and at least 6 characters.',
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'pa$5A',
+                user_pass    => $oldpass
+            }
+            )->{error}->{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'to short.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'pass$5ss', $oldpass)->{error}->{message_to_client},
-        'Password should have letters and numbers and at least 6 characters.',
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'pass$5ss',
+                user_pass    => $oldpass
+            }
+            )->{error}->{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'no upper case.',
     );
     is(
-        BOM::RPC::v3::Accounts::_check_password('old_password', 'PASS$5SS', $oldpass)->{error}->{message_to_client},
-        'Password should have letters and numbers and at least 6 characters.',
+        BOM::RPC::v3::Utility::_check_password({
+                old_password => 'old_password',
+                new_password => 'PASS$5SS',
+                user_pass    => $oldpass
+            }
+            )->{error}->{message_to_client},
+        'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'no lower case.',
     );
     is(
