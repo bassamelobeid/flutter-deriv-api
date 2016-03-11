@@ -363,9 +363,10 @@ sub jp_knowledge_test {
         $status_ok = 1;
     } elsif ($client_status = $jp_client->get_status('jp_knowledge_test_fail')) {
         # can't take test more than once per day
-        my $last_test_date = Date::Utility->new($client_status->last_modified_date);
+        my $tests           = from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
+        my $last_test_epoch = $tests->[-1]->{epoch};
 
-        if ($now->days_between($last_test_date) <= 0) {
+        if ($now->epoch - $last_test_epoch < 86400) {
             return BOM::RPC::v3::Utility::create_error({
                 code              => 'AttemptExceeded',
                 message_to_client => localize('You have exceeded attempt limit for Japan knowledge test today, please try again tomorrow.'),
@@ -398,9 +399,9 @@ sub jp_knowledge_test {
     my $results = $financial_data->{jp_knowledge_test} // [];
     push @{$results},
         {
-        score    => $score,
-        status   => $status,
-        datetime => $now->datetime_ddmmmyy_hhmmss,
+        score  => $score,
+        status => $status,
+        epoch  => $now->epoch,
         };
     $financial_data->{jp_knowledge_test} = $results;
     $jp_client->financial_assessment({data => encode_json($financial_data)});

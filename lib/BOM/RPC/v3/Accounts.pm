@@ -482,11 +482,14 @@ sub get_settings {
             if ($jp_client->get_status('disabled')) {
                 $jp_account_status->{status} = 'disabled';
 
-                foreach ('jp_knowledge_test_pending', 'jp_knowledge_test_fail', 'jp_activation_pending') {
-                    my $status;
-                    if ($status = $jp_client->get_status($_)) {
-                        $jp_account_status->{status} = $_;
-                        $jp_account_status->{epoch} = Date::Utility->new($status->last_modified_date)->epoch if ($_ eq 'jp_knowledge_test_fail');
+                foreach my $status ('jp_knowledge_test_pending', 'jp_knowledge_test_fail', 'jp_activation_pending') {
+                    if ($jp_client->get_status($status)) {
+                        $jp_account_status->{status} = $status;
+
+                        if ($status eq 'jp_knowledge_test_fail') {
+                            my $tests = JSON::from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
+                            $jp_account_status->{epoch} = $tests->[-1]->{epoch};
+                        }
                         last;
                     }
                 }
