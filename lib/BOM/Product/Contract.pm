@@ -2467,14 +2467,13 @@ sub _validate_start_date {
 
     if ($self->tick_expiry && $self->underlying->market->name ne 'random') {
         my $tick_expiry_blackout = Date::Utility->new->truncate_to_day->plus_time_interval('20h');
-	if ($self->date_start->is_after($tick_expiry_blackout)) {
-	    push @errors, 
+        if ($self->date_start->is_after($tick_expiry_blackout)) {
+            push @errors,
                 {
-                message => 'Tick Expiry Blackout',
-                message_to_client =>
-                    localize("You can only purchase tick expiry contacts between 0000 GMT to 2000 GMT."),
-		};	
-	}
+                message           => 'Tick Expiry Blackout',
+                message_to_client => localize("You can only purchase tick expiry contacts between 0000 GMT to 2000 GMT."),
+                };
+        }
     }
 
     return @errors;
