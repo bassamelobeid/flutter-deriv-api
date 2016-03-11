@@ -296,7 +296,7 @@ has _default_cutoff_list => (
 
 =head2 surfaces_to_save
 
-The surfaces that will be saved on couch database
+The surfaces that will be saved on Chronicle
 
 =cut
 
@@ -350,7 +350,6 @@ sub _stores_surface {
             my $doc = $self->document;
             $doc->{surfaces} ||= {};
             $doc->{surfaces}->{$cutoff} = $surface_hashref;
-            $self->_couchdb->document($self->symbol, $doc);
         }
         catch {
             get_logger('QUANT')->info('Could not save ' . $cutoff . ' cutoff for ' . $self->symbol);

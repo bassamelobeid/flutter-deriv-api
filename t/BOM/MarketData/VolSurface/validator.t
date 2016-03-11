@@ -9,33 +9,33 @@ use Date::Utility;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Delta;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::MarketData::VolSurface::Validator;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Platform::Static::Config;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/USD EUR/);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'GDAXI',
         date   => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'GDAXI',
         recorded_date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_100',
@@ -103,7 +103,7 @@ my %surface_data = (
     },
 );
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'JPY',
@@ -122,7 +122,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         date         => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'EUR',
@@ -143,9 +143,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 my $validator = BOM::MarketData::VolSurface::Validator->new;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for (qw(USD EUR-USD USD-EUR));
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for (qw(USD EUR-USD USD-EUR));
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxEURUSD',
@@ -155,7 +155,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 subtest 'Unit test tools.' => sub {
     $surface_data{1}->{smile}->{50} = 0.17;
-    my $sample_surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $sample_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => 'frxEURUSD',
@@ -170,7 +170,7 @@ subtest _check_age => sub {
     plan tests => 2;
 
     my $old_date = Date::Utility->new(time - 7201);
-    my $sample   = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $sample   = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => 'frxEURUSD',
@@ -184,7 +184,7 @@ subtest _check_age => sub {
     qr/more than 2 hours/, 'Old vol surface.';
 
     my $acceptable_date = Date::Utility->new(time - 7199);
-    $sample = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    $sample = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => 'frxEURUSD',
@@ -224,7 +224,7 @@ subtest '_check_structure' => sub {
     qr/positive numeric days/, 'Maturity on surface too small.';
 
     throws_ok {
-        my $sample = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        my $sample = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
                 symbol  => 'frxEURUSD',
@@ -251,7 +251,7 @@ subtest '_check_structure' => sub {
     qr/Day.381. in volsurface for underlying\S+ greater than allowed/, 'Maturity on surface too big.';
 
     throws_ok {
-        my $sample = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        my $sample = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
                 symbol  => 'frxEURUSD',
@@ -298,7 +298,7 @@ subtest '_check_structure' => sub {
     qr/Argument "banana" isn't numeric /, 'Invalid delta test warns.';
 
     throws_ok {
-        my $sample = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        my $sample = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
                 symbol  => 'frxEURUSD',
@@ -404,7 +404,7 @@ subtest _check_termstructure_for_calendar_arbitrage => sub {
 
 subtest 'partial surface data' => sub {
     plan tests => 1;
-    my $sample = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $sample = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             recorded_date => Date::Utility->new,
@@ -445,7 +445,7 @@ subtest 'Admissible Checks 1 & 2: Strike related.' => sub {
     BOM::Platform::Static::Config::quants->{market_data}->{extra_vol_diff_by_delta} = 5;
 
     # Need an existing USDJPY surface in place...
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol  => 'frxEURUSD',
@@ -502,7 +502,7 @@ subtest 'Admissible Checks 1 & 2: Strike related.' => sub {
 
 subtest 'Moneyness surfaces' => sub {
     plan tests => 2;
-    my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
             recorded_date => Date::Utility->new,
@@ -513,7 +513,7 @@ subtest 'Moneyness surfaces' => sub {
     lives_ok { $validator->validate_surface($surface) } 'Our default moneyness sample surface is valid.';
 
     # check that a surface that should fail Ad#2 does indeed fail.
-    $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
             surface => {
@@ -585,7 +585,7 @@ sub _sample_surface {
     my $args   = shift || {};
     my $symbol = shift || 'frxEURUSD';
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol               => $symbol,
