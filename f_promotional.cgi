@@ -225,9 +225,16 @@ foreach my $client (@clients) {
     my $client_authenticated = ($client->client_fully_authenticated) ? 'yes' : 'no';
     my $datetime             = $client->promo_code_apply_date;
 
-    my $client_ip = $client->latest_environment;
-    if ($client_ip =~ /(\d+\.\d+\.\d+\.\d+)/) {
-        $client_ip = $1;
+    my $user = BOM::Platform::User->new({ email => $client->email });
+    my $login_history = $user->find_login_history(
+        sort_by => 'history_date desc',
+        limit   => 1,
+    );
+    my $client_ip = 'no ip';
+    if (@$login_history > 0) {
+        if ($login_history->[0]->environment =~ /(\d+\.\d+\.\d+\.\d+)/) {
+            $client_ip = $1;
+        }
     }
 
     my $account_age;
