@@ -214,7 +214,7 @@ subtest 'send_ask' => sub {
 
   my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
   $mock_contract->mock('get_ask', sub{die});
-  $c->call_ok('send_ask', {language => 'ZH_CN', args => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
+  $c->call_ok('send_ask', {language => 'ZH_CN', args => {}})->has_error->error_code_is('pricing error')->error_message_is('无法提供合约售价。');
 
 };
 
