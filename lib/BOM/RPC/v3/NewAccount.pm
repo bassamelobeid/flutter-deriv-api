@@ -394,7 +394,7 @@ sub jp_knowledge_test {
     }
 
     # append result in financial_assessment record
-    my $financial_data = from_json $jp_client->financial_assessment->data;
+    my $financial_data = from_json($jp_client->financial_assessment->data);
 
     my $results;
     $results = $financial_data->{jp_knowledge_test} if (exists $financial_data->{jp_knowledge_test});
