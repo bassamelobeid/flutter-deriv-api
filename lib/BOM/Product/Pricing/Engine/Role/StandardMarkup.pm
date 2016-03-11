@@ -367,7 +367,6 @@ sub _build_commission_markup {
         set_by      => __PACKAGE__,
     });
 
-
     my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
         name        => 'commission_scaling_factor',
         description => 'A scaling factor to control commission',
