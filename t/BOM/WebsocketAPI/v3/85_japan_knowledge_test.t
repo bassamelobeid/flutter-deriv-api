@@ -60,60 +60,87 @@ my %client_details = (
     declare_not_fatca                           => 1,
 );
 
-subtest 'Japan Knowledge Test' => sub {
 
-    my ($vr_client, $token, $jp_loginid);
-    subtest 'create VRTJ & JP client' => sub {
-        # create VR acc
-        my $acc  = BOM::Platform::Account::Virtual::create_account({
-                details => {
-                    email           => 'test@binary.com',
-                    client_password => 'abc123',
-                    residence       => 'jp',
-                },
-                email_verified => 1
-            });
-        $vr_client = $acc->{client};
-        print "VRTJ [" . $vr_client->loginid . "]..\n";
+my ($vr_client, $token, $jp_loginid, $jp_client);
+subtest 'create VRTJ & JP client' => sub {
+    # create VR acc
+    my $acc  = BOM::Platform::Account::Virtual::create_account({
+            details => {
+                email           => 'test@binary.com',
+                client_password => 'abc123',
+                residence       => 'jp',
+            },
+            email_verified => 1
+        });
+    $vr_client = $acc->{client};
+    print "VRTJ [" . $vr_client->loginid . "]..\n";
 
-        # authorize
-        $token = BOM::Platform::SessionCookie->new(
-            loginid => $vr_client->loginid,
-            email   => $vr_client->email,
-        )->token;
-        print "token [$token]...\n\n";
-        $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+    # authorize
+    $token = BOM::Platform::SessionCookie->new(
+        loginid => $vr_client->loginid,
+        email   => $vr_client->email,
+    )->token;
+    print "token [$token]...\n\n";
+    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
-        # create JP acc
-        $t = $t->send_ok({json => \%client_details})->message_ok;
-        my $res = decode_json($t->message->[1]);
-        $jp_loginid = $res->{new_account_japan}->{client_id};
+    # create JP acc
+    $t = $t->send_ok({json => \%client_details})->message_ok;
+    my $res = decode_json($t->message->[1]);
+    $jp_loginid = $res->{new_account_japan}->{client_id};
 
-        print "JP loginid [$jp_loginid]\n\n";
-    };
+    print "JP loginid [$jp_loginid]\n\n";
+};
 
-    use Data::Dumper;
+use Data::Dumper;
 
-    subtest 'knowledge test' => sub {
-        $t = $t->send_ok({json => {get_settings => 1}})->message_ok;
+subtest 'not taken any Knowledge Test yet' => sub {
+    $t = $t->send_ok({json => {get_settings => 1}})->message_ok;
+    my $res = decode_json($t->message->[1]);
+    print "get_settings res[" . Dumper($res) . "]\n\n";
+
+    is $res->{get_settings}->{jp_account_status}->{status}, 'jp_knowledge_test_pending';
+};
+
+subtest 'First Test taken: fail test' => sub {
+    $t = $t->send_ok({json => {
+        jp_knowledge_test   => 1,
+        score               => 10,
+        status              => 'fail',
+    }})->message_ok;
+    my $res = decode_json($t->message->[1]);
+    my $epoch = $res->{jp_knowledge_test}->{test_taken_epoch};
+    like $epoch, qr/^\d+$/, "test taken time is epoch: $epoch";
+
+    subtest 'get_settings' => sub {
+        $t = $t->send_ok({json => { get_settings => 1 }})->message_ok;
         my $res = decode_json($t->message->[1]);
         print "get_settings res[" . Dumper($res) . "]\n\n";
-
-        is $res->{get_settings}->{jp_account_status}->{status}, 'jp_knowledge_test_pending';
-
-        subtest 'knowledge test taken' => sub {
-            $t = $t->send_ok({json => {
-                jp_knowledge_test   => 1,
-                score               => 10,
-                status              => 'fail',
-            }})->message_ok;
-            my $res = decode_json($t->message->[1]);
-            my $epoch = $res->{jp_knowledge_test}->{test_taken_epoch};
-            like $epoch, qr/^\d+$/, "test taken time is epoch: $epoch";
-
-        };
-
+        is $res->{get_settings}->{jp_account_status}->{status}, 'jp_knowledge_test_fail';
+        like $res->{get_settings}->{jp_account_status}->{epoch}, qr/^\d+$/, 'Test taken time is epoch';
     };
+
+    subtest 'Test result exists in financial assessment' => sub {
+        $jp_client = BOM::Platform::Client->new({loginid => $jp_loginid});
+        my $financial_data = from_json($jp_client->financial_assessment->data);
+
+        my $tests = $financial_data->{jp_knowledge_test};
+        is @{$tests}, 1, '1 test record';
+
+        my $test_1 = $tests->[0];
+        is $test_1->{score}, 10, 'correct score';
+        is $test_1->{status}, 'fail', 'correct status';
+    };
+};
+
+subtest 'Test not allow within same day' => sub {
+    $t = $t->send_ok({json => {
+        jp_knowledge_test   => 1,
+        score               => 18,
+        status              => 'pass',
+    }})->message_ok;
+    my $res = decode_json($t->message->[1]);
+    my $epoch = $res->{jp_knowledge_test}->{test_taken_epoch};
+    like $epoch, qr/^\d+$/, "test taken time is epoch: $epoch";
 };
 
 
