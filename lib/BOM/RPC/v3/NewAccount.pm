@@ -343,15 +343,15 @@ sub jp_knowledge_test {
         return $auth_error;
     }
 
-    my $user = BOM::Platform::User->new({ email => $client->email });
+    my $user = BOM::Platform::User->new({email => $client->email});
     my @siblings = $user->clients(disabled_ok => 1);
     my $jp_client = $siblings[0];
 
     # only allowed for VRTJ client, upgrading to JP
     unless (@siblings > 1
-            and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual'
-            and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($jp_client->broker)->short eq 'japan'
-    ) {
+        and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual'
+        and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($jp_client->broker)->short eq 'japan')
+    {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
@@ -381,7 +381,7 @@ sub jp_knowledge_test {
         });
     }
 
-    my $args             = $params->{args};
+    my $args = $params->{args};
     my ($score, $status) = @{$args}{'score', 'status'};
 
     if ($status eq 'pass') {
@@ -396,13 +396,14 @@ sub jp_knowledge_test {
     my $financial_data = from_json($jp_client->financial_assessment->data);
 
     my $results = $financial_data->{jp_knowledge_test} // [];
-    push @{$results}, {
-            score    => $score,
-            status   => $status,
-            datetime => $now->datetime_ddmmmyy_hhmmss,
+    push @{$results},
+        {
+        score    => $score,
+        status   => $status,
+        datetime => $now->datetime_ddmmmyy_hhmmss,
         };
     $financial_data->{jp_knowledge_test} = $results;
-    $jp_client->financial_assessment({ data => encode_json($financial_data) });
+    $jp_client->financial_assessment({data => encode_json($financial_data)});
 
     if (not $jp_client->save()) {
         return BOM::RPC::v3::Utility::create_error({
@@ -418,10 +419,11 @@ sub jp_knowledge_test {
             message            => [localize('Please reply to this email to send us documents for verification.')],
             use_email_template => 1,
         });
-        BOM::System::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to request for docs.', $client->loginid);
+        BOM::System::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to request for docs.',
+            $client->loginid);
     }
 
-    return { test_taken_epoch => $now->epoch };
+    return {test_taken_epoch => $now->epoch};
 }
 
 1;

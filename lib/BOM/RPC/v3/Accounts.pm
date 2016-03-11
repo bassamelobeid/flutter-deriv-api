@@ -472,10 +472,9 @@ sub get_settings {
 
     my $client_tnc_status = $client->get_status('tnc_approval');
 
-
     my $jp_account_status;
     if (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual') {
-        my $user = BOM::Platform::User->new({ email => $client->email });
+        my $user = BOM::Platform::User->new({email => $client->email});
         my @siblings = $user->clients(disabled_ok => 1);
         my $jp_client = $siblings[0];
 
@@ -501,22 +500,24 @@ sub get_settings {
         email        => $client->email,
         country      => $country,
         country_code => $country_code,
-        ($client->is_virtual
-         ? ()
-         : (
-             salutation                     => $client->salutation,
-             first_name                     => $client->first_name,
-             last_name                      => $client->last_name,
-             date_of_birth                  => $dob_epoch,
-             address_line_1                 => $client->address_1,
-             address_line_2                 => $client->address_2,
-             address_city                   => $client->city,
-             address_state                  => $client->state,
-             address_postcode               => $client->postcode,
-             phone                          => $client->phone,
-             is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
-             $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
-        )),
+        (
+            $client->is_virtual
+            ? ()
+            : (
+                salutation                     => $client->salutation,
+                first_name                     => $client->first_name,
+                last_name                      => $client->last_name,
+                date_of_birth                  => $dob_epoch,
+                address_line_1                 => $client->address_1,
+                address_line_2                 => $client->address_2,
+                address_city                   => $client->city,
+                address_state                  => $client->state,
+                address_postcode               => $client->postcode,
+                phone                          => $client->phone,
+                is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
+                $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
+            )
+        ),
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
     };
 }
