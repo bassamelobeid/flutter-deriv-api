@@ -115,7 +115,7 @@ if ($autoupdate) {
             is_tentative => $is_tentative,
         };
         my $id_date = $release_date || $estimated_release_date;
-        my $event_param->{id} = ForexFactory::generate_id(Date::Utility->new($id_date)->truncate_to_day()->epoch . $event_name . $symbol . $impact);
+        $event_param->{id} = ForexFactory::generate_id(Date::Utility->new($id_date)->truncate_to_day()->epoch . $event_name . $symbol . $impact);
         push @{$ref->{events}}, $event_param;
         BOM::MarketData::EconomicEventCalendar->new(
             events        => $ref->{events},
