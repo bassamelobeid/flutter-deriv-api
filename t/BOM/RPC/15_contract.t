@@ -191,7 +191,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 #};
 
 subtest 'send_ask' => sub {
-  my $params = {language => 'ZH_CN', args => {
+  my $params = {language => 'ZH_CN', client_ip => '127.0.0.1', args => {
                 "proposal"      => 1,
                 "amount"        => "100",
                 "basis"         => "payout",
@@ -200,9 +200,24 @@ subtest 'send_ask' => sub {
                 "duration"      => "60",
                 "duration_unit" => "s",
                 "symbol"        => "R_50",
-               }};
+                                                                       }};
+  #TODO:  Here it will print 2 warnings:
+  # Use of uninitialized value $country in hash element at /home/git/regentmarkets/bom-platform/lib/BOM/Platform/Runtime.pm line 130.
+  #Use of uninitialized value $country in hash element at /home/git/regentmarkets/bom-platform/lib/BOM/Platform/Runtime.pm line 122.
+  # That's because the request has no country_code. I don't know why the function _build_country_code doesn't run yet.
   my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-  diag(Dumper($c->call_ok('send_ask', $params)->result));
+  my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
+  my $expected_keys = [sort (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout))];
+  is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
+  diag($result->{longcode});
+    #           'longcode' => "\x{5982}\x{679c}\x{968f}\x{673a} 50 \x{6307}\x{6570}\x{5728}\x{5408}\x{7ea6}\x{5f00}\x{59cb}\x{65f6}\x{95f4}\x{4e4b}\x{540e}\x{5230}1 \x{5206}\x{949f}\x{65f6}\x{4e25}\x{683c}\x{9ad8}\x{4e8e}\x{5165}\x{5e02}\x{73b0}\x{4ef7}\x{ff0c}\x{5c06}\x{83b7}\x{5f97}USD100.00\x{7684}\x{8d54}\x{4ed8}\x{989d}\x{3002}",
+    #           'spot' => '963.3054',
+    #           'display_value' => '51.49',
+    #           'ask_price' => '51.49',
+    #           'spot_time' => '1457658198',
+    #           'date_start' => '1457657599',
+    #           'rpc_time' => '300.862',
+    #           'payout' => '100'
 };
 
 done_testing();
