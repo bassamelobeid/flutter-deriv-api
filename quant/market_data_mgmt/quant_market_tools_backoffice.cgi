@@ -101,19 +101,24 @@ if ($autoupdate) {
     }
 } elsif ($save_economic_event) {
     try {
-        $release_date           = Date::Utility->new($release_date)->epoch           if ($release_date);
-        $estimated_release_date = Date::Utility->new($estimated_release_date)->epoch if ($estimated_release_date);
         my $ref         = BOM::System::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
         my @events      = @{$ref->{events}};
         my $event_param = {
             event_name => $event_name,
             source     => $source,
-            ($release_date)           ? (release_date           => $release_date)           : (),
-            ($estimated_release_date) ? (estimated_release_date => $estimated_release_date) : (),
-            impact       => $impact,
-            symbol       => $symbol,
-            is_tentative => $is_tentative,
+            impact     => $impact,
+            symbol     => $symbol,
         };
+
+        if ($is_tentative) {
+            $event_param->{is_tentative} = $is_tentative;
+            die 'Must specify estimated announcement date for tentative events' if (not $estimated_release_date);
+            $event_param->{estimated_release_date} = Date::Utility->new($estimated_release_date)->epoch;
+        } else {
+            die 'Must specify announcement date for economic events' if (not $release_date);
+            $event_param->{release_date} = Date::Utility->new($release_date)->epoch;
+        }
+
         my $id_date = $release_date || $estimated_release_date;
         $event_param->{id} = ForexFactory::generate_id(Date::Utility->new($id_date)->truncate_to_day()->epoch . $event_name . $symbol . $impact);
         push @{$ref->{events}}, $event_param;
