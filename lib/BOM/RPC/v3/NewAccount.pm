@@ -402,7 +402,7 @@ sub jp_knowledge_test {
             datetime => $now->datetime_ddmmmyy_hhmmss,
         };
     $financial_data->{jp_knowledge_test} = $results;
-    $client->financial_assessment({ data => encode_json($financial_data) });
+    $jp_client->financial_assessment({ data => encode_json($financial_data) });
 
     if (not $jp_client->save()) {
         return BOM::RPC::v3::Utility::create_error({
