@@ -142,7 +142,7 @@ sub new_account_real {
     my $args = $params->{args};
     my $details_ref =
         _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code);
-     if (my $err = $details_ref->{error}) {
+    if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err,
                 message_to_client => $error_map->{$err}});
