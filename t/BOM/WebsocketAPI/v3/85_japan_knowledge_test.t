@@ -1,11 +1,13 @@
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 10;
+use Test::Exception;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
+use Test::MockTime qw(set_fixed_time restore_time);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 ## do not send email
@@ -18,7 +20,7 @@ $email_mocked->mock('send_email', sub { return 1 });
 
 my $t = build_mojo_test();
 
-my %client_details = (
+my %jp_client_details = (
     new_account_japan                           => 1,
     gender                                      => 'f',
     first_name                                  => 'first\'name',
@@ -61,60 +63,51 @@ my %client_details = (
 );
 
 
-my ($vr_client, $token, $jp_loginid, $jp_client);
+my ($vr_client, $user, $token, $jp_loginid, $jp_client);
 subtest 'create VRTJ & JP client' => sub {
-    # create VR acc
-    my $acc  = BOM::Platform::Account::Virtual::create_account({
-            details => {
-                email           => 'test@binary.com',
-                client_password => 'abc123',
-                residence       => 'jp',
-            },
-            email_verified => 1
+    # new VR client
+    ($vr_client, $user) = create_vr_account({
+            email           => 'test@binary.com',
+            client_password => 'abc123',
+            residence       => 'jp',
         });
-    $vr_client = $acc->{client};
-    print "VRTJ [" . $vr_client->loginid . "]..\n";
 
     # authorize
     $token = BOM::Platform::SessionCookie->new(
         loginid => $vr_client->loginid,
         email   => $vr_client->email,
     )->token;
-    print "token [$token]...\n\n";
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
-    # create JP acc
-    $t = $t->send_ok({json => \%client_details})->message_ok;
+    # new JP client
+    $t = $t->send_ok({json => \%jp_client_details})->message_ok;
     my $res = decode_json($t->message->[1]);
     $jp_loginid = $res->{new_account_japan}->{client_id};
-
-    print "JP loginid [$jp_loginid]\n\n";
 };
 
 use Data::Dumper;
 
-subtest 'not taken any Knowledge Test yet' => sub {
+subtest 'no test taken yet' => sub {
     $t = $t->send_ok({json => {get_settings => 1}})->message_ok;
     my $res = decode_json($t->message->[1]);
-    print "get_settings res[" . Dumper($res) . "]\n\n";
-
-    is $res->{get_settings}->{jp_account_status}->{status}, 'jp_knowledge_test_pending';
+    is $res->{get_settings}->{jp_account_status}->{status}, 'jp_knowledge_test_pending', 'jp_knowledge_test_pending';
 };
 
 subtest 'First Test taken: fail test' => sub {
     $t = $t->send_ok({json => {
-        jp_knowledge_test   => 1,
-        score               => 10,
-        status              => 'fail',
-    }})->message_ok;
+            jp_knowledge_test   => 1,
+            score               => 10,
+            status              => 'fail',
+        }})->message_ok;
     my $res = decode_json($t->message->[1]);
+
     my $epoch = $res->{jp_knowledge_test}->{test_taken_epoch};
     like $epoch, qr/^\d+$/, "test taken time is epoch: $epoch";
 
     subtest 'get_settings' => sub {
         $t = $t->send_ok({json => { get_settings => 1 }})->message_ok;
         my $res = decode_json($t->message->[1]);
-        print "get_settings res[" . Dumper($res) . "]\n\n";
+
         is $res->{get_settings}->{jp_account_status}->{status}, 'jp_knowledge_test_fail';
         like $res->{get_settings}->{jp_account_status}->{epoch}, qr/^\d+$/, 'Test taken time is epoch';
     };
@@ -132,16 +125,184 @@ subtest 'First Test taken: fail test' => sub {
     };
 };
 
-subtest 'Test not allow within same day' => sub {
+subtest 'No test allow within same day' => sub {
     $t = $t->send_ok({json => {
-        jp_knowledge_test   => 1,
-        score               => 18,
-        status              => 'pass',
-    }})->message_ok;
+            jp_knowledge_test   => 1,
+            score               => 18,
+            status              => 'pass',
+        }})->message_ok;
     my $res = decode_json($t->message->[1]);
-    my $epoch = $res->{jp_knowledge_test}->{test_taken_epoch};
-    like $epoch, qr/^\d+$/, "test taken time is epoch: $epoch";
+
+    is $res->{error}->{code}, 'AttemptExceeded', 'Number of attempt exceeded for knowledge test';
 };
 
+subtest 'Test is allowed after 1 day' => sub {
+    lives_ok {
+        my $financial_data = from_json($jp_client->financial_assessment->data);
+
+        my $results = $financial_data->{jp_knowledge_test};
+        my $last_test = pop @$results;
+
+        $last_test->{epoch} = $last_test->{epoch} - 86400;
+        push @{$results}, $last_test;
+
+        $financial_data->{jp_knowledge_test} = $results;
+        $jp_client->financial_assessment({data => encode_json($financial_data)});
+
+        $jp_client->save();
+    } 'fake last test date';
+
+    subtest 'Pass test' => sub {
+        $t = $t->send_ok({json => {
+                jp_knowledge_test   => 1,
+                score               => 18,
+                status              => 'pass',
+            }})->message_ok;
+        my $res = decode_json($t->message->[1]);
+
+        my $epoch = $res->{jp_knowledge_test}->{test_taken_epoch};
+        like $epoch, qr/^\d+$/, "test taken time is epoch: $epoch";
+    };
+
+    subtest 'get_settings' => sub {
+        $t = $t->send_ok({json => { get_settings => 1 }})->message_ok;
+        my $res = decode_json($t->message->[1]);
+
+        is $res->{get_settings}->{jp_account_status}->{status}, 'jp_activation_pending';
+    };
+
+    subtest '2 Tests result in financial assessment' => sub {
+        $jp_client = BOM::Platform::Client->new({loginid => $jp_loginid});
+        my $financial_data = from_json($jp_client->financial_assessment->data);
+
+        my $tests = $financial_data->{jp_knowledge_test};
+        is @{$tests}, 2, '2 test records';
+
+        my $test_2 = $tests->[1];
+        is $test_2->{score}, 18, 'Test 2: correct score';
+        is $test_2->{status}, 'pass', 'Test 2: correct status';
+    };
+};
+
+subtest 'No test allowed after passing' => sub {
+    $t = $t->send_ok({json => {
+            jp_knowledge_test   => 1,
+            score               => 18,
+            status              => 'pass',
+        }})->message_ok;
+    my $res = decode_json($t->message->[1]);
+
+    is $res->{error}->{code}, 'NotEligible', 'NotEligible';
+};
+
+subtest 'Test not allowed for non Japanese Client' => sub {
+    subtest 'create VRTC & CR client' => sub {
+        # new VRTC client
+        ($vr_client, $user) = create_vr_account({
+                email           => 'test+au@binary.com',
+                client_password => 'abc123',
+                residence       => 'au',
+            });
+        # authorize
+        $token = BOM::Platform::SessionCookie->new(
+                loginid => $vr_client->loginid,
+                email   => $vr_client->email,
+            )->token;
+        $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+
+        # new CR client
+        my %cr_client_details = (
+            new_account_real => 1,
+            salutation       => 'Ms',
+            last_name        => 'last-name',
+            first_name       => 'first\'name',
+            date_of_birth    => '1990-12-30',
+            residence        => 'au',
+            address_line_1   => 'Jalan Usahawan',
+            address_line_2   => 'Enterpreneur Center',
+            address_city     => 'Cyberjaya',
+            address_state    => 'Selangor',
+            address_postcode => '47120',
+            phone            => '+603 34567890',
+            secret_question  => 'Favourite dish',
+            secret_answer    => 'nasi lemak,teh tarik',
+        );
+
+        $t = $t->send_ok({json => \%cr_client_details})->message_ok;
+        my $res = decode_json($t->message->[1]);
+        my $cr_loginid = $res->{new_account_real}->{client_id};
+
+        like($cr_loginid, qr/^CR\d+$/, "got CR client $cr_loginid");
+    };
+
+    subtest 'get_settings has NO jp_account_status' => sub {
+        $t = $t->send_ok({json => {get_settings => 1}})->message_ok;
+        my $res = decode_json($t->message->[1]);
+
+        is $res->{get_settings}->{jp_account_status}, undef, 'NO jp_account_status';
+    };
+
+    subtest 'Test not allowed for VRTC Client' => sub {
+        $t = $t->send_ok({json => {
+                jp_knowledge_test   => 1,
+                score               => 18,
+                status              => 'pass',
+            }})->message_ok;
+        my $res = decode_json($t->message->[1]);
+
+        is $res->{error}->{code}, 'PermissionDenied', 'PermissionDenied';
+    };
+};
+
+subtest 'No test allowed for VRTJ, unless JP exists' => sub {
+    lives_ok {
+        ($vr_client, $user) = create_vr_account({
+                email           => 'test+jp01@binary.com',
+                client_password => 'abc123',
+                residence       => 'jp',
+            });
+
+        # authorize
+        $token = BOM::Platform::SessionCookie->new(
+            loginid => $vr_client->loginid,
+            email   => $vr_client->email,
+        )->token;
+
+        $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+    } 'new VRTJ client & authorize';
+
+    subtest 'get_settings has NO jp_account_status' => sub {
+        $t = $t->send_ok({json => {get_settings => 1}})->message_ok;
+        my $res = decode_json($t->message->[1]);
+
+        is $res->{get_settings}->{jp_account_status}, undef, 'NO jp_account_status';
+    };
+
+    subtest 'Test not allowed, unless upgraded to JP client' => sub {
+        $t = $t->send_ok({json => {
+                jp_knowledge_test   => 1,
+                score               => 18,
+                status              => 'pass',
+            }})->message_ok;
+        my $res = decode_json($t->message->[1]);
+
+        is $res->{error}->{code}, 'PermissionDenied', 'PermissionDenied';
+    };
+};
+
+
+sub create_vr_account {
+    my $args = shift;
+    my $acc  = BOM::Platform::Account::Virtual::create_account({
+            details => {
+                email           => $args->{email},
+                client_password => $args->{client_password},
+                residence       => $args->{residence},
+            },
+            email_verified => 1
+        });
+
+    return ($acc->{client}, $acc->{user});
+}
 
 $t->finish_ok;
