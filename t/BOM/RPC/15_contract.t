@@ -237,10 +237,10 @@ subtest 'get_bid' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
-    $fmb = create_fmb(
+    my $fmb = create_fmb(
         $client,
         buy_bet    => 1,
-        underlying => 'R_50'
+        underlying => 'R_50',
     )->financial_market_bet_record;
     my $params = {
         language    => 'ZH_CN',
