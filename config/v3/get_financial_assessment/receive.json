@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Get financial assessment details",
-  "description": "This call gets the financial assessment details of client's accounti.",
+  "description": "This call gets the financial assessment details of client's account.",
   "properties": {
     "echo_req": {
       "title": "Echo request",
