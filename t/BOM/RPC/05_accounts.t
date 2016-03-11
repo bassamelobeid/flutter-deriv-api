@@ -928,6 +928,26 @@ subtest $method => sub {
     );
 };
 
+$method = 'get_financial_assessment';
+subtest $method => sub {
+    my $args = {"get_financial_assessment" => 1};
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token_vr,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token1
+        });
+    is_deeply($res, {}, 'empty assessment details');
+};
+
 $method = 'set_financial_assessment';
 subtest $method => sub {
     my $args = {
@@ -967,6 +987,28 @@ subtest $method => sub {
         });
     cmp_ok($res->{score}, "<", 60, "Got correct score");
     is($res->{is_professional}, 0, "As score is less than 60 so its marked as not professional");
+};
+
+$method = 'get_financial_assessment';
+subtest $method => sub {
+    my $args = {"get_financial_assessment" => 1};
+
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token_vr,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+
+    $res = $c->tcall(
+        $method,
+        {
+            args  => $args,
+            token => $token1
+        });
+    cmp_ok($res->{score}, "==", 38, "Got correct score");
+    is $res->{education_level}, 'Secondary', 'Got correct answer for assessment key';
 };
 
 $method = 'set_settings';
