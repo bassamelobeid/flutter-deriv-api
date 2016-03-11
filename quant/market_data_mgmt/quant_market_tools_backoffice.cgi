@@ -113,7 +113,7 @@ if ($autoupdate) {
         if ($is_tentative) {
             $event_param->{is_tentative} = $is_tentative;
             die 'Must specify estimated announcement date for tentative events' if (not $estimated_release_date);
-            $event_param->{estimated_release_date} = Date::Utility->new($estimated_release_date)->epoch;
+            $event_param->{estimated_release_date} = Date::Utility->new($estimated_release_date)->truncate_to_day->epoch;
         } else {
             die 'Must specify announcement date for economic events' if (not $release_date);
             $event_param->{release_date} = Date::Utility->new($release_date)->epoch;
