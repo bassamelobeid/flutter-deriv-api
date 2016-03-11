@@ -45,7 +45,7 @@ sub chronicle_reader {
 
 sub chronicle_writer {
     return BOM::System::Chronicle::get_chronicle_writer();
-)
+}
 
 #this sub needs to be removed as it is no loger used.
 #we use `get_latest_events_for_period` to read economic events.
