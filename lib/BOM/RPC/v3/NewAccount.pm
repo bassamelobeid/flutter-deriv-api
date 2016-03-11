@@ -348,8 +348,11 @@ sub jp_knowledge_test {
         return $auth_error;
     }
 
+    my $user = BOM::Platform::User->new({ email => $client->email });
+    my @siblings = $user->clients(disabled_ok => 1);
+    my $jp_client = $siblings[0];
+
     # only allowed for VRTJ client, upgrading to JP
-    my $jp_client = ($client->siblings)[0];
     unless (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual'
             and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($jp_client->broker)->short eq 'japan'
     ) {
@@ -368,8 +371,8 @@ sub jp_knowledge_test {
 
         if ($now->days_between($last_test_date) <= 0) {
             return BOM::RPC::v3::Utility::create_error({
-                code              => 'JPKnowledgeTest',
-                message_to_client => localize('You are not allowed to take Knowledge Test more than once per day.'),
+                code              => 'AttemptExceeded',
+                message_to_client => localize('You have exceeded attempt limit for Japan knowledge test today, please try again tomorrow.'),
             });
         }
         $status_ok = 1;
@@ -377,8 +380,8 @@ sub jp_knowledge_test {
 
     unless ($status_ok) {
         return BOM::RPC::v3::Utility::create_error({
-            code              => 'JPKnowledgeTest',
-            message_to_client => localize('You are not eligible for Knowledge Test.'),
+            code              => 'NotEligible',
+            message_to_client => localize('You are not eligible for Japan knowledge test.'),
         });
     }
 
