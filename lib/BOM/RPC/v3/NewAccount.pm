@@ -28,7 +28,6 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Static::Config;
 use BOM::Platform::Runtime;
 use BOM::System::AuditLog;
-use BOM::Platform::Email qw(send_email);
 
 sub new_account_virtual {
     my $params = shift;
@@ -387,7 +386,7 @@ sub jp_knowledge_test {
 
     if ($status eq 'pass') {
         $jp_client->clr_status($client_status->status_code);
-        $jp_client->set_status('jp_activation_pending', 'system', 'pending verification documents from client.');
+        $jp_client->set_status('jp_activation_pending', 'system', 'pending verification documents from client');
     } else {
         $jp_client->clr_status($client_status->status_code) if ($client_status->status_code eq 'jp_knowledge_test_pending');
         $jp_client->set_status('jp_knowledge_test_fail', 'system', "Failed test with score: $score");
@@ -413,14 +412,45 @@ sub jp_knowledge_test {
     }
 
     if ($status eq 'pass') {
+        my $email_content = localize(
+            'Dear [_1] [_2],
+
+Congratulations on passing the knowledge test for binary options trading.
+
+In the next stage of our account opening process we are required to verify your identity documents and review your eligibility to open a trading account. This will be conducted by our Compliance and Risk Management department upon receipt of your identity documents.
+
+Kindly reply to this email and attach a scanned copy of one of the following approved forms of identity:
+
+<ul>
+    <li>Japan Driving license, front and back sides</li>
+    <li>Health Insurance card, front and back side</li>
+    <li>Basic Resident register and separate passport size photograph. If your document contains details of other family members please cover-over with a blank piece of paper when taking the scan</li>
+    <li>Residence Card, front and back side</li>
+</ul>
+
+Please ensure the document contains details of your current address which matches the details that you provided in the basic information section earlier. Please also ensure that the address and other information is easily readable, as otherwise this may delay your application.
+
+We will endeavor to verify your documents within 24 hours, and send you another email when this step has been completed.
+
+Once again, thank you very much for applying to open an account at Binary.com
+
+
+Yours sincerely,
+
+Customer Support
+Binary KK
+
+support@binary.com', $jp_client->last_name, $jp_client->first_name
+        );
+
         send_email({
             from               => BOM::Platform::Static::Config::get_customer_support_email(),
             to                 => $client->email,
-            subject            => localize('Please send us documents for verification.'),
-            message            => [localize('Please reply to this email to send us documents for verification.')],
+            subject            => localize('Kindly send us your documents for verification.'),
+            message            => [$email_content],
             use_email_template => 1,
         });
-        BOM::System::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to request for docs.',
+        BOM::System::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to request for docs',
             $client->loginid);
     }
 
