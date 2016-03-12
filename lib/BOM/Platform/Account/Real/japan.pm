@@ -53,8 +53,8 @@ sub create_account {
     });
 
     $client->set_exclusion->max_losses($daily_loss_limit);
-    $client->set_status('jp_knowledge_test_pending');
-    $client->set_status('disabled');
+    $client->set_status('jp_knowledge_test_pending', 'system', 'pending knowledge test');
+    $client->set_status('disabled',                  'system', 'disabled until Japan account opening process completed');
     $client->save;
 
     return BOM::Platform::Account::Real::default::_after_register_client({
