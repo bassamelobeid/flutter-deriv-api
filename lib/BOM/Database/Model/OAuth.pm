@@ -78,11 +78,21 @@ sub store_access_token_only {
     my $expires_in   = 86400;                                                     # for one day
     my $access_token = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
-    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
+    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
     $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires) VALUES (?, ?, ?, ?)",
         undef, $access_token, $app_id, $loginid, $expires_time);
 
     return ($access_token, $expires_in);
+}
+
+sub extend_access_token_expires {
+    my ($self, $token) = @_;
+
+    my $dbh        = $self->dbh;
+    my $expires_in = 86400;
+
+    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
+    return $dbh->do("UPDATE oauth.access_token SET expires = ? WHERE access_token = ?", undef, $expires_time, $token);
 }
 
 sub get_loginid_by_access_token {
