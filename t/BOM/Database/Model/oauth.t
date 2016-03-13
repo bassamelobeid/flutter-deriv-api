@@ -29,18 +29,12 @@ my $app = $m->verify_app($test_appid);
 is $app->{id}, $test_appid;
 
 $m->dbh->do("DELETE FROM oauth.user_scope_confirm");    # clear
-my $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade');
+my $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 0, 'not confirmed';
 
-ok $m->confirm_scope($test_appid, $test_loginid, 'read', 'trade'), 'confirm scope';
-$is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade');
+ok $m->confirm_scope($test_appid, $test_loginid), 'confirm scope';
+$is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 1, 'confirmed after confirm_scope';
-
-$is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade', 'admin');
-is $is_confirmed, 0, 'admin is not confirmed';
-ok $m->confirm_scope($test_appid, $test_loginid, 'admin'), 'confirm admin scope';
-$is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade', 'admin');
-is $is_confirmed, 1, 'admin is confirmed';
 
 my ($access_token) = $m->store_access_token_only($test_appid, $test_loginid);
 ok $access_token;

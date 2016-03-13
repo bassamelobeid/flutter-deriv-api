@@ -45,45 +45,30 @@ sub verify_app {
 }
 
 sub confirm_scope {
-    my ($self, $app_id, $loginid, @scopes) = @_;
+    my ($self, $app_id, $loginid) = @_;
 
     my $dbh = $self->dbh;
 
     my ($is_exists, $exists_scopes) = $dbh->selectrow_array("
-        SELECT true, scopes FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
+        SELECT true FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
     ", undef, $app_id, $loginid);
-    if ($is_exists) {
-        $exists_scopes = __parse_array($exists_scopes);
-        push @scopes, @$exists_scopes;
-        @scopes = __filter_valid_scopes(uniq @scopes);
-        $dbh->do("
-            UPDATE oauth.user_scope_confirm SET scopes = ? WHERE app_id = ? AND loginid = ?
-        ", undef, \@scopes, $app_id, $loginid);
-    } else {
-        $dbh->do("INSERT INTO oauth.user_scope_confirm (app_id, loginid, scopes) VALUES (?, ?, ?)",
-            undef, $app_id, $loginid, [__filter_valid_scopes(@scopes)]);
+    unless ($is_exists) {
+        $dbh->do("INSERT INTO oauth.user_scope_confirm (app_id, loginid) VALUES (?, ?)", undef, $app_id, $loginid);
     }
 
     return 1;
 }
 
 sub is_scope_confirmed {
-    my ($self, $app_id, $loginid, @scopes) = @_;
+    my ($self, $app_id, $loginid) = @_;
 
     return 1 if $app_id eq 'binarycom';    # our app is all confirmed
 
-    my $dbh = $self->dbh;
-
-    my ($confirmed_scopes) = $dbh->selectrow_array("
-        SELECT scopes FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
+    my ($confirmed_scopes) = $self->dbh->selectrow_array("
+        SELECT true FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
     ", undef, $app_id, $loginid);
-    $confirmed_scopes = __parse_array($confirmed_scopes);
 
-    foreach my $scope (@scopes) {
-        return 0 unless grep { $_ eq $scope } @$confirmed_scopes;
-    }
-
-    return 1;
+    return $confirmed_scopes ? 1 : 0;
 }
 
 sub store_access_token_only {
