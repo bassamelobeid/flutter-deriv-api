@@ -98,11 +98,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                     verification_code     => $code,
                     (defined $amount) ? (amount => $amount) : (),
                 }});
-        if (defined $amount and $amount ne '') {
-            ok $res->{error}->{message_to_client} =~ /Invalid amount/, "test amount $amount";
-        } else {
-            ok $res->{error}->{message_to_client} =~ /Input validation failed: amount/, "test amount " . ($amount // 'undef');
-        }
+        ok $res->{error}->{message_to_client} =~ /Invalid amount/, "test amount $amount";
     }
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
@@ -253,11 +249,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                     currency              => 'USD',
                     (defined $amount) ? (amount => $amount) : (),
                 }});
-        if (defined $amount and $amount ne '') {
-            ok $res->{error}->{message_to_client} =~ /Invalid amount/, "test amount $amount";
-        } else {
-            ok $res->{error}->{message_to_client} =~ /Input validation failed: amount/, "test amount " . ($amount // 'undef');
-        }
+        ok $res->{error}->{message_to_client} =~ /Invalid amount/, "test amount $amount";
     }
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({

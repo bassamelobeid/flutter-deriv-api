@@ -234,9 +234,8 @@ sub paymentagent_transfer {
         return $reject_error_sub->(localize('Sorry, it is not allowed.'));
     }
 
-    for ($currency) {
-        /^\w\w\w$/ || return $reject_error_sub->(localize('Sorry, the currency format is incorrect.'));
-        /^USD$/    || return $reject_error_sub->(localize('Sorry, only USD is allowed.'));
+    if ($currency ne 'USD') {
+        return $reject_error_sub->(localize('Sorry, only USD is allowed.'));
     }
 
     unless ($client_fm->currency eq $currency) {
