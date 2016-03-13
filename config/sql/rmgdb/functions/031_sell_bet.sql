@@ -11,32 +11,32 @@ BEGIN;
 --                                 FOR UPDATE)
 --     SELECT *
 --       FROM acc
---      CROSS JOIN LATERAL bet.sell_bet(acc.account_id, ...)
+--      CROSS JOIN LATERAL bet_v1.sell_bet(acc.account_id, ...)
 --
 -- The important piece is the FOR UPDATE clause in the CTE.
 --
 -- A simpler to use version of the function is available as
 --
---     bet.sell_bet(client_loginid, currency_code, ...)
+--     bet_v1.sell_bet(client_loginid, currency_code, ...)
 --
 -- With that function the account is identified by loginid and currency.
 
-CREATE OR REPLACE FUNCTION bet.sell_bet(p_account_id       BIGINT,                     --  1
-                                        p_currency         VARCHAR(3),                 --  2
-                                        -- FMB stuff
-                                        p_id               BIGINT,                     --  3
-                                        p_sell_price       NUMERIC,                    --  4
-                                        p_sell_time        TIMESTAMP,                  --  5
-                                        p_chld             JSON,                       --  6
-                                        -- transaction stuff
-                                        p_transaction_time TIMESTAMP,                  --  7
-                                        p_staff_loginid    VARCHAR(24),                --  8
-                                        p_remark           VARCHAR(800),               --  9
-                                        p_source           BIGINT,                     --  10
-                                        -- quants_bets_variables
-                                        p_qv               JSON,                       -- 11
-                                    OUT v_fmb              bet.financial_market_bet,
-                                    OUT v_trans            transaction.transaction)
+CREATE OR REPLACE FUNCTION bet_v1.sell_bet( p_account_id       BIGINT,                     --  1
+                                            p_currency         VARCHAR(3),                 --  2
+                                            -- FMB stuff
+                                            p_id               BIGINT,                     --  3
+                                            p_sell_price       NUMERIC,                    --  4
+                                            p_sell_time        TIMESTAMP,                  --  5
+                                            p_chld             JSON,                       --  6
+                                            -- transaction stuff
+                                            p_transaction_time TIMESTAMP,                  --  7
+                                            p_staff_loginid    VARCHAR(24),                --  8
+                                            p_remark           VARCHAR(800),               --  9
+                                            p_source           BIGINT,                     --  10
+                                            -- quants_bets_variables
+                                            p_qv               JSON,                       -- 11
+                                        OUT v_fmb              bet.financial_market_bet,
+                                        OUT v_trans            transaction.transaction)
 RETURNS SETOF RECORD AS $def$
 DECLARE
     v_nrows      INTEGER;
