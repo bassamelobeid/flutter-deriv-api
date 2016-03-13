@@ -85,21 +85,19 @@ sub store_access_token_only {
     return ($access_token, $expires_in);
 }
 
-sub extend_access_token_expires {
-    my ($self, $token) = @_;
-
-    my $dbh        = $self->dbh;
-    my $expires_in = 86400;
-
-    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
-    return $dbh->do("UPDATE oauth.access_token SET expires = ? WHERE access_token = ?", undef, $expires_time, $token);
-}
-
 sub get_loginid_by_access_token {
     my ($self, $token) = @_;
 
-    return $self->dbh->selectrow_array("UPDATE oauth.access_token SET last_used=NOW() WHERE access_token = ? AND expires > NOW() RETURNING loginid",
-        undef, $token);
+    ## extends access token expires
+    my $expires_in = 86400;
+    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
+
+    return $self->dbh->selectrow_array("
+        UPDATE oauth.access_token
+        SET last_used=NOW(), expires=?
+        WHERE access_token = ? AND expires > NOW()
+        RETURNING loginid
+    ", undef, $expires_time, $token);
 }
 
 sub get_scopes_by_access_token {

@@ -43,12 +43,6 @@ is $m->get_loginid_by_access_token($access_token), $test_loginid, 'get_loginid_b
 my @scopes = $m->get_scopes_by_access_token($access_token);
 is_deeply([sort @scopes], ['admin', 'payments', 'read', 'trade'], 'scopes are right');
 
-## test extend_access_token_expires
-$m->dbh->do("UPDATE oauth.access_token SET expires='2016-01-01 00:00:00' WHERE access_token = ?", undef, $access_token);
-is $m->get_loginid_by_access_token($access_token), undef, "b/c it's expired";
-ok $m->extend_access_token_expires($access_token);
-is $m->get_loginid_by_access_token($access_token), $test_loginid, 'get_loginid_by_access_token ok again';
-
 ### get app_register/app_list/app_get
 my $get_app = $m->get_app($test_user_id, $app1->{app_id});
 is_deeply($app1, $get_app, 'same on get');
