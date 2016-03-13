@@ -464,11 +464,11 @@ sub paymentagent_withdraw {
 
     # check that the currency is in correct format
     if ($client->currency ne $currency) {
-        return $error_sub->(localize('Sorry, your currency of [_1] is unavailable for Payment Agent Withdrawal', $client->currency));
+        return $error_sub->(localize('Sorry, your currency of [_1] is unavailable for Payment Agent Withdrawal', $currency));
     }
 
     if ($pa_client->currency ne $currency) {
-        return $error_sub->(localize("Sorry, the Payment Agent's currency [_1] is unavailable for Payment Agent Withdrawal", $pa_client->currency));
+        return $error_sub->(localize("Sorry, the Payment Agent's currency [_1] is unavailable for Payment Agent Withdrawal", $currency));
     }
 
     # check that the amount is in correct format
