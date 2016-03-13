@@ -235,28 +235,47 @@ subtest 'send_ask' => sub {
 };
 
 subtest 'get_bid' => sub {
-  diag(__LINE__);
+    diag(__LINE__);
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
-                                                                           });
-  $client->deposit_virtual_funds;
-  my $fmb;
-  lives_ok {
-    $fmb = create_fmb(
-                         $client,
-                         buy_bet    => 1,
-                         underlying => 'R_50',
-                        )->financial_market_bet_record;
-     };
-    #print Dumper($fmb);
+    });
+    $client->deposit_virtual_funds;
+    my $fmb;
+    lives_ok {
+        $fmb = create_fmb(
+            $client,
+            buy_bet    => 1,
+            underlying => 'R_50',
+        )->financial_market_bet_record;
+    };
+
     my $params = {
         language    => 'ZH_CN',
         short_code  => $fmb->{short_code},
         contract_id => $fmb->{id},
         currency    => $client->currency,
         is_sold     => $fmb->{is_sold},
-    };diag(__LINE__);
-    diag(Dumper($c->call_ok('get_bid', $params)->result));
+    };
+
+    my $expected_keys = [
+        sort (qw(ask_price
+                bid_price
+                current_spot_time
+                contract_id
+                underlying
+                is_expired
+                is_valid_to_sell
+                is_forward_starting
+                is_path_dependent
+                is_intraday
+                date_start
+                date_expiry
+                date_settlement
+                currency
+                longcode
+                shortcode
+                payout              ))];
+    is_deeply([sort keys %{$c->call_ok('get_bid', $params)->result}], $expected_keys);
     ok(1);
 };
 
