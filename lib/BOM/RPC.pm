@@ -66,11 +66,6 @@ sub register {
             my $r = BOM::Platform::Context::Request->new($args);
             BOM::Platform::Context::request($r);
 
-            ## randomly extends access token expires
-            if (int(rand(20)) == 1 and ($params->{token} // '') =~ /^a1-/) {
-                BOM::Database::Model::OAuth->new->extend_access_token_expires($params->{token});
-            }
-
             goto &$code;
         });
 }
