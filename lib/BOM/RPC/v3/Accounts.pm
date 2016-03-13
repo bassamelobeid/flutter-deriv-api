@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use JSON;
+use Try::Tiny;
 use Date::Utility;
 use Data::Password::Meter;
 
@@ -18,6 +19,7 @@ use BOM::Platform::Locale;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Static::Config;
+use BOM::Platform::Account::Real::default;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -102,6 +104,7 @@ sub __build_landing_company {
         legal_allowed_currencies          => $lc->legal_allowed_currencies,
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
+        has_reality_check                 => $lc->has_reality_check ? 1 : 0
     };
 }
 
@@ -272,30 +275,6 @@ sub get_account_status {
     return {status => \@status};
 }
 
-sub _check_password {
-    my ($old_password, $new_password, $user_pass) = @_;
-
-    my $message;
-    if (not BOM::System::Password::checkpw($old_password, $user_pass)) {
-        $message = localize("Old password is wrong.");
-    } elsif ($new_password eq $old_password) {
-        $message = localize('New password is same as old password.');
-    } elsif (not Data::Password::Meter->new(14)->strong($new_password)) {
-        $message = localize("Password is not strong enough.");
-    } elsif (length($new_password) < 6 or $new_password !~ /[0-9]+/ or $new_password !~ /[a-z]+/ or $new_password !~ /[A-Z]+/) {
-        $message = localize("Password should have letters and numbers and at least 6 characters.");
-    }
-
-    if ($message) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ChangePasswordError',
-            message_to_client => $message
-        });
-    }
-
-    return;
-}
-
 sub change_password {
     my $params = shift;
 
@@ -315,7 +294,13 @@ sub change_password {
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
-    if (my $pass_error = _check_password($args->{old_password}, $args->{new_password}, $user->password)) {
+    if (
+        my $pass_error = BOM::RPC::v3::Utility::_check_password({
+                old_password => $args->{old_password},
+                new_password => $args->{new_password},
+                user_pass    => $user->password
+            }))
+    {
         return $pass_error;
     }
 
@@ -391,9 +376,9 @@ sub cashier_password {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
 
-        my $pwdm = Data::Password::Meter->new(14);
-        return $error_sub->(localize("Password is not strong enough."))
-            unless ($pwdm->strong($lock_password));
+        if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $lock_password})) {
+            return $pass_error;
+        }
 
         $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
         if (not $client->save()) {
@@ -983,6 +968,55 @@ sub set_account_currency {
                 code              => 'InvalidCurrency',
                 message_to_client => localize("The provided currency [_1] is not applicable for this account.", $currency)});
     }
+
+    return $response;
+}
+
+sub set_financial_assessment {
+    my $params = shift;
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
+    my ($response, $subject, $message);
+    try {
+        my %financial_data = map { $_ => $params->{args}->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
+        my $financial_evaluation = BOM::Platform::Account::Real::default::get_financial_assessment_score(\%financial_data);
+
+        my $is_professional = $financial_evaluation->{total_score} < 60 ? 0 : 1;
+        $client->financial_assessment({
+            data            => encode_json $financial_evaluation->{user_data},
+            is_professional => $is_professional
+        });
+        $client->save;
+        $response = {
+            score           => $financial_evaluation->{total_score},
+            is_professional => $is_professional
+        };
+        $subject = $client_loginid . ' assessment test details have been updated';
+        $message = ["$client_loginid score is " . $financial_evaluation->{total_score}];
+    }
+    catch {
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'UpdateAssessmentError',
+                message_to_client => localize("Sorry, an error occurred while processing your request.")});
+        $subject = "$client_loginid - assessment test details error";
+        $message = ["An error occurred while updating assessment test details for $client_loginid. Please handle accordingly."];
+    };
+
+    send_email({
+        from    => BOM::Platform::Static::Config::get_customer_support_email(),
+        to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
+        subject => $subject,
+        message => $message,
+    });
 
     return $response;
 }

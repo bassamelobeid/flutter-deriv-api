@@ -15,6 +15,7 @@ use BOM::Platform::Account;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
+use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Locale;
 use BOM::Platform::Email qw(send_email);
@@ -27,15 +28,10 @@ use BOM::Platform::Static::Config;
 sub new_account_virtual {
     my $params = shift;
     my $args   = $params->{args};
-
     my $err_code;
-    my $pwdm = Data::Password::Meter->new(14);
 
-    unless ($pwdm->strong($args->{client_password})) {
-        $err_code = 'Password is not strong enough.';
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $err_code,
-                message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
+    if ($err_code = BOM::RPC::v3::Utility::_check_password({new_password => $args->{client_password}})) {
+        return $err_code;
     }
 
     if (exists $args->{affiliate_token}) {
@@ -202,19 +198,14 @@ sub new_account_maltainvest {
                 message_to_client => $error_map->{$err}});
     }
 
-    my $financial_data = {};
-    $financial_data->{$_} = $args->{$_} for qw (
-        forex_trading_experience forex_trading_frequency indices_trading_experience indices_trading_frequency
-        commodities_trading_experience commodities_trading_frequency stocks_trading_experience stocks_trading_frequency
-        other_derivatives_trading_experience other_derivatives_trading_frequency other_instruments_trading_experience
-        other_instruments_trading_frequency employment_industry education_level income_source net_income estimated_worth );
+    my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         from_client    => $client,
         user           => BOM::Platform::User->new({email => $client->email}),
         details        => $details_ref->{details},
         accept_risk    => 1,
-        financial_data => $financial_data,
+        financial_data => \%financial_data,
     });
 
     if (my $err_code = $acc->{error}) {
