@@ -320,6 +320,13 @@ sub paymentagent_transfer {
         return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
+    if ($client_to->default_account and $amount + $client_to->default_account->balance > $client_to->get_limit_for_account_balance) {
+        BOM::Platform::Transaction->unfreeze_client($loginid_fm);
+        BOM::Platform::Transaction->unfreeze_client($loginid_to);
+
+        return $reject_error_sub->(localize('Sorry, client balance will exceed limits with this payment.'));
+    }
+
     # execute the transfer
     my $now       = Date::Utility->new;
     my $today     = $now->datetime_ddmmmyy_hhmmss_TZ;

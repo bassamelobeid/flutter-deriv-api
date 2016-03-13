@@ -44,6 +44,7 @@ my $app1 = BOM::RPC::v3::App::register({
         token => $token,
         args  => {
             name         => 'App 1',
+            scopes       => ['read', 'trade'],
             redirect_uri => 'https://www.example.com/',
         }});
 my $get_app = BOM::RPC::v3::App::get({
@@ -64,6 +65,7 @@ my $app2 = BOM::RPC::v3::App::register({
         token => $token,
         args  => {
             name         => 'App 2',
+            scopes       => ['read', 'admin'],
             redirect_uri => 'https://www.example2.com/',
         }});
 my $get_apps = BOM::RPC::v3::App::list({

@@ -24,6 +24,7 @@ sub register {
 
     my $args         = $params->{args};
     my $name         = $args->{name};
+    my $scopes       = $args->{scopes};
     my $homepage     = $args->{homepage} // '';
     my $github       = $args->{github} // '';
     my $appstore     = $args->{appstore} // '';
@@ -59,6 +60,7 @@ sub register {
     my $app = $oauth->create_app({
         user_id      => $user_id,
         name         => $name,
+        scopes       => $scopes,
         homepage     => $homepage,
         github       => $github,
         appstore     => $appstore,
