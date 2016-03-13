@@ -242,13 +242,15 @@ subtest 'get_bid' => sub {
   $client->deposit_virtual_funds;
   my $fmb;
   lives_ok {
-    $fmb = create_fmb(
+    my $abc = create_fmb(
                          $client,
                          buy_bet    => 1,
-                         underlying => 'R_50',
-                        )->financial_market_bet_record;
-  }
-    
+                         underlying => 'R_100',
+                        );
+                        #print Dumper($abc);
+     $fmb = $abc->financial_market_bet_record;
+     }
+     print Dumper($fmb);    
     my $params = {
         language    => 'ZH_CN',
         short_code  => $fmb->{short_code},
@@ -268,7 +270,7 @@ sub create_fmb {
     my $account = $client->set_default_account('USD');
     return BOM::Test::Data::Utility::UnitTestDatabase::create_fmb_with_ticks({
         type               => 'fmb_higher_lower_call_buy',
-        short_code_prefix  => 'CALL_R_50_26.49',
+        short_code_prefix  => 'CALL_R_100_26.49',
         short_code_postfix => 'S0P_0',
         account_id         => $account->id,
         buy_bet            => 0,
