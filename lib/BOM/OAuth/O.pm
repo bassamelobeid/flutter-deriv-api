@@ -53,7 +53,7 @@ sub authorize {
     my $is_all_approved = 0;
     if ($c->req->method eq 'POST' and ($c->csrf_token eq ($c->param('csrftoken') // ''))) {
         if ($c->param('confirm_scopes')) {
-            $is_all_approved = $oauth_model->confirm_scope($app_id, $loginid, @scopes);
+            $is_all_approved = $oauth_model->confirm_scope($app_id, $loginid);
         } else {
             my $uri = $redirect_handle->($response_type, 'scope_denied', $state);
             return $c->redirect_to($uri);
@@ -61,7 +61,7 @@ sub authorize {
     }
 
     ## check if it's confirmed
-    $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid, @scopes);
+    $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid);
     unless ($is_all_approved) {
         ## show scope confirms
         return $c->render(
