@@ -67,7 +67,7 @@ subtest 'Invalid email verification code' => sub {
     $t = $t->send_ok({json => $create_vr})->message_ok;
     my $res = decode_json($t->message->[1]);
 
-    is($res->{error}->{code}, 'email unverified', 'Email unverified as wrong verification code');
+    is($res->{error}->{code}, 'InvalidToken', 'wrong verification code');
     is($res->{new_account_virtual}, undef, 'NO account created');
 };
 
