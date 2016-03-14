@@ -279,6 +279,8 @@ subtest 'get_bid' => sub {
                 barrier
                 exit_tick_time
                 exit_tick
+                entry_tick
+                entry_tick_time
                 current_spot
                 entry_spot
                ))];
