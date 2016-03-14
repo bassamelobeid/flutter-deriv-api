@@ -368,7 +368,8 @@ subtest 'get_bid' => sub {
                                              current_tick => $tick,
                                              entry_tick   => $old_tick1,
                                              exit_tick    => $old_tick2,
-                                             barrier      => 'S0P',
+                                  barrier      => 'S0P',
+                                  amount_per_point => 1
                                             });
 
     $txn = BOM::Product::Transaction->new({
