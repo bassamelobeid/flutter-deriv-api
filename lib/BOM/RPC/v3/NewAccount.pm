@@ -331,7 +331,7 @@ sub _get_client_details {
     return {details => $details};
 }
 
-sub _get_knowledge_test_status {
+sub _knowledge_test_available_date {
     my $last_test_epoch = shift;
 
     my $dt;
