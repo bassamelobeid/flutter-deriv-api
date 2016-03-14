@@ -31,6 +31,17 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => Date::Utility->new,
     }) for (qw/AUD EUR GBP HKD IDR JPY NZD SGD USD XAU ZAR/);
 
+Quant::Framework::Utils::Test::create_doc('randomindex', {
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        rates => { 7 => 3.5 },
+    });
+
+Quant::Framework::Utils::Test::create_doc('stock', {
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    });
+
 # INCORRECT DATA in support of in_quiet_period testing, only.
 # Update if you want to test some other exchange info here.
 my $looks_like_currency = qr/^[A-Z]{3}/;
@@ -96,6 +107,11 @@ subtest 'display_decimals' => sub {
             my $decimals = $symbols_decimals->{$symbol};
             is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
         }
+        
+        my $r100 = BOM::Market::Underlying->new({symbol => 'R_100'});
+        is $r100->dividend_rate_for(0.5), 3.5, 'correct dividend rate';
+        is $r100->dividend_rate_for(1.0), 3.5, 'correct dividend rate';
+
     };
 
     subtest 'indices' => sub {
@@ -122,6 +138,10 @@ subtest 'display_decimals' => sub {
             my $decimals = $symbols_decimals->{$symbol};
             is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
         }
+
+        my $stock = BOM::Market::Underlying->new({symbol => 'USAAPL'});
+        is roundnear(0.0001, $stock->dividend_rate_for(0.5)), 0.0103, 'correct dividend rate for stocks';
+        is $stock->dividend_rate_for(1.0), 0.0073, 'correct dividend rate for stocks';
     };
 };
 
