@@ -332,7 +332,7 @@ sub _get_client_details {
 }
 
 sub _get_knowledge_test_status {
-    my $last_epoch = shift;
+    my $last_test_epoch = shift;
 
     my $dt;
     if (not $last_test_epoch) {
