@@ -265,7 +265,7 @@ subtest 'get_bid' => sub {
                                                                         underlying => 'R_50',
                                                                        });
     my $underlying = BOM::Market::Underlying->new('R_50');
-    my $contract_expired = produce_contract({
+    my $contract = produce_contract({
                                              underlying   => $underlying,
                                              bet_type     => 'FLASHU',
                                              currency     => 'USD',
@@ -279,10 +279,10 @@ subtest 'get_bid' => sub {
                                             });
 
     my $txn = BOM::Product::Transaction->new({
-                                              client        => $test_client2,
-                                              contract      => $contract_expired,
+                                              client        => $client,
+                                              contract      => $contract,
                                               price         => 100,
-                                              payout        => $contract_expired->payout,
+                                              payout        => $contract->payout,
                                               amount_type   => 'stake',
                                               purchase_date => $now->epoch - 101,
                                              });
