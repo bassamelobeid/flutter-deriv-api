@@ -291,6 +291,15 @@ subtest 'get_bid' => sub {
     ok(!$error, 'should no error to buy the contract');
     diag(Dumper($error)) if $error;
 
+    my $params = {
+        language    => 'ZH_CN',
+        short_code  => $contract->short_code,
+        contract_id => $contract->id
+        currency    => $client->currency,
+        is_sold     => 0,
+    };
+
+
     #my $fmb;
     #lives_ok {
     #    $fmb = create_fmb(
