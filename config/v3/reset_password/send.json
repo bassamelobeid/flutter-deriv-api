@@ -12,7 +12,7 @@
     "new_password": {
       "type": "string",
       "pattern": "^[ -~]{6,25}$",
-      "description": "New password for validation (length within 6-25 chars, accepts any printable ASCII characters, need to include capital and lowercase letters with numbers). Password strength is evaluated as: http://archive.geekwisdom.com/js/passwordmeter.js",
+      "description": "New password for validation (length within 6-25 chars, accepts any printable ASCII characters, need to include capital and lowercase letters with numbers). Password strength is evaluated with: http://archive.geekwisdom.com/js/passwordmeter.js",
       "required": "1"
     },
     "date_of_birth" : {
