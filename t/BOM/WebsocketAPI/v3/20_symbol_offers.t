@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use Date::Utility;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use FindBin qw/$Bin/;
@@ -16,9 +16,9 @@ initialize_realtime_ticks_db();
 use Finance::Asset;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for qw(USD JPY);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
 my $now = Date::Utility->new('2015-08-21 05:30:00');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -59,6 +59,7 @@ $t = $t->send_ok({json => {contracts_for => 'R_50'}})->message_ok;
 my $contracts_for = decode_json($t->message->[1]);
 ok($contracts_for->{contracts_for});
 ok($contracts_for->{contracts_for}->{available});
+is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
 test_schema('contracts_for', $contracts_for);
 # test contracts_for japan
 $t = $t->send_ok({
@@ -69,6 +70,7 @@ $t = $t->send_ok({
 my $contracts_for_japan = decode_json($t->message->[1]);
 ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
+is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
 test_schema('contracts_for', $contracts_for_japan);
 
 $t = $t->send_ok({json => {trading_times => Date::Utility->new->date_yyyymmdd}})->message_ok;

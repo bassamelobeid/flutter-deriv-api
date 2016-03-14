@@ -24,7 +24,7 @@ $email_mocked->mock('send_email', sub { return 1 });
 my $t = build_mojo_test();
 
 my $email     = 'abc@binary.com';
-my $password  = 'jskjd8292922';
+my $password  = 'jSkjd8292922';
 my $hash_pwd  = BOM::System::Password::hashpw($password);
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -65,7 +65,7 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 ok $res->{error}->{message} =~ /Please use a different password than your login password/, 'Please use a different password than your login password';
 
-$password = rand();
+$password = 'Uplow2134445';
 $t        = $t->send_ok({
         json => {
             cashier_password => 1,
