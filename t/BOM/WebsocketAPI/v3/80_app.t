@@ -19,6 +19,8 @@ my $t = build_mojo_test();
 
 # cleanup
 my $dbh = BOM::Database::Model::OAuth->new->dbh;
+$dbh->do("DELETE FROM oauth.access_token");
+$dbh->do("DELETE FROM oauth.user_scope_confirm");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
 
 my $email     = 'abc@binary.com';
@@ -53,6 +55,7 @@ $t = $t->send_ok({
         json => {
             app_register => 1,
             name         => 'App 1',
+            scopes       => ['read', 'admin'],
             redirect_uri => 'https://www.example.com/',
         }})->message_ok;
 my $res = decode_json($t->message->[1]);
@@ -68,10 +71,41 @@ $res = decode_json($t->message->[1]);
 test_schema('app_get', $res);
 is_deeply($res->{app_get}, $app1, 'app_get ok');
 
+## validation
+$t = $t->send_ok({
+        json => {
+            app_register => 1,
+            name         => 'App 1',
+            scopes       => ['read', 'admin'],
+            redirect_uri => 'https://www.example.com/',
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+ok $res->{error}->{message} =~ /The name is taken/, 'The name is taken';
+
+$t = $t->send_ok({
+        json => {
+            app_register => 1,
+            name         => 'App 1',
+            redirect_uri => 'https://www.example.com/',
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+ok $res->{error}->{message} =~ /Input validation failed: scopes/, 'Input validation failed: scopes';
+
+$t = $t->send_ok({
+        json => {
+            app_register => 1,
+            name         => 'App 1',
+            scopes       => ['unknown'],
+            redirect_uri => 'https://www.example.com/',
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+ok $res->{error}->{message} =~ /Input validation failed: scopes/, 'Input validation failed: scopes';
+
 $t = $t->send_ok({
         json => {
             app_register => 1,
             name         => 'App 2',
+            scopes       => ['read', 'admin'],
             redirect_uri => 'https://www.example2.com/',
         }})->message_ok;
 $res = decode_json($t->message->[1]);
