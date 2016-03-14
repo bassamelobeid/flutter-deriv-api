@@ -135,10 +135,10 @@ sub send_ask {
 sub process_realtime_events {
     my ($c, $message, $chan) = @_;
 
-    my @m = split(';', $message);
+    my @m                  = split(';', $message);
     my $feed_channels_type = $c->stash('feed_channel_type');
-    my %skip_symbol_list = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
-    my %skip_type_list   = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
+    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
+    my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
     foreach my $channel (keys %{$feed_channels_type}) {
         $channel =~ /(.*);(.*)/;
         my $symbol    = $1;
