@@ -14,20 +14,20 @@ sub make_barrier {
 
     my $string_version = $supplied;
 
-    if ($self->underlying->market->integer_barrier and $string_version !~ /^S-?\d+P$/i and not isint($string_version)) {
-        $self->add_error({
-            severity          => 100,
-            message           => 'Invalid barrier',
-            message_to_client => localize('Barrier must be an integer.'),
-        });
-    }
-
     if (not defined $string_version) {
         $string_version = $self->underlying->pip_size;
         $self->add_error({
             severity          => 100,
             message           => 'Undefined barrier',
             message_to_client => localize('We could not process this contract at this time.'),
+        });
+    }
+
+    if ($self->underlying->market->integer_barrier and $string_version !~ /^S-?\d+P$/i and not isint($string_version)) {
+        $self->add_error({
+            severity          => 100,
+            message           => 'Invalid barrier',
+            message_to_client => localize('Barrier must be an integer.'),
         });
     }
 
