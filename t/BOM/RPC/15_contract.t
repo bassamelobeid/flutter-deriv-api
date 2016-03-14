@@ -302,7 +302,7 @@ subtest 'get_bid' => sub {
                                current_spot
                                entry_spot
                             );
-    is_deeply([sort keys %{$result}], [sort @expected_keys]);
+    is_deeply([sort keys %{$result}], [sort @expected_keys], 'keys of result is correct');
 
 
 
