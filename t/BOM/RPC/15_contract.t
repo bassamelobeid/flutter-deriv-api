@@ -242,54 +242,8 @@ subtest 'get_bid' => sub {
     my $params = {language => 'ZH_CN'};
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')->error_message_is('Sorry, an error occurred while processing your request.');
 
-    my $now        = Date::Utility->new('2005-09-21 06:46:00');
+    create_contract(spread => 0);
 
-    my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                             epoch      => $now->epoch - 99,
-                                                                             underlying => 'R_50',
-                                                                             quote      => 76.5996,
-                                                                             bid        => 76.6010,
-                                                                             ask        => 76.2030,
-                                                                            });
-
-    my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                             epoch      => $now->epoch - 52,
-                                                                             underlying => 'R_50',
-                                                                             quote      => 76.6996,
-                                                                             bid        => 76.7010,
-                                                                             ask        => 76.3030,
-                                                                            });
-
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                        epoch      => $now->epoch,
-                                                                        underlying => 'R_50',
-                                                                       });
-    my $underlying = BOM::Market::Underlying->new('R_50');
-    my $contract = produce_contract({
-                                             underlying   => $underlying,
-                                             bet_type     => 'FLASHU',
-                                             currency     => 'USD',
-                                             stake        => 100,
-                                             date_start   => $now->epoch - 100,
-                                             date_expiry  => $now->epoch - 50,
-                                             current_tick => $tick,
-                                             entry_tick   => $old_tick1,
-                                             exit_tick    => $old_tick2,
-                                             barrier      => 'S0P',
-                                            });
-
-    my $txn = BOM::Product::Transaction->new({
-                                              client        => $client,
-                                              contract      => $contract,
-                                              price         => 100,
-                                              payout        => $contract->payout,
-                                              amount_type   => 'stake',
-                                              purchase_date => $now->epoch - 101,
-                                             });
-
-    my $error = $txn->buy(skip_validation => 1);
-    ok(!$error, 'should no error to buy the contract');
-    diag(Dumper($error)) if $error;
 
     $params = {
         language    => 'ZH_CN',
@@ -334,59 +288,7 @@ subtest 'get_bid' => sub {
  #   diag(Dumper($result));
     is_deeply([sort keys %{$result}], $expected_keys);
 
-
-    $now = $now->plus_time_interval('10m');
-
-    $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                             epoch      => $now->epoch - 99,
-                                                                             underlying => 'R_50',
-                                                                             quote      => 76.5996,
-                                                                             bid        => 76.6010,
-                                                                             ask        => 76.2030,
-                                                                            });
-
-    $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                             epoch      => $now->epoch - 52,
-                                                                             underlying => 'R_50',
-                                                                             quote      => 76.6996,
-                                                                             bid        => 76.7010,
-                                                                             ask        => 76.3030,
-                                                                            });
-
-    $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                        epoch      => $now->epoch,
-                                                                        underlying => 'R_50',
-                                                                       });
-    $underlying = BOM::Market::Underlying->new('R_50');
-    $contract = produce_contract({
-                                             underlying   => $underlying,
-                                             bet_type     => 'SPREADU',
-                                             currency     => 'USD',
-                                             stake        => 100,
-                                             date_start   => $now->epoch - 100,
-                                             #date_expiry  => $now->epoch - 50,
-                                             current_tick => $tick,
-                                             entry_tick   => $old_tick1,
-                                             exit_tick    => $old_tick2,
-                                  amount_per_point => 1,
-                                      stop_type => 'point',
-                                stop_profit => 10,
-                                stop_loss => 10,
-
-                                            });
-
-    $txn = BOM::Product::Transaction->new({
-                                              client        => $client,
-                                              contract      => $contract,
-                                              price         => 100,
-                                              payout        => $contract->payout,
-                                              amount_type   => 'stake',
-                                              purchase_date => $now->epoch - 101,
-                                             });
-
-    $error = $txn->buy(skip_validation => 1);
-    ok(!$error, 'should no error to buy the contract');
-    diag(Dumper($error)) if $error;
+    create_contract(spread => 1);
 
     $params = {
         language    => 'ZH_CN',
@@ -465,4 +367,70 @@ sub create_fmb {
         buy_bet            => 0,
         %params,
     });
+}
+
+my $now        = Date::Utility->new('2005-09-21 06:46:00');
+sub create_contract {
+  my %args = @_;
+
+  #postpone 10 minutes to avoid conflicts
+  $now = $now->plus_time_interval('10m');
+
+      my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                                             epoch      => $now->epoch - 99,
+                                                                             underlying => 'R_50',
+                                                                             quote      => 76.5996,
+                                                                             bid        => 76.6010,
+                                                                             ask        => 76.2030,
+                                                                            });
+
+    my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                                             epoch      => $now->epoch - 52,
+                                                                             underlying => 'R_50',
+                                                                             quote      => 76.6996,
+                                                                             bid        => 76.7010,
+                                                                             ask        => 76.3030,
+                                                                            });
+
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                                        epoch      => $now->epoch,
+                                                                        underlying => 'R_50',
+                                                                       });
+  my $underlying = BOM::Market::Underlying->new('R_50');
+  my $contract_data = {
+                       underlying   => $underlying,
+                       bet_type     => 'FLASHU',
+                       currency     => 'USD',
+                       stake        => 100,
+                       date_start   => $now->epoch - 100,
+                       date_expiry  => $now->epoch - 50,
+                       current_tick => $tick,
+                       entry_tick   => $old_tick1,
+                       exit_tick    => $old_tick2,
+                       barrier      => 'S0P',
+                      };
+  if($args{spread}){
+    delete $contract_data->{date_expiry};
+    $contract_data->{bet_type} = 'SPREADU';
+    $contract_data->{amount_per_point} = 1;
+    $contract_data->{stop_type} = 'point';
+    $contract_data->{stop_profit} = 10;
+    $contract_data->{stop_loss} = 10;
+  }
+  my $contract = produce_contract($contract_data);
+
+    my $txn = BOM::Product::Transaction->new({
+                                              client        => $client,
+                                              contract      => $contract,
+                                              price         => 100,
+                                              payout        => $contract->payout,
+                                              amount_type   => 'stake',
+                                              purchase_date => $now->epoch - 101,
+                                             });
+
+    my $error = $txn->buy(skip_validation => 1);
+    ok(!$error, 'should no error to buy the contract');
+    diag(Dumper($error)) if $error;
+
+
 }
