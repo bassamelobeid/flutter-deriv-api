@@ -369,7 +369,11 @@ subtest 'get_bid' => sub {
                                              entry_tick   => $old_tick1,
                                              exit_tick    => $old_tick2,
                                   barrier      => 'S0P',
-                                  amount_per_point => 1
+                                  amount_per_point => 1,
+                                      stop_type => point
+                                stop_profit => 10,
+                                stop_loss => 10,
+
                                             });
 
     $txn = BOM::Product::Transaction->new({
