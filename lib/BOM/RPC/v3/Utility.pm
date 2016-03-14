@@ -131,10 +131,13 @@ sub is_verification_token_valid {
     my ($token, $email) = @_;
 
     my $verification_token = BOM::Platform::Token::Verification->new({token => $token});
-    return unless $verification_token;
+    return unless ($verification_token and $verification_token->token);
+
     my $response;
     if ($verification_token->email and $verification_token->email eq $email) {
         $response = 1;
+    } else {
+        $response = 0;
     }
     $verification_token->delete_token;
 

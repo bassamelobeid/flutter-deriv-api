@@ -28,7 +28,7 @@ use BOM::Platform::Static::Config;
 sub new_account_virtual {
     my $params = shift;
     my $args   = $params->{args};
-    my $err_code;
+    my ($err_code, $err_msg);
 
     if ($err_code = BOM::RPC::v3::Utility::_check_password({new_password => $args->{client_password}})) {
         return $err_code;
@@ -38,7 +38,8 @@ sub new_account_virtual {
         $args->{myaffiliates_token} = delete $args->{affiliate_token};
     }
 
-    if (BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $args->{email})) {
+    my $is_token_valid = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $args->{email});
+    if ($is_token_valid) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
             details        => $args,
             email_verified => 1
@@ -54,8 +55,12 @@ sub new_account_virtual {
             };
         }
         $err_code = $acc->{error};
+    } elsif (defined $is_token_valid and $is_token_valid == 0) {
+        $err_code = 'UnverifiedEmail';
+        $err_msg  = BOM::Platform::Locale::error_map()->{'email unverified'};
     } else {
-        $err_code = 'email unverified';
+        $err_code = 'ExpiredToken';
+        $err_msg  = localize('Your token has expired.');
     }
 
     return BOM::RPC::v3::Utility::create_error({
