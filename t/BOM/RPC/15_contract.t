@@ -242,7 +242,7 @@ subtest 'get_bid' => sub {
     $client->deposit_virtual_funds;
     my $params = {language => 'ZH_CN'};
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')->error_message_is('Sorry, an error occurred while processing your request.');
-    diag(Dumper($result));
+
     #my $fmb;
     #lives_ok {
     #    $fmb = create_fmb(
