@@ -303,6 +303,38 @@ subtest 'get_bid' => sub {
     diag(Dumper($result));
 
 
+    my $expected_keys = [
+        sort (qw(ask_price 
+                bid_price
+                current_spot_time
+                contract_id
+                underlying
+                is_expired
+                is_valid_to_sell
+                is_forward_starting
+                is_path_dependent
+                is_intraday
+                date_start
+                date_expiry
+                date_settlement
+                currency
+                longcode
+                shortcode
+                payout
+
+                barrier
+                exit_tick_time
+                exit_tick
+                entry_tick
+                entry_tick_time
+                current_spot
+                entry_spot
+               ))];
+    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    diag(Dumper($result));
+    is_deeply([sort keys %{$result}], $expected_keys);
+
+
     #my $fmb;
     #lives_ok {
     #    $fmb = create_fmb(
