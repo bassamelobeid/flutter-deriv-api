@@ -7,11 +7,20 @@ use VolSurface::Utils qw( get_strike_for_spot_delta );
 use BOM::Platform::Context qw(localize);
 use BOM::Utility::ErrorStrings qw( format_error_string );
 use List::Util qw(max);
+use Scalar::Util::Numeric qw(isint);
 
 sub make_barrier {
     my ($self, $supplied, $extra_params) = @_;
 
     my $string_version = $supplied;
+
+    if ($self->underlying->market->integer_barrier and not isint($string_version)) {
+        $self->add_error({
+            severity          => 100,
+            message           => 'Invalid barrier',
+            message_to_client => localize('Barrier must be an integer.'),
+        });
+    }
 
     if (not defined $string_version) {
         $string_version = $self->underlying->pip_size;
