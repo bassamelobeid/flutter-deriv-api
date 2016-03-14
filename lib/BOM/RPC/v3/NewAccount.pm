@@ -414,7 +414,7 @@ sub jp_knowledge_test {
     if ($now->epoch < $next_dt->epoch) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'TestUnavailableNow',
-            message_to_client => localize('Knowledge test is unavailable now, you may take the test on ' . $dt->date . ' ' . $dt_time),
+            message_to_client => localize('Knowledge test is unavailable now, you may take the test on ' . $next_dt->date . ' ' . $next_dt->time),
         });
     }
 
