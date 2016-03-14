@@ -2499,7 +2499,7 @@ sub _validate_start_date {
 
     }
 
-    if ($self->is_intraday and $self->underlying->market->name eq 'forex') {
+    if ($self->is_intraday and not $self->is_atm_bet and $self->underlying->market->name eq 'forex') {
         my $start_epoch = $self->effective_start->epoch;
         if (my $tentative = first { $start_epoch >= $_->{blankout} and $start_epoch <= $_->{blankout_end} } @{$self->tentative_events}) {
             push @errors,
@@ -2578,7 +2578,7 @@ sub _validate_expiry_date {
             }
         }
 
-        if ($self->underlying->market->name eq 'forex') {
+        if (not $self->is_atm_bet and $self->underlying->market->name eq 'forex') {
             my $expiry_epoch = $self->date_expiry->epoch;
             if (my $tentative = first { $expiry_epoch >= $_->{blankout} and $expiry_epoch <= $_->{blankout_end} } @{$self->tentative_events}) {
                 push @errors,
