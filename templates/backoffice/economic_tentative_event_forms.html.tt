@@ -1,0 +1,62 @@
+<p><b>Tentative events list:</b></p>[% FOREACH row = events %] [% END %]
+<table>
+    <tr>
+        <td>Date:</td>
+        <td>Time:</td>
+        <td>Currency:</td>
+        <td>Impact:</td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+    [% FOREACH row = events %]
+    <tr id="[% row.id %]">
+        <td>[% row.date %]</td>
+        <td><input class="blankout" type="time" value="[% row.blankout %]"> -
+        <input class="blankout_end" type="time" value="[% row.blankout_end %]"></td>
+        <td>[% row.symbol %]</td>
+        <td>[% row.impact %]</td>
+        <td>[% row.event_name %]</td>
+        <td><button onclick=
+        "updateEvent('[% row.id %]');">Update</button></td>
+        <td class="result"></td>
+    </tr>
+    [% END %]
+</table>
+<script>
+	function updateEvent(id){
+		if(id){
+			var el = \$('#'+id);
+			if(el.length>0){
+				var result = el.find('.result');
+				var m1 = el.find('.blankout').val().match(/^(\d+):(\d+)\$/);
+				if(!m1 || m1[1]<0 || m1[1]>23 || m1[2]<0 || m1[2]>59){
+					result.text('Wrong blankout start time').css('color','red');
+					return;
+				}
+				var m2 = el.find('.blankout_end').val().match(/^(\d+):(\d+)\$/);
+				if(!m2 || m2[1]<0 || m2[1]>23 || m2[2]<0 || m2[2]>59){
+					result.text('Wrong blankout end time').css('color','red');
+					return;
+				}
+				result.text('Saving.....').css('color','black');
+				\$.ajax({
+					url: "[%ee_upload_url%]",
+					data: {
+						id: id,
+						blankout: el.find('.blankout').val(),
+						blankout_end: el.find('.blankout_end').val()
+					},
+					success: function(data){
+						if(data==1){
+							result.text('Successful').css('color','green');
+						}
+						else{
+							result.text(data).css('color','red');
+						}
+					}
+				});
+			}
+		}
+	}
+</script>
