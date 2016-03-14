@@ -1202,6 +1202,56 @@ subtest 'zero vol' => sub {
     is $c->pricing_vol, 0, 'pricing vol is zero';
     like($c->primary_validation_error->message, qr/Zero volatility/, 'error');
 };
+
+subtest 'tentative events' => sub {
+    my $now = Date::Utility->new;
+    my $blackout_start = $now->minus_time_interval('1h');
+    my $blackout_end = $now->plus_time_interval('1h');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'economic_events',
+        {
+            recorded_date => Date::Utility->new(),
+            events => [{
+                symbol        => 'USD',
+                release_date  => $now->epoch,
+                blankout      => $blackout_start->epoch,
+                blankout_end  => $blackout_end->epoch,
+                is_tentative  => 1,
+                event_name    => 'Test tentative',
+                impact        => 5,
+            }],
+        });
+    my $contract_args = {
+        underlying => 'frxUSDJPY',
+        bet_type => 'CALL',
+        barrier => 'S0P',
+        duration => '2m',
+        payout => 10,
+        currency => 'USD',
+    };
+    $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('2m1s');
+    my $c = produce_contract($contract_args);
+    ok !$c->_validate_expiry_date, 'no error if contract expiring 1 second before tentative event\'s blackout period';
+    $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('2m');
+    $c = produce_contract($contract_args);
+    ok $c->_validate_expiry_date, 'throws error if contract expiring on the tentative event\'s blackout period';
+    cmp_ok(($c->_validate_expiry_date)[0]->{message}, 'eq', 'tentative economic events blackout period', 'correct error message');
+
+    $c = produce_contract({%$contract_args, underlying => 'frxGBPJPY'});
+    ok !$c->_validate_expiry_date, 'no error if event is not affecting the underlying';
+
+    $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_end;
+    $c = produce_contract($contract_args);
+    ok $c->_validate_start_date, 'throws error if contract starts on tentative event\'s blackout end';
+    cmp_ok(($c->_validate_start_date)[0]->{message}, 'eq', 'tentative economic events blackout period', 'correct error message');
+    $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('1s');
+    delete $contract_args->{duration};
+    $contract_args->{date_expiry} = $blackout_end->plus_time_interval('1s');
+    $c = produce_contract($contract_args);
+    ok !$c->_validate_start_date, 'no error';
+    ok !$c->_validate_expiry_date, 'no error';
+};
+
 # Let's not surprise anyone else
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig_suspended),
     'Switched RANGE bets back on, if they were.');
