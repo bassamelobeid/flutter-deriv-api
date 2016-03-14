@@ -412,6 +412,7 @@ sub create_contract {
                       };
   if($args{spread}){
     delete $contract_data->{date_expiry};
+    delete $contract_data->{barrier};
     $contract_data->{bet_type} = 'SPREADU';
     $contract_data->{amount_per_point} = 1;
     $contract_data->{stop_type} = 'point';
