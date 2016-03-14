@@ -12,7 +12,8 @@
         },
         "props": {
             "type": "object",
-            "description": "Object of pricing table properties"
+            "description": "Object of Pricing table properties",
+            "required": "1"
         },
         "passthrough": {
             "type": "object",
