@@ -293,7 +293,7 @@ subtest 'get_bid' => sub {
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
-    push @rexpected_keys, qw(
+    push @expected_keys, qw(
                                barrier
                                exit_tick_time
                                exit_tick
