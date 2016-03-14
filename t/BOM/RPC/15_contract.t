@@ -243,7 +243,7 @@ subtest 'get_bid' => sub {
     my $params = {language => 'ZH_CN'};
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')->error_message_is('Sorry, an error occurred while processing your request.');
 
-    my $contract = create_contract(client => $client, spread => 0);
+    my $contract = create_contract(client => $client, spread => 1);
 
 
     $params = {
@@ -258,8 +258,8 @@ subtest 'get_bid' => sub {
     diag(Dumper($result));
 
 
-    my $expected_keys = [
-        sort (qw(ask_price 
+    my @expected_keys = (
+        qw(ask_price 
                 bid_price
                 current_spot_time
                 contract_id
@@ -276,20 +276,12 @@ subtest 'get_bid' => sub {
                 longcode
                 shortcode
                 payout
-
-                barrier
-                exit_tick_time
-                exit_tick
-                entry_tick
-                entry_tick_time
-                current_spot
-                entry_spot
-               ))];
+               ));
  #   my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
  #   diag(Dumper($result));
-    is_deeply([sort keys %{$result}], $expected_keys);
+    is_deeply([sort keys %{$result}], [sort @expected_keys]);
 
-    $contract = create_contract(client => $client, spread => 1);
+    $contract = create_contract(client => $client, spread => 0);
 
     $params = {
         language    => 'ZH_CN',
@@ -300,7 +292,18 @@ subtest 'get_bid' => sub {
     };
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    diag(Dumper($result));
+
+    push @rexpected_keys, qw(
+                               barrier
+                               exit_tick_time
+                               exit_tick
+                               entry_tick
+                               entry_tick_time
+                               current_spot
+                               entry_spot
+                            );
+    is_deeply([sort keys %{$result}], [sort @expected_keys]);
+
 
 
 
