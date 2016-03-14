@@ -339,7 +339,7 @@ subtest $method => sub {
                'longcode' => "USD 194.22 payout if Random 50 Index is strictly higher than entry spot at 50 \x{79d2}\x{949f} after contract start time.",
                'display_name' => 'Random 50 Index',
                'date_expiry' => $now->epoch - 50,
-                                                                });
+                                                                }, 'result is ok');
 
 };
 
