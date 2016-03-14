@@ -17,6 +17,8 @@ use BOM::Database::Model::AccessToken;
 
 # cleanup
 my $dbh = BOM::Database::Model::OAuth->new->dbh;
+$dbh->do("DELETE FROM oauth.access_token");
+$dbh->do("DELETE FROM oauth.user_scope_confirm");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
 
 my $test_loginid = create_test_user();
