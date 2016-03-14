@@ -17,6 +17,8 @@ use BOM::Database::Model::AccessToken;
 
 # cleanup
 my $dbh = BOM::Database::Model::OAuth->new->dbh;
+$dbh->do("DELETE FROM oauth.access_token");
+$dbh->do("DELETE FROM oauth.user_scope_confirm");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
 
 my $test_loginid = create_test_user();
@@ -44,6 +46,7 @@ my $app1 = BOM::RPC::v3::App::register({
         token => $token,
         args  => {
             name         => 'App 1',
+            scopes       => ['read', 'trade'],
             redirect_uri => 'https://www.example.com/',
         }});
 my $get_app = BOM::RPC::v3::App::get({
@@ -64,6 +67,7 @@ my $app2 = BOM::RPC::v3::App::register({
         token => $token,
         args  => {
             name         => 'App 2',
+            scopes       => ['read', 'admin'],
             redirect_uri => 'https://www.example2.com/',
         }});
 my $get_apps = BOM::RPC::v3::App::list({
