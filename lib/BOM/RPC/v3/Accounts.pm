@@ -470,11 +470,15 @@ sub reset_password {
     my ($user, @clients);
     $user = BOM::Platform::User->new({email => $email});
     @clients = $user->clients if $user;
+    my $user_dob = $args->{date_of_birth};
+    my $db_dob = $clients[0]->date_of_birth;
+    $user_dob =~ s/\-0/\-/g;
+    $db_dob =~ s/\-0/\-/g;
 
     return BOM::RPC::v3::Utility::create_error({
             code              => "DOBMismatch",
             message_to_client => localize("The email address and date of birth do not match.")}
-    ) if ($clients[0]->date_of_birth ne $args->{date_of_birth});
+    ) if ($user_dob ne $db_dob);
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
     $user->password($new_password);
