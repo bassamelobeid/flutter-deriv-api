@@ -334,18 +334,33 @@ sub _get_client_details {
 sub _next_allowable_knowledge_test_epoch {
     my $last_epoch = shift;
 
-    # Test is allowed on next business day, not allowed on weekends. Based on Japan timezone
-    my $next_epoch = $last_epoch + 86400;
-    my $last_dt = DateTime->from_epoch(epoch => $last_epoch);
-    $last_dt->set_time_zone('Asia/Tokyo');
+#    if (not $last_epoch) {
+#        my $dt = DateTime->now;
+#        $dt->set_time_zone('Asia/Tokyo');
+#
+#        if ($dt->day_of_week == 6) {
+#            $dt->add(days => 2);
+#        } elsof ($dt->day_of_week == 7) {
+#            $dt->add(days => 1);
+#        }
+#        return $dt->epoch;
+#    }
+
 
     # If last test is taken on Friday, client can only repeat test on next business day, which is Monday
     # By right no test should be taken on Sat & Sun, but is handled here just in case.
-    if ($last_dt->day_of_week >= 5) {
-        $next_epoch += 86400 * (7 - $last_dt->day_of_week);
+
+    my $dt = DateTime->from_epoch(epoch => $last_epoch);
+    $dt->set_time_zone('Asia/Tokyo');
+    $dt->add(days => 1);
+
+    if ($dt->day_of_week == 6) {
+        $dt->add(days => 2);
+    } elsif ($dt->day_of_week == 7) {
+        $dt->add(days => 1);
     }
 
-    return $next_epoch;
+    return $dt->epoch;
 }
 
 sub jp_knowledge_test {
