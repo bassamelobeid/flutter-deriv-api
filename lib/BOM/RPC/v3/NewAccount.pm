@@ -421,11 +421,10 @@ sub jp_knowledge_test {
     my $args = $params->{args};
     my ($score, $status) = @{$args}{'score', 'status'};
 
+    $jp_client->clr_status($_) for ('jp_knowledge_test_pending', 'jp_knowledge_test_fail');
     if ($status eq 'pass') {
-        $jp_client->clr_status($_) for ('jp_knowledge_test_pending', 'jp_knowledge_test_fail');
         $jp_client->set_status('jp_activation_pending', 'system', 'pending verification documents from client');
     } else {
-        $jp_client->clr_status('jp_knowledge_test_pending');
         $jp_client->set_status('jp_knowledge_test_fail', 'system', "Failed test with score: $score");
     }
 
