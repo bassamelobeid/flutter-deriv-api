@@ -665,7 +665,7 @@ sub _build_timeindays {
 
     my $atid;
     # If market is Forex, We go with integer days as per the market convention
-    if ($self->market->name eq 'forex' and $self->pricing_engine_name !~ /Intraday::Forex/) {
+    if ($self->market->integer_number_of_day and $self->pricing_engine_name !~ /Intraday::Forex/) {
         my $utils        = BOM::MarketData::VolSurface::Utils->new;
         my $days_between = $self->date_expiry->days_between($self->date_start);
         $atid = $utils->is_before_rollover($self->date_start) ? ($days_between + 1) : $days_between;
