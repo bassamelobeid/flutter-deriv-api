@@ -6,7 +6,6 @@ use Test::MockModule;
 use utf8;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
-use MIME::QuotedPrint qw(encode_qp);
 use Encode qw(encode);
 use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -713,11 +712,6 @@ subtest $method => sub {
     clear_mailbox();
     is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
     my $subject = '您的密码已更改。';
-    $subject = encode_qp(encode('UTF-8', $subject));
-# I don't know why encode_qp will append two characters "=\n"
-# so I chopped them
-    chop($subject);
-    chop($subject);
     my %msg = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
@@ -1099,11 +1093,6 @@ subtest $method => sub {
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
     like($test_client->latest_environment, qr/LANG=ZH_CN/, 'latest environment updated');
     my $subject = '账户设置更改';
-    $subject = encode_qp(encode('UTF-8', $subject));
-    # I don't know why encode_qp will append two characters "=\n"
-    # so I chopped them
-    chop($subject);
-    chop($subject);
     my %msg = get_email_by_address_subject(
         email   => $test_client->email,
         subject => qr/\Q$subject\E/
