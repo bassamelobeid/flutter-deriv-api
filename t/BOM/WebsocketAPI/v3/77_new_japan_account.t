@@ -172,7 +172,7 @@ subtest 'VR Residence check' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code},     'invalid',                                'NO VR nl residence');
+            is($res->{error}->{code},     'InvalidAccount',                                'NO VR nl residence');
             is($res->{error}->{message},  'Sorry, account opening is unavailable.', 'jp only');
             is($res->{new_account_japan}, undef,                                    'NO account created');
         };
@@ -200,7 +200,7 @@ subtest 'VR Residence check' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code},     'invalid',                                'VR residence must be "jp"');
+            is($res->{error}->{code},     'InvalidAccount',                                'VR residence must be "jp"');
             is($res->{error}->{message},  'Sorry, account opening is unavailable.', 'VR jp only');
             is($res->{new_account_japan}, undef,                                    'NO account created');
         };
