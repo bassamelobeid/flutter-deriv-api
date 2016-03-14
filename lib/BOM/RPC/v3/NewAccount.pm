@@ -335,8 +335,8 @@ sub _next_allowable_knowledge_test_epoch {
     my $last_epoch = shift;
 
     # Test is allowed on next business day, not allowed on weekends. Based on Japan timezone
-    my $next_epoch  = $last_epoch + 86400;
-    my $last_dt     = DateTime->from_epoch(epoch => $last_epoch);
+    my $next_epoch = $last_epoch + 86400;
+    my $last_dt = DateTime->from_epoch(epoch => $last_epoch);
     $last_dt->set_time_zone('Asia/Tokyo');
 
     # If last test is taken on Friday, client can only repeat test on next business day, which is Monday
@@ -386,8 +386,8 @@ sub jp_knowledge_test {
         $status_ok = 1;
     } elsif ($client_status = $jp_client->get_status('jp_knowledge_test_fail')) {
         # can't take test more than once per day
-        my $tests       = from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
-        my $last_epoch  = $tests->[-1]->{epoch};
+        my $tests      = from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
+        my $last_epoch = $tests->[-1]->{epoch};
         my $next_epoch = _next_allowable_knowledge_test_epoch($last_epoch);
 
         if ($now->epoch < $next_epoch) {

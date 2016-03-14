@@ -488,9 +488,9 @@ sub get_settings {
                         $jp_account_status->{status} = $status;
 
                         if ($status eq 'jp_knowledge_test_fail') {
-                            my $tests       = JSON::from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
-                            my $last_epoch  = $tests->[-1]->{epoch};
-                            my $next_epoch  = BOM::RPC::v3::NewAccount::_next_allowable_knowledge_test_epoch($last_epoch);
+                            my $tests      = JSON::from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
+                            my $last_epoch = $tests->[-1]->{epoch};
+                            my $next_epoch = BOM::RPC::v3::NewAccount::_next_allowable_knowledge_test_epoch($last_epoch);
 
                             $jp_account_status->{last_test_epoch} = $last_epoch;
                             $jp_account_status->{next_test_epoch} = $next_epoch;
