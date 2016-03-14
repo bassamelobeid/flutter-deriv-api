@@ -2,13 +2,14 @@ use strict;
 use warnings;
 use Test::More tests => 8;
 use Test::Exception;
-use Test::Mojo;
 use JSON;
 
 use Test::BOM::RPC::Client;
 use Test::MockTime qw(set_fixed_time restore_time);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
+use BOM::RPC::v3::NewAccount;
+use BOM::RPC::v3::Accounts;
 
 ## do not send email
 use Test::MockModule;
@@ -60,9 +61,6 @@ my %jp_client_details = (
     declare_not_fatca                           => 1,
 );
 
-use Data::Dumper;
-
-my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my ($vr_client, $user, $token, $jp_loginid, $jp_client, $res);
 
 subtest 'create VRTJ & JP client' => sub {
@@ -73,38 +71,35 @@ subtest 'create VRTJ & JP client' => sub {
             residence       => 'jp',
         });
 
-    # authorize
     $token = BOM::Platform::SessionCookie->new(
         loginid => $vr_client->loginid,
         email   => $vr_client->email,
     )->token;
-    $res = $c->call_ok('authorize', {token => $token})->result;
 
     # new JP client
-    $res = $c->call_ok('new_account_japan', { token => $token, args => \%jp_client_details })->result;
+    $res = BOM::RPC::v3::NewAccount::new_account_japan({ token => $token, args => \%jp_client_details });
     $jp_loginid = $res->{client_id};
-
     like $jp_loginid, qr/^JP\d+$/, "JP client created";
 };
 
 subtest 'no test taken yet' => sub {
-    $res = $c->call_ok('get_settings', { token => $token })->result;
+    $res = BOM::RPC::v3::Accounts::get_settings({ token => $token });
     is $res->{jp_account_status}->{status}, 'jp_knowledge_test_pending', 'jp_knowledge_test_pending';
 };
 
 subtest 'First Test taken: fail test' => sub {
-    $res = $c->call_ok('jp_knowledge_test', {
+    $res = BOM::RPC::v3::NewAccount::jp_knowledge_test({
             token   => $token,
             args    => {
                 score => 10,
                 status => 'fail'
-            }})->result;
+            }});
 
     my $epoch = $res->{test_taken_epoch};
     like $epoch, qr/^\d+$/, "test taken time is epoch: $epoch";
 
     subtest 'get_settings' => sub {
-        $res = $c->call_ok('get_settings', { token => $token })->result->{jp_account_status};
+        $res = BOM::RPC::v3::Accounts::get_settings({ token => $token })->{jp_account_status};
 
         is $res->{status}, 'jp_knowledge_test_fail';
         like $res->{last_test_epoch}, qr/^\d+$/, 'Last test taken time is epoch';
@@ -126,13 +121,13 @@ subtest 'First Test taken: fail test' => sub {
 };
 
 subtest 'No test allow within same day' => sub {
-    $res = $c->call_ok('jp_knowledge_test', {
+    $res = BOM::RPC::v3::NewAccount::jp_knowledge_test({
             token   => $token,
             args    => {
                 score   => 18,
                 status  => 'pass'
             }});
-    $res->has_error->error_code_is('AttemptExceeded', 'Number of attempt exceeded for knowledge test');
+    is($res->{error}->{code}, 'AttemptExceeded', 'Number of attempt exceeded for knowledge test');
 };
 
 subtest 'Test is allowed after 1 day' => sub {
@@ -152,20 +147,20 @@ subtest 'Test is allowed after 1 day' => sub {
     } 'fake last test date';
 
     subtest 'Pass test' => sub {
-        $res = $c->call_ok('jp_knowledge_test', {
+        $res = BOM::RPC::v3::NewAccount::jp_knowledge_test({
                 token   => $token,
                 args    => {
                     score   => 18,
                     status  => 'pass'
-                }})->result;
+                }});
 
         my $epoch = $res->{test_taken_epoch};
         like $epoch, qr/^\d+$/, "test taken time is epoch: $epoch";
     };
 
     subtest 'get_settings' => sub {
-        $res = $c->call_ok('get_settings', { token => $token })->result->{jp_account_status};
-        is $res->{status}, 'jp_activation_pending';
+        $res = BOM::RPC::v3::Accounts::get_settings({ token => $token });
+        is $res->{jp_account_status}->{status}, 'jp_activation_pending';
     };
 
     subtest '2 Tests result in financial assessment' => sub {
@@ -183,13 +178,13 @@ subtest 'Test is allowed after 1 day' => sub {
 };
 
 subtest 'No test allowed after passing' => sub {
-    $res = $c->call_ok('jp_knowledge_test', {
+    $res = BOM::RPC::v3::NewAccount::jp_knowledge_test({
             token   => $token,
             args    => {
                 score   => 18,
                 status  => 'pass'
             }});
-    $res->has_error->error_code_is('NotEligible', 'Already pass knowledge test, not eligible now');
+    is $res->{error}->{code}, 'NotEligible', 'Already pass knowledge test, not eligible now';
 };
 
 subtest 'Test not allowed for non Japanese Client' => sub {
@@ -199,12 +194,11 @@ subtest 'Test not allowed for non Japanese Client' => sub {
                 client_password => 'abc123',
                 residence       => 'au',
             });
-        # authorize
+
         $token = BOM::Platform::SessionCookie->new(
                 loginid => $vr_client->loginid,
                 email   => $vr_client->email,
             )->token;
-        $res = $c->call_ok('authorize', {token => $token})->result;
 
         # new CR client
         my %cr_client_details = (
@@ -223,24 +217,24 @@ subtest 'Test not allowed for non Japanese Client' => sub {
             secret_answer    => 'nasi lemak,teh tarik',
         );
 
-        $res = $c->call_ok('new_account_real', { token => $token, args => \%cr_client_details })->result;
+        $res = BOM::RPC::v3::NewAccount::new_account_real({ token => $token, args => \%cr_client_details });
         my $cr_loginid = $res->{client_id};
         like($cr_loginid, qr/^CR\d+$/, "got CR client $cr_loginid");
     };
 
     subtest 'get_settings has NO jp_account_status' => sub {
-        $res = $c->call_ok('get_settings', { token => $token })->result;
+        $res = BOM::RPC::v3::Accounts::get_settings({ token => $token });
         is $res->{jp_account_status}, undef, 'NO jp_account_status';
     };
 
     subtest 'Test not allowed for VRTC Client' => sub {
-        $res = $c->call_ok('jp_knowledge_test', {
+        $res = BOM::RPC::v3::NewAccount::jp_knowledge_test({
                 token   => $token,
                 args    => {
                     score   => 18,
                     status  => 'pass'
                 }});
-        $res->has_error->error_code_is('PermissionDenied', 'PermissionDenied for VRTC');
+        is $res->{error}->{code}, 'PermissionDenied', 'PermissionDenied for VRTC';
     };
 };
 
@@ -252,28 +246,25 @@ subtest 'No test allowed for VRTJ, unless JP exists' => sub {
                 residence       => 'jp',
             });
 
-        # authorize
         $token = BOM::Platform::SessionCookie->new(
             loginid => $vr_client->loginid,
             email   => $vr_client->email,
         )->token;
-
-        $res = $c->call_ok('authorize', {token => $token})->result;
-    } 'new VRTJ client & authorize';
+    } 'new VRTJ client & token';
 
     subtest 'get_settings has NO jp_account_status' => sub {
-        $res = $c->call_ok('get_settings', { token => $token })->result;
+        $res = BOM::RPC::v3::Accounts::get_settings({ token => $token });
         is $res->{jp_account_status}, undef, 'NO jp_account_status';
     };
 
     subtest 'Test not allowed, unless upgraded to JP client' => sub {
-        $res = $c->call_ok('jp_knowledge_test', {
+        $res = BOM::RPC::v3::NewAccount::jp_knowledge_test({
                 token   => $token,
                 args    => {
                     score   => 18,
                     status  => 'pass'
                 }});
-        $res->has_error->error_code_is('PermissionDenied', 'PermissionDenied for VRTJ without JP');
+        is $res->{error}->{code}, 'PermissionDenied', 'PermissionDenied for VRTJ without JP';
     };
 };
 
