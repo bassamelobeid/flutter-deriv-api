@@ -264,7 +264,7 @@ subtest 'get_bid' => sub {
                                                                         epoch      => $now->epoch,
                                                                         underlying => 'R_50',
                                                                        });
-
+    my $underlying = BOM::Market::Underlying->new('R_50');
     my $contract_expired = produce_contract({
                                              underlying   => $underlying,
                                              bet_type     => 'FLASHU',
