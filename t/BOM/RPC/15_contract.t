@@ -380,18 +380,12 @@ sub create_contract {
       my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                                                                              epoch      => $now->epoch - 99,
                                                                              underlying => 'R_50',
-                                                                             quote      => 76.5996,
-                                                                             bid        => 76.6010,
-                                                                             ask        => 76.2030,
-                                                                            });
+                                                                             });
 
     my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                                                                              epoch      => $now->epoch - 52,
                                                                              underlying => 'R_50',
-                                                                             quote      => 76.6996,
-                                                                             bid        => 76.7010,
-                                                                             ask        => 76.3030,
-                                                                            });
+                                                                             });
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                                                                         epoch      => $now->epoch,
