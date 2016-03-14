@@ -30,6 +30,7 @@ use BOM::MarketData::VolSurface::Moneyness;
 use BOM::System::Chronicle;
 use BOM::System::RedisReplicated;
 use Quant::Framework::Utils::Test;
+use Quant::Framework::Dividend;
 use JSON;
 
 sub initialize_symbol_dividend {
@@ -42,7 +43,12 @@ sub initialize_symbol_dividend {
         discrete_points => undef
     };
 
-    my $dv = BOM::MarketData::Dividend->new(symbol => $symbol);
+    my $dv = Quant::Framework::Dividend->new(
+        symbol           => $symbol,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    );
+
     $dv->document($document);
     return $dv->save;
 }
@@ -138,7 +144,7 @@ sub _init {
 sub create_doc {
     my ($yaml_db, $data_mod) = @_;
 
-    if (grep { $_ eq $yaml_db } qw{currency}) {
+    if (grep { $_ eq $yaml_db } qw{currency randomindex stock index}) {
         $data_mod->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader();
         $data_mod->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();
 
