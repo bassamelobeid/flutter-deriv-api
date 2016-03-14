@@ -320,7 +320,7 @@ sub _get_daily_trading_window {
 
 }
 
-=head2 _set_predefined_barriers
+=head2 _set_predefined_iarriers
 
 To set the predefined barriers on each trading period.
 We do a binary search to find out the boundaries barriers associated with theo_prob [0.05,0.95] of a digital call,
@@ -404,7 +404,7 @@ sub _check_expired_barriers {
             })}{'high', 'low'};
     foreach my $key (keys %$available_barriers) {
         my $barrier = $available_barriers->{$key}->{barrier};
-        $available_barriers->{$key}->{expired} = ($barrier < $high or $barrier > $low) ? 1 : 0;
+        $available_barriers->{$key}->{expired} = ($barrier < $high && $barrier > $low) ? 1 : 0;
     }
 
     return;

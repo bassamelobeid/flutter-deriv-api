@@ -265,10 +265,12 @@ subtest "predefined barriers" => sub {
     my %expected_barriers = (
         call_intraday => {
             available_barriers => [1.15441, 1.15591, 1.15491, 1.16041, 1.15891, 1.15291, 1.15691, 1.15541, 1.15741, 1.15641, 1.15141],
-            barrier            => 1.15591,
+            barrier            => 1.15141,
+            expired_barriers   => [],
         },
         range_daily => {
             available_barriers => [[1.15436, 1.15746], [1.15281, 1.15901], [1.15126, 1.16056], [1.14661, 1.16521], [1.14196, 1.16986]],
+            expired_barriers   => [[1.15436, 1.15746],[1.15281, 1.15901]],
         },
         expiryrange_daily => {
             available_barriers => [
@@ -280,6 +282,7 @@ subtest "predefined barriers" => sub {
                 [1.14661, 1.15281],
                 [1.15901, 1.16521]
             ],
+            expired_barriers => [],
         },
 
     );
@@ -305,7 +308,14 @@ subtest "predefined barriers" => sub {
             underlying => 'frxEURUSD',
             epoch      => Date::Utility->new($_)->epoch,
             quote      => 1.15591,
-        }) for ("2015-08-24 00:00:00", "2015-08-24 00:10:00");
+        }) for ("2015-08-24 00:00:00");
+   
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxEURUSD',
+            epoch      => Date::Utility->new($_)->epoch,
+            quote      => 1.1521,
+        }) for ("2015-08-24 00:10:00");
+
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
@@ -320,6 +330,7 @@ subtest "predefined barriers" => sub {
         date         => $now
     });
     cmp_bag($contract->{available_barriers}, $expected_barriers{call_intraday}{available_barriers}, "Expected available barriers for intraday call");
+    cmp_bag($contract->{expired_barriers}, $expected_barriers{call_intraday}{expired_barriers}, "Expected expired barriers for intraday call");
     is($contract->{barrier}, $expected_barriers{call_intraday}{barrier}, "Expected default barrier for intraday call");
 
     my $contract_2 = {
@@ -348,6 +359,7 @@ subtest "predefined barriers" => sub {
         $expected_barriers{range_daily}{available_barriers}[$_],
         "Expected available barriers for daily range"
     ) for keys @{$expected_barriers{range_daily}{available_barriers}};
+   cmp_deeply($contract_2->{expired_barriers}[$_], $expected_barriers{range_daily}{expired_barriers}[$_], "Expected expired barriers for daily range")for keys @{$expected_barriers{range_daily}{expired_barriers}};
 
     my $contract_3 = {
         trading_period => {
@@ -375,6 +387,7 @@ subtest "predefined barriers" => sub {
         $expected_barriers{expiryrange_daily}{available_barriers}[$_],
         "Expected available barriers for daily expiry range"
     ) for keys @{$expected_barriers{expiryrange_daily}{available_barriers}};
+    cmp_deeply($contract_3->{expired_barriers}, $expected_barriers{expiryrange_daily}{expired_barriers}, "Expected expired barriers for daily expiry range");
 
 };
 
