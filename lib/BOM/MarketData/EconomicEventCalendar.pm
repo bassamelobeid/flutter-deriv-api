@@ -1,6 +1,7 @@
 package BOM::MarketData::EconomicEventCalendar;
 #Chornicle Economic Event
 
+use Carp qw(croak);
 use BOM::System::Chronicle;
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
@@ -21,13 +22,17 @@ Represents an economic event in the financial market
 =cut
 
 use Moose;
+use JSON;
+use ForexFactory;
+
 extends 'BOM::MarketData';
 
 use Date::Utility;
-
+use List::MoreUtils qw(firstidx);
 use BOM::Market::Types;
 
-use constant EE => 'economic_events';
+use constant EE  => 'economic_events';
+use constant EET => 'economic_events_tentative';
 
 has document => (
     is         => 'rw',
@@ -74,6 +79,12 @@ has for_date => (
     default => undef,
 );
 
+=head2 events
+
+Array reference of Economic events. Potentially contains tentative events.
+
+=cut
+
 has events => (
     is         => 'ro',
     lazy_build => 1,
@@ -84,6 +95,12 @@ sub _build_events {
     return $self->document->{events};
 }
 
+# economic events to be recorded to chronicle after processing.
+# tentative events without release_date will not be including in this list.
+has _events => (
+    is => 'rw',
+);
+
 around _document_content => sub {
     my $orig = shift;
     my $self = shift;
@@ -91,7 +108,7 @@ around _document_content => sub {
     #this will contain symbol, date and events
     my $data = {
         %{$self->$orig},
-        events => $self->events,
+        events => $self->_events,
     };
 
     return $data;
@@ -106,17 +123,71 @@ Saves the calendar into Chronicle
 sub save {
     my $self = shift;
 
-    if (not defined $self->chronicle_reader->get(EE, EE)) {
-        $self->chronicle_writer->set(EE, EE, {});
+    for (EE, EET) {
+        $self->chronicle_writer->set(EE, $_, {}) unless defined $self->chronicle_reader->get(EE, $_);
     }
+    #receive tentative events hash
+    my $existing_tentatives = $self->get_tentative_events;
 
-    for my $event (@{$self->events}) {
-        if (ref($event->{release_date}) eq 'Date::Utility') {
-            $event->{release_date} = $event->{release_date}->datetime_iso8601;
+    foreach my $event (@{$self->events}) {
+        my $id = $event->{id};
+        next unless $id;
+        # update existing tentative events
+        if (my $ete = $existing_tentatives->{$id}) {
+            if (not $event->{is_tentative}) {
+                $event->{actual_release_date} = $event->{release_date} if $event->{release_date};
+            } else {
+                for my $key (grep { $ete->{$_} } qw(blankout blankout_end estimated_release_date release_date)) {
+                    $event->{$key} = $ete->{$key};
+                }
+            }
+        } elsif ($event->{is_tentative}) {
+            $existing_tentatives->{$id} = $event;
         }
     }
 
-    return $self->chronicle_writer->set(EE, EE, $self->_document_content, $self->recorded_date);
+    #delete tentative events in EET one month after its estimated release date.
+    foreach my $id (keys %$existing_tentatives) {
+        delete $existing_tentatives->{$id} if time > $existing_tentatives->{$id}->{estimated_release_date} + 30 * 86400;
+    }
+
+    # We are only interest in events with a release_date so that we can actually act on it
+    # when we price contracts. $self->events could potentially contain:
+    # 1) regular scheduled events
+    # 2) tentative events that we do not care. (those that we don't add blockout times for them, we treat it as if they don't exist)
+    # 3) tentative events that we care. (with blockout time and release_date)
+    my @regular_events =
+        sort { $a->{release_date} <=> $b->{release_date} } grep { $_->{release_date} } @{$self->events};
+    $self->_events(\@regular_events);
+
+    return (
+        $self->chronicle_writer->set(EE, EET, $existing_tentatives,     $self->recorded_date),
+        $self->chronicle_writer->set(EE, EE,  $self->_document_content, $self->recorded_date));
+}
+
+sub update {
+    my ($self, $params) = @_;
+
+    my $existing_events = $self->chronicle_reader->get(EE, EE) || {};
+    my $tentative_events = $self->get_tentative_events || {};
+
+    croak "Specify a blackout start and end to update tentative event" unless ($params->{blankout} and $params->{blankout_end});
+    croak "could not find $params->{id} in tentative table" unless $tentative_events->{$params->{id}};
+
+    $params->{release_date} = int(($params->{blankout} + $params->{blankout_end}) / 2);
+    $existing_events->{events} = [] unless $existing_events->{events};
+    my $index = firstidx { $params->{id} eq $_->{id} } @{$existing_events->{events}};
+    if ($index != -1) {
+        $existing_events->{events}->[$index] = $params;
+    } else {
+        push @{$existing_events->{events}}, $params;
+    }
+
+    $tentative_events->{$params->{id}} = {(%{$tentative_events->{$params->{id}}}, %$params)};
+
+    return (
+        $self->chronicle_writer->set(EE, EET, $tentative_events, $self->recorded_date),
+        $self->chronicle_writer->set(EE, EE,  $existing_events,  $self->recorded_date));
 }
 
 sub get_latest_events_for_period {
@@ -131,22 +202,12 @@ sub get_latest_events_for_period {
     die "No economic events" if not defined $document;
 
     #extract first event from current document to check whether we need to get back to historical data
-    my $events           = $document->{events};
-    my $first_event      = $events->[0];
-    my $first_event_date = Date::Utility->new($first_event->{release_date});
+    my $events = $document->{events};
 
     #for live pricing, following condition should be satisfied
-    if ($from >= $first_event_date->epoch) {
-        my @matching_events;
-
-        for my $event (@{$events}) {
-            $event->{release_date} = Date::Utility->new($event->{release_date});
-            my $epoch = $event->{release_date}->epoch;
-
-            push @matching_events, $event if ($epoch >= $from and $epoch <= $to);
-        }
-
-        return \@matching_events;
+    #release date is now an epoch and not a date string.
+    if (@$events and $from >= $events->[0]->{release_date}) {
+        return [grep { $_->{release_date} >= $from and $_->{release_date} <= $to } @$events];
     }
 
     #if the requested period lies outside the current Redis data, refer to historical data
@@ -159,19 +220,26 @@ sub get_latest_events_for_period {
     for my $doc (@{$documents}) {
         #combine $doc->{events} with current $events
         my $doc_events = $doc->{events};
-
         for my $doc_event (@{$doc_events}) {
-            my $key = $doc_event->{event_name} . $doc_event->{impact} . $doc_event->{symbol} . $doc_event->{release_date};
+            $doc_event->{id} =
+                ForexFactory::generate_id(Date::Utility->new($doc_event->{release_date})->truncate_to_day()->epoch
+                    . $doc_event->{event_name}
+                    . $doc_event->{symbol}
+                    . $doc_event->{impact})
+                unless defined $doc_event->{id};
 
-            $doc_event->{release_date} = Date::Utility->new($doc_event->{release_date});
-            my $epoch = $doc_event->{release_date}->epoch;
-
-            $all_events{$key} = $doc_event if ($epoch >= $from and $epoch <= $to);
+            $all_events{$doc_event->{id}} = $doc_event if ($doc_event->{release_date} >= $from and $doc_event->{release_date} <= $to);
         }
     }
 
     my @result = values %all_events;
     return \@result;
+}
+
+sub get_tentative_events {
+
+    my $self = shift;
+    return $self->chronicle_reader->get(EE, EET);
 }
 
 no Moose;
