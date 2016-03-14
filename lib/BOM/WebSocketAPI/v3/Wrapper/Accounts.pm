@@ -194,6 +194,27 @@ sub cashier_password {
     return;
 }
 
+sub reset_password {
+    my ($c, $args) = @_;
+
+    my $r = $c->stash('request');
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'reset_password',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('reset_password', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type         => 'reset_password',
+                    cashier_password => $response->{status}};
+            }
+        },
+        {args => $args});
+    return;
+}
+
 sub get_settings {
     my ($c, $args) = @_;
 

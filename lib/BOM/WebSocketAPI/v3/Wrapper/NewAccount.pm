@@ -43,11 +43,11 @@ sub verify_email {
                 expires_in  => 3600,
                 created_for => 'account_opening'
             })->token;
-    } elsif ($type eq 'lost_password') {
+    } elsif ($type eq 'reset_password') {
         $code = BOM::Platform::SessionCookie->new({
                 email       => $email,
                 expires_in  => 3600,
-                created_for => 'lost_password'
+                created_for => 'reset_password'
             })->token;
     } elsif ($type eq 'paymentagent_withdraw') {
         $code = BOM::Platform::SessionCookie->new({

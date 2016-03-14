@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Reset Password Request",
+  "description": "Reset Password. Note: this call is NOT available when authenticated to a per-app token. It is only available for in-house Binary.com apps.",
+  "properties": {
+    "reset_password": {
+      "type": "string",
+      "pattern": "^1$",
+      "required": "1"
+    },
+    "new_password": {
+      "type": "string",
+      "pattern": "^[ -~]{6,25}$",
+      "description": "New password for validation (length within 6-25 chars, accepts any printable ASCII character)",
+      "required": "1"
+    },
+    "verify_password": {
+      "type": "string",
+      "pattern": "^[ -~]{6,25}$",
+      "description": "Verify new password (length within 6-25 chars, accepts any printable ASCII character)",
+      "required": "1"
+    },
+    "verification_code": {
+      "type": "string",
+      "description": "Email verification code (received from a verify_email call, which must be done first)",
+      "pattern": "^\\w{15,128}$",
+      "required": "1"
+    },
+    "passthrough": {
+      "type": "object",
+      "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+    },
+    "req_id": {
+      "type": "integer",
+      "description": "Optional field to map request to response"
+    }
+  },
+  "additionalProperties": false
+}
