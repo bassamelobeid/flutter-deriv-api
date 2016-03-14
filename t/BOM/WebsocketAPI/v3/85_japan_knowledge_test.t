@@ -85,8 +85,6 @@ subtest 'create VRTJ & JP client' => sub {
     $jp_loginid = $res->{new_account_japan}->{client_id};
 };
 
-use Data::Dumper;
-
 subtest 'no test taken yet' => sub {
     $t = $t->send_ok({json => {get_settings => 1}})->message_ok;
     my $res = decode_json($t->message->[1]);
@@ -106,10 +104,11 @@ subtest 'First Test taken: fail test' => sub {
 
     subtest 'get_settings' => sub {
         $t = $t->send_ok({json => { get_settings => 1 }})->message_ok;
-        my $res = decode_json($t->message->[1]);
+        my $res = decode_json($t->message->[1])->{get_settings}->{jp_account_status};
 
-        is $res->{get_settings}->{jp_account_status}->{status}, 'jp_knowledge_test_fail';
-        like $res->{get_settings}->{jp_account_status}->{epoch}, qr/^\d+$/, 'Test taken time is epoch';
+        is $res->{status}, 'jp_knowledge_test_fail';
+        like $res->{last_test_epoch}, qr/^\d+$/, 'Last test taken time is epoch';
+        like $res->{next_test_epoch}, qr/^\d+$/, 'Next allowable test time is epoch';
     };
 
     subtest 'Test result exists in financial assessment' => sub {
