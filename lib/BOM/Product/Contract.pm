@@ -1360,7 +1360,7 @@ sub _build_pricing_vol {
             fill_cache            => !$self->backtest,
             current_epoch         => $self->date_pricing->epoch,
             seconds_to_expiration => $duration_seconds,
-            economic_events       => $self->applicable_economic_events,
+            economic_events       => $self->economic_events_for_volatility_calculation,
             uses_flat_vol         => $uses_flat_vol,
         });
         $self->long_term_prediction($volsurface->long_term_prediction);
@@ -1390,6 +1390,27 @@ sub _build_pricing_vol {
     return $vol;
 }
 
+has economic_events_for_volatility_calculation => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_economic_events_for_volatility_calculation {
+    my $self = shift;
+
+    my $all_events        = $self->applicable_economic_events;
+    my $effective_start   = $self->effective_start;
+    my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
+    my $current_epoch     = $effective_start->epoch;
+    # Go back another hour because we expect the maximum impact on any news would not last for more than an hour.
+    my $start = $current_epoch - $seconds_to_expiry - 3600;
+    # Plus 5 minutes for the shifting logic.
+    # If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
+    my $end = $current_epoch + $seconds_to_expiry + 300;
+
+    return [grep { $_->{release_date} >= $start and $_->{release_date} <= $end } @$all_events];
+}
+
 has applicable_economic_events => (
     is      => 'ro',
     lazy    => 1,
@@ -1402,15 +1423,28 @@ sub _build_applicable_economic_events {
     my $effective_start   = $self->effective_start;
     my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
     my $current_epoch     = $effective_start->epoch;
-    # Go back another hour because we expect the maximum impact on any news would not last for more than an hour.
+    # Go back and forward an hour to get all the tentative events.
     my $start = $current_epoch - $seconds_to_expiry - 3600;
-    # Plus 5 minutes for the shifting logic.
-    # If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
-    my $end = $current_epoch + $seconds_to_expiry + 300;
+    my $end   = $current_epoch + $seconds_to_expiry + 3600;
 
     return BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
             from => Date::Utility->new($start),
             to   => Date::Utility->new($end)});
+}
+
+has tentative_events => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_tentative_events {
+    my $self = shift;
+
+    my %affected_currency = (
+        $self->underlying->asset_symbol           => 1,
+        $self->underlying->quoted_currency_symbol => 1,
+    );
+    return [grep { $_->{is_tentative} and $affected_currency{$_->{symbol}} } @{$self->applicable_economic_events}];
 }
 
 sub _build_news_adjusted_pricing_vol {
@@ -1419,7 +1453,7 @@ sub _build_news_adjusted_pricing_vol {
     my $news_adjusted_vol = $self->pricing_vol;
     my $effective_start   = $self->effective_start;
     my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
-    my $events            = $self->applicable_economic_events;
+    my $events            = $self->economic_events_for_volatility_calculation;
 
     # Only recalculated if there's economic_events.
     if ($seconds_to_expiry > 10 and @$events) {
@@ -1427,7 +1461,7 @@ sub _build_news_adjusted_pricing_vol {
             fill_cache            => !$self->backtest,
             current_epoch         => $effective_start->epoch,
             seconds_to_expiration => $seconds_to_expiry,
-            economic_events       => $self->applicable_economic_events,
+            economic_events       => $events,
             include_news_impact   => 1,
         });
     }
@@ -2470,6 +2504,20 @@ sub _validate_start_date {
 
     }
 
+    if ($self->is_intraday and $self->underlying->market->name eq 'forex') {
+        my $start_epoch = $self->effective_start->epoch;
+        if (my $tentative = first { $start_epoch >= $_->{blankout} and $start_epoch <= $_->{blankout_end} } @{$self->tentative_events}) {
+            push @errors,
+                {
+                message           => format_error_string('tentative economic events blackout period'),
+                message_to_client => localize(
+                    "Trading is suspended for [_1] from [_2] to [_3]",     $self->underlying->translated_display_name,
+                    Date::Utility->new($tentative->{blankout})->time_hhmm, Date::Utility->new($tentative->{blankout_end})->time_hhmm
+                ),
+                };
+        }
+    }
+
     return @errors;
 }
 
@@ -2531,6 +2579,20 @@ sub _validate_expiry_date {
                     message_to_client => localize("Contract may not expire within the last [_1] of trading.", $eod_blackout_expiry->as_string),
                     info_link         => $times_link,
                     info_text         => $times_text,
+                    };
+            }
+        }
+
+        if ($self->underlying->market->name eq 'forex') {
+            my $expiry_epoch = $self->date_expiry->epoch;
+            if (my $tentative = first { $expiry_epoch >= $_->{blankout} and $expiry_epoch <= $_->{blankout_end} } @{$self->tentative_events}) {
+                push @errors,
+                    {
+                    message           => format_error_string('tentative economic events blackout period'),
+                    message_to_client => localize(
+                        "Trading is suspended for [_1] from [_2] to [_3]",     $self->underlying->translated_display_name,
+                        Date::Utility->new($tentative->{blankout})->time_hhmm, Date::Utility->new($tentative->{blankout_end})->time_hhmm
+                    ),
                     };
             }
         }
