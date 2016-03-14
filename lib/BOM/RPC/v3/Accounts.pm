@@ -11,6 +11,7 @@ use Data::Password::Meter;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
+use BOM::RPC::v3::NewAccount;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
@@ -487,8 +488,12 @@ sub get_settings {
                         $jp_account_status->{status} = $status;
 
                         if ($status eq 'jp_knowledge_test_fail') {
-                            my $tests = JSON::from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
-                            $jp_account_status->{epoch} = $tests->[-1]->{epoch};
+                            my $tests       = JSON::from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
+                            my $last_epoch  = $tests->[-1]->{epoch};
+                            my $next_epoch  = BOM::RPC::v3::NewAccount::_next_allowable_knowledge_test_epoch($last_epoch);
+
+                            $jp_account_status->{last_test_epoch} = $last_epoch;
+                            $jp_account_status->{next_test_epoch} = $next_epoch;
                         }
                         last;
                     }

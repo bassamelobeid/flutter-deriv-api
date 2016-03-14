@@ -331,6 +331,23 @@ sub _get_client_details {
     return {details => $details};
 }
 
+sub _next_allowable_knowledge_test_epoch {
+    my $last_epoch = shift;
+
+    # Test is allowed on next business day, not allowed on weekends. Based on Japan timezone
+    my $next_epoch  = $last_epoch + 86400;
+    my $last_dt     = DateTime->from_epoch(epoch => $last_epoch);
+    $last_dt->set_time_zone('Asia/Tokyo');
+
+    # If last test is taken on Friday, client can only repeat test on next business day, which is Monday
+    # By right no test should be taken on Sat & Sun, but is handled here just in case.
+    if ($last_dt->day_of_week >= 5) {
+        $next_epoch += 86400*2;
+    }
+
+    return $next_epoch;
+}
+
 sub jp_knowledge_test {
     my $params = shift;
 
@@ -354,21 +371,29 @@ sub jp_knowledge_test {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $now = Date::Utility->new;
+    my $now = DateTime->now(time_zone => 'Asia/Tokyo');
     my ($client_status, $status_ok);
 
     if ($client_status = $jp_client->get_status('jp_knowledge_test_pending')) {
         # client haven't taken any test before
+        if ($now->day_of_week == 6 or $now->day_of_week == 7) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'NoTestOnWeekends',
+                message_to_client => localize('Knowledge test in only available on weekdays.'),
+            });
+        }
+
         $status_ok = 1;
     } elsif ($client_status = $jp_client->get_status('jp_knowledge_test_fail')) {
         # can't take test more than once per day
-        my $tests           = from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
-        my $last_test_epoch = $tests->[-1]->{epoch};
+        my $tests       = from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
+        my $last_epoch  = $tests->[-1]->{epoch};
+        my $next_epoch = _next_allowable_knowledge_test_epoch($last_epoch);
 
-        if ($now->epoch - $last_test_epoch < 86400) {
+        if ($now->epoch < $next_epoch) {
             return BOM::RPC::v3::Utility::create_error({
                 code              => 'AttemptExceeded',
-                message_to_client => localize('You have exceeded attempt limit for Japan knowledge test today, please try again tomorrow.'),
+                message_to_client => localize('Attempt limit exceeded for test, please try again on following business day.'),
             });
         }
         $status_ok = 1;
