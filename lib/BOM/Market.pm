@@ -72,6 +72,17 @@ sub _build_weekend_outlier_tick {
     return shift->outlier_tick;
 }
 
+=head2 integer_barrier
+
+Only allow integer barrier for this market. Default to false.
+
+=cut
+
+has integer_barrier => (
+    is      => 'ro',
+    default => 0,
+);
+
 =head2 display_current_spot
 
 A Boolean that determines if we are allowed to show current spot of this market to user
