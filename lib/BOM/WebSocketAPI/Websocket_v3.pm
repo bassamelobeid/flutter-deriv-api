@@ -168,12 +168,13 @@ my @dispatch = (
         'ticks_history',
         \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history, 0
     ],
-    ['proposal',       \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,     0],
-    ['forget',         \&BOM::WebSocketAPI::v3::Wrapper::System::forget,         0],
-    ['forget_all',     \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,     0],
-    ['ping',           \&BOM::WebSocketAPI::v3::Wrapper::System::ping,           0],
-    ['time',           \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,    0],
-    ['website_status', \&BOM::WebSocketAPI::v3::Wrapper::System::website_status, 0],
+    ['proposal',       \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,      0],
+    ['pricing_table',  \&BOM::WebSocketAPI::v3::Wrapper::Streamer::pricing_table, 0],
+    ['forget',         \&BOM::WebSocketAPI::v3::Wrapper::System::forget,          0],
+    ['forget_all',     \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,      0],
+    ['ping',           \&BOM::WebSocketAPI::v3::Wrapper::System::ping,            0],
+    ['time',           \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,     0],
+    ['website_status', \&BOM::WebSocketAPI::v3::Wrapper::System::website_status,  0],
     [
         'contracts_for',
         \&BOM::WebSocketAPI::v3::Wrapper::Offerings::contracts_for, 0
@@ -329,6 +330,7 @@ my %rate_limit_map = (
     statement_real                 => 'websocket_call_expensive',
     profit_table_real              => 'websocket_call_expensive',
     proposal_real                  => 'websocket_real_pricing',
+    pricing_table_real             => 'websocket_real_pricing',
     proposal_open_contract_real    => 'websocket_real_pricing',
     verify_email_real              => 'websocket_call_email',
     buy_real                       => 'websocket_real_pricing',
@@ -339,6 +341,7 @@ my %rate_limit_map = (
     statement_virtual              => 'websocket_call_expensive',
     profit_table_virtual           => 'websocket_call_expensive',
     proposal_virtual               => 'websocket_call_pricing',
+    pricing_table_virtual          => 'websocket_call_pricing',
     proposal_open_contract_virtual => 'websocket_call_pricing',
     verify_email_virtual           => 'websocket_call_email',
 );

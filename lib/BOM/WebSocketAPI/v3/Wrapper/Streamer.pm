@@ -93,6 +93,25 @@ sub proposal {
     return;
 }
 
+sub pricing_table {
+    my ($c, $args) = @_;
+
+    my $symbol   = $args->{symbol};
+    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
+
+    if ($response and exists $response->{error}) {
+        return $c->new_error('pricing_table', $response->{error}->{code}, $response->{error}->{message_to_client});
+    } else {
+        my $id;
+        if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args), $args)) {
+            return $c->new_error('pricing_table',
+                'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for pricing table subscription.'));
+        }
+        send_ask($c, $id, $args);
+    }
+    return;
+}
+
 sub send_ask {
     my ($c, $id, $args) = @_;
 
@@ -118,7 +137,8 @@ sub process_realtime_events {
 
     my @m = split(';', $message);
     my $feed_channels_type = $c->stash('feed_channel_type');
-
+    use Data::Dumper;
+    $c->app->log->info(Dumper \@m);
     my %skip_symbol_list = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
     my %skip_type_list   = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
     foreach my $channel (keys %{$feed_channels_type}) {
@@ -181,11 +201,17 @@ sub process_realtime_events {
 }
 
 sub _feed_channel {
+
     my ($c, $subs, $symbol, $type, $args) = @_;
+
     my $uuid;
 
     my $feed_channel      = $c->stash('feed_channel')      || {};
     my $feed_channel_type = $c->stash('feed_channel_type') || {};
+
+    # use Data::Dumper;
+    # $c->app->log->info(Dumper($feed_channel) . ' $feed_channel');
+    # $c->app->log->info(Dumper($feed_channel_type) . ' $feed_channel_type');
 
     my $redis = $c->stash('redis');
     if ($subs eq 'subscribe') {
@@ -200,6 +226,8 @@ sub _feed_channel {
         $feed_channel->{$symbol} += 1;
         $feed_channel_type->{"$symbol;$type"}->{args} = $args if $args;
         $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
+        # $c->app->log->info("FEED::$symbol" . ' =======================FEED::$symbol');
+
         $redis->subscribe(["FEED::$symbol"], sub { });
     }
 
@@ -207,6 +235,7 @@ sub _feed_channel {
         $feed_channel->{$symbol} -= 1;
         delete $feed_channel_type->{"$symbol;$type"};
         if ($feed_channel->{$symbol} <= 0) {
+
             $redis->unsubscribe(["FEED::$symbol"], sub { });
             delete $feed_channel->{$symbol};
         }
