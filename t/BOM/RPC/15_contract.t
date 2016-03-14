@@ -288,7 +288,7 @@ subtest 'get_bid' => sub {
                                              });
 
     my $error = $txn->buy(skip_validation => 1);
-    ok(!error 'should no error to buy the contract');
+    ok(!$error, 'should no error to buy the contract');
     diag(Dumper($error)) if $error;
 
     #my $fmb;
