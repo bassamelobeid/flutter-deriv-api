@@ -1,0 +1,40 @@
+<p>[% contract.longcode %]</p>
+<form action="" method="post">
+    <table>
+        <tr><td>Shortcode</td><td><input value="[% contract.shortcode %]" size="80" type="text" name="shortcode" id="shortcode"/></td></tr>
+        <tr><td>Currency</td><td><input value="[% contract.currency %]" size="4" type="text" name="currency" id="currency" style="none"/></td></tr>
+        <tr><td>Start time</td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/></td></tr>
+        <tr><td colspan=2><input type="submit" name="price" value="View in Table"/></td></tr>
+        <tr><td colspan=2><input type="submit" name="download" value="Download as CSV file"/></td></tr>
+    </table>
+</form>
+[% IF pricing_parameters.size > 0 %]
+        <p><b> Contract's Ask Price = [% contract.currency  %][%pricing_parameters.ask_price %]</b></p>
+        <table id="dtr" border="1" cellpadding="1" cellspacing="0">
+                <tr><b> Contract's ask probability </br></tr>
+                [% FOREACH ask_key =pricing_parameters.ask_probability.keys.sort%]
+                <tr><td>[% ask_key %]</td>
+                    <td> [% pricing_parameters.ask_probability.$ask_key %]</td>
+                </tr>
+                [% END %]
+        </table>
+          [% FOREACH key =pricing_parameters.keys.sort %]
+               <p><table id="dtr" border="1" cellpadding="1" cellspacing="0">
+               [% IF key != 'ask_probability' AND key != 'ask_price' %]
+                <tr><td><b> [% key %] </b></td></tr>
+                    [% FOREACH sub_keys = pricing_parameters.$key.keys.sort %]
+                         <tr><td>[% sub_keys %]</td>
+                          [% IF key != 'numeraire_probability' %]
+                           <td> [% pricing_parameters.$key.$sub_keys %]</td>
+                           [% END %]
+                         </tr>
+                            [% FOREACH sub_sub_keys = pricing_parameters.$key.$sub_keys.keys.sort %]
+                                <tr><td><td>[% sub_sub_keys %]</td></td>
+                                <td> [% pricing_parameters.$key.$sub_keys.$sub_sub_keys %]</td>
+                             </tr>
+                              [% END %]  
+                     [% END %] 
+             [% END %]
+           [% END %] 
+         </table></p>
+[% END %]
