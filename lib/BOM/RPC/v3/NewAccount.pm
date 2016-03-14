@@ -458,12 +458,10 @@ In the next stage of our account opening process we are required to verify your 
 
 Kindly reply to this email and attach a scanned copy of one of the following approved forms of identity:
 
-<ul>
-    <li>Japan Driving license, front and back sides</li>
-    <li>Health Insurance card, front and back side</li>
-    <li>Basic Resident register and separate passport size photograph. If your document contains details of other family members please cover-over with a blank piece of paper when taking the scan</li>
-    <li>Residence Card, front and back side</li>
-</ul>
+- Japan Driving license, front and back sides
+- Health Insurance card, front and back side
+- Basic Resident register and separate passport size photograph. If your document contains details of other family members please cover-over with a blank piece of paper when taking the scan
+- Residence Card, front and back side
 
 Please ensure the document contains details of your current address which matches the details that you provided in the basic information section earlier. Please also ensure that the address and other information is easily readable, as otherwise this may delay your application.
 
