@@ -358,11 +358,11 @@ sub _knowledge_test_available_date {
         if (not $last_test_epoch) {
             # if not taken any test before & is weekend now, allow test starting from coming Mon 12am JST
             $dt = DateTime->new(
-                  year       => $dt->year,
-                  month      => $dt->month,
-                  day        => $dt->day,
-                  time_zone  => 'Asia/Tokyo',
-              );
+                year      => $dt->year,
+                month     => $dt->month,
+                day       => $dt->day,
+                time_zone => 'Asia/Tokyo',
+            );
         }
     }
     return $dt;
@@ -413,8 +413,9 @@ sub jp_knowledge_test {
     my $now = DateTime->now(time_zone => 'Asia/Tokyo');
     if ($now->epoch < $next_dt->epoch) {
         return BOM::RPC::v3::Utility::create_error({
-            code              => 'TestUnavailableNow',
-            message_to_client => localize('Knowledge test is unavailable now, you may take the test on [_1]' . $next_dt->date . ' ' . $next_dt->time),
+            code => 'TestUnavailableNow',
+            message_to_client =>
+                localize('Knowledge test is unavailable now, you may take the test on [_1]' . $next_dt->date . ' ' . $next_dt->time),
         });
     }
 
