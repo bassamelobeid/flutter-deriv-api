@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Cashier Forward Request",
+  "description": "Cashier Forward",
+  "properties": {
+    "cashier_forward": {
+      "type": "string",
+      "pattern": "^(deposit|withdraw)$",
+      "required": "1",
+      "description": "either deposit or withdraw, default to deposit"
+    },
+    "passthrough": {
+      "type": "object",
+      "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+    },
+    "req_id": {
+      "type": "integer",
+      "description": "Optional field to map request to response"
+    }
+  },
+  "additionalProperties": false
+}
