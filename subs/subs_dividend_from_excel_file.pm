@@ -7,6 +7,9 @@ use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::Market::Underlying;
 use SuperDerivatives::UnderlyingConfig;
+use Quant::Framework::Dividend;
+use BOM::System::Chronicle;
+
 
 sub process_dividend {
     my ($fh, $vendor) = @_;
@@ -45,18 +48,22 @@ sub save_dividends {
 
         }
         try {
-            my $dividends = BOM::MarketData::Dividend->new(
+            my $dividends = Quant::Framework::Dividend->new(
                 symbol          => $symbol,
                 rates           => $rates,
                 discrete_points => $discrete_points,
                 recorded_date   => Date::Utility->new,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             );
             if (exists $valid_synthetic{'SYN' . $symbol}) {
-                my $synthetic_dividend = BOM::MarketData::Dividend->new(
+                my $synthetic_dividend = Quant::Framework::Dividend->new(
                     symbol          => 'SYN' . $symbol,
                     rates           => $rates,
                     discrete_points => $discrete_points,
                     recorded_date   => Date::Utility->new,
+                    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
                 );
                 $synthetic_dividend->save;
             }
