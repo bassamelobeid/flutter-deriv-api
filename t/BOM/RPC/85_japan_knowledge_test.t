@@ -4,13 +4,13 @@ use Test::More tests => 8;
 use Test::Exception;
 use JSON;
 
+use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
 use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Accounts;
 
 ## do not send email
-use Test::MockModule;
 my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 
