@@ -7,6 +7,7 @@ use Test::MockModule;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
+use POSIX qw/ ceil /;
 
 use Test::BOM::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
@@ -82,11 +83,11 @@ subtest $method => sub {
     $params->{args}->{residence} = 'id';
     $rpc_ct->call_ok($method, $params)
             ->has_no_system_error
-            ->has_no_error('If verification code is ok - account created successfully');
+            ->has_no_error('If verification code is ok - account created successfully')
+            ->result_value_is(sub { shift->{currency} }, 'USD', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-    is_deeply   [sort keys %{ $rpc_ct->result }],
-                [sort qw/ currency balance client_id /],
-                'It should return new account data';
+    ok $rpc_ct->result->{client_id} =~ /^VRTC\d+/, 'It should return new account data';
 };
 
 $method = 'new_account_real';
@@ -199,10 +200,11 @@ subtest $method => sub {
         $user->save;
         $rpc_ct->call_ok($method, $params)
                 ->has_no_system_error
-                ->has_no_error;
-        is_deeply   [sort keys %{$rpc_ct->result}],
-                    [sort qw/ landing_company landing_company_shortcode client_id /],
-                    'It should return new client data if creation ended successfully';
+                ->has_no_error
+                ->result_value_is(sub { shift->{landing_company} }, 'Binary (C.R.) S.A.', 'It should return new account data')
+                ->result_value_is(sub { shift->{landing_company_shortcode} }, 'costarica', 'It should return new account data');
+
+        ok exists $rpc_ct->result->{client_id}, 'It should return new account data';
     };
 
 };
@@ -325,11 +327,12 @@ subtest $method => sub {
         $user->email_verified(1);
         $user->save;
         $rpc_ct->call_ok($method, $params)
-              ->has_no_system_error
-              ->has_no_error;
-        is_deeply   [sort keys %{$rpc_ct->result}],
-                    [sort qw/ landing_company landing_company_shortcode client_id /],
-                    'It should return new client data if creation ended successfully';
+                ->has_no_system_error
+                ->has_no_error
+                ->result_value_is(sub { shift->{landing_company} }, 'Binary Investments (Europe) Ltd', 'It should return new account data')
+                ->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return new account data');
+
+        ok $rpc_ct->result->{client_id} =~ /^CR\d+/, 'It should return new account data';
     };
 };
 
@@ -447,11 +450,12 @@ subtest $method => sub {
         $params->{args}->{declare_not_fatca} = 1;
 
         $rpc_ct->call_ok($method, $params)
-              ->has_no_system_error
-              ->has_no_error;
-        is_deeply   [sort keys %{$rpc_ct->result}],
-                    [sort qw/ landing_company landing_company_shortcode client_id /],
-                    'It should return new client data if creation ended successfully';
+                ->has_no_system_error
+                ->has_no_error
+                ->result_value_is(sub { shift->{landing_company} }, 'Binary KK', 'It should return new account data')
+                ->result_value_is(sub { shift->{landing_company_shortcode} }, 'japan', 'It should return new account data');
+
+        ok $rpc_ct->result->{client_id} =~ /^JP\d+/, 'It should return new account data';
     };
 };
 
