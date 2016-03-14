@@ -242,7 +242,7 @@ subtest 'get_bid' => sub {
     my $params = {language => 'ZH_CN'};
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')->error_message_is('Sorry, an error occurred while processing your request.');
 
-    my $now        = Date::Utility->new();
+    my $now        = Date::Utility->new('2005-09-21 06:46:00');
 
     my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                                                                              epoch      => $now->epoch - 99,
