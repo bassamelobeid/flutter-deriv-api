@@ -28,6 +28,265 @@ use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
 use BOM::Platform::Email qw(send_email);
 use BOM::System::AuditLog;
 
+use BOM::Database::Model::HandoffToken;
+use LWP::UserAgent;
+use IO::Socket::SSL qw( SSL_VERIFY_NONE );
+
+sub cashier_forward {
+    my $params = shift;
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+
+    my $action = $params->{cashier_forward} // 'deposit';
+    my $currency = $params->{currency};
+
+    if (my $account = $client->default_account) {
+        $currency ||= $account->currency_code;
+    }
+
+    # still no currency?  Try the first financial sibling with same landing co.
+    $currency ||= do {
+        my @siblings = grep { $_->default_account }
+            grep { $_->landing_company->short eq $client->landing_company->short } $client->siblings;
+        @siblings && $siblings[0]->default_account->currency_code;
+    };
+
+    my $landing_company = $client->landing_company;
+    if (not $client->is_virtual) {
+        my $current_tnc_version = $app_config->cgi->terms_conditions_version;
+        my $client_tnc_status   = $client->get_status('tnc_approval');
+        if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version)) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'ASK_TNC_APPROVAL',
+                message_to_client => localize('TNC Approval is required.'),
+            });
+        }
+    }
+
+    if ($landing_company->short eq 'maltainvest') {
+        # $c->authenticate()
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'ASK_AUTHENTICATE',
+                message_to_client => localize('Client is not fully authenticated.'),
+            }) unless $client->client_fully_authenticated;
+    }
+
+    if (not $client->is_virtual and $client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'ASK_UK_FUNDS_PROTECTION',
+                message_to_client => localize('Client is not fully authenticated.'),
+            });
+
+        # if ($r->param('ukgc_funds_protection') and $r->param('ukgc_funds_protection') eq 'ok') {
+        #     $client->set_status('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds');
+        #     $client->save;
+        # } else {
+        #     return $c->render_tt(
+        #         template => 'cashier/ukgc_funds_protection_message',
+        #         action   => $action,
+        #         currency => $currency,
+        #     );
+        # }
+    }
+
+    my $error = '';
+
+    if ($action eq 'deposit' and $client->get_status('unwelcome')) {
+        $error = localize('Your account is restricted to withdrawals only.');
+    } elsif ($client->is_virtual) {
+        $error = localize('This is a virtual-money account. Please switch to real-money account and deposit funds.');
+    } elsif ($client->documents_expired) {
+        $error = localize(
+            'Your identity documents have passed their expiration date. Kindly send a scan of a valid ID to <a href="mailto:[_1]">[_1]</a> to unlock your cashier.',
+            'support@binary.com'
+        );
+    } elsif ($client->get_status('cashier_locked')) {
+        $error = localize('Your cashier is locked');
+    } elsif ($client->get_status('disabled')) {
+        $error = localize('Your account is disabled');
+    } elsif ($client->cashier_setting_password) {
+        $error = localize('Your cashier is locked as per your request.');
+    } elsif ($currency and not $landing_company->is_currency_legal($currency)) {
+        $error = localize('[_1] transactions may not be performed with this account.', $currency);
+    }
+
+    my $error_sub = sub {
+        my ($message_to_client, $message) = @_;
+        BOM::RPC::v3::Utility::create_error({
+            code              => 'CashierForwardError',
+            message_to_client => $message_to_client,
+            ($message) ? (message => $message) : (),
+        });
+    };
+
+    if ($error) {
+        return $error_sub->($error);
+    }
+
+    my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
+
+    # We ask the client which currency they wish to deposit/withdraw in
+    # if they've either never deposited before or have deposited in
+    # several currencies.
+    $currency = $currency || $df_client->doughflow_currency;
+    if (not $currency) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'ASK_CURRENCY',
+                message_to_client => $error,
+            });
+    }
+
+    my $email = $client->email;
+    if ($action eq 'withdraw') {
+        my $is_not_verified = 1;
+        my $token = $params->{verification_code} // '';
+
+        if (not $email or $email =~ /\s+/) {
+            $error_sub->( localize("Sorry, an error occurred. Please contact customer support if this problem persists.") );
+        } elsif ($token) {
+            unless (BOM::RPC::v3::Utility::is_verification_token_valid($token, $client->email)) {
+                return BOM::RPC::v3::Utility::create_error({
+                        code              => "InvalidVerificationCode",
+                        message_to_client => localize("Your verification link has expired.")});
+            }
+        } else {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'ASK_EMAIL_VERIFY',
+                message_to_client => localize('Verify your withdraw request.'),
+            });
+        }
+    }
+
+    # create handoff token
+    my $cb = BOM::Database::ClientDB->new({
+        client_loginid => $df_client->loginid,
+    });
+
+    BOM::Database::DataMapper::Payment::DoughFlow->new({
+            client_loginid => $df_client->loginid,
+            db             => $cb->db,
+        })->delete_expired_tokens();
+
+    my $handoff_token = BOM::Database::Model::HandoffToken->new(
+        db                 => $cb->db,
+        data_object_params => {
+            key            => BOM::Database::Model::HandoffToken::generate_session_key,
+            client_loginid => $df_client->loginid,
+            expires        => time + 60,
+        },
+    );
+    $handoff_token->save;
+
+    my $doughflow_loc  = BOM::System::Config::third_party->{doughflow}->{location};
+    my $doughflow_pass = BOM::System::Config::third_party->{doughflow}->{passcode};
+    my $url            = $doughflow_loc . '/CreateCustomer.asp';
+
+    my $broker = $df_client->broker;
+    my $sportsbook = get_sportsbook($broker, $currency);
+
+    # hit DF's CreateCustomer API
+    my $ua = LWP::UserAgent->new(timeout => 60);
+    $ua->ssl_opts(
+        verify_hostname => 0,
+        SSL_verify_mode => SSL_VERIFY_NONE
+    );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
+
+    my $result = $ua->post(
+        $url,
+        $df_client->create_customer_property_bag({
+                SecurePassCode => $doughflow_pass,
+                Sportsbook     => $sportsbook,
+                IP_Address     => '127.0.0.1',
+                Password       => $handoff_token->key,
+            }));
+
+    if ($result->{'_content'} ne 'OK') {
+        #parse error
+        my $errortext = $result->{_content};
+
+        if ($errortext =~ /custname/) {
+            $client->add_note('DOUGHFLOW_ADDRESS_MISMATCH',
+                      "The Doughflow server rejected the client's name.\n"
+                    . "If everything is correct with the client's name, notify the development team.\n"
+                    . "Doughflow response: [$errortext]");
+
+            return $error_sub->(localize(
+                    'Sorry, there was a problem validating your personal information with our payment processor. Please contact our Customer Service.'
+                ), 'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']');
+        }
+
+        my @errorfields;
+        push @errorfields, 'AddressState'    if ($errortext =~ /province/);
+        push @errorfields, 'residence'       if ($errortext =~ /country/);
+        push @errorfields, 'AddressTown'     if ($errortext =~ /city/);
+        push @errorfields, 'Address1'        if ($errortext =~ /street/);
+        push @errorfields, 'AddressPostcode' if ($errortext =~ /pcode/);
+        push @errorfields, 'Tel'             if ($errortext =~ /phone/);
+        push @errorfields, 'Email'           if ($errortext =~ /email/);
+
+        if (@errorfields) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'ASK_FIX_ADDRESS',
+                message_to_client => localize('There was a problem validating your address.'),
+            });
+        }
+
+        return $error_sub->(localize(
+                    'Sorry, an error has occurred, Please try accessing our Cashier again.'
+                ), 'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']');
+    }
+
+    my $secret = String::UTF8::MD5::md5($df_client->loginid . '-' . $handoff_token->key);
+
+    if ($action eq 'deposit') {
+        $action = 'DEPOSIT';
+
+        # FIXME
+        # # first deposit
+        # if (not $df_client->default_account) {
+        #     $r->ui_settings->{'client.currencies'} = [$currency];
+        #     $c->cookie(
+        #         'settings' => $r->ui_settings_value,
+        #         {
+        #             domain  => $r->cookie_domain,
+        #             path    => '/',
+        #             expires => 'Thu, 1 Jan 2037 12:00:00 GMT',
+        #             secure  => 1
+        #         });
+        # }
+    } elsif ($action eq 'withdraw') {
+        $action = 'PAYOUT';
+    }
+
+    path('/tmp/doughflow_tokens.txt')
+        ->append(join(":", Date::Utility->new()->datetime_ddmmmyy_hhmmss, $df_client->loginid, $handoff_token->key, $action));
+
+    # build DF link
+    $url =
+          $doughflow_loc
+        . '/login.asp?Sportsbook='
+        . $sportsbook . '&PIN='
+        . $df_client->loginid
+        . '&Lang='
+        . get_doughflow_language_code_for($params->{language})
+        . '&Password='
+        . $handoff_token->key
+        . '&Secret='
+        . $secret
+        . '&Action='
+        . $action;
+    BOM::System::AuditLog::log('redirecting to doughflow', $df_client->loginid);
+    return $url;
+}
+
 sub get_limits {
     my $params = shift;
 
