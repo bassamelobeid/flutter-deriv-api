@@ -464,9 +464,8 @@ sub reset_password {
 
     if (
         my $pass_error = BOM::RPC::v3::Utility::_check_password({
-                new_password => $args->{new_password},
-                verify_password => $args->{verify_password}
-            }))
+                new_password    => $args->{new_password},
+                verify_password => $args->{verify_password}}))
     {
         return $pass_error;
     }
