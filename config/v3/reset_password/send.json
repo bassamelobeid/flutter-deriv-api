@@ -12,13 +12,13 @@
     "new_password": {
       "type": "string",
       "pattern": "^[ -~]{6,25}$",
-      "description": "New password for validation (length within 6-25 chars, accepts any printable ASCII character)",
+      "description": "New password for validation (length within 6-25 chars, accepts any printable ASCII characters, need to include capital and lowercase letters with numbers). Password strength is evaluated as: http://archive.geekwisdom.com/js/passwordmeter.js",
       "required": "1"
     },
-    "verify_password": {
+    "date_of_birth" : {
       "type": "string",
-      "pattern": "^[ -~]{6,25}$",
-      "description": "Verify new password (length within 6-25 chars, accepts any printable ASCII character)",
+      "pattern": "^\\d{4}-\\d\\d?-\\d\\d?$",
+      "description": "Date of birth format: yyyy-mm-dd.",
       "required": "1"
     },
     "verification_code": {
