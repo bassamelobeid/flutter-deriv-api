@@ -20,6 +20,7 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Static::Config;
 use BOM::Platform::Account::Real::default;
+use BOM::Platform::SessionCookie;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -454,23 +455,26 @@ sub cashier_password {
 
 sub reset_password {
     my $params = shift;
-    my ($client_ip, $args) = @{$params}{qw/client_ip args/};
-    my $email = BOM::Platform::SessionCookie->new({token => $args->{verification_code}})->email;
+    my $args   = $params->{args};
+    my $email  = BOM::Platform::SessionCookie->new({token => $args->{verification_code}})->email;
     unless (BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => "InvalidVerificationCode",
                 message_to_client => localize("Your reset password token has expired.")});
     }
 
-    if (
-        my $pass_error = BOM::RPC::v3::Utility::_check_password({
-                new_password    => $args->{new_password},
-                verify_password => $args->{verify_password}}))
-    {
+    if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $args->{new_password}})) {
         return $pass_error;
     }
 
-    my $user = BOM::Platform::User->new({email => $email});
+    my ($user, @clients);
+    $user = BOM::Platform::User->new({email => $email});
+    @clients = $user->clients if $user;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => "DOBMismatch",
+            message_to_client => localize("The email address and date of birth do not match.")}
+    ) if ($clients[0]->date_of_birth ne $args->{date_of_birth});
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
     $user->password($new_password);
@@ -481,7 +485,7 @@ sub reset_password {
         $obj->save;
     }
 
-    BOM::System::AuditLog::log('password has been changed', $email);
+    BOM::System::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
             from    => BOM::Platform::Static::Config::get_customer_support_email(),
             to      => $email,

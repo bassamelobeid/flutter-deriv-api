@@ -155,11 +155,6 @@ sub _check_password {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'PasswordError',
                 message_to_client => localize('New password is same as old password.')}) if ($new_password eq $old_password);
-    } elsif (keys %$args == 2) {
-        my $verify_password = $args->{verify_password};
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'PasswordError',
-                message_to_client => localize('Password does not match confirmation.')}) if ($new_password ne $verify_password);
     }
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PasswordError',
