@@ -414,7 +414,7 @@ sub jp_knowledge_test {
     if ($now->epoch < $next_dt->epoch) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'TestUnavailableNow',
-            message_to_client => localize('Knowledge test is unavailable now, you may take the test on ' . $next_dt->date . ' ' . $next_dt->time),
+            message_to_client => localize('Knowledge test is unavailable now, you may take the test on [_1]' . $next_dt->date . ' ' . $next_dt->time),
         });
     }
 
@@ -422,7 +422,7 @@ sub jp_knowledge_test {
     my ($score, $status) = @{$args}{'score', 'status'};
 
     if ($status eq 'pass') {
-        $jp_client->clr_status($_) for ('jp_knowledge_test_pending', 'jo_knowledge_test_fail');
+        $jp_client->clr_status($_) for ('jp_knowledge_test_pending', 'jp_knowledge_test_fail');
         $jp_client->set_status('jp_activation_pending', 'system', 'pending verification documents from client');
     } else {
         $jp_client->clr_status('jp_knowledge_test_pending');

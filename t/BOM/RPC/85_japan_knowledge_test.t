@@ -4,8 +4,6 @@ use Test::More tests => 8;
 use Test::Exception;
 use JSON;
 
-use Test::BOM::RPC::Client;
-use Test::MockTime qw(set_fixed_time restore_time);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
 use BOM::RPC::v3::NewAccount;
@@ -127,7 +125,7 @@ subtest 'No test allow within same day' => sub {
                 score   => 18,
                 status  => 'pass'
             }});
-    is($res->{error}->{code}, 'AttemptExceeded', 'Number of attempt exceeded for knowledge test');
+    is($res->{error}->{code}, 'TestUnavailableNow', 'Test not available for now');
 };
 
 subtest 'Test is allowed after 1 day' => sub {
