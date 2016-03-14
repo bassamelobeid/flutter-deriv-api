@@ -334,9 +334,13 @@ subtest $method => sub {
   my $contract = create_contract(client => $client, spread => 0);
   $params->{short_code} = $contract->shortcode;
   $params->{currency} = 'USD';
-  diag(Dumper($c->call_ok($method, $params)->has_no_error->result));
+  $c->call_ok($method, $params)->has_no_error->result_is_deeply({
+                      'symbol' => 'R_50',
+               'longcode' => "USD 194.22 payout if Random 50 Index is strictly higher than entry spot at 50 \x{79d2}\x{949f} after contract start time.",
+               'display_name' => 'Random 50 Index',
+               'date_expiry' => $now->epoch - 50,
+                                                                });
 
-  
 };
 
 done_testing();
