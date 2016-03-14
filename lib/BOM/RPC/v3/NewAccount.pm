@@ -376,7 +376,7 @@ sub jp_knowledge_test {
 
     if ($client_status = $jp_client->get_status('jp_knowledge_test_pending')) {
         # client haven't taken any test before
-        if ($now->day_of_week == 6 or $now->day_of_week == 7) {
+        if ($now->day_of_week >= 6) {
             return BOM::RPC::v3::Utility::create_error({
                 code              => 'NoTestOnWeekends',
                 message_to_client => localize('Knowledge test in only available on weekdays.'),
