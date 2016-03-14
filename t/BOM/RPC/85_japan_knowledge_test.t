@@ -17,7 +17,6 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
 $email_mocked->mock('send_email', sub { return 1 });
 
-
 my %jp_client_details = (
     gender                                      => 'f',
     first_name                                  => 'first\'name',
@@ -61,6 +60,9 @@ my %jp_client_details = (
 
 my ($vr_client, $user, $token, $jp_loginid, $jp_client, $res);
 
+my $dt_mocked = Test::MockModule->new('DateTime');
+$dt_mocked->mock('day_of_week', sub { return 1 });
+
 subtest 'create VRTJ & JP client' => sub {
     # new VR client
     ($vr_client, $user) = create_vr_account({
@@ -80,9 +82,12 @@ subtest 'create VRTJ & JP client' => sub {
     like $jp_loginid, qr/^JP\d+$/, "JP client created";
 };
 
+my $now = DateTime->now;
+
 subtest 'no test taken yet' => sub {
-    $res = BOM::RPC::v3::Accounts::get_settings({ token => $token });
-    is $res->{jp_account_status}->{status}, 'jp_knowledge_test_pending', 'jp_knowledge_test_pending';
+    $res = BOM::RPC::v3::Accounts::get_settings({ token => $token })->{jp_account_status};
+    is $res->{status}, 'jp_knowledge_test_pending', 'jp_knowledge_test_pending';
+    is $res->{next_test_epoch}, $now->epoch, 'Test available now';
 };
 
 subtest 'First Test taken: fail test' => sub {
@@ -94,14 +99,14 @@ subtest 'First Test taken: fail test' => sub {
             }});
 
     my $epoch = $res->{test_taken_epoch};
-    like $epoch, qr/^\d+$/, "test taken time is epoch: $epoch";
+    is $epoch, $now->epoch, "test taken time is epoch: $epoch";
 
     subtest 'get_settings' => sub {
         $res = BOM::RPC::v3::Accounts::get_settings({ token => $token })->{jp_account_status};
 
         is $res->{status}, 'jp_knowledge_test_fail';
-        like $res->{last_test_epoch}, qr/^\d+$/, 'Last test taken time is epoch';
-        like $res->{next_test_epoch}, qr/^\d+$/, 'Next allowable test time is epoch';
+        is $res->{last_test_epoch}, $epoch, 'Last test taken time is now';
+        is $res->{next_test_epoch}, $epoch + 86400, 'Next allowable test is tomorrow';
     };
 
     subtest 'Test result exists in financial assessment' => sub {
@@ -153,7 +158,7 @@ subtest 'Test is allowed after 1 day' => sub {
                 }});
 
         my $epoch = $res->{test_taken_epoch};
-        like $epoch, qr/^\d+$/, "test taken time is epoch: $epoch";
+        is $epoch, $now->epoch, "Test taken time is now";
     };
 
     subtest 'get_settings' => sub {
@@ -171,7 +176,7 @@ subtest 'Test is allowed after 1 day' => sub {
         my $test_2 = $tests->[1];
         is $test_2->{score}, 18, 'Test 2: correct score';
         is $test_2->{status}, 'pass', 'Test 2: correct status';
-        like $test_2->{epoch}, qr/^\d+$/, 'Test 2: correct epoch format';
+        is $test_2->{epoch}, $now->epoch, 'Test 2: correct epoch';
     };
 };
 
@@ -266,6 +271,9 @@ subtest 'No test allowed for VRTJ, unless JP exists' => sub {
     };
 };
 
+$client_mocked->unmock_all;
+$email_mocked->unmock_all;
+$dt_mocked->unmock_all;
 
 sub create_vr_account {
     my $args = shift;
