@@ -78,9 +78,13 @@
               "enum": ["activated", "jp_knowledge_test_pending", "jp_knowledge_test_fail", "jp_activation_pending", "disabled"],
               "description": "Status of Japan real money account opening, any of the above."
             },
-            "epoch": {
+            "last_test_epoch": {
               "type": "integer",
-              "description": "Optional field. When status equals 'jp_knowledge_test_fail', this indicates last knowledge test taken time in epoch."
+              "description": "Optional field. When status equals 'jp_knowledge_test_fail', this shows last knowledge test taken time in epoch."
+            },
+            "next_test_epoch": {
+              "type": "integer",
+              "description": "Optional field. When status equals 'jp_knowledge_test_pending' or 'jp_knowledge_test_fail', this shows next available knowledge test time in epoch."
             }
           }
         }
