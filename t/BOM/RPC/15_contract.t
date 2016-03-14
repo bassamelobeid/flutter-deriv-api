@@ -370,7 +370,7 @@ subtest 'get_bid' => sub {
                                              exit_tick    => $old_tick2,
                                   barrier      => 'S0P',
                                   amount_per_point => 1,
-                                      stop_type => point
+                                      stop_type => 'point',
                                 stop_profit => 10,
                                 stop_loss => 10,
 
