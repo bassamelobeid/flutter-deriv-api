@@ -331,36 +331,41 @@ sub _get_client_details {
     return {details => $details};
 }
 
-sub _next_allowable_knowledge_test_epoch {
+sub _get_knowledge_test_status {
     my $last_epoch = shift;
 
-#    if (not $last_epoch) {
-#        my $dt = DateTime->now;
-#        $dt->set_time_zone('Asia/Tokyo');
-#
-#        if ($dt->day_of_week == 6) {
-#            $dt->add(days => 2);
-#        } elsof ($dt->day_of_week == 7) {
-#            $dt->add(days => 1);
-#        }
-#        return $dt->epoch;
-#    }
+    my $dt;
+    if (not $last_test_epoch) {
+        # no test is taken so far
 
+        $dt = DateTime->now;
+        $dt->set_time_zone('Asia/Tokyo');
+    } else {
+        # test can only be repeated after 24 hours of business day (exclude weekends)
+        #   a) if test taken on Tues 3pm, next test available is on Wed 3pm
+        #   b) if test taken on Fri 3pm, next test available is on Mon 3pm
+        # By right no test should already been taken on Sat & Sun, but is handled here just in case.
 
-    # If last test is taken on Friday, client can only repeat test on next business day, which is Monday
-    # By right no test should be taken on Sat & Sun, but is handled here just in case.
-
-    my $dt = DateTime->from_epoch(epoch => $last_epoch);
-    $dt->set_time_zone('Asia/Tokyo');
-    $dt->add(days => 1);
-
-    if ($dt->day_of_week == 6) {
-        $dt->add(days => 2);
-    } elsif ($dt->day_of_week == 7) {
+        $dt = DateTime->from_epoch(epoch => $last_test_epoch);
+        $dt->set_time_zone('Asia/Tokyo');
         $dt->add(days => 1);
     }
 
-    return $dt->epoch;
+    my $dow = $dt->day_of_week;
+    if ($dow >= 6) {
+        $dt->add(days => (8 - $dow));
+
+        if (not $last_test_epoch) {
+            # if not taken any test before & is weekend now, allow test starting from coming Mon 12am JST
+            $dt = DateTime->new(
+                  year       => $dt->year,
+                  month      => $dt->month,
+                  day        => $dt->day,
+                  time_zone  => 'Asia/Tokyo',
+              );
+        }
+    }
+    return $dt;
 }
 
 sub jp_knowledge_test {
@@ -386,38 +391,30 @@ sub jp_knowledge_test {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $now = DateTime->now(time_zone => 'Asia/Tokyo');
-    my ($client_status, $status_ok);
+    my $next_dt;
 
     if ($client_status = $jp_client->get_status('jp_knowledge_test_pending')) {
         # client haven't taken any test before
-        if ($now->day_of_week >= 6) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'NoTestOnWeekends',
-                message_to_client => localize('Knowledge test in only available on weekdays.'),
-            });
-        }
 
-        $status_ok = 1;
+        $next_dt = _knowledge_test_available_date();
     } elsif ($client_status = $jp_client->get_status('jp_knowledge_test_fail')) {
-        # can't take test more than once per day
+        # can't take test > 1 within same business day
+
         my $tests      = from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
         my $last_epoch = $tests->[-1]->{epoch};
-        my $next_epoch = _next_allowable_knowledge_test_epoch($last_epoch);
-
-        if ($now->epoch < $next_epoch) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'AttemptExceeded',
-                message_to_client => localize('Attempt limit exceeded for test, please try again on following business day.'),
-            });
-        }
-        $status_ok = 1;
-    }
-
-    unless ($status_ok) {
+        $next_dt = _knowledge_test_available_date($last_epoch);
+    } else {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'NotEligible',
             message_to_client => localize('You are not eligible for Japan knowledge test.'),
+        });
+    }
+
+    my $now = DateTime->now(time_zone => 'Asia/Tokyo');
+    if ($now->epoch < $next_dt->epoch) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'TestUnavailableNow',
+            message_to_client => localize('Knowledge test is unavailable now, you may take the test on ' . $dt->date . ' ' . $dt_time),
         });
     }
 
@@ -425,10 +422,10 @@ sub jp_knowledge_test {
     my ($score, $status) = @{$args}{'score', 'status'};
 
     if ($status eq 'pass') {
-        $jp_client->clr_status($client_status->status_code);
+        $jp_client->clr_status($_) for ('jp_knowledge_test_pending', 'jo_knowledge_test_fail');
         $jp_client->set_status('jp_activation_pending', 'system', 'pending verification documents from client');
     } else {
-        $jp_client->clr_status($client_status->status_code) if ($client_status->status_code eq 'jp_knowledge_test_pending');
+        $jp_client->clr_status('jp_knowledge_test_pending');
         $jp_client->set_status('jp_knowledge_test_fail', 'system', "Failed test with score: $score");
     }
 
