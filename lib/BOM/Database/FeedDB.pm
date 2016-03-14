@@ -23,7 +23,6 @@ sub write_dbh {
 }
 
 sub any_event_connection_str {
-    state $config = YAML::XS::LoadFile('/etc/rmg/feeddb.yml');
     return 'host=/var/run/postgresql port=6433 dbname=feed-replica user=read';
 }
 
