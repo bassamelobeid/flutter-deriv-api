@@ -40,30 +40,20 @@ sub script_run {
     #this will be an array of all extracted economic events. Later we will store
 
     foreach my $event_param (@$events_received) {
-        $event_param->{release_date}  = $event_param->{release_date}->epoch;
         $event_param->{recorded_date} = Date::Utility->new->epoch;
-
         Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param) . "\n");
-        BOM::System::RedisReplicated::redis_write->zadd('ECONOMIC_EVENTS',         $event_param->{release_date}, JSON::to_json($event_param));
-        BOM::System::RedisReplicated::redis_write->zadd('ECONOMIC_EVENTS_TRIMMED', $event_param->{release_date}, JSON::to_json($event_param));
     }
 
     try {
-        #here we need epochs to sort events
-        #the sorted array (by release date) in chronicle
-        my @all_events = sort { $a->{release_date} <=> $b->{release_date} } @$events_received;
 
-        #now convert release_date to string to be storable in chronicle
-        foreach my $event_param (@all_events) {
-            $event_param->{release_date} = Date::Utility->new($event_param->{release_date})->datetime_iso8601;
-        }
+        my $tentative_count = grep {$_->{is_tentative}} @$events_received;
 
         BOM::MarketData::EconomicEventCalendar->new({
-                events        => \@all_events,
+                events        => $events_received,
                 recorded_date => Date::Utility->new(),
             })->save;
 
-        print "stored " . (scalar @all_events) . " events in chronicle...\n";
+        print "stored " . (scalar @$events_received) . " events ($tentative_count are tentative events) in chronicle...\n";
     }
     catch {
         print 'Error occured while saving events: ' . $_;
