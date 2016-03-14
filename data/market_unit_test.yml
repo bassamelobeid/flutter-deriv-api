@@ -560,6 +560,7 @@ asset:
   data:
     symbol: UKTSCO
 
+<<<<<<< HEAD
 randomindex:
   class_name: 'BOM::MarketData::Dividend'
   data:
@@ -614,6 +615,16 @@ index:
       180: 2.11
       365: 1.04
 
+=======
+holiday:
+  class_name: 'BOM::MarketData::Holiday'
+  data:
+    calendar:
+        1420070400:
+          'New Year':
+            - EURONEXT
+            - USD
+>>>>>>> origin/master
 partial_trading:
   class_name: 'BOM::MarketData::PartialTrading'
   data:
