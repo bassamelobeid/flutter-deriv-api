@@ -10,6 +10,7 @@ use Time::HiRes;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 use BOM::Database::Rose::DB;
+use BOM::Database::Model::OAuth;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
