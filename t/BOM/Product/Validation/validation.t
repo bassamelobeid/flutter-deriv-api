@@ -1252,6 +1252,59 @@ subtest 'tentative events' => sub {
     ok !$c->_validate_expiry_date, 'no error';
 };
 
+subtest 'integer barrier' => sub {
+    my $now = Date::Utility->new('2015-04-08 00:30:00');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol         => 'AS51',
+            recorded_date  => $now,
+            spot_reference => $tick->quote,
+        });
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'index',
+        {
+            symbol        => 'AS51',
+            recorded_date => $now,
+        });
+    my $tick_params = {
+        symbol => 'not_checked',
+        epoch  => $now->epoch,
+        quote  => 100
+    };
+
+    my $tick   = BOM::Market::Data::Tick->new($tick_params);
+    my $params = {
+        bet_type     => 'CALL',
+        underlying   => 'AS51',
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '1d',
+        currency     => 'AUD',
+        current_tick => $tick,
+        payout       => 100,
+        barrier      => 100,
+    };
+
+    my $c = produce_contract($params);
+    ok $c->is_valid_to_buy, 'valid to buy if barrier is integer for indices';
+
+    $params->{barrier} = 100.1;
+    $c = produce_contract($params);
+    ok !$c->is_valid_to_buy, 'not valid to buy if barrier is non integer';
+    like ($c->primary_validation_error->message, qr/Invalid barrier/, 'correct error');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol         => $_,
+            recorded_date  => $now,
+        }) for qw(frxUSDJPY frxAUDJPY frxAUDUSD);
+    $params->{underlying} = 'frxUSDJPY';
+    $c = produce_contract($params);
+    ok $c->is_valid_to_buy, 'valid to buy if barrier is non integer for forex';
+};
+
 # Let's not surprise anyone else
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig_suspended),
     'Switched RANGE bets back on, if they were.');
