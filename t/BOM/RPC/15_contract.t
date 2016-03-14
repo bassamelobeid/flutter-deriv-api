@@ -16,19 +16,18 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Data::Dumper;
 
 initialize_realtime_ticks_db();
-my $now        = Date::Utility->new('2005-09-21 06:46:00');
-my $email = 'test@binary.com';
+my $now    = Date::Utility->new('2005-09-21 06:46:00');
+my $email  = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                                                                        broker_code => 'VRTC',
-                                                                        email => $email,
-                                                                       });
+    broker_code => 'VRTC',
+    email       => $email,
+});
 $client->deposit_virtual_funds;
 
 my $token = BOM::Platform::SessionCookie->new(
-                                              loginid => $client->loginid,
-                                              email   => $email
-                                             )->token;
-
+    loginid => $client->loginid,
+    email   => $email
+)->token;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -170,7 +169,6 @@ subtest 'get_ask' => sub {
         "duration_unit" => "s",
         "symbol"        => "R_50",
     };
-    #BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
     my $result = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
@@ -249,10 +247,13 @@ subtest 'send_ask' => sub {
 
 subtest 'get_bid' => sub {
     my $params = {language => 'ZH_CN'};
-    $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')->error_message_is('Sorry, an error occurred while processing your request.');
+    $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
+        ->error_message_is('Sorry, an error occurred while processing your request.');
 
-    my $contract = create_contract(client => $client, spread => 1);
-
+    my $contract = create_contract(
+        client => $client,
+        spread => 1
+    );
 
     $params = {
         language    => 'ZH_CN',
@@ -265,31 +266,33 @@ subtest 'get_bid' => sub {
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     diag(Dumper($result));
 
-
     my @expected_keys = (
-        qw(ask_price 
-                bid_price
-                current_spot_time
-                contract_id
-                underlying
-                is_expired
-                is_valid_to_sell
-                is_forward_starting
-                is_path_dependent
-                is_intraday
-                date_start
-                date_expiry
-                date_settlement
-                currency
-                longcode
-                shortcode
-                payout
-               ));
- #   my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
- #   diag(Dumper($result));
+        qw(ask_price
+            bid_price
+            current_spot_time
+            contract_id
+            underlying
+            is_expired
+            is_valid_to_sell
+            is_forward_starting
+            is_path_dependent
+            is_intraday
+            date_start
+            date_expiry
+            date_settlement
+            currency
+            longcode
+            shortcode
+            payout
+            ));
+    #   my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    #   diag(Dumper($result));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
 
-    $contract = create_contract(client => $client, spread => 0);
+    $contract = create_contract(
+        client => $client,
+        spread => 0
+    );
 
     $params = {
         language    => 'ZH_CN',
@@ -302,106 +305,112 @@ subtest 'get_bid' => sub {
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
     push @expected_keys, qw(
-                               barrier
-                               exit_tick_time
-                               exit_tick
-                               entry_tick
-                               entry_tick_time
-                               current_spot
-                               entry_spot
-                            );
+        barrier
+        exit_tick_time
+        exit_tick
+        entry_tick
+        entry_tick_time
+        current_spot
+        entry_spot
+    );
     is_deeply([sort keys %{$result}], [sort @expected_keys], 'keys of result is correct');
 
 };
 
 my $method = 'get_contract_details';
 subtest $method => sub {
-  my $params = {
-                language => 'zh_CN',
-                token    => '12345'
-               };
+    my $params = {
+        language => 'zh_CN',
+        token    => '12345'
+    };
 
-  $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'invalid token');
-  $client->set_status('disabled', 1, 'test');
-  $client->save;
-  $params->{token} = $token;
-  $c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'invalid token');
-  $client->clr_status('disabled');
-  $client->save;
+    $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'invalid token');
+    $client->set_status('disabled', 1, 'test');
+    $client->save;
+    $params->{token} = $token;
+    $c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'invalid token');
+    $client->clr_status('disabled');
+    $client->save;
 
-  $c->call_ok($method, $params)->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'will report error if no short_code and currency');
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'will report error if no short_code and currency');
 
-  my $contract = create_contract(client => $client, spread => 0);
-  $params->{short_code} = $contract->shortcode;
-  $params->{currency} = 'USD';
-  $c->call_ok($method, $params)->has_no_error->result_is_deeply({
-                      'symbol' => 'R_50',
-               'longcode' => "USD 194.22 payout if Random 50 Index is strictly higher than entry spot at 50 \x{79d2}\x{949f} after contract start time.",
-               'display_name' => 'Random 50 Index',
-               'date_expiry' => $now->epoch - 50,
-                                                                }, 'result is ok');
+    my $contract = create_contract(
+        client => $client,
+        spread => 0
+    );
+    $params->{short_code} = $contract->shortcode;
+    $params->{currency}   = 'USD';
+    $c->call_ok($method, $params)->has_no_error->result_is_deeply({
+            'symbol'   => 'R_50',
+            'longcode' => "USD 194.22 payout if Random 50 Index is strictly higher than entry spot at 50 \x{79d2}\x{949f} after contract start time.",
+            'display_name' => 'Random 50 Index',
+            'date_expiry'  => $now->epoch - 50,
+        },
+        'result is ok'
+    );
 
 };
 
 done_testing();
 
 sub create_contract {
-  my %args = @_;
+    my %args = @_;
 
-  my $client = $args{client};
-  #postpone 10 minutes to avoid conflicts
-  $now = $now->plus_time_interval('10m');
+    my $client = $args{client};
+    #postpone 10 minutes to avoid conflicts
+    $now = $now->plus_time_interval('10m');
 
-      my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                             epoch      => $now->epoch - 99,
-                                                                             underlying => 'R_50',
-                                                                             });
+    my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 99,
+        underlying => 'R_50',
+    });
 
     my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                             epoch      => $now->epoch - 52,
-                                                                             underlying => 'R_50',
-                                                                             });
+        epoch      => $now->epoch - 52,
+        underlying => 'R_50',
+    });
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                        epoch      => $now->epoch,
-                                                                        underlying => 'R_50',
-                                                                       });
-  my $underlying = BOM::Market::Underlying->new('R_50');
-  my $contract_data = {
-                       underlying   => $underlying,
-                       bet_type     => 'FLASHU',
-                       currency     => 'USD',
-                       stake        => 100,
-                       date_start   => $now->epoch - 100,
-                       date_expiry  => $now->epoch - 50,
-                       current_tick => $tick,
-                       entry_tick   => $old_tick1,
-                       exit_tick    => $old_tick2,
-                       barrier      => 'S0P',
-                      };
-  if($args{spread}){
-    delete $contract_data->{date_expiry};
-    delete $contract_data->{barrier};
-    $contract_data->{bet_type} = 'SPREADU';
-    $contract_data->{amount_per_point} = 1;
-    $contract_data->{stop_type} = 'point';
-    $contract_data->{stop_profit} = 10;
-    $contract_data->{stop_loss} = 10;
-  }
-  my $contract = produce_contract($contract_data);
+        epoch      => $now->epoch,
+        underlying => 'R_50',
+    });
+    my $underlying    = BOM::Market::Underlying->new('R_50');
+    my $contract_data = {
+        underlying   => $underlying,
+        bet_type     => 'FLASHU',
+        currency     => 'USD',
+        stake        => 100,
+        date_start   => $now->epoch - 100,
+        date_expiry  => $now->epoch - 50,
+        current_tick => $tick,
+        entry_tick   => $old_tick1,
+        exit_tick    => $old_tick2,
+        barrier      => 'S0P',
+    };
+    if ($args{spread}) {
+        delete $contract_data->{date_expiry};
+        delete $contract_data->{barrier};
+        $contract_data->{bet_type}         = 'SPREADU';
+        $contract_data->{amount_per_point} = 1;
+        $contract_data->{stop_type}        = 'point';
+        $contract_data->{stop_profit}      = 10;
+        $contract_data->{stop_loss}        = 10;
+    }
+    my $contract = produce_contract($contract_data);
 
     my $txn = BOM::Product::Transaction->new({
-                                              client        => $client,
-                                              contract      => $contract,
-                                              price         => 100,
-                                              payout        => $contract->payout,
-                                              amount_type   => 'stake',
-                                              purchase_date => $now->epoch - 101,
-                                             });
+        client        => $client,
+        contract      => $contract,
+        price         => 100,
+        payout        => $contract->payout,
+        amount_type   => 'stake',
+        purchase_date => $now->epoch - 101,
+    });
 
     my $error = $txn->buy(skip_validation => 1);
     ok(!$error, 'should no error to buy the contract');
     diag(Dumper($error)) if $error;
 
-  return  $contract;
+    return $contract;
 }
