@@ -712,7 +712,7 @@ subtest $method => sub {
     clear_mailbox();
     is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
     my $subject = '您的密码已更改。';
-    my %msg = get_email_by_address_subject(
+    my %msg     = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
@@ -1093,7 +1093,7 @@ subtest $method => sub {
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
     like($test_client->latest_environment, qr/LANG=ZH_CN/, 'latest environment updated');
     my $subject = '账户设置更改';
-    my %msg = get_email_by_address_subject(
+    my %msg     = get_email_by_address_subject(
         email   => $test_client->email,
         subject => qr/\Q$subject\E/
     );
