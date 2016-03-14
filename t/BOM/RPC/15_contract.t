@@ -335,6 +335,68 @@ subtest 'get_bid' => sub {
     is_deeply([sort keys %{$result}], $expected_keys);
 
 
+    $now = $now->plus_time_interval('10m');
+
+    $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                                             epoch      => $now->epoch - 99,
+                                                                             underlying => 'R_50',
+                                                                             quote      => 76.5996,
+                                                                             bid        => 76.6010,
+                                                                             ask        => 76.2030,
+                                                                            });
+
+    $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                                             epoch      => $now->epoch - 52,
+                                                                             underlying => 'R_50',
+                                                                             quote      => 76.6996,
+                                                                             bid        => 76.7010,
+                                                                             ask        => 76.3030,
+                                                                            });
+
+    $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                                        epoch      => $now->epoch,
+                                                                        underlying => 'R_50',
+                                                                       });
+    $underlying = BOM::Market::Underlying->new('R_50');
+    $contract = produce_contract({
+                                             underlying   => $underlying,
+                                             bet_type     => 'SPREADU',
+                                             currency     => 'USD',
+                                             stake        => 100,
+                                             date_start   => $now->epoch - 100,
+                                             date_expiry  => $now->epoch - 50,
+                                             current_tick => $tick,
+                                             entry_tick   => $old_tick1,
+                                             exit_tick    => $old_tick2,
+                                             barrier      => 'S0P',
+                                            });
+
+    $txn = BOM::Product::Transaction->new({
+                                              client        => $client,
+                                              contract      => $contract,
+                                              price         => 100,
+                                              payout        => $contract->payout,
+                                              amount_type   => 'stake',
+                                              purchase_date => $now->epoch - 101,
+                                             });
+
+    $error = $txn->buy(skip_validation => 1);
+    ok(!$error, 'should no error to buy the contract');
+    diag(Dumper($error)) if $error;
+
+    $params = {
+        language    => 'ZH_CN',
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => $client->currency,
+        is_sold     => 0,
+    };
+
+    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    diag(Dumper($result));
+
+
+
     #my $fmb;
     #lives_ok {
     #    $fmb = create_fmb(
