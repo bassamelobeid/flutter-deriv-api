@@ -31,7 +31,6 @@ subtest 'display_markets' => sub {
 
 subtest 'Market builds or configs test' => sub {
     subtest 'config' => sub {
-        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $config = $registry->get('config');
@@ -54,10 +53,10 @@ subtest 'Market builds or configs test' => sub {
         ok !$config->providers->[0];
         is $config->license, 'realtime';
         ok !$config->official_ohlc, 'Official OHLC';
+        ok !$config->integer_barrier, 'Integer barrier';
     };
 
     subtest 'forex' => sub {
-        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $forex = $registry->get('forex');
@@ -98,10 +97,10 @@ subtest 'Market builds or configs test' => sub {
 
         is $forex->license, 'realtime';
         ok !$forex->official_ohlc;
+        ok !$forex->integer_barrier, 'Integer barrier';
     };
 
     subtest 'commodities' => sub {
-        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $commodities = $registry->get('commodities');
@@ -143,10 +142,10 @@ subtest 'Market builds or configs test' => sub {
 
         is $commodities->license, 'realtime';
         ok !$commodities->official_ohlc;
+        ok !$commodities->integer_barrier, 'Integer barrier';
     };
 
     subtest 'indices' => sub {
-        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $indices = $registry->get('indices');
@@ -188,10 +187,10 @@ subtest 'Market builds or configs test' => sub {
 
         is $indices->license, 'daily';
         ok $indices->official_ohlc;
+        ok $indices->integer_barrier, 'Integer barrier';
     };
 
     subtest 'random' => sub {
-        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $random = $registry->get('random');
@@ -231,6 +230,7 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply($random->providers, ['random',]);
         is $random->license, 'realtime';
         ok !$random->official_ohlc;
+        ok !$random->integer_barrier, 'Integer barrier';
     };
 };
 
