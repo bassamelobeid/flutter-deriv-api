@@ -433,5 +433,5 @@ sub create_contract {
     ok(!$error, 'should no error to buy the contract');
     diag(Dumper($error)) if $error;
 
-
+  return  $contract;
 }
