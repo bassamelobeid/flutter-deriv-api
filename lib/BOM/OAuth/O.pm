@@ -3,6 +3,7 @@ package BOM::OAuth::O;
 use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
 use BOM::Platform::Client;
+use BOM::Platform::User;
 use BOM::Database::Model::OAuth;
 
 sub __oauth_model {
@@ -48,12 +49,16 @@ sub authorize {
     }
 
     my $loginid = $client->loginid;
+    my $user    = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
     ## confirm scopes
     my $is_all_approved = 0;
     if ($c->req->method eq 'POST' and ($c->csrf_token eq ($c->param('csrftoken') // ''))) {
         if ($c->param('confirm_scopes')) {
-            $is_all_approved = $oauth_model->confirm_scope($app_id, $loginid);
+            ## approval on all loginids
+            foreach my $c1 ($user->clients) {
+                $is_all_approved = $oauth_model->confirm_scope($app_id, $c1->loginid);
+            }
         } else {
             my $uri = $redirect_handle->($response_type, 'scope_denied', $state);
             return $c->redirect_to($uri);
@@ -76,8 +81,17 @@ sub authorize {
     }
 
     my $uri = Mojo::URL->new($redirect_uri);
-    my ($access_token, $expires_in) = $oauth_model->store_access_token_only($app_id, $loginid, @scopes);
-    $uri .= '#token=' . $access_token . '&expires_in=' . $expires_in;
+
+    ## create tokens for all loginids
+    my $i = 1;
+    my @accts;
+    foreach my $c1 ($user->clients) {
+        my ($access_token, $expires_in) = $oauth_model->store_access_token_only($app_id, $c1->loginid, @scopes);
+        push @accts, 'acct' . $i . '=' . $c1->loginid . '&token' . $i . '=' . $access_token;
+        $i++;
+    }
+
+    $uri .= '#' . join('&', @accts);
     $uri .= '&state=' . $state if defined $state;
 
     $c->redirect_to($uri);
