@@ -38,8 +38,11 @@ sub new_account_virtual {
         $args->{myaffiliates_token} = delete $args->{affiliate_token};
     }
 
-    my $is_token_valid = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $args->{email});
-    if ($is_token_valid) {
+    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $args->{email})->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err->{code},
+                message_to_client => $err->{message_to_client}});
+    } else {
         my $acc = BOM::Platform::Account::Virtual::create_account({
             details        => $args,
             email_verified => 1
@@ -54,19 +57,12 @@ sub new_account_virtual {
                 balance   => $account->balance
             };
         }
-        $err_code = $acc->{error};
-    } elsif (defined $is_token_valid and $is_token_valid == 0) {
-        $err_code = 'UnverifiedEmail';
-        $err_msg  = BOM::Platform::Locale::error_map()->{'email unverified'};
-    } else {
-        $err_code = 'ExpiredToken';
-        $err_msg  = localize('Your token has expired.');
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $acc->{error},
+                message_to_client => BOM::Platform::Locale::error_map()->{$acc->{error}}});
     }
 
-    return BOM::RPC::v3::Utility::create_error({
-        code              => $err_code,
-        message_to_client => $err_msg
-    });
+    return;
 }
 
 sub verify_email {

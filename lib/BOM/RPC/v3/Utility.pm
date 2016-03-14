@@ -131,13 +131,17 @@ sub is_verification_token_valid {
     my ($token, $email) = @_;
 
     my $verification_token = BOM::Platform::Token::Verification->new({token => $token});
-    return unless ($verification_token and $verification_token->token);
+    return create_error({
+            code              => "InvalidToken",
+            message_to_client => localize('Your token has expired.')}) unless ($verification_token and $verification_token->token);
 
     my $response;
     if ($verification_token->email and $verification_token->email eq $email) {
-        $response = 1;
+        $response = {status => 1};
     } else {
-        $response = 0;
+        $response = create_error({
+                code              => 'InvalidEmail',
+                message_to_client => localize('Email address is incorrect.')});
     }
     $verification_token->delete_token;
 
