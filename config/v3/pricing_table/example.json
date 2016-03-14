@@ -1,6 +1,8 @@
 {
     "pricing_table": 1,
-    "contract_category": "callput",
-    "date_expiry": "1456891200",
-    "symbol": "frxEURUSD"
+    "props": {
+    	"contract_category": "callput",
+    	"date_expiry": "1456891200",
+    	"symbol": "frxEURUSD"
+    }   
 }

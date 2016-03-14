@@ -12,7 +12,7 @@
         },
         "props": {
             "type": "object",
-            "description": "Object of Pricing table properties",
+            "description": "Object of Pricing table properties: {contract_category:.., date_expiry: .., symbol:..}",
             "required": "1"
         },
         "passthrough": {
