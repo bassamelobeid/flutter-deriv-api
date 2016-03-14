@@ -330,8 +330,8 @@ subtest 'get_bid' => sub {
                 current_spot
                 entry_spot
                ))];
-    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    diag(Dumper($result));
+ #   my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+ #   diag(Dumper($result));
     is_deeply([sort keys %{$result}], $expected_keys);
 
 
