@@ -165,9 +165,9 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
               ->has_error
-              ->error_code_is('invalid', 'It should return error when try to create acc to real client')
+              ->error_code_is('invalid', 'It should return error when try to create new client using exists real client')
               ->error_message_is('Извините, но открытие счёта недоступно.',
-                                 'It should return error when try to create acc to real client');
+                                 'It should return error when try to create new client using exists real client');
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token( $vclient->loginid, 'test token' );
         $rpc_ct->call_ok($method, $params)
