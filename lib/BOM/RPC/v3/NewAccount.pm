@@ -393,11 +393,11 @@ sub jp_knowledge_test {
 
     my $next_dt;
 
-    if ($client_status = $jp_client->get_status('jp_knowledge_test_pending')) {
+    if ($jp_client->get_status('jp_knowledge_test_pending')) {
         # client haven't taken any test before
 
         $next_dt = _knowledge_test_available_date();
-    } elsif ($client_status = $jp_client->get_status('jp_knowledge_test_fail')) {
+    } elsif ($jp_client->get_status('jp_knowledge_test_fail')) {
         # can't take test > 1 within same business day
 
         my $tests      = from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
