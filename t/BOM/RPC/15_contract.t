@@ -329,6 +329,14 @@ subtest $method => sub {
   $client->clr_status('disabled');
   $client->save;
 
+  $c->call_ok($method, $params)->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'will report error if no short_code and currency');
+
+  my $contract = create_contract(client => $client, spread => 0);
+  $params->{short_code} = $contract->shortcode;
+  $params->{currency} = 'USD';
+  diag(Dumper($c->call_ok($method, $params)->has_no_error->result));
+
+  
 };
 
 done_testing();
