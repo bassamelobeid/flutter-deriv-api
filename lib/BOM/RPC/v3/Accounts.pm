@@ -452,6 +452,53 @@ sub cashier_password {
     }
 }
 
+sub reset_password {
+    my $params = shift;
+    my ($client_ip, $args) = @{$params}{qw/client_ip args/};
+    my $email = BOM::Platform::SessionCookie->new({token => $args->{verification_code}})->email;
+    unless (BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => "InvalidVerificationCode",
+                message_to_client => localize("Your reset password token has expired.")});
+    }
+
+    if (
+        my $pass_error = BOM::RPC::v3::Utility::_check_password({
+                new_password => $args->{new_password},
+                verify_password => $args->{verify_password}
+            }))
+    {
+        return $pass_error;
+    }
+
+    my $user = BOM::Platform::User->new({email => $email});
+
+    my $new_password = BOM::System::Password::hashpw($args->{new_password});
+    $user->password($new_password);
+    $user->save;
+
+    foreach my $obj ($user->clients) {
+        $obj->password($new_password);
+        $obj->save;
+    }
+
+    BOM::System::AuditLog::log('password has been changed', $email);
+    send_email({
+            from    => BOM::Platform::Static::Config::get_customer_support_email(),
+            to      => $email,
+            subject => localize('Your password has been reset.'),
+            message => [
+                localize(
+                    'The password for your account [_1] has been reset. If this request was not performed by you, please immediately contact Customer Support.',
+                    $email
+                )
+            ],
+            use_email_template => 1,
+        });
+
+    return {status => 1};
+}
+
 sub get_settings {
     my $params = shift;
 

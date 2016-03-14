@@ -149,19 +149,24 @@ sub _check_password {
         my $user_pass    = $args->{user_pass};
 
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'ChangePasswordError',
+                code              => 'PasswordError',
                 message_to_client => localize('Old password is wrong.')}) if (not BOM::System::Password::checkpw($old_password, $user_pass));
 
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'ChangePasswordError',
+                code              => 'PasswordError',
                 message_to_client => localize('New password is same as old password.')}) if ($new_password eq $old_password);
+    } elsif (keys %$args == 2) {
+        my $verify_password = $args->{verify_password};
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'PasswordError',
+                message_to_client => localize('Password does not match confirmation.')}) if ($new_password ne $verify_password);
     }
     return BOM::RPC::v3::Utility::create_error({
-            code              => 'ChangePasswordError',
+            code              => 'PasswordError',
             message_to_client => localize('Password is not strong enough.')}) if (not Data::Password::Meter->new(14)->strong($new_password));
 
     return BOM::RPC::v3::Utility::create_error({
-            code              => 'ChangePasswordError',
+            code              => 'PasswordError',
             message_to_client => localize('Password should be at least six characters, including lower and uppercase letters with numbers.')}
     ) if (length($new_password) < 6 or $new_password !~ /[0-9]+/ or $new_password !~ /[a-z]+/ or $new_password !~ /[A-Z]+/);
 

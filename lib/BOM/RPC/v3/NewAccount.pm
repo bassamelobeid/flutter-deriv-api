@@ -66,7 +66,7 @@ sub new_account_virtual {
 sub verify_email {
     my $params = shift;
 
-    if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'lost_password') {
+    if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'reset_password') {
         send_email({
                 from    => BOM::Platform::Static::Config::get_customer_support_email(),
                 to      => $params->{email},
