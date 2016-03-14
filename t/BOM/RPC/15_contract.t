@@ -291,10 +291,10 @@ subtest 'get_bid' => sub {
     ok(!$error, 'should no error to buy the contract');
     diag(Dumper($error)) if $error;
 
-    my $params = {
+    $params = {
         language    => 'ZH_CN',
         short_code  => $contract->short_code,
-        contract_id => $contract->id
+        contract_id => $contract->id,
         currency    => $client->currency,
         is_sold     => 0,
     };
