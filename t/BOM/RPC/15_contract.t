@@ -17,6 +17,16 @@ use Data::Dumper;
 
 initialize_realtime_ticks_db();
 my $now        = Date::Utility->new('2005-09-21 06:46:00');
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                                                                        broker_code => 'VRTC',
+                                                                       });
+$client->deposit_virtual_funds;
+
+my $token = BOM::Platform::SessionCookie->new(
+                                              loginid => $test_client->loginid,
+                                              email   => $email
+                                             )->token;
+
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -236,10 +246,6 @@ subtest 'send_ask' => sub {
 };
 
 subtest 'get_bid' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
-    $client->deposit_virtual_funds;
     my $params = {language => 'ZH_CN'};
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')->error_message_is('Sorry, an error occurred while processing your request.');
 
@@ -304,74 +310,26 @@ subtest 'get_bid' => sub {
                             );
     is_deeply([sort keys %{$result}], [sort @expected_keys], 'keys of result is correct');
 
-
-
-
-    #my $fmb;
-    #lives_ok {
-    #    $fmb = create_fmb(
-    #        $client,
-    #        buy_bet    => 1,
-    #        underlying => 'R_50',
-    #    )->financial_market_bet_record;
-    #};
-    #
-    #my $params = {
-    #    language    => 'ZH_CN',
-    #    short_code  => $fmb->{short_code},
-    #    contract_id => $fmb->{id},
-    #    currency    => $client->currency,
-    #    is_sold     => $fmb->{is_sold},
-    #};
-    #
-    #my $expected_keys = [
-    #    sort (qw(ask_price 
-    #            bid_price
-    #            current_spot_time
-    #            contract_id
-    #            underlying
-    #            is_expired
-    #            is_valid_to_sell
-    #            is_forward_starting
-    #            is_path_dependent
-    #            is_intraday
-    #            date_start
-    #            date_expiry
-    #            date_settlement
-    #            currency
-    #            longcode
-    #            shortcode
-    #            payout
-    #
-    #            barrier
-    #            exit_tick_time
-    #            exit_tick
-    #            entry_tick
-    #            entry_tick_time
-    #            current_spot
-    #            entry_spot
-    #           ))];
-    #my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    #diag(Dumper($result));
-    #is_deeply([sort keys %{$result}], $expected_keys);
-    ok(1);
 };
 
-done_testing();
+my $method = 'get_contract_details';
+subtest $method => sub {
+  my $params = {
+                language => 'zh_CN',
+                token    => '12345'
+               };
 
-sub create_fmb {
-    my ($client, %params) = @_;
+  $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'invalid token');
+  $client->set_status('disabled', 1, 'test');
+  $client->save;
+  $params->{token} = $token;
+  $c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'invalid token');
+  $test_client->clr_status('disabled');
+  $test_client->save;
 
-    my $account = $client->set_default_account('USD');
-    return BOM::Test::Data::Utility::UnitTestDatabase::create_fmb_with_ticks({
-        type               => 'fmb_higher_lower_call_buy',
-        short_code_prefix  => 'CALL_R_50_26.49',
-        short_code_postfix => 'S0P_0',
-        account_id         => $account->id,
-        buy_bet            => 0,
-        %params,
-    });
 }
+
+done_testing();
 
 sub create_contract {
   my %args = @_;
