@@ -532,7 +532,7 @@ sub _get_economic_events {
 
         my $news_parameters = $news_categories->{$key};
         next unless $news_parameters;
-        $news_parameters->{release_time} = $event->{release_date}->epoch;
+        $news_parameters->{release_time} = $event->{release_date};
         push @events, $news_parameters;
     }
 

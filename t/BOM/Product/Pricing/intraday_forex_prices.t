@@ -127,7 +127,7 @@ subtest 'prices with economic events' => sub {
             events        => [{
                     symbol       => 'USD',
                     impact       => 5,
-                    release_date => $event_date,
+                    release_date => $event_date->epoch,
                     event_name   => 'Construction Spending m/m'
                 }]});
     foreach my $contract_type (@ct) {
