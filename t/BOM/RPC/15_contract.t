@@ -258,7 +258,7 @@ subtest 'get_bid' => sub {
     };
 
     my $expected_keys = [
-        sort (qw(ask_price
+        sort (qw(ask_price 
                 bid_price
                 current_spot_time
                 contract_id
@@ -274,7 +274,14 @@ subtest 'get_bid' => sub {
                 currency
                 longcode
                 shortcode
-                payout              ))];
+                payout
+
+                barrier
+                exit_tick_time
+                exit_tick
+                current_spot
+                entry_spot
+               ))];
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     diag(Dumper($result));
     is_deeply([sort keys %{$result}], $expected_keys);
