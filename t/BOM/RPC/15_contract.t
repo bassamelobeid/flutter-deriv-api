@@ -242,7 +242,7 @@ subtest 'get_bid' => sub {
     my $params = {language => 'ZH_CN'};
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')->error_message_is('Sorry, an error occurred while processing your request.');
 
-    my $contract = create_contract(spread => 0);
+    my $contract = create_contract(client => $client, spread => 0);
 
 
     $params = {
@@ -288,7 +288,7 @@ subtest 'get_bid' => sub {
  #   diag(Dumper($result));
     is_deeply([sort keys %{$result}], $expected_keys);
 
-    $contract = create_contract(spread => 1);
+    $contract = create_contract(client => $client, spread => 1);
 
     $params = {
         language    => 'ZH_CN',
@@ -373,6 +373,7 @@ my $now        = Date::Utility->new('2005-09-21 06:46:00');
 sub create_contract {
   my %args = @_;
 
+  my $client = $args{client};
   #postpone 10 minutes to avoid conflicts
   $now = $now->plus_time_interval('10m');
 
