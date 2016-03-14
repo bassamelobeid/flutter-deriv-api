@@ -293,7 +293,7 @@ subtest 'get_bid' => sub {
 
     $params = {
         language    => 'ZH_CN',
-        short_code  => $contract->short_code,
+        short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
         is_sold     => 0,
