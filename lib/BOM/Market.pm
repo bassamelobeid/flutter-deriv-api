@@ -73,7 +73,7 @@ sub _build_weekend_outlier_tick {
 }
 
 has integer_number_of_day => (
-    is => 'ro',
+    is      => 'ro',
     default => 0,
 );
 
