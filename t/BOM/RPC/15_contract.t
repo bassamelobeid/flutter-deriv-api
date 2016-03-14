@@ -16,6 +16,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Data::Dumper;
 
 initialize_realtime_ticks_db();
+my $now        = Date::Utility->new('2005-09-21 06:46:00');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -369,7 +370,6 @@ sub create_fmb {
     });
 }
 
-my $now        = Date::Utility->new('2005-09-21 06:46:00');
 sub create_contract {
   my %args = @_;
 
