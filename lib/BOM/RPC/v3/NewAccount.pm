@@ -342,7 +342,7 @@ sub _next_allowable_knowledge_test_epoch {
     # If last test is taken on Friday, client can only repeat test on next business day, which is Monday
     # By right no test should be taken on Sat & Sun, but is handled here just in case.
     if ($last_dt->day_of_week >= 5) {
-        $next_epoch += 86400*2;
+        $next_epoch += 86400 * (7 - $last_dt->day_of_week);
     }
 
     return $next_epoch;
