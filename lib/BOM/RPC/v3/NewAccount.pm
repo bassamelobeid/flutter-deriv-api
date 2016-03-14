@@ -140,7 +140,7 @@ sub new_account_real {
 
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'invalid',
+                code              => 'InvalidAccount',
                 message_to_client => $error_map->{'invalid'}});
     }
 
@@ -149,8 +149,8 @@ sub new_account_real {
         _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => $err,
-                message_to_client => $error_map->{$err}});
+                code              => $err->{code},
+                message_to_client => $err->{message}});
     }
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
@@ -193,15 +193,15 @@ sub new_account_maltainvest {
         and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest')
     {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'invalid',
+                code              => 'InvalidAccount',
                 message_to_client => $error_map->{'invalid'}});
     }
 
     my $details_ref = _get_client_details($args, $client, 'MF');
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => $err,
-                message_to_client => $error_map->{$err}});
+                code              => $err->{code},
+                message_to_client => $err->{message}});
     }
 
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
@@ -244,7 +244,7 @@ sub new_account_japan {
 
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'invalid',
+                code              => 'InvalidAccount',
                 message_to_client => $error_map->{'invalid'}});
     }
 
@@ -252,9 +252,10 @@ sub new_account_japan {
     my $details_ref = _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => 'jp')->real_account_broker->code);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => $err,
-                message_to_client => $error_map->{$err}});
+                code              => $err->{code},
+                message_to_client => $err->{message}});
     }
+
     my $details = $details_ref->{details};
     $details->{$_} = $args->{$_} for ('gender', 'occupation', 'daily_loss_limit');
 
@@ -328,7 +329,11 @@ sub _get_client_details {
 
         # Japan real a/c has NO salutation
         next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode salutation));
-        return {error => 'invalid'} if (not $details->{$key});
+        return {
+            error => {
+                code    => 'InsufficientAccountDetails',
+                message => localize('Please provide complete details for account opening.')}}
+            if (not $details->{$key});
     }
     return {details => $details};
 }
