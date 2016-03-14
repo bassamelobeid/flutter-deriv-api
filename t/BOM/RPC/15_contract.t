@@ -17,13 +17,15 @@ use Data::Dumper;
 
 initialize_realtime_ticks_db();
 my $now        = Date::Utility->new('2005-09-21 06:46:00');
+my $email = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                         broker_code => 'VRTC',
+                                                                        email => $email,
                                                                        });
 $client->deposit_virtual_funds;
 
 my $token = BOM::Platform::SessionCookie->new(
-                                              loginid => $test_client->loginid,
+                                              loginid => $client->loginid,
                                               email   => $email
                                              )->token;
 
@@ -327,7 +329,7 @@ subtest $method => sub {
   $client->clr_status('disabled');
   $client->save;
 
-}
+};
 
 done_testing();
 
