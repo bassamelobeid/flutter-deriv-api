@@ -11,6 +11,7 @@ use POSIX qw/ ceil /;
 
 use Test::BOM::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Platform::Token::Verification;
 
 use utf8;
 
@@ -56,19 +57,20 @@ subtest $method => sub {
     $rpc_ct->call_ok($method, $params)
             ->has_no_system_error
             ->has_error
-            ->error_code_is('ChangePasswordError', 'If password is weak it should return error')
+            ->error_code_is('PasswordError', 'If password is weak it should return error')
             ->error_message_is('Пароль недостаточно надёжный.', 'If password is weak it should return error_message');
 
     $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
     $rpc_ct->call_ok($method, $params)
             ->has_no_system_error
             ->has_error
-            ->error_code_is('email unverified', 'If email verification_code is wrong it should return error')
-            ->error_message_is('Ваш электронный адрес не подтвержден.', 'If email verification_code is wrong it should return error_message');
+            ->error_code_is('InvalidToken', 'If email verification_code is wrong it should return error')
+            ->error_message_is('Your token has expired.', 'If email verification_code is wrong it should return error_message');
 
     $params->{args}->{verification_code} =
-        BOM::Platform::SessionCookie->new(
+        BOM::Platform::Token::Verification->new(
             email => $email,
+            created_for => 'account_opening'
         )->token;
     $rpc_ct->call_ok($method, $params)
             ->has_no_system_error
@@ -77,8 +79,9 @@ subtest $method => sub {
             ->error_message_is('Извините, но открытие счёта недоступно.', 'If could not be created account it should return error_message');
 
     $params->{args}->{verification_code} =
-        BOM::Platform::SessionCookie->new(
+        BOM::Platform::Token::Verification->new(
             email => $email,
+            created_for => 'account_opening'
         )->token;
     $params->{args}->{residence} = 'id';
     $rpc_ct->call_ok($method, $params)
@@ -165,7 +168,7 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
               ->has_error
-              ->error_code_is('invalid', 'It should return error when try to create new client using exists real client')
+              ->error_code_is('InvalidAccount', 'It should return error when try to create new client using exists real client')
               ->error_message_is('Извините, но открытие счёта недоступно.',
                                  'It should return error when try to create new client using exists real client');
 
@@ -173,8 +176,8 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
               ->has_error
-              ->error_code_is('invalid', 'It should return error when try to create account without residence')
-              ->error_message_is('Извините, но открытие счёта недоступно.',
+              ->error_code_is('InsufficientAccountDetails', 'It should return error when try to create account without residence')
+              ->error_message_is('Please provide complete details for account opening.',
                                  'It should return error when try to create account without residence');
 
         $params->{args}->{residence} = 'id';
@@ -184,8 +187,8 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
               ->has_error
-              ->error_code_is('invalid', 'It should return error if missing any details')
-              ->error_message_is('Извините, но открытие счёта недоступно.',
+              ->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
+              ->error_message_is('Please provide complete details for account opening.',
                                  'It should return error if missing any details');
 
         $params->{args}->{first_name} = $client_details->{first_name};
@@ -279,7 +282,7 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
               ->has_error
-              ->error_code_is('invalid', 'It should return error if client residense does not fit for maltainvest')
+              ->error_code_is('InvalidAccount', 'It should return error if client residense does not fit for maltainvest')
               ->error_message_is('Извините, но открытие счёта недоступно.',
                                  'It should return error if client residense does not fit for maltainvest');
 
@@ -290,8 +293,8 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
               ->has_error
-              ->error_code_is('invalid', 'It should return error if client does not accept risk')
-              ->error_message_is('Извините, но открытие счёта недоступно.',
+              ->error_code_is('InsufficientAccountDetails', 'It should return error if client does not accept risk')
+              ->error_message_is('Please provide complete details for account opening.',
                                  'It should return error if client does not accept risk');
 
         $params->{args}->{residence} = 'de';
@@ -301,8 +304,8 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
               ->has_error
-              ->error_code_is('invalid', 'It should return error if missing any details')
-              ->error_message_is('Извините, но открытие счёта недоступно.',
+              ->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
+              ->error_message_is('Please provide complete details for account opening.',
                                  'It should return error if missing any details');
 
         $params->{args}->{first_name} = $client_details->{first_name};
@@ -408,7 +411,7 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
               ->has_error
-              ->error_code_is('invalid', 'It should return error if client residense does not fit for japan')
+              ->error_code_is('InvalidAccount', 'It should return error if client residense does not fit for japan')
               ->error_message_is('Извините, но открытие счёта недоступно.',
                                  'It should return error if client residense does not fit for japan');
 
@@ -422,8 +425,8 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
               ->has_error
-              ->error_code_is('invalid', 'It should return error if missing any details')
-              ->error_message_is('Извините, но открытие счёта недоступно.',
+              ->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
+              ->error_message_is('Please provide complete details for account opening.',
                                  'It should return error if missing any details');
 
         $params->{args}->{first_name} = $client_details->{first_name};
