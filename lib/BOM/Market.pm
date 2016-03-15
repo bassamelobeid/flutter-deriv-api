@@ -72,6 +72,11 @@ sub _build_weekend_outlier_tick {
     return shift->outlier_tick;
 }
 
+has integer_number_of_day => (
+    is      => 'ro',
+    default => 0,
+);
+
 =head2 display_current_spot
 
 A Boolean that determines if we are allowed to show current spot of this market to user
