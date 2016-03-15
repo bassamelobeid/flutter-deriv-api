@@ -236,6 +236,7 @@ my @dispatch = (
     ['login_history',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history,            1, 'read'],
     ['set_account_currency',     \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency,     1, 'admin'],
     ['set_financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_financial_assessment, 1, 'admin'],
+    ['get_financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_financial_assessment, 1, 'admin'],
 
     ['verify_email', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0],
     [
