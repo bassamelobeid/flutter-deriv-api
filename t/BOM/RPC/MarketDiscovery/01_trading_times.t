@@ -11,7 +11,7 @@ my $method = 'trading_times';
 my $params = {language => 'ZH_CN'};
 my $result = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
 ok($result->{markets}[0]{submarkets}, 'have sub markets key');
-diag scalar(@{$result->{markets}});
+diag $result->{markets}[0]{submarkets}{name};
 
 done_testing();
 
