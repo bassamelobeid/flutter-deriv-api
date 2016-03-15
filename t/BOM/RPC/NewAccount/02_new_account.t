@@ -444,13 +444,17 @@ subtest $method => sub {
         $user->email_verified(1);
         $user->save;
 
+        {
+          #suppress warning because we want to test this error
+          local $SIG{__WARN__} = sub {};
+
         $rpc_ct->call_ok($method, $params)
               ->has_no_system_error
               ->has_error
               ->error_code_is('insufficient score', 'It should return error if client has insufficient score')
               ->error_message_is('К сожалению. Ваши ответы на вышеперечисленные вопросы указывают на то, что у Вас недостаточно финансовых средств или торгового опыта, чтобы открыть торговый счёт в данное время.',
                                  'It should return error if client has insufficient score');
-
+        }
         $params->{args}->{annual_income} = '50-100 million JPY';
         $params->{args}->{trading_experience_public_bond} = 'Over 5 years';
         $params->{args}->{trading_experience_margin_fx} = 'Over 5 years';
