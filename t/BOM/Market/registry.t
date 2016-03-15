@@ -31,13 +31,12 @@ subtest 'display_markets' => sub {
 
 subtest 'Market builds or configs test' => sub {
     subtest 'config' => sub {
-        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $config = $registry->get('config');
 
         isa_ok $config, 'BOM::Market';
-        ok !$config->display_name,      'Display Name';
+        ok !$config->display_name, 'Display Name';
         ok !$config->equity;
         ok !$config->disabled,                 'disabled';
         ok !$config->reduced_display_decimals, 'Reduced Display Decimals';
@@ -53,18 +52,18 @@ subtest 'Market builds or configs test' => sub {
 
         ok !$config->providers->[0];
         is $config->license, 'realtime';
-        ok !$config->official_ohlc, 'Official OHLC';
+        ok !$config->official_ohlc,         'Official OHLC';
+        ok !$config->integer_number_of_day, 'integer number of day';
     };
 
     subtest 'forex' => sub {
-        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $forex = $registry->get('forex');
 
         isa_ok $forex, 'BOM::Market';
         is $forex->display_name, 'Forex', 'Correct display name';
-        is $forex->display_order,     1;
+        is $forex->display_order, 1;
         ok !$forex->equity;
         ok !$forex->disabled, 'But its not disabled';
         ok $forex->reduced_display_decimals;
@@ -102,10 +101,10 @@ subtest 'Market builds or configs test' => sub {
 
         is $forex->license, 'realtime';
         ok !$forex->official_ohlc;
+        ok $forex->integer_number_of_day, 'integer number of day';
     };
 
     subtest 'commodities' => sub {
-        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $commodities = $registry->get('commodities');
@@ -151,10 +150,10 @@ subtest 'Market builds or configs test' => sub {
 
         is $commodities->license, 'realtime';
         ok !$commodities->official_ohlc;
+        ok $commodities->integer_number_of_day, 'integer number of day';
     };
 
     subtest 'indices' => sub {
-        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $indices = $registry->get('indices');
@@ -200,10 +199,10 @@ subtest 'Market builds or configs test' => sub {
 
         is $indices->license, 'daily';
         ok $indices->official_ohlc;
+        ok !$indices->integer_number_of_day, 'integer number of day';
     };
 
     subtest 'random' => sub {
-        plan tests => 17;
         my $registry = BOM::Market::Registry->instance;
 
         my $random = $registry->get('random');
@@ -247,6 +246,7 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply($random->providers, ['random',]);
         is $random->license, 'realtime';
         ok !$random->official_ohlc;
+        ok !$random->integer_number_of_day, 'integer number of day';
     };
 };
 
