@@ -5,6 +5,7 @@ use warnings;
 
 use BOM::Market::UnderlyingDB;
 use BOM::RPC::v3::Utility;
+use BOM::Platform::Context qw(localize);
 
 sub validate_table_props {
 
@@ -16,7 +17,7 @@ sub validate_table_props {
                 message_to_client => BOM::Platform::Context::localize("Wrong pricing table props")});
     }
 
-    my %symbols = map { ($_, 1) } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my %symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market    => 'forex',
         submarket => 'major_pairs'
     );
