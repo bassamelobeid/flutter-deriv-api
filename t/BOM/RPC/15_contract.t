@@ -228,25 +228,23 @@ subtest 'send_ask' => sub {
         $result->{longcode},
         '如果随机 50 指数在合约开始时间之后到1 分钟时严格高于入市现价，将获得USD100.00的赔付额。',
         'long code  is correct'
-      );
+    );
     {
-      local $SIG{'__WARN__'} = sub { };
-      $c->call_ok(
-                  'send_ask',
-                  {
-                   language => 'ZH_CN',
-                   args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
+        local $SIG{'__WARN__'} = sub { };
+        $c->call_ok(
+            'send_ask',
+            {
+                language => 'ZH_CN',
+                args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
 
+        my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
+        $mock_contract->mock('get_ask', sub { die });
+        $c->call_ok(
+            'send_ask',
+            {
+                language => 'ZH_CN',
+                args     => {}})->has_error->error_code_is('pricing error')->error_message_is('无法提供合约售价。');
     }
-
-    my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
-    $mock_contract->mock('get_ask', sub { die });
-    $c->call_ok(
-        'send_ask',
-        {
-            language => 'ZH_CN',
-            args     => {}})->has_error->error_code_is('pricing error')->error_message_is('无法提供合约售价。');
-
 };
 
 subtest 'get_bid' => sub {
@@ -343,8 +341,9 @@ subtest $method => sub {
     $params->{short_code} = $contract->shortcode;
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
-            'symbol'   => 'R_50',
-            'longcode' => "如果随机 50 指数在合约开始时间之后到50 秒钟时严格高于入市现价，将获得USD194.22的赔付额。",
+            'symbol' => 'R_50',
+            'longcode' =>
+                "如果随机 50 指数在合约开始时间之后到50 秒钟时严格高于入市现价，将获得USD194.22的赔付额。",
             'display_name' => 'Random 50 Index',
             'date_expiry'  => $now->epoch - 50,
         },
