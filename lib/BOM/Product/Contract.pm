@@ -2157,12 +2157,9 @@ sub _has_ticks_before_close {
 
 # Validation methods.
 
-sub _validate_underlying {
+# Is this underlying or contract is disabled/suspended from trading.
+sub _validate_tradability {
     my $self = shift;
-
-    my @errors;
-    my $underlying      = $self->underlying;
-    my $translated_name = $underlying->translated_display_name();
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->trading) {
         push @errors,
@@ -2171,6 +2168,10 @@ sub _validate_underlying {
             message_to_client => localize("Trading is suspended at the moment."),
             };
     }
+
+    my $underlying      = $self->underlying;
+    my $translated_name = $underlying->translated_display_name();
+
     if ($underlying->is_trading_suspended) {
         push @errors,
             {
@@ -2178,6 +2179,27 @@ sub _validate_underlying {
             message_to_client => localize('Trading on [_1] is suspended at the moment.', $translated_name),
             };
     }
+
+    my $contract_code = $self->code;
+    # check if trades are suspended on that claimtype
+    my $suspend_claim_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
+    if (@$suspend_claim_types and first { $contract_code eq $_ } @{$suspend_claim_types}) {
+        push @errors,
+            {
+            message           => format_error_string('Trading suspended for contract type', code => $contract_code),
+            message_to_client => localize("Trading is suspended at the moment."),
+            };
+    }
+
+    return @errors;
+}
+
+sub _validate_underlying {
+    my $self = shift;
+
+    my @errors;
+    my $underlying      = $self->underlying;
+    my $translated_name = $underlying->translated_display_name();
 
     if (grep { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions}) {
         push @errors,
@@ -2224,16 +2246,6 @@ sub _validate_contract {
     my $self = shift;
 
     my @errors;
-    my $contract_code = $self->code;
-    # check if trades are suspended on that claimtype
-    my $suspend_claim_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
-    if ($suspend_claim_types and first { $contract_code eq $_ } @{$suspend_claim_types}) {
-        push @errors,
-            {
-            message           => format_error_string('Trading suspended for contract type', code => $contract_code),
-            message_to_client => localize("Trading is suspended at the moment."),
-            };
-    }
     my $expiry_type = $self->expiry_type;
     if (not $self->offering_specifics->{permitted}) {
         my $message =
