@@ -7,6 +7,7 @@ commodities:
     weekend_outlier_tick: 0.05
     display_name: "Commodities"
     display_order: 4
+    integer_number_of_day: 1
     max_suspend_trading_feed_delay: '2m'
     eod_blackout_expiry: '1m'
     eod_blackout_start: '0s'
@@ -46,6 +47,7 @@ forex:
     deep_otm_threshold: 0.05
     display_name: "Forex"
     display_order: 1
+    integer_number_of_day: 1
     eod_blackout_expiry: '0s'
     eod_blackout_start: '0s'
     sod_blackout_start: '0s'
