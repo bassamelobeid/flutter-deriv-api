@@ -190,8 +190,6 @@ subtest 'get_ask' => sub {
                 code    => "ContractBuyValidationError",
             }});
 
-    #TODO I should  tesk the error of 'ContractBuyValidationError', But I don't know how to build a scenario to get there.
-
     is_deeply(
         BOM::RPC::v3::Contract::get_ask({}),
         {
@@ -217,10 +215,6 @@ subtest 'send_ask' => sub {
             "duration_unit" => "s",
             "symbol"        => "R_50",
         }};
-    #TODO:  Here it will print 2 warnings:
-    # Use of uninitialized value $country in hash element at /home/git/regentmarkets/bom-platform/lib/BOM/Platform/Runtime.pm line 130.
-    #Use of uninitialized value $country in hash element at /home/git/regentmarkets/bom-platform/lib/BOM/Platform/Runtime.pm line 122.
-    # That's because the request has no country_code. I don't know why the function _build_country_code doesn't run yet.
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys = [sort (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout))];
