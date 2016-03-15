@@ -2161,6 +2161,7 @@ sub _has_ticks_before_close {
 sub _validate_tradability {
     my $self = shift;
 
+    my @errors;
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->trading) {
         push @errors,
             {
@@ -2258,7 +2259,7 @@ sub _validate_contract {
                 'trying unauthorised combination',
                 underlying  => $self->underlying->symbol,
                 expiry_type => $expiry_type,
-                code        => $contract_code,
+                code        => $self->code,
             ),
             message_to_client => $message,
             };
