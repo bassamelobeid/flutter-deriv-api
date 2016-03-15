@@ -42,4 +42,8 @@ sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomony
     return __call_rpc(shift, 'app_delete', @_);
 }
 
+sub oauth_apps {
+    return __call_rpc(shift, 'oauth_apps', @_);
+}
+
 1;
