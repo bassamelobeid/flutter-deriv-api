@@ -23,8 +23,14 @@
             "description":"Application id"
           },
           "last_used": {
-            "type": ["datetime", "null"],
+            "type": ["string", "null"],
             "description":"Application last used"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }
