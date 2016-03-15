@@ -71,6 +71,7 @@ ok $used_apps->[0]->{last_used}, 'last_used ok';
 ok $m->revoke_app($test_appid, $test_loginid);
 $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 0, 'not confirmed after revoke';
+is $m->get_loginid_by_access_token($access_token), undef, 'token is not valid anymore';
 
 ## delete again will just return 0
 $delete_st = $m->delete_app($test_user_id, $app2->{app_id});
