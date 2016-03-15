@@ -76,7 +76,6 @@ sub ticks {
     my $args = shift;
 
     $args = _validate_start_end($args);
-
     my $ul    = $args->{ul} || die 'no underlying';
     my $start = $args->{start};
     my $end   = $args->{end};
