@@ -369,8 +369,8 @@ sub _set_predefined_barriers {
         my @keys = keys %$available_barriers;
         my @barriers = sort map { $available_barriers->{$_}->{barrier} } @keys;
 
-        $contract->{expired_barriers} = $contract->{barrier_category} ne 'american' ? [] : map { $available_barriers->{$_}->{barrier} }
-            grep { $available_barriers->{$_}->{expired} } @keys;
+        $contract->{expired_barriers} = $contract->{barrier_category} ne 'american' ? [] : [map { $available_barriers->{$_}->{barrier} }
+            grep { $available_barriers->{$_}->{expired} } @keys];
         $contract->{available_barriers} = \@barriers;
         $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @barriers;
     } elsif ($contract->{barriers} == 2) {
