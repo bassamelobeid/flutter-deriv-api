@@ -185,7 +185,7 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
             my $res = decode_json($t->message->[1]);
 
             is($res->{error}->{code},           'InvalidAccount', "no MF upgrade for $broker");
-            is($res->{new_account_maltainvest}, undef,     'NO account created');
+            is($res->{new_account_maltainvest}, undef,            'NO account created');
         };
     }
 };
