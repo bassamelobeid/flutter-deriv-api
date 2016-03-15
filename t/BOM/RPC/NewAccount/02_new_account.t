@@ -70,12 +70,15 @@ subtest $method => sub {
         BOM::Platform::SessionCookie->new(
             email => $email,
         )->token;
+    {
+      #suppress warning because we want to test this error
+      local $SIG{__WARN__} = sub {};
     $rpc_ct->call_ok($method, $params)
             ->has_no_system_error
             ->has_error
             ->error_code_is('invalid', 'If could not be created account it should return error')
             ->error_message_is('Извините, но открытие счёта недоступно.', 'If could not be created account it should return error_message');
-
+    }
     $params->{args}->{verification_code} =
         BOM::Platform::SessionCookie->new(
             email => $email,
