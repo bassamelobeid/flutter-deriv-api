@@ -49,7 +49,7 @@ subtest $method => sub {
 
 $method = 'active_symbols' ;
 subtest $method => sub {
-  my $params = {language => 'ZH_CN'};
+  my $params = {language => 'ZH_CN', args => {active_symbols => 'full'}};
   my $result = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
   diag Dumper($result);
 };
