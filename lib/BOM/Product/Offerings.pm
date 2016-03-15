@@ -123,9 +123,13 @@ sub get_offerings_with_filter {
     croak 'Must supply an output key' unless defined $what;
 
     my $fb = get_offerings_flyby();
-    $args->{landing_company} = 'costarica' unless $args->{landing_company};
 
-    return $fb->query($args, [$what]);
+    # if we are filtering and landing company is not specified, defaults to costarica
+    if (keys %$args and not $args->{landing_company}) {
+        $args->{landing_company} = 'costarica';
+    }
+
+    return (not keys %$args) ? $fb->values_for_key($what) : $fb->query($args, [$what]);
 }
 
 # This skips the FlyBy in favor of digging in directly when the way to find the info
