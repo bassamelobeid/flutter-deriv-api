@@ -13,3 +13,5 @@ my $result = $c->call_ok($method, $params)->has_no_system_error->has_no_error->r
 is_deeply(['markets'], [keys %$result] 'have markets key');
 diag Dumper $result->{markets}[0];
 
+done_testing();
+
