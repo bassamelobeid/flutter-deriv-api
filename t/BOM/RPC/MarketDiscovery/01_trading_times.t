@@ -21,7 +21,7 @@ is_deeply(
                 'dates'   => 'Fridays'
             }
         ],
-        'name'       => "abcd",
+        'name'       => "欧元/加元",
         'settlement' => '',
         'times'      => {
             'open'       => ['00:00:00'],
