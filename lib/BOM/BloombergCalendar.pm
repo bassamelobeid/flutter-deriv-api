@@ -3,7 +3,7 @@ package BOM::BloombergCalendar;
 use strict;
 use warnings;
 
-use Quant:Framework::Holiday;
+use Quant::Framework::Holiday;
 use BOM::MarketData::PartialTrading;
 use BOM::Platform::Context;
 use Try::Tiny;
