@@ -474,6 +474,13 @@ sub rpc {
 
     my $client = MojoX::JSON::RPC::Client->new;
     my $url    = 'http://127.0.0.1:5005/' . $method;
+    if (BOM::System::Config::env eq 'production') {
+        if (BOM::System::Config::node->{node}->{www2}) {
+            $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/' . $method;
+        } else {
+            $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/' . $method;
+        }
+    }
 
     my $callobj = {
         id     => Data::UUID->new()->create_str(),
