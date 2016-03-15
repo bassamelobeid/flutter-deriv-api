@@ -32,5 +32,8 @@ is_deeply(
     'a instance of symbol'
 );
 
+open(my $fh, ">/tmp/a.log");
+print $fh Dumper($result);
+close($fh);
 done_testing();
 
