@@ -46,26 +46,22 @@ foreach my $symbol (keys %date_string) {
 
 subtest 'realtime report generation' => sub {
     plan tests => 3;
-    diag("step1");
 
     my $dm = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
     });
 
-    diag("step2");
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
     my $USDaccount = $client->set_default_account('USD');
 
-    diag("step3");
     $client->payment_free_gift(
         currency    => 'USD',
         amount      => 5000,
         remark      => 'free gift',
     );
 
-    diag("step4");
     my $start_time  = $minus5mins;
     my $expiry_time = $now;
 
@@ -81,12 +77,10 @@ subtest 'realtime report generation' => sub {
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
 
-    diag("step5");
     my @shortcode_param = (
         $bet_hash{bet_type}, $bet_hash{underlying_symbol},
         $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
     );
-    diag("step6");
 
     BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type => 'fmb_higher_lower',
@@ -94,7 +88,6 @@ subtest 'realtime report generation' => sub {
         account_id => $USDaccount->id,
         short_code => uc join('_', @shortcode_param),
     });
-    diag("step7");
 
     $start_time  = $now;
     $expiry_time = $plus5mins;
@@ -109,7 +102,6 @@ subtest 'realtime report generation' => sub {
         expiry_time       => $expiry_time->datetime_yyyymmdd_hhmmss,
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
-    diag("step8");
 
     BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type => 'fmb_higher_lower',
@@ -118,7 +110,6 @@ subtest 'realtime report generation' => sub {
         short_code => uc join('_', @shortcode_param),
     });
 
-    diag("step9");
     $start_time  = $plus5mins;
     $expiry_time = $plus30mins;
     %bet_hash    = (
@@ -133,14 +124,12 @@ subtest 'realtime report generation' => sub {
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
 
-    diag("step10");
     BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type => 'fmb_higher_lower',
         %bet_hash,
         account_id => $USDaccount->id,
         short_code => uc join('_', @shortcode_param),
     });
-    diag("step11");
 
     is($dm->get_last_generated_historical_marked_to_market_time, undef, 'Start with a clean slate.');
 
