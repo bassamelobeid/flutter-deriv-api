@@ -205,6 +205,7 @@ subtest 'get_ask' => sub {
 subtest 'send_ask' => sub {
     my $params = {
         language  => 'ZH_CN',
+        country   => 'id',
         client_ip => '127.0.0.1',
         args      => {
             "proposal"      => 1,
