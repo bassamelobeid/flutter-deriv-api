@@ -13,7 +13,21 @@ sub get_duplicate_client() {
     my $args = shift;
 
     my $dupe_sql =
-"SELECT loginid, first_name, last_name, date_of_birth, email from betonmarkets.client where upper(first_name)=? and upper(last_name)=? and date_of_birth=? and broker_code=?";
+"
+    SELECT
+        loginid,
+        first_name,
+        last_name,
+        date_of_birth,
+        email
+    FROM
+        betonmarkets.client
+    WHERE
+        UPPER(TRIM(BOTH ' ' FROM first_name))=(TRIM(BOTH ' ' FROM ?)) AND
+        UPPER(TRIM(BOTH ' ' FROM last_name))=(TRIM(BOTH ' ' FROM ?)) AND
+        date_of_birth=? AND
+        broker_code=?
+";
     my $dupe_dbh = $self->db->dbh;
     my $dupe_sth = $dupe_dbh->prepare($dupe_sql);
     $dupe_sth->bind_param( 1, uc $args->{first_name} );
@@ -22,12 +36,6 @@ sub get_duplicate_client() {
     $dupe_sth->bind_param( 4, $self->broker_code );
     $dupe_sth->execute();
     my @dupe_record = $dupe_sth->fetchrow_array();
-
-    if (@dupe_record) {
-        warn "Possible duplicate registration attempted.  "
-            . "Attempt matches - loginid: $dupe_record[0], firstname: $dupe_record[1], "
-            . "lastname: $dupe_record[2], email: $dupe_record[4]";
-    }
 
     return @dupe_record;
 }
