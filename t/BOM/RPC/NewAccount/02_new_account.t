@@ -56,7 +56,7 @@ subtest $method => sub {
     $rpc_ct->call_ok($method, $params)
             ->has_no_system_error
             ->has_error
-            ->error_code_is('ChangePasswordError', 'If password is weak it should return error')
+            ->error_code_is('PasswordError', 'If password is weak it should return error')
             ->error_message_is('Пароль недостаточно надёжный.', 'If password is weak it should return error_message');
 
     $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
