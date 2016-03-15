@@ -32,16 +32,16 @@ is_deeply(
     'a instance of symbol'
 );
 
-for my $m (@{$result->{markets}}){
-  for my $subm (@{$m->{submarkets}}){
-    for my $sym (@{$subm->{symbols}}){
-      if($sym->{symbol} eq 'BSESENSEX30'){
-        ok($sym->{feed_license}, 'have feed_license');
-        ok($sym->{delay_amount}, 'have delay_amount');
-      }
+for my $m (@{$result->{markets}}) {
+    for my $subm (@{$m->{submarkets}}) {
+        for my $sym (@{$subm->{symbols}}) {
+            if ($sym->{symbol} eq 'BSESENSEX30') {
+                ok($sym->{feed_license}, 'have feed_license');
+                ok($sym->{delay_amount}, 'have delay_amount');
+            }
 
+        }
     }
-  }
 }
 
 done_testing();
