@@ -1041,9 +1041,7 @@ sub get_financial_assessment {
         if ($data) {
             foreach my $key (keys %$data) {
                 unless ($key =~ /total_score/) {
-                    foreach my $sub_key (keys %{$data->{$key}}) {
-                        $response->{$key} = $data->{$key}->{$sub_key} if ($sub_key =~ /answer/);
-                    }
+                    $response->{$key} = $data->{$key}->{answer};
                 }
             }
             $response->{score} = $data->{total_score};
