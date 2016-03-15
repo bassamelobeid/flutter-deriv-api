@@ -5,8 +5,6 @@ use warnings;
 
 use BOM::Market::UnderlyingDB;
 
-use constant PRICES => 'PricingTable';
-
 sub validate_table_props {
 
     my $props = shift;
@@ -50,7 +48,7 @@ sub get_channel_name {
 
     my $args  = shift;
     my $props = $args->{props} || {};
-    my $id    = join "::", PRICES, $props->{symbol}, $props->{contract_category}, $props->{date_expiry};
+    my $id    = join "::", 'PricingTable', $props->{symbol}, $props->{contract_category}, $props->{date_expiry};
 
     return $id;
 }
