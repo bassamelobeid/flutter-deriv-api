@@ -69,7 +69,7 @@ subtest $method => sub {
     $params->{args}->{verification_code} =
         BOM::Platform::SessionCookie->new(
             email => $email,
-        )->token;
+        )->toekn;
     $rpc_ct->call_ok($method, $params)
             ->has_no_system_error
             ->has_error
@@ -170,12 +170,16 @@ subtest $method => sub {
                                  'It should return error when try to create new client using exists real client');
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token( $vclient->loginid, 'test token' );
-        $rpc_ct->call_ok($method, $params)
-              ->has_no_system_error
-              ->has_error
-              ->error_code_is('invalid', 'It should return error when try to create account without residence')
-              ->error_message_is('Извините, но открытие счёта недоступно.',
-                                 'It should return error when try to create account without residence');
+        {
+          #suppress warning because we want to test this error
+          local $SIG{__WARN__} = sub {};
+          $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error
+            ->has_error
+            ->error_code_is('invalid', 'It should return error when try to create account without residence')
+            ->error_message_is('Извините, но открытие счёта недоступно.',
+                               'It should return error when try to create account without residence');
+        }
 
         $params->{args}->{residence} = 'id';
         @{ $params->{args} }{ keys %$client_details } = values %$client_details;
