@@ -60,7 +60,7 @@ has holidays => (
 );
 
 sub _build_holidays {
-    my $self = shift;
+    my $self             = shift;
     my $chronicle_reader = BOM::System::Chronicle::get_chronicle_reader();
 
     my $holidays_ref = Quant::Framework::Holiday::get_holidays_for($chronicle_reader, $self->symbol, $self->for_date);

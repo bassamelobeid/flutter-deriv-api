@@ -121,8 +121,8 @@ has holidays => (
 sub _build_holidays {
     my $self = shift;
 
-    my $chronicle_reader = BOM::System::Chronicle::get_chronicle_reader();
-    my $ref = Quant::Framework::Holiday::get_holidays_for($chronicle_reader, $self->symbol, $self->for_date);
+    my $chronicle_reader  = BOM::System::Chronicle::get_chronicle_reader();
+    my $ref               = Quant::Framework::Holiday::get_holidays_for($chronicle_reader, $self->symbol, $self->for_date);
     my %exchange_holidays = map { Date::Utility->new($_)->days_since_epoch => $ref->{$_} } keys %$ref;
 
     return \%exchange_holidays;
