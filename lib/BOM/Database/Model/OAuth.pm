@@ -209,7 +209,7 @@ sub get_used_apps_by_loginid {
     return [] unless $apps;
 
     my $get_last_used_sth = $self->dbh->prepare("
-        SELECT MAX(last_used) FROM oauth.access_token WHERE app_id = ?
+        SELECT MAX(last_used)::timestamp(0) FROM oauth.access_token WHERE app_id = ?
     ");
 
     foreach (@$apps) {
