@@ -48,7 +48,7 @@ sub validate_table_props {
 sub get_channel_name {
 
     my $args  = shift;
-    my $props = $args->{props} || {};
+    my $props = $args->{properties} || {};
     my $id    = join "::", 'PricingTable', $props->{symbol}, $props->{contract_category}, $props->{date_expiry};
 
     return $id;
