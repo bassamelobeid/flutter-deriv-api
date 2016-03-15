@@ -197,6 +197,41 @@ sub delete_app {
     return 1;
 }
 
+sub get_used_apps_by_loginid {
+    my ($self, $loginid) = @_;
+
+    my $apps = $self->dbh->selectall_arrayref("
+        SELECT
+            u.app_id, name, a.scopes
+        FROM oauth.apps a JOIN oauth.user_scope_confirm u ON a.id=u.app_id
+        WHERE loginid = ? AND a.active ORDER BY a.name
+    ", {Slice => {}}, $loginid);
+    return [] unless $apps;
+
+    my $get_last_used_sth = $self->dbh->prepare("
+        SELECT MAX(last_used) FROM oauth.access_token WHERE app_id = ?
+    ");
+
+    foreach (@$apps) {
+        $_->{scopes} = __parse_array($_->{scopes});
+        $get_last_used_sth->execute($_->{app_id});
+        $_->{last_used} = $get_last_used_sth->fetchrow_array;
+    }
+
+    return $apps;
+}
+
+sub revoke_app {
+    my ($self, $app_id, $loginid) = @_;
+
+    my $dbh = $self->dbh;
+    foreach my $table ('user_scope_confirm', 'access_token') {
+        $dbh->do("DELETE FROM oauth.$table WHERE app_id = ? AND loginid = ?", undef, $app_id, $loginid);
+    }
+
+    return 1;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 

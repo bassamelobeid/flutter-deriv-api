@@ -61,6 +61,17 @@ ok $delete_st;
 $get_apps = $m->get_apps_by_user_id($test_user_id);
 is_deeply($get_apps, [$app1], 'delete app ok');
 
+## test get_used_apps_by_loginid and revoke
+my $used_apps = $m->get_used_apps_by_loginid($test_loginid);
+is scalar(@{$used_apps}), 1;
+is $used_apps->[0]->{app_id}, $test_appid, 'app_id 1';
+is_deeply([sort @{$used_apps->[0]->{scopes}}], ['admin', 'payments', 'read', 'trade'], 'scopes are right');
+ok $used_apps->[0]->{last_used}, 'last_used ok';
+
+ok $m->revoke_app($test_appid, $test_loginid);
+$is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
+is $is_confirmed, 0, 'not confirmed after revoke';
+
 ## delete again will just return 0
 $delete_st = $m->delete_app($test_user_id, $app2->{app_id});
 ok !$delete_st, 'was deleted';
