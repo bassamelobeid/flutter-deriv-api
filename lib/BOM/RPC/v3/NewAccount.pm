@@ -184,10 +184,7 @@ sub new_account_maltainvest {
     my $args      = $params->{args};
     my $error_map = BOM::Platform::Locale::error_map();
 
-    unless ($args->{accept_risk} == 1
-        and $client
-        and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest')
-    {
+    unless ($client and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccount',
                 message_to_client => $error_map->{'invalid'}});
@@ -206,7 +203,7 @@ sub new_account_maltainvest {
         from_client    => $client,
         user           => BOM::Platform::User->new({email => $client->email}),
         details        => $details_ref->{details},
-        accept_risk    => 1,
+        accept_risk    => $args->{accept_risk},
         financial_data => \%financial_data,
     });
 
