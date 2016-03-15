@@ -264,7 +264,6 @@ subtest 'get_bid' => sub {
     };
 
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    diag(Dumper($result));
 
     my @expected_keys = (
         qw(ask_price
@@ -285,8 +284,6 @@ subtest 'get_bid' => sub {
             shortcode
             payout
             ));
-    #   my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    #   diag(Dumper($result));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
 
     $contract = create_contract(
@@ -410,7 +407,6 @@ sub create_contract {
 
     my $error = $txn->buy(skip_validation => 1);
     ok(!$error, 'should no error to buy the contract');
-    diag(Dumper($error)) if $error;
 
     return $contract;
 }
