@@ -97,19 +97,19 @@ sub proposal {
 sub pricing_table {
     my ($c, $args) = @_;
 
-    my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args->{props});
+    my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args->{properties});
 
     if ($response and exists $response->{error}) {
         return $c->new_error('pricing_table', $response->{error}->{code}, $response->{error}->{message_to_client});
     }
 
-    my $symbol = $args->{props}->{symbol};
+    my $symbol = $args->{properties}->{symbol};
     my $id;
     if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args), $args)) {
         return $c->new_error('pricing_table',
             'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for pricing table subscription.'));
     }
-    
+
     return;
 }
 

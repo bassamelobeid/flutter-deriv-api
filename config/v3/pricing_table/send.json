@@ -10,7 +10,7 @@
             "pattern": "^1$",
             "required": "1"
         },
-        "props": {
+        "properties": {
             "type": "object",
             "description": "Object of Pricing table properties: {contract_category:.., date_expiry: .., symbol:..}",
             "required": "1"
