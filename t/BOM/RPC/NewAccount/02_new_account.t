@@ -69,7 +69,7 @@ subtest $method => sub {
     $params->{args}->{verification_code} =
         BOM::Platform::SessionCookie->new(
             email => $email,
-        )->toekn;
+        )->token;
     $rpc_ct->call_ok($method, $params)
             ->has_no_system_error
             ->has_error
