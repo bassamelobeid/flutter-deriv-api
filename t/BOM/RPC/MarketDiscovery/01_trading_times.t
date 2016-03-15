@@ -21,7 +21,7 @@ is_deeply(
                 'dates'   => 'Fridays'
             }
         ],
-        'name'       => "\x{6b27}\x{5143}/\x{52a0}\x{5143}",
+        'name'       => "abcd",
         'settlement' => '',
         'times'      => {
             'open'       => ['00:00:00'],
@@ -32,8 +32,17 @@ is_deeply(
     'a instance of symbol'
 );
 
-open(my $fh, ">/tmp/a.log");
-print $fh Dumper($result);
-close($fh);
+for my $m (@{$result->{markets}}){
+  for my $subm (@{$m->{submarkets}}){
+    for my $sym (@{$subm->{symbols}}){
+      if($sym->{symbol} eq 'BSESENSEX30'){
+        ok($sym->{feed_license}, 'have feed_license');
+        ok($sym->{delay_amount}, 'have delay_amount');
+      }
+
+    }
+  }
+}
+
 done_testing();
 
