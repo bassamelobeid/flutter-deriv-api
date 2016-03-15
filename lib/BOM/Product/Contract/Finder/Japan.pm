@@ -397,7 +397,7 @@ sub _get_expired_barriers {
 
     my $available_barriers = $args->{available_barriers};
     my $date_start         = $args->{start};
-    my $date_expiry => $args->{expiry};
+    my $date_expiry        = $args->{expiry};
     my $now                  = $args->{now};
     my $underlying           = $args->{underlying};
     my $expired_barriers_key = join($cache_sep, $underlying->symbol, 'expired_barrier', $date_start, $date_expiry);
@@ -414,7 +414,7 @@ sub _get_expired_barriers {
     my @unexpired_barriers        = grep { !$skip_list{$_} } @barriers;
     my $new_added_expired_barrier = 0;
     foreach my $barrier (@unexpired_barriers) {
-        push @expired_barriers if ($barrier < $high && $barrier > $low);
+        push @expired_barriers, $barrier if ($barrier < $high && $barrier > $low);
         $new_added_expired_barrier++;
     }
 
@@ -455,11 +455,11 @@ sub _get_barriers_pair {
 
         if ($contract_category eq 'staysinout') {
             push @expired_barriers, [$first_barrier, $second_barrier]
-                if (grep { $_ eq $first_barrier or $_ eq $secon_barrier } @list_of_expired_barriers);
+                if (grep { $_ eq $first_barrier or $_ eq $second_barrier } @list_of_expired_barriers);
 
         }
 
-        push @barriers, [$available_barriers->{$keys[$i]}, $available_barriers->{$keys[$i + 1]}];
+        push @barriers, [$first_barrier, $second_barrier];
     }
 
     return (\@barriers, \@expired_barriers);
