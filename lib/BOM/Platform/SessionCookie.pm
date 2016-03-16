@@ -171,7 +171,7 @@ sub _clear_session_collection {
     my $all_sessions = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . $key);
     for my $session (@$all_sessions) {
         BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . $key, $session)
-            unless BOM::System::RedisReplicated::redis_read()->get('LOGIN_SESSION::' . $session);
+            unless BOM::System::RedisReplicated::redis_write()->get('LOGIN_SESSION::' . $session);
     }
     return;
 }
