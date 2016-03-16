@@ -58,7 +58,7 @@ subtest $method => sub {
   is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys' );
 
   $params->{args}{active_symbols} = 'full';
-  push @$expected_keys, qw(exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time sport_age);
+  push @$expected_keys, qw(exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time spot_age);
   $result = $c->call_ok($method, $params)->has_no_system_error->result;
   ($indices) = grep {$_->{symbol} eq 'AEX'} @$result;
   is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys' );
