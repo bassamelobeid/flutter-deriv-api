@@ -166,7 +166,9 @@ sub send_proposal {
             is_sold     => delete $details->{is_sold},
             sell_time   => $sell_time,
             args        => $details
-        });
+        },
+        'proposal_open_contract'
+    );
     return;
 }
 
