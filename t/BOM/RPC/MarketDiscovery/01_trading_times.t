@@ -49,13 +49,20 @@ subtest $method => sub {
 
 $method = 'active_symbols' ;
 subtest $method => sub {
-  my $params = {language => 'ZH_CN', args => {active_symbols => 'full'}};
+  my $params = {language => 'ZH_CN', args => {active_symbols => 'brief'}};
 
   my $result = $c->call_ok($method, $params)->has_no_system_error->result;
-  my $expected_keys = [qw(market submarket exchange_name submarket_display_name delay_amount pip symbol symbol_type market_display_name intraday_interval_minutes exchange_is_open display_name  spot spot_time is_trading_suspended quoted_currency_symbol spot_age)];
+  my $expected_keys = [qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended )];
 
   my ($indices) = grep {$_->{symbol} eq 'AEX'} @$result;
   is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys' );
+
+  $params->{args}{active_symbols} = 'full';
+  $expected_keys = [%expected_keys, qw(exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time sport_age)];
+  $result = $c->call_ok($method, $params)->has_no_system_error->result;
+  ($indices) = grep {$_->{symbol} eq 'AEX'} @$result;
+  is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys' );
+
 };
 
 done_testing();
