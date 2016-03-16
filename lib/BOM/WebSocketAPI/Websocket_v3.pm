@@ -236,6 +236,7 @@ my @dispatch = (
     ['login_history',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history,            1, 'read'],
     ['set_account_currency',     \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency,     1, 'admin'],
     ['set_financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_financial_assessment, 1, 'admin'],
+    ['get_financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_financial_assessment, 1, 'admin'],
 
     ['verify_email', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0],
     [
@@ -383,11 +384,16 @@ sub __handle {
             $c->stash('connection_id' => Data::UUID->new()->create_str());
         }
 
-        if (_reached_limit_check($c->stash('connection_id'), $descriptor->{category}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
+        my $t0 = [Time::HiRes::gettimeofday];
+
+        # For authorized calls that are heavier we will limit based on loginid
+        # For unauthorized calls that are less heavy we will use connection id.
+        # None are much helpful in a well prepared DDoS.
+        my $consumer = $c->stash('loginid') || $c->stash('connection_id');
+
+        if (_reached_limit_check($consumer, $descriptor->{category}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
             return $c->new_error($descriptor->{category}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $descriptor->{category}));
         }
-
-        my $t0 = [Time::HiRes::gettimeofday];
 
         my $input_validation_result = $descriptor->{in_validator}->validate($p1);
         if (not $input_validation_result) {
@@ -459,10 +465,11 @@ sub _failed_key_value {
 }
 
 sub rpc {
-    my $self     = shift;
-    my $method   = shift;
-    my $callback = shift;
-    my $params   = shift;
+    my $self        = shift;
+    my $method      = shift;
+    my $callback    = shift;
+    my $params      = shift;
+    my $method_name = shift // $method;
 
     my $tv = [Time::HiRes::gettimeofday];
     state $cpu = Proc::CPUUsage->new();
@@ -473,6 +480,13 @@ sub rpc {
 
     my $client = MojoX::JSON::RPC::Client->new;
     my $url    = 'http://127.0.0.1:5005/' . $method;
+    if (BOM::System::Config::env eq 'production') {
+        if (BOM::System::Config::node->{node}->{www2}) {
+            $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/' . $method;
+        } else {
+            $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/' . $method;
+        }
+    }
 
     my $callobj = {
         id     => Data::UUID->new()->create_str(),
@@ -523,7 +537,7 @@ sub rpc {
 
             if ($res->is_error) {
                 warn $res->error_message;
-                $data = $self->new_error($method, 'CallError', $self->l('Sorry, an error occurred while processing your request.'));
+                $data = $self->new_error($method_name, 'CallError', $self->l('Sorry, an error occurred while processing your request.'));
                 $data->{echo_req} = $args;
                 $data->{req_id} = $req_id if $req_id;
                 $self->send({json => $data});
