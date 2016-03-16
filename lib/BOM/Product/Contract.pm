@@ -2195,6 +2195,35 @@ sub _validate_tradability {
     return @errors;
 }
 
+sub _validate_feed {
+    my $self = shift;
+
+    return if $self->is_expired;
+
+    my @errors;
+    my $underlying = $self->underlying;
+    my $translated_name = $underlying->translated_display_name();
+
+    if (not $self->current_tick) {
+        push @errors,
+            {
+            message           => format_error_string('No realtime data',                              symbol => $underlying->symbol),
+            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
+            };
+    } elsif ($self->exchange->is_open_at($self->date_pricing)
+        and $self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch)
+    {
+        # only throw errors for quote too old, if the exchange is open at pricing time
+        push @errors,
+            {
+            message           => format_error_string('Quote too old',                                 symbol => $underlying->symbol),
+            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
+            };
+    }
+
+    return @errors;
+}
+
 sub _validate_underlying {
     my $self = shift;
 
@@ -2208,26 +2237,6 @@ sub _validate_underlying {
             message => format_error_string('Underlying trades suspended due to corporate actions', symbol => $underlying->symbol),
             message_to_client => localize('Trading on [_1] is suspended at the moment.', $translated_name),
             };
-    }
-
-    # Ignore spot age if it's an expired bet.
-    if (not $self->is_expired) {
-        if (not $self->current_tick) {
-            push @errors,
-                {
-                message           => format_error_string('No realtime data',                              symbol => $underlying->symbol),
-                message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
-                };
-        } elsif ($self->exchange->is_open_at($self->date_pricing)
-            and $self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch)
-        {
-            # only throw errors for quote too old, if the exchange is open at pricing time
-            push @errors,
-                {
-                message           => format_error_string('Quote too old',                                 symbol => $underlying->symbol),
-                message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
-                };
-        }
     }
 
     if ($self->is_intraday and $underlying->deny_purchase_during($self->date_start, $self->date_expiry)) {
@@ -2986,7 +2995,7 @@ sub confirm_validity {
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     my @validation_methods =
-        qw(_validate_lifetime  _validate_volsurface _validate_contract _validate_barrier _validate_underlying _validate_expiry_date _validate_start_date _validate_stake _validate_payout _validate_eod_market_risk);
+        qw(_validate_tradability _validate_feed _validate_lifetime  _validate_volsurface _validate_contract _validate_barrier _validate_underlying _validate_expiry_date _validate_start_date _validate_stake _validate_payout _validate_eod_market_risk);
 
     foreach my $method (@validation_methods) {
         my @err = $self->$method;
