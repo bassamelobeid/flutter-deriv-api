@@ -82,7 +82,7 @@ subtest $method => sub {
 
   $params->{token} = $token;
   $result = $c->call_ok($method, $params)->has_no_system_error->result;
-  is(scalar @$result, 102, 'the landing company now is maltainvest, the number of result should be ok');
+  is(scalar @$result, 90, 'the landing company now is maltainvest, the number of result should be ok');
 };
 
 done_testing();
