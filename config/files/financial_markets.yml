@@ -26,10 +26,14 @@ commodities:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             DIGITMATCH: 4
             DIGITDIFF: 4
             ASIANU: 4
@@ -66,8 +70,12 @@ forex:
         apply_traded_markets_markup: 1
         apply_butterfly_markup: 1
         digital_spread:
+            CALLE: 3.5
+            PUTE: 3.5
             CALL: 3.5
             PUT: 3.5
+            EXPIRYMISSE: 3.5
+            EXPIRYRANGEE: 3.5
             EXPIRYMISS: 3.5
             EXPIRYRANGE: 3.5
             DIGITMATCH: 3.5
@@ -94,8 +102,12 @@ futures:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
             DIGITMATCH: 4
@@ -129,8 +141,12 @@ indices:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
             DIGITMATCH: 4
@@ -168,8 +184,12 @@ stocks:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
             DIGITMATCH: 4
@@ -201,8 +221,12 @@ random:
         - 'random'
     markups:
         digital_spread:
+            CALLE: 3
+            PUTE: 3
             CALL: 3
             PUT: 3
+            EXPIRYMISSE: 3
+            EXPIRYRANGEE: 3
             EXPIRYMISS: 3
             EXPIRYRANGE: 3
             DIGITMATCH: 3
