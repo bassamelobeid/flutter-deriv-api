@@ -61,7 +61,9 @@ sub trading_times {
 sub asset_index {
     my $params = shift;
 
-    my $asset_index = BOM::Product::Contract::Offerings->new->decorate_tree(
+    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
+
+    my $asset_index = BOM::Product::Contract::Offerings->new(landing_company => $landing_company_name)->decorate_tree(
         markets => {
             code => sub { $_->name },
             name => sub { $_->translated_display_name }
@@ -147,7 +149,7 @@ sub asset_index {
 sub active_symbols {
     my $params = shift;
 
-    my $landing_company_name = 'costarica';
+    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
     if ($params->{token}
         and my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token}))
     {
@@ -155,10 +157,7 @@ sub active_symbols {
         $landing_company_name = $client->landing_company->short if $client;
     }
 
-    my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
-
-    my $key =
-        'legal_allowed_markets::' . $params->{args}->{active_symbols} . '::' . $params->{language} . '::' . join(",", sort @$legal_allowed_markets);
+    my $key = join('::', ('legal_allowed_markets', $params->{args}->{active_symbols}, $params->{language}, $landing_company_name));
 
     my $active_symbols;
     if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($key)
@@ -166,13 +165,8 @@ sub active_symbols {
     {
         $active_symbols = Sereal::Decoder->new->decode($active_symbols);
     } else {
-        my %allowed_market;
-        undef @allowed_market{@$legal_allowed_markets};
-        $active_symbols = [
-            map {
-                my $descr = _description($_, $params->{args}->{active_symbols});
-                exists $allowed_market{$descr->{market}} ? $descr : ();
-            } get_offerings_with_filter('underlying_symbol')];
+        $active_symbols = [map { my $descr = _description($_, $params->{args}->{active_symbols}); }
+                get_offerings_with_filter('underlying_symbol', {landing_company => $landing_company_name})];
 
         BOM::System::RedisReplicated::redis_write()->set($key, Sereal::Encoder->new->encode($active_symbols));
         #expire in nearest 5 minute interval
