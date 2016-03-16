@@ -274,14 +274,14 @@ is_deeply $@,
     ],
     'max_open_bets reached';
 
-
 # bought 2 bets before, sum turnover = 20 + 20, which exceeds max_turnover
 dies_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
+    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+        +{
         limits => {
             max_turnover => 39,
         },
-    };
+        };
 }
 'exception thrown';
 is_deeply $@,
@@ -291,11 +291,12 @@ is_deeply $@,
     'max_turnover reached';
 
 lives_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
+    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+        +{
         limits => {
             max_turnover => 100,
         },
-    };
+        };
     $bal -= 20;
     is $balance_after + 0, $bal, 'correct balance_after';
     sell_one_bet $acc_usd,
@@ -709,7 +710,7 @@ subtest 'more validation', sub {
         my $res = $fmb->batch_sell_bet;
 
         # note explain $res;
-        $bal += 5*30;
+        $bal += 5 * 30;
         is 0 + @$res, 5, 'sold 5 out of 6 bets (1 was already sold)';
         is $res->[0]->{txn}->{balance_after} + 0, $bal, 'balance_after';
     }
@@ -1017,7 +1018,7 @@ SKIP: {
             is $balance_after + 0, $bal, 'correct balance_after';
 
             $sell_price = 100;
-            $txnid = sell_one_bet $acc_usd,
+            $txnid      = sell_one_bet $acc_usd,
                 +{
                 id         => $fmbid,
                 sell_price => $sell_price,
