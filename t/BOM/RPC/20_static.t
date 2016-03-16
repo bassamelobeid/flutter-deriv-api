@@ -18,4 +18,9 @@ subtest 'residence_list' => sub{
                },'cn is correct');
 };
 
+subtest 'states_list' => sub{
+  my $result = $c->call_ok('residence_list', {language => 'ZH_CN'})->has_no_system_error->result;
+  diag($result->[0]);
+};
+
 done_testing();
