@@ -52,7 +52,10 @@ subtest $method => sub {
   my $params = {language => 'ZH_CN', args => {active_symbols => 'full'}};
 
   my $result = $c->call_ok($method, $params)->has_no_system_error->result;
-  diag Dumper($result->[0]);
+  my $expected_keys = [qw(market submarket exchange_name submarket_display_name delay_amount pip symbol symbol_type market_display_name intraday_interval_minutes exchange_is_open display_name  spot spot_time is_trading_suspended quoted_currency_symbol spot_age)];
+
+  my $indices = grep {$_->{market} eq 'AEX'} @$result;
+  is_deeply([sort keys %$indeices], [sort keys %$expected_keys], 'result has correct keys' );
 };
 
 done_testing();
