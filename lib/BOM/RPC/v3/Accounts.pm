@@ -314,6 +314,9 @@ sub change_password {
         $obj->save;
     }
 
+    # end all other sessions
+    BOM::Platform::SessionCookie->new({token => $params->{token}})->end_other_sessions();
+
     BOM::System::AuditLog::log('password has been changed', $client->email);
     send_email({
             from    => BOM::Platform::Static::Config::get_customer_support_email(),
@@ -1068,6 +1071,36 @@ sub set_financial_assessment {
         subject => $subject,
         message => $message,
     });
+
+    return $response;
+}
+
+sub get_financial_assessment {
+    my $params = shift;
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
+    my $response             = {};
+    my $financial_assessment = $client->financial_assessment();
+    if ($financial_assessment) {
+        my $data = from_json $financial_assessment->data;
+        if ($data) {
+            foreach my $key (keys %$data) {
+                unless ($key =~ /total_score/) {
+                    $response->{$key} = $data->{$key}->{answer};
+                }
+            }
+            $response->{score} = $data->{total_score};
+        }
+    }
 
     return $response;
 }

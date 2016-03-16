@@ -306,15 +306,6 @@ subtest $method => sub {
                                  'It should return error if missing any details');
 
         $params->{args}->{first_name} = $client_details->{first_name};
-
-        $params->{args}->{residence} = 'id';
-        $rpc_ct->call_ok($method, $params)
-              ->has_no_system_error
-              ->has_error
-              ->error_code_is('invalid', 'It should return error if residence does not fit with maltainvest')
-              ->error_message_is('Извините, но открытие счёта недоступно.',
-                                 'It should return error if residence does not fit with maltainvest');
-
         $params->{args}->{residence} = 'de';
         $params->{args}->{accept_risk} = 1;
         $rpc_ct->call_ok($method, $params)
@@ -326,6 +317,18 @@ subtest $method => sub {
 
         $user->email_verified(1);
         $user->save;
+
+        $params->{args}->{residence} = 'id';
+
+        $rpc_ct->call_ok($method, $params)
+              ->has_no_system_error
+              ->has_error
+              ->error_code_is('invalid residence', 'It should return error if residence does not fit with maltainvest')
+              ->error_message_is('Извините, мы не принимаем к регистрации резидентов Вашей страны.',
+                                 'It should return error if residence does not fit with maltainvest');
+
+        $params->{args}->{residence} = 'de';
+
         $rpc_ct->call_ok($method, $params)
                 ->has_no_system_error
                 ->has_no_error
