@@ -49,40 +49,43 @@ subtest $method => sub {
 
 };
 
-$method = 'active_symbols' ;
+$method = 'active_symbols';
 subtest $method => sub {
-  my $params = {language => 'ZH_CN', args => {active_symbols => 'brief'}};
+    my $params = {
+        language => 'ZH_CN',
+        args     => {active_symbols => 'brief'}};
 
-  my $result = $c->call_ok($method, $params)->has_no_system_error->result;
-  my $expected_keys = [qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended )];
+    my $result = $c->call_ok($method, $params)->has_no_system_error->result;
+    my $expected_keys =
+        [qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended )];
 
-  my ($indices) = grep {$_->{symbol} eq 'AEX'} @$result;
-  is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys' );
+    my ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
+    is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
 
-  $params->{args}{active_symbols} = 'full';
-  push @$expected_keys, qw(exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time spot_age);
-  $result = $c->call_ok($method, $params)->has_no_system_error->result;
-  ($indices) = grep {$_->{symbol} eq 'AEX'} @$result;
-  is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys' );
-  is($indices->{market_display_name}, '指数', 'the market_display_name is translated');
-  is($indices->{submarket_display_name}, '欧洲/非洲', 'the submarket_display_name is translated');
-  is(scalar @$result, 102, 'the default landing company is "costarica", the number of result should be ok');
+    $params->{args}{active_symbols} = 'full';
+    push @$expected_keys, qw(exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time spot_age);
+    $result = $c->call_ok($method, $params)->has_no_system_error->result;
+    ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
+    is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
+    is($indices->{market_display_name},    '指数',        'the market_display_name is translated');
+    is($indices->{submarket_display_name}, '欧洲/非洲', 'the submarket_display_name is translated');
+    is(scalar @$result,                    102,             'the default landing company is "costarica", the number of result should be ok');
 
-  my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-                                                                              });
-  my $email = 'test@binary.com';
-  $test_client->email($email);
-  $test_client->save;
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+    my $email = 'test@binary.com';
+    $test_client->email($email);
+    $test_client->save;
 
-  my $token = BOM::Platform::SessionCookie->new(
-                                                loginid => $test_client->loginid,
-                                                email   => $email
-                                               )->token;
+    my $token = BOM::Platform::SessionCookie->new(
+        loginid => $test_client->loginid,
+        email   => $email
+    )->token;
 
-  $params->{token} = $token;
-  $result = $c->call_ok($method, $params)->has_no_system_error->result;
-  is(scalar @$result, 90, 'the landing company now is maltainvest, the number of result should be ok');
+    $params->{token} = $token;
+    $result = $c->call_ok($method, $params)->has_no_system_error->result;
+    is(scalar @$result, 90, 'the landing company now is maltainvest, the number of result should be ok');
 };
 
 done_testing();
