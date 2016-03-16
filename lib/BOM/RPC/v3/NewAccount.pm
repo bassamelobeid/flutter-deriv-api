@@ -334,11 +334,11 @@ sub _knowledge_test_available_date {
     my $now = DateTime->now;
     $now->set_time_zone('Asia/Tokyo');
 
-    my ($dt, $avail_monday);
+    my ($dt, $skip_to_monday);
     if (not $last_test_epoch) {
         # no test is taken so far
-        $dt = $now;
-        $avail_monday = 1;
+        $dt              = $now;
+        $skip_to__monday = 1;
     } else {
         # test can only be repeated after 24 hours of business day (exclude weekends)
         #   a) if test taken on Tues 3pm, next test available is on Wed 3pm
@@ -351,9 +351,9 @@ sub _knowledge_test_available_date {
         $dt->add(days => 1);
 
         # if today is weekends, next test will be avilable on Monday 12am
-        if ($now >= 6 and $dt->epoch < $now->epoch) {
-            $dt = $now;
-            $avail_monday = 1;
+        if ($now->day_of_week >= 6 and $dt->epoch < $now->epoch) {
+            $dt             = $now;
+            $skip_to_monday = 1;
         }
     }
 
@@ -361,7 +361,7 @@ sub _knowledge_test_available_date {
     if ($dow >= 6) {
         $dt->add(days => (8 - $dow));
 
-        if ($avail_monday) {
+        if ($skip_to_monday) {
             # is weekend now, allow test starting from coming Mon 12am JST
             $dt = DateTime->new(
                 year      => $dt->year,
