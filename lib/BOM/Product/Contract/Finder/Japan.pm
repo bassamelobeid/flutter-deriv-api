@@ -33,6 +33,7 @@ sub available_contracts_for_symbol {
         $close = $exchange->closing_on($now)->epoch;
         my $flyby = BOM::Product::Offerings::get_offerings_flyby;
         @offerings = $flyby->query({
+                landing_company   => 'japan',
                 underlying_symbol => $symbol,
                 start_type        => 'spot',
                 expiry_type       => ['daily', 'intraday'],
@@ -59,7 +60,6 @@ sub available_contracts_for_symbol {
                 contract     => $o,
                 date         => $now,
             });
-
         }
     }
     return {

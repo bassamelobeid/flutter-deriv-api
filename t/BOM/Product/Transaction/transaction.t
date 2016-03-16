@@ -635,11 +635,14 @@ subtest 'sell a bet', sub {
 
         note 'bid price: ' . $contract->bid_price;
 
+        my $mocked = Test::MockModule->new('BOM::Product::Transaction');
+        $mocked->mock('_validate_trade_pricing_adjustment', sub {});
+        $mocked->mock('price', sub {$contract->bid_price});
         my $txn = BOM::Product::Transaction->new({
             client      => $cl,
             contract    => $contract,
             contract_id => $fmb->{id},
-            price       => $contract->bid_price + 5,
+            price       => $contract->bid_price,
             source      => 23,
         });
         my $error = $txn->sell;

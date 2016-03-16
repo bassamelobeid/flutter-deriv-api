@@ -10,7 +10,7 @@ use VolSurface::Utils qw(get_strike_for_spot_delta);
 
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Product::Offerings qw(get_offerings_flyby);
 use BOM::Product::Contract::Category;
 use BOM::Product::Contract::Strike;
 
@@ -18,8 +18,9 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 
 sub available_contracts_for_symbol {
-    my $args = shift;
-    my $symbol = $args->{symbol} || die 'no symbol';
+    my $args            = shift;
+    my $symbol          = $args->{symbol} || die 'no symbol';
+    my $landing_company = $args->{landing_company} || 'costarica';
 
     my $now        = Date::Utility->new;
     my $underlying = BOM::Market::Underlying->new($symbol);
@@ -30,8 +31,11 @@ sub available_contracts_for_symbol {
         $close = $exchange->closing_on($now)->epoch;
     }
 
-    my $flyby = BOM::Product::Offerings::get_offerings_flyby;
-    my @offerings = $flyby->query({underlying_symbol => $symbol});
+    my $flyby     = get_offerings_flyby;
+    my @offerings = $flyby->query({
+        underlying_symbol => $symbol,
+        landing_company   => $landing_company
+    });
 
     for my $o (@offerings) {
         my $cc = $o->{contract_category};
