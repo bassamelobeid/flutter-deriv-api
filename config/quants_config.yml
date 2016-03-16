@@ -1,5 +1,4 @@
 commission:
-  resell_discount_factor: 0.2
   intraday:
     historical_fixed: 0.0125
     historical_vol_meanrev: 0.10
