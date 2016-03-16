@@ -145,7 +145,7 @@ subtest 'asian' => sub {
 
 subtest '2000GMT FX Blackout' => sub {
     lives_ok{
-        my $time_22GMT = Date::Utility->new('2016-03-09 22:00:01');
+        my $time_22GMT = Date::Utility->new('2016-03-09 22:00:00');
         
         #Case 1: FX Tick expiry
         my $arg = {
