@@ -66,7 +66,20 @@ subtest $method => sub {
   is($indices->{submarket_display_name}, '欧洲/非洲', 'the submarket_display_name is translated');
   is(scalar @$result, 102, 'the default landing company is "costarica", the number of result should be ok');
 
-  
+  my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+                                                                              });
+  $test_client->email($email);
+  $test_client->save;
+
+  my $token = BOM::Platform::SessionCookie->new(
+                                                loginid => $test_client->loginid,
+                                                email   => $email
+                                               )->token;
+
+  $params->{token} = $token;
+  $result = $c->call_ok($method, $params)->has_no_system_error->result;
+  is(scalar @$result, 102, 'the landing company now is maltainvest, the number of result should be ok');
 };
 
 done_testing();
