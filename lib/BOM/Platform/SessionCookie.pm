@@ -153,19 +153,31 @@ sub end_other_sessions {
     my $self = shift;
     return unless $self->{token};
 
-    BOM::System::RedisReplicated::redis_write()->eval(
-        'for k,v in pairs(redis.call("SMEMBERS", ARGV[1])) do if v ~= ARGV[2] then redis.call("DEL", "LOGIN_SESSION::" .. v); redis.call("SREM", ARGV[1], v); end; end;',
-        0, "LOGIN_SESSION_COLLECTION::" . md5_hex($self->{email}), $self->{token});
+    ## no critic
+    BOM::System::RedisReplicated::redis_write()->eval(<<LUA_SCRIPT, 0, "LOGIN_SESSION_COLLECTION::" . md5_hex($self->{email}), $self->{token});
+for k,v in pairs(redis.call("SMEMBERS", ARGV[1])) do
+    if v ~= ARGV[2] then
+        redis.call("DEL", "LOGIN_SESSION::" .. v)
+        redis.call("SREM", ARGV[1], v)
+    end
+end
+LUA_SCRIPT
+
     return;
 }
 
 sub _clear_session_collection {
     my $self = shift;
 
-    BOM::System::RedisReplicated::redis_write()->eval(
-        'for k,v in pairs(redis.call("SMEMBERS", ARGV[1])) do if not redis.call("GET", "LOGIN_SESSION::" .. v) then redis.call("SREM", ARGV[1], v); end; end;',
-        0,
-        "LOGIN_SESSION_COLLECTION::" . md5_hex($self->{email}));
+    ## no critic
+    BOM::System::RedisReplicated::redis_write()->eval(<<LUA_SCRIPT, 0, "LOGIN_SESSION_COLLECTION::" . md5_hex($self->{email}));
+for k,v in pairs(redis.call("SMEMBERS", ARGV[1])) do
+    if not redis.call("GET", "LOGIN_SESSION::" .. v) then
+        redis.call("SREM", ARGV[1], v)
+    end
+end
+LUA_SCRIPT
+
     return;
 }
 
