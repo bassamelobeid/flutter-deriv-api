@@ -35,7 +35,7 @@ subtest 'buy' => sub {
     my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
     $mocked_client->mock('new',sub {return undef});
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'AuthorizationRequired')
-      ->error_message_is('请登录', 'please login');
+      ->error_message_is('请登陆。', 'please login');
     undef $mocked_client;
 
 
