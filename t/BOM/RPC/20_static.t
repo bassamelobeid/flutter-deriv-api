@@ -20,7 +20,12 @@ subtest 'residence_list' => sub{
 
 subtest 'states_list' => sub{
   my $result = $c->call_ok('residence_list', {language => 'ZH_CN'})->has_no_system_error->result;
-  diag($result->[0]);
+  my ($cn) = grep {$_->{value} eq 'cn'} @$result;
+  is_deeply($cn,             {
+                              'value' => 'cn',
+                              'text' => "中国",
+                              'phone_idd' => '86'
+                             },'cn is correct');
 };
 
 done_testing();
