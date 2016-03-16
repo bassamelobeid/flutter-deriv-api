@@ -39,9 +39,9 @@ subtest 'buy' => sub {
     undef $mocked_client;
 
     $params->{contract_parameters} = {};
-    #$c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'ContractCreationFailure')
-    #  ->error_message_is('请登陆。', 'cannot create contract');
-    diag Dumper $c->call_ok('buy', $params)->response;
+    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'ContractCreationFailure')
+      ->error_message_is('请登陆。', 'cannot create contract');
+    
 
     ok(1);
 };
