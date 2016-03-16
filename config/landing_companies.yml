@@ -27,6 +27,25 @@
       - staysinout
       - touchnotouch
       - spreads
+    legal_allowed_contract_types:
+      - ASIANU
+      - ASIAND
+      - CALL
+      - PUT
+      - DIGITDIFF
+      - DIGITMATCH
+      - DIGITOVER
+      - DIGITUNDER
+      - DIGITEVEN
+      - DIGITODD
+      - EXPIRYMISS
+      - EXPIRYRANGE
+      - RANGE
+      - UPORDOWN
+      - ONETOUCH
+      - NOTOUCH
+      - SPREADU
+      - SPREADD
     legal_default_currency: GBP
     has_reality_check: 1
 'Binary (Europe) Ltd':
@@ -53,6 +72,25 @@
       - staysinout
       - touchnotouch
       - spreads
+    legal_allowed_contract_types:
+      - ASIANU
+      - ASIAND
+      - CALL
+      - PUT
+      - DIGITDIFF
+      - DIGITMATCH
+      - DIGITOVER
+      - DIGITUNDER
+      - DIGITEVEN
+      - DIGITODD
+      - EXPIRYMISS
+      - EXPIRYRANGE
+      - RANGE
+      - UPORDOWN
+      - ONETOUCH
+      - NOTOUCH
+      - SPREADU
+      - SPREADD
     legal_default_currency: EUR
     has_reality_check: 1
 'Binary Investments (Europe) Ltd':
@@ -82,6 +120,23 @@
       - endsinout
       - staysinout
       - touchnotouch
+    legal_allowed_contract_types:
+      - ASIANU
+      - ASIAND
+      - CALL
+      - PUT
+      - DIGITDIFF
+      - DIGITMATCH
+      - DIGITOVER
+      - DIGITUNDER
+      - DIGITEVEN
+      - DIGITODD
+      - EXPIRYMISS
+      - EXPIRYRANGE
+      - RANGE
+      - UPORDOWN
+      - ONETOUCH
+      - NOTOUCH
     legal_default_currency: EUR
     has_reality_check: 1
 'Binary (C.R.) S.A.':
@@ -109,6 +164,25 @@
       - staysinout
       - touchnotouch
       - spreads
+    legal_allowed_contract_types:
+      - ASIANU
+      - ASIAND
+      - CALL
+      - PUT
+      - DIGITDIFF
+      - DIGITMATCH
+      - DIGITOVER
+      - DIGITUNDER
+      - DIGITEVEN
+      - DIGITODD
+      - EXPIRYMISS
+      - EXPIRYRANGE
+      - RANGE
+      - UPORDOWN
+      - ONETOUCH
+      - NOTOUCH
+      - SPREADU
+      - SPREADD
     legal_default_currency: USD
     allows_payment_agents: 1
     payment_agents_residence_disable: jp
@@ -133,6 +207,25 @@
       - staysinout
       - touchnotouch
       - spreads
+    legal_allowed_contract_types:
+      - ASIANU
+      - ASIAND
+      - CALL
+      - PUT
+      - DIGITDIFF
+      - DIGITMATCH
+      - DIGITOVER
+      - DIGITUNDER
+      - DIGITEVEN
+      - DIGITODD
+      - EXPIRYMISS
+      - EXPIRYRANGE
+      - RANGE
+      - UPORDOWN
+      - ONETOUCH
+      - NOTOUCH
+      - SPREADU
+      - SPREADD
     legal_allowed_currencies:
       - USD
 'Binary KK':
@@ -149,11 +242,30 @@
       - JPY
     legal_allowed_markets:
       - forex
+    legal_allowed_underlyings:
+      - frxAUDJPY
+      - frxAUDUSD
+      - frxEURGBP
+      - frxEURJPY
+      - frxEURUSD
+      - frxGBPJPY
+      - frxGBPUSD
+      - frxUSDCAD
+      - frxUSDJPY
     legal_allowed_contract_categories:
       - callput
       - endsinout
       - staysinout
       - touchnotouch
+    legal_allowed_contract_types:
+      - CALLE
+      - PUTE
+      - EXPIRYMISSE
+      - EXPIRYRANGEE
+      - RANGE
+      - UPORDOWN
+      - ONETOUCH
+      - NOTOUCH
     legal_default_currency: JPY
     has_reality_check: 0
 'Binary Virtual Japan':
@@ -164,9 +276,28 @@
       - JPY
     legal_allowed_markets:
       - forex
+    legal_allowed_underlyings:
+      - frxAUDJPY
+      - frxAUDUSD
+      - frxEURGBP
+      - frxEURJPY
+      - frxEURUSD
+      - frxGBPJPY
+      - frxGBPUSD
+      - frxUSDCAD
+      - frxUSDJPY
     legal_allowed_contract_categories:
       - callput
       - endsinout
       - staysinout
       - touchnotouch
+    legal_allowed_contract_types:
+      - CALLE
+      - PUTE
+      - EXPIRYMISSE
+      - EXPIRYRANGEE
+      - RANGE
+      - UPORDOWN
+      - ONETOUCH
+      - NOTOUCH
     legal_default_currency: JPY
