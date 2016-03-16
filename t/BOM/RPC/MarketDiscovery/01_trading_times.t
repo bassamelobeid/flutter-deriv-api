@@ -69,6 +69,7 @@ subtest $method => sub {
   my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
                                                                               });
+  my $email = 'test@binary.com';
   $test_client->email($email);
   $test_client->save;
 
