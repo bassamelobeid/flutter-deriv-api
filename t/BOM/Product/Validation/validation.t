@@ -1234,6 +1234,9 @@ subtest 'tentative events' => sub {
     ok !$c->_validate_expiry_date, 'no error if contract expiring 1 second before tentative event\'s blackout period';
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('2m');
     $c = produce_contract($contract_args);
+    ok !$c->_validate_expiry_date, 'no error if contract is atm';
+    $contract_args->{barrier} = 'S20P';
+    $c = produce_contract($contract_args);
     ok $c->_validate_expiry_date, 'throws error if contract expiring on the tentative event\'s blackout period';
     cmp_ok(($c->_validate_expiry_date)[0]->{message}, 'eq', 'tentative economic events blackout period', 'correct error message');
 

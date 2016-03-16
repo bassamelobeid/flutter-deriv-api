@@ -665,7 +665,7 @@ sub _build_timeindays {
 
     my $atid;
     # If market is Forex, We go with integer days as per the market convention
-    if ($self->market->name eq 'forex' and $self->pricing_engine_name !~ /Intraday::Forex/) {
+    if ($self->market->integer_number_of_day and $self->pricing_engine_name !~ /Intraday::Forex/) {
         my $utils        = BOM::MarketData::VolSurface::Utils->new;
         my $days_between = $self->date_expiry->days_between($self->date_start);
         $atid = $utils->is_before_rollover($self->date_start) ? ($days_between + 1) : $days_between;
@@ -1665,7 +1665,7 @@ sub _pricing_parameters {
         mu                => $self->mu,
         vol               => $self->pricing_vol,
         payouttime_code   => $self->payouttime_code,
-        contract_type     => $self->code,
+        contract_type     => $self->pricing_code,
         underlying_symbol => $self->underlying->symbol,
         market_data       => $self->_market_data,
         market_convention => $self->_market_convention,
@@ -2499,7 +2499,7 @@ sub _validate_start_date {
 
     }
 
-    if ($self->is_intraday and $self->underlying->market->name eq 'forex') {
+    if ($self->is_intraday and not $self->is_atm_bet and $self->underlying->market->name eq 'forex') {
         my $start_epoch = $self->effective_start->epoch;
         if (my $tentative = first { $start_epoch >= $_->{blankout} and $start_epoch <= $_->{blankout_end} } @{$self->tentative_events}) {
             push @errors,
@@ -2578,7 +2578,7 @@ sub _validate_expiry_date {
             }
         }
 
-        if ($self->underlying->market->name eq 'forex') {
+        if (not $self->is_atm_bet and $self->underlying->market->name eq 'forex') {
             my $expiry_epoch = $self->date_expiry->epoch;
             if (my $tentative = first { $expiry_epoch >= $_->{blankout} and $expiry_epoch <= $_->{blankout_end} } @{$self->tentative_events}) {
                 push @errors,
