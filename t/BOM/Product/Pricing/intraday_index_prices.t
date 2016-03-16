@@ -50,11 +50,11 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         next if $category_obj->is_path_dependent;
         my @duration = map { $_ * 60 } (15, 20, 25, 40, 60);
         foreach my $duration (@duration) {
-            my $vol = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul})->get_volatility({
-                delta => 50,
-                days  => $duration / 24
-            });
-            foreach my $contract_type (get_offerings_with_filter('contract_type', {contract_category => $contract_category})) {
+            my %equal = (
+                CALLE => 1,
+                PUTE  => 1,
+            );
+            foreach my $contract_type (grep { !$equal{$_} } get_offerings_with_filter('contract_type', {contract_category => $contract_category})) {
                 my $args = {
                     bet_type     => $contract_type,
                     underlying   => $ul,

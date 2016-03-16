@@ -60,7 +60,14 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         volatility => $vol,
                     })};
             foreach my $barrier (@barriers) {
-                foreach my $contract_type (get_offerings_with_filter('contract_type', {contract_category => $contract_category})) {
+                my %equal = (
+                    CALLE        => 1,
+                    PUTE         => 1,
+                    EXPIRYMISSE  => 1,
+                    EXPIRYRANGEE => 1,
+                );
+                foreach my $contract_type (grep { !$equal{$_} } get_offerings_with_filter('contract_type', {contract_category => $contract_category}))
+                {
                     my $args = {
                         bet_type     => $contract_type,
                         underlying   => $ul,
