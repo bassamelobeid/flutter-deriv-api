@@ -76,9 +76,13 @@ sub _build_weekend_outlier_tick {
 
 Only allow integer barrier for this market. Default to false.
 
+=head2 integer_number_of_day
+
+Volatility surface expiry convention. For Forex and commodities it is integer number of day.
+
 =cut
 
-has integer_barrier => (
+has [qw(integer_barrier integer_number_of_day)] => (
     is      => 'ro',
     default => 0,
 );
