@@ -96,9 +96,6 @@ is $old_session->token, undef, 'Cannot access old token';
 
 $session_cookie3->end_session();
 $all_session = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($email));
-
-$session_cookie3->end_session();
-$all_session = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($email));
 is scalar @$all_session, 0, 'All session ended correctly';
 
 $session_cookie3 = BOM::Platform::SessionCookie->new(
