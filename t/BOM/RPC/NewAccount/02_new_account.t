@@ -73,7 +73,7 @@ subtest $method => sub {
         #suppress warning because we want to test this error
         local $SIG{__WARN__} = sub {
             my $msg = shift;
-            if ($msg !~ /Use of uninitialized value in pattern match/) {
+            if ($msg !~ /Use of uninitialized value \$country in hash element/) {
                 print STDERR $msg;
             }
 
@@ -168,7 +168,7 @@ subtest $method => sub {
             #suppress warning because we want to test this error
             local $SIG{__WARN__} = sub {
                 my $msg = shift;
-                if ($msg !~ /Use of uninitialized value in pattern match/) {
+                if ($msg !~ /Use of uninitialized value $country in hash element/) {
                     print STDERR $msg;
                 }
             };
