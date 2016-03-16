@@ -8,7 +8,7 @@ use Moose;
 use namespace::autoclean;
 
 has 'ua' => (
-    is => 'ro',
+    is       => 'ro',
     required => 1,
 );
 has 'client' => (
@@ -81,7 +81,7 @@ sub has_error {
 
 sub error_code_is {
     my ($self, $expected, $description) = @_;
-    my $result = $self->result || {};
+    my $result = $self->result    || {};
     my $error  = $result->{error} || {};
     $self->_test('is', $error->{code}, $expected, $description);
     return $self;
@@ -89,7 +89,7 @@ sub error_code_is {
 
 sub error_message_is {
     my ($self, $expected, $description) = @_;
-    my $result = $self->result || {};
+    my $result = $self->result    || {};
     my $error  = $result->{error} || {};
     $self->_test('is', $error->{message_to_client}, $expected, $description);
     return $self;
