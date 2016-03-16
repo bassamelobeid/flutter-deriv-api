@@ -6,6 +6,7 @@ use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use Data::Dumper;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $email       = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
