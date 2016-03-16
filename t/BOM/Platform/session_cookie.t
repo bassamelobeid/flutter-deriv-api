@@ -84,7 +84,7 @@ my $session_cookie3 = BOM::Platform::SessionCookie->new(
 
 $session_cookie3->end_other_sessions();
 
-my $all_session = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($email));
+my $all_session = BOM::System::RedisReplicated::redis_read()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($email));
 is scalar @$all_session, 1, 'Correct number of session in collection';
 is $all_session->[0], $session_cookie3->token, 'Collection has only current token';
 
@@ -95,7 +95,7 @@ $old_session = BOM::Platform::SessionCookie->new({token => $session_cookie2->tok
 is $old_session->token, undef, 'Cannot access old token';
 
 $session_cookie3->end_session();
-$all_session = BOM::System::RedisReplicated::redis_write()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($email));
+$all_session = BOM::System::RedisReplicated::redis_read()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($email));
 is scalar @$all_session, 0, 'All session ended correctly';
 
 $session_cookie3 = BOM::Platform::SessionCookie->new(
