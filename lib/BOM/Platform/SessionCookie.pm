@@ -1,3 +1,4 @@
+package BOM::Platform::SessionCookie;
 
 =head1 NAME
 
@@ -13,11 +14,11 @@ BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
 
 =cut
 
-package BOM::Platform::SessionCookie;
 use Bytes::Random::Secure;
 use JSON;
 use Carp;
 use Array::Utils qw (array_minus);
+use Digest::MD5 qw(md5_hex);
 
 use BOM::System::RedisReplicated;
 
@@ -108,10 +109,14 @@ sub new {    ## no critic RequireArgUnpack
         )->string_from($STRING, $TOKEN_LENGTH);
         $self->{loginat} ||= time;
         BOM::System::RedisReplicated::redis_write()->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
+        # clear collection for expired sessions
+        _clear_session_collection($self);
+        BOM::System::RedisReplicated::redis_write()->sadd('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $self->{token});
     }
     $self->{expires_in} ||= $EXPIRES_IN;
     $self->{issued_at} = time;
-    BOM::System::RedisReplicated::redis_write()->expire('LOGIN_SESSION::' . $self->{token}, $self->{expires_in});
+    BOM::System::RedisReplicated::redis_write()->expire('LOGIN_SESSION::' . $self->{token},                     $self->{expires_in});
+    BOM::System::RedisReplicated::redis_write()->expire('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}), $self->{expires_in});
     return bless $self, $package;
 }
 
@@ -138,7 +143,42 @@ Deletes from redis
 sub end_session {    ## no critic
     my $self = shift;
     return unless $self->{token};
+
+    my $key = md5_hex($self->{email});
     BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION::' . $self->{token});
+    BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . $key, $self->{token});
+}
+
+sub end_other_sessions {
+    my $self = shift;
+    return unless $self->{token};
+
+    ## no critic
+    BOM::System::RedisReplicated::redis_write()->eval(<<LUA_SCRIPT, 0, "LOGIN_SESSION_COLLECTION::" . md5_hex($self->{email}), $self->{token});
+for k,v in pairs(redis.call("SMEMBERS", ARGV[1])) do
+    if v ~= ARGV[2] then
+        redis.call("DEL", "LOGIN_SESSION::" .. v)
+        redis.call("SREM", ARGV[1], v)
+    end
+end
+LUA_SCRIPT
+
+    return;
+}
+
+sub _clear_session_collection {
+    my $self = shift;
+
+    ## no critic
+    BOM::System::RedisReplicated::redis_write()->eval(<<LUA_SCRIPT, 0, "LOGIN_SESSION_COLLECTION::" . md5_hex($self->{email}));
+for k,v in pairs(redis.call("SMEMBERS", ARGV[1])) do
+    if not redis.call("GET", "LOGIN_SESSION::" .. v) then
+        redis.call("SREM", ARGV[1], v)
+    end
+end
+LUA_SCRIPT
+
+    return;
 }
 
 1;

@@ -1,11 +1,13 @@
 use Test::Most;
 use Test::FailWarnings;
+use Digest::MD5 qw(md5_hex);
+
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Context::Request;
+use BOM::System::RedisReplicated;
 
-my $loginid  = 'VRTC10001';
-my $password = 'abc123';
-my $email    = 'xyz@binary.com';
+my $loginid = 'VRTC10001';
+my $email   = 'xyz@binary.com';
 
 my $session_cookie = BOM::Platform::SessionCookie->new(
     loginid => $loginid,
@@ -82,5 +84,39 @@ subtest 'session generation is fork-safe', sub {
     isnt $c1, $c3, 'c1 <> c3';
     isnt $c2, $c3, 'c2 <> c3';
 };
+
+my $session_cookie3 = BOM::Platform::SessionCookie->new(
+    loginid => $loginid,
+    email   => $email,
+);
+
+$session_cookie3->end_other_sessions();
+
+my $all_session = BOM::System::RedisReplicated::redis_read()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($email));
+is scalar @$all_session, 1, 'Correct number of session in collection';
+is $all_session->[0], $session_cookie3->token, 'Collection has only current token';
+
+my $old_session = BOM::Platform::SessionCookie->new({token => $session_cookie->token});
+is $old_session->token, undef, 'Cannot access old token';
+
+$old_session = BOM::Platform::SessionCookie->new({token => $session_cookie2->token});
+is $old_session->token, undef, 'Cannot access old token';
+
+$session_cookie3->end_session();
+$all_session = BOM::System::RedisReplicated::redis_read()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($email));
+is scalar @$all_session, 0, 'All session ended correctly';
+
+$session_cookie3 = BOM::Platform::SessionCookie->new(
+    loginid    => $loginid,
+    email      => $email,
+    expires_in => 1
+);
+ok $session_cookie3->token, 'token not expired yet';
+
+# make sure token expires so sleeping
+sleep(4);
+
+$session_cookie3 = BOM::Platform::SessionCookie->new({token => $session_cookie3->token});
+is $session_cookie3->token, undef, 'token already expired';
 
 done_testing();
