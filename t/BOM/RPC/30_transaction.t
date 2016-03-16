@@ -5,6 +5,7 @@ use utf8;
 use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
+use Test::MockModule;
 use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
