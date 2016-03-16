@@ -224,7 +224,12 @@ subtest 'send_ask' => sub {
         'long code  is correct'
     );
     {
-        local $SIG{'__WARN__'} = sub { };
+        local $SIG{'__WARN__'} = sub {
+            my $msg = shift;
+            if ($msg !~ /Use of uninitialized value in pattern match/) {
+                print STDERR $msg;
+            }
+        };
         $c->call_ok(
             'send_ask',
             {
