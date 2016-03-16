@@ -334,29 +334,38 @@ sub _get_client_details {
 sub _knowledge_test_available_date {
     my $last_test_epoch = shift;
 
-    my $dt;
+    my $now = DateTime->now;
+    $now->set_time_zone('Asia/Tokyo');
+
+    my ($dt, $avail_monday);
     if (not $last_test_epoch) {
         # no test is taken so far
-
-        $dt = DateTime->now;
-        $dt->set_time_zone('Asia/Tokyo');
+        $dt = $now;
+        $avail_monday = 1;
     } else {
         # test can only be repeated after 24 hours of business day (exclude weekends)
         #   a) if test taken on Tues 3pm, next test available is on Wed 3pm
         #   b) if test taken on Fri 3pm, next test available is on Mon 3pm
+        #   c) if test taken on Tues 3pm, but today is weekends, next test available in on Mon 12am
         # By right no test should already been taken on Sat & Sun, but is handled here just in case.
 
         $dt = DateTime->from_epoch(epoch => $last_test_epoch);
         $dt->set_time_zone('Asia/Tokyo');
         $dt->add(days => 1);
+
+        # if today is weekends, next test will be avilable on Monday 12am
+        if ($now >= 6 and $dt->epoch < $now->epoch) {
+            $dt = $now;
+            $avail_monday = 1;
+        }
     }
 
     my $dow = $dt->day_of_week;
     if ($dow >= 6) {
         $dt->add(days => (8 - $dow));
 
-        if (not $last_test_epoch) {
-            # if not taken any test before & is weekend now, allow test starting from coming Mon 12am JST
+        if ($avail_monday) {
+            # is weekend now, allow test starting from coming Mon 12am JST
             $dt = DateTime->new(
                 year      => $dt->year,
                 month     => $dt->month,
