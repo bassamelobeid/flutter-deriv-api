@@ -38,6 +38,11 @@ The data structure representing BOM offerings.
 
 =cut
 
+has landing_company => (
+    is      => 'ro',
+    default => 'costarica',
+);
+
 has tree => (
     is         => 'ro',
     lazy_build => 1,
@@ -203,7 +208,7 @@ sub _build_tree {
 
     foreach my $market (
         sort { $a->display_order <=> $b->display_order }
-        map  { BOM::Market::Registry->instance->get($_) } get_offerings_with_filter('market'))
+        map { BOM::Market::Registry->instance->get($_) } get_offerings_with_filter('market', {landing_company => $self->landing_company}))
     {
         my $children    = [];
         my $market_info = {
@@ -213,7 +218,12 @@ sub _build_tree {
         };
         foreach my $submarket (
             sort { $a->display_order <=> $b->display_order }
-            map { BOM::Market::SubMarket::Registry->instance->get($_) } get_offerings_with_filter('submarket', {market => $market->name}))
+            map  { BOM::Market::SubMarket::Registry->instance->get($_) } get_offerings_with_filter(
+                'submarket',
+                {
+                    market          => $market->name,
+                    landing_company => $self->landing_company
+                }))
         {
             my $children       = [];
             my $submarket_info = {
@@ -225,7 +235,12 @@ sub _build_tree {
             };
             foreach my $ul (
                 sort { $a->translated_display_name() cmp $b->translated_display_name() }
-                map { BOM::Market::Underlying->new($_) } get_offerings_with_filter('underlying_symbol', {submarket => $submarket->name}))
+                map  { BOM::Market::Underlying->new($_) } get_offerings_with_filter(
+                    'underlying_symbol',
+                    {
+                        submarket       => $submarket->name,
+                        landing_company => $self->landing_company
+                    }))
             {
                 my $children        = [];
                 my $underlying_info = {
@@ -237,8 +252,12 @@ sub _build_tree {
                 };
                 foreach my $bc (
                     sort { $a->display_order <=> $b->display_order }
-                    map  { BOM::Product::Contract::Category->new($_) }
-                    get_offerings_with_filter('contract_category', {underlying_symbol => $ul->symbol}))
+                    map  { BOM::Product::Contract::Category->new($_) } get_offerings_with_filter(
+                        'contract_category',
+                        {
+                            underlying_symbol => $ul->symbol,
+                            landing_company   => $self->landing_company
+                        }))
                 {
                     my $children      = [];
                     my $category_info = {

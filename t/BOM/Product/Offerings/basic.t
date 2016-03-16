@@ -20,7 +20,7 @@ subtest 'get_offerings_flyby' => sub {
             sort { $a cmp $b } (
                 'barrier_category',               'contract_category',
                 'contract_type',                  'contract_display',
-                'expiry_type',                    'market',
+                'expiry_type',                    'landing_company' , 'market',
                 'exchange_name',                  'sentiment',
                 'start_type',                     'submarket',
                 'underlying_symbol',              'min_contract_duration',
@@ -35,7 +35,7 @@ subtest 'get_offerings_flyby' => sub {
     subtest 'example queries' => sub {
         is(scalar $fb->query('"start_type" IS "forward" -> "market"'),          5,  'Forward-starting is offered on 6 markets.');
         is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 30, 'Tick expiries are offered on 30 underlyings.');
-        is(scalar $fb->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'), 12, 'Twelve callput options on frxUSDJPY');
+        is(scalar $fb->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY" AND "landing_company" IS "iom"'), 12, 'Twelve callput options on frxUSDJPY');
         is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 8,  'Eight underlyings trade on the RANDOM exchange');
         is(scalar $fb->query('"market" IS "random" -> "underlying_symbol"'),        12, '...out of 12 total random market symbols.');
     };
@@ -60,7 +60,7 @@ subtest 'get_offerings_with_filter' => sub {
     delete $filtration->{contract_category};
     eq_or_diff(
         [sort(get_offerings_with_filter($to, $filtration))],
-        [sort qw(CALL PUT EXPIRYMISS EXPIRYRANGE ONETOUCH NOTOUCH RANGE SPREADD SPREADU UPORDOWN)],
+        [sort qw(CALL PUT EXPIRYRANGE EXPIRYMISS ONETOUCH NOTOUCH RANGE SPREADD SPREADU UPORDOWN)],
         '... explodes without a contract category'
     );
     $filtration->{expiry_type} = 'tick';
@@ -146,7 +146,8 @@ subtest 'get_historical_pricer_durations' => sub {
     SKIP: {
         skip 'skip because of euro pairs offerings adjustment', 2 unless exists $eu_tnt->{intraday};
         cmp_ok $eu_cp->{intraday}->{min}->seconds, '<',  $eu_tnt->{intraday}->{min}->seconds, 'callputs have shorter minimums';
-        cmp_ok $eu_cp->{intraday}->{max}->seconds, '==', $eu_tnt->{intraday}->{max}->seconds, '... and run for the same maximum';
+        cmp_ok $eu_cp->{intraday}->{max}->seconds, '==', 18000, '5h eu callput';
+        cmp_ok $eu_tnt->{intraday}->{max}->seconds, '==', 18000, '5h tnt';
     }
 
     my $r100_digits_tick = get_permitted_expiries({
