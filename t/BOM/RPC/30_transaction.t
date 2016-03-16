@@ -27,11 +27,16 @@ subtest 'buy' => sub {
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'invalid token')
         ->error_message_is('令牌无效。', 'invalid token');
 
-    $client->set_status('disabled', 1, 'disabled for test');
-    $client->save;
     $params->{token} = $token;
+
+    #I don't know how to set such a scenario that a valid token id have no valid client,
+    #So I mock client module to simulate this scenario.
+    my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
+    $mocked_client->mock('new',sub {return undef});
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'AuthorizationRequired')
       ->error_message_is('请登录', 'please login');
+    undef $mocked_client;
+
 
     ok(1);
 };
