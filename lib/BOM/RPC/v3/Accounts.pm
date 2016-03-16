@@ -20,6 +20,7 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Static::Config;
 use BOM::Platform::Account::Real::default;
+use BOM::Platform::SessionCookie;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -312,6 +313,9 @@ sub change_password {
         $obj->password($new_password);
         $obj->save;
     }
+
+    # end all other sessions
+    BOM::Platform::SessionCookie->new({token => $params->{token}})->end_other_sessions();
 
     BOM::System::AuditLog::log('password has been changed', $client->email);
     send_email({
