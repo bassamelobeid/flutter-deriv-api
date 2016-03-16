@@ -71,7 +71,13 @@ subtest $method => sub {
     )->token;
     {
         #suppress warning because we want to test this error
-        local $SIG{__WARN__} = sub { };
+        local $SIG{__WARN__} = sub {
+            my $msg = shift;
+            if ($msg !~ /Use of uninitialized value in pattern match/) {
+                print STDERR $msg;
+            }
+
+        };
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('invalid', 'If could not be created account it should return error')->error_message_is(
             'Извините, но открытие счёта недоступно.',
@@ -160,7 +166,12 @@ subtest $method => sub {
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
         {
             #suppress warning because we want to test this error
-            local $SIG{__WARN__} = sub { };
+            local $SIG{__WARN__} = sub {
+                my $msg = shift;
+                if ($msg !~ /Use of uninitialized value in pattern match/) {
+                    print STDERR $msg;
+                }
+            };
             $rpc_ct->call_ok($method, $params)
                 ->has_no_system_error->has_error->error_code_is('invalid', 'It should return error when try to create account without residence')
                 ->error_message_is(
