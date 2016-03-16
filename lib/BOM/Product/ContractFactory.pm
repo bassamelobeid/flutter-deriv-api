@@ -33,12 +33,16 @@ our @EXPORT_OK = qw( produce_contract make_similar_contract simple_contract_info
 require BOM::Product::Contract::Asiand;
 require BOM::Product::Contract::Asianu;
 require BOM::Product::Contract::Call;
+require BOM::Product::Contract::Calle;
+require BOM::Product::Contract::Pute;
 require BOM::Product::Contract::Digitdiff;
 require BOM::Product::Contract::Digiteven;
 require BOM::Product::Contract::Digitmatch;
 require BOM::Product::Contract::Digitodd;
 require BOM::Product::Contract::Digitover;
 require BOM::Product::Contract::Digitunder;
+require BOM::Product::Contract::Expirymisse;
+require BOM::Product::Contract::Expiryrangee;
 require BOM::Product::Contract::Expirymiss;
 require BOM::Product::Contract::Expiryrange;
 require BOM::Product::Contract::Invalid;
@@ -114,7 +118,7 @@ sub produce_contract {
     if (
         grep { /^$bet_type$/ }
         qw/
-        Asiand Asianu Call Digitdiff Digiteven Digitmatch Digitodd Digitover Digitunder Expirymiss
+        Expiryrangee Expirymisse Calle Pute Asiand Asianu Call Digitdiff Digiteven Digitmatch Digitodd Digitover Digitunder Expirymiss
         Expiryrange Notouch Onetouch Put Range Spreadd Spreadu Upordown Vanilla_call Vanilla_put
         /
         )
