@@ -12,7 +12,8 @@ and commodities.
 =cut
 
 use Moose;
-use BOM::MarketData::Dividend;
+use Quant::Framework::Dividend;
+use BOM::System::Chronicle;
 use Date::Utility;
 
 =head2 symbol
@@ -36,9 +37,11 @@ has for_date => (
 sub rate_for {
     my ($self, $tiy) = @_;
 
-    return BOM::MarketData::Dividend->new(
-        symbol   => $self->symbol,
-        for_date => $self->for_date
+    return Quant::Framework::Dividend->new(
+        symbol           => $self->symbol,
+        for_date         => $self->for_date,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     )->rate_for($tiy);
 }
 

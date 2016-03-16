@@ -7,6 +7,7 @@ commodities:
     weekend_outlier_tick: 0.05
     display_name: "Commodities"
     display_order: 4
+    integer_number_of_day: 1
     max_suspend_trading_feed_delay: '2m'
     eod_blackout_expiry: '1m'
     eod_blackout_start: '0s'
@@ -25,10 +26,14 @@ commodities:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             DIGITMATCH: 4
             DIGITDIFF: 4
             ASIANU: 4
@@ -46,6 +51,7 @@ forex:
     deep_otm_threshold: 0.05
     display_name: "Forex"
     display_order: 1
+    integer_number_of_day: 1
     eod_blackout_expiry: '0s'
     eod_blackout_start: '0s'
     sod_blackout_start: '0s'
@@ -64,8 +70,12 @@ forex:
         apply_traded_markets_markup: 1
         apply_butterfly_markup: 1
         digital_spread:
+            CALLE: 3.5
+            PUTE: 3.5
             CALL: 3.5
             PUT: 3.5
+            EXPIRYMISSE: 3.5
+            EXPIRYRANGEE: 3.5
             EXPIRYMISS: 3.5
             EXPIRYRANGE: 3.5
             DIGITMATCH: 3.5
@@ -92,8 +102,12 @@ futures:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
             DIGITMATCH: 4
@@ -126,8 +140,12 @@ indices:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
             DIGITMATCH: 4
@@ -165,8 +183,12 @@ stocks:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
+            CALLE: 4
+            PUTE: 4
             CALL: 4
             PUT: 4
+            EXPIRYMISSE: 4
+            EXPIRYRANGEE: 4
             EXPIRYMISS: 4
             EXPIRYRANGE: 4
             DIGITMATCH: 4
@@ -198,8 +220,12 @@ random:
         - 'random'
     markups:
         digital_spread:
+            CALLE: 3
+            PUTE: 3
             CALL: 3
             PUT: 3
+            EXPIRYMISSE: 3
+            EXPIRYRANGEE: 3
             EXPIRYMISS: 3
             EXPIRYRANGE: 3
             DIGITMATCH: 3
