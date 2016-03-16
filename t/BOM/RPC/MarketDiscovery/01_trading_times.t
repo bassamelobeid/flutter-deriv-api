@@ -5,6 +5,8 @@ use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use Data::Dumper;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Platform::SessionCookie;
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $method = 'trading_times';
