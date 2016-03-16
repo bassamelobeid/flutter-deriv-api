@@ -2500,7 +2500,7 @@ sub _validate_start_date {
     }
 
     if ($self->tick_expiry && $self->underlying->market->name ne 'random') {
-        my $tick_expiry_blackout = Date::Utility->new->truncate_to_day->plus_time_interval('20h');
+        my $tick_expiry_blackout = $self->date_pricing->truncate_to_day->plus_time_interval('20h');
         if ($self->date_start->is_after($tick_expiry_blackout)) {
             push @errors,
                 {
