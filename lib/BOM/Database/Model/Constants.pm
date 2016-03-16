@@ -29,6 +29,7 @@ Readonly our $BET_CLASS_TO_TYPE_MAP => {
     'spread_bet' => ['SPREADU', 'SPREADD'],
     'higher_lower_bet' => [
         'FLASHU',      'INTRADU',      'DOUBLEUP',      'FLASHD',         'INTRADD', 'DOUBLEDOWN', 'CALL', 'PUT',
+        'CALLE', 'PUTE',
         'TWOFORONEUP', 'TWOFORWARDUP', 'TWOFORONEDOWN', 'TWOFORWARDDOWN', 'ASIANU',  'ASIAND'
     ],
 
@@ -40,7 +41,7 @@ Readonly our $BET_CLASS_TO_TYPE_MAP => {
         'RUNBET_DOUBLEUP',   'RUNBET_DOUBLEDOWN',
     ],
 
-    'range_bet' => ['RANGE', 'UPORDOWN', 'EXPIRYRANGE', 'EXPIRYMISS'],
+    'range_bet' => ['RANGE', 'UPORDOWN', 'EXPIRYRANGE', 'EXPIRYMISS', 'EXPIRYRANGEE', 'EXPIRYMISSE'],
 
     'touch_bet' => ['ONETOUCH',   'NOTOUCH'],
     'digit_bet' => ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
