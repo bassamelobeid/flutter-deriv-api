@@ -8,7 +8,6 @@ use Test::Mojo;
 use Data::Dumper;
 
 my $email       = 'test@binary.com';
-$test_client->save;
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                                                                         broker_code => 'VRTC',
                                                                         email => $email,
@@ -23,6 +22,8 @@ my $token = BOM::Platform::SessionCookie->new(
 $client->deposit_virtual_funds;
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 subtest 'buy' => sub {
+  my $params = {language => 'ZH_CN'};
+  $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('abcd', 'invalid loginid')->error_message_is->('abcd','invvalid loginid');
   ok(1);
 };
 
