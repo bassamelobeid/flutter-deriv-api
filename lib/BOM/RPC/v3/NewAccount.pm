@@ -337,7 +337,7 @@ sub _knowledge_test_available_date {
     my ($dt, $skip_to_monday);
     if (not $last_test_epoch) {
         # no test is taken so far
-        $dt              = $now;
+        $dt             = $now;
         $skip_to_monday = 1;
     } else {
         # test can only be repeated after 24 hours of business day (exclude weekends)
