@@ -9,7 +9,7 @@ use Data::Dumper;
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 subtest 'residence_list' => sub{
-  diag Dumper($c->call_ok('residence',params => {})->response);
+  diag ($c->call_ok('residence_list',params => {}));
   ok(1);
 };
 
