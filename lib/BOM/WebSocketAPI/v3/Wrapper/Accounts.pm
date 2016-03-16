@@ -472,4 +472,28 @@ sub set_financial_assessment {
     return;
 }
 
+sub get_financial_assessment {
+    my ($c, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'get_financial_assessment',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('get_financial_assessment', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type                 => 'get_financial_assessment',
+                    get_financial_assessment => $response
+                };
+            }
+        },
+        {
+            args  => $args,
+            token => $c->stash('token')});
+
+    return;
+}
+
 1;
