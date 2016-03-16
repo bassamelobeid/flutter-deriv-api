@@ -561,6 +561,14 @@ subtest 'smartfx_turnover_limit', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
             note "mocked BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit} returning 149.99";
+            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+            (my $fname = $class) =~ s!::!/!g;
+            $INC{$fname . '.pm'} = 1;
+            # This mocked should be removed the turnover limit on Master Live Server.
+            my $mock_limits = Test::MockModule->new($class);
+            $mock_limits->mock(tick_expiry_engine_turnover_limit =>
+                    sub { note "mocked app_config->quants->client_limits->tick_expiry_engine_turnover_limit returning 149.99"; 150.01 });
+            note "mocked BOM::Platform::Static::Config::quants->{client_limits}->{tick_expiry_engine_turnover_limit} returning 149.99";
             BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit} = 149.99;
 
             is $txn->buy, undef, 'bought 1st contract';
@@ -603,6 +611,13 @@ subtest 'smartfx_turnover_limit', sub {
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
+            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+            (my $fname = $class) =~ s!::!/!g;
+            $INC{$fname . '.pm'} = 1;
+            # This mocked should be removed the turnover limit on Master Live Server.
+            my $mock_limits = Test::MockModule->new($class);
+            $mock_limits->mock(tick_expiry_engine_turnover_limit =>
+                    sub { note "mocked app_config->quants->client_limits->tick_expiry_engine_turnover_limit returning 149.99"; 150.01 });
             note "mocked BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit} returning 150";
             BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit} = 150;
 
