@@ -31,7 +31,7 @@ subtest 'buy' => sub {
     $client->save;
     $params->{token} = $token;
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'AuthorizationRequired')
-      ->error_message_is->('请登录', 'please login');
+      ->error_message_is('请登录', 'please login');
 
     ok(1);
 };
