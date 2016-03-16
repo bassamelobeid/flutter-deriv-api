@@ -6,9 +6,8 @@ use BOM::Platform::SessionCookie;
 use BOM::Platform::Context::Request;
 use BOM::System::RedisReplicated;
 
-my $loginid  = 'VRTC10001';
-my $password = 'abc123';
-my $email    = 'xyz@binary.com';
+my $loginid = 'VRTC10001';
+my $email   = 'xyz@binary.com';
 
 my $session_cookie = BOM::Platform::SessionCookie->new(
     loginid => $loginid,
