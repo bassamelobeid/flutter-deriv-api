@@ -5,7 +5,7 @@ use warnings;
 
 use BOM::RPC::v3::NewAccount;
 use BOM::WebSocketAPI::Websocket_v3;
-use BOM::Platform::SessionCookie;
+use BOM::Platform::Token::Verification;
 
 sub new_account_virtual {
     my ($c, $args) = @_;
@@ -38,19 +38,19 @@ sub verify_email {
     my $link;
     my $code;
     if ($type eq 'account_opening') {
-        $code = BOM::Platform::SessionCookie->new({
+        $code = BOM::Platform::Token::Verification->new({
                 email       => $email,
                 expires_in  => 3600,
                 created_for => 'account_opening'
             })->token;
     } elsif ($type eq 'lost_password') {
-        $code = BOM::Platform::SessionCookie->new({
+        $code = BOM::Platform::Token::Verification->new({
                 email       => $email,
                 expires_in  => 3600,
                 created_for => 'lost_password'
             })->token;
     } elsif ($type eq 'paymentagent_withdraw') {
-        $code = BOM::Platform::SessionCookie->new({
+        $code = BOM::Platform::Token::Verification->new({
                 email       => $email,
                 expires_in  => 3600,
                 created_for => 'paymentagent_withdraw'
