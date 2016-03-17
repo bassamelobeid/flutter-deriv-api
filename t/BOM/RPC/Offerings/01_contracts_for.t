@@ -45,6 +45,7 @@ subtest "Request $method" => sub {
     ok @{ $rpc_ct->result->{available} }, 'It should return available contracts';
 
     $params[1]{args}{region} = 'japan';
+    $params[1]{args}{contracts_for} = 'frxUSDJPY';
     $rpc_ct->call_ok(@params)
             ->has_no_system_error
             ->has_no_error;
