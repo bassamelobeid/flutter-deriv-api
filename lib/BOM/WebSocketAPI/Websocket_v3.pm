@@ -464,10 +464,11 @@ sub _failed_key_value {
 }
 
 sub rpc {
-    my $self     = shift;
-    my $method   = shift;
-    my $callback = shift;
-    my $params   = shift;
+    my $self        = shift;
+    my $method      = shift;
+    my $callback    = shift;
+    my $params      = shift;
+    my $method_name = shift // $method;
 
     my $tv = [Time::HiRes::gettimeofday];
     state $cpu = Proc::CPUUsage->new();
@@ -535,7 +536,7 @@ sub rpc {
 
             if ($res->is_error) {
                 warn $res->error_message;
-                $data = $self->new_error($method, 'CallError', $self->l('Sorry, an error occurred while processing your request.'));
+                $data = $self->new_error($method_name, 'CallError', $self->l('Sorry, an error occurred while processing your request.'));
                 $data->{echo_req} = $args;
                 $data->{req_id} = $req_id if $req_id;
                 $self->send({json => $data});
