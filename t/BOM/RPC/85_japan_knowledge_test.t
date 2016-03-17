@@ -83,8 +83,6 @@ subtest 'create VRTJ & JP client' => sub {
     like $jp_loginid, qr/^JP\d+$/, "JP client created";
 };
 
-my $now = DateTime->now;
-
 subtest 'no test taken yet' => sub {
     $res = BOM::RPC::v3::Accounts::get_settings({ token => $token })->{jp_account_status};
     is $res->{status}, 'jp_knowledge_test_pending', 'jp_knowledge_test_pending';
@@ -159,7 +157,7 @@ subtest 'Test is allowed after 1 day' => sub {
                     status  => 'pass'
                 }});
 
-        my $epoch = $res->{test_taken_epoch};
+        $test_epoch = $res->{test_taken_epoch};
         like $test_epoch, qr/^\d+$/, "Test taken time is epoch";
     };
 
