@@ -86,13 +86,13 @@ sub sell {
         return $auth_error;
     }
 
-    my ($source, $args, @fmbs) = ($params->{source}, $params->{args}, ());
+    my ($source, $args) = ($params->{source}, $params->{args});
     my $id = $args->{sell};
 
-    @fmbs = @{BOM::RPC::v3::PortfolioManagement::__get_contract_by_id($client, $id)};
+    my @fmbs = @{BOM::RPC::v3::PortfolioManagement::__get_contract_by_id($client, $id)};
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidSellContractProposal',
-            message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless (scalar @fmbs);
+            message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless @fmbs;
 
     my $contract = produce_contract($fmbs[0]->{short_code}, $client->currency);
     my $trx = BOM::Product::Transaction->new({
