@@ -57,7 +57,8 @@ sub register {
         sub {
             my ($params) = @_;
 
-            my $args = {country_code => $params->{country}};
+            my $args = {};
+            $args->{country_code} = $params->{country} if exists $params->{country};
             my $loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
             if ($loginid and $loginid =~ /^(\D+)\d+$/) {
                 $args->{broker_code} = $1;
