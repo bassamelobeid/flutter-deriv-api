@@ -151,7 +151,7 @@ subtest 'Test is allowed after 1 day' => sub {
     } 'fake last test date';
 
     subtest 'Pass test' => sub {
-        $res = BOM::RPC::v3::NewAccount::::Japan::jp_knowledge_test({
+        $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
                 token   => $token,
                 args    => {
                     score   => 18,
