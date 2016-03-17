@@ -37,30 +37,55 @@ subtest 'Initialization' => sub {
     } 'Initial RPC server and client connection';
 
     lives_ok {
-        # Insert HSI data ticks
+        my ($fill_start, $populator, @ticks, $fh);
         my $work_dir = File::Temp->newdir();
         my $buffer = BOM::Feed::Buffer::TickFile->new(base_dir => "$work_dir");
-        my $date = $now->minus_time_interval('7h');
-        my $populator = BOM::Feed::Populator::InsertTicks->new({
+
+        # Insert HSI data ticks
+        $fill_start = $now->minus_time_interval('7h');
+        $populator = BOM::Feed::Populator::InsertTicks->new({
             symbols            => [qw/ HSI /],
-            last_migrated_time => $date,
+            last_migrated_time => $fill_start,
             buffer             => $buffer,
         });
 
-        open(my $fh, "<", "/home/git/regentmarkets/bom-test/feed/combined/HSI/17-Dec-12.fullfeed") or die;
-        my @ticks = <$fh>;
+        open($fh, "<", "/home/git/regentmarkets/bom-test/feed/combined/HSI/17-Dec-12.fullfeed") or die $!;
+        @ticks = <$fh>;
         close $fh;
 
         $populator->insert_to_db({
             ticks  => \@ticks,
-            date   => $date,
+            date   => $fill_start,
             symbol => 'HSI',
         });
+
+        # Insert RDYANG data ticks
+        $fill_start = $now->minus_time_interval('1d7h');
+        $populator = BOM::Feed::Populator::InsertTicks->new({
+            symbols            => [qw/ RDYANG /],
+            last_migrated_time => $fill_start,
+            buffer             => $buffer,
+        });
+        open($fh, "<", "/home/git/regentmarkets/bom-test/feed/combined/frxUSDJPY/13-Apr-12.fullfeed") or die $!;
+        @ticks = <$fh>;
+        close $fh;
+        foreach my $i (0..1) {
+            $populator->insert_to_db({
+                ticks  => \@ticks,
+                date   => $fill_start->plus_time_interval("${i}d"),
+                symbol => 'RDYANG',
+            });
+        }
 
         # Insert frxUSDJPY data ticks
         BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/14-Mar-12.dump');
     } 'Setup ticks';
 };
+
+# TODO ???
+my $module = Test::MockModule->new('BOM::Database::FeedDB');
+$module->mock('read_dbh', sub { BOM::Database::FeedDB::write_dbh });
+# /TODO
 
 subtest 'ticks_history' => sub {
     $rpc_ct->call_ok($method, $params)
@@ -87,21 +112,15 @@ subtest 'ticks_history' => sub {
 };
 
 subtest '_validate_start_end' => sub {
-
-    # TODO ???
-    my $module = Test::MockModule->new('BOM::Database::FeedDB');
-    $module->mock('read_dbh', sub { BOM::Database::FeedDB::write_dbh });
-    # /TODO
-
-    my $start = Date::Utility->new('2012-03-14 00:00:00');
+    my $start = $now->minus_time_interval('7h');
     my $end = $start->plus_time_interval('1m');
 
     $params->{args}->{ticks_history} = 'frxUSDJPY';
     $params->{args}->{end} = $end->epoch;
     $params->{args}->{start} = $start->epoch;
+    $params->{args}->{style} = 'ticks';
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $result->{publish}, 'tick', 'It should return ticks data by default';
     is $result->{type}, 'history', 'Result type should be history';
     is scalar( @{ $result->{data}->{history}->{times} } ), 47, 'It should return all ticks between start and end';
     is scalar( @{ $result->{data}->{history}->{prices} } ), 47, 'It should return all ticks between start and end';
@@ -111,13 +130,6 @@ subtest '_validate_start_end' => sub {
     is scalar( @{ $result->{data}->{history}->{times} } ), $params->{args}->{count}, 'It should return last 10 ticks if count sent with start and end time';
     is scalar( @{ $result->{data}->{history}->{prices} } ), $params->{args}->{count}, 'It should return last 10 ticks if count sent with start and end time';
     is $rpc_ct->result->{data}->{history}->{times}->[-1], $end->epoch, 'It should return last 10 ticks if count sent with start and end time';
-
-    $params->{args}->{style} = 'invalid';
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error
-        ->has_error
-        ->error_code_is('InvalidStyle', 'It should return error if sent invalid style')
-        ->error_message_is('Стиль invalid недействителен', 'It should return error if sent invalid style');
 
     $params->{args}->{style} = 'ticks';
     $params->{args}->{end} = $end->minus_time_interval((365*4).'d')->epoch;
@@ -173,14 +185,83 @@ subtest '_validate_start_end' => sub {
     delete $params->{args}->{count};
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is $result->{data}->{history}->{times}->[0], $ul->exchange->closing_on($now)->minus_time_interval('40m')->epoch, 'If exchange close at end time and sent adjust_start_time then it should shift back start time';
+};
 
-    # print Dumper scalar @{ $rpc_ct->result->{data}->{history}->{times} };
-    # print Dumper( Date::Utility->new($now->epoch - BOM::Market::Underlying->new('HSI')->delay_amount*60)->datetime_yyyymmdd_hhmmss );
-    # print Dumper( Date::Utility->new($rpc_ct->result->{data}->{history}->{times}->[-1])->datetime_yyyymmdd_hhmmss );
-    # print Dumper( $now->minus_time_interval('1d')->datetime_yyyymmdd_hhmmss );
-    # print Dumper $rpc_ct->result;
-    # print Dumper $rpc_ct->response;
-    # print $rpc_ct->result->{error}->{message_to_client};
+subtest 'history data style' => sub {
+    my $start = $now->minus_time_interval('5h');
+    my $end = $start->plus_time_interval('2h');
+
+    $params->{args} = {};
+    $params->{args}->{ticks_history} = 'HSI';
+    $params->{args}->{end} = $end->epoch;
+    $params->{args}->{start} = $start->epoch;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is $result->{publish}, 'tick', 'It should return ticks style data by default';
+
+    $params->{args}->{style} = 'invalid';
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error
+        ->has_error
+        ->error_code_is('InvalidStyle', 'It should return error if sent invalid style')
+        ->error_message_is('Стиль invalid недействителен', 'It should return error if sent invalid style');
+
+    delete $params->{args}->{style};
+    $params->{args}->{granularity} = 60;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is $result->{type}, 'candles', 'It should return candles';
+
+    $params->{args}->{style} = 'candles';
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is $result->{type}, 'candles', 'It should return candles';
+
+    delete $params->{args}->{granularity};
+    $params->{args}->{end} = $start->plus_time_interval('40s')->epoch;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is @{$result->{data}->{candles}}, 1, 'It should return only 1 candle if start end diff lower than granularity';
+    is_deeply   [sort keys %{ $result->{data}->{candles}->[0] } ],
+                [sort qw/ open high epoch low close /];
+
+    $start = $now->minus_time_interval('1d7h')->plus_time_interval('1m');
+    $params->{args}->{start} = $start->epoch;
+    $params->{args}->{end} = $start->plus_time_interval('1d1m1s')->epoch;
+    $params->{args}->{granularity} = 60*60*24;
+    $params->{args}->{ticks_history} = 'RDYANG';
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    my $daily_candles_rdyang_first_open = $result->{data}->{candles}->[0]->{open};
+    $start = $now->minus_time_interval('1d7h');
+    $params->{args}->{style} = 'ticks';
+    $params->{args}->{start} = $start->epoch;
+    $params->{args}->{end} = $start->plus_time_interval('1s')->epoch;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is $daily_candles_rdyang_first_open, $result->{data}->{history}->{prices}->[0], 'For the underlying nocturne, for daily ohlc, it should return ticks started from day started time';
+
+    $start = $now->minus_time_interval('5h');
+    $end = $start->plus_time_interval('30m');
+    $params->{args} = {};
+    $params->{args}->{ticks_history} = 'HSI';
+    $params->{args}->{end} = $end->epoch;
+    $params->{args}->{start} = $start->epoch;
+    $params->{args}->{style} = 'candles';
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is @{ $rpc_ct->result->{data}->{candles} }, ($end->minute - $start->minute + 1), 'Granularity is 60 by default it should return candles count equals minute difference';
+    is $params->{args}->{start}, $result->{data}->{candles}->[0]->{epoch};
+    is $params->{args}->{end}, $result->{data}->{candles}->[-1]->{epoch};
+    my $first_candle_close = $result->{data}->{candles}->[0]->{close};
+    my $end_candle_open = $result->{data}->{candles}->[-1]->{open};
+
+    $start = $start->plus_time_interval('30s');
+    $end = $end->plus_time_interval('30s');
+    $params->{args}->{start} = $start->epoch;
+    $params->{args}->{end} = $end->epoch;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is $result->{data}->{candles}->[0]->{close}, $first_candle_close, 'It should align candles by close time';
+    is $result->{data}->{candles}->[-1]->{open}, $end_candle_open, 'It should align candles by open time';
+
+    $params->{args}->{count} = 1;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is @{ $result->{data}->{candles} }, 1, 'It should return one last candle';
+    is $result->{data}->{candles}->[-1]->{open}, $end_candle_open, 'It should return one last candle';
 };
 
 done_testing();
