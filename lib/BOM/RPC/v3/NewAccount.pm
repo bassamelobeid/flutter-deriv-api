@@ -42,27 +42,24 @@ sub new_account_virtual {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
                 message_to_client => $err->{message_to_client}});
-    } else {
-        my $acc = BOM::Platform::Account::Virtual::create_account({
-            details        => $args,
-            email_verified => 1
-        });
-        if (not $acc->{error}) {
-            my $client  = $acc->{client};
-            my $account = $client->default_account->load;
-
-            return {
-                client_id => $client->loginid,
-                currency  => $account->currency_code,
-                balance   => $account->balance
-            };
-        }
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $acc->{error},
-                message_to_client => BOM::Platform::Locale::error_map()->{$acc->{error}}});
     }
 
-    return;
+    my $acc = BOM::Platform::Account::Virtual::create_account({
+        details        => $args,
+        email_verified => 1
+    });
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => $acc->{error},
+            message_to_client => BOM::Platform::Locale::error_map()->{$acc->{error}}}) if $acc->{error};
+
+    my $client  = $acc->{client};
+    my $account = $client->default_account->load;
+    return {
+        client_id => $client->loginid,
+        currency  => $account->currency_code,
+        balance   => $account->balance
+    };
 }
 
 sub verify_email {
