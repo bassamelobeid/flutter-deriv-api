@@ -14,6 +14,46 @@ use BOM::Platform::Static::Config;
 use BOM::Platform::Runtime;
 use BOM::System::AuditLog;
 
+sub get_jp_account_status {
+    my $client = shift;
+
+    my $user = BOM::Platform::User->new({email => $client->email});
+    my @siblings = $user->clients(disabled_ok => 1);
+    my $jp_client = $siblings[0];
+
+    my $jp_account_status;
+
+    if (    @siblings > 1
+        and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual'
+        and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($jp_client->broker)->short eq 'japan')
+    {
+        if ($jp_client->get_status('disabled')) {
+            $jp_account_status->{status} = 'disabled';
+
+            foreach my $status ('jp_knowledge_test_pending', 'jp_knowledge_test_fail', 'jp_activation_pending') {
+                if ($jp_client->get_status($status)) {
+                    $jp_account_status->{status} = $status;
+
+                    if ($status eq 'jp_knowledge_test_pending') {
+                        my $next_dt = BOM::RPC::v3::NewAccount::Japan::knowledge_test_available_date();
+                        $jp_account_status->{next_test_epoch} = $next_dt->epoch;
+                    } elsif ($status eq 'jp_knowledge_test_fail') {
+                        my $tests      = JSON::from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
+                        my $last_epoch = $tests->[-1]->{epoch};
+                        my $next_dt    = BOM::RPC::v3::NewAccount::Japan::knowledge_test_available_date($last_epoch);
+
+                        $jp_account_status->{last_test_epoch} = $last_epoch;
+                        $jp_account_status->{next_test_epoch} = $next_dt->epoch;
+                    }
+                    last;
+                }
+            }
+        } else {
+            $jp_account_status->{status} = 'activated';
+        }
+    }
+}
+
 sub knowledge_test_available_date {
     my $last_test_epoch = shift;
 
