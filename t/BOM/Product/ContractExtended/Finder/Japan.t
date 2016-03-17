@@ -261,13 +261,18 @@ subtest "check_intraday trading_period_non_JPY" => sub {
 
 };
 subtest "predefined barriers" => sub {
-
     my %expected_barriers = (
         call_intraday => {
             available_barriers => [1.15441, 1.15591, 1.15491, 1.16041, 1.15891, 1.15291, 1.15691, 1.15541, 1.15741, 1.15641, 1.15141],
             barrier            => 1.15141,
             expired_barriers   => [],
         },
+        onetouch_daily => {
+            available_barriers => [1.14661, 1.15126, 1.15281, 1.15436,  1.14196, 1.15591,  1.15746, 1.15901, 1.16056, 1.16521, 1.16986],
+            barrier            => 1.15141,
+            expired_barriers   => [1.15281, 1.15436],
+        },
+
         range_daily => {
             available_barriers => [[1.15436, 1.15746], [1.15281, 1.15901], [1.15126, 1.16056], [1.14661, 1.16521], [1.14196, 1.16986]],
             expired_barriers   => [[1.15436, 1.15746],[1.15281, 1.15901]],
@@ -388,6 +393,32 @@ subtest "predefined barriers" => sub {
         "Expected available barriers for daily expiry range"
     ) for keys @{$expected_barriers{expiryrange_daily}{available_barriers}};
     cmp_deeply($contract_3->{expired_barriers}, $expected_barriers{expiryrange_daily}{expired_barriers}, "Expected expired barriers for daily expiry range");
+
+    my $contract_4 = {
+        trading_period => {
+            date_start => {
+                epoch => 1440374400,
+                date  => '2015-08-24 00:00:00'
+            },
+            date_expiry => {
+                epoch => 1440547199,
+                date  => '2015-08-25 23:59:59'
+            },
+            duration => '1d',
+        },
+        barriers          => 1,
+        barrier_category => 'american',
+        contract_category => 'onetouch',
+    };
+    BOM::Product::Contract::Finder::Japan::_set_predefined_barriers({
+        underlying   => $underlying,
+        contract     => $contract_4,
+        current_tick => $underlying->tick_at($now),
+        date         => $now
+    });
+     cmp_bag($contract_4->{available_barriers}, $expected_barriers{onetouch_daily}{available_barriers}, "Expected available barriers for daily onetouch");
+    cmp_bag($contract_4->{expired_barriers}, $expected_barriers{onetouch_daily}{expired_barriers}, "Expected expired barriers for daily onetouch");
+
 
 };
 

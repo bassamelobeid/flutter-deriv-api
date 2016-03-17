@@ -332,12 +332,12 @@ sub _set_predefined_barriers {
     my $args = shift;
     my ($underlying, $contract, $current_tick, $now) = @{$args}{'underlying', 'contract', 'current_tick', 'date'};
 
-    my $trading_period     = $contract->{trading_period};
-    my $date_start         = $trading_period->{date_start}->{epoch};
-    my $date_expiry        = $trading_period->{date_expiry}->{epoch};
-    my $duration           = $trading_period->{duration};
-    my $barrier_key        = join($cache_sep, $underlying->symbol, $date_start, $date_expiry);
-    my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
+    my $trading_period = $contract->{trading_period};
+    my $date_start     = $trading_period->{date_start}->{epoch};
+    my $date_expiry    = $trading_period->{date_expiry}->{epoch};
+    my $duration       = $trading_period->{duration};
+    my $barrier_key    = join($cache_sep, $underlying->symbol, $date_start, $date_expiry);
+    my $available_barriers;    #Cache::RedisDB->get($cache_keyspace, $barrier_key);
     my $current_tick_quote = $current_tick->quote;
     if (not $available_barriers) {
         my $start_tick = $underlying->tick_at($date_start) // $current_tick;
@@ -359,7 +359,7 @@ sub _set_predefined_barriers {
         Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - $now->epoch);
     }
 
-    my @expired_barriers = _get_expired_barriers({
+    my $expired_barriers = _get_expired_barriers({
         available_barriers => $available_barriers,
         start              => $date_start,
         expiry             => $date_expiry,
@@ -370,14 +370,14 @@ sub _set_predefined_barriers {
     if ($contract->{barriers} == 1) {
         my @barriers = sort values %$available_barriers;
 
-        $contract->{expired_barriers}   = $contract->{barrier_category} ne 'american' ? [] : \@expired_barriers;
+        $contract->{expired_barriers}   = $contract->{barrier_category} ne 'american' ? [] : $expired_barriers;
         $contract->{available_barriers} = \@barriers;
         $contract->{barrier}            = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @barriers;
     } elsif ($contract->{barriers} == 2) {
         ($contract->{available_barriers}, $contract->{expired_barriers}) = _get_barriers_pair({
             contract_category  => $contract->{contract_category},
             available_barriers => $available_barriers,
-            expired_barriers   => \@expired_barriers,
+            expired_barriers   => $expired_barriers,
         });
 
     }
@@ -395,13 +395,13 @@ sub _set_predefined_barriers {
 sub _get_expired_barriers {
     my $args = shift;
 
-    my $available_barriers = $args->{available_barriers};
-    my $date_start         = $args->{start};
-    my $date_expiry        = $args->{expiry};
+    my $available_barriers   = $args->{available_barriers};
+    my $date_start           = $args->{start};
+    my $date_expiry          = $args->{expiry};
     my $now                  = $args->{now};
     my $underlying           = $args->{underlying};
     my $expired_barriers_key = join($cache_sep, $underlying->symbol, 'expired_barrier', $date_start, $date_expiry);
-    my @expired_barriers     = Cache::RedisDB->get($cache_keyspace, $expired_barriers_key);
+    my $expired_barriers   = Cache::RedisDB->get($cache_keyspace, $expired_barriers_key);
 
     my ($high, $low) = @{
         $underlying->get_high_low_for_period({
@@ -410,19 +410,21 @@ sub _get_expired_barriers {
             })}{'high', 'low'};
 
     my @barriers                  = sort values %$available_barriers;
-    my %skip_list                 = map { $_ => 1 } (@expired_barriers);
+    my %skip_list                 = $expired_barriers ? map { $_ => 1 } (@$expired_barriers) : ();
     my @unexpired_barriers        = grep { !$skip_list{$_} } @barriers;
     my $new_added_expired_barrier = 0;
     foreach my $barrier (@unexpired_barriers) {
-        push @expired_barriers, $barrier if ($barrier < $high && $barrier > $low);
-        $new_added_expired_barrier++;
-    }
 
+        if ($barrier < $high && $barrier > $low) {
+            push @$expired_barriers, $barrier;
+            $new_added_expired_barrier++;
+        }
+    }
     if ($new_added_expired_barrier > 0) {
-        Cache::RedisDB->set($cache_keyspace, $expired_barriers_key, @expired_barriers, $date_expiry - $now);
+        Cache::RedisDB->set($cache_keyspace, $expired_barriers_key, $expired_barriers, $date_expiry - $now);
     }
 
-    return \@expired_barriers;
+    return $expired_barriers;
 
 }
 
@@ -442,7 +444,7 @@ sub _get_barriers_pair {
 
     my $contract_category        = $args->{contract_category};
     my $available_barriers       = $args->{available_barriers};
-    my @list_of_expired_barriers = $args->{expired_barriers};
+    my $list_of_expired_barriers = $args->{expired_barriers};
     my @keys =
         $contract_category eq 'staysinout'
         ? ((45, 55), (40, 60), (35, 65), (20, 80), (5, 95))
@@ -455,7 +457,7 @@ sub _get_barriers_pair {
 
         if ($contract_category eq 'staysinout') {
             push @expired_barriers, [$first_barrier, $second_barrier]
-                if (grep { $_ eq $first_barrier or $_ eq $second_barrier } @list_of_expired_barriers);
+                if (grep { $_ eq $first_barrier or $_ eq $second_barrier } @$list_of_expired_barriers);
 
         }
 
