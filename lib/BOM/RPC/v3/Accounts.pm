@@ -11,7 +11,6 @@ use Data::Password::Meter;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
-use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::NewAccount::Japan;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
