@@ -10,6 +10,7 @@ use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use BOM::Test::Data::Utility::Product;
 
 my $email  = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -52,6 +53,9 @@ subtest 'buy' => sub {
         ->error_message_is('无法创建合约', 'cannot create contract');
 
     }
+
+    BOM::Test::Data::Utility::Product::create_contract();
+
     $params->{source} = 1;
     $params->{contract_parameters} = {
                                       "proposal"      => 1,
