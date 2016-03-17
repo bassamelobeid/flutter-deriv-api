@@ -23,7 +23,7 @@ subtest 'residence_list' => sub {
 };
 
 subtest 'states_list' => sub {
-    my $result = $c->call_ok('residence_list', {language => 'ZH_CN'})->has_no_system_error->result;
+    my $result = $c->call_ok('states_list', {language => 'ZH_CN'})->has_no_system_error->result;
     my ($cn) = grep { $_->{value} eq 'cn' } @$result;
     is_deeply(
         $cn,
