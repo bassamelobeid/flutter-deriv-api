@@ -168,7 +168,11 @@ sub process_realtime_events {
                         (exists $arguments->{req_id})
                         ? (req_id => $arguments->{req_id})
                         : (),
-                        (pricing_table => $table)}});
+                        (
+                            pricing_table => {
+                                id     => $feed_channels_type->{$channel}->{uuid},
+                                prices => $table,
+                            })}});
 
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
             if (exists $arguments->{subscribe} and $arguments->{subscribe} eq '1') {
