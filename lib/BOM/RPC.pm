@@ -10,6 +10,7 @@ use Time::HiRes;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 use BOM::Database::Rose::DB;
+use BOM::Database::Model::OAuth;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
@@ -55,7 +56,8 @@ sub register {
         sub {
             my ($params) = @_;
 
-            my $args = {country_code => $params->{country}};
+            my $args = {};
+            $args->{country_code} = $params->{country} if exists $params->{country};
             my $loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
             if ($loginid and $loginid =~ /^(\D+)\d+$/) {
                 $args->{broker_code} = $1;
@@ -136,6 +138,7 @@ sub startup {
                 '/login_history'             => register('login_history',             \&BOM::RPC::v3::Accounts::login_history),
                 '/set_account_currency'      => register('set_account_currency',      \&BOM::RPC::v3::Accounts::set_account_currency),
                 '/set_financial_assessment'  => register('set_financial_assessment',  \&BOM::RPC::v3::Accounts::set_financial_assessment),
+                '/get_financial_assessment'  => register('get_financial_assessment',  \&BOM::RPC::v3::Accounts::get_financial_assessment),
                 '/verify_email'              => register('verify_email',              \&BOM::RPC::v3::NewAccount::verify_email),
                 '/send_ask'                  => register('send_ask',                  \&BOM::RPC::v3::Contract::send_ask),
                 '/get_bid'                   => register('get_bid',                   \&BOM::RPC::v3::Contract::get_bid),
