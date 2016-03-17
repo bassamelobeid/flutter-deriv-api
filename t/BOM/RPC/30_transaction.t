@@ -50,7 +50,7 @@ subtest 'buy' => sub {
         ->error_message_is('无法创建合约', 'cannot create contract');
 
     }
-
+    $params->{source} = 1;
     $params->{contract_parameters} = {
                                       "proposal"      => 1,
                                       "amount"        => "100",
