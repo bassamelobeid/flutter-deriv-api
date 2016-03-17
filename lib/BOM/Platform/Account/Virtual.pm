@@ -14,7 +14,7 @@ use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::SessionCookie;
+use BOM::Platform::Token::Verification;
 use BOM::Platform::Account;
 use BOM::Platform::Static::Config;
 
@@ -84,7 +84,7 @@ sub create_account {
         my $link = request()->url_for(
             '/user/validate_link',
             {
-                verify_token => BOM::Platform::SessionCookie->new({
+                verify_token => BOM::Platform::Token::Verification->new({
                         email       => $email,
                         expires_in  => 3600,
                         created_for => 'verify_email'
