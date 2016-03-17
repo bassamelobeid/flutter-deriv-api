@@ -246,6 +246,10 @@ sub sell_expired_contracts {
             next;    # Nothing else to do.
         }
 
+        # Database sync could be delayed resulting in riskd trying resell them again.
+        # Skip them here.
+        next if $bet->is_sold;
+
         my $stats_data = do {
             my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$bet->code};
             my $broker    = lc($client->broker_code);
