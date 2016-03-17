@@ -5,9 +5,10 @@ use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
-use BOM::Platform::SessionCookie;
+use BOM::Platform::Token::Verification;
 use BOM::System::RedisReplicated;
 use List::Util qw(first);
+use RateLimitations qw (flush_all_service_consumers);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
@@ -41,6 +42,21 @@ subtest 'verify_email' => sub {
     $res = decode_json($t->message->[1]);
     is($res->{verify_email}, 1, 'verify_email OK');
     test_schema('verify_email', $res);
+
+    my $old_token = _get_token();
+
+    # send this again to check if invalidates old one
+    $t = $t->send_ok({
+            json => {
+                verify_email => $email,
+                type         => 'account_opening'
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    is($res->{verify_email}, 1, 'verify_email OK');
+    test_schema('verify_email', $res);
+    ok _get_token(), "Token exists";
+
+    is(BOM::Platform::Token::Verification->new({token => $old_token})->token, undef, 'New token will expire old token created earlier');
 };
 
 my $create_vr = {
@@ -51,8 +67,28 @@ my $create_vr = {
     verification_code   => _get_token()};
 
 subtest 'create Virtual account' => sub {
+    $create_vr->{email} = 'invalid@binary.com';
+
     $t = $t->send_ok({json => $create_vr})->message_ok;
     my $res = decode_json($t->message->[1]);
+    is($res->{error}->{code}, 'InvalidEmail', 'different email');
+
+    # as verify_email has rate limit, so clearing for testing other cases also
+    flush_all_service_consumers();
+
+    $t = $t->send_ok({
+            json => {
+                verify_email => $email,
+                type         => 'account_opening'
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    is($res->{verify_email}, 1, 'verify_email OK');
+
+    $create_vr->{email}             = $email;
+    $create_vr->{verification_code} = _get_token();
+
+    $t = $t->send_ok({json => $create_vr})->message_ok;
+    $res = decode_json($t->message->[1]);
     ok($res->{new_account_virtual});
     test_schema('new_account_virtual', $res);
 
@@ -67,8 +103,8 @@ subtest 'Invalid email verification code' => sub {
     $t = $t->send_ok({json => $create_vr})->message_ok;
     my $res = decode_json($t->message->[1]);
 
-    is($res->{error}->{code}, 'email unverified', 'Email unverified as wrong verification code');
-    is($res->{new_account_virtual}, undef, 'NO account created');
+    is($res->{error}->{code},       'InvalidToken', 'wrong verification code');
+    is($res->{new_account_virtual}, undef,          'NO account created');
 };
 
 subtest 'NO duplicate email' => sub {
@@ -104,14 +140,14 @@ subtest 'insufficient data' => sub {
 
 sub _get_token {
     my $redis = BOM::System::RedisReplicated::redis_read;
-    my $tokens = $redis->execute('keys', 'LOGIN_SESSION::*');
+    my $tokens = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
 
     my $code;
     foreach my $key (@{$tokens}) {
         my $value = JSON::from_json($redis->get($key));
 
         if ($value->{email} eq $email) {
-            $key =~ /^LOGIN_SESSION::(\w+)$/;
+            $key =~ /^VERIFICATION_TOKEN::(\w+)$/;
             $code = $1;
             last;
         }

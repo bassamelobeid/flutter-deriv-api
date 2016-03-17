@@ -293,6 +293,10 @@ my @dispatch = (
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_maltainvest,
         1, 'admin'
     ],
+    [
+        'jp_knowledge_test',
+        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::jp_knowledge_test, 1, 'admin'
+    ],
 );
 
 # key: category, value:  hashref (descriptor) with fields
