@@ -33,6 +33,9 @@ my @params = (
     }
 );
 
+$t = Test::Mojo->new('BOM::RPC');
+$rpc_ct = Test::BOM::RPC::Client->new( ua => $t->app->ua );
+
 subtest 'Initialization' => sub {
     lives_ok {
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -53,11 +56,6 @@ subtest 'Initialization' => sub {
             email   => $client->email,
         )->token;
     } 'Initial clients';
-
-    lives_ok {
-        $t = Test::Mojo->new('BOM::RPC');
-        $rpc_ct = Test::BOM::RPC::Client->new( ua => $t->app->ua );
-    } 'Initial RPC server';
 };
 
 subtest 'Auth client' => sub {
