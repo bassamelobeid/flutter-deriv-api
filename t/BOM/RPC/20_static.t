@@ -32,8 +32,8 @@ subtest 'states_list' => sub {
     is_deeply(
         $sh,
         {
-            'value'     => '31',
-            'text'      => "Shanghai",
+            'value' => '31',
+            'text'  => "Shanghai",
         },
         'Shanghai is correct'
     );
