@@ -27,12 +27,8 @@ my @params = (
     }
 );
 
-subtest 'Initialization' => sub {
-    lives_ok {
-        $t = Test::Mojo->new('BOM::RPC');
-        $rpc_ct = Test::BOM::RPC::Client->new( ua => $t->app->ua );
-    } 'Initial RPC server and client connection';
-};
+$t = Test::Mojo->new('BOM::RPC');
+$rpc_ct = Test::BOM::RPC::Client->new( ua => $t->app->ua );
 
 subtest "Request $method" => sub {
     $rpc_ct->call_ok(@params)
