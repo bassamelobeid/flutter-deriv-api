@@ -100,6 +100,23 @@ subtest 'buy' => sub {
         'longcode is correct'
     );
 
+    $contract = BOM::Test::Data::Utility::Product::create_contract(is_spread => 1);
+    $params->{contract_parameters} = {
+                                      "proposal"      => 1,
+                                      "amount"        => "100",
+                                      "basis"         => "payout",
+                                      "contract_type" => "SPREADU",
+                                      "currency"      => "USD",
+                                      "stop_profit"   => "10",
+                                      "stop_type"     => "point",
+                                      "amount_per_point" => "1",
+                                      "stop_loss"    => "10",
+                                      "symbol"        => "R_50",
+                                     };
+
+    $params->{args}{price} = $contract->ask_price;
+
+    diag Dumper $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
 #    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
 #            client_loginid => $client->loginid,
 #            currency_code  => $client->currency,
@@ -113,6 +130,10 @@ subtest 'buy' => sub {
 #    my $fmb = $fmb_dm->get_fmb_by_id([$result->{contract_id}]);
 #    ok($fmb->[0], 'have such contract');
 
+};
+
+subtest 'sell' => sub {
+  
 };
 
 done_testing();
