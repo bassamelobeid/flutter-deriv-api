@@ -29,7 +29,7 @@ sub validate_table_props {
                 message_to_client => BOM::Platform::Context::localize("Symbol [_1] invalid", $props->{symbol})});
     }
 
-    if (not defined $props->{date_expiry} or $props->{date_expiry} !~ /^\d+$/ or $props->{date_expiry} < time) {
+    if (not defined $props->{date_expiry} or $props->{date_expiry} !~ /^\d+$/) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidDateExpiry',
                 message_to_client => BOM::Platform::Context::localize("Date expiry [_1] invalid", $props->{date_expiry})});
