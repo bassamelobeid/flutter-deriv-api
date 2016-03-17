@@ -35,12 +35,12 @@ sub get_jp_account_status {
                     $jp_account_status->{status} = $status;
 
                     if ($status eq 'jp_knowledge_test_pending') {
-                        my $next_dt = BOM::RPC::v3::NewAccount::Japan::knowledge_test_available_date();
+                        my $next_dt = _knowledge_test_available_date();
                         $jp_account_status->{next_test_epoch} = $next_dt->epoch;
                     } elsif ($status eq 'jp_knowledge_test_fail') {
                         my $tests      = JSON::from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
                         my $last_epoch = $tests->[-1]->{epoch};
-                        my $next_dt    = BOM::RPC::v3::NewAccount::Japan::knowledge_test_available_date($last_epoch);
+                        my $next_dt    = _knowledge_test_available_date($last_epoch);
 
                         $jp_account_status->{last_test_epoch} = $last_epoch;
                         $jp_account_status->{next_test_epoch} = $next_dt->epoch;
@@ -54,7 +54,7 @@ sub get_jp_account_status {
     }
 }
 
-sub knowledge_test_available_date {
+sub _knowledge_test_available_date {
     my $last_test_epoch = shift;
 
     my $now = DateTime->now;
@@ -128,13 +128,13 @@ sub jp_knowledge_test {
     if ($jp_client->get_status('jp_knowledge_test_pending')) {
         # client haven't taken any test before
 
-        $next_dt = knowledge_test_available_date();
+        $next_dt = _knowledge_test_available_date();
     } elsif ($jp_client->get_status('jp_knowledge_test_fail')) {
         # can't take test > 1 within same business day
 
         my $tests      = from_json($jp_client->financial_assessment->data)->{jp_knowledge_test};
         my $last_epoch = $tests->[-1]->{epoch};
-        $next_dt = knowledge_test_available_date($last_epoch);
+        $next_dt = _knowledge_test_available_date($last_epoch);
     } else {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'NotEligible',
