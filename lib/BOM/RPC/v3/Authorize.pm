@@ -31,8 +31,8 @@ sub authorize {
         my $limit_excludeuntil = $client->get_self_exclusion->exclude_until;
         if (Date::Utility->new->is_before(Date::Utility->new($limit_excludeuntil))) {
             return BOM::RPC::v3::Utility::create_error({
-                    code              => 'SeflExclusion',
-                    message_to_client => BOM::Platform::Context::localize("Account is self-excluded from login")});
+                    code              => 'SelfExclusion',
+                    message_to_client => BOM::Platform::Context::localize("Sorry, you have excluded yourself until [_1].", $limit_excludeuntil)});
         }
     }
 
