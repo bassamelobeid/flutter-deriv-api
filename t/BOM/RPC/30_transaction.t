@@ -8,6 +8,8 @@ use Test::Mojo;
 use Test::MockModule;
 use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 my $email  = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -61,7 +63,7 @@ subtest 'buy' => sub {
                                       "duration_unit" => "s",
                                       "symbol"        => "R_50",
                                      };
-    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('PriceMoved', 'price moved error')->error_message_is('price','prive moved error');
+    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('PriceMoved', 'price moved error')->error_message_is('t: '自从您为交易定价后，标的市场已发生太大变化。 合约 price 已从 USD0.00 变为 USD51.49。','prive moved error');
     ok(1);
 };
 
