@@ -2158,7 +2158,7 @@ sub _has_ticks_before_close {
 # Validation methods.
 
 # Is this underlying or contract is disabled/suspended from trading.
-sub _validate_tradability {
+sub _validate_offerings {
     my $self = shift;
 
     my @errors;
@@ -2189,6 +2189,23 @@ sub _validate_tradability {
             {
             message           => format_error_string('Trading suspended for contract type', code => $contract_code),
             message_to_client => localize("Trading is suspended at the moment."),
+            };
+    }
+
+    if (not $self->offering_specifics->{permitted}) {
+        my $message =
+            ($self->built_with_bom_parameters)
+            ? localize('Resale of this contract is not offered.')
+            : localize('This trade is not offered.');
+        push @errors,
+            {
+            message => format_error_string(
+                'trying unauthorised combination',
+                underlying  => $self->underlying->symbol,
+                expiry_type => $self->expiry_type,
+                code        => $self->code,
+            ),
+            message_to_client => $message,
             };
     }
 
@@ -2246,31 +2263,6 @@ sub _validate_underlying {
             message_to_client => localize('Trading on [_1] is suspended at the moment.',           $translated_name),
             info_link => request()->url_for('/resources/market_timesws', undef, {no_host => 1}),
             info_text => localize('Trading Times'),
-            };
-    }
-
-    return @errors;
-}
-
-sub _validate_contract {
-    my $self = shift;
-
-    my @errors;
-    my $expiry_type = $self->expiry_type;
-    if (not $self->offering_specifics->{permitted}) {
-        my $message =
-            ($self->built_with_bom_parameters)
-            ? localize('Resale of this contract is not offered.')
-            : localize('This trade is not offered.');
-        push @errors,
-            {
-            message => format_error_string(
-                'trying unauthorised combination',
-                underlying  => $self->underlying->symbol,
-                expiry_type => $expiry_type,
-                code        => $self->code,
-            ),
-            message_to_client => $message,
             };
     }
 
@@ -2995,7 +2987,7 @@ sub confirm_validity {
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     my @validation_methods =
-        qw(_validate_tradability _validate_lifetime  _validate_volsurface _validate_contract _validate_barrier _validate_underlying _validate_feed _validate_expiry_date _validate_start_date _validate_stake _validate_payout _validate_eod_market_risk);
+        qw(_validate_offerings _validate_lifetime  _validate_volsurface _validate_barrier _validate_underlying _validate_feed _validate_expiry_date _validate_start_date _validate_stake _validate_payout _validate_eod_market_risk);
 
     foreach my $method (@validation_methods) {
         my @err = $self->$method;

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::NoWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -15,9 +15,22 @@ use Test::MockModule;
 
 my $now = Date::Utility->new('2016-03-15 01:00:00');
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_, recorded_date => $now}) for qw(USD JPY);
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('volsurface_delta', {symbol => 'frxUSDJPY', recorded_date => $now});
-my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({underlying => 'frxUSDJPY', epoch => $now->epoch});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw(USD JPY);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDJPY',
+        recorded_date => $now
+    });
+my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxUSDJPY',
+    epoch      => $now->epoch
+});
 my $bet_params = {
     underlying   => 'frxUSDJPY',
     bet_type     => 'CALL',
@@ -31,7 +44,7 @@ my $bet_params = {
 };
 
 my $mocked_FA = Test::MockModule->new('Finance::Asset');
-$mocked_FA->mock('cached_underlyings', sub {{}});
+$mocked_FA->mock('cached_underlyings', sub { {} });
 
 note("Validation runs on " . $now->datetime);
 subtest 'system wide suspend trading' => sub {
@@ -46,7 +59,7 @@ subtest 'system wide suspend trading' => sub {
 
 subtest 'suspend trade on underlyings' => sub {
     my $mocked = Test::MockModule->new('BOM::Market::Underlying');
-    $mocked->mock('contracts', sub{{}});
+    $mocked->mock('contracts', sub { {} });
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/Underlying trades suspended/, 'Underlying trades suspended message');
@@ -57,7 +70,7 @@ subtest 'suspend trade on underlyings' => sub {
 
 subtest 'market disabled' => sub {
     $mocked_market = Test::MockModule->new('BOM::Market');
-    $mocked_market->mock('disabled', sub {1});
+    $mocked_market->mock('disabled', sub { 1 });
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/Underlying trades suspended/, 'Underlying trades suspended message');
@@ -77,3 +90,12 @@ subtest 'suspend contract type' => sub {
     ok $c->is_valid_to_buy, 'ok to buy';
 };
 
+subtest 'invalid underlying - contract type combination' => sub {
+    my $mocked = Test::MockModule->new('BOM::Market::Underlying');
+    $mocked->mock('contracts', sub { {callput => {intraday => {spot => {euro_atm => {min => '15h', max => '1d'}}}}} });
+    $bet_params->{barrier} = 'S100P';    # non atm
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like($c->primary_validation_error->{message}, qr/trying unauthorised combination/, 'Contract type suspended message');
+    $mocked->unmock_all();
+};
