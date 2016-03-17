@@ -3,8 +3,6 @@ package BOM::RPC::v3::NewAccount;
 use strict;
 use warnings;
 
-use JSON qw(from_json encode_json);
-use Date::Utility;
 use DateTime;
 use Try::Tiny;
 use List::MoreUtils qw(any);
@@ -26,8 +24,6 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Static::Config;
-use BOM::Platform::Runtime;
-use BOM::System::AuditLog;
 
 sub new_account_virtual {
     my $params = shift;
