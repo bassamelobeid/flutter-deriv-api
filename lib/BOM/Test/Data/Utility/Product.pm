@@ -109,19 +109,18 @@ sub create_contract {
 
     my $contract_data = {
         underlying   => $underlying,
-        bet_type     => 'FLASHU',
+        bet_type     => 'CALL',
         currency     => 'USD',
-        stake        => 100,
+        basic        => 'payout',
+        amount       => 100,
         date_start   => $start->epoch,
         date_expiry  => $expire->epoch,
         current_tick => $ticks[1],
         entry_tick   => $ticks[0],
         exit_tick    => $ticks[-1],
-        barrier      => 'S0P',
     };
     if ($args{is_spread}) {
         delete $contract_data->{date_expiry};
-        delete $contract_data->{barrier};
         $contract_data->{bet_type}         = 'SPREADU';
         $contract_data->{amount_per_point} = 1;
         $contract_data->{stop_type}        = 'point';
