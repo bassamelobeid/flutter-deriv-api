@@ -332,12 +332,12 @@ sub _set_predefined_barriers {
     my $args = shift;
     my ($underlying, $contract, $current_tick, $now) = @{$args}{'underlying', 'contract', 'current_tick', 'date'};
 
-    my $trading_period = $contract->{trading_period};
-    my $date_start     = $trading_period->{date_start}->{epoch};
-    my $date_expiry    = $trading_period->{date_expiry}->{epoch};
-    my $duration       = $trading_period->{duration};
-    my $barrier_key    = join($cache_sep, $underlying->symbol, $date_start, $date_expiry);
-    my $available_barriers =Cache::RedisDB->get($cache_keyspace, $barrier_key);
+    my $trading_period     = $contract->{trading_period};
+    my $date_start         = $trading_period->{date_start}->{epoch};
+    my $date_expiry        = $trading_period->{date_expiry}->{epoch};
+    my $duration           = $trading_period->{duration};
+    my $barrier_key        = join($cache_sep, $underlying->symbol, $date_start, $date_expiry);
+    my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
     my $current_tick_quote = $current_tick->quote;
     if (not $available_barriers) {
         my $start_tick = $underlying->tick_at($date_start) // $current_tick;
@@ -401,7 +401,7 @@ sub _get_expired_barriers {
     my $now                  = $args->{now};
     my $underlying           = $args->{underlying};
     my $expired_barriers_key = join($cache_sep, $underlying->symbol, 'expired_barrier', $date_start, $date_expiry);
-    my $expired_barriers   = Cache::RedisDB->get($cache_keyspace, $expired_barriers_key);
+    my $expired_barriers     = Cache::RedisDB->get($cache_keyspace, $expired_barriers_key);
 
     my ($high, $low) = @{
         $underlying->get_high_low_for_period({
