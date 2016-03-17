@@ -81,8 +81,8 @@ subtest 'Initialization' => sub {
 };
 
 # TODO ???
-my $module = Test::MockModule->new('BOM::Database::FeedDB');
-$module->mock('read_dbh', sub { BOM::Database::FeedDB::write_dbh });
+# my $module = Test::MockModule->new('BOM::Database::FeedDB');
+# $module->mock('read_dbh', sub { BOM::Database::FeedDB::write_dbh });
 # /TODO
 
 subtest 'ticks_history' => sub {
