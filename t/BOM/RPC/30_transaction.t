@@ -54,7 +54,7 @@ subtest 'buy' => sub {
 
     }
 
-    BOM::Test::Data::Utility::Product::create_contract();
+    my $contract = BOM::Test::Data::Utility::Product::create_contract();
 
     $params->{source} = 1;
     $params->{contract_parameters} = {
@@ -63,11 +63,12 @@ subtest 'buy' => sub {
                                       "basis"         => "payout",
                                       "contract_type" => "CALL",
                                       "currency"      => "USD",
-                                      "duration"      => "60",
+                                      "duration"      => "120",
                                       "duration_unit" => "s",
                                       "symbol"        => "R_50",
                                      };
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('PriceMoved', 'price moved error')->error_message_is('自从您为交易定价后，标的市场已发生太大变化。 合约 price 已从 USD0.00 变为 USD51.49。','prive moved error');
+
     ok(1);
 };
 
