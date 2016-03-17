@@ -2201,7 +2201,7 @@ sub _validate_feed {
     return if $self->is_expired;
 
     my @errors;
-    my $underlying = $self->underlying;
+    my $underlying      = $self->underlying;
     my $translated_name = $underlying->translated_display_name();
 
     if (not $self->current_tick) {
