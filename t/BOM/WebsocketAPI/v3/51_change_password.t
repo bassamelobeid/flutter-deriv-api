@@ -70,7 +70,7 @@ $t = $t->send_ok({
             new_password    => $new_password
         }})->message_ok;
 my $change_password = decode_json($t->message->[1]);
-is $change_password->{error}->{code}, 'ChangePasswordError';
+is $change_password->{error}->{code}, 'PasswordError';
 ok $change_password->{error}->{message} =~ /Old password is wrong/;
 test_schema('change_password', $change_password);
 
@@ -91,7 +91,7 @@ $t = $t->send_ok({
             new_password    => $password
         }})->message_ok;
 $change_password = decode_json($t->message->[1]);
-is $change_password->{error}->{code}, 'ChangePasswordError';
+is $change_password->{error}->{code}, 'PasswordError';
 ok $change_password->{error}->{message} =~ /New password is same as old password/;
 test_schema('change_password', $change_password);
 
