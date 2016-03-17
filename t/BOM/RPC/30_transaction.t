@@ -146,8 +146,8 @@ subtest 'sell' => sub {
 
       $client->set_status('disabled', 1, 'test');
       $client->save;
-      $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'AuthorizationRequired')
-        ->error_message_is('请登陆。', 'please login');
+      $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('DisabledClient', 'disabled client')
+        ->error_message_is('此账户不可用。', 'account disabled');
 
       $client->clr_status('disabled');
 
