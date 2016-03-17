@@ -215,7 +215,7 @@ sub sell_expired_contracts {
     my $csv       = Text::CSV->new;
 
     my $rmgenv = BOM::System::Config::env;
-    while (scalar @error_lines < 100 and my $id = shift @full_list) {
+    while (my $id = shift @full_list) {
         my $fmb_id         = $open_bets_ref->{$id}->{id};
         my $client_id      = $open_bets_ref->{$id}->{client_loginid};
         my $expected_value = $open_bets_ref->{$id}->{market_price};
