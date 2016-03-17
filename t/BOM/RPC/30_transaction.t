@@ -67,9 +67,11 @@ subtest 'buy' => sub {
                                       "duration_unit" => "s",
                                       "symbol"        => "R_50",
                                      };
-    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('PriceMoved', 'price moved error')->error_message_is('自从您为交易定价后，标的市场已发生太大变化。 合约 price 已从 USD0.00 变为 USD51.48。','prive moved error');
+    my $result = $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('PriceMoved', 'price moved error');
+    like($result->{error}{message_to_client}, qr/自从您为交易定价后，标的市场已发生太大变化/, 'price moved error');
 
-    $params->{args}{price} = $contract->price;
+
+    $params->{args}{price} = $contract->stake;
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('PriceMoved', 'price moved error')->error_message_is('自从您为交易定价后，标的市场已发生太大变化。 合约 price 已从 USD0.00 变为 USD51.48。','prive moved error');
 
     ok(1);
