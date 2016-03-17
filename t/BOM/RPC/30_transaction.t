@@ -144,7 +144,7 @@ subtest 'sell' => sub {
 
       $params->{token} = $token;
 
-      $client->set_status('disabled', 1 'test');
+      $client->set_status('disabled', 1, 'test');
       $client->save;
       $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'AuthorizationRequired')
         ->error_message_is('请登陆。', 'please login');
