@@ -203,7 +203,6 @@ subtest 'get_ask' => sub {
 subtest 'send_ask' => sub {
     my $params = {
         language  => 'ZH_CN',
-        country   => 'id',
         client_ip => '127.0.0.1',
         args      => {
             "proposal"      => 1,
@@ -225,7 +224,12 @@ subtest 'send_ask' => sub {
         'long code  is correct'
     );
     {
-        local $SIG{'__WARN__'} = sub { };
+        local $SIG{'__WARN__'} = sub {
+            my $msg = shift;
+            if ($msg !~ /Use of uninitialized value in pattern match/) {
+                print STDERR $msg;
+            }
+        };
         $c->call_ok(
             'send_ask',
             {
