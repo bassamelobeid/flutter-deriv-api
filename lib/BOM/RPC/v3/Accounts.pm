@@ -477,12 +477,18 @@ sub get_settings {
 
     my $client_tnc_status = $client->get_status('tnc_approval');
 
+    my $jp_account_status;
+    if (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual') {
+        $jp_account_status = BOM::RPC::v3::NewAccount::Japan::get_jp_account_status($client);
+    }
+
     return {
         email        => $client->email,
         country      => $country,
         country_code => $country_code,
         (
-            $client->is_virtual ? ()
+            $client->is_virtual
+            ? ()
             : (
                 salutation                     => $client->salutation,
                 first_name                     => $client->first_name,
@@ -498,11 +504,7 @@ sub get_settings {
                 $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
             )
         ),
-        (
-              (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual')
-            ? (jp_account_status => BOM::RPC::v3::NewAccount::Japan::get_jp_account_status($client))
-            : ()
-        ),
+        $jp_account_status ? (jp_account_status => $jp_account_status) : (),
     };
 }
 
