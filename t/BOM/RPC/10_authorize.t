@@ -127,7 +127,7 @@ subtest 'self_exclusion' => sub {
     $test_client->set_exclusion->exclude_until('2020-01-01');
     $test_client->save();
 
-    $c->call_ok($method, $params)->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01.', 'check if authorize check self exclusion');
+    $c->call_ok($method, $params)->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01T00:00:00.', 'check if authorize check self exclusion');
 };
 
 done_testing();
