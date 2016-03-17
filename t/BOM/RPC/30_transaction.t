@@ -71,8 +71,40 @@ subtest 'buy' => sub {
     #like($result->{error}{message_to_client}, qr/自从您为交易定价后，标的市场已发生太大变化/, 'price moved error');
     diag Dumper $c->call_ok('buy', $params)->has_no_system_error->has_error->response;
 
+    my $old_balance = $client->default_account->load->balance;
     $params->{args}{price} = $contract->stake;
-    diag Dumper $c->call_ok('buy', $params)->has_no_system_error->has_error->response;
+    my $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
+    my @expected_keys = (qw(
+transaction_id 
+contract_id    
+balance_after  
+purchase_time  
+buy_price      
+start_time     
+longcode       
+shortcode      
+payout         
+                          ));
+    is_deeply([sort keys %$result],[sort @expected_keys], 'result keys is ok');
+    my $new_balance = $client->default_account->load->balance;
+    is($new_balance, $result->{balance_after}, 'balance is changed');
+    is($result->{buy_price}, $old_balance - $new_balance, 'balance reduced');
+    like($result->{shortcode}, qr/CALL_R_50_100_\d{9}_\d{9}_S0P_0/,'shortcode is correct');
+    like($result->{longcode}, qr/abcd/, 'longcode is correct');
+
+    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+            client_loginid => $client->loginid,
+            currency_code  => $client->currency,
+            db             => BOM::Database::ClientDB->new({
+                    client_loginid => $client->loginid,
+                    operation      => 'replica',
+                }
+            )->db,
+        });
+
+    my $fmb = $fmb_dm->get_fmb_by_id([$result->{contract_id});
+    ok($fmb->[0], 'have such contract');
+
 };
 
 done_testing();
