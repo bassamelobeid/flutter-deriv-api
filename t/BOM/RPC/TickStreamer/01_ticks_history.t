@@ -243,6 +243,12 @@ subtest 'history data style' => sub {
     $params->{args}->{end} = $end->epoch;
     $params->{args}->{start} = $start->epoch;
     $params->{args}->{style} = 'candles';
+
+    $params->{args}->{granularity} = 60*5;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is @{ $rpc_ct->result->{data}->{candles} }, (($end->minute - $start->minute)/5 + 1), 'If granularity is 60*5 it should return candles count equals minute difference/5';
+
+    $params->{args}->{granularity} = 60;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is @{ $rpc_ct->result->{data}->{candles} }, ($end->minute - $start->minute + 1), 'Granularity is 60 by default it should return candles count equals minute difference';
     is $params->{args}->{start}, $result->{data}->{candles}->[0]->{epoch};
