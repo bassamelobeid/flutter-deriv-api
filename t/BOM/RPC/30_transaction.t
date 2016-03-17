@@ -116,8 +116,10 @@ subtest 'buy' => sub {
 
     $params->{args}{price} = $contract->ask_price;
 
-    diag Dumper $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
-#    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+    $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
+    push @expected_keys, qw(stop_loss_level stop_profit_level amount_per_point);
+    is_deeply([sort keys %$result], [sort @expected_keys], 'result spread keys is ok');
+    #    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
 #            client_loginid => $client->loginid,
 #            currency_code  => $client->currency,
 #            db             => BOM::Database::ClientDB->new({
@@ -133,7 +135,7 @@ subtest 'buy' => sub {
 };
 
 subtest 'sell' => sub {
-  
+  ok(1)
 };
 
 done_testing();
