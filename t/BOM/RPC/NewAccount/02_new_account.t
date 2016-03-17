@@ -67,11 +67,21 @@ subtest $method => sub {
         email       => $email,
         created_for => 'account_opening'
     )->token;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('invalid', 'If could not be created account it should return error')->error_message_is(
-        'Извините, но открытие счёта недоступно.',
-        'If could not be created account it should return error_message'
-        );
+    {
+        #suppress warning because we want to test this error
+        local $SIG{__WARN__} = sub {
+            my $msg = shift;
+            if ($msg !~ /Use of uninitialized value \$country in hash element/) {
+                print STDERR $msg;
+            }
+
+        };
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('invalid', 'If could not be created account it should return error')->error_message_is(
+            'Извините, но открытие счёта недоступно.',
+            'If could not be created account it should return error_message'
+            );
+    }
 
     $params->{args}->{verification_code} = BOM::Platform::Token::Verification->new(
         email       => $email,
@@ -154,11 +164,20 @@ subtest $method => sub {
             );
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails',
-            'It should return error when try to create account without residence')
-            ->error_message_is('Please provide complete details for account opening.',
-            'It should return error when try to create account without residence');
+        {
+            #suppress warning because we want to test this error
+            local $SIG{__WARN__} = sub {
+                my $msg = shift;
+                if ($msg !~ /Use of uninitialized value \$country in hash element/) {
+                    print STDERR $msg;
+                }
+            };
+            $rpc_ct->call_ok($method, $params)
+                ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails',
+                'It should return error when try to create account without residence')
+                ->error_message_is('Please provide complete details for account opening.',
+                'It should return error when try to create account without residence');
+        }
 
         $params->{args}->{residence} = 'id';
         @{$params->{args}}{keys %$client_details} = values %$client_details;
@@ -376,12 +395,17 @@ subtest $method => sub {
         $user->email_verified(1);
         $user->save;
 
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('insufficient score', 'It should return error if client has insufficient score')
-            ->error_message_is(
-            'К сожалению. Ваши ответы на вышеперечисленные вопросы указывают на то, что у Вас недостаточно финансовых средств или торгового опыта, чтобы открыть торговый счёт в данное время.',
-            'It should return error if client has insufficient score'
-            );
+        {
+            #suppress warning because we want to test this error
+            local $SIG{__WARN__} = sub { };
+
+            $rpc_ct->call_ok($method, $params)
+                ->has_no_system_error->has_error->error_code_is('insufficient score', 'It should return error if client has insufficient score')
+                ->error_message_is(
+                'К сожалению. Ваши ответы на вышеперечисленные вопросы указывают на то, что у Вас недостаточно финансовых средств или торгового опыта, чтобы открыть торговый счёт в данное время.',
+                'It should return error if client has insufficient score'
+                );
+        }
 
         $params->{args}->{annual_income}                  = '50-100 million JPY';
         $params->{args}->{trading_experience_public_bond} = 'Over 5 years';
