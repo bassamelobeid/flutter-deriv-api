@@ -88,9 +88,10 @@ my $now = DateTime->now;
 subtest 'no test taken yet' => sub {
     $res = BOM::RPC::v3::Accounts::get_settings({ token => $token })->{jp_account_status};
     is $res->{status}, 'jp_knowledge_test_pending', 'jp_knowledge_test_pending';
-    is $res->{next_test_epoch}, $now->epoch, 'Test available now';
+    like $res->{next_test_epoch}, qr/^\d+$/, 'Test available time is epoch';
 };
 
+my $test_epoch;
 subtest 'First Test taken: fail test' => sub {
     $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
             token   => $token,
@@ -99,15 +100,15 @@ subtest 'First Test taken: fail test' => sub {
                 status => 'fail'
             }});
 
-    my $epoch = $res->{test_taken_epoch};
-    is $epoch, $now->epoch, "test taken time is epoch: $epoch";
+    $test_epoch = $res->{test_taken_epoch};
+    like $test_epoch, qr/^\d+$/, "test taken time is epoch";
 
     subtest 'get_settings' => sub {
         $res = BOM::RPC::v3::Accounts::get_settings({ token => $token })->{jp_account_status};
 
         is $res->{status}, 'jp_knowledge_test_fail';
-        is $res->{last_test_epoch}, $epoch, 'Last test taken time is now';
-        is $res->{next_test_epoch}, $epoch + 86400, 'Next allowable test is tomorrow';
+        is $res->{last_test_epoch}, $test_epoch, 'Correct last test taken time';
+        is $res->{next_test_epoch}, $test_epoch + 86400, 'Next allowable test is tomorrow';
     };
 
     subtest 'Test result exists in financial assessment' => sub {
@@ -120,7 +121,7 @@ subtest 'First Test taken: fail test' => sub {
         my $test_1 = $tests->[0];
         is $test_1->{score}, 10, 'correct score';
         is $test_1->{status}, 'fail', 'correct status';
-        like $test_1->{epoch}, qr/^\d+$/, 'correct epoch format';
+        is $test_1->{epoch}, $test_epoch, 'correct test taken epoch';
     };
 };
 
@@ -159,7 +160,7 @@ subtest 'Test is allowed after 1 day' => sub {
                 }});
 
         my $epoch = $res->{test_taken_epoch};
-        is $epoch, $now->epoch, "Test taken time is now";
+        like $test_epoch, qr/^\d+$/, "Test taken time is epoch";
     };
 
     subtest 'get_settings' => sub {
@@ -177,7 +178,7 @@ subtest 'Test is allowed after 1 day' => sub {
         my $test_2 = $tests->[1];
         is $test_2->{score}, 18, 'Test 2: correct score';
         is $test_2->{status}, 'pass', 'Test 2: correct status';
-        is $test_2->{epoch}, $now->epoch, 'Test 2: correct epoch';
+        is $test_2->{epoch}, $test_epoch, 'Test 2: correct epoch';
     };
 };
 
