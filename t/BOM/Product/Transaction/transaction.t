@@ -928,7 +928,7 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
             is $error->get_type, 'AccountBalanceExceedsLimit', 'error is AccountBalanceExceedsLimit';
 
             like $error->{-message_to_client}, qr/balance is too high \(USD100\.00\)/, 'message_to_client contains balance';
-            like $error->{-message_to_client}, qr/maximum account balance is 99\.99/,  'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/maximum account balance is USD99\.99/,  'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
