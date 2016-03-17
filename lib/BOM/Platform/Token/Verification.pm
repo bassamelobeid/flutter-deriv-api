@@ -43,32 +43,33 @@ sub new {                                    ## no critic RequireArgUnpack
     if ($self->{token}) {
         $self = eval { JSON::from_json(BOM::System::RedisReplicated::redis_read()->get('VERIFICATION_TOKEN::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
-    } else {
-        my @valid = grep { !$self->{$_} } qw(email created_for);
-        croak "Error creating new verification token, missing: " . join(',', @valid)
-            if @valid;
-
-        my @allowed = qw(email token expires_in created_for);
-        my @passed  = keys %$self;
-        @valid = array_minus(@passed, @allowed);
-        croak "Error adding new verification token, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
-
-        $self->{token} = Bytes::Random::Secure->new(
-            Bits        => 160,
-            NonBlocking => 1,
-        )->string_from(join('', 'a' .. 'z', 'A' .. 'Z', '0' .. '9'), 48);
-
-        my $key = md5_hex($self->{created_for} . $self->{email});
-        if (my $token = BOM::System::RedisReplicated::redis_read()->get('VERIFICATION_TOKEN_INDEX::' . $key)) {
-            BOM::System::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN::' . $token);
-        }
-
-        $self->{expires_in} ||= 3600;
-        BOM::System::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN::' . $self->{token}, JSON::to_json($self));
-        BOM::System::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN::' . $self->{token}, $self->{expires_in});
-        BOM::System::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN_INDEX::' . $key, $self->{token});
-        BOM::System::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN_INDEX::' . $key, $self->{expires_in});
+        return bless $self, $package;
     }
+
+    my @valid = grep { !$self->{$_} } qw(email created_for);
+    croak "Error creating new verification token, missing: " . join(',', @valid)
+        if @valid;
+
+    my @allowed = qw(email token expires_in created_for);
+    my @passed  = keys %$self;
+    @valid = array_minus(@passed, @allowed);
+    croak "Error adding new verification token, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
+
+    $self->{token} = Bytes::Random::Secure->new(
+        Bits        => 160,
+        NonBlocking => 1,
+    )->string_from(join('', 'a' .. 'z', 'A' .. 'Z', '0' .. '9'), 48);
+
+    my $key = md5_hex($self->{created_for} . $self->{email});
+    if (my $token = BOM::System::RedisReplicated::redis_write()->get('VERIFICATION_TOKEN_INDEX::' . $key)) {
+        BOM::System::RedisReplicated::redis_write()->del('VERIFICATION_TOKEN::' . $token);
+    }
+
+    $self->{expires_in} ||= 3600;
+    BOM::System::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN::' . $self->{token}, JSON::to_json($self));
+    BOM::System::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN::' . $self->{token}, $self->{expires_in});
+    BOM::System::RedisReplicated::redis_write()->set('VERIFICATION_TOKEN_INDEX::' . $key, $self->{token});
+    BOM::System::RedisReplicated::redis_write()->expire('VERIFICATION_TOKEN_INDEX::' . $key, $self->{expires_in});
     return bless $self, $package;
 }
 
