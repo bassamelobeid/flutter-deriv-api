@@ -61,7 +61,7 @@ subtest 'buy' => sub {
                                       "duration_unit" => "s",
                                       "symbol"        => "R_50",
                                      };
-    diag Dumper $c->call_ok('buy', $params)->response;
+    $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('PriceMoved', 'price moved error')->error_message_is('price','prive moved error');
     ok(1);
 };
 
