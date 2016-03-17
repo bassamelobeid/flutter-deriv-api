@@ -25,13 +25,18 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch      => $now->epoch,
-    quote      => 100
-});
-#load it the contract finder at first load to resolve time out issue
+                underlying => 'frxUSDJPY',
+                epoch      => Date::Utility->new($_)->epoch,
+                quote      => 100,
+            })
+            for (
+            "2015-01-01 00:00:00",  "2015-07-01 00:00:00", "2015-08-03 00:00:00",          "2015-08-17 00:00:00", "2015-08-21 00:00:00",
+            "2015-08-21 00:45:00", "2015-08-21 03:45:00", "2015-08-21 04:45:00", "2015-08-21 05:30:00"
+            );
+
 my $f = available_contracts_for_symbol({
     symbol => 'frxUSDJPY',
+    date   => $now,
 });
 
 my $t = build_mojo_test();
