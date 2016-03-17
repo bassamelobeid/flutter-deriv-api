@@ -302,7 +302,7 @@ subtest 'invalid bet types are dull' => sub {
     };
 
     my $bet              = produce_contract($bet_params);
-    my $expected_reasons = [qr/duration.*not acceptable/];
+    my $expected_reasons = [qr/suspended for contract type/];
     test_error_list('buy', $bet, $expected_reasons);
 };
 
@@ -1064,7 +1064,7 @@ subtest 'intraday indices duration test' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'FTSE',
+            symbol        => 'GDAXI',
             recorded_date => Date::Utility->new($params->{date_pricing}),
         });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -1076,23 +1076,23 @@ subtest 'intraday indices duration test' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'FTSE',
+            symbol         => 'GDAXI',
             recorded_date  => $now,
             spot_reference => $tick->quote,
         });
     $params->{date_start} = Date::Utility->new('2015-04-08 07:15:00');
     my $ftse_tick = BOM::Market::Data::Tick->new({
         epoch      => $params->{date_start}->epoch,
-        underlying => 'FTSE',
+        underlying => 'GDAXI',
         quote      => 100.012,
         bid        => 100.015,
         ask        => 100.021
     });
 
     $params->{date_pricing} = $params->{date_start};
-    $params->{underlying}   = 'FTSE';
+    $params->{underlying}   = 'GDAXI';
     $params->{currency}     = 'GBP';
-    $params->{duration}     = '15m';
+    $params->{duration}     = '14m59s';
     $params->{current_tick} = $ftse_tick;
     $c                      = produce_contract($params);
     $expected_reasons       = [qr/Intraday duration.*not acceptable/];
