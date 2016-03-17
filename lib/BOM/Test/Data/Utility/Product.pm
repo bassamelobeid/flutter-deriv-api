@@ -7,6 +7,7 @@ use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Market::Underlying;
 use Date::Utility;
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 sub client_buy_bet {
     my ($client, $currency, $amount) = @_;
@@ -98,7 +99,7 @@ sub create_contract {
         unless ($tick) {
             BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                 epoch      => $epoch,
-                underlying => $args->{underlying_symbol},
+                underlying => $underlying_symbol,
             });
         }
         push @ticks, $tick;
