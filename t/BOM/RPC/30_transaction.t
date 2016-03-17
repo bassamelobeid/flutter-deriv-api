@@ -135,7 +135,22 @@ subtest 'buy' => sub {
 };
 
 subtest 'sell' => sub {
-  ok(1)
+      my $params = {
+                    language => 'ZH_CN',
+                    token    => 'invalid token'
+                   };
+      $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'invalid token')
+        ->error_message_is('令牌无效。', 'invalid token');
+
+      $params->{token} = $token;
+
+      $client->set_status('disabled', 1 'test');
+      $client->save;
+      $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'AuthorizationRequired')
+        ->error_message_is('请登陆。', 'please login');
+
+      $client->clr_status('disabled');
+
 };
 
 done_testing();
