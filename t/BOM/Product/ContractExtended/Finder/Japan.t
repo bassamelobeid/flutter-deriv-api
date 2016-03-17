@@ -95,13 +95,13 @@ subtest "predefined trading_period" => sub {
         },
     );
 
-    my $flyby     = BOM::Product::Offerings::get_offerings_flyby;
-    my @offerings = $flyby->query({
+    my @offerings = BOM::Product::Offerings::get_offerings_flyby->query({
+            landing_company   => 'japan',
             underlying_symbol => 'frxUSDJPY',
             start_type        => 'spot',
-            expiry_type       => ['daily', 'intraday'],
+            expiry_type       => ['intraday','daily'],
             barrier_category  => ['euro_non_atm', 'american']});
-    is(scalar(keys @offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
+    is(scalar(@offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
     my $exchange = BOM::Market::Underlying->new('frxUSDJPY')->exchange;
     my $now      = Date::Utility->new('2015-09-04 17:00:00');
     @offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
@@ -113,7 +113,7 @@ subtest "predefined trading_period" => sub {
 
     my %got;
     foreach (keys @offerings) {
-        $offerings[$_]{contract_type} eq 'CALL'
+        $offerings[$_]{contract_type} eq 'CALLE'
             and $offerings[$_]{expiry_type} eq 'intraday' ? push @{$got{call_intraday}}, $offerings[$_]{trading_period} : push @{$got{call_daily}},
             $offerings[$_]{trading_period};
         $offerings[$_]{contract_type} eq 'RANGE'
@@ -185,6 +185,7 @@ subtest "check_intraday trading_period_JPY" => sub {
     );
 
     my @i_offerings = BOM::Product::Offerings::get_offerings_flyby->query({
+            landing_company   => 'japan',
             underlying_symbol => 'frxUSDJPY',
             start_type        => 'spot',
             expiry_type       => ['intraday'],
@@ -233,6 +234,7 @@ subtest "check_intraday trading_period_non_JPY" => sub {
     );
 
     my @e_offerings = BOM::Product::Offerings::get_offerings_flyby->query({
+            landing_company   => 'japan',
             underlying_symbol => 'frxEURUSD',
             start_type        => 'spot',
             expiry_type       => ['intraday'],

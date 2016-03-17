@@ -439,16 +439,12 @@ sub _build_commission_markup {
     my $self = shift;
 
     my $bet = $self->bet;
-    my $comm_base_amount =
-        ($self->bet->built_with_bom_parameters)
-        ? BOM::Platform::Static::Config::quants->{commission}->{resell_discount_factor}
-        : 1;
 
     my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
         name        => 'commission_scaling_factor',
         description => 'A scaling factor to control commission',
         set_by      => __PACKAGE__,
-        base_amount => $comm_base_amount,
+        base_amount => 1,
     });
 
     my $comm_markup = Math::Util::CalculatedValue::Validatable->new({
