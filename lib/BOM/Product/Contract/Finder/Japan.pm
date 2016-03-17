@@ -451,7 +451,7 @@ sub _get_barriers_pair {
         : ((45, 55), (40, 50), (50, 60), (35, 45), (55, 65), (20, 40), (60, 80));
     my @barriers;
     my @expired_barriers;
-    for my $pair in (@barrier_pairs) {
+    for my $pair  (@barrier_pairs) {
         my ($barrier_low, $barrier_high) = @$pair;
 
         if ($contract_category eq 'staysinout') {
