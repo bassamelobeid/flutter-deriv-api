@@ -2,6 +2,7 @@ package BOM::Test::Data::Utility::Product;
 use strict;
 use warnings;
 
+use feature 'state';
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Market::Underlying;
@@ -60,6 +61,74 @@ sub sell_bet {
         contract_id => $txn_buy_contract_id,
     });
     return $txn->sell(skip_validation => 1);
+}
+
+sub prepare_contract_db {
+    my $underlying_symbol = shift || 'R_50';
+    state $already_prepared = 0;
+    return 1 if $already_prepared;
+    initialize_realtime_ticks_db();
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'randomindex',
+        {
+            symbol => $underlying_symbol,
+            date   => Date::Utility->new
+        });
+    $already_prepared = 1;
+}
+
+sub create_contract {
+    my %args              = @_;
+    my $underlying_symbol = $args{underlying} || 'R_50';
+    my $is_expired        = $args{is_expired} || 0;
+
+    my $start = Date::Utility->new();
+    $start = $start->minus_time_interval('1h 2m') if $is_expired;
+    my $expire = $start->plus_time_interval('2m');
+
+    prepare_contract_db($underlying_symbol);
+
+    my @ticks;
+
+    for my $epoch ($start->epoch - 1, $start->epoch, $expire->epoch) {
+        my $api = BOM::Market::Data::DatabaseAPI->new(underlying => $underlying_symbol);
+        my $tick = $api->tick_at({end_time => $epoch});
+
+        unless ($tick) {
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                epoch      => $epoch,
+                underlying => $args->{underlying_symbol},
+            });
+        }
+        push @ticks, $tick;
+    }
+
+    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+
+    my $contract_data = {
+        underlying   => $underlying,
+        bet_type     => 'FLASHU',
+        currency     => 'USD',
+        stake        => 100,
+        date_start   => $start->epoch,
+        date_expiry  => $expire->epoch,
+        current_tick => $ticks[1],
+        entry_tick   => $ticks[0],
+        exit_tick    => $ticks[-1],
+        barrier      => 'S0P',
+    };
+    if ($args{is_spread}) {
+        delete $contract_data->{date_expiry};
+        delete $contract_data->{barrier};
+        $contract_data->{bet_type}         = 'SPREADU';
+        $contract_data->{amount_per_point} = 1;
+        $contract_data->{stop_type}        = 'point';
+        $contract_data->{stop_profit}      = 10;
+        $contract_data->{stop_loss}        = 10;
+    }
+    return produce_contract($contract_data);
+
 }
 
 1;
