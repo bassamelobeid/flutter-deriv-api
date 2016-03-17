@@ -337,7 +337,7 @@ sub _set_predefined_barriers {
     my $date_expiry    = $trading_period->{date_expiry}->{epoch};
     my $duration       = $trading_period->{duration};
     my $barrier_key    = join($cache_sep, $underlying->symbol, $date_start, $date_expiry);
-    my $available_barriers;    #Cache::RedisDB->get($cache_keyspace, $barrier_key);
+    my $available_barriers =Cache::RedisDB->get($cache_keyspace, $barrier_key);
     my $current_tick_quote = $current_tick->quote;
     if (not $available_barriers) {
         my $start_tick = $underlying->tick_at($date_start) // $current_tick;
