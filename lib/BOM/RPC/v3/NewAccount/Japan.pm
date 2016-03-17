@@ -52,6 +52,7 @@ sub get_jp_account_status {
             $jp_account_status->{status} = 'activated';
         }
     }
+    return $jp_account_status;
 }
 
 sub _knowledge_test_available_date {
