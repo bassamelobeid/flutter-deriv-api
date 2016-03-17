@@ -30,12 +30,10 @@ my $params = {
 my $now = Date::Utility->new('2012-03-14 07:00:00');
 set_fixed_time($now->epoch);
 
-subtest 'Initialization' => sub {
-    lives_ok {
-        $t = Test::Mojo->new('BOM::RPC');
-        $rpc_ct = Test::BOM::RPC::Client->new( ua => $t->app->ua );
-    } 'Initial RPC server and client connection';
+$t = Test::Mojo->new('BOM::RPC');
+$rpc_ct = Test::BOM::RPC::Client->new( ua => $t->app->ua );
 
+subtest 'Initialization' => sub {
     lives_ok {
         my ($fill_start, $populator, @ticks, $fh);
         my $work_dir = File::Temp->newdir();
