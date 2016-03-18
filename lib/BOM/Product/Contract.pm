@@ -2371,6 +2371,64 @@ sub _validate_stake {
     return @errors;
 }
 
+sub _validate_input_parameters {
+    my $self = shift;
+
+    my @errors;
+    my $when_epoch = $self->date_pricing->epoch;
+    my $epoch_expiry = $self->date_expiry->epoch;
+    my $epoch_start = $self->date_start->epoch;
+
+    if ($epoch_expiry == $epoch_start) {
+        push @errors, {
+            message => format_error_string(
+                'Start and Expiry times are the same',
+                'start' => $epoch_start,
+                'expiry' => $epoch_expiry,
+            ),
+            message_to_client => localize('Expiry time cannot be equal to start time.'),
+        };
+    } elsif ($epoch_expiry < $epoch_start) {
+        push @errors,
+            {
+            message => format_error_string(
+                'Start must be before expiry',
+                'start' => $epoch_start,
+                expiry  => $epoch_expiry
+            ),
+            message_to_client => localize("Expiry time cannot be in the past."),
+            };
+    } elsif (not $self->built_with_bom_parameters and $epoch_start < $when_epoch) {
+        push @errors,
+            {
+            message           => format_error_string('starts in the past', 'start' => $epoch_start, 'now' => $when_epoch),
+            message_to_client => localize("Start time is in the past"),
+            };
+    } elsif (not $self->is_forward_starting and $epoch_start > $when_epoch) {
+        push @errors,
+            {
+            message           => format_error_string('Forward time for non-forward-starting contract type', code => $self->code),
+            message_to_client => localize('Start time is in the future.'),
+            };
+    } elsif ($self->is_forward_starting and not $self->built_with_bom_parameters) {
+        # Intraday cannot be bought in the 5 mins before the bet starts, unless we've built it for that purpose.
+        my $forward_starting_blackout = Time::Duration::Concise::Localize->new(
+            interval => '5m',
+            locale   => BOM::Platform::Context::request()->language
+        );
+        if ($epoch_start < $when_epoch + $forward_starting_blackout->seconds) {
+            push @errors,
+                {
+                message => format_error_string('forward-starting blackout', 'blackout' => $forward_starting_blackout->as_concise_string),
+                message_to_client =>
+                    localize("Start time on forward-starting contracts must be more than [_1] from now.", $forward_starting_blackout->as_string),
+                };
+        }
+    }
+
+    return @errors;
+}
+
 # Check against our timelimits, suspended trades etc. whether we allow this bet to start
 sub _validate_start_date {
     my $self = shift;
@@ -2419,33 +2477,6 @@ sub _validate_start_date {
         }
     }
 
-    if (not $epoch_expiry > $epoch_start) {
-        push @errors,
-            {
-            message => format_error_string(
-                'Start must be before expiry',
-                'start' => $epoch_start,
-                expiry  => $epoch_expiry
-            ),
-            message_to_client => localize("Expiry time cannot be in the past."),
-            };
-    }
-
-    if (not $self->is_forward_starting and $epoch_start > $when->epoch) {
-        push @errors,
-            {
-            message           => format_error_string('Forward time for non-forward-starting contract type', code => $self->code),
-            message_to_client => localize('Start time is invalid.'),
-            };
-    }
-    # Bet can not start in the past
-    if (not $self->built_with_bom_parameters and $epoch_start < $when->epoch) {
-        push @errors,
-            {
-            message           => format_error_string('starts in the past'),
-            message_to_client => localize("Start time is in the past"),
-            };
-    }
     # exchange needs to be open when the bet starts.
     if (not $exchange->is_open_at($self->date_start)) {
         my $message =
@@ -2469,16 +2500,6 @@ sub _validate_start_date {
             ),
             message_to_client => localize("Trading is available after the first [_1] of the session.", $blackout_time) . " "
                 . localize("Try out the Random Indices which are always open.")};
-    } elsif ($self->is_forward_starting and not $self->built_with_bom_parameters) {
-        # Intraday cannot be bought in the 5 mins before the bet starts, unless we've built it for that purpose.
-        if ($epoch_start < $when->epoch + $forward_starting_blackout->seconds) {
-            push @errors,
-                {
-                message => format_error_string('forward-starting blackout', 'blackout' => $forward_starting_blackout->as_concise_string),
-                message_to_client =>
-                    localize("Start time on forward-starting contracts must be more than [_1] from now.", $forward_starting_blackout->as_string),
-                };
-        }
     } elsif ($eod_blackout_start and $sec_to_close < $eod_blackout_start->seconds) {
         my $localized_eod_blackout_start = Time::Duration::Concise::Localize->new(
             interval => $eod_blackout_start->seconds,
@@ -2987,7 +3008,7 @@ sub confirm_validity {
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     my @validation_methods =
-        qw(_validate_offerings _validate_lifetime  _validate_volsurface _validate_barrier _validate_underlying _validate_feed _validate_expiry_date _validate_start_date _validate_stake _validate_payout _validate_eod_market_risk);
+        qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_volsurface _validate_barrier _validate_underlying _validate_feed _validate_expiry_date _validate_start_date _validate_stake _validate_payout _validate_eod_market_risk);
 
     foreach my $method (@validation_methods) {
         my @err = $self->$method;

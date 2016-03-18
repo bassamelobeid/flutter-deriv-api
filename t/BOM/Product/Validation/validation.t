@@ -588,7 +588,7 @@ subtest 'invalid start times' => sub {
     $bet_params->{duration} = '-1m';
 
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/Intraday duration.*not acceptable/,];
+    $expected_reasons = [qr/Start must be before expiry/,];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{duration} = '6d';
@@ -605,7 +605,7 @@ subtest 'invalid start times' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/volsurface too old/, qr/forward-starting.*blackout/];
+    $expected_reasons = [qr/forward-starting.*blackout/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{date_pricing} = $starting + 45;
