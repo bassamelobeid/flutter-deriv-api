@@ -72,6 +72,7 @@ $t = $t->send_ok({
             contracts_for => 'frxUSDJPY',
             region        => 'japan'
         }})->message_ok;
+print Data::Dumper::Dumper($contracts_for_japan->{contracts_for}->{available});
 my $contracts_for_japan = decode_json($t->message->[1]);
 ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
