@@ -21,6 +21,10 @@
         }
       }
     },
+    "clients_country": {
+      "type": "string",
+      "description": "Country code of connected IP"
+    },
     "msg_type": {
         "type": "string",
         "description": "website_status"

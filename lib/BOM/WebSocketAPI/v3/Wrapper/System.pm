@@ -65,8 +65,9 @@ sub website_status {
     my ($c, $args) = @_;
 
     return {
-        msg_type       => 'website_status',
-        website_status => BOM::RPC::v3::Utility::website_status()};
+        msg_type        => 'website_status',
+        website_status  => BOM::RPC::v3::Utility::website_status(),
+        clients_country => $c->stash('request')->country_code};
 }
 
 sub _forget_transaction_subscription {
