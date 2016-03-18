@@ -14,7 +14,7 @@ sub contracts_for {
 
     my $args     = $params->{args};
     my $symbol   = $args->{contracts_for};
-    my $currency = $args->{currency} // 'USD';
+    my $currency = $args->{currency} || 'USD';
 
     my $contracts_for;
     if ($args->{region} and $args->{region} eq 'japan') {
