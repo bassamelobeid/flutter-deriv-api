@@ -117,4 +117,17 @@ subtest 'logout' => sub {
 
 };
 
+subtest 'self_exclusion' => sub {
+    my $params = {
+        language => 'en',
+        token    => $token
+    };
+    # This is how long I think binary.com can survive using Perl in its concurrency paradigm era. 
+    # If this test ever failed because of setting this date too short, we might be in bigger troubles than a failing test.
+    $test_client->set_exclusion->exclude_until('2020-01-01');
+    $test_client->save();
+
+    $c->call_ok($method, $params)->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01T00:00:00.', 'check if authorize check self exclusion');
+};
+
 done_testing();
