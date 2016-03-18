@@ -99,7 +99,7 @@
                       },
                       "trading_period":{
                           "type":"object",
-                          "description":"A hash of predefined trading period (only retrun if region set to 'japan')"
+                          "description":"A hash of predefined trading period (only return if region set to 'japan')"
                       }
                   }
                 },
