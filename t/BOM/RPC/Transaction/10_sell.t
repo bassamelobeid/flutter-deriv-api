@@ -66,7 +66,7 @@ subtest 'sell' => sub {
                                        };
 
       $buy_params->{args}{price} = $contract->ask_price;
-      $c->call_ok('buy', $buy_params)->has_no_system_error->has_no_error;
+      diag Dumper($c->call_ok('buy', $buy_params)->has_no_system_error->result);
 };
 
 done_testing();
