@@ -123,6 +123,7 @@ indices:
     suspicious_move: 0.07
     outlier_tick: 0.10
     display_name: "Indices"
+    integer_barrier: 1
     display_order: 2
     eod_blackout_expiry: '1m'
     eod_blackout_start: '15m'
