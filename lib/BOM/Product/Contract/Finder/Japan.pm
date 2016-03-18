@@ -408,7 +408,7 @@ sub _get_expired_barriers {
                 end   => $now,
             })}{'high', 'low'};
 if (not $high){
-print "start time is [$date_start] now [$now] no high[$high]\n";
+print "start time is [$date_start] now [$now] no high[$high]\n";}
     my @barriers                  = sort values %$available_barriers;
     my %skip_list                 = map { $_ => 1 } (@$expired_barriers);
     my @unexpired_barriers        = grep { !$skip_list{$_} } @barriers;
