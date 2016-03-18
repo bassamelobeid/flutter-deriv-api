@@ -100,6 +100,10 @@ subtest 'buy' => sub {
         'longcode is correct'
     );
 
+
+    $c->call_ok('sell',{language => 'ZH_CN', source => 1, args => {sell => }})
+
+
     $contract = BOM::Test::Data::Utility::Product::create_contract(is_spread => 1);
     $params->{contract_parameters} = {
                                       "proposal"      => 1,
@@ -150,6 +154,13 @@ subtest 'sell' => sub {
         ->error_message_is('此账户不可用。', 'account disabled');
 
       $client->clr_status('disabled');
+      $client->save;
+
+      #sold  contract should be hold 2 minutes and interval should more than 15
+      my $contract = create_contract(start_time => time - 60 * 2, interval => '20m');
+      
+
+
 
 };
 
