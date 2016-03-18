@@ -120,18 +120,6 @@ subtest 'buy' => sub {
     $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
     push @expected_keys, qw(stop_loss_level stop_profit_level amount_per_point);
     is_deeply([sort keys %$result], [sort @expected_keys], 'result spread keys is ok');
-    #    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
-#            client_loginid => $client->loginid,
-#            currency_code  => $client->currency,
-#            db             => BOM::Database::ClientDB->new({
-#                    client_loginid => $client->loginid,
-#                    operation      => 'replica',
-#                }
-#            )->db,
-#        });
-#
-#    my $fmb = $fmb_dm->get_fmb_by_id([$result->{contract_id}]);
-#    ok($fmb->[0], 'have such contract');
 
 };
 
