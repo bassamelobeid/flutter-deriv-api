@@ -160,8 +160,21 @@ subtest 'sell' => sub {
       my $contract = BOM::Test::Data::Utility::Product::create_contract(start_time => time - 60 * 2, interval => '20m');
       ok($contract);
 
+      my $buy_params = {};
+      $buy_params->{source}              = 1;
+      $buy_params->{contract_parameters} = {
+                                        "proposal"      => 1,
+                                        "amount"        => "100",
+                                        "basis"         => "payout",
+                                        "contract_type" => "CALL",
+                                        "currency"      => "USD",
+                                        "duration"      => "120",
+                                        "duration_unit" => "s",
+                                        "symbol"        => "R_50",
+                                       };
 
-
+      $bug_params->{args}{price} = $contract->ask_price;
+      $c->call_ok('buy', $buy_params)->has_no_system_error->has_no_error;
 };
 
 done_testing();
