@@ -52,7 +52,7 @@ subtest 'sell' => sub {
       my $contract = BOM::Test::Data::Utility::Product::create_contract(start_time => time - 60 * 2, interval => '20m');
       ok($contract);
 
-      my $buy_params = {};
+      my $buy_params = {language => 'ZH_CN', token => $token};
       $buy_params->{source}              = 1;
       $buy_params->{contract_parameters} = {
                                         "proposal"      => 1,
