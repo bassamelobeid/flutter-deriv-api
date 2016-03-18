@@ -178,7 +178,15 @@ subtest 'get_contract_specifics' => sub {
 
     $params->{barrier_category} = 'euro_atm';
 
-    eq_or_diff(get_contract_specifics($params), {payout_limit => 100000}, 'Non-matching parameters yield just a default payout limit');
+    my $default_payout = {
+        payout_limit => {
+            USD => 100000,
+            AUD => 100000,
+            GBP => 100000,
+            EUR => 100000,
+            JPY => 10000000,
+        }};
+    eq_or_diff(get_contract_specifics($params), $default_payout, 'Non-matching parameters yield just a default payout limit');
     $params->{barrier_category} = 'american';
     my $result = get_contract_specifics($params);
 

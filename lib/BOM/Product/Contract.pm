@@ -1551,7 +1551,7 @@ Returns a limit for the payout if one exists on the contract
 sub _payout_limit {
     my ($self) = @_;
 
-    return $self->offering_specifics->{payout_limit};    # Even if not valid, make it 100k.
+    return $self->offering_specifics->{payout_limit}->{$self->currency};    # Even if not valid, make it 100k.
 }
 
 has 'staking_limits' => (
@@ -1564,20 +1564,25 @@ sub _build_staking_limits {
     my $self = shift;
 
     my $underlying = $self->underlying;
+    my $curr       = $self->currency;
 
     my @possible_payout_maxes = ($self->_payout_limit);
 
-    push @possible_payout_maxes, BOM::Platform::Static::Config::quants->{bet_limits}->{maximum_payout};
-    push @possible_payout_maxes, BOM::Platform::Static::Config::quants->{bet_limits}->{maximum_payout_on_new_markets}
+    my $bet_limits = BOM::Platform::Static::Config::quants->{bet_limits};
+    push @possible_payout_maxes, $bet_limits->{maximum_payout}->{$curr};
+    push @possible_payout_maxes, $bet_limits->{maximum_payout_on_new_markets}->{$curr}
         if ($underlying->is_newly_added);
-    push @possible_payout_maxes, BOM::Platform::Static::Config::quants->{bet_limits}->{maximum_payout_on_less_than_7day_indices_call_put}
+    push @possible_payout_maxes, $bet_limits->{maximum_payout_on_less_than_7day_indices_call_put}->{$curr}
         if ($self->underlying->market->name eq 'indices' and not $self->is_atm_bet and $self->timeindays->amount < 7);
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $stake_max = $payout_max;
 
     # Client likes lower stake/payout limit on random market.
-    my $payout_min = $self->underlying->market->name eq 'random' ? 0.7 : 1;
+    my $payout_min =
+        ($self->underlying->market->name eq 'random')
+        ? $bet_limits->{min_payout}->{random}->{$curr}
+        : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
 
     # err is included here to allow the web front-end access to the same message generated in the back-end.
