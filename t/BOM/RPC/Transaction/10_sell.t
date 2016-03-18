@@ -55,8 +55,7 @@ subtest 'sell' => sub {
       my $txn = BOM::Product::Transaction->new({
                                                 client        => $client,
                                                 contract      => $contract,
-                                                amount        => 100,
-                                                amount_type   => 'payout',
+                                                price         => $contract->ask_price,
                                                 purchase_date => time - 60 * 2,
                                                });
 
