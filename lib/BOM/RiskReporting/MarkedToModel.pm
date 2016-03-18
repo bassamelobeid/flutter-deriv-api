@@ -215,7 +215,7 @@ sub sell_expired_contracts {
     my $csv       = Text::CSV->new;
 
     my $rmgenv = BOM::System::Config::env;
-    while (scalar @error_lines < 100 and my $id = shift @full_list) {
+    while (my $id = shift @full_list) {
         my $fmb_id         = $open_bets_ref->{$id}->{id};
         my $client_id      = $open_bets_ref->{$id}->{client_loginid};
         my $expected_value = $open_bets_ref->{$id}->{market_price};
@@ -245,6 +245,10 @@ sub sell_expired_contracts {
             push @error_lines, $bet_info;
             next;    # Nothing else to do.
         }
+
+        # Database sync could be delayed resulting in riskd trying resell them again.
+        # Skip them here.
+        next if $bet->is_sold;
 
         my $stats_data = do {
             my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$bet->code};
