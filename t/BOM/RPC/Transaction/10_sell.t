@@ -52,24 +52,37 @@ subtest 'sell' => sub {
       my $contract = BOM::Test::Data::Utility::Product::create_contract(start_time => time - 60 * 2, interval => '20m');
       ok($contract);
 
-      my $buy_params = {language => 'ZH_CN', token => $token};
-      $buy_params->{source}              = 1;
-      $buy_params->{contract_parameters} = {
-                                        "proposal"      => 1,
-                                        "amount"        => "100",
-                                        "basis"         => "payout",
-                                        "contract_type" => "CALL",
-                                        "currency"      => "USD",
-                                        "duration"      => "20",
-                                        "duration_unit" => "m",
-                                        "symbol"        => "R_50",
-                                       };
+      my $txn = BOM::Product::Transaction->new({
+                                                client        => $client,
+                                                contract      => $contract,
+                                                amount        => 100,
+                                                amount_type   => 'payout',
+                                                purchase_date => time - 60 * 2,
+                                               });
 
-      $buy_params->{args}{price} = $contract->ask_price;
-      my $buy_result = $c->call_ok('buy', $buy_params)->has_no_system_error->result;
+      my $error = $txn->buy(skip_validation => 1);
+      ok(!$error, 'should no error to buy the contract');
+
+
+
+      #my $buy_params = {language => 'ZH_CN', token => $token};
+      #$buy_params->{source}              = 1;
+      #$buy_params->{contract_parameters} = {
+      #                                  "proposal"      => 1,
+      #                                  "amount"        => "100",
+      #                                  "basis"         => "payout",
+      #                                  "contract_type" => "CALL",
+      #                                  "currency"      => "USD",
+      #                                  "duration"      => "20",
+      #                                  "duration_unit" => "m",
+      #                                  "symbol"        => "R_50",
+      #                                 };
+      #
+      #$buy_params->{args}{price} = $contract->ask_price;
+      #my $buy_result = $c->call_ok('buy', $buy_params)->has_no_system_error->result;
 
       $params->{source} = 1;
-      $params->{args}{sell} = $buy_result->{contract_id};
+      $params->{args}{sell} = $countract->id;
       $params->{args}{price} = $contract->ask_price;
       diag Dumper $c->call_ok('sell', $params)->has_no_system_error->has_no_error->result;
 };
