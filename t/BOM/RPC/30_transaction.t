@@ -154,7 +154,7 @@ subtest 'sell' => sub {
       $client->save;
 
       #sold  contract should be hold 2 minutes and interval should more than 15
-      my $contract = create_contract(start_time => time - 60 * 2, interval => '20m');
+      my $contract = BOM::Test::Data::Utility::Product::create_contract(start_time => time - 60 * 2, interval => '20m');
       ok($contract);
 
 
