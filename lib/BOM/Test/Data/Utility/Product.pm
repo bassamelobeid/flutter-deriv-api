@@ -84,9 +84,12 @@ sub create_contract {
     my $underlying_symbol = $args{underlying} || 'R_50';
     my $is_expired        = $args{is_expired} || 0;
 
-    my $start = Date::Utility->new();
-    $start = $start->minus_time_interval('1h 2m') if $is_expired;
-    my $expire = $start->plus_time_interval('2m');
+    my $start_time = $args{start_time} || time;
+    my $start = Date::Utility->new($start_time);
+    my $interval = $args{internval} || '2m';
+    $start = $start->minus_time_interval('1h')->minus_time_interval($interval) if $is_expired;
+
+    my $expire = $start->plus_time_interval($interval);
 
     prepare_contract_db($underlying_symbol);
 
