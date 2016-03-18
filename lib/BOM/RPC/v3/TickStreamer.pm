@@ -25,7 +25,7 @@ sub ticks_history {
         return $response;
     }
 
-    if ($args->{subscribe} eq '1') {
+    if ($args->{subscribe} && $args->{subscribe} eq '1') {
         my $license = BOM::RPC::v3::Contract::validate_license($symbol);
         if ($license and exists $license->{error}) {
             return $license;

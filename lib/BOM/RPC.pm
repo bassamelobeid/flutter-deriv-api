@@ -25,6 +25,7 @@ use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::App;
+use BOM::RPC::v3::NewAccount::Japan;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -150,6 +151,7 @@ sub startup {
                 '/portfolio'                 => register('portfolio',                 \&BOM::RPC::v3::PortfolioManagement::portfolio),
                 '/sell_expired'              => register('sell_expired',              \&BOM::RPC::v3::PortfolioManagement::sell_expired),
                 '/proposal_open_contract'    => register('proposal_open_contract',    \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract),
+                '/jp_knowledge_test'         => register('jp_knowledge_test',         \&BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test),
 
                 '/app_register' => register('app_register', \&BOM::RPC::v3::App::register),
                 '/app_list'     => register('app_list',     \&BOM::RPC::v3::App::list),

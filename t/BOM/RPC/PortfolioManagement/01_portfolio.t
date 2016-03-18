@@ -20,18 +20,17 @@ use BOM::Product::ContractFactory qw(simple_contract_info);
 
 use utf8;
 
-my ( $client, $client_token, $session );
-my ( $t, $rpc_ct );
+my ($client, $client_token, $session);
+my ($t, $rpc_ct);
 my $method = 'portfolio';
 
 my @params = (
     $method,
     {
         language => 'RU',
-        source => 1,
-        country => 'ru',
-    }
-);
+        source   => 1,
+        country  => 'ru',
+    });
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -39,109 +38,97 @@ subtest 'Initialization' => sub {
             broker_code => 'CR',
         });
         $client->payment_free_gift(
-            currency    => 'USD',
-            amount      => 500,
-            remark      => 'free gift',
+            currency => 'USD',
+            amount   => 500,
+            remark   => 'free gift',
         );
 
         my $m = BOM::Database::Model::AccessToken->new;
 
-        $client_token = $m->create_token( $client->loginid, 'test token' );
+        $client_token = $m->create_token($client->loginid, 'test token');
 
         $session = BOM::Platform::SessionCookie->new(
             loginid => $client->loginid,
             email   => $client->email,
         )->token;
-    } 'Initial clients';
+    }
+    'Initial clients';
 
     lives_ok {
         $t = Test::Mojo->new('BOM::RPC');
-        $rpc_ct = Test::BOM::RPC::Client->new( ua => $t->app->ua );
-    } 'Initial RPC server';
+        $rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+    }
+    'Initial RPC server';
 };
 
 subtest 'Auth client' => sub {
-    $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->result_is_deeply(
-                {
-                    error => {
-                        message_to_client => 'Токен недействителен.',
-                        code => 'InvalidToken',
-                    }
-                },
-                'It should return error: InvalidToken' );
+    $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
+            error => {
+                message_to_client => 'Токен недействителен.',
+                code              => 'InvalidToken',
+            }
+        },
+        'It should return error: InvalidToken'
+    );
 
     $params[1]->{token} = 'wrong token';
-    $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->result_is_deeply(
-                {
-                    error => {
-                        message_to_client => 'Токен недействителен.',
-                        code => 'InvalidToken',
-                    }
-                },
-                'It should return error: InvalidToken' );
+    $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
+            error => {
+                message_to_client => 'Токен недействителен.',
+                code              => 'InvalidToken',
+            }
+        },
+        'It should return error: InvalidToken'
+    );
 
     delete $params[1]->{token};
-    $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->result_is_deeply(
-                {
-                    error => {
-                        message_to_client => 'Токен недействителен.',
-                        code => 'InvalidToken',
-                    }
-                },
-                'It should return error: InvalidToken' );
+    $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
+            error => {
+                message_to_client => 'Токен недействителен.',
+                code              => 'InvalidToken',
+            }
+        },
+        'It should return error: InvalidToken'
+    );
 
     $params[1]->{token} = $client_token;
 
     {
         my $module = Test::MockModule->new('BOM::Platform::Client');
-        $module->mock( 'new', sub {} );
+        $module->mock('new', sub { });
 
-        $rpc_ct->call_ok(@params)
-              ->has_no_system_error
-              ->has_error
-              ->error_code_is( 'AuthorizationRequired', 'It should check auth' );
+        $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'It should check auth');
     }
 
-    $rpc_ct->call_ok(@params)
-          ->has_no_system_error
-          ->has_no_error('It should be success using token');
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using token');
 
     $params[1]->{token} = $session;
 
-    $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->has_no_error('It should be success using session');
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using session');
 };
 
 subtest 'Return empty client portfolio' => sub {
-    $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->has_no_error
-           ->result_is_deeply({ contracts => [] }, 'It should return empty array');
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({contracts => []}, 'It should return empty array');
 };
 
 subtest 'Sell expired contracts' => sub {
     lives_ok {
-        create_fmb( $client, buy_bet => 1, is_expired => 1 );
-    } 'Create expired contract for sell';
+        create_fmb(
+            $client,
+            buy_bet    => 1,
+            is_expired => 1
+        );
+    }
+    'Create expired contract for sell';
 
-    $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->has_no_error
-           ->result_is_deeply({ contracts => [] }, 'It should return empty array');
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({contracts => []}, 'It should return empty array');
 };
 
 subtest 'Return not expired client contracts' => sub {
     my $fmb;
     my $expected_contract_data;
     lives_ok {
-        create_fmb( $client, buy_bet => 1 );
+        create_fmb($client, buy_bet => 1);
 
         my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
                 client_loginid => $client->loginid,
@@ -169,21 +156,17 @@ subtest 'Return not expired client contracts' => sub {
             shortcode      => $fmb->{short_code},
             longcode       => (simple_contract_info($fmb->{short_code}, $client->currency))[0] // '',
         };
-    } 'Create not expired contract and expected data';
+    }
+    'Create not expired contract and expected data';
 
     $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->has_no_error
-           ->result_is_deeply(
-               { contracts => [ $expected_contract_data ] },
-               'Should return contract data',
-           );
+        ->has_no_system_error->has_no_error->result_is_deeply({contracts => [$expected_contract_data]}, 'Should return contract data',);
 };
 
 done_testing();
 
 sub create_fmb {
-    my ( $client, %params ) = @_;
+    my ($client, %params) = @_;
 
     my $account = $client->set_default_account('USD');
     return BOM::Test::Data::Utility::UnitTestDatabase::create_fmb_with_ticks({
