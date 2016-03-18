@@ -60,8 +60,8 @@ subtest 'sell' => sub {
                                         "basis"         => "payout",
                                         "contract_type" => "CALL",
                                         "currency"      => "USD",
-                                        "duration"      => "120",
-                                        "duration_unit" => "s",
+                                        "duration"      => "20",
+                                        "duration_unit" => "m",
                                         "symbol"        => "R_50",
                                        };
 
