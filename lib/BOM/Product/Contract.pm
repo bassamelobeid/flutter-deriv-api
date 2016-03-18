@@ -2505,7 +2505,7 @@ sub _validate_start_date {
             push @errors,
                 {
                 message           => 'Tick Expiry Blackout',
-                message_to_client => localize("You can only purchase tick expiry contacts between 0000 GMT to 2000 GMT."),
+                message_to_client => localize("This contract is only available between 00:00:00 GMT to 20:00:00 GMT."),
                 };
         }
     }
