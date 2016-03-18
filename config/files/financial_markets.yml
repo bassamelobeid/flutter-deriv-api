@@ -52,6 +52,7 @@ forex:
     display_name: "Forex"
     display_order: 1
     integer_number_of_day: 1
+    max_suspend_trading_feed_delay: '1m30s'
     eod_blackout_expiry: '0s'
     eod_blackout_start: '0s'
     sod_blackout_start: '0s'
