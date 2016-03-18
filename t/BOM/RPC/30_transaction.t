@@ -173,7 +173,7 @@ subtest 'sell' => sub {
                                         "symbol"        => "R_50",
                                        };
 
-      $bug_params->{args}{price} = $contract->ask_price;
+      $buy_params->{args}{price} = $contract->ask_price;
       $c->call_ok('buy', $buy_params)->has_no_system_error->has_no_error;
 };
 
