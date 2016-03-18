@@ -410,7 +410,7 @@ sub _get_expired_barriers {
             })}{'high', 'low'};
 
     my @barriers                  = sort values %$available_barriers;
-    my %skip_list                 =  map { $_ => 1 } (@$expired_barriers);
+    my %skip_list                 = map { $_ => 1 } (@$expired_barriers);
     my @unexpired_barriers        = grep { !$skip_list{$_} } @barriers;
     my $new_added_expired_barrier = 0;
     foreach my $barrier (@unexpired_barriers) {
@@ -447,23 +447,24 @@ sub _get_barriers_pair {
     my $list_of_expired_barriers = $args->{expired_barriers};
     my @barrier_pairs =
         $contract_category eq 'staysinout'
-        ? ((45, 55), (40, 60), (35, 65), (20, 80), (5, 95))
-        : ((45, 55), (40, 50), (50, 60), (35, 45), (55, 65), (20, 40), (60, 80));
+        ? ([45, 55], [40, 60], [35, 65], [20, 80], [5, 95])
+        : ([45, 55], [40, 50], [50, 60], [35, 45], [55, 65], [20, 40], [60, 80]);
     my @barriers;
     my @expired_barriers;
-    for my $pair  (@barrier_pairs) {
+    for my $pair (@barrier_pairs) {
         my ($barrier_low, $barrier_high) = @$pair;
+        my $first_barrier  = $available_barriers->{$barrier_low};
+        my $second_barrier = $available_barriers->{$barrier_high};
 
         if ($contract_category eq 'staysinout') {
-            push @expired_barriers, [$barrier_low, $barrier_high]
-                if (grep { $_ eq $barrier_low or $_ eq $barrier_high } @$list_of_expired_barriers);
-        }
+            push @expired_barriers, [$first_barrier, $second_barrier]
+                if (grep { $_ eq $first_barrier or $_ eq $second_barrier } @$list_of_expired_barriers);
 
-        push @barriers, [$barrier_low, $barrier_high];
+        }
+        push @barriers, [$first_barrier, $second_barrier];
     }
 
     return (\@barriers, \@expired_barriers);
-
 }
 
 =head2 _split_boundaries_barriers
