@@ -35,20 +35,23 @@ use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 my $CLIENT_STATUS_TYPES = {
-    age_verification      => 1,
-    can_authenticate      => 1,
-    cashier_locked        => 1,
-    disabled              => 1,
-    ok                    => 1,
-    unwelcome             => 1,
-    withdrawal_locked     => 1,
-    ukgc_funds_protection => 1,    # UKGC License condition 4.2.1 for UK clients only
-    tnc_approval          => 1     # MGA License condition 2.7.1.10 for MLT clients only
+    age_verification          => 1,
+    can_authenticate          => 1,
+    cashier_locked            => 1,
+    disabled                  => 1,
+    ok                        => 1,
+    unwelcome                 => 1,
+    withdrawal_locked         => 1,
+    ukgc_funds_protection     => 1,    # UKGC License condition 4.2.1 for UK clients only
+    tnc_approval              => 1,    # MGA License condition 2.7.1.10 for MLT clients only
+    jp_knowledge_test_pending => 1,
+    jp_knowledge_test_fail    => 1,
+    jp_activation_pending     => 1,
 };
 
 sub client_status_types { return $CLIENT_STATUS_TYPES }
 
-my $META = __PACKAGE__->meta;      # rose::db::object::manager meta rules. Knows our db structure
+my $META = __PACKAGE__->meta;          # rose::db::object::manager meta rules. Knows our db structure
 
 sub rnew { return shift->SUPER::new(@_) }
 
@@ -451,7 +454,9 @@ sub get_limit_for_account_balance {
     my $self = shift;
 
     my @maxbalances = ();
-    push @maxbalances, $self->is_virtual ? 1000000 : 300000;
+    my $max_bal     = BOM::Platform::Static::Config::quants->{client_limits}->{max_balance};
+    my $curr        = $self->currency;
+    push @maxbalances, $self->is_virtual ? $max_bal->{virtual}->{$curr} : $max_bal->{real}->{$curr};
 
     if ($self->get_self_exclusion and $self->get_self_exclusion->max_balance) {
         push @maxbalances, $self->get_self_exclusion->max_balance;
@@ -475,10 +480,12 @@ sub get_limit_for_daily_turnover {
     my $val = $self->custom_max_daily_turnover;
     return $excl && $excl < $val ? $excl : $val if defined $val;
 
+    my $curr         = $self->currency;
+    my $max_turnover = BOM::Platform::Static::Config::quants->{client_limits}->{max_daily_turnover};
     $val =
-          $self->loginid =~ /^VRT/          ? 1_000_000
-        : $self->client_fully_authenticated ? 500_000
-        :                                     200_000;
+          $self->is_virtual                 ? $max_turnover->{virtual}->{$curr}
+        : $self->client_fully_authenticated ? $max_turnover->{real_authenticated}->{$curr}
+        :                                     $max_turnover->{real_unauthenticated}->{$curr};
 
     return $excl && $excl < $val ? $excl : $val;
 }
@@ -548,21 +555,16 @@ sub get_limit_for_payout {
     my $val = $self->custom_max_payout;
     return $val if defined $val;
 
-    my $lc_limit = $self->landing_company_open_positions_payout_limit;
+    my $max_payout = BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions};
+    my $curr       = $self->currency;
 
     $val =
-          $self->loginid =~ /^VRT/          ? 1_000_000
-        : $lc_limit                         ? $lc_limit
-        : $self->client_fully_authenticated ? 500_000
-        :                                     200_000;
+          $self->is_virtual                                ? $max_payout->{virtual}->{$curr}
+        : ($self->landing_company->short eq 'maltainvest') ? $max_payout->{maltainvest}->{$curr}
+        : $self->client_fully_authenticated                ? $max_payout->{real_authenticated}->{$curr}
+        :                                                    $max_payout->{real_unauthenticated}->{$curr};
 
     return $val;
-}
-
-sub landing_company_open_positions_payout_limit {
-    my $self = shift;
-
-    return ($self->landing_company->short eq 'maltainvest') ? 100_000 : undef;
 }
 
 sub get_limit {
