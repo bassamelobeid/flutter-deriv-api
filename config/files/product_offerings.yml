@@ -22,7 +22,12 @@ AEX: &limited_equities
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            GBP: 5000
+            AUD: 5000
+            EUR: 5000
+            JPY: 500000
   endsinout:
     daily:
       spot:
@@ -62,7 +67,12 @@ AS51: &limited_ao_equities
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            GBP: 5000
+            AUD: 5000
+            EUR: 5000
+            JPY: 500000
   endsinout:
     daily:
       spot:
@@ -88,13 +98,23 @@ BBABI: &stocks
         euro_atm:
           max: 365d
           min: 1d
-          payout_limit: 1000
+          payout_limit:
+            USD: 1000
+            GBP: 1000
+            AUD: 1000
+            EUR: 1000
+            JPY: 100000
     intraday:
       forward:
         euro_atm:
           max: 1d
           min: 5m
-          payout_limit: 1000
+          payout_limit:
+            USD: 1000
+            GBP: 1000
+            AUD: 1000
+            EUR: 1000
+            JPY: 100000
 BBBELG: *stocks
 BBGBLB: *stocks
 BBKBC: *stocks
@@ -117,7 +137,12 @@ BFX: &limited_callput
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            GBP: 5000
+            AUD: 5000
+            EUR: 5000
+            JPY: 500000
 BSESENSEX30: &forward_and_daily
   callput:
     daily:
@@ -243,7 +268,12 @@ RDBEAR: &random_daily_nightly
         asian:
           max: 10
           min: 5
-          payout_limit: 10000
+          payout_limit:
+            USD: 10000
+            GBP: 10000
+            AUD: 10000
+            EUR: 10000
+            JPY: 1000000
   callput:
     intraday:
       forward:
@@ -286,7 +316,12 @@ RDMARS: &reset_random
         asian:
           max: '10'
           min: '5'
-          payout_limit: '10000'
+          payout_limit:
+            USD: 10000
+            GBP: 10000
+            AUD: 10000
+            EUR: 10000
+            JPY: 1000000
   callput:
     intraday:
       forward:
@@ -329,7 +364,12 @@ R_100: &random_index
         asian:
           max: 10
           min: 5
-          payout_limit: 10000
+          payout_limit:
+            USD: 10000
+            GBP: 10000
+            AUD: 10000
+            EUR: 10000
+            JPY: 1000000
   callput:
     daily:
       spot:
@@ -419,7 +459,12 @@ WLDAUD: &smart_fx
           historical_pricer_min: 2m
           max: 10h
           min: 2m
-          payout_limit: 1000
+          payout_limit:
+            USD: 1000
+            GBP: 1000
+            AUD: 1000
+            EUR: 1000
+            JPY: 100000
 WLDEUR: *smart_fx
 WLDGBP: *smart_fx
 WLDUSD: *smart_fx
