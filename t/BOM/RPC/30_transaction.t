@@ -101,9 +101,6 @@ subtest 'buy' => sub {
     );
 
 
-    $c->call_ok('sell',{language => 'ZH_CN', source => 1, args => {sell => }})
-
-
     $contract = BOM::Test::Data::Utility::Product::create_contract(is_spread => 1);
     $params->{contract_parameters} = {
                                       "proposal"      => 1,
