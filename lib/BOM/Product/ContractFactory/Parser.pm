@@ -137,7 +137,7 @@ sub shortcode_to_parameters {
     );
     $test_bet_name = $OVERRIDE_LIST{$test_bet_name} if exists $OVERRIDE_LIST{$test_bet_name};
 
-    if (not exists $AVAILABLE_CONTRACTS{$test_bet_name} or $shortcode =~ /_\d+H\d+/ or $shortcode =~ /_\d\d?_\w\w\w_\d\d_\d\d?_/) {
+    if (not exists $AVAILABLE_CONTRACTS{$test_bet_name} or $shortcode =~ /_\d+H\d+/) {
         return {
             bet_type => 'Invalid',    # it doesn't matter what it is if it is a legacy
             currency => $currency,
