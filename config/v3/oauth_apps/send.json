@@ -11,7 +11,7 @@
     },
     "revoke_app": {
       "type":"string",
-      "description": "Revoke App Permissions and delete all tokens related to the app."
+      "description": "Accept app_id, Revoke App Permissions and delete all tokens related to the app."
     },
     "passthrough": {
       "type": "object",
