@@ -64,12 +64,15 @@ subtest 'financial_market_bet_to_parameters' => sub {
 };
 
 subtest 'shortcode_to_parameters' => sub {
-    plan tests => 4;
-
     my $frxUSDJPY = BOM::Market::Underlying->new('frxUSDJPY');
 
     my $legacy = shortcode_to_parameters('DOUBLEDBL_frxUSDJPY_100_10_OCT_12_I_10H10_U_11H10_D_12H10', 'USD');
     is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');
+
+    my $rmg_dated_call = shortcode_to_parameters('CALL_frxUSDJPY_100_10_OCT_12_17_OCT_12_S1P_S2P', 'USD');
+    is($rmg_dated_call->{bet_type}, 'CALL', 'parsed bet_type');
+    is($rmg_dated_call->{date_start}, Date::Utility->new('2012-10-10')->epoch, 'parsed start time');
+    is($rmg_dated_call->{date_expiry}, Date::Utility->new('2012-10-17 23:59:59')->epoch, 'parsed expiry time');
 
     my $call = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P', 'USD');
     my $expected = {
@@ -90,6 +93,11 @@ subtest 'shortcode_to_parameters' => sub {
         is_sold      => undef
     };
     cmp_deeply($call, $expected, 'CALL shortcode.');
+
+    my $put = shortcode_to_parameters('PUT_frxUSDJPY_100.00_1352351000_9_NOV_12_80_90', 'USD');
+    is($put->{bet_type}, 'PUT', 'parsed bet_type');
+    is($put->{date_start}, Date::Utility->new(1352351000)->epoch, 'parsed start time');
+    is($put->{date_expiry}, Date::Utility->new('2012-11-09 21:00:00')->epoch, 'parsed expiry time');
 
     my $tickup = shortcode_to_parameters('FLASHU_frxUSDJPY_100.00_1352351000_9T_0_0', 'USD');
     $expected = {
