@@ -31,6 +31,8 @@ $t = Test::Mojo->new('BOM::RPC');
 $rpc_ct = Test::BOM::RPC::Client->new( ua => $t->app->ua );
 
 subtest "Request $method" => sub {
+    my %got_landing_company;
+
     $rpc_ct->call_ok(@params)
             ->has_no_system_error
             ->has_no_error;
@@ -39,6 +41,10 @@ subtest "Request $method" => sub {
                 [sort qw/ available close open hit_count spot feed_license /],
                 'It should return contracts_for object';
     ok @{ $rpc_ct->result->{available} }, 'It should return available contracts';
+    %got_landing_company = map { $_->{landing_company} => 1 } @{ $rpc_ct->result->{available} };
+    is_deeply   [keys %got_landing_company],
+                [qw/ costarica /],
+                'It should return available contracts only for costarica region';
 
     $params[1]{args}{region} = 'japan';
     $params[1]{args}{contracts_for} = 'frxUSDJPY';
@@ -49,7 +55,11 @@ subtest "Request $method" => sub {
     is_deeply   [sort keys %{ $rpc_ct->result }],
                 [sort qw/ available close open hit_count spot feed_license /],
                 'It should return contracts_for object for japan region';
-    ok @{ $rpc_ct->result->{available} }, 'It should return available contracts for japan region';
+    ok @{ $rpc_ct->result->{available} }, 'It should return available contracts only for japan region';
+    %got_landing_company = map { $_->{landing_company} => 1 } @{ $rpc_ct->result->{available} };
+    is_deeply   [keys %got_landing_company],
+                [qw/ japan /],
+                'It should return available contracts only for japan region';
 
     $params[1]{args}{contracts_for} = 'invalid symbol';
     $rpc_ct->call_ok(@params)
