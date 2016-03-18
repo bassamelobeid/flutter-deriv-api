@@ -123,46 +123,4 @@ subtest 'buy' => sub {
 
 };
 
-subtest 'sell' => sub {
-      my $params = {
-                    language => 'ZH_CN',
-                    token    => 'invalid token'
-                   };
-      $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'invalid token')
-        ->error_message_is('令牌无效。', 'invalid token');
-
-      $params->{token} = $token;
-
-      $client->set_status('disabled', 1, 'test');
-      $client->save;
-      $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('DisabledClient', 'disabled client')
-        ->error_message_is('此账户不可用。', 'account disabled');
-
-      $client->clr_status('disabled');
-      $client->save;
-
-#      #reset ticks
-#      BOM::Test::Data::Utility::FeedTestDatabase->instance->prepare_unit_test_database;
-#
-#      #sold  contract should be hold 2 minutes and interval should more than 15
-#      my $contract = BOM::Test::Data::Utility::Product::create_contract(start_time => time - 60 * 2, interval => '20m');
-#      ok($contract);
-#
-#      my $buy_params = {};
-#      $buy_params->{source}              = 1;
-#      $buy_params->{contract_parameters} = {
-#                                        "proposal"      => 1,
-#                                        "amount"        => "100",
-#                                        "basis"         => "payout",
-#                                        "contract_type" => "CALL",
-#                                        "currency"      => "USD",
-#                                        "duration"      => "120",
-#                                        "duration_unit" => "s",
-#                                        "symbol"        => "R_50",
-#                                       };
-#
-#      $buy_params->{args}{price} = $contract->ask_price;
-#      $c->call_ok('buy', $buy_params)->has_no_system_error->has_no_error;
-};
-
 done_testing();
