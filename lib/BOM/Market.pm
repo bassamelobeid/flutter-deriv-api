@@ -294,7 +294,7 @@ How long before we think the feed is down?
 has max_suspend_trading_feed_delay => (
     is      => 'ro',
     isa     => 'bom_time_interval',
-    default => '1m',
+    default => '1m30s',
     coerce  => 1,
 );
 
