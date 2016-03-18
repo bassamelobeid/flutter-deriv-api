@@ -81,7 +81,7 @@ subtest 'sell' => sub {
       #my $buy_result = $c->call_ok('buy', $buy_params)->has_no_system_error->result;
 
       $params->{source} = 1;
-      $params->{args}{sell} = $tnx->contract_id;
+      $params->{args}{sell} = $txn->contract_id;
       $params->{args}{price} = $contract->ask_price;
       diag Dumper $c->call_ok('sell', $params)->has_no_system_error->has_no_error->result;
 };
