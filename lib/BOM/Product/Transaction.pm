@@ -611,10 +611,9 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _validate_iom_withdrawal_limit
             _validate_payout_limit
             _is_valid_to_sell
-            _validate_currency/,
-            # always sell at market price -- must be called after _is_valid_to_sell
-            sub { $_[0]->price($_[0]->contract->bid_price); return },
-            '_validate_date_pricing',
+            _validate_currency
+            _validate_sell_pricing_adjustment
+            _validate_date_pricing/
             );
 
         $self->comment($self->_build_pricing_comment) unless defined $self->comment;
@@ -1080,6 +1079,71 @@ sub _build_pricing_comment {
     return sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
 }
 
+sub _validate_sell_pricing_adjustment {
+    my $self = shift;
+
+    # spreads and digits prices don't jump
+    return if $self->contract->is_spread;
+
+    my $contract = $self->contract;
+    my $currency = $contract->currency;
+
+    my $requested         = $self->price / $self->payout;
+    my $recomputed        = $contract->bid_probability->amount;
+    my $move              = $recomputed - $requested;
+    my $commission_markup = 0;
+    if (not $contract->is_expired) {
+        if ($contract->new_interface_engine) {
+            $commission_markup = $contract->pricing_engine->commission_markup;
+        } else {
+            $commission_markup = $contract->bid_probability->peek_amount('commission_markup') || 0;
+        }
+    }
+    my $allowed_move = $commission_markup * 0.8;
+    $allowed_move = 0 if $recomputed == 1;
+    my ($amount, $recomputed_amount) = ($self->price, $contract->bid_price);
+
+    if ($move != 0) {
+        my $final_value;
+        if ($contract->is_expired) {
+            return Error::Base->cuss(
+                -type              => 'BetExpired',
+                -mesg              => 'Bet expired with a new price[' . $recomputed_amount . '] (old price[' . $amount . '])',
+                -message_to_client => BOM::Platform::Context::localize('The contract has expired'),
+            );
+        } elsif ($allowed_move == 0) {
+            $final_value = $recomputed_amount;
+        } elsif ($move < -$allowed_move) {
+            my $market_moved = BOM::Platform::Context::localize('The underlying market has moved too much since you priced the contract. ');
+            $market_moved .= BOM::Platform::Context::localize(
+                'The contract [_4] has changed from [_1][_2] to [_1][_3].',
+                $currency,
+                to_monetary_number_format($amount),
+                to_monetary_number_format($recomputed_amount),
+                'sell price'
+            );
+
+            return Error::Base->cuss(
+                -type => 'PriceMoved',
+                -mesg =>
+                    "Difference between submitted and newly calculated bet price: currency $currency, amount: $amount, recomputed amount: $recomputed_amount",
+                -message_to_client => $market_moved,
+            );
+        } else {
+            if ($move <= $allowed_move and $move >= -$allowed_move) {
+                $final_value = $amount;
+            } elsif ($move > $allowed_move) {
+                $self->execute_at_better_price(1);
+                $final_value = $recomputed_amount;
+            }
+        }
+
+        $self->price($final_value);
+    }
+
+    return;
+}
+
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
@@ -1398,9 +1462,10 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    my %legal_allowed_cc =
-        map { $_ => 1 } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_contract_categories};
-    if (not $legal_allowed_cc{$contract->category_code}) {
+    my $lc = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid);
+
+    my %legal_allowed_ct = map { $_ => 1 } @{$lc->legal_allowed_contract_types};
+    if (not $legal_allowed_ct{$contract->code}) {
         return Error::Base->cuss(
             -type              => 'NotLegalContractCategory',
             -mesg              => 'Clients are not allowed to trade on this contract category as its restricted for this landing company',
@@ -1408,7 +1473,7 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    if (not grep { $market_name eq $_ } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_markets}) {
+    if (not grep { $market_name eq $_ } @{$lc->legal_allowed_markets}) {
         return Error::Base->cuss(
             -type              => 'NotLegalMarket',
             -mesg              => 'Clients are not allowed to trade on this markets as its restricted for this landing company',
@@ -1422,6 +1487,15 @@ sub _validate_jurisdictional_restrictions {
             -mesg => 'Clients are not allowed to place Random contracts as their country is restricted.',
             -message_to_client =>
                 BOM::Platform::Context::localize('Sorry, contracts on Random Indices are not available in your country of residence'),
+        );
+    }
+
+    my %legal_allowed_underlyings = map { $_ => 1 } @{$lc->legal_allowed_underlyings};
+    if (not $legal_allowed_underlyings{all} and not $legal_allowed_underlyings{$contract->underlying->symbol}) {
+        return Error::Base->cuss(
+            -type              => 'NotLegalUnderlying',
+            -mesg              => 'Clients are not allowed to trade on this underlying as its restricted for this landing company',
+            -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this underlying.'),
         );
     }
 

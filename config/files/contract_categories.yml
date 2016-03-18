@@ -14,6 +14,8 @@ callput:
     available_types:
       - BOM::Product::Contract::Call
       - BOM::Product::Contract::Put
+      - BOM::Product::Contract::Calle
+      - BOM::Product::Contract::Pute
 touchnotouch:
     display_order: 2
     display_name: "Touch/No Touch"
@@ -36,6 +38,8 @@ endsinout:
     available_types:
       - BOM::Product::Contract::Expirymiss
       - BOM::Product::Contract::Expiryrange
+      - BOM::Product::Contract::Expirymisse
+      - BOM::Product::Contract::Expiryrangee
 staysinout:
     display_order : 4
     two_barriers: 1

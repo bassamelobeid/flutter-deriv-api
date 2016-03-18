@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 11;
+use Test::Most tests => 12;
 use Test::NoWarnings;
 use File::Spec;
 use JSON qw(decode_json);
@@ -705,6 +705,157 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
 };
 
+subtest 'SELL - sell pricing adjustment' => sub {
+    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+
+    subtest 'do not allow move if recomputed is 0' => sub {
+        $mock_contract->mock('bid_price', sub { 100 });
+        my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'model_markup',
+            description => 'fake model markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0,
+        });
+        my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'commission_markup',
+            description => 'fake commission markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0.01,
+        });
+        my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'risk_markup',
+            description => 'fake risk markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0,
+        });
+        $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
+        $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
+        $mock_contract->mock('model_markup', sub { $fake_model_markup });
+        my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'bid_probability',
+            description => 'fake ask prov',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 1
+        });
+        $ask_cv->include_adjustment('info', $fake_model_markup);
+        $mock_contract->mock('bid_probability', sub { $ask_cv });
+        my $allowed_move = 0.01 * 0.80;
+
+        my $contract = produce_contract({
+            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            bet_type     => 'CALL',
+            currency     => 'GBP',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $now->epoch + 300,
+            date_pricing => Date::Utility->new($now->epoch - 100),
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $price = $contract->bid_price - ($allowed_move * $contract->payout) + 0.1;
+        my $transaction = BOM::Product::Transaction->new({
+            client   => $client,
+            contract => $contract,
+            action   => 'SELL',
+            price    => $price,
+        });
+        my $error = $transaction->_validate_sell_pricing_adjustment;
+        is($error, undef, 'no error');
+        cmp_ok($transaction->price, '==', 100, 'SELL at the recomputed price');
+    };
+
+    subtest 'check price move' => sub {
+        $mock_contract->mock('bid_price', sub { 10 });
+        my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'model_markup',
+            description => 'fake model markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0,
+        });
+        my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'commission_markup',
+            description => 'fake commission markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0.01,
+        });
+        my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'risk_markup',
+            description => 'fake risk markup',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0,
+        });
+        $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
+        $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
+        $mock_contract->mock('model_markup', sub { $fake_model_markup });
+        my $bid_cv = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'bid_probability',
+            description => 'fake ask prov',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0.1
+        });
+        $bid_cv->include_adjustment('info', $fake_model_markup);
+        $mock_contract->mock('bid_probability', sub { $bid_cv });
+
+        my $allowed_move = 0.01 * 0.80;
+
+        my $contract = produce_contract({
+            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            bet_type     => 'FLASHU',
+            currency     => 'GBP',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $now->epoch + 300,
+            date_pricing => Date::Utility->new($now->epoch - 100),
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        # amount_type = payout, sell price increase > allowed move
+        my $transaction = BOM::Product::Transaction->new({
+            client   => $client,
+            contract => $contract,
+            action   => 'SELL',
+            price    => $contract->bid_price + ($allowed_move * $contract->payout + 0.1),
+        });
+
+        my $error = $transaction->_validate_sell_pricing_adjustment;
+        is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
+        like(
+            $error->{-message_to_client},
+            qr/The underlying market has moved too much since you priced the contract. The contract sell price has changed from GBP10.90 to GBP10.00./,
+            'price move - msg to client'
+        );
+
+        # amount_type = payout, sell price decrease < allowed move
+        my $price = $contract->bid_price + ($allowed_move * $contract->payout - 0.1);
+        $transaction = BOM::Product::Transaction->new({
+            client   => $client,
+            contract => $contract,
+            action   => 'SELL',
+            price    => $price,
+        });
+
+        $error = $transaction->_validate_sell_pricing_adjustment;
+        is($error, undef, 'SELL price descrease within allowable move');
+        cmp_ok($transaction->price, '==', $price, 'SELL with original price');
+
+        # amount_type = payout, sell price increase => better execution price
+        $price = $contract->bid_price - ($allowed_move * $contract->payout * 2);
+        $transaction = BOM::Product::Transaction->new({
+            client   => $client,
+            contract => $contract,
+            action   => 'SELL',
+            price    => $price,
+        });
+        $error = $transaction->_validate_sell_pricing_adjustment;
+        is($error, undef, 'SELL price increase, better execution price');
+        cmp_ok($transaction->price, '>', $price, 'SELL with higher price');
+
+        $mock_contract->unmock_all;
+    };
+};
+
 subtest 'Purchase Sell Contract' => sub {
     plan tests => 4;
 
@@ -770,6 +921,8 @@ subtest 'Purchase Sell Contract' => sub {
         exit_tick    => $current_tick,
         barrier      => 'S0P',
     });
+    my $mocked = Test::MockModule->new('BOM::Product::Transaction');
+    $mocked->mock('_validate_trade_pricing_adjustment', sub { });
     $error = BOM::Product::Transaction->new({
             client      => $client,
             contract    => $contract,
