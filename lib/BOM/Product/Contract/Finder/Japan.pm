@@ -402,19 +402,18 @@ sub _get_expired_barriers {
     my $underlying           = $args->{underlying};
     my $expired_barriers_key = join($cache_sep, $underlying->symbol, 'expired_barrier', $date_start, $date_expiry);
     my $expired_barriers     = Cache::RedisDB->get($cache_keyspace, $expired_barriers_key);
-
     my ($high, $low) = @{
         $underlying->get_high_low_for_period({
                 start => $date_start,
                 end   => $now,
             })}{'high', 'low'};
-
+if (not $high){
+print "start time is [$date_start] now [$now] no high[$high]\n";
     my @barriers                  = sort values %$available_barriers;
     my %skip_list                 = map { $_ => 1 } (@$expired_barriers);
     my @unexpired_barriers        = grep { !$skip_list{$_} } @barriers;
     my $new_added_expired_barrier = 0;
     foreach my $barrier (@unexpired_barriers) {
-
         if ($barrier < $high && $barrier > $low) {
             push @$expired_barriers, $barrier;
             $new_added_expired_barrier++;
