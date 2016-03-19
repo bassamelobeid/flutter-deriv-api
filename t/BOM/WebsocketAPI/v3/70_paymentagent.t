@@ -83,14 +83,14 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{paymentagent_list}{list}});
 test_schema('paymentagent_list', $res);
 
 my $redis = BOM::System::RedisReplicated::redis_read;
-my $tokens = $redis->execute('keys', 'LOGIN_SESSION::*');
+my $tokens = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
 
 my $code;
 foreach my $key (@{$tokens}) {
     my $value = JSON::from_json($redis->get($key));
 
     if ($value->{email} eq $email) {
-        $key =~ /^LOGIN_SESSION::(\w+)$/;
+        $key =~ /^VERIFICATION_TOKEN::(\w+)$/;
         $code = $1;
         last;
     }
