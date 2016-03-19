@@ -20,7 +20,12 @@ AEX:
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            EUR: 5000
+            GBP: 5000
+            AUD: 5000
+            JPY: 500000
   endsinout:
     daily:
       spot:
@@ -60,7 +65,12 @@ AS51:
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            EUR: 5000
+            GBP: 5000
+            AUD: 5000
+            JPY: 500000
   endsinout:
     daily:
       spot:
@@ -86,13 +96,23 @@ BBABI: &1
         euro_atm:
           max: 365d
           min: 1d
-          payout_limit: 1000
+          payout_limit:
+            USD: 1000
+            EUR: 1000
+            GBP: 1000
+            AUD: 1000
+            JPY: 100000
     intraday:
       forward:
         euro_atm:
           max: 1d
           min: 5m
-          payout_limit: 1000
+          payout_limit:
+            USD: 1000
+            EUR: 1000
+            GBP: 1000
+            AUD: 1000
+            JPY: 100000
 BBBELG: *1
 BBGBLB: *1
 BBKBC: *1
@@ -115,7 +135,12 @@ BFX:
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            EUR: 5000
+            GBP: 5000
+            AUD: 5000
+            JPY: 500000
 BSESENSEX30:
   callput:
     daily:
@@ -194,7 +219,12 @@ FCHI:
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            EUR: 5000
+            GBP: 5000
+            AUD: 5000
+            JPY: 500000
   endsinout:
     daily:
       spot:
@@ -258,7 +288,12 @@ GDAXI:
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            EUR: 5000
+            GBP: 5000
+            AUD: 5000
+            JPY: 500000
   endsinout:
     daily:
       spot:
@@ -298,7 +333,12 @@ HSI:
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            EUR: 5000
+            GBP: 5000
+            AUD: 5000
+            JPY: 500000
   endsinout:
     daily:
       spot:
@@ -380,7 +420,12 @@ RDBEAR: &4
         asian:
           max: 10
           min: 5
-          payout_limit: 10000
+          payout_limit:
+            USD: 10000
+            EUR: 10000
+            GBP: 10000
+            AUD: 10000
+            JPY: 1000000
   callput:
     intraday:
       forward:
@@ -423,7 +468,12 @@ RDMARS:
         asian:
           max: '10'
           min: '5'
-          payout_limit: '10000'
+          payout_limit:
+            USD: 10000
+            EUR: 10000
+            GBP: 10000
+            AUD: 10000
+            JPY: 1000000
   callput:
     intraday:
       forward:
@@ -461,7 +511,12 @@ RDMOON:
         asian:
           max: '10'
           min: '5'
-          payout_limit: '10000'
+          payout_limit:
+            USD: 10000
+            EUR: 10000
+            GBP: 10000
+            AUD: 10000
+            JPY: 1000000
   callput:
     intraday:
       forward:
@@ -499,7 +554,12 @@ RDSUN:
         asian:
           max: '10'
           min: '5'
-          payout_limit: '10000'
+          payout_limit:
+            USD: 10000
+            EUR: 10000
+            GBP: 10000
+            AUD: 10000
+            JPY: 1000000
   callput:
     intraday:
       forward:
@@ -537,7 +597,12 @@ RDVENUS:
         asian:
           max: '10'
           min: '5'
-          payout_limit: '10000'
+          payout_limit:
+            USD: 10000
+            EUR: 10000
+            GBP: 10000
+            AUD: 10000
+            JPY: 1000000
   callput:
     intraday:
       forward:
@@ -577,7 +642,12 @@ R_100: &6
         asian:
           max: 10
           min: 5
-          payout_limit: 10000
+          payout_limit:
+            USD: 10000
+            EUR: 10000
+            GBP: 10000
+            AUD: 10000
+            JPY: 1000000
   callput:
     daily:
       spot:
@@ -656,7 +726,12 @@ SSMI:
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            EUR: 5000
+            GBP: 5000
+            AUD: 5000
+            JPY: 500000
   endsinout:
     daily:
       spot:
@@ -693,7 +768,12 @@ ISEQ:
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            EUR: 5000
+            GBP: 5000
+            AUD: 5000
+            JPY: 500000
 STI:
   callput:
     daily:
@@ -712,7 +792,12 @@ STI:
           historical_pricer_min: 15m
           max: 1h
           min: 15m
-          payout_limit: '5000'
+          payout_limit:
+            USD: 5000
+            EUR: 5000
+            GBP: 5000
+            AUD: 5000
+            JPY: 500000
 TOP40:
   callput:
     daily:
@@ -734,7 +819,12 @@ WLDAUD: &10
           historical_pricer_min: 2m
           max: 10h
           min: 2m
-          payout_limit: 1000
+          payout_limit:
+            USD: 1000
+            EUR: 1000
+            GBP: 1000
+            AUD: 1000
+            JPY: 100000
 WLDEUR: *10
 WLDGBP: *10
 WLDUSD: *10

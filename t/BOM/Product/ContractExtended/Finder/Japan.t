@@ -50,10 +50,15 @@ subtest "predefined contracts for symbol" => sub {
     );
     foreach my $u (keys %expected) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => $u,
-            epoch      => $now->epoch,
-            quote      => 100
-        });
+                underlying => $u,
+                epoch      => Date::Utility->new($_)->epoch,
+                quote      => 100,
+            })
+            for (
+            "2015-01-01",          "2015-07-01",          "2015-08-03",          "2015-08-17", "2015-08-21",
+            "2015-08-21 00:45:00", "2015-08-21 03:45:00", "2015-08-21 04:45:00", "2015-08-21 05:30:00"
+            );
+
         my $f = available_contracts_for_symbol({
             symbol => $u,
             date   => $now
@@ -258,14 +263,21 @@ subtest "check_intraday trading_period_non_JPY" => sub {
 
 };
 subtest "predefined barriers" => sub {
-
     my %expected_barriers = (
         call_intraday => {
             available_barriers => [1.15441, 1.15591, 1.15491, 1.16041, 1.15891, 1.15291, 1.15691, 1.15541, 1.15741, 1.15641, 1.15141],
-            barrier            => 1.15591,
+            barrier            => 1.15141,
+            expired_barriers   => [],
         },
+        onetouch_daily => {
+            available_barriers => [1.14661, 1.15126, 1.15281, 1.15436, 1.14196, 1.15591, 1.15746, 1.15901, 1.16056, 1.16521, 1.16986],
+            barrier            => 1.15141,
+            expired_barriers => [1.15281, 1.15436],
+        },
+
         range_daily => {
             available_barriers => [[1.15436, 1.15746], [1.15281, 1.15901], [1.15126, 1.16056], [1.14661, 1.16521], [1.14196, 1.16986]],
+            expired_barriers => [[1.15436, 1.15746], [1.15281, 1.15901]],
         },
         expiryrange_daily => {
             available_barriers => [
@@ -277,6 +289,7 @@ subtest "predefined barriers" => sub {
                 [1.14661, 1.15281],
                 [1.15901, 1.16521]
             ],
+            expired_barriers => [],
         },
 
     );
@@ -293,15 +306,23 @@ subtest "predefined barriers" => sub {
             },
             duration => '5h15m',
         },
-        barriers => 1,
+        barriers         => 1,
+        barrier_category => 'euro_non_atm',
     };
     my $underlying = BOM::Market::Underlying->new('frxEURUSD');
-    my $now        = Date::Utility->new('2015-08-24 00:00:00');
+    my $now        = Date::Utility->new('2015-08-24 00:10:00');
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxEURUSD',
-        epoch      => $now->epoch,
-        quote      => 1.15591,
-    });
+            underlying => 'frxEURUSD',
+            epoch      => Date::Utility->new($_)->epoch,
+            quote      => 1.15591,
+        }) for ("2015-08-24 00:00:00");
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxEURUSD',
+            epoch      => Date::Utility->new($_)->epoch,
+            quote      => 1.1521,
+        }) for ("2015-08-24 00:10:00");
+
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
@@ -315,6 +336,7 @@ subtest "predefined barriers" => sub {
         date         => $now
     });
     cmp_bag($contract->{available_barriers}, $expected_barriers{call_intraday}{available_barriers}, "Expected available barriers for intraday call");
+    cmp_bag($contract->{expired_barriers},   $expected_barriers{call_intraday}{expired_barriers},   "Expected expired barriers for intraday call");
     is($contract->{barrier}, $expected_barriers{call_intraday}{barrier}, "Expected default barrier for intraday call");
 
     my $contract_2 = {
@@ -343,6 +365,11 @@ subtest "predefined barriers" => sub {
         $expected_barriers{range_daily}{available_barriers}[$_],
         "Expected available barriers for daily range"
     ) for keys @{$expected_barriers{range_daily}{available_barriers}};
+    cmp_deeply(
+        $contract_2->{expired_barriers}[$_],
+        $expected_barriers{range_daily}{expired_barriers}[$_],
+        "Expected expired barriers for daily range"
+    ) for keys @{$expected_barriers{range_daily}{expired_barriers}};
 
     my $contract_3 = {
         trading_period => {
@@ -370,6 +397,94 @@ subtest "predefined barriers" => sub {
         $expected_barriers{expiryrange_daily}{available_barriers}[$_],
         "Expected available barriers for daily expiry range"
     ) for keys @{$expected_barriers{expiryrange_daily}{available_barriers}};
+    cmp_deeply(
+        $contract_3->{expired_barriers},
+        $expected_barriers{expiryrange_daily}{expired_barriers},
+        "Expected expired barriers for daily expiry range"
+    );
+
+    my $contract_4 = {
+        trading_period => {
+            date_start => {
+                epoch => 1440374400,
+                date  => '2015-08-24 00:00:00'
+            },
+            date_expiry => {
+                epoch => 1440547199,
+                date  => '2015-08-25 23:59:59'
+            },
+            duration => '1d',
+        },
+        barriers          => 1,
+        barrier_category  => 'american',
+        contract_category => 'onetouch',
+    };
+    BOM::Product::Contract::Finder::Japan::_set_predefined_barriers({
+        underlying   => $underlying,
+        contract     => $contract_4,
+        current_tick => $underlying->tick_at($now),
+        date         => $now
+    });
+    cmp_bag(
+        $contract_4->{available_barriers},
+        $expected_barriers{onetouch_daily}{available_barriers},
+        "Expected available barriers for daily onetouch"
+    );
+    cmp_bag($contract_4->{expired_barriers}, $expected_barriers{onetouch_daily}{expired_barriers}, "Expected expired barriers for daily onetouch");
+
+    my %expected_barriers_2 = (
+        onetouch_daily => {
+            available_barriers => [1.14661, 1.15126, 1.15281, 1.15436, 1.14196, 1.15591, 1.15746, 1.15901, 1.16056, 1.16521, 1.16986],
+            barrier            => 1.15141,
+            expired_barriers => [1.15126, 1.15281, 1.15436],
+        },
+
+        range_daily => {
+            available_barriers => [[1.15436, 1.15746], [1.15281, 1.15901], [1.15126, 1.16056], [1.14661, 1.16521], [1.14196, 1.16986]],
+            expired_barriers => [[1.15436, 1.15746], [1.15281, 1.15901], [1.15126, 1.16056]],
+        },
+
+    );
+    my $new_date = Date::Utility->new("2015-08-24 00:20:00");
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxEURUSD',
+            epoch      => $_->epoch,
+            quote      => 1.151,
+        }) for ($new_date);
+
+    BOM::Product::Contract::Finder::Japan::_set_predefined_barriers({
+        underlying   => $underlying,
+        contract     => $contract_4,
+        current_tick => $underlying->tick_at($new_date),
+        date         => $new_date,
+    });
+    cmp_bag(
+        $contract_4->{available_barriers},
+        $expected_barriers_2{onetouch_daily}{available_barriers},
+        "Expected available barriers for daily onetouch after 10 min"
+    );
+    cmp_bag(
+        $contract_4->{expired_barriers},
+        $expected_barriers_2{onetouch_daily}{expired_barriers},
+        "Expected expired barriers for daily onetouch after 10 min"
+    );
+
+    BOM::Product::Contract::Finder::Japan::_set_predefined_barriers({
+        underlying   => $underlying,
+        contract     => $contract_2,
+        current_tick => $underlying->tick_at($new_date),
+        date         => $new_date
+    });
+    cmp_deeply(
+        $contract_2->{available_barriers}[$_],
+        $expected_barriers_2{range_daily}{available_barriers}[$_],
+        "Expected available barriers for daily range after 10min"
+    ) for keys @{$expected_barriers_2{range_daily}{available_barriers}};
+    cmp_deeply(
+        $contract_2->{expired_barriers}[$_],
+        $expected_barriers_2{range_daily}{expired_barriers}[$_],
+        "Expected expired barriers for daily range after 10 min"
+    ) for keys @{$expected_barriers_2{range_daily}{expired_barriers}};
 
 };
 
