@@ -80,11 +80,6 @@ subtest 'Initialization' => sub {
     } 'Setup ticks';
 };
 
-# TODO ???
-# my $module = Test::MockModule->new('BOM::Database::FeedDB');
-# $module->mock('read_dbh', sub { BOM::Database::FeedDB::write_dbh });
-# /TODO
-
 subtest 'ticks_history' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error
