@@ -180,10 +180,41 @@ sub get_settings_by_group {
                 quants.markets.disable_iv
                 quants.features.suspend_claim_types
 
-                quants.client_limits.asian_turnover_limit
-                quants.client_limits.intraday_forex_iv
-                quants.client_limits.spreads_daily_profit_limit
-                quants.client_limits.tick_expiry_engine_turnover_limit
+                quants.client_limits.asian_daily_turnover.USD
+                quants.client_limits.asian_daily_turnover.EUR
+                quants.client_limits.asian_daily_turnover.AUD
+                quants.client_limits.asian_daily_turnover.GBP
+                quants.client_limits.asian_daily_turnover.JPY
+
+                quants.client_limits.intraday_forex_iv_turnover.USD
+                quants.client_limits.intraday_forex_iv_turnover.EUR
+                quants.client_limits.intraday_forex_iv_turnover.AUD
+                quants.client_limits.intraday_forex_iv_turnover.GBP
+                quants.client_limits.intraday_forex_iv_turnover.JPY
+
+                quants.client_limits.intraday_forex_iv_realized_profit.USD
+                quants.client_limits.intraday_forex_iv_realized_profit.EUR
+                quants.client_limits.intraday_forex_iv_realized_profit.AUD
+                quants.client_limits.intraday_forex_iv_realized_profit.GBP
+                quants.client_limits.intraday_forex_iv_realized_profit.JPY
+
+                quants.client_limits.intraday_forex_iv_potential_profit.USD
+                quants.client_limits.intraday_forex_iv_potential_profit.EUR
+                quants.client_limits.intraday_forex_iv_potential_profit.AUD
+                quants.client_limits.intraday_forex_iv_potential_profit.GBP
+                quants.client_limits.intraday_forex_iv_potential_profit.JPY
+
+                quants.client_limits.spreads_daily_profit.USD
+                quants.client_limits.spreads_daily_profit.EUR
+                quants.client_limits.spreads_daily_profit.AUD
+                quants.client_limits.spreads_daily_profit.GBP
+                quants.client_limits.spreads_daily_profit.JPY
+
+                quants.client_limits.tick_expiry_engine_daily_turnover.USD
+                quants.client_limits.tick_expiry_engine_daily_turnover.EUR
+                quants.client_limits.tick_expiry_engine_daily_turnover.AUD
+                quants.client_limits.tick_expiry_engine_daily_turnover.GBP
+                quants.client_limits.tick_expiry_engine_daily_turnover.JPY
 
                 quants.underlyings.disable_autoupdate_vol
                 quants.underlyings.disabled_due_to_corporate_actions
