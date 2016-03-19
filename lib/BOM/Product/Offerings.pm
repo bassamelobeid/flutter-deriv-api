@@ -26,7 +26,13 @@ my $cache_namespace = 'OFFERINGS';
 tie my $ofb, 'Tie::Scalar::Timeout', EXPIRES => '+19s';    # Process level caching for about a third of a minute.
 
 # Keep these in sync with reality.
-our $DEFAULT_MAX_PAYOUT = 100_000;
+our $DEFAULT_MAX_PAYOUT = {
+    USD => 100_000,
+    EUR => 100_000,
+    GBP => 100_000,
+    AUD => 100_000,
+    JPY => 10_000_000,
+};
 our $BARRIER_CATEGORIES = {
     callput      => ['euro_atm', 'euro_non_atm'],
     endsinout    => ['euro_non_atm'],
