@@ -7,10 +7,9 @@ use Try::Tiny;
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::PortfolioManagement;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
-use BOM::Database::DataMapper::FinancialMarketBet;
-use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
 
@@ -87,26 +86,15 @@ sub sell {
         return $auth_error;
     }
 
-    my $source = $params->{source};
-    my $args   = $params->{args};
-    my $id     = $args->{sell};
+    my ($source, $args) = ($params->{source}, $params->{args});
+    my $id = $args->{sell};
 
-    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
-            client_loginid => $client->loginid,
-            currency_code  => $client->currency,
-            db             => BOM::Database::ClientDB->new({
-                    client_loginid => $client->loginid,
-                    operation      => 'replica',
-                }
-            )->db,
-        });
-
-    my $fmb = $fmb_dm->get_fmb_by_id([$id]);
+    my @fmbs = @{BOM::RPC::v3::PortfolioManagement::__get_contract_by_id($client, $id)};
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidSellContractProposal',
-            message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless $fmb;
+            message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless @fmbs;
 
-    my $contract = produce_contract(${$fmb}[0]->short_code, $client->currency);
+    my $contract = produce_contract($fmbs[0]->{short_code}, $client->currency);
     my $trx = BOM::Product::Transaction->new({
         client      => $client,
         contract    => $contract,

@@ -11,6 +11,7 @@ use POSIX qw/ ceil /;
 
 use Test::BOM::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Platform::Token::Verification;
 
 use utf8;
 
@@ -54,20 +55,17 @@ subtest $method => sub {
     $params->{args}->{email}             = $email;
     $params->{args}->{verification_code} = 'wrong token';
 
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ChangePasswordError', 'If password is weak it should return error')
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PasswordError', 'If password is weak it should return error')
         ->error_message_is('Пароль недостаточно надёжный.', 'If password is weak it should return error_message');
 
     $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
     $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('email unverified', 'If email verification_code is wrong it should return error')
-        ->error_message_is(
-        'Ваш электронный адрес не подтвержден.',
-        'If email verification_code is wrong it should return error_message'
-        );
+        ->has_no_system_error->has_error->error_code_is('InvalidToken', 'If email verification_code is wrong it should return error')
+        ->error_message_is('Your token has expired.', 'If email verification_code is wrong it should return error_message');
 
-    $params->{args}->{verification_code} = BOM::Platform::SessionCookie->new(
-        email => $email,
+    $params->{args}->{verification_code} = BOM::Platform::Token::Verification->new(
+        email       => $email,
+        created_for => 'account_opening'
     )->token;
     {
         #suppress warning because we want to test this error
@@ -84,8 +82,10 @@ subtest $method => sub {
             'If could not be created account it should return error_message'
             );
     }
-    $params->{args}->{verification_code} = BOM::Platform::SessionCookie->new(
-        email => $email,
+
+    $params->{args}->{verification_code} = BOM::Platform::Token::Verification->new(
+        email       => $email,
+        created_for => 'account_opening'
     )->token;
     $params->{args}->{residence} = 'id';
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
@@ -157,7 +157,7 @@ subtest $method => sub {
 
     subtest 'Create new account' => sub {
         $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('invalid',
+            ->has_no_system_error->has_error->error_code_is('InvalidAccount',
             'It should return error when try to create new client using exists real client')->error_message_is(
             'Извините, но открытие счёта недоступно.',
             'It should return error when try to create new client using exists real client'
@@ -173,20 +173,19 @@ subtest $method => sub {
                 }
             };
             $rpc_ct->call_ok($method, $params)
-                ->has_no_system_error->has_error->error_code_is('invalid', 'It should return error when try to create account without residence')
-                ->error_message_is(
-                'Извините, но открытие счёта недоступно.',
-                'It should return error when try to create account without residence'
-                );
+                ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails',
+                'It should return error when try to create account without residence')
+                ->error_message_is('Please provide complete details for account opening.',
+                'It should return error when try to create account without residence');
         }
 
         $params->{args}->{residence} = 'id';
         @{$params->{args}}{keys %$client_details} = values %$client_details;
         delete $params->{args}->{first_name};
 
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('invalid', 'It should return error if missing any details')
-            ->error_message_is('Извините, но открытие счёта недоступно.',
-            'It should return error if missing any details');
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
+            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
 
         $params->{args}->{first_name} = $client_details->{first_name};
         $rpc_ct->call_ok($method, $params)
@@ -263,8 +262,8 @@ subtest $method => sub {
         $params->{token} = $auth_token;
 
         $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('invalid', 'It should return error if client residense does not fit for maltainvest')
-            ->error_message_is(
+            ->has_no_system_error->has_error->error_code_is('InvalidAccount',
+            'It should return error if client residense does not fit for maltainvest')->error_message_is(
             'Извините, но открытие счёта недоступно.',
             'It should return error if client residense does not fit for maltainvest'
             );
@@ -274,17 +273,16 @@ subtest $method => sub {
         delete $params->{args}->{accept_risk};
 
         $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('invalid', 'It should return error if client does not accept risk')
-            ->error_message_is('Извините, но открытие счёта недоступно.',
-            'It should return error if client does not accept risk');
+            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if client does not accept risk')
+            ->error_message_is('Please provide complete details for account opening.', 'It should return error if client does not accept risk');
 
         $params->{args}->{residence} = 'de';
         @{$params->{args}}{keys %$client_details} = values %$client_details;
         delete $params->{args}->{first_name};
 
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('invalid', 'It should return error if missing any details')
-            ->error_message_is('Извините, но открытие счёта недоступно.',
-            'It should return error if missing any details');
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
+            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
 
         $params->{args}->{first_name}  = $client_details->{first_name};
         $params->{args}->{residence}   = 'de';
@@ -372,7 +370,7 @@ subtest $method => sub {
         $params->{token} = $auth_token;
 
         $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('invalid', 'It should return error if client residense does not fit for japan')
+            ->has_no_system_error->has_error->error_code_is('InvalidAccount', 'It should return error if client residense does not fit for japan')
             ->error_message_is(
             'Извините, но открытие счёта недоступно.',
             'It should return error if client residense does not fit for japan'
@@ -385,9 +383,9 @@ subtest $method => sub {
         @{$params->{args}}{keys %$client_details} = values %$client_details;
         delete $params->{args}->{first_name};
 
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('invalid', 'It should return error if missing any details')
-            ->error_message_is('Извините, но открытие счёта недоступно.',
-            'It should return error if missing any details');
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
+            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
 
         $params->{args}->{first_name} = $client_details->{first_name};
         $rpc_ct->call_ok($method, $params)
@@ -408,6 +406,7 @@ subtest $method => sub {
                 'It should return error if client has insufficient score'
                 );
         }
+
         $params->{args}->{annual_income}                  = '50-100 million JPY';
         $params->{args}->{trading_experience_public_bond} = 'Over 5 years';
         $params->{args}->{trading_experience_margin_fx}   = 'Over 5 years';
