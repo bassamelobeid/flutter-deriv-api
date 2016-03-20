@@ -31,16 +31,15 @@ my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-       symbol => $_,
-       recorded_date => $now,
+        symbol        => $_,
+        recorded_date => $now,
     }) for qw(JPY USD JPY-USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-       symbol => $_,
-       recorded_date => Date::Utility->new('2016-03-18 00:00:00'),
+        symbol        => $_,
+        recorded_date => Date::Utility->new,
     }) for qw(JPY USD JPY-USD);
-
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
@@ -53,7 +52,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date => Date::Utility->new('2016-03-18 00:00:00'),
+        recorded_date => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
@@ -84,11 +83,8 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $usdjpy_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => Date::Utility->new('2016-03-18 00:00:00')->epoch,
+    epoch      => Date::Utility->new->epoch,
     underlying => 'frxUSDJPY',
-    quote      =>  111.15,
-    bid        =>  111.14,
-    ask        =>  111.16, 
 });
 
 my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -646,8 +642,8 @@ subtest 'sell a bet', sub {
         note 'bid price: ' . $contract->bid_price;
 
         my $mocked = Test::MockModule->new('BOM::Product::Transaction');
-        $mocked->mock('_validate_trade_pricing_adjustment', sub {});
-        $mocked->mock('price', sub {$contract->bid_price});
+        $mocked->mock('_validate_trade_pricing_adjustment', sub { });
+        $mocked->mock('price',                              sub { $contract->bid_price });
         my $txn = BOM::Product::Transaction->new({
             client      => $cl,
             contract    => $contract,
@@ -937,8 +933,8 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
 
             is $error->get_type, 'AccountBalanceExceedsLimit', 'error is AccountBalanceExceedsLimit';
 
-            like $error->{-message_to_client}, qr/balance is too high \(USD100\.00\)/, 'message_to_client contains balance';
-            like $error->{-message_to_client}, qr/maximum account balance is USD99\.99/,  'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/balance is too high \(USD100\.00\)/,   'message_to_client contains balance';
+            like $error->{-message_to_client}, qr/maximum account balance is USD99\.99/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1254,13 +1250,9 @@ subtest 'max_payout_open_bets validation', sub {
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
-        my $date = Date::Utility->new('2016-03-18 00:00:00');
-        set_absolute_time($date->epoch);
-       my $contract = produce_contract({
+        my $contract = produce_contract({
             underlying   => 'frxUSDJPY',
             bet_type     => 'FLASHU',
-            date_pricing => $date,
-            date_start   => $date,
             currency     => 'USD',
             payout       => 10.00,
             duration     => '6h',
@@ -1279,6 +1271,16 @@ subtest 'max_payout_open_bets validation', sub {
         my $error = do {
             note "Set max_payout_open_positions for MF Client => 29.99";
             BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{maltainvest}->{USD} = 29.99;
+            my $mock_contract    = Test::MockModule->new('BOM::Product::Contract');
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+
+            if ($now->is_a_weekend) {
+                $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+                $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
+                $mock_transaction->mock(_is_valid_to_buy       => sub { note "mocked Transaction->_is_valid_to_buy returning nothing";       () });
+
+            }
             is +BOM::Product::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
@@ -1315,6 +1317,11 @@ subtest 'max_payout_open_bets validation', sub {
         $error = do {
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 30.00"; 30.00 });
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+
+            if ($now->is_a_weekend) {
+                $mock_transaction->mock(_is_valid_to_buy => sub { note "mocked Transaction->_is_valid_to_buy returning nothing"; () });
+            }
 
             $txn->buy;
         };
