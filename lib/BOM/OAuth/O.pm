@@ -140,7 +140,7 @@ sub __login {
     my $r       = $c->stash('request');
     my $options = {
         domain  => $r->cookie_domain,
-        secure  => 1,
+        secure  => ($r->cookie_domain eq '127.0.0.1') ? 0 : 1,
         path    => '/',
         expires => time + 86400 * 2,
     };
@@ -241,7 +241,7 @@ sub __login_env {
     my $ip_address         = $r->client_ip || '';
     my $ip_address_country = uc $r->country_code || '';
     my $ua                 = $c->req->headers->header('User-Agent') || '';
-    my $lang               = uc $c->stash->{language} || '';
+    my $lang               = uc $r->language || '';
     my $environment        = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
     return $environment;
 }
