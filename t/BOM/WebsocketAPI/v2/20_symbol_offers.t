@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use Test::MockTime qw/:all/;
 use Test::More;
 use JSON;
 use Data::Dumper;
@@ -61,6 +62,7 @@ ok($contracts_for->{contracts_for});
 ok($contracts_for->{contracts_for}->{available});
 test_schema('contracts_for', $contracts_for);
 # test contracts_for japan
+set_absolute_time(Date::Utility->new('2016-03-18 00:00:00')->epoch);
 $t = $t->send_ok({
         json => {
             contracts_for => 'frxUSDJPY',
@@ -70,7 +72,7 @@ my $contracts_for_japan = decode_json($t->message->[1]);
 ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
 test_schema('contracts_for', $contracts_for_japan);
-
+restore_time();
 $t = $t->send_ok({json => {trading_times => Date::Utility->new->date_yyyymmdd}})->message_ok;
 my $trading_times = decode_json($t->message->[1]);
 ok($trading_times->{trading_times});
