@@ -50,7 +50,7 @@ subtest clone => sub {
         '1W' => {smile => {100 => 0.2}}};
     my $volsurface = BOM::MarketData::VolSurface::Moneyness->new(
         underlying     => $underlying,
-        spot_reference => $underlying->spot,
+        spot_reference => 100,
         surface        => $surface,
         recorded_date  => $now,
     );
@@ -75,7 +75,7 @@ subtest 'get available strikes on surface' => sub {
         '1W' => {smile => {100 => 0.2}}};
     my $volsurface = BOM::MarketData::VolSurface::Moneyness->new(
         underlying     => $underlying,
-        spot_reference => $underlying->spot,
+        spot_reference => 100,
         surface        => $surface,
         recorded_date  => Date::Utility->new('2012-06-14 08:00:00'),
     );
