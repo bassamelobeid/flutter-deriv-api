@@ -32,8 +32,15 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        date   => Date::Utility->new('2016-03-18 00:00:00'),
     }) for qw(JPY USD JPY-USD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol => 'USD',
+        date   => $now,
+    });
+
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
@@ -46,7 +53,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date => $now,
+        recorded_date => Date::Utility->new('2016-03-18 00:00:00'),
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
@@ -77,8 +84,11 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $usdjpy_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => $now->epoch,
+    epoch      => Date::Utility->new('2016-03-18 00:00:00')->epoch,
     underlying => 'frxUSDJPY',
+    quote      =>  111.15,
+    bid        =>  111.14,
+    ask        =>  111.16, 
 });
 
 my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -1244,11 +1254,13 @@ subtest 'max_payout_open_bets validation', sub {
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
-
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        my $date = Date::Utility->new('2016-03-18 00:00:00');
+        set_absolute_time($date->epoch);
         my $contract = produce_contract({
             underlying   => 'frxUSDJPY',
             bet_type     => 'FLASHU',
+            date_pricing => $date,
+            date_start   => $date,
             currency     => 'USD',
             payout       => 10.00,
             duration     => '6h',
@@ -1267,7 +1279,6 @@ subtest 'max_payout_open_bets validation', sub {
         my $error = do {
             note "Set max_payout_open_positions for MF Client => 29.99";
             BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{maltainvest}->{USD} = 29.99;
-
             is +BOM::Product::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
@@ -1311,6 +1322,7 @@ subtest 'max_payout_open_bets validation', sub {
         is $error, undef, 'no error';
     }
     'survived';
+    restore_time();
 };
 
 subtest 'max_payout_open_bets validation: selling bets on the way', sub {
