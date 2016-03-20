@@ -32,7 +32,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     }) for qw(JPY USD JPY-USD);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -1249,7 +1249,8 @@ subtest 'max_payout_open_bets validation', sub {
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
         my $date = Date::Utility->new('2016-03-18 00:00:00');
         set_absolute_time($date->epoch);
-        my $contract = produce_contract({
+   $DB::single=1; 
+       my $contract = produce_contract({
             underlying   => 'frxUSDJPY',
             bet_type     => 'FLASHU',
             date_pricing => $date,
