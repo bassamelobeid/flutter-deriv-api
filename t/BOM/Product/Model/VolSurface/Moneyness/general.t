@@ -1,3 +1,4 @@
+use Test::MockTime qw/:all/;
 use Test::Most qw(-Test::Deep);
 use Scalar::Util qw( looks_like_number );
 use Test::MockObject::Extends;
@@ -39,6 +40,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 subtest clone => sub {
     plan tests => 5;
     my $now = Date::Utility->new('2012-06-14 08:00:00');
+    set_absolute_time($now->epoch);
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         quote      => 100,
@@ -50,7 +52,7 @@ subtest clone => sub {
         '1W' => {smile => {100 => 0.2}}};
     my $volsurface = BOM::MarketData::VolSurface::Moneyness->new(
         underlying     => $underlying,
-        spot_reference => 100,
+        spot_reference => $underlying->spot,
         surface        => $surface,
         recorded_date  => $now,
     );
@@ -61,7 +63,7 @@ subtest clone => sub {
     isa_ok($clone, 'BOM::MarketData::VolSurface::Moneyness');
     is($clone->surface->{1}->{smile}->{100}, 0.5, 'can change attribute value when clone');
 
-    my $spot_reference = 100 - 10 * $underlying->pip_size;
+    my $spot_reference = $underlying->spot - 10 * $underlying->pip_size;
     $clone = $volsurface->clone({spot_reference => $spot_reference});
 
     cmp_ok($clone->spot_reference, '==', $spot_reference, 'Adjusted spot ref preserved through clone.');
@@ -70,14 +72,16 @@ subtest clone => sub {
 subtest 'get available strikes on surface' => sub {
     plan tests => 2;
     my $underlying = BOM::Market::Underlying->new('HSI');
+    my $now = Date::Utility->new('2012-06-14 08:00:00');
+    set_absolute_time($now->epoch);
     my $surface    = {
         'ON' => {smile => {100 => 0.1}},
         '1W' => {smile => {100 => 0.2}}};
     my $volsurface = BOM::MarketData::VolSurface::Moneyness->new(
         underlying     => $underlying,
-        spot_reference => 100,
+        spot_reference => $underlying->spot,
         surface        => $surface,
-        recorded_date  => Date::Utility->new('2012-06-14 08:00:00'),
+        recorded_date  => $now,
     );
     my $moneyness_points;
     lives_ok { $moneyness_points = $volsurface->moneynesses } 'can call moneynesses';

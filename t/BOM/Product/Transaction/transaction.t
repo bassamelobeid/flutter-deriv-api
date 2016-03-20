@@ -32,12 +32,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
-        recorded_date => $now,
-    }) for qw(JPY USD JPY-USD);
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'currency',
-    {
-        symbol        => $_,
         recorded_date => Date::Utility->new,
     }) for qw(JPY USD JPY-USD);
 
@@ -52,7 +46,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date => Date::Utility->new,
+        recorded_date => $now,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
@@ -83,7 +77,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $usdjpy_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => Date::Utility->new->epoch,
+    epoch      => $now->epoch,
     underlying => 'frxUSDJPY',
 });
 
