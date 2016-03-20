@@ -38,7 +38,7 @@
             </button>
           </span>
           <span class="button button-focus">
-            <button class="button button-focus" name="cancel" value="Cancel" type="submit" style="background: #fff;border: 1px solid #c2c2c2;color: inherit;">
+            <button class="button button-focus" name="cancel_scopes" value="Cancel" type="submit" style="background: #fff;border: 1px solid #c2c2c2;color: inherit;">
               Cancel
             </button>
           </span>
