@@ -31,17 +31,16 @@ my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new('2016-03-18 00:00:00'),
+       symbol => $_,
+       recorded_date => $now,
     }) for qw(JPY USD JPY-USD);
-
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new,
+       symbol => $_,
+       recorded_date => Date::Utility->new('2016-03-18 00:00:00'),
     }) for qw(JPY USD JPY-USD);
+
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
