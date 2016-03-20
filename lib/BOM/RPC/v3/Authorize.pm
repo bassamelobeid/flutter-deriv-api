@@ -21,6 +21,21 @@ sub authorize {
     my $client = BOM::Platform::Client->new({loginid => $loginid});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
+    if ($client->get_status('disabled')) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'AccountDisabled',
+                message_to_client => BOM::Platform::Context::localize("Account is dsiabled")});
+    }
+
+    if ($client->get_self_exclusion and $client->get_self_exclusion->exclude_until) {
+        my $limit_excludeuntil = $client->get_self_exclusion->exclude_until;
+        if (Date::Utility->new->is_before(Date::Utility->new($limit_excludeuntil))) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'SelfExclusion',
+                    message_to_client => BOM::Platform::Context::localize("Sorry, you have excluded yourself until [_1].", $limit_excludeuntil)});
+        }
+    }
+
     my $account = $client->default_account;
 
     return {

@@ -11,6 +11,7 @@ use Data::Password::Meter;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
+use BOM::RPC::v3::NewAccount::Japan;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
@@ -475,26 +476,35 @@ sub get_settings {
     }
 
     my $client_tnc_status = $client->get_status('tnc_approval');
+
+    my $jp_account_status;
+    if (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short eq 'japan-virtual') {
+        $jp_account_status = BOM::RPC::v3::NewAccount::Japan::get_jp_account_status($client);
+    }
+
     return {
         email        => $client->email,
         country      => $country,
         country_code => $country_code,
-        $client->is_virtual
-        ? ()
-        : (
-            salutation                     => $client->salutation,
-            first_name                     => $client->first_name,
-            last_name                      => $client->last_name,
-            date_of_birth                  => $dob_epoch,
-            address_line_1                 => $client->address_1,
-            address_line_2                 => $client->address_2,
-            address_city                   => $client->city,
-            address_state                  => $client->state,
-            address_postcode               => $client->postcode,
-            phone                          => $client->phone,
-            is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
-            $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
+        (
+            $client->is_virtual
+            ? ()
+            : (
+                salutation                     => $client->salutation,
+                first_name                     => $client->first_name,
+                last_name                      => $client->last_name,
+                date_of_birth                  => $dob_epoch,
+                address_line_1                 => $client->address_1,
+                address_line_2                 => $client->address_2,
+                address_city                   => $client->city,
+                address_state                  => $client->state,
+                address_postcode               => $client->postcode,
+                phone                          => $client->phone,
+                is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
+                $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
+            )
         ),
+        $jp_account_status ? (jp_account_status => $jp_account_status) : (),
     };
 }
 

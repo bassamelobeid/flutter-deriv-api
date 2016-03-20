@@ -639,10 +639,10 @@ sub paymentagent_withdraw {
 
     # expire token only when its not dry run
     if (exists $args->{dry_run} and not $args->{dry_run}) {
-        unless (BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email)) {
+        if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email)->{error}) {
             return BOM::RPC::v3::Utility::create_error({
-                    code              => "InvalidVerificationCode",
-                    message_to_client => localize("Your payment agent withdrawal token has expired.")});
+                    code              => $err->{code},
+                    message_to_client => $err->{message_to_client}});
         }
     }
 
