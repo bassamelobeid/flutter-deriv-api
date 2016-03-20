@@ -1,17 +1,18 @@
 use strict;
 use warnings;
 
+use Test::MockTime qw/:all/;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
-
+use Date::Utility;
 use Test::BOM::RPC::Client;
 
 use utf8;
-
+set_absolute_time(Date::Utility->new('2016-03-18 00:00:00')->epoch);
 my ( $t, $rpc_ct );
 my $method = 'contracts_for';
 
