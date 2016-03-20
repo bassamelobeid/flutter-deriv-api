@@ -11,6 +11,7 @@ use BOM::Database::Model::OAuth;
 # login
 use Email::Valid;
 use Mojo::Util qw(url_escape);
+use List::MoreUtils qw(any);
 
 sub __oauth_model {
     state $oauth_model = BOM::Database::Model::OAuth->new;
@@ -123,7 +124,7 @@ sub __login {
 
     my ($err, $user, $client) = $c->__validate_login();
     if ($err) {
-        return $c->render(
+        $c->render(
             template => 'login',
             layout   => 'default',
 
@@ -131,6 +132,7 @@ sub __login {
             error     => $err,
             csrftoken => $c->csrf_token,
         );
+        return;
     }
 
     ## set session cookie?
@@ -151,7 +153,7 @@ sub __login {
         loginid_list => url_escape($user->loginid_list_cookie_val),
         $options
     );
-    $c->set_reality_check_cookie($user, $options);
+    $c->__set_reality_check_cookie($user, $options);
     $c->cookie(
         $app_config->cgi->cookie_name->login => url_escape(
             BOM::Platform::SessionCookie->new({
