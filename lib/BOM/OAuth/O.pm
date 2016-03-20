@@ -63,6 +63,7 @@ sub authorize {
             layout   => 'default',
 
             app       => $app,
+            l         => \&localize,
             csrftoken => $c->csrf_token,
         );
     }
@@ -98,6 +99,7 @@ sub authorize {
             app       => $app,
             client    => $client,
             scopes    => \@scopes,
+            l         => \&localize,
             csrftoken => $c->csrf_token,
         );
     }
@@ -130,6 +132,7 @@ sub __login {
 
             app       => $app,
             error     => $err,
+            l         => \&localize,
             csrftoken => $c->csrf_token,
         );
         return;

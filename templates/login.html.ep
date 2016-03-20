@@ -4,42 +4,38 @@
       <img class="responsive" src="https://static.binary.com/images/pages/binary-symbol-logo.svg" style="width:50%; margin-left:25%"/>
     </div>
     <div class="grd-grid-10 grd-grid-mobile-12">
-      <h1>Login</h1>
-      <p><%= $app->{name} %> would like permission to access your account</strong></p>
+      <h1><%= $l->('Login') %></h1>
+      <p><%= $l->('[_1] would like to access your account', $app->{name}) %></strong></p>
       <div class="separator-line"></div>
       <form method="POST">
 
-        <%
-          if (stash('error')) {
-        %>
+        <% if (stash('error')) { %>
             <p class='errorfield'><%= stash('error') %></p>
-        <%
-          }
-        %>
+        <% } %>
 
         <fieldset>
           <legend>Your details</legend>
           <div class='grd-grid-12 grd-parent grd-row-padding'>
             <div class='form_label grd-grid-4'>
-            <label for='email'>Email</label>
+            <label for='email'><%= $l->('Email') %></label>
             </div>
             <div class='grd-grid-8'>
-            <input id='email' type='text' name='email' placeholder='Email'/>
+            <input id='email' type='text' name='email' placeholder='<%= $l->('Email') %>'/>
             </div>
           </div>
           <div class='grd-grid-12 grd-parent grd-row-padding'>
             <div class='form_label grd-grid-4'>
-            <label for='password'>Password</label>
+            <label for='password'><%= $l->('Password') %></label>
             </div>
             <div class='grd-grid-8'>
-            <input id='password' type='password' name='password' placeholder='Password'/>
+            <input id='password' type='password' name='password' placeholder='<%= $l->('Password') %>'/>
             </div>
           </div>
           <div class='grd-grid-12 grd-parent'>
             <div class='grd-grid-4'></div>
             <div class='grd-grid-8'>
               <span class='button'>
-              <button class='button' id='submit' name='login' type='submit' value='Login'>Login</button>
+              <button class='button' id='submit' name='login' type='submit' value='<%= $l->('Login') %>'><%= $l->('Login') %></button>
               </span>
             </div>
           </div>
