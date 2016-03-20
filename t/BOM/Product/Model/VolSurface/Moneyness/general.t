@@ -61,7 +61,7 @@ subtest clone => sub {
     isa_ok($clone, 'BOM::MarketData::VolSurface::Moneyness');
     is($clone->surface->{1}->{smile}->{100}, 0.5, 'can change attribute value when clone');
 
-    my $spot_reference = $underlying->spot - 10 * $underlying->pip_size;
+    my $spot_reference = 100 - 10 * $underlying->pip_size;
     $clone = $volsurface->clone({spot_reference => $spot_reference});
 
     cmp_ok($clone->spot_reference, '==', $spot_reference, 'Adjusted spot ref preserved through clone.');
