@@ -1257,7 +1257,6 @@ subtest 'max_payout_open_bets validation', sub {
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
         my $date = Date::Utility->new('2016-03-18 00:00:00');
         set_absolute_time($date->epoch);
-   $DB::single=1; 
        my $contract = produce_contract({
             underlying   => 'frxUSDJPY',
             bet_type     => 'FLASHU',
