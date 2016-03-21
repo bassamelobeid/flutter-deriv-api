@@ -54,6 +54,7 @@ subtest 'sell' => sub {
       diag($contract->shortcode);
       ok($contract);
 
+      sleep 5;
       my $txn = BOM::Product::Transaction->new({
                                                 client        => $client,
                                                 contract      => $contract,
