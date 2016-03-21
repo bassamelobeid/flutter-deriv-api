@@ -103,7 +103,7 @@ sub create_contract {
     my @epoches = ($start->epoch, $start->epoch + 1, $expire->epoch);
     push @epoches, @$tick_epoches;
     @epoches = sort {$a <=> $b} @epoches;
-    print join ",", @epoches;
+    print join(",", map {localtime($_)} @epoches);
     for my $epoch (@epoches) {
         my $api = BOM::Market::Data::DatabaseAPI->new(underlying => $underlying_symbol);
         my $tick = $api->tick_at({end_time => $epoch});
