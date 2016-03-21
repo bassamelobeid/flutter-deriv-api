@@ -33,7 +33,7 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 subtest 'sell' => sub {
       my $params = {
-                    #language => 'ZH_CN',
+                    language => 'ZH_CN',
                     token    => 'invalid token'
                    };
       $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'invalid token')
@@ -70,29 +70,18 @@ subtest 'sell' => sub {
 
 
 
-      #my $buy_params = {language => 'ZH_CN', token => $token};
-      #$buy_params->{source}              = 1;
-      #$buy_params->{contract_parameters} = {
-      #                                  "proposal"      => 1,
-      #                                  "amount"        => "100",
-      #                                  "basis"         => "payout",
-      #                                  "contract_type" => "CALL",
-      #                                  "currency"      => "USD",
-      #                                  "duration"      => "20",
-      #                                  "duration_unit" => "m",
-      #                                  "symbol"        => "R_50",
-      #                                 };
-      #
-      #$buy_params->{args}{price} = $contract->ask_price;
-      #my $buy_result = $c->call_ok('buy', $buy_params)->has_no_system_error->result;
-
-      print "ask_price before:" . $contract->ask_price,"\n";
-      $contract = produce_contract($contract->shortcode, $client->currency);
-      print "ask_price after:" . $contract->ask_price,"\n";
+      #print "ask_price before:" . $contract->ask_price,"\n";
+      #$contract = produce_contract($contract->shortcode, $client->currency);
+      #print "ask_price after:" . $contract->ask_price,"\n";
       $params->{source} = 1;
       $params->{args}{sell} = $txn->contract_id;
+      my $old_balance = $client->default_account->load->balance;
       #$params->{args}{price} = $contract->ask_price;
-      diag Dumper $c->call_ok('sell', $params)->has_no_system_error->has_no_error->result;
+      $c->call_ok('sell', $params)->has_no_system_error->has_no_error->result;
+      is_deeply([sort keys %{$c->result}], [sort qw(sold_for balance_after transaction_id contract_id)],'keys is correct');
+      my $new_balance = $client->default_account->load->balance;
+      ok($new_balance -  $c->result->{balance_after} < 0.000001, 'balance is correct' );
+      ok($old_balance +  $c->result->{sold_for} - $new_balance < 0.000001, 'balance is correct' );
 };
 
 done_testing();
