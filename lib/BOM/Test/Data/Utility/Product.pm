@@ -86,33 +86,30 @@ sub create_contract {
     my $tick_epoches      = $args{tick_epoches} // [];
 
     my $start_time = $args{start_time} // time;
-    my $start = Date::Utility->new($start_time);
-    my $interval = $args{interval} // '2m';
+    my $start      = Date::Utility->new($start_time);
+    my $interval   = $args{interval} // '2m';
     $start = $start->minus_time_interval('1h')->minus_time_interval($interval) if $is_expired;
 
     my $expire = $start->plus_time_interval($interval);
-    use Data::Dumper;
-    print "args:" . Dumper(\%args);
-    print "now:" . time(),"\n";
-    print "start: " . $start->epoch, "\n";
-    print "expire:" . $expire->epoch, "\n";
-    print "interval:" . $interval;
     prepare_contract_db($underlying_symbol);
 
     my @ticks;
     my @epoches = ($start->epoch, $start->epoch + 1, $expire->epoch);
     push @epoches, @$tick_epoches;
-    @epoches = sort {$a <=> $b} @epoches;
-    print join(",", map {scalar localtime($_)} @epoches);
+    @epoches = sort { $a <=> $b } @epoches;
+    print join(",", map { scalar localtime($_) } @epoches);
     for my $epoch (@epoches) {
         my $api = BOM::Market::Data::DatabaseAPI->new(underlying => $underlying_symbol);
         my $tick = $api->tick_at({end_time => $epoch});
 
         unless ($tick) {
+            # this number should be similar with the quotes in BOM::Test::Data::Utility::UnitTestRedis::get_test_realtime_ticks,
+            # otherwise it will produce the error of 'Barrier too far'
             BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                epoch      => $epoch,
-                                                                     quote => '963.3000',
-                                                                     underlying => $underlying_symbol,
+                    epoch => $epoch,
+                    quote => '963.3000',
+
+                    underlying => $underlying_symbol,
             });
         }
         push @ticks, $tick;
