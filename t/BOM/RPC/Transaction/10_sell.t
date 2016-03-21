@@ -85,8 +85,9 @@ subtest 'sell' => sub {
       #$buy_params->{args}{price} = $contract->ask_price;
       #my $buy_result = $c->call_ok('buy', $buy_params)->has_no_system_error->result;
 
+      print "ask_price before:" . $contract->ask_price,"\n";
       $contract = BOM::Test::Data::Utility::Product::create_contract();
-
+      print "ask_price after:" . $contract->ask_price,"\n";
       $params->{source} = 1;
       $params->{args}{sell} = $txn->contract_id;
       $params->{args}{price} = $contract->ask_price;
