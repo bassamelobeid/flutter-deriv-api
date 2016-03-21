@@ -1,0 +1,16 @@
+body {margin: 0; background-color: #2a3052; color: white;}
+.clear {clear: both;}
+button, input {padding: 0; margin: 0; font-size: .8rem; border: 0;}
+
+#wrapper {max-width: 400px; width: 100%; margin: 0 auto;}
+
+#header {text-align: center;}
+#header #logo {width: 100%;}
+
+form input:-webkit-autofill, form input, form button {width: 100%; height: 3rem; margin-bottom: 2%; background-color: #41476B; text-align: center; font-size: 1rem; color: white;}
+::-webkit-input-placeholder {font-style: italic; color: #888;}
+:-moz-placeholder {font-style: italic; color: #888;}
+::-moz-placeholder {font-style: italic; color: #888;}
+:-ms-input-placeholder {font-style: italic; color: #888;}
+form button {cursor: pointer; background-color: #e98024 /* #59618E */;}
+.err, .err::-webkit-input-placeholder {color: #E4666F;}

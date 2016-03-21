@@ -5,6 +5,7 @@ use Date::Utility;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Database::Model::OAuth;
+use BOM::Platform::Context qw(localize);
 
 sub __oauth_model {
     state $oauth_model = BOM::Database::Model::OAuth->new;
@@ -45,7 +46,7 @@ sub authorize {
         # login (with the original params)
         my $query = $c->url_with->query;
         $c->session('oauth_authorize_query' => $query);
-        return $c->redirect_to('/login');
+        return $c->redirect_to('/oauth2/login');
     }
 
     my $loginid = $client->loginid;
@@ -121,6 +122,16 @@ sub __bad_request {
     my ($c, $error) = @_;
 
     return $c->throw_error('invalid_request', $error);
+}
+
+sub login {
+    my $c = shift;
+
+    return $c->render(
+        template => 'login',
+        layout   => 'default',
+        title    => localize('Login to Binary'),
+    );
 }
 
 1;

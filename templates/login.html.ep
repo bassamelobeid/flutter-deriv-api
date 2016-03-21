@@ -1,0 +1,10 @@
+<div id="wrapper">
+	<div id="header">
+		<img id="logo" src="/oauth2/images/binary-logo.svg" alt="" />
+	</div>
+	<form id="frmLogin" method="POST">
+		<div><input type="text" id="txtEmail" name="email" placeholder="Email" autocomplete="off" autofocus="autofocus" /></div>
+		<div><input type="password" id="txtPass" name="password" placeholder="Password" /></div>
+		<div><button type="submit" id="btnLogin">Login</button></div>
+	</form>
+</div>
