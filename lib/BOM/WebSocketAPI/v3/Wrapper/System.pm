@@ -65,8 +65,8 @@ sub website_status {
     my ($c, $args) = @_;
 
     return {
-        msg_type        => 'website_status',
-        website_status  => BOM::RPC::v3::Utility::website_status($c->stash('request')->country_code),
+        msg_type       => 'website_status',
+        website_status => BOM::RPC::v3::Utility::website_status($c->stash('request')->country_code),
     };
 }
 
