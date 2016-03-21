@@ -16,7 +16,8 @@ use BOM::Database::Model::OAuth;
 use BOM::Database::Model::AccessToken;
 
 # cleanup
-my $dbh = BOM::Database::Model::OAuth->new->dbh;
+my $oauth = BOM::Database::Model::OAuth->new;
+my $dbh   = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
@@ -99,6 +100,39 @@ $delete_st = BOM::RPC::v3::App::delete({
             app_delete => $app2->{app_id},
         }});
 ok !$delete_st, 'was deleted';
+
+## for used and revoke
+my $test_appid = $app1->{app_id};
+ok $oauth->confirm_scope($test_appid, $test_loginid), 'confirm scope';
+my ($access_token) = $oauth->store_access_token_only($test_appid, $test_loginid);
+my $used_apps = BOM::RPC::v3::App::oauth_apps({
+        token => $access_token,
+        args  => {
+            oauth_apps => 1,
+        }});
+is scalar(@{$used_apps}), 1;
+is $used_apps->[0]->{app_id}, $test_appid, 'app_id 1';
+is_deeply([sort @{$used_apps->[0]->{scopes}}], ['read', 'trade'], 'scopes are right');
+ok $used_apps->[0]->{last_used}, 'last_used ok';
+
+my $is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
+is $is_confirmed, 1, 'was confirmed';
+BOM::RPC::v3::App::oauth_apps({
+        token => $access_token,
+        args  => {
+            oauth_apps => 1,
+            revoke_app => $test_appid,
+        }});
+$is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
+is $is_confirmed, 0, 'not confirmed after revoke';
+
+## the access_token is not working after revoke
+$used_apps = BOM::RPC::v3::App::oauth_apps({
+        token => $access_token,
+        args  => {
+            oauth_apps => 1,
+        }});
+is $used_apps->{error}->{code}, 'InvalidToken', 'not valid after revoke';
 
 $res = BOM::RPC::v3::Accounts::api_token({
         token => $token,
