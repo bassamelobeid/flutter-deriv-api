@@ -100,7 +100,7 @@ sub create_contract {
 
     my @ticks;
 
-    for (my $epoch = $start->epoch - 5; $epoch <= $expire->epoch; $epoch += 5) {
+    for (my $epoch = $start->epoch - 1; $epoch <= $expire->epoch; $epoch += 5) {
         my $api = BOM::Market::Data::DatabaseAPI->new(underlying => $underlying_symbol);
         my $tick = $api->tick_at({end_time => $epoch});
 
