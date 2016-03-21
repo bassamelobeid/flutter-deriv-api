@@ -32,7 +32,7 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 subtest 'sell' => sub {
       my $params = {
-                    language => 'ZH_CN',
+                    #language => 'ZH_CN',
                     token    => 'invalid token'
                    };
       $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'invalid token')
