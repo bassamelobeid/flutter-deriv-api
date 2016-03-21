@@ -81,12 +81,13 @@ sub prepare_contract_db {
 
 sub create_contract {
     my %args              = @_;
-    my $underlying_symbol = $args{underlying} || 'R_50';
-    my $is_expired        = $args{is_expired} || 0;
+    my $underlying_symbol = $args{underlying} // 'R_50';
+    my $is_expired        = $args{is_expired} // 0;
+    my $tick_epoches      = $args{tick_epoches} // [];
 
-    my $start_time = $args{start_time} || time;
+    my $start_time = $args{start_time} // time;
     my $start = Date::Utility->new($start_time);
-    my $interval = $args{interval} || '2m';
+    my $interval = $args{interval} // '2m';
     $start = $start->minus_time_interval('1h')->minus_time_interval($interval) if $is_expired;
 
     my $expire = $start->plus_time_interval($interval);
@@ -99,8 +100,11 @@ sub create_contract {
     prepare_contract_db($underlying_symbol);
 
     my @ticks;
+    my @epoches = ($start->epoch - 1, $start->epoch, $expire->epoch);
+    push @epoches, @$tick_epoches;
+    @epoches = sort {$a <=> $b} @epoches;
 
-    for (my $epoch = $start->epoch - 1; $epoch <= $expire->epoch; $epoch += 5) {
+    for my $epoch (@epoches) {
         my $api = BOM::Market::Data::DatabaseAPI->new(underlying => $underlying_symbol);
         my $tick = $api->tick_at({end_time => $epoch});
 
