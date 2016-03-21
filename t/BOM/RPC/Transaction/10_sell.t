@@ -91,7 +91,7 @@ subtest 'sell' => sub {
       print "ask_price after:" . $contract->ask_price,"\n";
       $params->{source} = 1;
       $params->{args}{sell} = $txn->contract_id;
-      $params->{args}{price} = $contract->ask_price;
+      #$params->{args}{price} = $contract->ask_price;
       diag Dumper $c->call_ok('sell', $params)->has_no_system_error->has_no_error->result;
 };
 
