@@ -93,6 +93,7 @@ sub create_contract {
     print "now:" . time(),"\n";
     print "start: " . $start->epoch, "\n";
     print "expire:" . $expire->epoch, "\n";
+    print "interval:" . $interval;
     prepare_contract_db($underlying_symbol);
 
     my @ticks;
