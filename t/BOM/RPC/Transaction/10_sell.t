@@ -61,7 +61,6 @@ subtest 'sell' => sub {
                                                 purchase_date => time - 60 * 2,
                                                });
 
-      diag "txn: " . Dumper $txn;
 
       my $error = $txn->buy(skip_validation => 1);
       ok(!$error, 'should no error to buy the contract');
