@@ -212,8 +212,8 @@ subtest 'create account failed' => sub {
         $t = $t->send_ok({json => \%details})->message_ok;
         my $res = decode_json($t->message->[1]);
 
-        is($res->{error}->{code},    'invalid', 'cannot create real account');
-        is($res->{new_account_real}, undef,     'NO account created');
+        is($res->{error}->{code},    'InvalidAccount', 'cannot create real account');
+        is($res->{new_account_real}, undef,            'NO account created');
     };
 
     $vr_client->residence('id');
@@ -263,8 +263,8 @@ subtest 'create account failed' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code},    'invalid', 'restricted country - US');
-            is($res->{new_account_real}, undef,     'NO account created');
+            is($res->{error}->{code},    'InvalidAccount', 'restricted country - US');
+            is($res->{new_account_real}, undef,            'NO account created');
         };
         subtest 'invalid - xx' => sub {
             $vr_client->residence('xx');
@@ -276,8 +276,8 @@ subtest 'create account failed' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code},    'invalid', 'invalid country - xx');
-            is($res->{new_account_real}, undef,     'NO account created');
+            is($res->{error}->{code},    'InvalidAccount', 'invalid country - xx');
+            is($res->{new_account_real}, undef,            'NO account created');
         };
     };
 
@@ -292,8 +292,8 @@ subtest 'create account failed' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code},    'invalid', 'wrong acc opening - MF');
-            is($res->{new_account_real}, undef,     'NO account created');
+            is($res->{error}->{code},    'InvalidAccount', 'wrong acc opening - MF');
+            is($res->{new_account_real}, undef,            'NO account created');
         };
         subtest 'Japan' => sub {
             $vr_client->residence('jp');
@@ -305,8 +305,8 @@ subtest 'create account failed' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code},    'invalid', 'wrong acc opening - JP');
-            is($res->{new_account_real}, undef,     'NO account created');
+            is($res->{error}->{code},    'InvalidAccount', 'wrong acc opening - JP');
+            is($res->{new_account_real}, undef,            'NO account created');
         };
     };
 };

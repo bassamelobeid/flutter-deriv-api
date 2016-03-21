@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use Test::MockTime qw/:all/;
 use Test::More;
 use JSON;
 use Data::Dumper;
@@ -18,6 +19,7 @@ use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
 my $now = Date::Utility->new('2015-08-21 05:30:00');
+set_absolute_time($now->epoch);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -70,7 +72,6 @@ my $contracts_for_japan = decode_json($t->message->[1]);
 ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
 test_schema('contracts_for', $contracts_for_japan);
-
 $t = $t->send_ok({json => {trading_times => Date::Utility->new->date_yyyymmdd}})->message_ok;
 my $trading_times = decode_json($t->message->[1]);
 ok($trading_times->{trading_times});
