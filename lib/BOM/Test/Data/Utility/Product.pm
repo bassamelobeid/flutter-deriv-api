@@ -111,7 +111,8 @@ sub create_contract {
         unless ($tick) {
             BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                 epoch      => $epoch,
-                underlying => $underlying_symbol,
+                                                                     quote => '963.3000',
+                                                                     underlying => $underlying_symbol,
             });
         }
         push @ticks, $tick;
