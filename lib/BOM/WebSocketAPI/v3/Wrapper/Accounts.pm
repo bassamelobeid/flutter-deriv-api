@@ -475,4 +475,27 @@ sub get_financial_assessment {
     return;
 }
 
+sub reality_check {
+    my ($c, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'reality_check',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('reality_check', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type      => 'reality_check',
+                    reality_check => $response
+                };
+            }
+        },
+        {
+            args  => $args,
+            token => $c->stash('token')});
+
+    return;
+}
 1;
