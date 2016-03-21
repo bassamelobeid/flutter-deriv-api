@@ -9,6 +9,7 @@ use Test::MockModule;
 use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::Product;
 use BOM::Database::DataMapper::FinancialMarketBet;
