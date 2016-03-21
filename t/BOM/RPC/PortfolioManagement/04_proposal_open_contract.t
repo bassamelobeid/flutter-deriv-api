@@ -22,22 +22,21 @@ use BOM::Product::ContractFactory qw( produce_contract );
 
 use utf8;
 
-my ( $client, $client_token, $session );
-my ( $t, $rpc_ct );
+my ($client, $client_token, $session);
+my ($t, $rpc_ct);
 my $method = 'proposal_open_contract';
 
 my @params = (
     $method,
     {
         language => 'RU',
-        source => 1,
-        country => 'ru',
-        args => {},
-    }
-);
+        source   => 1,
+        country  => 'ru',
+        args     => {},
+    });
 
 $t = Test::Mojo->new('BOM::RPC');
-$rpc_ct = Test::BOM::RPC::Client->new( ua => $t->app->ua );
+$rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
 initialize_realtime_ticks_db();
 
 subtest 'Initialization' => sub {
@@ -53,72 +52,60 @@ subtest 'Initialization' => sub {
 
         my $m = BOM::Database::Model::AccessToken->new;
 
-        $client_token = $m->create_token( $client->loginid, 'test token' );
+        $client_token = $m->create_token($client->loginid, 'test token');
 
         $session = BOM::Platform::SessionCookie->new(
             loginid => $client->loginid,
             email   => $client->email,
         )->token;
-    } 'Initial clients';
+    }
+    'Initial clients';
 };
 
 subtest 'Auth client' => sub {
-    $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->result_is_deeply(
-                {
-                    error => {
-                        message_to_client => 'Токен недействителен.',
-                        code => 'InvalidToken',
-                    }
-                },
-                'It should return error: InvalidToken' );
+    $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
+            error => {
+                message_to_client => 'Токен недействителен.',
+                code              => 'InvalidToken',
+            }
+        },
+        'It should return error: InvalidToken'
+    );
 
     $params[1]->{token} = 'wrong token';
-    $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->result_is_deeply(
-                {
-                    error => {
-                        message_to_client => 'Токен недействителен.',
-                        code => 'InvalidToken',
-                    }
-                },
-                'It should return error: InvalidToken' );
+    $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
+            error => {
+                message_to_client => 'Токен недействителен.',
+                code              => 'InvalidToken',
+            }
+        },
+        'It should return error: InvalidToken'
+    );
 
     delete $params[1]->{token};
-    $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->result_is_deeply(
-                {
-                    error => {
-                        message_to_client => 'Токен недействителен.',
-                        code => 'InvalidToken',
-                    }
-                },
-                'It should return error: InvalidToken' );
+    $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
+            error => {
+                message_to_client => 'Токен недействителен.',
+                code              => 'InvalidToken',
+            }
+        },
+        'It should return error: InvalidToken'
+    );
 
     $params[1]->{token} = $client_token;
 
     {
         my $module = Test::MockModule->new('BOM::Platform::Client');
-        $module->mock( 'new', sub {} );
+        $module->mock('new', sub { });
 
-        $rpc_ct->call_ok(@params)
-              ->has_no_system_error
-              ->has_error
-              ->error_code_is( 'AuthorizationRequired', 'It should check auth' );
+        $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'It should check auth');
     }
 
-    $rpc_ct->call_ok(@params)
-          ->has_no_system_error
-          ->has_no_error('It should be success using token');
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using token');
 
     $params[1]->{token} = $session;
 
-    $rpc_ct->call_ok(@params)
-           ->has_no_system_error
-           ->has_no_error('It should be success using session');
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using session');
 };
 
 subtest $method => sub {
@@ -126,12 +113,11 @@ subtest $method => sub {
     my @expected_contract_fields;
 
     lives_ok {
-        ($contract_id, $contract) = create_contract( client => $client );
-    } 'Initial contract';
+        ($contract_id, $contract) = create_contract(client => $client);
+    }
+    'Initial contract';
 
-    $rpc_ct->call_ok(@params)
-            ->has_no_system_error
-            ->has_no_error;
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error;
     lives_ok {
         my $bid = BOM::RPC::v3::Contract::get_bid({
             short_code  => $contract->shortcode,
@@ -142,16 +128,12 @@ subtest $method => sub {
 
         @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold /;
         push @expected_contract_fields, keys %$bid;
-    } 'Get extected data';
-    is_deeply(
-        [ sort keys %{ $rpc_ct->result->{ $contract_id } } ],
-        [ sort @expected_contract_fields ],
-        'Should return contract and bid data' );
+    }
+    'Get extected data';
+    is_deeply([sort keys %{$rpc_ct->result->{$contract_id}}], [sort @expected_contract_fields], 'Should return contract and bid data');
 
     $params[1]->{contract_id} = $contract_id;
-    $rpc_ct->call_ok(@params)
-            ->has_no_system_error
-            ->has_no_error;
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error;
     lives_ok {
         my $bid = BOM::RPC::v3::Contract::get_bid({
             short_code  => $contract->shortcode,
@@ -162,28 +144,23 @@ subtest $method => sub {
 
         @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold /;
         push @expected_contract_fields, keys %$bid;
-    } 'Get extected data';
-    is_deeply(
-        [ sort keys %{ $rpc_ct->result->{ $contract_id } } ],
-        [ sort @expected_contract_fields ],
-        'Should return contract and bid data by contract_id' );
+    }
+    'Get extected data';
+    is_deeply([sort keys %{$rpc_ct->result->{$contract_id}}], [sort @expected_contract_fields], 'Should return contract and bid data by contract_id');
 
     my $contract_factory = Test::MockModule->new('BOM::RPC::v3::Contract');
     $contract_factory->mock('produce_contract', sub { die });
 
-    $rpc_ct->call_ok(@params)
-            ->has_no_system_error
-            ->result_is_deeply(
-                {
-                    $contract_id => {
-                        error => {
-                            message_to_client => 'Извините, при обработке Вашего запроса произошла ошибка.',
-                            code => 'GetProposalFailure',
-                        },
-                    },
+    $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
+            $contract_id => {
+                error => {
+                    message_to_client => 'Извините, при обработке Вашего запроса произошла ошибка.',
+                    code              => 'GetProposalFailure',
                 },
-                'Should return error instead contract data',
-            );
+            },
+        },
+        'Should return error instead contract data',
+    );
 };
 
 done_testing();
@@ -225,6 +202,7 @@ sub create_contract {
         exit_tick    => $old_tick2,
         barrier      => 'S0P',
     };
+
     if ($args{spread}) {
         delete $contract_data->{date_expiry};
         delete $contract_data->{barrier};
