@@ -2635,6 +2635,10 @@ sub _subvalidate_lifetime_tick_expiry {
 
     my $min_tick = $expiries->{min} // 0;    # Do we accidentally autoviv here?
     my $max_tick = $expiries->{max} // 0;
+    my $invalid_duration_messsage =
+        $min_tick == 0
+        ? localize('Trading is not offered for this duration')
+        : localize('Number of ticks must be between [_1] and [_2]', $min_tick, $max_tick);
     my $tick_count = $self->tick_count;
 
     if ($tick_count > $max_tick or $tick_count < $min_tick) {
@@ -2646,7 +2650,7 @@ sub _subvalidate_lifetime_tick_expiry {
                 min    => $min_tick,
                 max    => $max_tick
             ),
-            message_to_client => localize('Trading is not offered for this duration.'),
+            message_to_client => $invalid_duration_message,
             };
     } elsif (my $entry = $self->entry_tick and my $exit = $self->exit_tick) {
         my $actual_duration = Time::Duration::Concise::Localize->new(interval => $exit->epoch - $entry->epoch);
