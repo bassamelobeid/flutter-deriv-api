@@ -57,7 +57,7 @@ sub login {
     my $password    = $args{password}    || die "requires password argument";
     my $environment = $args{environment} || '';
 
-    my ($error, $cfl);
+    my ($error, $cfl, @clients);
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
 
         $error = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
@@ -79,9 +79,16 @@ sub login {
 
         $error = localize('Incorrect email or password.');
         BOM::System::AuditLog::log('incorrect email or password', $self->email);
-    } elsif (!$self->clients) {
+    } elsif (not @clients = $self->clients) {
         $error = localize('This account is unavailable. For any questions please contact Customer Support.');
         BOM::System::AuditLog::log('Account disabled', $self->email);
+    }
+
+    my ($excl, $lim);
+    $excl = [map { $_->get_self_exclusion } grep { defined $_->get_self_exclusion } @clients]->[0];
+    if ($excl and $lim = $excl->exclude_until and Date::Utility->new->is_before($lim = Date::Utility->new($lim))) {
+        $error = localize('Sorry, you have excluded yourself from the website until [_1].', $lim->date);
+        BOM::System::AuditLog::log('Account self excluded', $self->email);
     }
 
     $self->add_login_history({
