@@ -86,7 +86,7 @@ sub create_contract {
 
     my $start_time = $args{start_time} || time;
     my $start = Date::Utility->new($start_time);
-    my $interval = $args{internval} || '2m';
+    my $interval = $args{interval} || '2m';
     $start = $start->minus_time_interval('1h')->minus_time_interval($interval) if $is_expired;
 
     my $expire = $start->plus_time_interval($interval);
