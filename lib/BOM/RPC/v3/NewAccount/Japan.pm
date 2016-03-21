@@ -189,12 +189,14 @@ Congratulations on passing the knowledge test for binary options trading.
 
 In the next stage of our account opening process we are required to verify your identity documents and review your eligibility to open a trading account. This will be conducted by our Compliance and Risk Management department upon receipt of your identity documents.
 
-Kindly reply to this email and attach a scanned copy of one of the following approved forms of identity:
+Kindly <u>reply to this email and attach a scanned copy</u> of one of the following approved forms of identity:
 
-- Japan Driving license, front and back sides
-- Health Insurance card, front and back side
-- Basic Resident register and separate passport size photograph. If your document contains details of other family members please cover-over with a blank piece of paper when taking the scan
-- Residence Card, front and back side
+<ul>
+    <li><b>Japan Driving license</b>, front and back sides</li>
+    <li><b>Health Insurance card</b>, front and back side</li>
+    <li><b>Basic Resident register</b> and separate passport size photograph. If your document contains details of other family members please cover-over with a blank piece of paper when taking the scan</li>
+    <li><b>Residence Card</b>, front and back side</li>
+</ul>
 
 Please ensure the document contains details of your current address which matches the details that you provided in the basic information section earlier. Please also ensure that the address and other information is easily readable, as otherwise this may delay your application.
 
