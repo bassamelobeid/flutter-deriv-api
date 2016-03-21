@@ -128,6 +128,8 @@ sub create_contract {
         current_tick => $ticks[1],
         entry_tick   => $ticks[0],
         exit_tick    => $ticks[-1],
+        barrier  => 'S0P',
+       
     };
     if ($args{is_spread}) {
         delete $contract_data->{date_expiry};
