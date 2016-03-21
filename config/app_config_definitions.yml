@@ -103,7 +103,7 @@ payments:
       isa: section
       contains:
         iom:
-          description: "withdrawal limits for iom"
+          description: "withdrawal limits for iom (in EUR)"
           isa: section
           contains:
             for_days:
@@ -119,7 +119,7 @@ payments:
               isa: Int
               default: 99999999
         malta:
-          description: "withdrawal limits for malta"
+          description: "withdrawal limits for malta (in EUR)"
           isa: section
           contains:
             for_days:
@@ -135,7 +135,7 @@ payments:
               isa: Int
               default: 2300
         maltainvest:
-          description: "withdrawal limits for malta"
+          description: "withdrawal limits for malta (in EUR)"
           isa: section
           contains:
             for_days:
@@ -151,7 +151,7 @@ payments:
               isa: Int
               default: 2300
         costarica:
-          description: "withdrawal limits for costarica"
+          description: "withdrawal limits for costarica (in account's currency)"
           isa: section
           contains:
             for_days:
@@ -166,6 +166,22 @@ payments:
               description: 'lifetime limit'
               isa: Int
               default: 10000
+        japan:
+          description: "withdrawal limits for Japan (in JPY)"
+          isa: section
+          contains:
+            for_days:
+              description: 'period of days'
+              isa: Int
+              default: 30
+            limit_for_days:
+              description: 'limit for days'
+              isa: Int
+              default: 1000000
+            lifetime_limit:
+              description: 'lifetime limit'
+              isa: Int
+              default: 1000000
     virtual:
       description: "Control parameters for virtual"
       isa: section
