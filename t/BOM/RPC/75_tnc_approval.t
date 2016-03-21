@@ -23,7 +23,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 my $test_loginid = $test_client->loginid;
 
-my $res = BOM::RPC::v3::Utility::website_status(BOM::Platform::Runtime->instance->app_config);
+my $res = BOM::RPC::v3::Utility::website_status('');
 is $res->{terms_conditions_version}, 'version 1', 'version 1';
 
 # cleanup
@@ -57,7 +57,7 @@ is $res->{client_tnc_status}, 'version 1', 'version 1';
 # switch to version 2
 $version = 2;
 
-$res = BOM::RPC::v3::Utility::website_status(BOM::Platform::Runtime->instance->app_config);
+$res = BOM::RPC::v3::Utility::website_status('');
 is $res->{terms_conditions_version}, 'version 2', 'version 2';
 
 $res = BOM::RPC::v3::Accounts::tnc_approval({token => $token});
