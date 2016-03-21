@@ -12,7 +12,7 @@ use Data::Password::Meter;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::NewAccount::Japan;
-use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime::LandingCompany::Registry;
@@ -1063,6 +1063,42 @@ sub get_financial_assessment {
     }
 
     return $response;
+}
+
+sub reality_check {
+    my $params = shift;
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    # need to check how to handle per api token and oauth token
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
+    my @siblings = grep { $_->landing_company->has_reality_check } $client->siblings;
+    my @summary;
+    for my $reality_check_client (@siblings) {
+        BOM::Product::Transaction::sell_expired_contracts({
+            client => $reality_check_client,
+        });
+
+        my $txn_dm = BOM::Database::DataMapper::Transaction->new({
+                client_loginid => $reality_check_client->loginid,
+                db             => BOM::Database::ClientDB->new({
+                        client_loginid => $reality_check_client->loginid,
+                        operation      => 'replica',
+                    }
+                )->db,
+            });
+
+        push @summary, [$reality_check_client->loginid, $txn_dm->get_reality_check_data_of_account(Date::Utility->new($start))];
+    }
+
+    return \@summary;
 }
 
 1;

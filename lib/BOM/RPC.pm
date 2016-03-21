@@ -140,6 +140,7 @@ sub startup {
                 '/set_account_currency'      => register('set_account_currency',      \&BOM::RPC::v3::Accounts::set_account_currency),
                 '/set_financial_assessment'  => register('set_financial_assessment',  \&BOM::RPC::v3::Accounts::set_financial_assessment),
                 '/get_financial_assessment'  => register('get_financial_assessment',  \&BOM::RPC::v3::Accounts::get_financial_assessment),
+                '/reality_check'             => register('reality_check',             \&BOM::RPC::v3::Accounts::reality_check),
                 '/verify_email'              => register('verify_email',              \&BOM::RPC::v3::NewAccount::verify_email),
                 '/send_ask'                  => register('send_ask',                  \&BOM::RPC::v3::Contract::send_ask),
                 '/get_bid'                   => register('get_bid',                   \&BOM::RPC::v3::Contract::get_bid),
@@ -148,15 +149,14 @@ sub startup {
                 '/new_account_maltainvest'   => register('new_account_maltainvest',   \&BOM::RPC::v3::NewAccount::new_account_maltainvest),
                 '/new_account_japan'         => register('new_account_japan',         \&BOM::RPC::v3::NewAccount::new_account_japan),
                 '/new_account_virtual'       => register('new_account_virtual',       \&BOM::RPC::v3::NewAccount::new_account_virtual),
+                '/jp_knowledge_test'         => register('jp_knowledge_test',         \&BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test),
                 '/portfolio'                 => register('portfolio',                 \&BOM::RPC::v3::PortfolioManagement::portfolio),
                 '/sell_expired'              => register('sell_expired',              \&BOM::RPC::v3::PortfolioManagement::sell_expired),
                 '/proposal_open_contract'    => register('proposal_open_contract',    \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract),
-                '/jp_knowledge_test'         => register('jp_knowledge_test',         \&BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test),
-
-                '/app_register' => register('app_register', \&BOM::RPC::v3::App::register),
-                '/app_list'     => register('app_list',     \&BOM::RPC::v3::App::list),
-                '/app_get'      => register('app_get',      \&BOM::RPC::v3::App::get),
-                '/app_delete'   => register('app_delete',   \&BOM::RPC::v3::App::delete),
+                '/app_register'              => register('app_register',              \&BOM::RPC::v3::App::register),
+                '/app_list'                  => register('app_list',                  \&BOM::RPC::v3::App::list),
+                '/app_get'                   => register('app_get',                   \&BOM::RPC::v3::App::get),
+                '/app_delete'                => register('app_delete',                \&BOM::RPC::v3::App::delete),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
