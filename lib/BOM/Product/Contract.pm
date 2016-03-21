@@ -2635,7 +2635,7 @@ sub _subvalidate_lifetime_tick_expiry {
 
     my $min_tick = $expiries->{min} // 0;    # Do we accidentally autoviv here?
     my $max_tick = $expiries->{max} // 0;
-    my $invalid_duration_messsage =
+    my $invalid_duration_message =
         $min_tick == 0
         ? localize('Trading is not offered for this duration')
         : localize('Number of ticks must be between [_1] and [_2]', $min_tick, $max_tick);
