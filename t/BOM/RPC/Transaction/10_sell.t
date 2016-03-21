@@ -49,7 +49,8 @@ subtest 'sell' => sub {
       $client->save;
 
       #sold  contract should be hold 2 minutes and interval should more than 15
-      my $contract = BOM::Test::Data::Utility::Product::create_contract(start_time => time - 60 * 2, interval => '20m', tick_epoches => [time]);
+      my $now = time;
+      my $contract = BOM::Test::Data::Utility::Product::create_contract(start_time => $now - 60 * 2, interval => '20m', tick_epoches => [$now]);
       diag"shortcode:";
       diag($contract->shortcode);
       ok($contract);
@@ -58,7 +59,7 @@ subtest 'sell' => sub {
                                                 client        => $client,
                                                 contract      => $contract,
                                                 price         => $contract->ask_price,
-                                                purchase_date => time - 60 * 2,
+                                                purchase_date => $now - 60 * 2,
                                                });
 
 
