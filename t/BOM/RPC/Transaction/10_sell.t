@@ -63,6 +63,7 @@ subtest 'sell' => sub {
 
 
       my $error = $txn->buy(skip_validation => 1);
+      diag(Dumper $error);
       ok(!$error, 'should no error to buy the contract');
 
 
