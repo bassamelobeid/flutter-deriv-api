@@ -31,7 +31,7 @@ BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
 
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
 # need to mock it as to access api token we need token beforehand
-$mock_utility->mock('token_to_loginid', sub { return $test_loginid });
+$mock_utility->mock('get_token_details', sub { return {loginid => $test_loginid} });
 
 # create new api token
 $res = BOM::RPC::v3::Accounts::api_token({
@@ -43,7 +43,7 @@ $res = BOM::RPC::v3::Accounts::api_token({
 is scalar(@{$res->{tokens}}), 1, "token created succesfully";
 my $token = $res->{tokens}->[0]->{token};
 
-$mock_utility->unmock('token_to_loginid');
+$mock_utility->unmock('get_token_details');
 
 $res = BOM::RPC::v3::Accounts::tnc_approval({token => $token});
 is_deeply $res, {status => 1};

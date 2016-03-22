@@ -11,7 +11,7 @@ use BOM::Database::Model::OAuth;
 sub register {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -74,7 +74,7 @@ sub register {
 sub list {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -92,7 +92,7 @@ sub list {
 sub get {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -118,7 +118,7 @@ sub get {
 sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -139,7 +139,7 @@ sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
 sub oauth_apps {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});

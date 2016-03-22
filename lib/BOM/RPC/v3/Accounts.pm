@@ -35,7 +35,7 @@ sub payout_currencies {
 
     my $client;
     if ($params->{token}) {
-        my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+        my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
         $client = BOM::Platform::Client->new({loginid => $client_loginid}) if $client_loginid;
     }
 
@@ -113,7 +113,7 @@ sub __build_landing_company {
 sub statement {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -173,7 +173,7 @@ sub statement {
 sub profit_table {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -232,7 +232,7 @@ sub profit_table {
 sub balance {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -256,7 +256,7 @@ sub balance {
 sub get_account_status {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -280,7 +280,7 @@ sub get_account_status {
 sub change_password {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -339,7 +339,7 @@ sub change_password {
 sub cashier_password {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -460,7 +460,7 @@ sub cashier_password {
 sub get_settings {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -511,7 +511,7 @@ sub get_settings {
 sub set_settings {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -631,7 +631,7 @@ sub set_settings {
 sub get_self_exclusion {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -683,7 +683,7 @@ sub _get_self_exclusion_details {
 sub set_self_exclusion {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -829,7 +829,7 @@ sub set_self_exclusion {
 sub api_token {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -887,7 +887,7 @@ sub api_token {
 sub tnc_approval {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -917,7 +917,7 @@ sub tnc_approval {
 sub login_history {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -958,7 +958,7 @@ sub login_history {
 sub set_account_currency {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -989,7 +989,7 @@ sub set_account_currency {
 sub set_financial_assessment {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -1038,7 +1038,7 @@ sub set_financial_assessment {
 sub get_financial_assessment {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -1068,7 +1068,7 @@ sub get_financial_assessment {
 sub reality_check {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});

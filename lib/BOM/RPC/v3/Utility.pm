@@ -13,7 +13,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Token::Verification;
 
-sub token_to_loginid {
+sub get_token_details {
     my $token = shift;
 
     return unless $token;
@@ -36,7 +36,10 @@ sub token_to_loginid {
         $loginid = $session->loginid;
     }
 
-    return wantarray ? ($loginid, @scopes) : $loginid;    # backwards
+    return {
+        loginid => $loginid,
+        scopes  => \@scopes
+    };
 }
 
 sub create_error {
