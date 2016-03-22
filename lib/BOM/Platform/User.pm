@@ -86,8 +86,8 @@ sub login {
 
     my ($excl, $lim);
     $excl = [map { $_->get_self_exclusion } grep { defined $_->get_self_exclusion } @clients]->[0];
-    if ($excl and $lim = $excl->exclude_until and Date::Utility->new->is_before($lim = Date::Utility->new($lim))) {
-        $error = localize('Sorry, you have excluded yourself from the website until [_1].', $lim->date);
+    if ($excl and $lim = $excl->exclude_until and Date::Utility->new->is_before(Date::Utility->new($lim))) {
+        $error = localize('Sorry, you have excluded yourself until [_1].', $lim);
         BOM::System::AuditLog::log('Account self excluded', $self->email);
     }
 
