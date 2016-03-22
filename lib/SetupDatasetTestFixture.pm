@@ -141,11 +141,13 @@ sub _setup_rates {
         $asset->save;
     } else {
         if ($underlying->market->name eq 'indices') {
-            $asset = BOM::MarketData::Dividend->new(
+            $asset = Quant::Framework::Dividend->new(
                 symbol          => $asset->symbol,
                 rates           => $rates->{asset_rate}->{continuous},
                 discrete_points => $rates->{asset_rate}->{discrete},
                 recorded_date   => $date,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             );
         } else {
             $asset = Quant::Framework::InterestRate->new(
