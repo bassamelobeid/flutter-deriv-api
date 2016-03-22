@@ -164,8 +164,9 @@ sub _build_cutoff {
     my $self = shift;
 
     Carp::croak('Must define cutoff when saving a new volatility surface.') if $self->_new_surface;
+    my $date = $self->for_date ? $self->for_date : Date::Utility->new;
 
-    return BOM::MarketData::VolSurface::Cutoff->new( BOM::MarketData::VolSurface::Utils->new->default_pricing_cutoff($self->underlying));
+    return BOM::MarketData::VolSurface::Cutoff->new($self->underlying->exchange->standard_closing_on($date)->time_hhmm);
 }
 
 =head2 smile_points

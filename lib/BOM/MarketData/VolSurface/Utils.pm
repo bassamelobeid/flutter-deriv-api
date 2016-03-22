@@ -21,18 +21,6 @@ use Memoize;
 
 use Date::Utility;
 
-# The cutoff we (should) use for pricing our bets,
-# given our chosen expiry times.
-sub default_pricing_cutoff {
-    my ($self, $underlying) = @_;
-    my $when     = $underlying->exchange->representative_trading_date;
-    my $exchange = $underlying->exchange;
-
-    # representative_trading_date doesn't cover DST.
-    # But this is just a default, so it should be ok.
-    return 'UTC ' . $exchange->closing_on($when)->time_hhmm;
-}
-
 =head2 NY1700_rollover_date_on
 
 Returns (as a Date::Utility) the NY1700 rollover date for a given Date::Utility.
