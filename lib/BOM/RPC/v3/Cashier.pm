@@ -31,9 +31,10 @@ use BOM::System::AuditLog;
 sub get_limits {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
+    my $client_loginid = $token_details->{loginid};
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
@@ -101,8 +102,8 @@ sub paymentagent_list {
 
     my $client;
     if ($params->{token}) {
-        my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
-        $client = BOM::Platform::Client->new({loginid => $client_loginid}) if $client_loginid;
+        my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+        $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}}) if ($token_details and exists $token_details->{loginid});
     }
 
     my $broker_code = $client ? $client->broker_code : 'CR';
@@ -368,9 +369,10 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
 sub paymentagent_withdraw {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
+    my $client_loginid = $token_details->{loginid};
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
@@ -683,10 +685,10 @@ sub __client_withdrawal_notes {
 sub transfer_between_accounts {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -897,10 +899,10 @@ sub transfer_between_accounts {
 sub topup_virtual {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }

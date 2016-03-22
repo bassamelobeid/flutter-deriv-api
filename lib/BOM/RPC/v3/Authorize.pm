@@ -15,8 +15,10 @@ use BOM::Platform::SessionCookie;
 sub authorize {
     my $params = shift;
 
-    my ($loginid, @scopes) = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless $loginid;
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
+
+    my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
 
     my $client = BOM::Platform::Client->new({loginid => $loginid});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
@@ -47,7 +49,7 @@ sub authorize {
         account_id           => ($account ? $account->id : ''),
         landing_company_name => $client->landing_company->short,
         country              => $client->residence,
-        scopes               => \@scopes,
+        scopes               => $scopes,
         is_virtual           => ($client->is_virtual ? 1 : 0),
     };
 }
@@ -56,7 +58,8 @@ sub logout {
     my $params = shift;
 
     if (my $email = $params->{client_email}) {
-        my $loginid = BOM::RPC::v3::Utility::get_token_details($params->{token}) // '';
+        my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+        my $loginid = $token_details and exists $token_details->{loginid} ? $token_details->{loginid} : '';
         if (my $user = BOM::Platform::User->new({email => $email})) {
             $user->add_login_history({
                 environment => _login_env($params),
