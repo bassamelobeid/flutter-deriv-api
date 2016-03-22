@@ -59,7 +59,7 @@ sub logout {
 
     if (my $email = $params->{client_email}) {
         my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-        my $loginid = $token_details and exists $token_details->{loginid} ? $token_details->{loginid} : '';
+        my $loginid = ($token_details and exists $token_details->{loginid}) ? $token_details->{loginid} : '';
         if (my $user = BOM::Platform::User->new({email => $email})) {
             $user->add_login_history({
                 environment => _login_env($params),
