@@ -85,10 +85,12 @@ sub login {
     }
 
     my @non_self_excluded = grep { !$_->get_self_exclusion || !$_->get_self_exclusion->exclude_until } @clients;
-    unless (@non_self_excluded) {
-        my $client =
-            [sort { Date::Uti->new($a->get_self_exclusion->exclude_until)->epoch <=> Date::Uti->new($a->get_self_exclusion->exclude_until)->epoch }
-                @clients]->[0];
+    if (@clients && !@non_self_excluded) {
+        my $client = [
+            sort {
+                Date::Utility->new($a->get_self_exclusion->exclude_until)->epoch <=> Date::Utility->new($a->get_self_exclusion->exclude_until)->epoch
+            } @clients
+        ]->[0];
         $error = localize('Sorry, you have excluded yourself until [_1].', $client->get_self_exclusion->exclude_until);
         BOM::System::AuditLog::log('Account self excluded', $self->email);
     }
