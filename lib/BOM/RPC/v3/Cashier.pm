@@ -87,7 +87,8 @@ sub get_limits {
 
         # withdrawal since inception
         my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
-        $withdrawal_since_inception = roundnear(0.01, amount_from_to_currency($withdrawal_since_inception, $client->currency, $withdrawal_limit_curr));
+        $withdrawal_since_inception =
+            roundnear(0.01, amount_from_to_currency($withdrawal_since_inception, $client->currency, $withdrawal_limit_curr));
 
         $limit->{withdrawal_since_inception_monetary} = to_monetary_number_format($withdrawal_since_inception, 1);
         $limit->{withdrawal_for_x_days_monetary}      = to_monetary_number_format($withdrawal_for_x_days,      $numdays);
