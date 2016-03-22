@@ -533,6 +533,7 @@ subtest 'all methods on a selection of underlyings' => sub {
         is($EURUSD->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
+    my $eod = BOM::Market::Exchange->new('NYSE')->closing_on(Date::Utility->new);
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
         my $worm = BOM::Market::Underlying->new($pair, $eod->minus_time_interval('1s'));
         is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');
