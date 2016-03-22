@@ -163,12 +163,9 @@ has cutoff => (
 sub _build_cutoff {
     my $self = shift;
 
-    my $underlying = $self->underlying;
-    my $when       = $self->for_date || Date::Utility->today;
-    my $util       = BOM::MarketData::VolSurface::Utils->new;
-    my $cutoff_str = ($self->_new_surface) ? $util->default_bloomberg_cutoff($underlying) : $util->default_pricing_cutoff($underlying);
+    Carp::croak('Must define cutoff when saving a new volatility surface.') if $self->_new_surface;
 
-    return BOM::MarketData::VolSurface::Cutoff->new($cutoff_str);
+    return BOM::MarketData::VolSurface::Cutoff->new( BOM::MarketData::VolSurface::Utils->new->default_pricing_cutoff($self->underlying));
 }
 
 =head2 smile_points

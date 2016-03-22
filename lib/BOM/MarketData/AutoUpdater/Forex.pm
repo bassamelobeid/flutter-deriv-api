@@ -162,6 +162,7 @@ sub run {
             underlying    => $underlying,
             recorded_date => $raw_volsurface->{recorded_date},
             surface       => $raw_volsurface->{surface},
+            cutoff        => 'New York 10:00',
         });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
