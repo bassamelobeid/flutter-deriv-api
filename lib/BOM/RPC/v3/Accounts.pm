@@ -462,10 +462,10 @@ sub reset_password {
     my $params = shift;
     my $args   = $params->{args};
     my $email  = BOM::Platform::Token::Verification->new({token => $args->{verification_code}})->email;
-    unless (BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)) {
+    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => "InvalidVerificationCode",
-                message_to_client => localize("Your reset password token has expired.")});
+                code              => $err->{code},
+                message_to_client => $err->{message_to_client}});
     }
 
     if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $args->{new_password}})) {
