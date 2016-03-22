@@ -107,14 +107,8 @@ sub run {
     my $self = shift;
     $self->_logger->debug(ref($self) . ' starting update.');
     my $surfaces_from_file = $self->surfaces_from_file;
-    my %valid_synthetic = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
-        market            => 'indices',
-        submarket         => 'smart_index',
-        contract_category => 'ANY',
-        exclude_disabled  => 1
-    );
     foreach my $symbol (@{$self->symbols_to_update}) {
-        if (not $valid_synthetic{$symbol} and not $surfaces_from_file->{$symbol}) {
+        if (not $surfaces_from_file->{$symbol}) {
             $self->report->{$symbol} = {
                 success => 0,
                 reason  => 'Surface Information missing from datasource for ' . $symbol,
@@ -135,14 +129,6 @@ sub run {
             cutoff         => 'UTC ' . $cutoff->time_hhmm,
         });
         if ($volsurface->is_valid) {
-            if (exists $valid_synthetic{'SYN' . $volsurface->underlying->symbol}) {
-                my $syn               = BOM::Market::Underlying->new('SYN' . $symbol);
-                my $synthetic_surface = $volsurface->clone({
-                    underlying => $syn,
-                    cutoff     => $syn->exchange->closing_on($syn->exchange->representative_trading_date)->time_cutoff
-                });
-                $synthetic_surface->save;
-            }
             $volsurface->save;
             $self->report->{$symbol}->{success} = 1;
         } else {
