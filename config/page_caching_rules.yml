@@ -33,10 +33,6 @@
 "/cashier/payment_agent_list":
   header:
     Cache-Control: "public, max-age=1000"
-"/states_list":
-  header:
-    Cache-Control: "public, max-age=86400, s-maxage=604800"
-  exclude_appcache: true
 "trade_livechart.cgi":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
