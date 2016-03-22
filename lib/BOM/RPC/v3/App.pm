@@ -136,4 +136,26 @@ sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     return $status ? 1 : 0;
 }
 
+sub oauth_apps {
+    my $params = shift;
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my $oauth = BOM::Database::Model::OAuth->new;
+    if ($params->{args} and $params->{args}->{revoke_app}) {
+        my $user = BOM::Platform::User->new({email => $client->email});
+        foreach my $c1 ($user->clients) {
+            $oauth->revoke_app($params->{args}->{revoke_app}, $c1->loginid);
+        }
+    }
+
+    return $oauth->get_used_apps_by_loginid($client_loginid);
+}
+
 1;

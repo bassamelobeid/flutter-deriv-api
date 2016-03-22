@@ -157,6 +157,7 @@ sub startup {
                 '/app_list'                  => register('app_list',                  \&BOM::RPC::v3::App::list),
                 '/app_get'                   => register('app_get',                   \&BOM::RPC::v3::App::get),
                 '/app_delete'                => register('app_delete',                \&BOM::RPC::v3::App::delete),
+                '/oauth_apps'                => register('oauth_apps',                \&BOM::RPC::v3::App::oauth_apps),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
