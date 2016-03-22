@@ -95,10 +95,12 @@ sub site_limits {
 }
 
 sub website_status {
+    my $country_code = shift;
 
     return {
         terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
-        api_call_limits          => site_limits
+        api_call_limits          => site_limits,
+        clients_country          => $country_code,
     };
 }
 
