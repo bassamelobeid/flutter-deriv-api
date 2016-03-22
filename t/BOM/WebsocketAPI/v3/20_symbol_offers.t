@@ -10,14 +10,13 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
+
 use TestHelper qw/test_schema build_mojo_test/;
 
 initialize_realtime_ticks_db();
 use Finance::Asset;
-use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
-my $now = Date::Utility->new('2015-08-21 05:30:00');
+my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -25,14 +24,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch      => $now->epoch,
-    quote      => 100
-});
-#load it the contract finder at first load to resolve time out issue
-my $f = available_contracts_for_symbol({
-    symbol => 'frxUSDJPY',
-});
+                underlying => 'frxUSDJPY',
+                epoch      => $now->epoch,
+                quote      => 100,
+            });
 
 my $t = build_mojo_test();
 
@@ -61,6 +56,7 @@ ok($contracts_for->{contracts_for});
 ok($contracts_for->{contracts_for}->{available});
 is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
 test_schema('contracts_for', $contracts_for);
+if (not $now->is_a_weekend){
 # test contracts_for japan
 $t = $t->send_ok({
         json => {
@@ -72,7 +68,7 @@ ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
 is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
 test_schema('contracts_for', $contracts_for_japan);
-
+}
 $t = $t->send_ok({json => {trading_times => Date::Utility->new->date_yyyymmdd}})->message_ok;
 my $trading_times = decode_json($t->message->[1]);
 ok($trading_times->{trading_times});

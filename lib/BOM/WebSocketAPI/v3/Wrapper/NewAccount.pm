@@ -5,7 +5,7 @@ use warnings;
 
 use BOM::RPC::v3::NewAccount;
 use BOM::WebSocketAPI::Websocket_v3;
-use BOM::Platform::SessionCookie;
+use BOM::Platform::Token::Verification;
 
 sub new_account_virtual {
     my ($c, $args) = @_;
@@ -38,19 +38,19 @@ sub verify_email {
     my $link;
     my $code;
     if ($type eq 'account_opening') {
-        $code = BOM::Platform::SessionCookie->new({
+        $code = BOM::Platform::Token::Verification->new({
                 email       => $email,
                 expires_in  => 3600,
                 created_for => 'account_opening'
             })->token;
     } elsif ($type eq 'reset_password') {
-        $code = BOM::Platform::SessionCookie->new({
+        $code = BOM::Platform::Token::Verification->new({
                 email       => $email,
                 expires_in  => 3600,
                 created_for => 'reset_password'
             })->token;
     } elsif ($type eq 'paymentagent_withdraw') {
-        $code = BOM::Platform::SessionCookie->new({
+        $code = BOM::Platform::Token::Verification->new({
                 email       => $email,
                 expires_in  => 3600,
                 created_for => 'paymentagent_withdraw'
@@ -143,6 +143,30 @@ sub new_account_japan {
                 return {
                     msg_type          => 'new_account_japan',
                     new_account_japan => $response
+                };
+            }
+        },
+        {
+            args  => $args,
+            token => $c->stash('token'),
+        });
+    return;
+}
+
+sub jp_knowledge_test {
+    my ($c, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'jp_knowledge_test',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('jp_knowledge_test', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type          => 'jp_knowledge_test',
+                    jp_knowledge_test => $response
                 };
             }
         },

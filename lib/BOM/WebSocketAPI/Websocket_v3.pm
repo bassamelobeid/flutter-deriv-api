@@ -263,10 +263,11 @@ my @dispatch = (
     ],
     ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1, 'trade'],
 
-    ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register, 1, 'admin'],
-    ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,     1, 'admin'],
-    ['app_get',      \&BOM::WebSocketAPI::v3::Wrapper::App::get,      1, 'admin'],
-    ['app_delete',   \&BOM::WebSocketAPI::v3::Wrapper::App::delete,   1, 'admin'],
+    ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register,   1, 'admin'],
+    ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,       1, 'admin'],
+    ['app_get',      \&BOM::WebSocketAPI::v3::Wrapper::App::get,        1, 'admin'],
+    ['app_delete',   \&BOM::WebSocketAPI::v3::Wrapper::App::delete,     1, 'admin'],
+    ['oauth_apps',   \&BOM::WebSocketAPI::v3::Wrapper::App::oauth_apps, 1, 'admin'],
 
     ['topup_virtual',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual,     1, 'trade'],
     ['get_limits',        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,        1, 'read'],
@@ -295,6 +296,10 @@ my @dispatch = (
         'new_account_maltainvest',
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_maltainvest,
         1, 'admin'
+    ],
+    [
+        'jp_knowledge_test',
+        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::jp_knowledge_test, 1, 'admin'
     ],
 );
 
