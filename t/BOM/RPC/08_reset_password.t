@@ -8,9 +8,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
 use BOM::Platform::SessionCookie;
 use utf8;
-use Data::Dumper;
 use BOM::Platform::Token::Verification;
-binmode STDOUT, ':utf8';
 
 # init db
 my $email    = 'abc@binary.com';
