@@ -18,7 +18,7 @@ sub get_token_details {
 
     return unless $token;
 
-    my $loginid;
+    my ($loginid, $epoch);
     my @scopes = qw/read trade admin payments/;    # scopes is everything for session token
     if (length $token == 15) {                     # access token
         my $m = BOM::Database::Model::AccessToken->new;
@@ -34,10 +34,12 @@ sub get_token_details {
         my $session = BOM::Platform::SessionCookie->new(token => $token);
         return unless $session and $session->validate_session;
         $loginid = $session->loginid;
+        $epoch   = $sesion->{loginat};
     }
 
     return {
         loginid => $loginid,
+        epoch   => $epoch,
         scopes  => \@scopes
     };
 }

@@ -261,7 +261,7 @@ sub get_account_status {
     my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    my $client = BOM::Platform::Client->new({loginid => $token->{loginid}});
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -1081,6 +1081,10 @@ sub reality_check {
 
     # need to check how to handle per api token and oauth token
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+
+    my $tm    = time - 48 * 3600;          # 48 hours
+    my $start = $token_details->{epoch};
+    $start = $tm if $start < $tm;
 
     my @siblings = grep { $_->landing_company->has_reality_check } $client->siblings;
     my @summary;
