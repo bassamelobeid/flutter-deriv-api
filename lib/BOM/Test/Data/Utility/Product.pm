@@ -77,6 +77,7 @@ sub prepare_contract_db {
             date   => Date::Utility->new
         });
     $already_prepared = 1;
+    return 1;
 }
 
 sub create_contract {
