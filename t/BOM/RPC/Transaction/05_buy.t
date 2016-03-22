@@ -11,8 +11,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::Product;
-use BOM::Database::DataMapper::FinancialMarketBet;
-use BOM::Database::ClientDB;
 
 my $email  = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -38,7 +36,7 @@ subtest 'buy' => sub {
 
     $params->{token} = $token;
 
-    #I don't know how to set such a scenario that a valid token id have no valid client,
+    #I don't know how to set such a scenario that a valid token id has no valid client,
     #So I mock client module to simulate this scenario.
     my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
     $mocked_client->mock('new', sub { return undef });
@@ -100,20 +98,19 @@ subtest 'buy' => sub {
         'longcode is correct'
     );
 
-
     $contract = BOM::Test::Data::Utility::Product::create_contract(is_spread => 1);
     $params->{contract_parameters} = {
-                                      "proposal"      => 1,
-                                      "amount"        => "100",
-                                      "basis"         => "payout",
-                                      "contract_type" => "SPREADU",
-                                      "currency"      => "USD",
-                                      "stop_profit"   => "10",
-                                      "stop_type"     => "point",
-                                      "amount_per_point" => "1",
-                                      "stop_loss"    => "10",
-                                      "symbol"        => "R_50",
-                                     };
+        "proposal"         => 1,
+        "amount"           => "100",
+        "basis"            => "payout",
+        "contract_type"    => "SPREADU",
+        "currency"         => "USD",
+        "stop_profit"      => "10",
+        "stop_type"        => "point",
+        "amount_per_point" => "1",
+        "stop_loss"        => "10",
+        "symbol"           => "R_50",
+    };
 
     $params->{args}{price} = $contract->ask_price;
 
