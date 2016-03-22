@@ -34,7 +34,7 @@ sub get_token_details {
         my $session = BOM::Platform::SessionCookie->new(token => $token);
         return unless $session and $session->validate_session;
         $loginid = $session->loginid;
-        $epoch   = $sesion->{loginat};
+        $epoch   = $session->{loginat};
     }
 
     return {
