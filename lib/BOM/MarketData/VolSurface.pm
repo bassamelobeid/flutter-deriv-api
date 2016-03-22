@@ -138,37 +138,6 @@ sub _build_default_vol_spread {
     return {shift->atm_spread_point => 0.1};
 }
 
-=head2 cutoff
-
-Specified in Bloomberg naming terminology. If you want the surface to
-cutoff at New York 10:00, set to "New York 10:00":
-
-  BOM::MarketData::VolSurface::Delta->new(
-      ...
-      cutoff => 'New York 10:00',
-      ...
-  );
-
-This can also be specified as a BOM::MarketData::VolSurface::Cutoff instance.
-
-=cut
-
-has cutoff => (
-    is         => 'ro',
-    isa        => 'bom_cutoff_helper',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
-sub _build_cutoff {
-    my $self = shift;
-
-    Carp::croak('Must define cutoff when saving a new volatility surface.') if $self->_new_surface;
-    my $date = $self->for_date ? $self->for_date : Date::Utility->new;
-
-    return BOM::MarketData::VolSurface::Cutoff->new('UTC ' . $self->underlying->exchange->standard_closing_on($date)->time_hhmm);
-}
-
 =head2 smile_points
 
 The points across a smile.
