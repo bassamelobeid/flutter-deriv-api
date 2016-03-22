@@ -18,7 +18,8 @@ use BOM::Database::Model::OAuth;
 my $t = build_mojo_test();
 
 # cleanup
-my $dbh = BOM::Database::Model::OAuth->new->dbh;
+my $oauth = BOM::Database::Model::OAuth->new;
+my $dbh   = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
@@ -136,6 +137,47 @@ $res = decode_json($t->message->[1]);
 test_schema('app_list', $res);
 $get_apps = [grep { $_->{app_id} ne 'binarycom' } @{$res->{app_list}}];
 is_deeply($get_apps, [$app1], 'app_delete ok');
+
+## for used and revoke
+my $test_appid = $app1->{app_id};
+$oauth = BOM::Database::Model::OAuth->new;
+ok $oauth->confirm_scope($test_appid, $cr_1), 'confirm scope';
+my ($access_token) = $oauth->store_access_token_only($test_appid, $cr_1);
+
+$t = build_mojo_test();
+$t = $t->send_ok({json => {authorize => $access_token}})->message_ok;
+$t = $t->send_ok({
+        json => {
+            oauth_apps => 1,
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+test_schema('oauth_apps', $res);
+
+my $used_apps = $res->{oauth_apps};
+is scalar(@{$used_apps}), 1;
+is $used_apps->[0]->{app_id}, $test_appid, 'app_id 1';
+is_deeply([sort @{$used_apps->[0]->{scopes}}], ['admin', 'read'], 'scopes are right');
+ok $used_apps->[0]->{last_used}, 'last_used ok';
+
+my $is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($test_appid, $cr_1);
+is $is_confirmed, 1, 'was confirmed';
+$t = $t->send_ok({
+        json => {
+            oauth_apps => 1,
+            revoke_app => $test_appid,
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+$is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($test_appid, $cr_1);
+is $is_confirmed, 0, 'not confirmed after revoke';
+
+## the access_token is not working after revoke
+$t = $t->send_ok({
+        json => {
+            oauth_apps => 1,
+            revoke_app => $test_appid,
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'InvalidToken', 'not valid after revoke';
 
 $t->finish_ok;
 
