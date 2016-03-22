@@ -1,16 +1,56 @@
-body {margin: 0; background-color: #2a3052; color: white;}
-.clear {clear: both;}
+body {margin: 0; background-color: white; color: #2a3052;}
 button, input {padding: 0; margin: 0; font-size: .8rem; border: 0;}
+input:focus, bottun:focus, a:focus {outline: none;}
+a {display: block; text-decoration: none; color: #2a3052; font-family: Arial;}
+a:hover {text-decoration: underline;}
 
-#wrapper {max-width: 400px; width: 100%; margin: 0 auto;}
+.clear {clear: both;}
+.err, .err::-webkit-input-placeholder {color: #E4666F;}
 
+#wrapper {max-width: 300px; width: 100%; margin: 0 auto;}
 #header {text-align: center;}
-#header #logo {width: 100%;}
+#header #logo {width: 100%; height: 8rem; background: url('/oauth2/images/binary-logo.svg') no-repeat center;}
 
-form input:-webkit-autofill, form input, form button {width: 100%; height: 3rem; margin-bottom: 2%; background-color: #41476B; text-align: center; font-size: 1rem; color: white;}
+form input:-webkit-autofill, form input, form button {
+	box-sizing: border-box;
+	width: 100%;
+	height: 2.5rem;
+	margin-bottom: 2%;
+	background-color: white;
+	text-align: center;
+	font-size: 1rem;
+}
+form input {background: white; border: 1px solid #dedede; padding: 2px 3px;}
+
 ::-webkit-input-placeholder {font-style: italic; color: #888;}
 :-moz-placeholder {font-style: italic; color: #888;}
 ::-moz-placeholder {font-style: italic; color: #888;}
 :-ms-input-placeholder {font-style: italic; color: #888;}
-form button {cursor: pointer; background-color: #e98024 /* #59618E */;}
-.err, .err::-webkit-input-placeholder {color: #E4666F;}
+
+button, .button {cursor: pointer; width: auto; display: block; margin: 0 auto;}
+.button span {
+    color: #fff;
+    text-decoration: none;
+    text-align: center;
+    line-height: 100%;
+    background: #2e8836;
+    border-radius: 4px;
+    text-transform: capitalize;
+    padding: 10px 25px;
+    display: inline-block;
+    letter-spacing: .75px;
+    border: 0;
+}
+.button:hover span {background-color: #14602B;}
+
+#links {margin-top: 30px;}
+#links a {line-height: 25px; margin-bottom: 10px;}
+
+/* Dark Theme */
+body.dark {background-color: #2a3052; color: white;}
+.dark #wrapper {max-width: 400px;}
+.dark #header #logo {height: 10rem; background-image: url('/oauth2/images/binary-logo-dark.svg');}
+.dark form input:-webkit-autofill, .dark form input, .dark form button {background-color: #41476B; color: white; border: 0px; height: 3rem;}
+.dark button, .dark .button {background-color: #e98024; width: 100%;}
+.dark .button span, .dark .button:hover span {background: none; color: #41476B;}
+.dark #links a {color: #ccc;}
