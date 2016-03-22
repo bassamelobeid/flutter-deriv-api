@@ -120,7 +120,7 @@ sub run {
         if ($self->uses_binary_spot->{$symbol}) {
             $raw_volsurface->{spot_reference} = $underlying->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote;
         }
-        my $cutoff = Date::Utility->new->truncate_to_day->plus_time_interval($underlying->exchange->market_times->{standard}->{daily_close});
+        my $cutoff     = $underlying->exchange->standard_closing_on(Date::Utility->new);
         my $volsurface = BOM::MarketData::VolSurface::Moneyness->new({
             underlying     => $underlying,
             recorded_date  => $raw_volsurface->{recorded_date},

@@ -661,8 +661,8 @@ has exchange => (
     isa        => 'BOM::Market::Exchange',
     lazy_build => 1,
     handles    => [
-        'seconds_of_trading_between_epochs',
-        'trade_date_after', 'trade_date_before', 'trades_on', 'has_holiday_on', 'is_open', 'is_in_dst_at', 'is_OTC',
+        'seconds_of_trading_between_epochs', 'trade_date_after', 'trade_date_before', 'trades_on',
+        'has_holiday_on',                    'is_open',          'is_in_dst_at',      'is_OTC',
     ]);
 
 sub _build_exchange {
