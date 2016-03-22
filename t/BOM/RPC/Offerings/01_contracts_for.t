@@ -36,18 +36,18 @@ subtest "Request $method" => sub {
     $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
 
     is_deeply [sort keys %{$result}], [sort qw/ available close open hit_count spot feed_license /], 'It should return contracts_for object';
-    ok @{ $result->{available} }, 'It should return available contracts';
-    %got_landing_company = map { $_->{landing_company} => 1 } @{ $result->{available} };
+    ok @{$result->{available}}, 'It should return available contracts';
+    %got_landing_company = map { $_->{landing_company} => 1 } @{$result->{available}};
     is_deeply [keys %got_landing_company], [qw/ costarica /], 'It should return available contracts only for costarica region';
 
     $params[1]{args}{region}        = 'japan';
     $params[1]{args}{contracts_for} = 'frxUSDJPY';
-    $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
+    $result                         = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
 
-    is_deeply [sort keys %{ $result }],
+    is_deeply [sort keys %{$result}],
         [sort qw/ available close open hit_count spot feed_license /],
         'It should return contracts_for object for japan region';
-    ok @{ $result->{available} }, 'It should return available contracts only for japan region';
+    ok @{$result->{available}}, 'It should return available contracts only for japan region';
     %got_landing_company = map { $_->{landing_company} => 1 } @{$result->{available}};
     is_deeply [keys %got_landing_company], [qw/ japan /], 'It should return available contracts only for japan region';
 
