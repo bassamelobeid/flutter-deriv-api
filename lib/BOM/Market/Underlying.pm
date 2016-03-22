@@ -661,7 +661,7 @@ has exchange => (
     isa        => 'BOM::Market::Exchange',
     lazy_build => 1,
     handles    => [
-        'representative_trading_date', 'seconds_of_trading_between_epochs',
+        'seconds_of_trading_between_epochs',
         'trade_date_after', 'trade_date_before', 'trades_on', 'has_holiday_on', 'is_open', 'is_in_dst_at', 'is_OTC',
     ]);
 
@@ -1732,7 +1732,7 @@ sub ohlc_daily_open {
     my $trading_day =
         ($exchange->trades_on($today))
         ? $today
-        : $exchange->representative_trading_date;
+        : $exchange->trade_date_after($today);
 
     my $open  = $exchange->opening_on($trading_day);
     my $close = $exchange->closing_on($trading_day);

@@ -57,10 +57,6 @@ The client-friendly name
 
 Amount the feed for this exchange needs to be delayed, in minutes.
 
-=head2 representative_trading_date
-
-A Date::Utility for a non-DST day which we believe represents normal trading for this exchange.
-
 =cut
 
 has [qw(
@@ -71,15 +67,6 @@ has [qw(
     ] => (
     is  => 'ro',
     isa => 'Str',
-    );
-
-has [qw(
-        representative_trading_date
-        )
-    ] => (
-    is         => 'ro',
-    isa        => 'Maybe[Date::Utility]',
-    lazy_build => 1,
     );
 
 has [qw(
@@ -1182,22 +1169,6 @@ sub _find_dst_switch {
     }
 
     return $ret_val;
-}
-
-sub _build_representative_trading_date {
-    my $self = shift;
-
-    my $trading_day = $self->trade_date_after(Date::Utility::today());
-
-    if ($self->is_in_dst_at($trading_day->epoch)) {
-        $trading_day = Date::Utility->new($self->_find_dst_switch($trading_day->epoch, 'next'));
-    }
-
-    while (not $self->trades_normal_hours_on($trading_day)) {
-        $trading_day = $self->trade_date_after($trading_day);
-    }
-
-    return $trading_day;
 }
 
 =head2 closed_for_the_day
