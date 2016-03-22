@@ -17,7 +17,7 @@ use DataDog::DogStatsd::Helper qw(stats_timing);
 sub validate_symbol {
     my $symbol    = shift;
     my @offerings = get_offerings_with_filter('underlying_symbol');
-    if (none { $symbol eq $_ } @offerings) {
+    if (!$symbol || none { $symbol eq $_ } @offerings) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidSymbol',
                 message_to_client => BOM::Platform::Context::localize("Symbol [_1] invalid", $symbol)});
