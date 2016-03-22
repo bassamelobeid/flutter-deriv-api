@@ -87,6 +87,7 @@ sub login {
     # If all accounts are self excluded - show error
     my @self_excluded = grep { $_->get_self_exclusion and $_->get_self_exclusion->exclude_until } @clients;
     if (@clients and @clients == @self_excluded) {
+        # Print the earliest time until user has excluded himself
         my $client = [
             sort {
                 Date::Utility->new($a->get_self_exclusion->exclude_until)->epoch <=> Date::Utility->new($a->get_self_exclusion->exclude_until)->epoch
