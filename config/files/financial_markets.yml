@@ -204,7 +204,7 @@ random:
     display_current_spot: 1
     suspicious_move: 0.5
     outlier_tick: 0.10
-    display_name: "Randoms"
+    display_name: "Volatility Indices"
     volatility_surface_type: "flat"
     deep_otm_threshold: 0.025
     eod_blackout_expiry: '0s'
@@ -215,7 +215,7 @@ random:
     generation_interval: '2s'
     reduced_display_decimals: 1
     absolute_barrier_multiplier: 1
-    explanation: 'The Randoms are simulated markets that use random numbers to model the uncertainty that exists in real markets.'
+    explanation: 'The Volatility Indices are simulated markets that use rndom numbers to model the uncertainty that exists in real markets.'
     license: "realtime"
     providers:
         - 'random'
