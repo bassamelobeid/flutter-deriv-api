@@ -654,7 +654,7 @@ sub get_profit_for_days {
     return $result->[0];
 }
 
-sub get_contract_details_by_transaction_ref {
+sub get_details_by_transaction_ref {
     my $self           = shift;
     my $transaction_id = shift;
     my $sql            = q{
