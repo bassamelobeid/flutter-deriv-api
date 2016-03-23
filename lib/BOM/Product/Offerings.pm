@@ -109,8 +109,8 @@ sub _make_new_flyby {
                 }
             }
         }
-        Cache::RedisDB->set($cache_namespace . '_' . BOM::Platform::Context::request()->language, $cache_key, $fb, 159)
-            ;    # Machine leveling caching for about two and a half minutes.
+        # Machine leveling caching for about two and a half minutes.
+        Cache::RedisDB->set($cache_namespace . '_' . BOM::Platform::Context::request()->language, $cache_key, $fb);
     }
 
     return $fb;
