@@ -53,7 +53,7 @@ Bar("Contract's Parameters");
 
 sub output_as_csv {
     my $param    = shift;
-    my $csv_name = 'contract.xls';
+    my $csv_name = 'contract.csv';
     PrintContentType_excel($csv_name);
     print "ASK_PRICE " . $param->{ask_price} . "\n";
     print "\n";
@@ -81,7 +81,7 @@ sub _get_pricing_parameter_from_IH_pricer {
     my $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $contract});
     my $ask_probability = $contract->ask_probability;
     $pricing_parameters->{ask_probability} = {
-        bs_probability => $contract->bs_probability->amount,
+        bs_probability => $ask_probability->peek_amount(lc($contract->code) . '_theoretical_probability'),
         map { $_ => $ask_probability->peek_amount($_) } qw(intraday_delta_correction vega_correction risk_markup commission_markup),
     };
 
@@ -164,8 +164,9 @@ sub _get_bs_probability_parameters {
     my $prob         = shift;
     my $bs_parameter = {
         'K' => $prob->{strikes}[0],
+        "S" => $prob->{spot},
         't' => $prob->{_timeinyears},
-        map { $_ => $prob->{$_} } qw(spot discount_rate mu vol),
+        map { $_ => $prob->{$_} } qw(discount_rate mu vol),
     };
     return $bs_parameter;
 }
