@@ -67,16 +67,13 @@ sub verify_email {
 
     if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'lost_password') {
         send_email({
-                from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                to      => $params->{email},
-                subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
-                message => [
-                    BOM::Platform::Context::localize(
-                        'Please use the following verification token to change your password: '
-                            . $params->{code})
-                ],
-                use_email_template => 1
-            });
+            from    => BOM::Platform::Static::Config::get_customer_support_email(),
+            to      => $params->{email},
+            subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
+            message =>
+                [BOM::Platform::Context::localize('Please use the following verification token to change your password: ' . $params->{code})],
+            use_email_template => 1
+        });
     } elsif ($params->{type} eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $params->{email}})) {
             send_email({
