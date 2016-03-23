@@ -9048,7 +9048,7 @@
         '75': '0.102142857142857'
   timeindays: 1
 2016-01-22 16:00:00:
-  ask_probability: 0.307232213193852
+  ask_probability: 0.342384930964044
   surface_data:
     1M:
       smile:
@@ -9152,7 +9152,7 @@
         '75': '0.102142857142857'
   timeindays: 0.208333333333333
 2016-01-22 17:00:00:
-  ask_probability: 0.258854716351964
+  ask_probability: 0.287689538954255
   surface_data:
     1M:
       smile:
@@ -9256,7 +9256,7 @@
         '75': '0.102142857142857'
   timeindays: 0.166666666666667
 2016-01-22 18:00:00:
-  ask_probability: 0.215963809383364
+  ask_probability: 0.236266877148396
   surface_data:
     1M:
       smile:
@@ -9360,7 +9360,7 @@
         '75': '0.102142857142857'
   timeindays: 0.125
 2016-01-22 19:00:00:
-  ask_probability: 0.180323201545434
+  ask_probability: 0.189303999627543
   surface_data:
     1M:
       smile:
@@ -9464,7 +9464,7 @@
         '75': '0.102142857142857'
   timeindays: 0.0833333333333333
 2016-01-22 20:00:00:
-  ask_probability: 0.16074721674576
+  ask_probability: 0.161390929867295
   surface_data:
     1M:
       smile:
