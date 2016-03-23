@@ -20,7 +20,6 @@ use BOM::Platform::Context;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 
 my $cache_namespace = 'OFFERINGS';
-my $cache_key       = 'FLYBY';
 
 # Keep these in sync with reality.
 our $DEFAULT_MAX_PAYOUT = {
@@ -54,7 +53,6 @@ my %record_map = (
 # 1) On services restart, we will create a new offerings object and stores that in Redis cache.
 # 2) When we update suspend buy and suspend trade settings in the backoffice, we will clear offerings cache in Redis.
 #    We will then recalculate a new offerings object and cache it.
-_make_new_flyby();
 
 sub _make_new_flyby {
 
@@ -111,14 +109,16 @@ sub _make_new_flyby {
         }
     }
     # Machine leveling caching for as long as it is valid.
-    Cache::RedisDB->set($cache_namespace . '_' . BOM::Platform::Context::request()->language, $cache_key, $fb);
+    my $app_config_rev = $runtime->app_config->current_revision;
+    Cache::RedisDB->set($cache_namespace . '_' . BOM::Platform::Context::request()->language, $app_config_rev, $fb, 86399);
 
     return $fb;
 }
 
 sub get_offerings_flyby {
 
-    my $cached_fb = Cache::RedisDB->get($cache_namespace . '_' . BOM::Platform::Context::request()->language, $cache_key);
+    my $app_config_rev = BOM::Platform::Runtime->instance->app_config->current_revision;
+    my $cached_fb = Cache::RedisDB->get($cache_namespace . '_' . BOM::Platform::Context::request()->language, $app_config_rev);
 
     return $cached_fb ? $cached_fb : _make_new_flyby();
 }
