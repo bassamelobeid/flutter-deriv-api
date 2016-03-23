@@ -1095,7 +1095,7 @@ sub reality_check {
     my $tm = time - 48 * 3600;    # 48 hours
     $start = $tm unless $start and $start > $tm;
 
-    my @summary;
+    my $summary = [];
     for my $reality_check_client (@clients) {
         BOM::Product::Transaction::sell_expired_contracts({
             client => $reality_check_client,
@@ -1110,10 +1110,23 @@ sub reality_check {
                 )->db,
             });
 
-        push @summary, [$reality_check_client->loginid, $txn_dm->get_reality_check_data_of_account(Date::Utility->new($start))];
+        my $data = $txn_dm->get_reality_check_data_of_account(Date::Utility->new($start));
+        if ($data and scalar @$data) {
+            $data = $data->[0];
+            my $record = {
+                loginid             => $reality_check_client->loginid,
+                contract_count      => $data->{buy_count},
+                contract_amount     => $data->{buy_amount},
+                sell_count          => $data->{sell_count},
+                sell_amount         => $data->{sell_amount},
+                currency            => $data->{currency_code},
+                potential_profit    => $data->{pot_profit},
+                open_contract_count => $data->{open_cnt}};
+            push @$summary, $record;
+        }
     }
 
-    return \@summary;
+    return {summary => $summary};
 }
 
 1;
