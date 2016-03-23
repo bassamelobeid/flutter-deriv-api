@@ -1115,8 +1115,8 @@ sub reality_check {
             $data = $data->[0];
             my $record = {
                 loginid             => $reality_check_client->loginid,
-                contract_count      => $data->{buy_count},
-                contract_amount     => $data->{buy_amount},
+                buy_count           => $data->{buy_count},
+                buy_amount          => $data->{buy_amount},
                 sell_count          => $data->{sell_count},
                 sell_amount         => $data->{sell_amount},
                 currency            => $data->{currency_code},
