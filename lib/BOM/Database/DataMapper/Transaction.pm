@@ -660,7 +660,8 @@ sub get_contract_details_by_transaction_ref {
     my $sql            = q{
     SELECT 
     a.client_loginid AS loginid,
-    b.short_code
+    b.short_code as shortcode,
+    a.currency_code as currency_code,
     FROM bet.financial_market_bet b
     LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=b.id
     LEFT JOIN transaction.account a on a.id=b.account_id
