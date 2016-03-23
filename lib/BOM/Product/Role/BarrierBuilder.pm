@@ -23,7 +23,11 @@ sub make_barrier {
         });
     }
 
-    if ($self->underlying->market->integer_barrier and not $self->built_with_bom_parameters and $string_version !~ /^S-?\d+P$/i and not isint($string_version)) {
+    if (    $self->underlying->market->integer_barrier
+        and not $self->built_with_bom_parameters
+        and $string_version !~ /^S-?\d+P$/i
+        and not isint($string_version))
+    {
         $self->add_error({
             severity          => 100,
             message           => 'Invalid barrier',
