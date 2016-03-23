@@ -185,9 +185,6 @@
 "/user/my_accountws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/paymentagent/request_withdrawws":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/open-positions":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
