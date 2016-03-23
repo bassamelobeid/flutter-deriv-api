@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Reality check send",
-  "description":"This gives you summary of your trades and account for reality check. A 'reality check' means a display of time elapsed since the session began.",
+  "description": "Retrieve summary of client's trades and account for reality check. A 'reality check' means a display of time elapsed since the session began.",
   "properties": {
     "reality_check": {
       "type":"integer",
