@@ -533,9 +533,7 @@ subtest 'all methods on a selection of underlyings' => sub {
         is($EURUSD->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
-    my $NYSE = BOM::Market::Exchange->new('NYSE');
-    my $eod  = $NYSE->closing_on($NYSE->representative_trading_date);
-
+    my $eod = BOM::Market::Exchange->new('NYSE')->closing_on(Date::Utility->new);
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
         my $worm = BOM::Market::Underlying->new($pair, $eod->minus_time_interval('1s'));
         is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');
@@ -638,9 +636,9 @@ subtest 'max_suspend_trading_feed_delay' => sub {
     plan tests => 6;
 
     my %expectations = (
-        'frxEURUSD' => 60,
+        'frxEURUSD' => 90,
         'frxBROUSD' => 120,
-        'AS51'      => 60,
+        'AS51'      => 90,
         'USAAPL'    => 120,
         'R_100'     => 60,
         'RDBULL'    => 60,

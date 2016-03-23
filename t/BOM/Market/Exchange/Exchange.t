@@ -648,6 +648,14 @@ subtest "seconds between trading" => sub {
 
 };
 
+subtest 'standard_closing_on' => sub {
+    note ("DST ends on 3 April 2016");
+    my $in_dst = Date::Utility->new('2016-03-01');
+    my $non_dst = Date::Utility->new('2016-03-04');
+    my $asx = BOM::Market::Exchange->new('ASX');
+    is $asx->standard_closing_on($in_dst)->epoch, $in_dst->plus_time_interval('6h')->epoch, 'standard_closing_on return non DST closing on 1 April 2016';
+    is $asx->standard_closing_on($non_dst)->epoch, $non_dst->plus_time_interval('6h')->epoch, 'standard_closing_on return non DST closing on 4 April 2016';
+};
 
 done_testing;
 
