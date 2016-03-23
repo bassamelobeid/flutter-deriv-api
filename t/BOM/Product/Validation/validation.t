@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Test::MockTime qw/:all/;
 use Test::Most qw(-Test::Deep);
 use Test::FailWarnings;
 use DateTime;
@@ -1204,7 +1205,8 @@ subtest 'zero vol' => sub {
 };
 
 subtest 'tentative events' => sub {
-    my $now = Date::Utility->new;
+    my $now = Date::Utility->new('2016-03-18 05:00:00');
+    set_absolute_time($now->epoch);
     my $blackout_start = $now->minus_time_interval('1h');
     my $blackout_end = $now->plus_time_interval('1h');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -1253,6 +1255,61 @@ subtest 'tentative events' => sub {
     $c = produce_contract($contract_args);
     ok !$c->_validate_start_date, 'no error';
     ok !$c->_validate_expiry_date, 'no error';
+};
+
+subtest 'integer barrier' => sub {
+    my $now = Date::Utility->new('2015-04-08 00:30:00');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol         => 'AS51',
+            recorded_date  => $now,
+            spot_reference => $tick->quote,
+        });
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'index',
+        {
+            symbol        => 'AS51',
+            recorded_date => $now,
+        });
+    my $tick_params = {
+        symbol => 'not_checked',
+        epoch  => $now->epoch,
+        quote  => 100
+    };
+
+    my $tick   = BOM::Market::Data::Tick->new($tick_params);
+    my $params = {
+        bet_type     => 'CALL',
+        underlying   => 'AS51',
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '1d',
+        currency     => 'AUD',
+        current_tick => $tick,
+        payout       => 100,
+        barrier      => 100,
+    };
+
+    my $c = produce_contract($params);
+    ok $c->is_valid_to_buy, 'valid to buy if barrier is integer for indices';
+
+    $params->{barrier} = 100.1;
+    $c = produce_contract($params);
+    ok !$c->is_valid_to_buy, 'not valid to buy if barrier is non integer';
+    $c = produce_contract($params);
+    ok $c->is_valid_to_sell, 'valid to sell at non integer barrier';
+    like ($c->primary_validation_error->message, qr/Invalid barrier/, 'correct error');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol         => $_,
+            recorded_date  => $now,
+        }) for qw(frxUSDJPY frxAUDJPY frxAUDUSD);
+    $params->{underlying} = 'frxUSDJPY';
+    $c = produce_contract($params);
+    ok $c->is_valid_to_buy, 'valid to buy if barrier is non integer for forex';
 };
 
 # Let's not surprise anyone else

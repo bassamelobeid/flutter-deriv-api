@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 24;
+use Test::More tests => 25;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use Guard;
@@ -31,8 +31,8 @@ my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        date   => Date::Utility->new,
+        symbol        => $_,
+        recorded_date => Date::Utility->new,
     }) for qw(JPY USD JPY-USD);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -84,6 +84,7 @@ my $usdjpy_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     underlying => 'R_100',
+    quote => 100,
 });
 
 my $underlying      = BOM::Market::Underlying->new('R_50');
@@ -294,11 +295,12 @@ lives_ok {
 
 my ($trx, $fmb, $chld, $qv1, $qv2);
 
+my $new_client = create_client;
+top_up $new_client, 'USD', 5000;
+my $new_acc_usd = $new_client->find_account(query => [currency_code => 'USD'])->[0];
+my $sell_spread_id;
 subtest 'buy a spread bet' => sub {
     # creating a new account so that I won't mess up current tests.
-    my $new_client = create_client;
-    top_up $new_client, 'USD', 5000;
-    my $acc_usd = $new_client->find_account(query => [currency_code => 'USD'])->[0];
     local $ENV{REQUEST_STARTTIME} = time;
     my $c = produce_contract({
         underlying       => 'R_100',
@@ -314,7 +316,7 @@ subtest 'buy a spread bet' => sub {
     my $txn = BOM::Product::Transaction->new({
         client   => $new_client,
         contract => $c,
-        price    => 20.00,
+        price    => 19.00,
         source   => 21,
     });
 
@@ -338,13 +340,14 @@ subtest 'buy a spread bet' => sub {
     };
 
     ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db spread_bet => $txn->transaction_id;
+    $sell_spread_id = $fmb->{id};
 
     # note explain $trx;
 
     subtest 'transaction row', sub {
         plan tests => 13;
         cmp_ok $trx->{id}, '>', 0, 'id';
-        is $trx->{account_id}, $acc_usd->id, 'account_id';
+        is $trx->{account_id}, $new_acc_usd->id, 'account_id';
         is $trx->{action_type}, 'buy', 'action_type';
         is $trx->{amount} + 0, -20, 'amount';
         is $trx->{balance_after} + 0, 5000 - 20, 'balance_after';
@@ -363,7 +366,7 @@ subtest 'buy a spread bet' => sub {
     subtest 'fmb row', sub {
         plan tests => 21;
         cmp_ok $fmb->{id}, '>', 0, 'id';
-        is $fmb->{account_id}, $acc_usd->id, 'account_id';
+        is $fmb->{account_id}, $new_acc_usd->id, 'account_id';
         is $fmb->{bet_class}, 'spread_bet', 'bet_class';
         is $fmb->{bet_type},  'SPREADU',    'bet_type';
         is $fmb->{buy_price} + 0, 20, 'buy_price';
@@ -442,7 +445,7 @@ subtest 'buy a spread bet' => sub {
     subtest 'transaction row', sub {
         plan tests => 13;
         cmp_ok $trx->{id}, '>', 0, 'id';
-        is $trx->{account_id}, $acc_usd->id, 'account_id';
+        is $trx->{account_id}, $new_acc_usd->id, 'account_id';
         is $trx->{action_type}, 'buy', 'action_type';
         is $trx->{amount} + 0, -10, 'amount';
         is $trx->{balance_after} + 0, 5000 - 30, 'balance_after';
@@ -461,7 +464,7 @@ subtest 'buy a spread bet' => sub {
     subtest 'fmb row', sub {
         plan tests => 21;
         cmp_ok $fmb->{id}, '>', 0, 'id';
-        is $fmb->{account_id}, $acc_usd->id, 'account_id';
+        is $fmb->{account_id}, $new_acc_usd->id, 'account_id';
         is $fmb->{bet_class}, 'spread_bet', 'bet_class';
         is $fmb->{bet_type},  'SPREADU',    'bet_type';
         is $fmb->{buy_price} + 0, 10, 'buy_price';
@@ -493,6 +496,89 @@ subtest 'buy a spread bet' => sub {
         is $chld->{stop_loss},   10, 'stop_loss is 10';
         is $chld->{stop_profit}, 20, 'stop_profit is 20';
     };
+};
+
+subtest 'sell a spread bet' => sub {
+    lives_ok {
+        set_relative_time 1;
+        my $reset_time = guard { restore_time };
+        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            epoch      => $now->epoch + 1,
+            underlying => 'R_100',
+            quote => 101,
+        });
+        my $contract = produce_contract({
+            underlying       => 'R_100',
+            bet_type         => 'SPREADU',
+            currency         => 'USD',
+            amount_per_point => 2,
+            stop_loss        => 10,
+            stop_profit      => 20,
+            entry_tick       => $tick_r100,
+            current_tick     => $current_tick,
+            stop_type        => 'point',
+        });
+
+        note 'bid price: ' . $contract->bid_price;
+
+        my $txn = BOM::Product::Transaction->new({
+            client      => $new_client,
+            contract    => $contract,
+            contract_id => $sell_spread_id,
+            price       => 0,
+            source      => 23,
+        });
+        my $error = $txn->sell;
+        is $error, undef, 'no error';
+
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+        # note explain $trx;
+
+        subtest 'transaction row', sub {
+            plan tests => 13;
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id}, $new_acc_usd->id, 'account_id';
+            is $trx->{action_type}, 'sell', 'action_type';
+            is $trx->{amount} + 0, $contract->bid_price, 'amount';
+            # bought two contracts at 10 and 20 USD.
+            is $trx->{balance_after} + 0, 5000 - 30 + $contract->bid_price, 'balance_after';
+            is $trx->{financial_market_bet_id}, $sell_spread_id, 'financial_market_bet_id';
+            is $trx->{payment_id},    undef,                  'payment_id';
+            is $trx->{quantity},      1,                      'quantity';
+            is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
+            is $trx->{remark},        undef,                  'remark';
+            is $trx->{staff_loginid}, $new_client->loginid, 'staff_loginid';
+            is $trx->{source}, 23, 'source';
+            cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
+        };
+
+        # note explain $fmb;
+
+        subtest 'fmb row', sub {
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id}, $new_acc_usd->id, 'account_id';
+            is $fmb->{bet_class}, 'spread_bet', 'bet_class';
+            is $fmb->{bet_type},  'SPREADU',             'bet_type';
+            is $fmb->{buy_price} + 0, 20, 'buy_price';
+            is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
+            cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
+            is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
+            is !$fmb->{is_expired}, !1, 'is_expired';
+            is !$fmb->{is_sold},    !1, 'is_sold';
+            is $fmb->{payout_price} + 0, 40, 'payout_price';
+            cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
+            is $fmb->{sell_price} + 0, $contract->bid_price, 'sell_price';
+            cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch,       '<=', time, 'sell_time';
+            cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>',  time, 'settlement_time';
+            like $fmb->{short_code}, qr/SPREADU/, 'short_code';
+            cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
+            is $fmb->{tick_count},        undef,  'tick_count';
+            is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
+        };
+    }
+    'sell spread bet';
 };
 
 subtest 'buy a bet', sub {
@@ -636,8 +722,8 @@ subtest 'sell a bet', sub {
         note 'bid price: ' . $contract->bid_price;
 
         my $mocked = Test::MockModule->new('BOM::Product::Transaction');
-        $mocked->mock('_validate_trade_pricing_adjustment', sub {});
-        $mocked->mock('price', sub {$contract->bid_price});
+        $mocked->mock('_validate_trade_pricing_adjustment', sub { });
+        $mocked->mock('price',                              sub { $contract->bid_price });
         my $txn = BOM::Product::Transaction->new({
             client      => $cl,
             contract    => $contract,
@@ -927,8 +1013,8 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
 
             is $error->get_type, 'AccountBalanceExceedsLimit', 'error is AccountBalanceExceedsLimit';
 
-            like $error->{-message_to_client}, qr/balance is too high \(USD100\.00\)/, 'message_to_client contains balance';
-            like $error->{-message_to_client}, qr/maximum account balance is 99\.99/,  'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/balance is too high \(USD100\.00\)/,   'message_to_client contains balance';
+            like $error->{-message_to_client}, qr/maximum account balance is USD99\.99/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1244,8 +1330,6 @@ subtest 'max_payout_open_bets validation', sub {
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
-
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => 'frxUSDJPY',
             bet_type     => 'FLASHU',
@@ -1265,10 +1349,18 @@ subtest 'max_payout_open_bets validation', sub {
         });
 
         my $error = do {
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-            $mock_client->mock(landing_company_open_positions_payout_limit =>
-                    sub { note "mocked Client->landing_company_open_positions_payout_limit returning 29.99"; 29.99 });
+            note "Set max_payout_open_positions for MF Client => 29.99";
+            BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{maltainvest}->{USD} = 29.99;
+            my $mock_contract    = Test::MockModule->new('BOM::Product::Contract');
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
 
+            if ($now->is_a_weekend) {
+                $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+                $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
+                $mock_transaction->mock(_is_valid_to_buy       => sub { note "mocked Transaction->_is_valid_to_buy returning nothing";       () });
+
+            }
             is +BOM::Product::Transaction->new({
                     client      => $cl,
                     contract    => $contract,
@@ -1305,6 +1397,11 @@ subtest 'max_payout_open_bets validation', sub {
         $error = do {
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 30.00"; 30.00 });
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+
+            if ($now->is_a_weekend) {
+                $mock_transaction->mock(_is_valid_to_buy => sub { note "mocked Transaction->_is_valid_to_buy returning nothing"; () });
+            }
 
             $txn->buy;
         };
@@ -1312,6 +1409,7 @@ subtest 'max_payout_open_bets validation', sub {
         is $error, undef, 'no error';
     }
     'survived';
+    restore_time();
 };
 
 subtest 'max_payout_open_bets validation: selling bets on the way', sub {
@@ -1439,8 +1537,8 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
         });
 
         my $error = do {
-            note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} to 29.99";
-            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 29.99;
+            note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit->{USD}} to 29.99";
+            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
@@ -1473,8 +1571,8 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
 
         # retry with a slightly higher limit should succeed
         $error = do {
-            note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} to 30";
-            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 30;
+            note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit}->{USD} to 30";
+            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit}->{USD} = 30;
 
             my $contract_r100 = produce_contract({
                 underlying   => $underlying_r100,
@@ -1535,8 +1633,8 @@ subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way'
 
         my $txn_id_buy_expired_contract;
         my $error = do {
-            note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} to 29.99";
-            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 29.99;
+            note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit}->{USD} to 29.99";
+            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
