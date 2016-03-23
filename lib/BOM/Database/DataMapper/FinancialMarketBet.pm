@@ -224,23 +224,6 @@ sub get_fmb_by_shortcode {
     return \@bet_models;
 }
 
-sub get_shortcode_by_transaction_ref {
-    my $self = shift;
-    my $transaction_id = shift;
-    my $sql = q{
-    SELECT b.shortcode
-    FROM bet.financial_market_bet b
-    JOIN transaction.transaction t ON t.financial_market_bet_id=b.id
-    where t.id = $1
-    };
-
-    
-    my $sth = $self->db->dbh->prepare($sql);
-    $sth->execute($transaction_id);
-
-    return $sth->fetchall_arrayref({});
-}
-
 
 =head2 get_sold(%args)
 
