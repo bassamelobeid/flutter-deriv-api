@@ -6,6 +6,7 @@ use warnings;
 use BOM::Market::UnderlyingDB;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw(localize);
+use BOM::System::RedisReplicated;
 
 sub validate_table_props {
 
@@ -52,6 +53,14 @@ sub get_channel_name {
     my $id    = join "::", 'PricingTable', $props->{symbol}, $props->{contract_category}, $props->{date_expiry};
 
     return $id;
+}
+
+sub get_table {
+    my $args = shift;
+    my $id   = get_channel_name($args);
+
+    my $redis_read = BOM::System::RedisReplicated::redis_read();
+    return $redis_read->get($id);
 }
 
 1;
