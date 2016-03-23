@@ -207,8 +207,8 @@ sub reset_password {
                 return $c->new_error('reset_password', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 return {
-                    msg_type         => 'reset_password',
-                    reset_password   => $response->{status}};
+                    msg_type       => 'reset_password',
+                    reset_password => $response->{status}};
             }
         },
         {args => $args});
