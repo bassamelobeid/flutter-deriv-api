@@ -57,7 +57,7 @@ sub login {
     my $password    = $args{password}    || die "requires password argument";
     my $environment = $args{environment} || '';
 
-    my ($error, $cfl, @clients);
+    my ($error, $cfl, @clients, @self_excluded);
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
 
         $error = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
@@ -82,11 +82,14 @@ sub login {
     } elsif (not @clients = $self->clients) {
         $error = localize('This account is unavailable. For any questions please contact Customer Support.');
         BOM::System::AuditLog::log('Account disabled', $self->email);
-    }
-
-    # If all accounts are self excluded - show error
-    my @self_excluded = grep { $_->get_self_exclusion and $_->get_self_exclusion->exclude_until } @clients;
-    if (@clients and @clients == @self_excluded) {
+    } elsif (
+        @self_excluded = grep {
+            $_->get_self_exclusion and $_->get_self_exclusion->exclude_until
+        } @clients
+        and @self_excluded == @clients
+        )
+    {
+        # If all accounts are self excluded - show error
         # Print the earliest time until user has excluded himself
         my ($client) = sort {
             Date::Utility->new($a->get_self_exclusion->exclude_until)->epoch <=> Date::Utility->new($b->get_self_exclusion->exclude_until)->epoch
