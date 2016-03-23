@@ -1087,6 +1087,8 @@ sub reality_check {
     $start = $tm unless $start and $start > $tm;
 
     my @siblings = grep { $_->landing_company->has_reality_check } $client->siblings;
+    push @siblings, $client if $client->landing_company->has_reality_check;
+
     my @summary;
     for my $reality_check_client (@siblings) {
         BOM::Product::Transaction::sell_expired_contracts({
