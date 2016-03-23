@@ -1082,15 +1082,21 @@ sub reality_check {
     # need to check how to handle per api token and oauth token
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
-    my $tm    = time - 48 * 3600;          # 48 hours
-    my $start = $token_details->{epoch};
+    my $start   = $token_details->{epoch};
+    my @clients = ();
+
+    # get siblings for session token only as epoch is defined for session token only
+    if ($start) {
+        @clients = grep { $_->landing_company->has_reality_check } $client->siblings;
+    } else {
+        push @clients, $client if $client->landing_company->has_reality_check;
+    }
+
+    my $tm = time - 48 * 3600;    # 48 hours
     $start = $tm unless $start and $start > $tm;
 
-    my @siblings = grep { $_->landing_company->has_reality_check } $client->siblings;
-    push @siblings, $client if $client->landing_company->has_reality_check;
-
     my @summary;
-    for my $reality_check_client (@siblings) {
+    for my $reality_check_client (@clients) {
         BOM::Product::Transaction::sell_expired_contracts({
             client => $reality_check_client,
         });
