@@ -13,7 +13,7 @@ use Test::BOM::RPC::Client;
 
 use utf8;
 set_absolute_time(Date::Utility->new('2016-03-18 00:00:00')->epoch);
-my ($t, $rpc_ct, $result);
+my ($t, $rpc_ct);
 my $method = 'contracts_for';
 
 my @params = (
@@ -31,7 +31,7 @@ $t = Test::Mojo->new('BOM::RPC');
 $rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
 
 subtest "Request $method" => sub {
-    my %got_landing_company;
+    my (%got_landing_company, $result);
 
     $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
 
