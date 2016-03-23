@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Reset Password Request",
-  "description": "Reset Password. Note: this call is NOT available when authenticated to a per-app token. It is only available for in-house Binary.com apps.",
+  "description": "Reset Password.",
   "properties": {
     "reset_password": {
       "type": "string",

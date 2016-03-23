@@ -6,7 +6,7 @@
   "properties": {
     "reset_password": {
       "type": "integer",
-      "description": "If 1, password updated.",
+      "description": "1: password reset success, 0: password reset failure",
       "pattern": "^(1|0)$"
     },
     "echo_req": {

@@ -208,7 +208,7 @@ sub reset_password {
             } else {
                 return {
                     msg_type         => 'reset_password',
-                    cashier_password => $response->{status}};
+                    reset_password   => $response->{status}};
             }
         },
         {args => $args});
