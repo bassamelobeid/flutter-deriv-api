@@ -72,8 +72,8 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        'Before we can help you change your password, please help us to verify your identity by clicking on the following link: '
-                            . $params->{link})
+                        'Please use the following verification token to change your password: '
+                            . $params->{code})
                 ],
                 use_email_template => 1
             });
@@ -83,7 +83,7 @@ sub verify_email {
                 from               => BOM::Platform::Static::Config::get_customer_support_email(),
                 to                 => $params->{email},
                 subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-                message            => [BOM::Platform::Context::localize('Your email address verification link is: ' . $params->{link})],
+                message            => [BOM::Platform::Context::localize('Your email address verification token is: ' . $params->{token})],
                 use_email_template => 1
             });
         } else {
@@ -106,8 +106,8 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        '<p>Dear Valued Customer,</p><p>In order to verify your withdrawal request, please click on the following link: </p><p> '
-                            . $params->{link} . ' </p>'
+                        '<p>Dear Valued Customer,</p><p>In order to verify your withdrawal request, please use the following verification token: </p><p> '
+                            . $params->{code} . ' </p>'
                     )
                 ],
                 use_email_template => 1
