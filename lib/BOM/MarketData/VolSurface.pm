@@ -138,39 +138,6 @@ sub _build_default_vol_spread {
     return {shift->atm_spread_point => 0.1};
 }
 
-=head2 cutoff
-
-Specified in Bloomberg naming terminology. If you want the surface to
-cutoff at New York 10:00, set to "New York 10:00":
-
-  BOM::MarketData::VolSurface::Delta->new(
-      ...
-      cutoff => 'New York 10:00',
-      ...
-  );
-
-This can also be specified as a BOM::MarketData::VolSurface::Cutoff instance.
-
-=cut
-
-has cutoff => (
-    is         => 'ro',
-    isa        => 'bom_cutoff_helper',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
-sub _build_cutoff {
-    my $self = shift;
-
-    my $underlying = $self->underlying;
-    my $when       = $self->for_date || Date::Utility->today;
-    my $util       = BOM::MarketData::VolSurface::Utils->new;
-    my $cutoff_str = ($self->_new_surface) ? $util->default_bloomberg_cutoff($underlying) : $util->default_pricing_cutoff($underlying);
-
-    return BOM::MarketData::VolSurface::Cutoff->new($cutoff_str);
-}
-
 =head2 smile_points
 
 The points across a smile.
