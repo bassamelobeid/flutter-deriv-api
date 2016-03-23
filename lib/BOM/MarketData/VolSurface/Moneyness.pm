@@ -394,6 +394,27 @@ sub clone {
     return $self->meta->name->new(\%clone_args);
 }
 
+=head2 cutoff
+
+default to closing on the underlying.
+
+=cut
+
+has cutoff => (
+    is         => 'ro',
+    isa        => 'bom_cutoff_helper',
+    lazy_build => 1,
+    coerce     => 1,
+);
+
+sub _build_cutoff {
+    my $self = shift;
+
+    my $date = $self->for_date ? $self->for_date : Date::Utility->new;
+
+    return BOM::MarketData::VolSurface::Cutoff->new('UTC ' . $self->underlying->exchange->standard_closing_on($date)->time_hhmm);
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
