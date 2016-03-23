@@ -67,22 +67,31 @@ sub verify_email {
 
     if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'lost_password') {
         send_email({
-            from    => BOM::Platform::Static::Config::get_customer_support_email(),
-            to      => $params->{email},
-            subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
-            message =>
-                [BOM::Platform::Context::localize('Please use the following verification token to change your password: ' . $params->{code})],
-            use_email_template => 1
-        });
+                from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                to      => $params->{email},
+                subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
+                message => [
+                    BOM::Platform::Context::localize(
+                        'Dear Valued Customer, <p style="margin-top:1em;line-height:200%;">Please paste the following verification token in the lost password form: </p><p>'
+                            . $params->{code} . '</p>'
+                    )
+                ],
+                use_email_template => 1
+            });
     } elsif ($params->{type} eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $params->{email}})) {
             send_email({
-                from               => BOM::Platform::Static::Config::get_customer_support_email(),
-                to                 => $params->{email},
-                subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-                message            => [BOM::Platform::Context::localize('Your email address verification token is: ' . $params->{code})],
-                use_email_template => 1
-            });
+                    from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    to      => $params->{email},
+                    subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
+                    message => [
+                        BOM::Platform::Context::localize(
+                            'Dear Valued Customer, <p style="margin-top:1em;line-height:200%;">Please paste the following verification token in the account opening form: </p><p>'
+                                . $params->{code} . '</p>'
+                        )
+                    ],
+                    use_email_template => 1
+                });
         } else {
             send_email({
                     from    => BOM::Platform::Static::Config::get_customer_support_email(),
@@ -103,8 +112,8 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        '<p>Dear Valued Customer,</p><p>In order to verify your withdrawal request, please use the following verification token: </p><p> '
-                            . $params->{code} . ' </p>'
+                        '<p>Dear Valued Customer,</p><p>In order to verify your withdrawal request, please paste the following verification token in the payment agent withdrawal form: </p><p>'
+                            . $params->{code} . '</p>'
                     )
                 ],
                 use_email_template => 1
