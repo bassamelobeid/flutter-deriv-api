@@ -52,6 +52,7 @@ forex:
     display_name: "Forex"
     display_order: 1
     integer_number_of_day: 1
+    max_suspend_trading_feed_delay: '1m30s'
     eod_blackout_expiry: '0s'
     eod_blackout_start: '0s'
     sod_blackout_start: '0s'
@@ -123,11 +124,13 @@ indices:
     suspicious_move: 0.07
     outlier_tick: 0.10
     display_name: "Indices"
+    integer_barrier: 1
     display_order: 2
     eod_blackout_expiry: '1m'
     eod_blackout_start: '15m'
     sod_blackout_start: '10m'
     intradays_must_be_same_day: 1
+    max_suspend_trading_feed_delay: '1m30s'
     asset_type: 'index'
     equity: 1
     explanation: 'Indices represent the weighted value of a basket of companies, typically traded on the same exchange.'

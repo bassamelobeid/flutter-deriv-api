@@ -57,10 +57,6 @@ The client-friendly name
 
 Amount the feed for this exchange needs to be delayed, in minutes.
 
-=head2 representative_trading_date
-
-A Date::Utility for a non-DST day which we believe represents normal trading for this exchange.
-
 =cut
 
 has [qw(
@@ -71,15 +67,6 @@ has [qw(
     ] => (
     is  => 'ro',
     isa => 'Str',
-    );
-
-has [qw(
-        representative_trading_date
-        )
-    ] => (
-    is         => 'ro',
-    isa        => 'Maybe[Date::Utility]',
-    lazy_build => 1,
     );
 
 has [qw(
@@ -806,6 +793,21 @@ sub closing_on {
     return $self->closes_early_on($when) // $self->_get_exchange_open_times($when, 'daily_close');
 }
 
+=head2 standard_closing_on
+
+This is used to fetch regular non dst closing time for an exchange.
+
+=cut
+
+sub standard_closing_on {
+    my ($self, $when) = @_;
+
+    $when = $self->trading_date_for($when);
+    my $standard_close = $when->truncate_to_day->plus_time_interval($self->market_times->{standard}->{daily_close});
+
+    return $self->closes_early_on($when) // $standard_close;
+}
+
 =head2 settlement_on
 
 Similar to opening_on.
@@ -1167,22 +1169,6 @@ sub _find_dst_switch {
     }
 
     return $ret_val;
-}
-
-sub _build_representative_trading_date {
-    my $self = shift;
-
-    my $trading_day = $self->trade_date_after(Date::Utility::today());
-
-    if ($self->is_in_dst_at($trading_day->epoch)) {
-        $trading_day = Date::Utility->new($self->_find_dst_switch($trading_day->epoch, 'next'));
-    }
-
-    while (not $self->trades_normal_hours_on($trading_day)) {
-        $trading_day = $self->trade_date_after($trading_day);
-    }
-
-    return $trading_day;
 }
 
 =head2 closed_for_the_day

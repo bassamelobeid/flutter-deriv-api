@@ -53,6 +53,7 @@ subtest 'Market builds or configs test' => sub {
         ok !$config->providers->[0];
         is $config->license, 'realtime';
         ok !$config->official_ohlc,         'Official OHLC';
+        ok !$config->integer_barrier, 'non integer barrier';
         ok !$config->integer_number_of_day, 'integer number of day';
     };
 
@@ -101,6 +102,7 @@ subtest 'Market builds or configs test' => sub {
 
         is $forex->license, 'realtime';
         ok !$forex->official_ohlc;
+        ok !$forex->integer_barrier, 'non integer barrier';
         ok $forex->integer_number_of_day, 'integer number of day';
     };
 
@@ -150,6 +152,7 @@ subtest 'Market builds or configs test' => sub {
 
         is $commodities->license, 'realtime';
         ok !$commodities->official_ohlc;
+        ok !$commodities->integer_barrier, 'non integer barrier';
         ok $commodities->integer_number_of_day, 'integer number of day';
     };
 
@@ -199,6 +202,7 @@ subtest 'Market builds or configs test' => sub {
 
         is $indices->license, 'daily';
         ok $indices->official_ohlc;
+        ok $indices->integer_barrier, 'Integer barrier';
         ok !$indices->integer_number_of_day, 'integer number of day';
     };
 
@@ -246,6 +250,7 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply($random->providers, ['random',]);
         is $random->license, 'realtime';
         ok !$random->official_ohlc;
+        ok !$random->integer_barrier, 'non integer barrier';
         ok !$random->integer_number_of_day, 'integer number of day';
     };
 };

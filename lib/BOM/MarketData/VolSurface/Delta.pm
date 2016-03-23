@@ -435,6 +435,30 @@ sub clone {
     return $self->meta->name->new($clone_args);
 }
 
+=head2 cutoff
+
+cutoff is New York 10:00 when we save new volatility delta surfaces. (Surfaces that we get from Bloomberg)
+
+cutoff is UTC 23:59 or UTC 21:00 for contract pricing.
+
+=cut
+
+has cutoff => (
+    is         => 'ro',
+    isa        => 'bom_cutoff_helper',
+    lazy_build => 1,
+    coerce     => 1,
+);
+
+sub _build_cutoff {
+    my $self = shift;
+
+    my $date          = $self->for_date     ? $self->for_date  : Date::Utility->new;
+    my $cutoff_string = $self->_new_surface ? 'New York 10:00' : 'UTC ' . $self->underlying->exchange->standard_closing_on($date)->time_hhmm;
+
+    return BOM::MarketData::VolSurface::Cutoff->new($cutoff_string);
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
