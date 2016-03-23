@@ -88,11 +88,9 @@ sub login {
     my @self_excluded = grep { $_->get_self_exclusion and $_->get_self_exclusion->exclude_until } @clients;
     if (@clients and @clients == @self_excluded) {
         # Print the earliest time until user has excluded himself
-        my $client = [
-            sort {
-                Date::Utility->new($a->get_self_exclusion->exclude_until)->epoch <=> Date::Utility->new($a->get_self_exclusion->exclude_until)->epoch
-            } @self_excluded
-        ]->[0];
+        my ($client) = sort {
+            Date::Utility->new($a->get_self_exclusion->exclude_until)->epoch <=> Date::Utility->new($b->get_self_exclusion->exclude_until)->epoch
+        } @self_excluded;
         $error = localize('Sorry, you have excluded yourself until [_1].', $client->get_self_exclusion->exclude_until);
         BOM::System::AuditLog::log('Account self excluded', $self->email);
     }
