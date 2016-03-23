@@ -1298,6 +1298,8 @@ subtest 'integer barrier' => sub {
     $params->{barrier} = 100.1;
     $c = produce_contract($params);
     ok !$c->is_valid_to_buy, 'not valid to buy if barrier is non integer';
+    $c = produce_contract($params);
+    ok $c->is_valid_to_sell, 'valid to sell at non integer barrier';
     like ($c->primary_validation_error->message, qr/Invalid barrier/, 'correct error');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
