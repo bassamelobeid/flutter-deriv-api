@@ -46,13 +46,9 @@ my %record_map = (
     max_historical_pricer_duration => 'historical_pricer_max',
 );
 
-# Calculates flyby and cache it.
-# We need to cache this in redis because offerings could be changed by app config's
-# suspend buy and suspend trade settings. The solution:
-#
-# 1) On services restart, we will create a new offerings object and stores that in Redis cache.
-# 2) When we update suspend buy and suspend trade settings in the backoffice, we will clear offerings cache in Redis.
-#    We will then recalculate a new offerings object and cache it.
+# Flush cached offerings on services restart.
+# This makes sure that we recalculate offerings based on the new yaml files (product_offerings.yml & landing_company.yml).
+_flush_offerings();
 
 sub _make_new_flyby {
 
@@ -215,6 +211,11 @@ sub _do_min_max {
     }
 
     return $result;
+}
+
+sub _flush_offerings {
+    my $redis = Cache::RedisDB->redis;
+    return $redis->del($_) foreach (@{$redis->keys("$cache_namespace*")});
 }
 
 1;
