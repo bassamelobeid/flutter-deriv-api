@@ -1084,7 +1084,7 @@ sub reality_check {
 
     my $tm    = time - 48 * 3600;          # 48 hours
     my $start = $token_details->{epoch};
-    $start = $tm if $start < $tm;
+    $start = $tm unless $start and $start > $tm;
 
     my @siblings = grep { $_->landing_company->has_reality_check } $client->siblings;
     my @summary;
