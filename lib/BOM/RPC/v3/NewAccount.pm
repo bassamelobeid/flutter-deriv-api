@@ -83,7 +83,7 @@ sub verify_email {
                 from               => BOM::Platform::Static::Config::get_customer_support_email(),
                 to                 => $params->{email},
                 subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-                message            => [BOM::Platform::Context::localize('Your email address verification token is: ' . $params->{token})],
+                message            => [BOM::Platform::Context::localize('Your email address verification token is: ' . $params->{code})],
                 use_email_template => 1
             });
         } else {
