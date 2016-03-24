@@ -10,7 +10,7 @@ use BOM::Market::SubMarket::Registry;
 
 use Time::HiRes;
 
-subtest 'benchmarket offerings' => sub {
+subtest 'benchmark offerings' => sub {
     foreach my $lc (map { $_->short } BOM::Platform::Runtime::LandingCompany::Registry->new->all) {
         my $before = Time::HiRes::time;
         get_offerings_with_filter('market', {landing_company => $lc});
