@@ -36,7 +36,7 @@ window.onload = function() {
             validatePass();
         });
     }
-}
+};
 
 function validate() {
 	var validEmail = validateEmail(),
