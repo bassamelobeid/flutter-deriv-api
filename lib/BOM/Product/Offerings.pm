@@ -111,12 +111,25 @@ sub _make_new_flyby {
     return $fb;
 }
 
-sub get_offerings_flyby {
+{
+    my %cache;
 
-    my $app_config_rev = BOM::Platform::Runtime->instance->app_config->current_revision;
-    my $cached_fb = Cache::RedisDB->get($cache_namespace . '_' . BOM::Platform::Context::request()->language, $app_config_rev);
+    sub get_offerings_flyby {
+        my $app_config_rev = BOM::Platform::Runtime->instance->app_config->current_revision;
+        my $lang           = BOM::Platform::Context::request()->language;
 
-    return $cached_fb ? $cached_fb : _make_new_flyby();
+        return $cache{$lang}->[1] if $cache{$lang} and $cache{$lang}->[0] == $app_config_rev;
+
+        my $cached_fb = Cache::RedisDB->get($cache_namespace . '_' . $lang, $app_config_rev) // _make_new_flyby();
+        $cache{$lang} = [$app_config_rev, $cached_fb];
+
+        return $cached_fb;
+    }
+
+    sub _flush_offerings {
+        %cache = ();
+        return;
+    }
 }
 
 sub get_offerings_with_filter {
@@ -211,12 +224,6 @@ sub _do_min_max {
     }
 
     return $result;
-}
-
-sub _flush_offerings {
-    my $redis = Cache::RedisDB->redis;
-    $redis->del($_) foreach (@{$redis->keys("$cache_namespace*")});
-    return;
 }
 
 1;
