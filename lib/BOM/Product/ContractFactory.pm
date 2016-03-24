@@ -101,20 +101,24 @@ sub produce_contract {
 
     my $params_ref = _args_to_ref($build_arg, $maybe_currency, $maybe_sold);
 
-    if (my $missing = first { not defined $params_ref->{$_} } (qw(bet_type currency))) {
+    # dereference here
+    my %input_params = %$params_ref;
+
+    if (my $missing = first { not defined $input_params{$_} } (qw(bet_type currency))) {
         # Some things are required for all possible contracts
         # This list is pretty small, though!
         croak $missing. ' is required.';
     }
 
     # common initialization for spreads and derivatives
-    if (defined $OVERRIDE_LIST{$params_ref->{bet_type}}) {
-        my $override_params = $OVERRIDE_LIST{$params_ref->{bet_type}};
-        $params_ref->{$_} = $override_params->{$_} for keys %$override_params;
+    if (defined $OVERRIDE_LIST{$input_params{bet_type}}) {
+        my $override_params = $OVERRIDE_LIST{$input_params{bet_type}};
+        $input_params{$_} = $override_params->{$_} for keys %$override_params;
     }
 
-    # dereference here
-    my %input_params = (%$params_ref, %{$contract_type_config->{$params_ref->{bet_type}}});
+    $input_params{bet_type} = 'LEGACY' unless exists $contract_type_config->{$input_params{bet_type}};
+    my %type_config = %{$contract_type_config->{$input_params{bet_type}}};
+    @input_params{keys %type_config} = values %type_config;
 
     my $contract_class;
     my $bet_type = ucfirst lc $input_params{bet_type};
