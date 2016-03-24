@@ -115,8 +115,8 @@ sub _make_new_flyby {
     my %cache;
 
     sub get_offerings_flyby {
-        my $app_config_rev = BOM::Platform::Runtime->instance->app_config->current_revision;
-        my $lang           = BOM::Platform::Context::request()->language;
+        my $app_config_rev = BOM::Platform::Runtime->instance->app_config->current_revision || 0;
+        my $lang = BOM::Platform::Context::request()->language;
 
         return $cache{$lang}->[1] if $cache{$lang} and $cache{$lang}->[0] == $app_config_rev;
 
