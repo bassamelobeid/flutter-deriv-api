@@ -65,11 +65,13 @@ sub _make_new_flyby {
     my $fb                           = FlyBy->new;
     my %legal_allowed_contract_types = map { $_ => 1 } @{$landing_company->legal_allowed_contract_types};
     my %legal_allowed_markets        = map { $_ => 1 } @{$landing_company->legal_allowed_markets};
+    my @legal_allowed_underlyings    = @{$landing_company->legal_allowed_underlyings};
     my @underlyings =
-        map  { BOM::Market::Underlying->new($_) }
-        grep { not $suspended_underlyings{$_} } keys %{$BOM::Market::Underlying::PRODUCT_OFFERINGS};
-    my @legal_allowed_underlyings = @{$landing_company->legal_allowed_underlyings};
-    @underlyings = map { BOM::Market::Underlying->new($_) } @legal_allowed_underlyings if $legal_allowed_underlyings[0] ne 'all';
+        map { BOM::Market::Underlying->new($_) }
+        ( $legal_allowed_underlyings[0] ne 'all'
+        ? @legal_allowed_underlyings
+        : (grep { not $suspended_underlyings{$_} } keys %{$BOM::Market::Underlying::PRODUCT_OFFERINGS}));
+
     foreach my $ul (@underlyings) {
         next unless $legal_allowed_markets{$ul->market->name};
         my %record = (
