@@ -659,9 +659,9 @@ sub get_details_by_transaction_ref {
     my $transaction_id = shift;
     my $sql            = q{
     SELECT 
-    a.client_loginid,
-    b.short_code,
-    a.currency_code
+    a.client_loginid AS loginID,
+    b.short_code AS shortcode,
+    a.currency_code AS currency_code
     FROM bet.financial_market_bet b
     LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=b.id
     LEFT JOIN transaction.account a on a.id=b.account_id
@@ -671,7 +671,7 @@ sub get_details_by_transaction_ref {
     my $sth = $self->db->dbh->prepare($sql);
     $sth->execute($transaction_id);
 
-    return $sth->fetchall_arrayref();
+    return $sth->fetchall_arrayref({})->[0];
 }
 
 no Moose;
