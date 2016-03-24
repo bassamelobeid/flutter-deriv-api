@@ -7,8 +7,4 @@
 		<div><input type="password" id="txtPass" name="password" placeholder="Password" /></div>
 		<div><button type="submit" id="btnLogin" class="button"><span>Login</span></button></div>
 	</form>
-	<div id="links">
-		<a href="#">Forgot your password?</a>
-		<a href="#">Don't have an account?</a>
-	</div>
 </div>
