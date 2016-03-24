@@ -1,6 +1,6 @@
 body {margin: 0; background-color: white; color: #2a3052;}
 button, input {padding: 0; margin: 0; font-size: .8rem; border: 0;}
-input:focus, bottun:focus, a:focus {outline: none;}
+input:focus, bottun:focus, button, a:focus {outline: none;}
 a {display: block; text-decoration: none; color: #2a3052; font-family: Arial;}
 a:hover {text-decoration: underline;}
 
@@ -27,18 +27,18 @@ form input {background: white; border: 1px solid #dedede; padding: 2px 3px;}
 ::-moz-placeholder {font-style: italic; color: #888;}
 :-ms-input-placeholder {font-style: italic; color: #888;}
 
-button, .button {cursor: pointer; width: auto; display: block; margin: 0 auto;}
+button, .button {cursor: pointer; display: block; margin: 0 auto;}
 .button span {
     color: #fff;
     text-decoration: none;
     text-align: center;
     line-height: 100%;
     background: #2e8836;
-    border-radius: 4px;
     text-transform: capitalize;
     padding: 10px 25px;
     display: inline-block;
     letter-spacing: .75px;
     border: 0;
+    display: block;
 }
 .button:hover span {background-color: #14602B;}
