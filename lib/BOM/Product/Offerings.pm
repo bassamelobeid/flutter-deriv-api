@@ -121,7 +121,7 @@ sub _make_new_flyby {
         my $app_config_rev = BOM::Platform::Runtime->instance->app_config->current_revision || 0;
         my $lang = BOM::Platform::Context::request()->language;
 
-        return $cache{$lang}->[1]
+        return $cache{$lang}{$landing_company}->[1]
             if exists $cache{$lang}
             and exists $cache{$lang}{$landing_company}
             and $cache{$lang}{$landing_company}->[0] == $app_config_rev;
