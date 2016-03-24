@@ -108,7 +108,7 @@ sub produce_contract {
     }
 
     # dereference here
-    my %input_params = (%$params_ref, %{$contract_type_config->{$param_ref->{bet_type}}});
+    my %input_params = (%$params_ref, %{$contract_type_config->{$params_ref->{bet_type}}});
 
     # common initialization for spreads and derivatives
     if (defined $OVERRIDE_LIST{$input_params{bet_type}}) {
