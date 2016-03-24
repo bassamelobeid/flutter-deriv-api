@@ -121,11 +121,14 @@ sub _make_new_flyby {
         my $app_config_rev = BOM::Platform::Runtime->instance->app_config->current_revision || 0;
         my $lang = BOM::Platform::Context::request()->language;
 
-        return $cache{$lang}->[1] if $cache{$lang} and $cache{$lang}->[0] == $app_config_rev;
+        return $cache{$lang}->[1]
+            if exists $cache{$lang}
+            and exists $cache{$lang}{$landing_company}
+            and $cache{$lang}{$landing_company}->[0] == $app_config_rev;
 
         my $cached_fb = Cache::RedisDB->get($cache_namespace . '_' . $lang . '_' . $landing_company, $app_config_rev)
             // _make_new_flyby($landing_company);
-        $cache{$lang} = [$app_config_rev, $cached_fb];
+        $cache{$lang}{$landing_company} = [$app_config_rev, $cached_fb];
 
         return $cached_fb;
     }
