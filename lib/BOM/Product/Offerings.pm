@@ -215,7 +215,8 @@ sub _do_min_max {
 
 sub _flush_offerings {
     my $redis = Cache::RedisDB->redis;
-    return $redis->del($_) foreach (@{$redis->keys("$cache_namespace*")});
+    $redis->del($_) foreach (@{$redis->keys("$cache_namespace*")});
+    return;
 }
 
 1;
