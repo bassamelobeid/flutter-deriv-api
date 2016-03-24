@@ -560,14 +560,6 @@ asset:
   data:
     symbol: UKTSCO
 
-holiday:
-  class_name: 'BOM::MarketData::Holiday'
-  data:
-    calendar:
-        1420070400:
-          'New Year':
-            - EURONEXT
-            - USD
 partial_trading:
   class_name: 'BOM::MarketData::PartialTrading'
   data:
