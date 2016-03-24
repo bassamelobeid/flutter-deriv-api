@@ -1122,8 +1122,8 @@ sub reality_check {
             $record->{currency}            => $data->{currency_code};
             $record->{potential_profit}    => $data->{pot_profit};
             $record->{open_contract_count} => $data->{open_cnt};
-            push @$summary, $record;
         }
+        push @$summary, $record;
     }
 
     return {
