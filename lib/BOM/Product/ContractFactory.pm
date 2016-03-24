@@ -107,15 +107,14 @@ sub produce_contract {
         croak $missing. ' is required.';
     }
 
+    # common initialization for spreads and derivatives
+    if (defined $OVERRIDE_LIST{$params_ref->{bet_type}}) {
+        my $override_params = $OVERRIDE_LIST{$params_ref->{bet_type}};
+        $params_ref->{$_} = $override_params->{$_} for keys %$override_params;
+    }
+
     # dereference here
     my %input_params = (%$params_ref, %{$contract_type_config->{$params_ref->{bet_type}}});
-
-    # common initialization for spreads and derivatives
-    if (defined $OVERRIDE_LIST{$input_params{bet_type}}) {
-        my $override_params = $OVERRIDE_LIST{$input_params{bet_type}};
-        delete $input_params{bet_type};
-        $input_params{$_} = $override_params->{$_} for keys %$override_params;
-    }
 
     my $contract_class;
     my $bet_type = ucfirst lc $input_params{bet_type};
