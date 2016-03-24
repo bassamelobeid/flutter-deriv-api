@@ -10,7 +10,6 @@ use Cache::RedisDB;
 use Carp qw( croak );
 use FlyBy;
 use List::MoreUtils qw( uniq all );
-use Module::Load::Conditional qw(can_load);
 use Time::Duration::Concise;
 
 use BOM::Market::Underlying;
@@ -18,6 +17,9 @@ use BOM::Platform::Runtime;
 use BOM::Product::Contract::Category;
 use BOM::Platform::Context;
 use BOM::Platform::Runtime::LandingCompany::Registry;
+use YAML::XS qw(LoadFile);
+
+my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
 
 my $cache_namespace = 'OFFERINGS';
 
@@ -86,12 +88,11 @@ sub _make_new_flyby {
                     $record{start_type} = $start_type;
                     foreach my $barrier_category (sort keys %{$ul->contracts->{$cc_code}->{$expiry_type}->{$start_type}}) {
                         $record{barrier_category} = $barrier_category;
-                        foreach my $type_class (@{$category_cache{$cc_code}->available_types}) {
-                            next unless (can_load(modules => {$type_class => undef}));      # Should we tell someone?
-                            next unless $legal_allowed_contract_types{$type_class->code};
-                            $record{sentiment}        = $type_class->sentiment;
-                            $record{contract_display} = $type_class->display_name;
-                            $record{contract_type}    = $type_class->code;
+                        foreach my $contract_type (@{$category_cache{$cc_code}->available_types}) {
+                            next unless $legal_allowed_contract_types{$contract_type};
+                            $record{sentiment}        = $contract_type_config->{$contract_type}{sentiment};
+                            $record{contract_display} = $contract_type_config->{$contract_type}{display_name};
+                            $record{contract_type}    = $contract_type;
                             my $permitted = _exists_value($ul->contracts, \%record);
                             while (my ($rec_key, $from_attr) = each %record_map) {
                                 $record{$rec_key} = $permitted->{$from_attr};

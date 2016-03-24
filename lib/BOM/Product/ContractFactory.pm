@@ -18,6 +18,7 @@ use Cache::RedisDB;
 use List::Util qw( first );
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
+use YAML::XS qw(LoadFile);
 
 use BOM::Market::Data::Tick;
 use BOM::Platform::Context qw(request);
@@ -93,18 +94,21 @@ my %OVERRIDE_LIST = (
     },
 );
 
+my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
+
 sub produce_contract {
     my ($build_arg, $maybe_currency, $maybe_sold) = @_;
 
     my $params_ref = _args_to_ref($build_arg, $maybe_currency, $maybe_sold);
-    # dereference here
-    my %input_params = %$params_ref;
 
-    if (my $missing = first { not defined $input_params{$_} } (qw(bet_type currency))) {
+    if (my $missing = first { not defined $params_ref->{$_} } (qw(bet_type currency))) {
         # Some things are required for all possible contracts
         # This list is pretty small, though!
         croak $missing. ' is required.';
     }
+
+    # dereference here
+    my %input_params = (%$params_ref, %{$contract_type_config->{$param_ref->{bet_type}}});
 
     # common initialization for spreads and derivatives
     if (defined $OVERRIDE_LIST{$input_params{bet_type}}) {

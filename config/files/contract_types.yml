@@ -1,0 +1,203 @@
+---
+ASIAND:
+  id: 240
+  category_code: asian
+  display_name: asian down
+  other_side_code: ASIANU
+  payout_type: binary
+  payouttime: end
+  pricing_code: PUT
+  sentiment: down
+ASIANU:
+  id: 230
+  category_code: asian
+  display_name: asian up
+  other_side_code: ASIAND
+  payout_type: binary
+  payouttime: end
+  pricing_code: CALL
+  sentiment: up
+CALL:
+  id: 10
+  category_code: callput
+  display_name: higher
+  other_side_code: PUT
+  payout_type: binary
+  payouttime: end
+  pricing_code: CALL
+  sentiment: up
+CALLE:
+  id: 290
+  category_code: callput
+  display_name: higher
+  other_side_code: PUTE
+  payout_type: binary
+  payouttime: end
+  pricing_code: CALL
+  sentiment: up
+DIGITDIFF:
+  id: 220
+  category_code: digits
+  display_name: differs
+  other_side_code: DIGITMATCH
+  payout_type: binary
+  payouttime: end
+  pricing_code: DIGITDIFF
+  sentiment: differ
+DIGITEVEN:
+  id: 260
+  category_code: digits
+  display_name: even
+  other_side_code: DIGITODD
+  payout_type: binary
+  payouttime: end
+  pricing_code: DIGITEVEN
+  sentiment: even
+DIGITMATCH:
+  id: 210
+  category_code: digits
+  display_name: matches
+  other_side_code: DIGITDIFF
+  payout_type: binary
+  payouttime: end
+  pricing_code: DIGITMATCH
+  sentiment: match
+DIGITODD:
+  id: 250
+  category_code: digits
+  display_name: odd
+  other_side_code: DIGITEVEN
+  payout_type: binary
+  payouttime: end
+  pricing_code: DIGITODD
+  sentiment: odd
+DIGITOVER:
+  id: 270
+  category_code: digits
+  display_name: over
+  other_side_code: DIGITUNDER
+  payout_type: binary
+  payouttime: end
+  pricing_code: DIGITOVER
+  sentiment: over
+DIGITUNDER:
+  id: 280
+  category_code: digits
+  display_name: under
+  other_side_code: DIGITOVER
+  payout_type: binary
+  payouttime: end
+  pricing_code: DIGITUNDER
+  sentiment: under
+EXPIRYMISS:
+  id: 180
+  category_code: endsinout
+  display_name: ends outside
+  other_side_code: EXPIRYRANGE
+  payout_type: binary
+  payouttime: end
+  pricing_code: EXPIRYMISS
+  sentiment: high_vol
+EXPIRYMISSE:
+  id: 310
+  category_code: endsinout
+  display_name: ends outside
+  other_side_code: EXPIRYRANGEE
+  payout_type: binary
+  payouttime: end
+  pricing_code: EXPIRYMISS
+  sentiment: high_vol
+EXPIRYRANGE:
+  id: 170
+  category_code: endsinout
+  display_name: ends between
+  other_side_code: EXPIRYMISS
+  payout_type: binary
+  payouttime: end
+  pricing_code: EXPIRYRANGE
+  sentiment: low_vol
+EXPIRYRANGEE:
+  id: 320
+  category_code: endsinout
+  display_name: ends between
+  other_side_code: EXPIRYMISSE
+  payout_type: binary
+  payouttime: end
+  pricing_code: EXPIRYRANGE
+  sentiment: low_vol
+NOTOUCH:
+  id: 140
+  category_code: touchnotouch
+  display_name: does not touch
+  other_side_code: ONETOUCH
+  payout_type: binary
+  payouttime: end
+  pricing_code: NOTOUCH
+  sentiment: low_vol
+ONETOUCH:
+  id: 130
+  category_code: touchnotouch
+  display_name: touches
+  other_side_code: NOTOUCH
+  payout_type: binary
+  payouttime: hit
+  pricing_code: ONETOUCH
+  sentiment: high_vol
+PUT:
+  id: 20
+  category_code: callput
+  display_name: lower
+  other_side_code: CALL
+  payout_type: binary
+  payouttime: end
+  pricing_code: PUT
+  sentiment: down
+PUTE:
+  id: 300
+  category_code: callput
+  display_name: lower
+  other_side_code: CALLE
+  payout_type: binary
+  payouttime: end
+  pricing_code: PUT
+  sentiment: down
+RANGE:
+  id: 150
+  category_code: staysinout
+  display_name: stays between
+  other_side_code: UPORDOWN
+  payout_type: binary
+  payouttime: end
+  pricing_code: RANGE
+  sentiment: low_vol
+SPREADD:
+  id: 260
+  category_code: spreads
+  display_name: spread down
+  other_side_code: SPREADU
+  sentiment: down
+SPREADU:
+  id: 250
+  category_code: spreads
+  display_name: spread up
+  other_side_code: SPREADD
+  sentiment: up
+UPORDOWN:
+  id: 160
+  category_code: staysinout
+  display_name: goes outside
+  other_side_code: RANGE
+  payout_type: binary
+  payouttime: hit
+  pricing_code: UPORDOWN
+  sentiment: high_vol
+VANILLA_CALL:
+  category_code: vanilla
+  payout_type: non-binary
+  payouttime: end
+  pricing_code: VANILLA_CALL
+VANILLA_PUT:
+  category_code: vanilla
+  payout_type: non-binary
+  payouttime: end
+  pricing_code: VANILLA_PUT
