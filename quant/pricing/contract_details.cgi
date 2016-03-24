@@ -24,7 +24,7 @@ use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
-my ($pricing_parameters, $contract_details, $start);
+my ($pricing_parameters, @contract_details, $start);
 
 my $broker = request()->broker->code;
 my $id = $params{id} ? $params{id} : '';
@@ -49,16 +49,19 @@ if ($broker and $id) {
           $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex' ? _get_pricing_parameter_from_IH_pricer($contract)
         : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'          ? _get_pricing_parameter_from_slope_pricer($contract)
         :   die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
-    $contract_details->{ask_price}    = $contract->ask_price;
-    $contract_details->{description}     = $contract->longcode;
-    $contract_details->{short_code}    = $contract->shortcode;
-    $contract_details->{trans_id}           = $id;
-    $contract_details->{login_id}      = $details->{loginid};
-    $contract_details->{ccy} = $details->{currency_code};
+
+    @contract_details = (
+        login_id   => $details->{loginid},
+        trans_id   => $id,
+        ccy        => $details->{currency_code},
+        short_code => $contract->shortcode,
+        description => $contract->longcode,
+        ask_price   => $contract->ask_price,
+    );
 }
 my $display = $params{download} ? 'download' : 'display';
 if ($display eq 'download') {
-    output_as_csv($pricing_parameters, $contract_details);
+    output_as_csv($pricing_parameters, \@contract_details);
     return;
 }
 
@@ -69,12 +72,13 @@ Bar("Contract's Parameters");
 sub output_as_csv {
     my $param            = shift;
     my $contract_details = shift;
-    my $loginid          = $contract_details->{loginid};
-    my $trans_id         = $contract_details->{id};
+    my $loginid          = $contract_details[1];
+    my $trans_id         = $contract_details[3];
     my $csv_name         = $loginid . '_' . $trans_id . '.csv';
     PrintContentType_excel($csv_name);
-    foreach my $field (keys %{$contract_details}){
-       print uc($field) . $contract_details->{$field} . "\n";
+
+    for (my $i=0; $i <= scalar @$contract_details; $i+2){
+       print uc($contract_details[$i]) . " ". $contract_details[$i +1] . "\n";
     }
     foreach my $key (keys %{$param}) {
         print uc($key) . "\n";
@@ -193,7 +197,7 @@ BOM::Platform::Context::template->process(
     {
         broker             => $broker,
         id                 => $id,
-        contract_details   => $contract_details,
+        contract_details   => {  @contract_details },
         start              => $start ? $start->datetime : '',
         pricing_parameters => $pricing_parameters,
     }) || die BOM::Platform::Context::template->error;
