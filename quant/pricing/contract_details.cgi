@@ -50,11 +50,11 @@ if ($broker and $id) {
         : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'          ? _get_pricing_parameter_from_slope_pricer($contract)
         :   die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
     $contract_details->{ask_price}    = $contract->ask_price;
-    $contract_details->{longcode}     = $contract->longcode;
-    $contract_details->{shortcode}    = $contract->shortcode;
-    $contract_details->{id}           = $id;
-    $contract_details->{loginid}      = $details->{loginid};
-    $contract_details->{currencycode} = $details->{currency_code};
+    $contract_details->{description}     = $contract->longcode;
+    $contract_details->{short_code}    = $contract->shortcode;
+    $contract_details->{trans_id}           = $id;
+    $contract_details->{login_id}      = $details->{loginid};
+    $contract_details->{ccy} = $details->{currency_code};
 }
 my $display = $params{download} ? 'download' : 'display';
 if ($display eq 'download') {
@@ -73,14 +73,9 @@ sub output_as_csv {
     my $trans_id         = $contract_details->{id};
     my $csv_name         = $loginid . '_' . $trans_id . '.csv';
     PrintContentType_excel($csv_name);
-    print "LOGIN_ID " . $loginid . "\n";
-    print "TRANS_ID " . $trans_id . "\n";
-    print "CCY " . $contract_details->{currencycode} . "\n";
-    print "DESCRIPTION " . $contract_details->{longcode} . "\n";
-    print "SHORT_CODE " . $contract_details->{shortcode} . "\n";
-    print "ASK_PRICE " . $contract_details->{ask_price} . "\n";
-    print "\n";
-
+    foreach my $field (keys %{$contract_details}){
+       print uc($field) . $contract_details->{$field} . "\n";
+    }
     foreach my $key (keys %{$param}) {
         print uc($key) . "\n";
         foreach my $subkey (keys %{$param->{$key}}) {
