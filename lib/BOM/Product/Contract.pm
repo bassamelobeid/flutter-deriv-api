@@ -44,7 +44,7 @@ require BOM::Product::Pricing::Greeks::BlackScholes;
 
 sub is_spread { return 0 }
 
-has [qw(id pricing_code category_code display_name sentiment other_side_code payout_type payouttime)] => (
+has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
     is      => 'ro',
     default => undef,
 );
@@ -64,8 +64,17 @@ has category => (
     isa     => 'bom_contract_category',
     coerce  => 1,
     handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers)],
-    default => sub { shift->category_code },
 );
+
+has category_code => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_category_code {
+    my $self = shift;
+    return $self->category->code;
+}
 
 has ticks_to_expiry => (
     is         => 'ro',

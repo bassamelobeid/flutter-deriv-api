@@ -144,7 +144,7 @@ sub produce_contract {
     }
 
     my $contract_obj;
-    if ($contract_class->category_code eq 'spreads') {
+    if ($input_params{category} eq 'spreads') {
         $input_params{date_start} = Date::Utility->new if not $input_params{date_start};
         for (grep { defined $input_params{$_} } qw(stop_loss stop_profit)) {
             # copy them to supplied, we will build stop_loss & stop_profit later
