@@ -139,8 +139,9 @@ sub shortcode_to_parameters {
 
     if (not exists $AVAILABLE_CONTRACTS{$test_bet_name} or $shortcode =~ /_\d+H\d+/) {
         return {
-            bet_type => 'Invalid',    # it doesn't matter what it is if it is a legacy
-            currency => $currency,
+            bet_type   => 'Invalid',    # it doesn't matter what it is if it is a legacy
+            underlying => 'config',
+            currency   => $currency,
         };
     }
 
