@@ -182,19 +182,19 @@ subtest 'User Login' => sub {
 
     subtest 'wiht self excluded accounts' => sub {
         my ($user3, $vr_3, $cr_3, $cr_31);
-        my $new_email = 'test'. rand . '@binary.com';
+        my $new_email = 'test' . rand . '@binary.com';
         lives_ok {
             $vr_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'VRTC',
-                email => $new_email,
+                email       => $new_email,
             });
             $cr_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'CR',
-                email => $new_email,
+                email       => $new_email,
             });
             $cr_31 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code => 'CR',
-                email => $new_email,
+                email       => $new_email,
             });
 
             $user3 = BOM::Platform::User->create(
@@ -208,7 +208,7 @@ subtest 'User Login' => sub {
         'create user with cr accounts only';
 
         subtest 'cannot login if he has all self excluded account' => sub {
-            my $exclude_until_3 = Date::Utility->new()->plus_time_interval('365d')->date;
+            my $exclude_until_3  = Date::Utility->new()->plus_time_interval('365d')->date;
             my $exclude_until_31 = Date::Utility->new()->plus_time_interval('300d')->date;
 
             $cr_3->set_exclusion->exclude_until($exclude_until_3);
@@ -218,7 +218,8 @@ subtest 'User Login' => sub {
 
             $status = $user3->login(%pass);
 
-            ok $status->{error} =~ /Sorry, you have excluded yourself until $exclude_until_31/, 'It should return the earlist until date in message error';
+            ok $status->{error} =~ /Sorry, you have excluded yourself until $exclude_until_31/,
+                'It should return the earlist until date in message error';
         };
 
         subtest 'if user has vr account and other accounts is self excluded' => sub {

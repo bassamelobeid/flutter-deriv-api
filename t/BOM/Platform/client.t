@@ -164,11 +164,11 @@ subtest 'client_account_statistics' => sub {
 
 subtest 'Login to self excluded client' => sub {
     my ($client);
-    my $new_email = 'test'. rand . '@binary.com';
+    my $new_email = 'test' . rand . '@binary.com';
     lives_ok {
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
-            email => $new_email,
+            email       => $new_email,
         });
         my $exclude_until = Date::Utility->new()->plus_time_interval('365d')->date;
         $client->set_exclusion->exclude_until($exclude_until);
@@ -177,7 +177,8 @@ subtest 'Login to self excluded client' => sub {
         my $res = $client->login_error;
 
         ok $res =~ /Sorry, you have excluded yourself until $exclude_until/, 'It should return until date in message error';
-    } 'create client';
+    }
+    'create client';
 };
 
 done_testing;
