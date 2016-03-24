@@ -661,7 +661,8 @@ sub get_details_by_transaction_ref {
     SELECT 
     a.client_loginid AS loginid,
     b.short_code AS shortcode,
-    a.currency_code AS currency_code
+    a.currency_code AS currency_code,
+    t.action_type as action_type
     FROM bet.financial_market_bet b
     LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=b.id
     LEFT JOIN transaction.account a on a.id=b.account_id
