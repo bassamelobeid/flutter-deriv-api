@@ -51,53 +51,52 @@ my %record_map = (
 _flush_offerings();
 
 sub _make_new_flyby {
+    my $landing_company_short = shift;
 
+    my $landing_company = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_short);
     my %category_cache;    # Per-run to catch differences.
     my $runtime = BOM::Platform::Runtime->instance;
     my %suspended_underlyings =
         map { $_ => 1 } (@{$runtime->app_config->quants->underlyings->suspend_trades}, @{$runtime->app_config->quants->underlyings->suspend_buy});
-    my $fb = FlyBy->new;
+    my $app_config_rev = $runtime->app_config->current_revision;
 
-    LC:
-    foreach my $landing_company (BOM::Platform::Runtime::LandingCompany::Registry->new->all) {
-        my %legal_allowed_contract_types = map { $_ => 1 } @{$landing_company->legal_allowed_contract_types};
-        my %legal_allowed_markets        = map { $_ => 1 } @{$landing_company->legal_allowed_markets};
-        my @underlyings =
-            map  { BOM::Market::Underlying->new($_) }
-            grep { not $suspended_underlyings{$_} } keys %{$BOM::Market::Underlying::PRODUCT_OFFERINGS};
-        my @legal_allowed_underlyings = @{$landing_company->legal_allowed_underlyings};
-        @underlyings = map { BOM::Market::Underlying->new($_) } @legal_allowed_underlyings if $legal_allowed_underlyings[0] ne 'all';
-        foreach my $ul (@underlyings) {
-            next unless $legal_allowed_markets{$ul->market->name};
-            my %record = (
-                landing_company   => $landing_company->short,
-                market            => $ul->market->name,
-                submarket         => $ul->submarket->name,
-                underlying_symbol => $ul->symbol,
-                exchange_name     => $ul->exchange_name,
-            );
-            foreach my $cc_code (keys %{$ul->contracts}) {
-                $record{contract_category} = $cc_code;
-                $category_cache{$cc_code} //= BOM::Product::Contract::Category->new($cc_code);
-                $record{contract_category_display} = $category_cache{$cc_code}->{display_name};
-                foreach my $expiry_type (sort keys %{$ul->contracts->{$cc_code}}) {
-                    $record{expiry_type} = $expiry_type;
-                    foreach my $start_type (sort keys %{$ul->contracts->{$cc_code}->{$expiry_type}}) {
-                        $record{start_type} = $start_type;
-                        foreach my $barrier_category (sort keys %{$ul->contracts->{$cc_code}->{$expiry_type}->{$start_type}}) {
-                            $record{barrier_category} = $barrier_category;
-                            foreach my $type_class (@{$category_cache{$cc_code}->available_types}) {
-                                next unless (can_load(modules => {$type_class => undef}));      # Should we tell someone?
-                                next unless $legal_allowed_contract_types{$type_class->code};
-                                $record{sentiment}        = $type_class->sentiment;
-                                $record{contract_display} = $type_class->display_name;
-                                $record{contract_type}    = $type_class->code;
-                                my $permitted = _exists_value($ul->contracts, \%record);
-                                while (my ($rec_key, $from_attr) = each %record_map) {
-                                    $record{$rec_key} = $permitted->{$from_attr};
-                                }
-                                $fb->add_records({%record});
+    my $fb                           = FlyBy->new;
+    my %legal_allowed_contract_types = map { $_ => 1 } @{$landing_company->legal_allowed_contract_types};
+    my %legal_allowed_markets        = map { $_ => 1 } @{$landing_company->legal_allowed_markets};
+    my @underlyings =
+        map  { BOM::Market::Underlying->new($_) }
+        grep { not $suspended_underlyings{$_} } keys %{$BOM::Market::Underlying::PRODUCT_OFFERINGS};
+    my @legal_allowed_underlyings = @{$landing_company->legal_allowed_underlyings};
+    @underlyings = map { BOM::Market::Underlying->new($_) } @legal_allowed_underlyings if $legal_allowed_underlyings[0] ne 'all';
+    foreach my $ul (@underlyings) {
+        next unless $legal_allowed_markets{$ul->market->name};
+        my %record = (
+            market            => $ul->market->name,
+            submarket         => $ul->submarket->name,
+            underlying_symbol => $ul->symbol,
+            exchange_name     => $ul->exchange_name,
+        );
+        foreach my $cc_code (keys %{$ul->contracts}) {
+            $record{contract_category} = $cc_code;
+            $category_cache{$cc_code} //= BOM::Product::Contract::Category->new($cc_code);
+            $record{contract_category_display} = $category_cache{$cc_code}->{display_name};
+            foreach my $expiry_type (sort keys %{$ul->contracts->{$cc_code}}) {
+                $record{expiry_type} = $expiry_type;
+                foreach my $start_type (sort keys %{$ul->contracts->{$cc_code}->{$expiry_type}}) {
+                    $record{start_type} = $start_type;
+                    foreach my $barrier_category (sort keys %{$ul->contracts->{$cc_code}->{$expiry_type}->{$start_type}}) {
+                        $record{barrier_category} = $barrier_category;
+                        foreach my $type_class (@{$category_cache{$cc_code}->available_types}) {
+                            next unless (can_load(modules => {$type_class => undef}));      # Should we tell someone?
+                            next unless $legal_allowed_contract_types{$type_class->code};
+                            $record{sentiment}        = $type_class->sentiment;
+                            $record{contract_display} = $type_class->display_name;
+                            $record{contract_type}    = $type_class->code;
+                            my $permitted = _exists_value($ul->contracts, \%record);
+                            while (my ($rec_key, $from_attr) = each %record_map) {
+                                $record{$rec_key} = $permitted->{$from_attr};
                             }
+                            $fb->add_records({%record});
                         }
                     }
                 }
@@ -105,8 +104,8 @@ sub _make_new_flyby {
         }
     }
     # Machine leveling caching for as long as it is valid.
-    my $app_config_rev = $runtime->app_config->current_revision;
-    Cache::RedisDB->set($cache_namespace . '_' . BOM::Platform::Context::request()->language, $app_config_rev, $fb, 86399);
+    Cache::RedisDB->set($cache_namespace . '_' . BOM::Platform::Context::request()->language . '_' . $landing_company->short,
+        $app_config_rev, $fb, 86399);
 
     return $fb;
 }
@@ -115,12 +114,17 @@ sub _make_new_flyby {
     my %cache;
 
     sub get_offerings_flyby {
+        my $landing_company = shift;
+
+        $landing_company = 'costarica' unless $landing_company;
+
         my $app_config_rev = BOM::Platform::Runtime->instance->app_config->current_revision || 0;
         my $lang = BOM::Platform::Context::request()->language;
 
         return $cache{$lang}->[1] if $cache{$lang} and $cache{$lang}->[0] == $app_config_rev;
 
-        my $cached_fb = Cache::RedisDB->get($cache_namespace . '_' . $lang, $app_config_rev) // _make_new_flyby();
+        my $cached_fb = Cache::RedisDB->get($cache_namespace . '_' . $lang . '_' . $landing_company, $app_config_rev)
+            // _make_new_flyby($landing_company);
         $cache{$lang} = [$app_config_rev, $cached_fb];
 
         return $cached_fb;
@@ -138,13 +142,8 @@ sub get_offerings_with_filter {
     my ($what, $args) = @_;
 
     croak 'Must supply an output key' unless defined $what;
-
-    my $fb = get_offerings_flyby();
-
-    # if we are filtering and landing company is not specified, defaults to costarica
-    if (keys %$args and not $args->{landing_company}) {
-        $args->{landing_company} = 'costarica';
-    }
+    my $landing_company = delete $args->{landing_company};
+    my $fb              = get_offerings_flyby($landing_company);
 
     return (not keys %$args) ? $fb->values_for_key($what) : $fb->query($args, [$what]);
 }
