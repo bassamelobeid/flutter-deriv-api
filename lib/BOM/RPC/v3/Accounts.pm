@@ -468,19 +468,26 @@ sub reset_password {
                 message_to_client => $err->{message_to_client}});
     }
 
-    if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $args->{new_password}})) {
-        return $pass_error;
-    }
-
     my ($user, @clients);
     $user = BOM::Platform::User->new({email => $email});
     @clients = $user->clients if $user;
-    my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;
-    my $db_dob   = $clients[0]->date_of_birth =~ s/-0/-/gr;
+    if ($clients[0]->date_of_birth) {
+        unless ($args->{date_of_birth}) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => "DateOfBirthMissing",
+                    message_to_client => localize("Date of birth is required.")});
+        }
+        my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;
+        my $db_dob   = $clients[0]->date_of_birth =~ s/-0/-/gr;
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => "DateOfBirthMismatch",
-            message_to_client => localize("The email address and date of birth do not match.")}) if ($user_dob ne $db_dob);
+        return BOM::RPC::v3::Utility::create_error({
+                code              => "DateOfBirthMismatch",
+                message_to_client => localize("The email address and date of birth do not match.")}) if ($user_dob ne $db_dob);
+    }
+
+    if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $args->{new_password}})) {
+        return $pass_error;
+    }
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
     $user->password($new_password);
