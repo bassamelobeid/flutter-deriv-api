@@ -211,6 +211,11 @@ sub save_dynamic {
     return 1;
 }
 
+sub current_revision {
+    my $settings = BOM::System::Chronicle::get('app_settings', 'binary');
+    return $settings->{_rev};
+}
+
 sub _build_data_set {
     my $self = shift;
 
