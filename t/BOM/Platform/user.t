@@ -210,7 +210,6 @@ subtest 'User Login' => sub {
         subtest 'cannot login if he has all self excluded account' => sub {
             my $exclude_until_3 = Date::Utility->new()->plus_time_interval('365d')->date;
             my $exclude_until_31 = Date::Utility->new()->plus_time_interval('300d')->date;
-            use Data::Dumper;
 
             $cr_3->set_exclusion->exclude_until($exclude_until_3);
             $cr_3->save;
@@ -219,7 +218,7 @@ subtest 'User Login' => sub {
 
             $status = $user3->login(%pass);
 
-            ok $status->{error} =~ /Sorry, you have excluded yourself until $exclude_until_31/, 'It should the earlist until date in message error';
+            ok $status->{error} =~ /Sorry, you have excluded yourself until $exclude_until_31/, 'It should return the earlist until date in message error';
         };
 
         subtest 'if user has vr account and other accounts is self excluded' => sub {
