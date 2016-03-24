@@ -21,7 +21,7 @@ use BOM::Platform::Static::Config;
 
 with 'MooseX::Role::Validatable';
 
-has [qw(id category_code display_name sentiment other_side_code)] => (is => 'ro');
+has [qw(id display_name sentiment other_side_code)] => (is => 'ro');
 
 # Actual methods for introspection purposes.
 sub is_spread           { return 1 }
@@ -68,8 +68,17 @@ has category => (
     isa     => 'bom_contract_category',
     coerce  => 1,
     handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers)],
-    default => sub { shift->category_code },
 );
+
+has category_code => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_category_code {
+    my $self = shift;
+    return $self->category->code;
+}
 
 has build_parameters => (
     is       => 'ro',
