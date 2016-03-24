@@ -27,6 +27,8 @@ use Date::Utility;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
 use BOM::Database::Model::Constants;
+use BOM::Platform::Runtime::LandingCompany::Registry;
+use List::MoreUtils qw(uniq);
 
 =head2 financial_market_bet_to_parameters
 
@@ -34,7 +36,9 @@ Convert an FMB into parameters suitable for creating a BOM::Product::Contract
 
 =cut
 
-my %AVAILABLE_CONTRACTS = map { $_ => 1 } get_offerings_with_filter('contract_type');
+my @available_contracts =
+    map { get_offerings_with_filter('contract_type', {landing_company => $_->short}) } BOM::Platform::Runtime::LandingCompany::Registry->new->all;
+my %AVAILABLE_CONTRACTS = map { $_ => 1 } uniq(@available_contracts);
 
 sub financial_market_bet_to_parameters {
     my $fmb      = shift;
