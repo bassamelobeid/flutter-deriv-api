@@ -21,6 +21,8 @@ use BOM::Platform::Static::Config;
 
 with 'MooseX::Role::Validatable';
 
+has [qw(id category_code display_name sentiment other_side_code)] => (is => 'ro');
+
 # Actual methods for introspection purposes.
 sub is_spread           { return 1 }
 sub is_atm_bet          { return 0 }

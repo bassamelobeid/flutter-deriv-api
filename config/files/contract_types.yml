@@ -201,3 +201,5 @@ VANILLA_PUT:
   payout_type: non-binary
   payouttime: end
   pricing_code: VANILLA_PUT
+LEGACY:
+  category_code: legacy

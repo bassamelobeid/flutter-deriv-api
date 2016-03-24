@@ -5,13 +5,7 @@ extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 # Static methods
-sub id              { return 300; }
-sub code            { return 'PUTE'; }
-sub pricing_code    { return 'PUT'; }
-sub category_code   { return 'callput'; }
-sub display_name    { return 'lower'; }
-sub sentiment       { return 'down'; }
-sub other_side_code { return 'CALLE'; }
+sub code { return 'PUTE'; }
 
 sub localizable_description {
     return +{

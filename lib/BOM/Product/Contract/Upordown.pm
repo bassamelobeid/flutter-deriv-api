@@ -4,14 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
-sub id              { return 160; }
-sub code            { return 'UPORDOWN'; }
-sub pricing_code    { return 'UPORDOWN'; }
-sub category_code   { return 'staysinout'; }
-sub display_name    { return 'goes outside'; }
-sub sentiment       { return 'high_vol'; }
-sub other_side_code { return 'RANGE'; }
-sub payouttime      { return 'hit'; }
+sub code { return 'UPORDOWN'; }
 
 sub localizable_description {
     return +{

@@ -4,13 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
-sub id              { return 150; }
-sub code            { return 'RANGE'; }
-sub pricing_code    { return 'RANGE'; }
-sub category_code   { return 'staysinout'; }
-sub display_name    { return 'stays between'; }
-sub sentiment       { return 'low_vol'; }
-sub other_side_code { return 'UPORDOWN'; }
+sub code { return 'RANGE'; }
 
 sub localizable_description {
     return +{

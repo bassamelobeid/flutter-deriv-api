@@ -8,13 +8,7 @@ use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
 
-sub id              { return 260; }
-sub code            { return 'DIGITEVEN'; }
-sub pricing_code    { return 'DIGITEVEN'; }
-sub category_code   { return 'digits'; }
-sub display_name    { return 'even'; }
-sub sentiment       { return 'even'; }
-sub other_side_code { return 'DIGITODD'; }
+sub code { return 'DIGITEVEN'; }
 
 sub localizable_description {
     return +{

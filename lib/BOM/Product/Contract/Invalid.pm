@@ -6,8 +6,8 @@ extends 'BOM::Product::Contract';
 use BOM::Platform::Context qw(localize);
 use Carp qw(croak);
 
-sub value         { return 0; }
-sub category_code { return 'legacy'; }
+sub value { return 0; }
+sub code  { return 'LEGACY'; }
 
 # it is just here to show which type is invalid
 has bet_type => (

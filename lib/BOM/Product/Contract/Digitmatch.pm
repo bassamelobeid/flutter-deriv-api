@@ -11,13 +11,7 @@ use BOM::Product::Pricing::Greeks::Digits;
 
 # Static methods.
 
-sub id              { return 210; }
-sub code            { return 'DIGITMATCH'; }
-sub pricing_code    { return 'DIGITMATCH'; }
-sub category_code   { return 'digits'; }
-sub display_name    { return 'matches'; }
-sub sentiment       { return 'match'; }
-sub other_side_code { return 'DIGITDIFF'; }
+sub code { return 'DIGITMATCH'; }
 
 sub localizable_description {
     return +{

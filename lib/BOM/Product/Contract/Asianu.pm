@@ -8,13 +8,7 @@ use BOM::Product::Pricing::Engine::Asian;
 use BOM::Product::Pricing::Greeks::Asian;
 
 # Static methods.
-sub id              { return 230; }
-sub code            { return 'ASIANU'; }
-sub pricing_code    { return 'CALL'; }
-sub category_code   { return 'asian'; }
-sub display_name    { return 'asian up'; }
-sub sentiment       { return 'up'; }
-sub other_side_code { return 'ASIAND'; }
+sub code { return 'ASIANU'; }
 
 sub localizable_description {
     return +{
