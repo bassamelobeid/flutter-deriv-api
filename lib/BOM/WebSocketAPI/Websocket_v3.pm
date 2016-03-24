@@ -338,6 +338,7 @@ my %rate_limit_map = (
     verify_email_real              => 'websocket_call_email',
     buy_real                       => 'websocket_real_pricing',
     sell_real                      => 'websocket_real_pricing',
+    reality_check_real             => 'websocket_reality_check',
     ping_virtual                   => '',
     time_virtual                   => '',
     portfolio_virtual              => 'websocket_call_expensive',
