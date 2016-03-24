@@ -15,7 +15,7 @@ subtest 'benchmarket offerings' => sub {
         my $before = Time::HiRes::time;
         get_offerings_with_filter('market', {landing_company => $lc});
         my $diff = Time::HiRes::time - $before;
-        cmp_ok($diff, "<", 2.5, "construction of $lc offerings objectis less that 2 seconds");
+        cmp_ok($diff, "<", 0.5, "construction of $lc offerings objectis less that 2 seconds");
         foreach my $market (map { $_->name } BOM::Market::Registry->all) {
             my @common_calls = [
                 'submarket',
