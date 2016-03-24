@@ -1088,9 +1088,10 @@ sub reality_check {
     # get siblings for session token only as epoch is defined for session token only
     if ($start) {
         @clients = grep { $_->landing_company->has_reality_check } $client->siblings;
-    } else {
-        push @clients, $client if $client->landing_company->has_reality_check;
     }
+
+    # push that client as well if it has reality check
+    push @clients, $client if $client->landing_company->has_reality_check;
 
     my $tm = time - 48 * 3600;    # 48 hours
     $start = $tm unless $start and $start > $tm;
@@ -1126,7 +1127,10 @@ sub reality_check {
         }
     }
 
-    return {summary => $summary};
+    return {
+        summary    => $summary,
+        start_time => $start
+    };
 }
 
 1;
