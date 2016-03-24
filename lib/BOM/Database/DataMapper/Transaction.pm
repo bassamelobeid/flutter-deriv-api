@@ -659,7 +659,7 @@ sub get_details_by_transaction_ref {
     my $transaction_id = shift;
     my $sql            = q{
     SELECT 
-    a.client_loginid AS loginID,
+    a.client_loginid AS loginid,
     b.short_code AS shortcode,
     a.currency_code AS currency_code
     FROM bet.financial_market_bet b

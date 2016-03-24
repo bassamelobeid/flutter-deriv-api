@@ -224,7 +224,6 @@ sub get_fmb_by_shortcode {
     return \@bet_models;
 }
 
-
 =head2 get_sold(%args)
 
 Returns list of sold bets for the specified intervals.
