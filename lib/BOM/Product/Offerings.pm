@@ -67,8 +67,8 @@ sub _make_new_flyby {
     my %legal_allowed_markets        = map { $_ => 1 } @{$landing_company->legal_allowed_markets};
     my @legal_allowed_underlyings    = @{$landing_company->legal_allowed_underlyings};
     my @underlyings =
-        map { BOM::Market::Underlying->new($_) }
-        ( $legal_allowed_underlyings[0] ne 'all'
+        map { BOM::Market::Underlying->new($_) } (
+          $legal_allowed_underlyings[0] ne 'all'
         ? @legal_allowed_underlyings
         : (grep { not $suspended_underlyings{$_} } keys %{$BOM::Market::Underlying::PRODUCT_OFFERINGS}));
 
