@@ -15,20 +15,31 @@ package main;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
-use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
+use BOM::Database::ClientDB;
+use BOM::Database::DataMapper::Transaction;
 use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
-my ($pricing_parameters, $start);
-my $original_contract =
-    ($params{shortcode} and $params{currency})
-    ? produce_contract($params{shortcode}, $params{currency})
-    : '';
+my ($pricing_parameters, $contract_details, $start);
 
-if ($original_contract) {
+my $broker = request()->broker->code;
+my $id = $params{id} ? $params{id} : '';
+
+if ($broker and $id) {
+    my $db = BOM::Database::ClientDB->new({
+            broker_code => $broker,
+        })->db;
+
+    my $details = BOM::Database::DataMapper::Transaction->new({
+            db => $db,
+        })->get_details_by_transaction_ref($id);
+
+    my $original_contract = produce_contract($details->{shortcode}, $details->{currency_code});
+
     $start = $params{start} ? Date::Utility->new($params{start}) : $original_contract->date_start;
     my $pricing_args = $original_contract->build_parameters;
     $pricing_args->{date_pricing} = $start;
@@ -38,12 +49,16 @@ if ($original_contract) {
           $contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex' ? _get_pricing_parameter_from_IH_pricer($contract)
         : $contract->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'          ? _get_pricing_parameter_from_slope_pricer($contract)
         :   die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
-    $pricing_parameters->{ask_price} = $contract->ask_price;
+    $contract_details->{ask_price}    = $contract->ask_price;
+    $contract_details->{longcode}     = $contract->longcode;
+    $contract_details->{shortcode}    = $contract->shortcode;
+    $contract_details->{id}           = $id;
+    $contract_details->{loginid}      = $details->{loginid};
+    $contract_details->{currencycode} = $details->{currency_code};
 }
-
 my $display = $params{download} ? 'download' : 'display';
 if ($display eq 'download') {
-    output_as_csv($pricing_parameters);
+    output_as_csv($pricing_parameters, $contract_details);
     return;
 }
 
@@ -52,13 +67,21 @@ BrokerPresentation("Contract's details");
 Bar("Contract's Parameters");
 
 sub output_as_csv {
-    my $param    = shift;
-    my $csv_name = 'contract.csv';
+    my $param            = shift;
+    my $contract_details = shift;
+    my $loginid          = $contract_details->{loginid};
+    my $trans_id         = $contract_details->{id};
+    my $csv_name         = $loginid . '_' . $trans_id . '.csv';
     PrintContentType_excel($csv_name);
-    print "ASK_PRICE " . $param->{ask_price} . "\n";
+    print "LOGIN_ID " . $loginid . "\n";
+    print "TRANS_ID " . $trans_id . "\n";
+    print "CCY " . $contract_details->{currencycode} . "\n";
+    print "DESCRIPTION " . $contract_details->{longcode} . "\n";
+    print "SHORT_CODE " . $contract_details->{shortcode} . "\n";
+    print "ASK_PRICE " . $contract_details->{ask_price} . "\n";
     print "\n";
+
     foreach my $key (keys %{$param}) {
-        if ($key eq 'ask_price') { next; }
         print uc($key) . "\n";
         foreach my $subkey (keys %{$param->{$key}}) {
             if ($key ne 'numeraire_probability') {
@@ -173,7 +196,9 @@ sub _get_bs_probability_parameters {
 BOM::Platform::Context::template->process(
     'backoffice/contract_details.html.tt',
     {
-        contract           => $original_contract,
+        broker             => $broker,
+        id                 => $id,
+        contract_details   => $contract_details,
         start              => $start ? $start->datetime : '',
         pricing_parameters => $pricing_parameters,
     }) || die BOM::Platform::Context::template->error;

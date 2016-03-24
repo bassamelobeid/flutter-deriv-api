@@ -1,15 +1,19 @@
 <p>[% contract.longcode %]</p>
 <form action="" method="post">
     <table>
-        <tr><td>Shortcode</td><td><input value="[% contract.shortcode %]" size="80" type="text" name="shortcode" id="shortcode"/></td></tr>
-        <tr><td>Currency</td><td><input value="[% contract.currency %]" size="4" type="text" name="currency" id="currency" style="none"/></td></tr>
+        <tr><td>Transaction ID</td><td><input value="[% id %]" size="4" type="text" name="id" id="id"/></td></tr>
         <tr><td>Start time</td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/></td></tr>
         <tr><td colspan=2><input type="submit" name="price" value="View in Table"/></td></tr>
         <tr><td colspan=2><input type="submit" name="download" value="Download as CSV file"/></td></tr>
     </table>
 </form>
 [% IF pricing_parameters.size > 0 %]
-        <p><b> Contract's Ask Price = [% contract.currency  %][%pricing_parameters.ask_price %]</b></p>
+        <p><b> LOGIN_ID = [% contract_details.loginid  %]</b></p>
+        <p><b> TRANS_REF = [% contract_details.id  %]</b></p>
+        <p><b> CCY = [% contract_details.currencycode  %]</b></p>
+        <p><b> DESCRIPTION = [% contract_details.longcode  %]</b></p>
+        <p><b> SHORT_CODE = [% contract_details.shortcode  %]</b></p>
+        <p><b> ASK_PRICE = [% contract_details.currencycode  %] [% contract_details.ask_price %]</b></p>
         <table id="dtr" border="1" cellpadding="1" cellspacing="0">
                 <tr><b> Contract's ask probability </br></tr>
                 [% FOREACH ask_key =pricing_parameters.ask_probability.keys.sort%]

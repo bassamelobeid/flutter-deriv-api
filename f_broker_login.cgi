@@ -38,7 +38,7 @@ if (BOM::System::Localhost::is_master_server()) {
 
 print "<center>";
 
-my $allbrokercodes = '<option>' .join("<option>", BOM::Platform::Runtime->instance->broker_codes->all_codes);
+my $allbrokercodes = '<option>' . join("<option>", BOM::Platform::Runtime->instance->broker_codes->all_codes);
 
 my $brokerselection = "Broker code : <select name=broker>" . set_selected_item($broker, $allbrokercodes) . "</select>";
 
@@ -227,7 +227,8 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
                                 <td align="center" width="50%">
 					<p><b>RETRIEVE CONTRACT DETAILS</b></p>
 					<form action="~ . request()->url_for('backoffice/quant/pricing/contract_details.cgi') . qq~" method="post"><font size=2>
-						<input type="submit" value="RETRIEVE CONTRACT DETAILS">
+						<b>$brokerselection</b>
+                                                <input type="submit" value="RETRIEVE CONTRACT DETAILS">
 					</font></form>
 				</td>
 
