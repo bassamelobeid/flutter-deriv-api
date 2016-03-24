@@ -128,6 +128,8 @@ sub _make_new_flyby {
 
     sub _flush_offerings {
         %cache = ();
+        my $redis = Cache::RedisDB->redis;
+        $redis->del($_) foreach (@{$redis->keys("$cache_namespace*")});
         return;
     }
 }
