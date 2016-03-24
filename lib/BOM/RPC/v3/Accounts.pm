@@ -1079,19 +1079,19 @@ sub reality_check {
         return $auth_error;
     }
 
-    # need to check how to handle per api token and oauth token
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
-
     my $start   = $token_details->{epoch};
     my @clients = ();
 
-    # get siblings for session token only as epoch is defined for session token only
-    if ($start) {
-        @clients = grep { $_->landing_company->has_reality_check } $client->siblings;
-    }
+    # get siblings for session token only as epoch/start is defined for session token only
+    @clients = grep { $_->landing_company->has_reality_check } $client->siblings if $start;
 
-    # push that client as well if it has reality check
+    # push that client as well, only if it has reality check
     push @clients, $client if $client->landing_company->has_reality_check;
+
+    return {
+        summary    => [],
+        start_time => 0
+    } unless (scalar @clients);
 
     my $tm = time - 48 * 3600;    # 48 hours
     $start = $tm unless $start and $start > $tm;
