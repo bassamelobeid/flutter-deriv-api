@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use POSIX qw(floor);
 use Time::Duration::Concise;
 use List::Util qw(first);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
@@ -177,7 +178,9 @@ sub _default_barrier {
         supplied_barrier => $approximate_barrier,
     );
 
-    return $duration > 86400 ? $strike->as_absolute : $strike->as_difference;
+    my $barrier = $duration > 86400 ? $strike->as_absolute : $strike->as_difference;
+
+    return $underlying->market->integer_barrier ? floor($barrier) : $barrier;
 }
 
 1;
