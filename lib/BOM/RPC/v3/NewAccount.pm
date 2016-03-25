@@ -100,10 +100,10 @@ sub verify_email {
                 \$email_content
             ) || die BOM::Platform::Context::template->error();
             send_email({
-                from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                to      => $params->{email},
-                subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-                message => [$email_content],
+                from               => BOM::Platform::Static::Config::get_customer_support_email(),
+                to                 => $params->{email},
+                subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
+                message            => [$email_content],
                 use_email_template => 1
             });
         } else {
