@@ -12,7 +12,8 @@ use BOM::Database::Helper::FinancialMarketBet;
 use Date::Utility;
 
 sub _db_name {
-    return 'regentmarkets';
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    return 'regentmarkets' . $db_postfix;
 }
 
 sub _db_migrations_dir {
@@ -22,7 +23,7 @@ sub _db_migrations_dir {
 sub _build__connection_parameters {
     my $self = shift;
     return {
-        database => 'regentmarkets',
+        database => $self->_db_name,
         domain   => 'TEST',
         driver   => 'Pg',
         host     => 'localhost',
