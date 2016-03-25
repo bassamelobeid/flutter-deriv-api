@@ -91,7 +91,7 @@ sub create_tick {
     }
 
     # table for tick
-    $self->_create_table_for_date(Date::Utility->new($defaults{epoch}));
+    _create_table_for_date(Date::Utility->new($defaults{epoch}));
 
     # date for database
     my $ts = Date::Utility->new($defaults{epoch})->datetime_yyyymmdd_hhmmss;
@@ -160,7 +160,6 @@ EOD
 }
 
 sub _create_table_for_date {
-    my $self = shift;
     my $date = shift;
     my $dbh  = BOM::Database::FeedDB::write_dbh;
 
@@ -170,7 +169,8 @@ sub _create_table_for_date {
     my $table_present = $stmt->fetchrow_arrayref;
 
     if ($table_present->[0] < 1) {
-        my $db = $self->_db_name;
+        my $db_postfix = $ENV{DB_POSTFIX} // '';
+        my $db = 'feed' . $db_postfix;
         my $dbh = DBI->connect("dbi:Pg:dbname=$db;host=localhost;port=5433", 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
 
         # This operation is bound to raise an warning about how index was created.
