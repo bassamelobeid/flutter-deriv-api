@@ -212,7 +212,7 @@ subtest 'Market builds or configs test' => sub {
         my $random = $registry->get('random');
 
         isa_ok $random, 'BOM::Market';
-        is $random->display_name,  'Randoms';
+        is $random->display_name,  'Volatility Indices';
         is $random->display_order, 5;
         ok !$random->equity;
         ok !$random->disabled;
