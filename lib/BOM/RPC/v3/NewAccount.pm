@@ -73,7 +73,7 @@ sub verify_email {
     my $params = shift;
     my $email_content;
 
-    if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'lost_password') {
+    if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'reset_password') {
         BOM::Platform::Context::template->process(
             'email/send_verificationws.html.tt',
             {

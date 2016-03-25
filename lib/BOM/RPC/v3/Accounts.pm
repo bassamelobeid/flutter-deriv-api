@@ -22,6 +22,7 @@ use BOM::Platform::User;
 use BOM::Platform::Static::Config;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::SessionCookie;
+use BOM::Platform::Token::Verification;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -455,6 +456,69 @@ sub cashier_password {
             return {status => 0};
         }
     }
+}
+
+sub reset_password {
+    my $params = shift;
+    my $args   = $params->{args};
+    my $email  = BOM::Platform::Token::Verification->new({token => $args->{verification_code}})->email;
+    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err->{code},
+                message_to_client => $err->{message_to_client}});
+    }
+
+    my ($user, @clients);
+    $user = BOM::Platform::User->new({email => $email});
+    unless ($user) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => "InternalServerError",
+                message_to_client => localize("Sorry, an error occurred while processing your account.")});
+    }
+    @clients = $user->clients;
+    # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
+    unless ($clients[0]->is_virtual) {
+        unless ($args->{date_of_birth}) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => "DateOfBirthMissing",
+                    message_to_client => localize("Date of birth is required.")});
+        }
+        my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;
+        my $db_dob   = $clients[0]->date_of_birth =~ s/-0/-/gr;
+
+        return BOM::RPC::v3::Utility::create_error({
+                code              => "DateOfBirthMismatch",
+                message_to_client => localize("The email address and date of birth do not match.")}) if ($user_dob ne $db_dob);
+    }
+
+    if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $args->{new_password}})) {
+        return $pass_error;
+    }
+
+    my $new_password = BOM::System::Password::hashpw($args->{new_password});
+    $user->password($new_password);
+    $user->save;
+
+    foreach my $obj ($user->clients) {
+        $obj->password($new_password);
+        $obj->save;
+    }
+
+    BOM::System::AuditLog::log('password has been reset', $email, $args->{verification_code});
+    send_email({
+            from    => BOM::Platform::Static::Config::get_customer_support_email(),
+            to      => $email,
+            subject => localize('Your password has been reset.'),
+            message => [
+                localize(
+                    'The password for your account [_1] has been reset. If this request was not performed by you, please immediately contact Customer Support.',
+                    $email
+                )
+            ],
+            use_email_template => 1,
+        });
+
+    return {status => 1};
 }
 
 sub get_settings {
