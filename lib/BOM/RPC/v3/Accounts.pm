@@ -470,7 +470,12 @@ sub reset_password {
 
     my ($user, @clients);
     $user = BOM::Platform::User->new({email => $email});
-    @clients = $user->clients if $user;
+    unless ($user) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => "InvalidUser",
+                message_to_client => localize("User not found.")});
+    }
+    @clients = $user->clients;
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     unless ($clients[0]->is_virtual) {
         unless ($args->{date_of_birth}) {
