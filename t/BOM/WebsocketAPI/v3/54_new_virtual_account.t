@@ -61,17 +61,14 @@ subtest 'verify_email' => sub {
 
 my $create_vr = {
     new_account_virtual => 1,
-    email               => $email,
     client_password     => 'Ac0+-_:@.',
     residence           => 'au',
-    verification_code   => _get_token()};
+    verification_code   => 'laskdjfalsf12081231'};
 
 subtest 'create Virtual account' => sub {
-    $create_vr->{email} = 'invalid@binary.com';
-
     $t = $t->send_ok({json => $create_vr})->message_ok;
     my $res = decode_json($t->message->[1]);
-    is($res->{error}->{code}, 'InvalidEmail', 'different email');
+    is($res->{error}->{code}, 'InvalidToken', 'wrong token');
 
     # as verify_email has rate limit, so clearing for testing other cases also
     flush_all_service_consumers();
@@ -84,7 +81,6 @@ subtest 'create Virtual account' => sub {
     $res = decode_json($t->message->[1]);
     is($res->{verify_email}, 1, 'verify_email OK');
 
-    $create_vr->{email}             = $email;
     $create_vr->{verification_code} = _get_token();
 
     $t = $t->send_ok({json => $create_vr})->message_ok;
@@ -98,8 +94,6 @@ subtest 'create Virtual account' => sub {
 };
 
 subtest 'Invalid email verification code' => sub {
-    $create_vr->{email} = 'test123@binary.com';
-
     $t = $t->send_ok({json => $create_vr})->message_ok;
     my $res = decode_json($t->message->[1]);
 
@@ -108,8 +102,6 @@ subtest 'Invalid email verification code' => sub {
 };
 
 subtest 'NO duplicate email' => sub {
-    $create_vr->{email} = $email;
-
     $t = $t->send_ok({
             json => {
                 verify_email => $email,
