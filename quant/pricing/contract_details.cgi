@@ -148,7 +148,7 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $ask_probability   = $contract->ask_probability;
     my $debug_information = $contract->pricing_engine->debug_information;
     my $pricing_parameters;
-
+    my $contract_type = $contract->pricing_engine->contract_type;
     $pricing_parameters->{ask_probability} = {
         theoretical_probability => $ask_probability->peek_amount('theo_probability'),
         map { $_ => $ask_probability->peek_amount($_) } qw(risk_markup commission_markup),
@@ -156,12 +156,12 @@ sub _get_pricing_parameter_from_slope_pricer {
 
     $pricing_parameters->{commission_markup} = {digital_spread_percentage => 0.035};
 
-    my $theo_param = $debug_information->{$contract->code}{theo_probability}{parameters};
+    my $theo_param = $debug_information->{$contract_type}{theo_probability}{parameters};
 
     if ($contract->priced_with ne 'base') {
         $pricing_parameters->{bs_probability}   = _get_bs_probability_parameters($theo_param->{bs_probability}{parameters});
         $pricing_parameters->{slope_adjustment} = {
-            weight => $contract->code eq 'CALL' ? -1 : 1,
+            weight => $contract_type eq 'CALL' ? -1 : 1,
             slope => $theo_param->{slope_adjustment}{parameters}{slope},
             vanilla_vega => $theo_param->{slope_adjustment}{parameters}{vanilla_vega}{amount},
         };
@@ -170,7 +170,7 @@ sub _get_pricing_parameter_from_slope_pricer {
             _get_bs_probability_parameters($theo_param->{numeraire_probability}{parameters}{bs_probability}{parameters});
         my $slope_param = $theo_param->{numeraire_probability}{parameters}{slope_adjustment}{parameters};
         $pricing_parameters->{slope_adjustment} = {
-            weight => $contract->code eq 'CALL' ? -1 : 1,
+            weight => $contract_type eq 'CALL' ? -1 : 1,
             slope => $slope_param->{slope},
             vanilla_vega => $slope_param->{vanilla_vega}{amount},
         };
