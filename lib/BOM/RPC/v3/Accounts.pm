@@ -488,7 +488,8 @@ sub reset_password {
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => "DateOfBirthMismatch",
-                message_to_client => localize("The email address and date of birth do not match.")} if ($user_dob ne $db_dob));
+                message_to_client => localize("The email address and date of birth do not match.")}
+            if ($user_dob ne $db_dob));
     }
 
     if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $args->{new_password}})) {
