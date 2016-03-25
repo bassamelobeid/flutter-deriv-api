@@ -178,7 +178,7 @@ sub _default_barrier {
         supplied_barrier => $approximate_barrier,
     );
 
-    my $barrier = $duration > 86400 ? $strike->as_absolute : $strike->as_difference;
+    my $barrier = $duration >= 86400 ? $strike->as_absolute : $strike->as_difference;
 
     return $underlying->market->integer_barrier ? floor($barrier) : $barrier;
 }
