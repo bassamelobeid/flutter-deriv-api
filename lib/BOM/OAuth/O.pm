@@ -224,6 +224,13 @@ sub __validate_login {
         password    => $password,
         environment => $c->__login_env(),
     );
+
+    $user->add_login_history({
+        action      => 'login',
+        environment => $c->__login_env(),
+        successful  => ($result->{error}) ? 'f' : 't'
+    });
+
     return $result->{error} if $result->{error};
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
