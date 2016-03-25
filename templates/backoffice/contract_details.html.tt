@@ -8,9 +8,12 @@
     </table>
 </form>
 [% IF pricing_parameters.size > 0 %]
-        [% FOREACH detail =contract_details.keys %]
-             <p><b> [% detail %] = [% contract_details.$detail  %]</b></p>
-        [% END %]
+        <p><b>LOGIN_ID  [% contract_details.login_id  %]</b></p>
+        <p><b>TRANS_ID  [% contract_details.trans_id  %]</b></p>
+        <p><b>SHORT_CODE  [% contract_details.short_code  %]</b></p>
+        <p><b>DESCRIPTION  [% contract_details.description  %]</b></p>
+        <p><b>CCY  [% contract_details.ccy  %]</b></p>
+        <p><b>ASK_PRICE  [% contract_details.ask_price  %]</b></p>
         <table id="dtr" border="1" cellpadding="1" cellspacing="0">
                 <tr><b> Contract's ask probability </br></tr>
                 [% FOREACH ask_key =pricing_parameters.ask_probability.keys.sort%]

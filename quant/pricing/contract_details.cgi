@@ -51,11 +51,11 @@ if ($broker and $id) {
         :   die "Can not obtain pricing parameter for this contract with pricing engine: $contract->pricing_engine_name \n";
 
     @contract_details = (
-        login_id   => $details->{loginid},
-        trans_id   => $id,
-        ccy        => $details->{currency_code},
-        short_code => $contract->shortcode,
+        login_id    => $details->{loginid},
+        trans_id    => $id,
+        short_code  => $contract->shortcode,
         description => $contract->longcode,
+        ccy         => $details->{currency_code},
         ask_price   => $contract->ask_price,
     );
 }
@@ -72,13 +72,13 @@ Bar("Contract's Parameters");
 sub output_as_csv {
     my $param            = shift;
     my $contract_details = shift;
-    my $loginid          = $contract_details[1];
-    my $trans_id         = $contract_details[3];
+    my $loginid          = $contract_details->[1];
+    my $trans_id         = $contract_details->[3];
     my $csv_name         = $loginid . '_' . $trans_id . '.csv';
     PrintContentType_excel($csv_name);
     my $size = scalar @$contract_details;
-    for (my $i=0; $i <= $size; $i+2){
-       print uc($contract_details[$i]) . " ". $contract_details[$i +1] . "\n";
+    for (my $i = 0; $i <= $size; $i = $i + 2) {
+        print uc($contract_details->[$i]) . "= " . $contract_details->[$i + 1] . "\n";
     }
     foreach my $key (keys %{$param}) {
         print uc($key) . "\n";
@@ -197,7 +197,7 @@ BOM::Platform::Context::template->process(
     {
         broker             => $broker,
         id                 => $id,
-        contract_details   => {  @contract_details },
+        contract_details   => {@contract_details},
         start              => $start ? $start->datetime : '',
         pricing_parameters => $pricing_parameters,
     }) || die BOM::Platform::Context::template->error;
