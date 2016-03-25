@@ -1,5 +1,5 @@
 use strict;
-use warings;
+use warnings;
 use Test::Most;
 use BOM::Test;
 
