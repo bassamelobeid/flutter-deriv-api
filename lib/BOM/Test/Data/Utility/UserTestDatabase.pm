@@ -15,7 +15,7 @@ sub _build__connection_parameters {
     my $self = shift;
     return {
         database => $self->_db_name;
-        domain   => 'TEST',
+          domain => 'TEST',
         driver   => 'Pg',
         host     => 'localhost',
         port     => '5436',
@@ -36,9 +36,9 @@ __PACKAGE__->meta->make_immutable;
 
 ## no critic (Variables::RequireLocalizedPunctuationVars)
 sub import {
-    my ($class, $init) = @_;
+    my ( $class, $init ) = @_;
 
-    if ($init && $init eq ':init') {
+    if ( $init && $init eq ':init' ) {
         __PACKAGE__->instance->prepare_unit_test_database;
     }
     return;
