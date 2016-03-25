@@ -64,12 +64,13 @@ sub _build_db {
         type   => $type
     );
 
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
     if (not BOM::Database::Rose::DB->registry->entry_exists(@db_params)) {
         BOM::Database::Rose::DB->register_db(
             domain   => $domain,
             type     => $type,
             driver   => 'Pg',
-            database => "$domain-$type",
+            database => "$domain-$type$db_postfix",
             host     => '/var/run/postgresql',
             port     => 6432,
             username => 'write',
