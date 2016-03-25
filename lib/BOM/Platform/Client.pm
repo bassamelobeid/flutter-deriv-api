@@ -687,7 +687,7 @@ sub add_note {
     return if -e '/etc/rmg/travis';
     my $to = BOM::Platform::Static::Config::get_customer_support_email();
     local $\ = undef;
-    my $from = $to;
+    my $from    = $to;
     my $replyto = $to;
     $replyto = $self->email if $self->email;
 
