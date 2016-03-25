@@ -25,12 +25,12 @@ my %new_client_details = (
     broker_code     => 'CR',
     residence       => 'br',
     client_password => 'x',
-    last_name       => 'shuwnyuan',
-    first_name      => 'tee',
-    email           => 'shuwnyuan@regentmarkets.com',
+    last_name       => 'binary',
+    first_name      => 'test',
+    email           => 'binarytest@binary.com',
     salutation      => 'Ms',
     address_line_1  => 'ADDR 1',
-    address_city    => 'Segamat',
+    address_city    => 'Cyberjaya',
     phone           => '+60123456789',
     secret_question => "Mother's maiden name",
     secret_answer   => 'blah',
@@ -55,6 +55,9 @@ my %deposit = (
     payment_type => 'external_cashier',
     remark       => 'test deposit'
 );
+
+my %deposit_eur = (%deposit, currency => 'EUR');
+my %withdrawal_eur = (%withdrawal, currency => 'EUR');
 
 subtest 'General' => sub {
     plan tests => 2;
@@ -103,31 +106,68 @@ subtest "withdraw vs Balance" => sub {
 };
 
 subtest 'CR withdrawal' => sub {
-    plan tests => 5;
-    my $client = new_client('USD');
-    $client->smart_payment(%deposit, amount => 10500);
-    throws_ok { $client->validate_payment(%withdrawal, amount => -10001) } qr/exceeds withdrawal limit/,
-        'Non-Authed CR withdrawal greater than USD10K';
+    plan tests => 3;
 
-    $client = new_client('USD');
-    $client->smart_payment(%deposit, amount => 10500);
-    throws_ok { $client->validate_payment(%withdrawal, amount => -10000) } qr/exceeds withdrawal limit/, 'Non-Authed CR withdrawal USD10K';
+    subtest 'in USD, unauthenticated' => sub {
+        my $client = new_client('USD');
+        $client->smart_payment(%deposit, amount => 10500);
+        throws_ok { $client->validate_payment(%withdrawal, amount => -10001) } qr/exceeds withdrawal limit/,
+            'Non-Authed CR withdrawal greater than USD10K';
+        throws_ok { $client->validate_payment(%withdrawal, amount => -10000) } qr/exceeds withdrawal limit/, 'Non-Authed CR withdrawal USD10K';
+        lives_ok { $client->validate_payment(%withdrawal, amount => -9999) } 'Non-Authed CR withdrawal USD9999';
+    };
 
-    $client = new_client('USD');
-    $client->smart_payment(%deposit, amount => 10500);
-    lives_ok { $client->validate_payment(%withdrawal, amount => -9999) } 'Non-Authed CR withdrawal USD9999';
+    subtest 'in EUR, unauthenticated' => sub {
+        my $client = new_client('EUR');
+        $client->smart_payment(%deposit_eur, amount => 10500);
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -10001) } qr/exceeds withdrawal limit/,
+            'Non-Authed CR withdrawal greater than EUR 10K';
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -10000) } qr/exceeds withdrawal limit/, 'Non-Authed CR withdrawal EUR 10K';
+        lives_ok { $client->validate_payment(%withdrawal_eur, amount => -9999) } 'Non-Authed CR withdrawal EUR 9999';
+    };
 
-    # fully authenticated
-    $client = new_client('USD');
-    $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-    $client->set_authentication('ID_192')->status('pass');
-    $client->save;
-    $client->smart_payment(%deposit, amount => 10500);
-    lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Authed CR withdrawal no more than USD10K';
+    subtest 'fully authenticated' => sub {
+        my $client = new_client('USD');
+        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+        $client->set_authentication('ID_192')->status('pass');
+        $client->save;
+        $client->smart_payment(%deposit, amount => 10500);
+        lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Authed CR withdrawal no more than USD10K';
+        lives_ok { $client->validate_payment(%withdrawal, amount => -10001) } 'Authed CR withdrawal more than USD10K';
+    };
+};
 
-    $client->smart_payment(%deposit, amount => 10500);
-    lives_ok { $client->validate_payment(%withdrawal, amount => -10001) } 'Authed CR withdrawal more than USD10K';
+subtest 'JP withdrawal' => sub {
+    plan tests => 2;
+    my %deposit_jpy = (%deposit, currency => 'JPY');
+    my %withdrawal_jpy = (%withdrawal, currency => 'JPY');
 
+    subtest 'unauthenticated' => sub {
+        my $client = new_client('JPY', broker_code => 'JP', residence => 'jp');
+        $client->smart_payment(%deposit_jpy, amount => 1100000);
+        $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
+        $client->save;
+
+        throws_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000001) } qr/exceeds withdrawal limit/,
+            'Non-Authed JP withdrawal greater than JPY 1,000,000';
+        throws_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000000) } qr/exceeds withdrawal limit/, 'Non-Authed JP withdrawal JPY 1,000,000';
+        lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -999999) } 'Non-Authed JP withdrawal JPY 999,999';
+    };
+
+    subtest 'fully authenticated' => sub {
+        my $client = new_client(
+            'JPY',
+            broker_code => 'JP',
+            residence   => 'jp'
+        );
+
+        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+        $client->set_authentication('ID_192')->status('pass');
+        $client->save;
+        $client->smart_payment(%deposit_jpy, amount => 1100000);
+        lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -999999) } 'Authed JP withdrawal no more than JPY 1,000,000';
+        lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000001) } 'Authed JP withdrawal more than JPY 1,000,000';
+    };
 };
 
 subtest 'EUR3k over 30 days MX limitation.' => sub {
@@ -191,6 +231,49 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     # move forward 1 day
     set_fixed_time(time + 86400 + 1);
     ok $client->validate_payment(%wd0501), 'Unauthed, allowed to withdraw equiv EUR3000 then 3000 more 30 days later.';
+};
+
+subtest 'Total EUR2300 MLT limitation.' => sub {
+    plan tests => 3;
+    my $client;
+
+    subtest 'prepare client' => sub {
+        $client = new_client(
+            'EUR',
+            broker_code => 'MLT',
+            residence   => 'nl'
+        );
+        ok(!$client->client_fully_authenticated, 'client has not authenticated identity.');
+
+        $client->smart_payment(%deposit_eur, amount => 10000);
+        $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
+        $client->save;
+        ok $client->default_account->load->balance == 10000, 'Correct balance';
+    };
+
+    subtest 'unauthenticated' => sub {
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -2301) } qr/exceeds withdrawal limit \[EUR/, 'Unauthed, not allowed to withdraw EUR2301.';
+        ok $client->validate_payment(%withdrawal_eur, amount => -2300), 'Unauthed, allowed to withdraw EUR2300.';
+
+        $client->smart_payment(%withdrawal_eur, amount => -2000);
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -301) } qr/exceeds withdrawal limit \[EUR/, 'Unauthed, total withdrawal (2000+301) > EUR2300.';
+        ok $client->validate_payment(%withdrawal_eur, amount => -300), 'Unauthed, allowed to withdraw total EUR (2000+300).';
+    };
+
+    subtest 'authenticated' => sub {
+        $client->set_authentication('ID_192')->status('pass');
+        $client->save;
+
+        ok $client->validate_payment(%withdrawal_eur, amount => -2301), 'Authed, allowed to withdraw EUR2301.';
+        $client->smart_payment(%withdrawal_eur, amount => -2301);
+        ok $client->validate_payment(%withdrawal_eur, amount => -2301), 'Authed, allowed to withdraw EUR (2301+2301), no limit anymore.';
+
+        $client->set_authentication('ID_192')->status('pending');
+        $client->save;
+
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -100) } qr/exceeds withdrawal limit \[EUR/,
+            'Unauthed, not allowed to withdraw as limit already > EUR2300';
+    };
 };
 
 subtest 'Frozen bonus.' => sub {
