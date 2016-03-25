@@ -56,10 +56,11 @@ sub truncate_tables {
 sub setup_ticks {
     my $file      = shift;
     my $feed_file = '/home/git/regentmarkets/bom-test/feed/combined/' . $file;
-
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    my $db = 'feed' . $db_postfix;
     my $command;
     $command = "PGPASSWORD=mRX1E3Mi00oS8LG";
-    $command .= " /usr/lib/postgresql/9.1/bin/pg_restore -d feed";
+    $command .= " /usr/lib/postgresql/9.1/bin/pg_restore -d $db";
     $command .= " -Fc -a -p 5433";
     $command .= " -U write";
     $command .= " -h localhost ";
