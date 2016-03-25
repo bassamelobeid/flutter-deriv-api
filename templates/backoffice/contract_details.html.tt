@@ -2,7 +2,7 @@
 <form action="" method="post">
     <table>
         <tr><td>Transaction ID</td><td><input value="[% id %]" size="4" type="text" name="id" id="id"/></td></tr>
-        <tr><td>Start time</td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/></td></tr>
+        <tr><td>Start time</td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/> If left empty, it will always price at contract's start time</td></tr>
         <tr><td colspan=2><input type="submit" name="price" value="View in Table"/></td></tr>
         <tr><td colspan=2><input type="submit" name="download" value="Download as CSV file"/></td></tr>
     </table>
