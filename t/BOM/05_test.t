@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::Most;
+use Test::Most tests => 1;
 use BOM::Test;
 
 my $environment = '';
