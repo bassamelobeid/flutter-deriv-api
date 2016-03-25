@@ -85,7 +85,7 @@ sub verify_email {
         send_email({
             from               => BOM::Platform::Static::Config::get_customer_support_email(),
             to                 => $params->{email},
-            subject            => BOM::Platform::Context::localize('New Password Request - [_1]', $params->{website_name}),
+            subject            => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
             message            => [$email_content],
             use_email_template => 1
         });
@@ -102,7 +102,7 @@ sub verify_email {
             send_email({
                 from    => BOM::Platform::Static::Config::get_customer_support_email(),
                 to      => $params->{email},
-                subject => BOM::Platform::Context::localize('Verify Your Virtual Account with this Token - [_1]', $params->{website_name}),
+                subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
                 message => [$email_content],
                 use_email_template => 1
             });
