@@ -471,7 +471,6 @@ sub reset_password {
     my ($user, @clients);
     $user = BOM::Platform::User->new({email => $email});
     unless ($user) {
-        $args->{verification_token}->delete_token;
         return BOM::RPC::v3::Utility::create_error({
                 code              => "InternalServerError",
                 message_to_client => localize("Sorry, an error occurred while processing your account.")});
@@ -480,7 +479,6 @@ sub reset_password {
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     unless ($clients[0]->is_virtual) {
         unless ($args->{date_of_birth}) {
-            $args->{verification_token}->delete_token;
             return BOM::RPC::v3::Utility::create_error({
                     code              => "DateOfBirthMissing",
                     message_to_client => localize("Date of birth is required.")});
@@ -488,17 +486,12 @@ sub reset_password {
         my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;
         my $db_dob   = $clients[0]->date_of_birth =~ s/-0/-/gr;
 
-        if ($user_dob ne $db_dob) {
-            $args->{verification_token}->delete_token;
-            return BOM::RPC::v3::Utility::create_error({
+        return BOM::RPC::v3::Utility::create_error({
                 code              => "DateOfBirthMismatch",
-                message_to_client => localize("The email address and date of birth do not match.")});
-
-        }
+                message_to_client => localize("The email address and date of birth do not match.")} if ($user_dob ne $db_dob));
     }
 
     if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $args->{new_password}})) {
-        $args->{verification_token}->delete_token;
         return $pass_error;
     }
 
