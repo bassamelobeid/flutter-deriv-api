@@ -38,16 +38,22 @@ sub new_account_virtual {
         $args->{myaffiliates_token} = delete $args->{affiliate_token};
     }
 
-    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $args->{email})->{error}) {
+    my $email = BOM::Platform::Token::Verification->new({token => $args->{verification_code}})->email;
+
+    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
                 message_to_client => $err->{message_to_client}});
     }
 
     my $acc = BOM::Platform::Account::Virtual::create_account({
-        details        => $args,
-        email_verified => 1
-    });
+            details => {
+                email           => $email,
+                client_password => $args->{client_password},
+                residence       => $args->{residence},
+            },
+            email_verified => 1
+        });
 
     return BOM::RPC::v3::Utility::create_error({
             code              => $acc->{error},
@@ -57,6 +63,7 @@ sub new_account_virtual {
     my $account = $client->default_account->load;
     return {
         client_id => $client->loginid,
+        email     => $email,
         currency  => $account->currency_code,
         balance   => $account->balance
     };
