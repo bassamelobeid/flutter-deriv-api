@@ -220,14 +220,15 @@ sub __validate_login {
     my $user = BOM::Platform::User->new({email => $email})
         or return localize('Invalid email and password combination.');
 
-    my $result = $user->login(
+    my $environment = $c->__login_env();
+    my $result      = $user->login(
         password    => $password,
-        environment => $c->__login_env(),
+        environment => $environment,
     );
 
     $user->add_login_history({
         action      => 'login',
-        environment => $c->__login_env(),
+        environment => $environment,
         successful  => ($result->{error}) ? 'f' : 't'
     });
 
