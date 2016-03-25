@@ -688,7 +688,7 @@ sub add_note {
     my $to = BOM::Platform::Static::Config::get_customer_support_email();
     local $\ = undef;
     my $from = $to;
-    my $replyto = $to
+    my $replyto = $to;
     $replyto = $self->email if $self->email;
 
     return Mail::Sender->new()->MailMsg({
