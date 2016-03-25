@@ -78,7 +78,7 @@ sub output_as_csv {
     PrintContentType_excel($csv_name);
     my $size = scalar @$contract_details;
     for (my $i = 0; $i <= $size; $i = $i + 2) {
-        print uc($contract_details->[$i]) . "= " . $contract_details->[$i + 1] . "\n";
+        print uc($contract_details->[$i]) . " " . $contract_details->[$i + 1] . "\n";
     }
     foreach my $key (keys %{$param}) {
         print uc($key) . "\n";
