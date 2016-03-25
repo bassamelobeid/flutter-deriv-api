@@ -39,34 +39,36 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         },
     });
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('partial_trading', {
-    recorded_date => $date,
-    type => 'early_closes',
-    calendar => {
-        '24-Dec-2009' => {
-            '4h30m' => ['HKSE'],
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'partial_trading',
+    {
+        recorded_date => $date,
+        type          => 'early_closes',
+        calendar      => {
+            '24-Dec-2009' => {
+                '4h30m' => ['HKSE'],
+            },
+            '24-Dec-2010' => {'12h30m' => ['LSE']},
+            '24-Dec-2013' => {
+                '12h30m' => ['LSE'],
+            },
+            '22-Dec-2016' => {
+                '18h' => ['FOREX'],
+            },
         },
-        '24-Dec-2010' => {
-            '12h30m' => ['LSE']
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'partial_trading',
+    {
+        recorded_date => $date,
+        type          => 'late_opens',
+        calendar      => {
+            '24-Dec-2010' => {
+                '2h30m' => ['HKSE'],
+            },
         },
-        '24-Dec-2013' => {
-            '12h30m' => ['LSE'],
-        },
-        '22-Dec-2016' => {
-            '18h' => ['FOREX'],
-        },
-    },
-});
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('partial_trading', {
-    recorded_date => $date,
-    type => 'late_opens',
-    calendar => {
-        '24-Dec-2010' => {
-            '2h30m' => ['HKSE'],
-        },
-    },
-});
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency',        {symbol => $_}) for qw(AUD GBP EUR USD HKD);
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(AUD GBP EUR USD HKD);
 
 use BOM::Market::Exchange;
 use BOM::Market::Underlying;
@@ -637,41 +639,54 @@ subtest 'trading period' => sub {
 
 subtest "seconds between trading" => sub {
 
-  is $HKSE->seconds_of_trading_between_epochs(1291161600, 1293753600),
-    404280, "Seconds between 1st and 31 of December 2010 (HKSE/late opening)";
+    is $HKSE->seconds_of_trading_between_epochs(1291161600, 1293753600), 404280, "Seconds between 1st and 31 of December 2010 (HKSE/late opening)";
 
-  is $FOREX->seconds_of_trading_between_epochs(1385856000, 1388448000),
-    1684784, "Seconds between 1st and 31 of December 2013 (Forex/Christmas holyday)";
+    is $FOREX->seconds_of_trading_between_epochs(1385856000, 1388448000),
+        1684784, "Seconds between 1st and 31 of December 2013 (Forex/Christmas holyday)";
 
-  is $LSE->seconds_of_trading_between_epochs(1385856000, 1388448000),
-    597600, "Seconds between 1st and 31 of December 2013 (LSE/early closes)";
+    is $LSE->seconds_of_trading_between_epochs(1385856000, 1388448000), 597600, "Seconds between 1st and 31 of December 2013 (LSE/early closes)";
 
-  is $RANDOM->seconds_of_trading_between_epochs(1385856000, 1388448000),
-    (1388448000 - 1385856000) - 30, "Seconds between 1st and 31 of December 2013 (Random)";
+    is $RANDOM->seconds_of_trading_between_epochs(1385856000, 1388448000),
+        (1388448000 - 1385856000) - 30, "Seconds between 1st and 31 of December 2013 (Random)";
 
 };
 
 subtest 'standard_closing_on' => sub {
-    note ("DST ends on 3 April 2016");
-    my $in_dst = Date::Utility->new('2016-03-01');
+    note("DST ends on 3 April 2016");
+    my $in_dst  = Date::Utility->new('2016-03-01');
     my $non_dst = Date::Utility->new('2016-03-04');
-    my $asx = BOM::Market::Exchange->new('ASX');
-    is $asx->standard_closing_on($in_dst)->epoch, $in_dst->plus_time_interval('6h')->epoch, 'standard_closing_on return non DST closing on 1 April 2016';
-    is $asx->standard_closing_on($non_dst)->epoch, $non_dst->plus_time_interval('6h')->epoch, 'standard_closing_on return non DST closing on 4 April 2016';
+    my $asx     = BOM::Market::Exchange->new('ASX');
+    is $asx->standard_closing_on($in_dst)->epoch, $in_dst->plus_time_interval('6h')->epoch,
+        'standard_closing_on return non DST closing on 1 April 2016';
+    is $asx->standard_closing_on($non_dst)->epoch, $non_dst->plus_time_interval('6h')->epoch,
+        'standard_closing_on return non DST closing on 4 April 2016';
 };
 
 subtest 'standard_closing_on early close' => sub {
-    my $hkse = BOM::Market::Exchange->new('HKSE');
+    my $hkse        = BOM::Market::Exchange->new('HKSE');
     my $early_close = Date::Utility->new('2009-12-24');
     is $hkse->standard_closing_on($early_close)->epoch, $early_close->plus_time_interval('7h40m')->epoch, 'no early close for indices';
 
-    my $friday = Date::Utility->new('2016-03-25');
-    my $normal_thursday = Date::Utility->new('2016-03-24');
+    my $friday               = Date::Utility->new('2016-03-25');
+    my $normal_thursday      = Date::Utility->new('2016-03-24');
     my $early_close_thursday = Date::Utility->new('2016-12-24');
-    my $fx = BOM::Market::Exchange->new('FOREX');
+    my $fx                   = BOM::Market::Exchange->new('FOREX');
     is $fx->standard_closing_on($friday)->epoch, $friday->plus_time_interval('21h')->epoch, 'standard close for friday is 21:00 GMT';
-    is $fx->standard_closing_on($normal_thursday)->epoch, $normal_thursday->plus_time_interval('23h59m59s')->epoch, 'normal standard closing is 23:59:59 GMT';
-    is $fx->standard_closing_on($early_close_thursday)->epoch, $early_close_thursday->plus_time_interval('23h59m59s')->epoch, 'normal standard closing is 23:59:59 GMT';
+    is $fx->standard_closing_on($normal_thursday)->epoch, $normal_thursday->plus_time_interval('23h59m59s')->epoch,
+        'normal standard closing is 23:59:59 GMT';
+    is $fx->standard_closing_on($early_close_thursday)->epoch, $early_close_thursday->plus_time_interval('23h59m59s')->epoch,
+        'normal standard closing is 23:59:59 GMT';
+
+    # Gold has the same exchange as FOREX.
+    # Yng Shan is planning to create a commodities exchange in the near future.
+    # This test will fail when that happens.
+    my $gold = BOM::Market::Underlying->new('frxXAUUSD');
+    is $gold->exchange->standard_closing_on($friday)->epoch, $friday->plus_time_interval('21h')->epoch, 'standard close for friday is 21:00 GMT';
+    is $gold->exchange->standard_closing_on($normal_thursday)->epoch, $normal_thursday->plus_time_interval('23h59m59s')->epoch,
+        'normal standard closing is 23:59:59 GMT';
+    is $gold->exchange->standard_closing_on($early_close_thursday)->epoch, $early_close_thursday->plus_time_interval('23h59m59s')->epoch,
+        'normal standard closing is 23:59:59 GMT';
+
 };
 
 done_testing;
