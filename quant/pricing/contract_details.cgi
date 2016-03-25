@@ -30,12 +30,10 @@ my $broker = request()->broker->code;
 my $id = $params{id} ? $params{id} : '';
 
 if ($broker and $id) {
-    my $db = BOM::Database::ClientDB->new({
-            broker_code => $broker,
-        })->db;
 
     my $details = BOM::Database::DataMapper::Transaction->new({
-            db => $db,
+            broker_code => $broker,
+            operation   => 'backoffice_replica',
         })->get_details_by_transaction_ref($id);
 
     my $original_contract = produce_contract($details->{shortcode}, $details->{currency_code});
@@ -195,7 +193,6 @@ sub _get_bs_probability_parameters {
 BOM::Platform::Context::template->process(
     'backoffice/contract_details.html.tt',
     {
-        broker             => $broker,
         id                 => $id,
         contract_details   => {@contract_details},
         start              => $start ? $start->datetime : '',
