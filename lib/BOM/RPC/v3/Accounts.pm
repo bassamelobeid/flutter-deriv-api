@@ -472,8 +472,8 @@ sub reset_password {
     $user = BOM::Platform::User->new({email => $email});
     unless ($user) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => "InvalidUser",
-                message_to_client => localize("User not found.")});
+                code              => "InternalServerError",
+                message_to_client => localize("Sorry, an error occurred while processing your account.")});
     }
     @clients = $user->clients;
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
