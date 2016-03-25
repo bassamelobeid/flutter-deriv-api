@@ -91,7 +91,7 @@ sub create_tick {
     }
 
     # table for tick
-    _create_table_for_date(Date::Utility->new($defaults{epoch}));
+    $self->_create_table_for_date(Date::Utility->new($defaults{epoch}));
 
     # date for database
     my $ts = Date::Utility->new($defaults{epoch})->datetime_yyyymmdd_hhmmss;
