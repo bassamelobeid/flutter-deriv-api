@@ -76,8 +76,8 @@ sub output_as_csv {
     my $trans_id         = $contract_details[3];
     my $csv_name         = $loginid . '_' . $trans_id . '.csv';
     PrintContentType_excel($csv_name);
-
-    for (my $i=0; $i <= scalar $contract_details; $i+2){
+    my $size = scalar @$contract_details;
+    for (my $i=0; $i <= $size; $i+2){
        print uc($contract_details[$i]) . " ". $contract_details[$i +1] . "\n";
     }
     foreach my $key (keys %{$param}) {
