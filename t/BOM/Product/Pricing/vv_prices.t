@@ -52,7 +52,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         underlying => $ul,
                         duration   => $duration,
                         spot       => $spot,
-                        volatility => BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul})->get_volatility({
+                        volatility => BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul, for_date => $now})->get_volatility({
                                 delta => 50,
                                 days  => $duration / 86400
                             }
