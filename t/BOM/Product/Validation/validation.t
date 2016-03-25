@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Test::MockTime qw/:all/;
 use Test::Most qw(-Test::Deep);
 use Test::FailWarnings;
 use DateTime;
@@ -1204,7 +1205,8 @@ subtest 'zero vol' => sub {
 };
 
 subtest 'tentative events' => sub {
-    my $now = Date::Utility->new;
+    my $now = Date::Utility->new('2016-03-18 05:00:00');
+    set_absolute_time($now->epoch);
     my $blackout_start = $now->minus_time_interval('1h');
     my $blackout_end = $now->plus_time_interval('1h');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -1296,6 +1298,8 @@ subtest 'integer barrier' => sub {
     $params->{barrier} = 100.1;
     $c = produce_contract($params);
     ok !$c->is_valid_to_buy, 'not valid to buy if barrier is non integer';
+    $c = produce_contract($params);
+    ok $c->is_valid_to_sell, 'valid to sell at non integer barrier';
     like ($c->primary_validation_error->message, qr/Invalid barrier/, 'correct error');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',

@@ -1086,8 +1086,11 @@ sub _build_pricing_comment {
 sub _validate_sell_pricing_adjustment {
     my $self = shift;
 
-    # spreads and digits prices don't jump
-    return if $self->contract->is_spread;
+    # always sell at recomputed bid price for spreads.
+    if ($self->contract->is_spread) {
+        $self->price($self->contract->bid_price);
+        return;
+    }
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
@@ -1151,8 +1154,11 @@ sub _validate_sell_pricing_adjustment {
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
-    # spreads and digits prices don't jump
-    return if $self->contract->is_spread;
+    # always buy at recomputed ask price for spreads.
+    if ($self->contract->is_spread) {
+        $self->price($self->contract->ask_price);
+        return;
+    }
 
     my $amount_type = $self->amount_type;
     my $contract    = $self->contract;
