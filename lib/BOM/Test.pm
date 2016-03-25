@@ -21,12 +21,13 @@ This variable will be set if test is running on qa devbox. If it is set the syst
 
 BEGIN {
     my $environment = '';
-    if (open(my $fh, "</etc/rmg/environment")) {
+    if (open(my $fh, "<", "/etc/rmg/environment")) {
         $environment = <$fh>;
         close($fh);
     }
 
     if ($environment =~ /^qa/) {
+        ## no critic (RequireLocalizedPunctuationVars)
         $ENV{DB_POSTFIX} = '_test';
     }
 }
