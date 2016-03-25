@@ -2380,19 +2380,20 @@ sub _validate_input_parameters {
     my $self = shift;
 
     my @errors;
-    my $when_epoch = $self->date_pricing->epoch;
+    my $when_epoch   = $self->date_pricing->epoch;
     my $epoch_expiry = $self->date_expiry->epoch;
-    my $epoch_start = $self->date_start->epoch;
+    my $epoch_start  = $self->date_start->epoch;
 
     if ($epoch_expiry == $epoch_start) {
-        push @errors, {
+        push @errors,
+            {
             message => format_error_string(
                 'Start and Expiry times are the same',
-                'start' => $epoch_start,
+                'start'  => $epoch_start,
                 'expiry' => $epoch_expiry,
             ),
             message_to_client => localize('Expiry time cannot be equal to start time.'),
-        };
+            };
     } elsif ($epoch_expiry < $epoch_start) {
         push @errors,
             {
@@ -2406,7 +2407,11 @@ sub _validate_input_parameters {
     } elsif (not $self->built_with_bom_parameters and $epoch_start < $when_epoch) {
         push @errors,
             {
-            message           => format_error_string('starts in the past', 'start' => $epoch_start, 'now' => $when_epoch),
+            message => format_error_string(
+                'starts in the past',
+                'start' => $epoch_start,
+                'now'   => $when_epoch
+            ),
             message_to_client => localize("Start time is in the past"),
             };
     } elsif (not $self->is_forward_starting and $epoch_start > $when_epoch) {
@@ -2434,9 +2439,41 @@ sub _validate_input_parameters {
     return @errors;
 }
 
+sub _validate_sellback_conditions {
+    my $self = shift;
+
+    my @errors;
+
+    # Contracts must be held for a minimum duration before resale.
+    if (my $orig_start = $self->build_parameters->{_original_date_start}) {
+        # Does not apply to unstarted forward-starting contracts
+        if ($self->date_pricing->is_after($orig_start)) {
+            my $minimum_hold = Time::Duration::Concise::Localize->new(
+                interval => '1m',
+                locale   => BOM::Platform::Context::request()->language
+            );
+            my $held = Time::Duration::Concise::Localize->new(interval => $self->date_start->epoch - $orig_start->epoch);
+            if ($held->seconds < $minimum_hold->seconds) {
+                push @errors, {
+                    message => format_error_string(
+                        'Contract not held long enough',
+                        held => $held->as_concise_string,
+                        min  => $minimum_hold->as_concise_string,
+                    ),
+                    message_to_client => localize('Contract must be held for [_1] before resale is offered.', $minimum_hold->as_string),
+
+                };
+            }
+        }
+    }
+
+    return @errors;
+}
+
 # Check against our timelimits, suspended trades etc. whether we allow this bet to start
 sub _validate_start_date {
     my $self = shift;
+
     my @errors;
     my $underlying = $self->underlying;
 
@@ -2459,28 +2496,6 @@ sub _validate_start_date {
           ($self->tick_expiry and $underlying->intradays_must_be_same_day) ? $self->max_tick_expiry_duration
         : ($self->date_expiry->date eq $self->date_pricing->date) ? $underlying->eod_blackout_start
         :                                                           undef;
-    # Contracts must be held for a minimum duration before resale.
-    if (my $orig_start = $self->build_parameters->{_original_date_start}) {
-        # Does not apply to unstarted forward-starting contracts
-        if ($when->is_after($orig_start)) {
-            my $minimum_hold = Time::Duration::Concise::Localize->new(
-                interval => '1m',
-                locale   => BOM::Platform::Context::request()->language
-            );
-            my $held = Time::Duration::Concise::Localize->new(interval => $epoch_start - $orig_start->epoch);
-            if ($held->seconds < $minimum_hold->seconds) {
-                push @errors, {
-                    message => format_error_string(
-                        'Contract not held long enough',
-                        held => $held->as_concise_string,
-                        min  => $minimum_hold->as_concise_string,
-                    ),
-                    message_to_client => localize('Contract must be held for [_1] before resale is offered.', $minimum_hold->as_string),
-
-                };
-            }
-        }
-    }
 
     # exchange needs to be open when the bet starts.
     if (not $exchange->is_open_at($self->date_start)) {
@@ -3013,7 +3028,7 @@ sub confirm_validity {
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     my @validation_methods =
-        qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_volsurface _validate_barrier _validate_underlying _validate_feed _validate_expiry_date _validate_start_date _validate_stake _validate_payout _validate_eod_market_risk);
+        qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_volsurface _validate_barrier _validate_underlying _validate_feed _validate_expiry_date _validate_start_date _validate_sellback_conditions _validate_stake _validate_payout _validate_eod_market_risk);
 
     foreach my $method (@validation_methods) {
         my @err = $self->$method;
