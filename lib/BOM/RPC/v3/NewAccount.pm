@@ -71,34 +71,41 @@ sub new_account_virtual {
 
 sub verify_email {
     my $params = shift;
+    my $email_content;
 
     if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'lost_password') {
+        BOM::Platform::Context::template->process(
+            'email/send_verificationws.html.tt',
+            {
+                code    => $params->{code},
+                purpose => BOM::Platform::Context::localize('reset your password')
+            },
+            \$email_content
+        ) || die BOM::Platform::Context::template->error();
         send_email({
-                from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                to      => $params->{email},
-                subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
-                message => [
-                    BOM::Platform::Context::localize(
-                        'Dear Valued Customer, <p style="margin-top:1em;line-height:200%;">Please paste the following verification token in the lost password form: </p><p>'
-                            . $params->{code} . '</p>'
-                    )
-                ],
-                use_email_template => 1
-            });
+            from               => BOM::Platform::Static::Config::get_customer_support_email(),
+            to                 => $params->{email},
+            subject            => BOM::Platform::Context::localize('New Password Request - [_1]', $params->{website_name}),
+            message            => [$email_content],
+            use_email_template => 1
+        });
     } elsif ($params->{type} eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $params->{email}})) {
+            BOM::Platform::Context::template->process(
+                'email/send_verificationws.html.tt',
+                {
+                    code    => $params->{code},
+                    purpose => BOM::Platform::Context::localize('create your account')
+                },
+                \$email_content
+            ) || die BOM::Platform::Context::template->error();
             send_email({
-                    from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                    to      => $params->{email},
-                    subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-                    message => [
-                        BOM::Platform::Context::localize(
-                            'Dear Valued Customer, <p style="margin-top:1em;line-height:200%;">Please paste the following verification token in the account opening form: </p><p>'
-                                . $params->{code} . '</p>'
-                        )
-                    ],
-                    use_email_template => 1
-                });
+                from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                to      => $params->{email},
+                subject => BOM::Platform::Context::localize('Verify Your Virtual Account with this Token - [_1]', $params->{website_name}),
+                message => [$email_content],
+                use_email_template => 1
+            });
         } else {
             send_email({
                     from    => BOM::Platform::Static::Config::get_customer_support_email(),
@@ -106,25 +113,28 @@ sub verify_email {
                     subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
                     message => [
                         BOM::Platform::Context::localize(
-                            'Dear Valued Customer, <p style="margin-top:1em;line-height:200%;">It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p>'
+                            '<div style="line-height:200%;color:#333333;font-size:15px;"><p>Dear Valued Customer,</p><p style="margin-top:1em;">It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p></div>'
                         )
                     ],
                     use_email_template => 1
                 });
         }
     } elsif ($params->{type} eq 'paymentagent_withdraw' && BOM::Platform::User->new({email => $params->{email}})) {
+        BOM::Platform::Context::template->process(
+            'email/send_verificationws.html.tt',
+            {
+                code    => $params->{code},
+                purpose => BOM::Platform::Context::localize('withdraw via payment agent')
+            },
+            \$email_content
+        ) || die BOM::Platform::Context::template->error();
         send_email({
-                from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                to      => $params->{email},
-                subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
-                message => [
-                    BOM::Platform::Context::localize(
-                        '<p>Dear Valued Customer,</p><p>In order to verify your withdrawal request, please paste the following verification token in the payment agent withdrawal form: </p><p>'
-                            . $params->{code} . '</p>'
-                    )
-                ],
-                use_email_template => 1
-            });
+            from               => BOM::Platform::Static::Config::get_customer_support_email(),
+            to                 => $params->{email},
+            subject            => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
+            message            => [$email_content],
+            use_email_template => 1
+        });
     }
 
     return {status => 1};    # always return 1, so not to leak client's email
