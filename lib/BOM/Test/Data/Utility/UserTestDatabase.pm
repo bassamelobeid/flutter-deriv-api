@@ -14,7 +14,7 @@ sub _db_migrations_dir {
 sub _build__connection_parameters {
     my $self = shift;
     return {
-        database => $self->_db_name;
+        database => $self->_db_name,
           domain => 'TEST',
         driver   => 'Pg',
         host     => 'localhost',
