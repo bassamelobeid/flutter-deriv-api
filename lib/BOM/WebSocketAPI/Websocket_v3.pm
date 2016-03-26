@@ -244,6 +244,10 @@ my @dispatch = (
         'new_account_virtual',
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0
     ],
+    [
+        'reset_password',
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::reset_password, 0
+    ],
 
     # authenticated calls
     ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1, 'trade'],
