@@ -2,9 +2,16 @@ package BOM::OAuth::O;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
+use BOM::Platform::Runtime;
+use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Database::Model::OAuth;
+
+# login
+use Email::Valid;
+use Mojo::Util qw(url_escape);
+use List::MoreUtils qw(any);
 
 sub __oauth_model {
     state $oauth_model = BOM::Database::Model::OAuth->new;
@@ -38,22 +45,38 @@ sub authorize {
         return $uri;
     };
 
+    my $client;
+    if (    $c->req->method eq 'POST'
+        and ($c->csrf_token eq ($c->param('csrftoken') // ''))
+        and $c->param('login'))
+    {
+        $client = $c->__login($app) or return;
+    } else {
+        $client = $c->__get_client;
+    }
+
     ## check user is logined
-    my $client = $c->__get_client;
     unless ($client) {
-        # we need to redirect back to oauth/authorize after
-        # login (with the original params)
-        my $query = $c->url_with->query;
-        $c->session('oauth_authorize_query' => $query);
-        return $c->redirect_to('/login');
+        ## show login form
+        return $c->render(
+            template => 'login',
+            layout   => 'default',
+
+            app       => $app,
+            l         => \&localize,
+            csrftoken => $c->csrf_token,
+        );
     }
 
     my $loginid = $client->loginid;
-    my $user    = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
+    my $user = BOM::Platform::User->new({email => $client->email}) or die "no user for email " . $client->email;
 
     ## confirm scopes
     my $is_all_approved = 0;
-    if ($c->req->method eq 'POST' and ($c->csrf_token eq ($c->param('csrftoken') // ''))) {
+    if (    $c->req->method eq 'POST'
+        and ($c->csrf_token eq ($c->param('csrftoken') // ''))
+        and ($c->param('cancel_scopes') || $c->param('confirm_scopes')))
+    {
         if ($c->param('confirm_scopes')) {
             ## approval on all loginids
             foreach my $c1 ($user->clients) {
@@ -76,6 +99,7 @@ sub authorize {
             app       => $app,
             client    => $client,
             scopes    => \@scopes,
+            l         => \&localize,
             csrftoken => $c->csrf_token,
         );
     }
@@ -95,6 +119,134 @@ sub authorize {
     $uri .= '&state=' . $state if defined $state;
 
     $c->redirect_to($uri);
+}
+
+sub __login {
+    my ($c, $app) = @_;
+
+    my ($err, $user, $client) = $c->__validate_login();
+    if ($err) {
+        $c->render(
+            template => 'login',
+            layout   => 'default',
+
+            app       => $app,
+            error     => $err,
+            l         => \&localize,
+            csrftoken => $c->csrf_token,
+        );
+        return;
+    }
+
+    ## set session cookie?
+    state $app_config = BOM::Platform::Runtime->instance->app_config;
+    my $r       = $c->stash('request');
+    my $options = {
+        domain  => $r->cookie_domain,
+        secure  => ($r->cookie_domain eq '127.0.0.1') ? 0 : 1,
+        path    => '/',
+        expires => time + 86400 * 2,
+    };
+
+    $c->cookie(
+        email => url_escape($user->email),
+        $options
+    );
+    $c->cookie(
+        loginid_list => url_escape($user->loginid_list_cookie_val),
+        $options
+    );
+    $c->__set_reality_check_cookie($user, $options);
+    $c->cookie(
+        $app_config->cgi->cookie_name->login => url_escape(
+            BOM::Platform::SessionCookie->new({
+                    loginid => $client->loginid,
+                    email   => $client->email,
+                    loginat => $r->session_cookie && $r->session_cookie->loginat,
+                    scopes  => [qw(price chart trade password cashier)]}
+            )->token
+        ),
+        $options
+    );
+    $c->cookie(
+        loginid => $client->loginid,
+        $options
+    );
+    $c->cookie(
+        residence => $client->residence,
+        $options
+    );
+
+    # reset csrf_token
+    delete $c->session->{csrf_token};
+
+    return $client;
+}
+
+sub __set_reality_check_cookie {
+    my ($c, $user, $options) = @_;
+
+    my $r = $c->stash('request');
+
+    # set this cookie only once
+    return if $r->cookie('reality_check');
+
+    my %rck_brokers = map { $_->code => 1 } @{$r->website->reality_check_broker_codes};
+    return unless any { $rck_brokers{$_->broker_code} } $user->clients;
+
+    my $rck_interval = $r->website->reality_check_interval;
+    $c->cookie(
+        'reality_check' => url_escape($rck_interval . ',' . time),
+        $options
+    );
+
+    return;
+}
+
+sub __validate_login {
+    my ($c) = @_;
+
+    my $email    = $c->param('email');
+    my $password = $c->param('password');
+
+    if (not $email or not Email::Valid->address($email)) {
+        return localize('Email not given.');
+    }
+
+    if (not $password) {
+        return localize('Password not given.');
+    }
+
+    my $user = BOM::Platform::User->new({email => $email})
+        or return localize('Invalid email and password combination.');
+
+    my $result = $user->login(
+        password    => $password,
+        environment => $c->__login_env(),
+    );
+    return $result->{error} if $result->{error};
+
+    # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
+    my @clients = $user->clients;
+    my $client  = $clients[0];
+    if ($result = $client->login_error()) {
+        return $result;
+    }
+
+    return (undef, $user, $client);
+}
+
+sub __login_env {
+    my $c = shift;
+    my $r = $c->stash('request');
+
+    my $now                = Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
+    my $ip_address         = $r->client_ip || '';
+    my $ip_address_country = uc $r->country_code || '';
+    my $ua                 = $c->req->headers->header('User-Agent') || '';
+    my $lang               = uc $r->language || '';
+    my $environment        = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
+    return $environment;
 }
 
 sub __get_client {

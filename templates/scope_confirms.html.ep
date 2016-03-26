@@ -4,24 +4,24 @@
       <img class="responsive" src="https://static.binary.com/images/pages/binary-symbol-logo.svg" style="width:50%; margin-left:25%"/>
     </div>
     <div class="grd-grid-10 grd-grid-mobile-12">
-      <h1>Authorize application</h1>
-      <p><%= $app->{name} %> would like permission to access your account <strong><%= $client->loginid %></strong></p>
+      <h1><%= $l->('Authorize application') %></h1>
+      <p><%= $l->('[_1] would like permission to access your account <strong>[_2]</strong>', $app->{name}, $client->loginid) %></strong></p>
       <div class="separator-line"></div>
-      <p><strong>Review Permissions</strong></p>
+      <p><strong><%= $l->('Review Permissions') %></strong></p>
       <div class="grd-grid-12">
         <div class="grd-grid-6 grd-grid-mobile-12" style="background-color:#f2f2f2">
           <ul class="bullet">
             <% if (grep { $_ eq 'read' } @$scopes) { %>
-              <li>Read user profile</li>
+              <li><%= $l->('Read user profile') %></li>
             <% } %>
             <% if (grep { $_ eq 'trade' } @$scopes) { %>
-              <li>Trading</li>
+              <li><%= $l->('Trading') %></li>
             <% } %>
             <% if (grep { $_ eq 'admin' } @$scopes) { %>
-              <li>Operate on accounts</li>
+              <li><%= $l->('Operate on accounts') %></li>
             <% } %>
             <% if (grep { $_ eq 'payments' } @$scopes) { %>
-              <li>Payments</li>
+              <li><%= $l->('Payments') %></li>
             <% } %>
           </ul>
         </div>
@@ -33,13 +33,13 @@
         <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
         <div class="grd-grid-6 grd-grid-mobile-10" style="margin-top:1em; padding-left: 0;">
           <span class="button button-focus">
-            <button class="button button-focus" name="confirm_scopes" value="Grant" type="submit" style="border: 1px solid; width: 6.5em;">
-              Grant
+            <button class="button button-focus" name="confirm_scopes" value="<%= $l->('Grant') %>" type="submit" style="border: 1px solid; width: 6.5em;">
+              <%= $l->('Grant') %>
             </button>
           </span>
           <span class="button button-focus">
-            <button class="button button-focus" name="cancel" value="Cancel" type="submit" style="background: #fff;border: 1px solid #c2c2c2;color: inherit;">
-              Cancel
+            <button class="button button-focus" name="cancel_scopes" value="<%= $l->('Cancel') %>" type="submit" style="background: #fff;border: 1px solid #c2c2c2;color: inherit;">
+              <%= $l->('Cancel') %>
             </button>
           </span>
         </div>
