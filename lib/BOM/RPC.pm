@@ -131,6 +131,7 @@ sub startup {
                 '/get_account_status'        => register('get_account_status',        \&BOM::RPC::v3::Accounts::get_account_status),
                 '/change_password'           => register('change_password',           \&BOM::RPC::v3::Accounts::change_password),
                 '/cashier_password'          => register('cashier_password',          \&BOM::RPC::v3::Accounts::cashier_password),
+                '/reset_password'            => register('reset_password',            \&BOM::RPC::v3::Accounts::reset_password),
                 '/get_settings'              => register('get_settings',              \&BOM::RPC::v3::Accounts::get_settings),
                 '/set_settings'              => register('set_settings',              \&BOM::RPC::v3::Accounts::set_settings),
                 '/get_self_exclusion'        => register('get_self_exclusion',        \&BOM::RPC::v3::Accounts::get_self_exclusion),
