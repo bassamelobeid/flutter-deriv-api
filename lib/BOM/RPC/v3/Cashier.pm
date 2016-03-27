@@ -32,7 +32,7 @@ use BOM::Database::Model::HandoffToken;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
-sub cashier_forward {
+sub cashier {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
@@ -45,7 +45,7 @@ sub cashier_forward {
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
 
-    my $action = $params->{cashier_forward} // 'deposit';
+    my $action = $params->{cashier} // 'deposit';
     my $currency = $params->{currency};
 
     if (my $account = $client->default_account) {
@@ -81,9 +81,9 @@ sub cashier_forward {
 
     if (not $client->is_virtual and $client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_UK_FUNDS_PROTECTION',
-                message_to_client => localize('Client is not fully authenticated.'),
-            });
+            code              => 'ASK_UK_FUNDS_PROTECTION',
+            message_to_client => localize('Client is not fully authenticated.'),
+        });
 
         # if ($r->param('ukgc_funds_protection') and $r->param('ukgc_funds_protection') eq 'ok') {
         #     $client->set_status('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds');
@@ -139,9 +139,9 @@ sub cashier_forward {
     $currency = $currency || $df_client->doughflow_currency;
     if (not $currency) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_CURRENCY',
-                message_to_client => $error,
-            });
+            code              => 'ASK_CURRENCY',
+            message_to_client => $error,
+        });
     }
 
     my $email = $client->email;
@@ -150,7 +150,7 @@ sub cashier_forward {
         my $token = $params->{verification_code} // '';
 
         if (not $email or $email =~ /\s+/) {
-            $error_sub->( localize("Sorry, an error occurred. Please contact customer support if this problem persists.") );
+            $error_sub->(localize("Sorry, an error occurred. Please contact customer support if this problem persists."));
         } elsif ($token) {
             unless (BOM::RPC::v3::Utility::is_verification_token_valid($token, $client->email)) {
                 return BOM::RPC::v3::Utility::create_error({
@@ -218,9 +218,12 @@ sub cashier_forward {
                     . "If everything is correct with the client's name, notify the development team.\n"
                     . "Doughflow response: [$errortext]");
 
-            return $error_sub->(localize(
+            return $error_sub->(
+                localize(
                     'Sorry, there was a problem validating your personal information with our payment processor. Please contact our Customer Service.'
-                ), 'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']');
+                ),
+                'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
+            );
         }
 
         my @errorfields;
@@ -239,9 +242,10 @@ sub cashier_forward {
             });
         }
 
-        return $error_sub->(localize(
-                    'Sorry, an error has occurred, Please try accessing our Cashier again.'
-                ), 'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']');
+        return $error_sub->(
+            localize('Sorry, an error has occurred, Please try accessing our Cashier again.'),
+            'Error with DF CreateCustomer API loginid[' . $df_client->loginid . '] error[' . $errortext . ']'
+        );
     }
 
     my $secret = String::UTF8::MD5::md5($df_client->loginid . '-' . $handoff_token->key);
