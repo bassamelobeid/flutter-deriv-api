@@ -14,7 +14,7 @@
         <% } %>
 
         <fieldset>
-          <legend>Your details</legend>
+          <legend><%= $l->('Your details') %></legend>
           <div class='grd-grid-12 grd-parent grd-row-padding'>
             <div class='form_label grd-grid-4'>
             <label for='email'><%= $l->('Email') %></label>
@@ -43,6 +43,7 @@
       </div>
       <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
       </form>
+      <div class="separator-line"></div>
 
     </div>
   </div>

@@ -51,7 +51,8 @@ sub authorize {
         and $c->param('login'))
     {
         $client = $c->__login($app) or return;
-    } else {
+    } elsif ($c->req->method eq 'POST') {
+        # we force login no matter user is in or not
         $client = $c->__get_client;
     }
 
