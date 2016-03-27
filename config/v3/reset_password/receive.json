@@ -1,12 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Cashier Forward Response",
+  "title": "Reset Password Response",
   "description": "",
   "properties": {
-    "cashier_forward": {
-      "type": "string",
-      "description": "cashier url, Note possible error codes: ASK_TNC_APPROVAL, ASK_AUTHENTICATE, ASK_UK_FUNDS_PROTECTION, ASK_CURRENCY, ASK_EMAIL_VERIFY, ASK_FIX_ADDRESS"
+    "reset_password": {
+      "type": "integer",
+      "description": "1: password reset success, 0: password reset failure",
+      "pattern": "^(1|0)$"
     },
     "echo_req": {
       "title": "Echo request",
@@ -14,7 +15,7 @@
     },
     "msg_type": {
       "type": "string",
-      "description": "cashier_forward"
+      "description": "reset_password"
     },
     "req_id": {
       "type": "integer",

@@ -243,6 +243,10 @@ my @dispatch = (
         'new_account_virtual',
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0
     ],
+    [
+        'reset_password',
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::reset_password, 0
+    ],
 
     # authenticated calls
     ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1, 'trade'],
@@ -281,7 +285,7 @@ my @dispatch = (
         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::transfer_between_accounts, 1, 'payments'
     ],
     [
-        'cashier_forward',
+        'cashier',
         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::cforward, 1, 'payments'
     ],
     [
@@ -461,7 +465,12 @@ sub _failed_key_value {
     } elsif (
         $key !~ /^[A-Za-z0-9_-]{1,50}$/
         # !-~ to allow a range of acceptable characters. To find what is the range, look at ascii table
-        or $value !~ /^[\s\w\@_:!-~]{0,300}$/
+
+        # please don't remove: \p{Script=Common}\p{L}
+        # \p{L} is to match utf-8 characters
+        # \p{Script=Common} is to match double byte characters in Japanese keyboards, eg: '１−１−１'
+        # refer: http://perldoc.perl.org/perlunicode.html
+        or $value !~ /^[\p{Script=Common}\p{L}\s\w\@_:!-~]{0,300}$/
         )
     {
         return ($key, $value);

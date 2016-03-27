@@ -95,7 +95,7 @@ sub topup_virtual {
 }
 
 sub cforward {
-    return __call_rpc(shift, 'cashier_forward', @_);
+    return __call_rpc(shift, 'cashier', @_);
 }
 
 sub __call_rpc {

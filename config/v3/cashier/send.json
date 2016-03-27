@@ -1,10 +1,10 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Cashier Forward Request",
-  "description": "Cashier Forward",
+  "title": "Cashier Request",
+  "description": "Cashier",
   "properties": {
-    "cashier_forward": {
+    "cashier": {
       "type": "string",
       "pattern": "^(deposit|withdraw)$",
       "required": "1",
