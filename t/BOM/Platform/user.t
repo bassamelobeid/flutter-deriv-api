@@ -180,7 +180,7 @@ subtest 'User Login' => sub {
         ok $status->{error} =~ /account is unavailable/;
     };
 
-    subtest 'wiht self excluded accounts' => sub {
+    subtest 'with self excluded accounts' => sub {
         my ($user3, $vr_3, $cr_3, $cr_31);
         my $new_email = 'test' . rand . '@binary.com';
         lives_ok {
