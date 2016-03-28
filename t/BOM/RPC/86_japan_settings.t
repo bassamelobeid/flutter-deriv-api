@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Test::More tests => 4;
 use Test::Exception;
 use JSON;
 
@@ -89,9 +89,25 @@ subtest 'create VRTJ & JP client' => sub {
     $jp_client->save;
 };
 
+my @jp_only = qw(
+    annual_income
+    financial_asset
+    daily_loss_limit
+    trading_experience_equities
+    trading_experience_commodities
+    trading_experience_foreign_currency_deposit
+    trading_experience_margin_fx
+    trading_experience_investment_trust
+    trading_experience_public_bond
+    trading_experience_option_trading
+    trading_purpose
+    hedge_asset
+    hedge_asset_amount
+);
+
 subtest 'VRTJ get_settings' => sub {
     $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
-    is $res->{$_}, undef, "NO $_ for VRTJ" for qw(occupation daily_loss_limit trading_experience_equities);
+    is $res->{$_}, undef, "undef: $_" for (@jp_only);
 };
 
 subtest 'JP get_settings' => sub {
@@ -102,12 +118,13 @@ subtest 'JP get_settings' => sub {
 
     $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
 
-    my %expected = (
+    my %jp_expected = (
         salutation    => '',
         country_code  => 'jp',
         date_of_birth => Date::Utility->new($jp_client_details{date_of_birth})->epoch
     );
-    $expected{$_} = $jp_client_details{$_} for qw(
+
+    my @all = qw(
         gender
         first_name
         last_name
@@ -118,22 +135,56 @@ subtest 'JP get_settings' => sub {
         address_state
         address_postcode
         phone
-        annual_income
-        financial_asset
-        daily_loss_limit
-        trading_experience_equities
-        trading_experience_commodities
-        trading_experience_foreign_currency_deposit
-        trading_experience_margin_fx
-        trading_experience_investment_trust
-        trading_experience_public_bond
-        trading_experience_option_trading
-        trading_purpose
-        hedge_asset
-        hedge_asset_amount
     );
+    @all = (@all, @jp_only);
+    $jp_expected{$_} = $jp_client_details{$_} for (@all);
 
-    is($res->{$_}, $expected{$_}, "JP get_settings OK: $_") for (keys %expected);
+    is($res->{$_}, $jp_expected{$_}, "OK: $_") for (keys %jp_expected);
+};
+
+subtest 'non-JP client get_settings' => sub {
+    subtest 'create VRTC & CR client' => sub {
+        ($vr_client, $user) = create_vr_account({
+            email           => 'test+au@binary.com',
+            client_password => 'abc123',
+            residence       => 'au',
+        });
+
+        $token = BOM::Platform::SessionCookie->new(
+            loginid => $vr_client->loginid,
+            email   => $vr_client->email,
+        )->token;
+
+        # new CR client
+        my %cr_client_details = (
+            salutation       => 'Ms',
+            last_name        => 'last-name',
+            first_name       => 'first-name',
+            date_of_birth    => '1990-12-30',
+            residence        => 'au',
+            address_line_1   => 'Jalan Usahawan',
+            address_line_2   => 'Enterpreneur Center',
+            address_city     => 'Cyberjaya',
+            address_state    => 'Selangor',
+            address_postcode => '47120',
+            phone            => '+603 34567890',
+            secret_question  => 'Favourite dish',
+            secret_answer    => 'nasi lemak,teh tarik',
+        );
+
+        $res = BOM::RPC::v3::NewAccount::new_account_real({
+            token => $token,
+            args  => \%cr_client_details
+        });
+        my $cr_loginid = $res->{client_id};
+        like($cr_loginid, qr/^CR\d+$/, "got CR client $cr_loginid");
+    };
+
+    subtest 'VRTC - get_settings' => sub {
+        $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
+        is($res->{$_}, undef, "undef : $_") for (@jp_only);
+    };
+
 };
 
 sub create_vr_account {
