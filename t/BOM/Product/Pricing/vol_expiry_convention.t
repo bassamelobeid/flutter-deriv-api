@@ -7,7 +7,7 @@ use Test::More tests => 2;
 use Test::Exception;
 use Test::NoWarnings;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
@@ -17,23 +17,22 @@ use YAML::XS qw(LoadFile);
 use BOM::Market::Underlying;
 use Storable qw(dclone);
 
-
 subtest 'tuesday to friday close' => sub {
     my $expiry = Date::Utility->new('2016-01-22 21:00:00');
     my $data   = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/vol_expiry_test.yml');
 
     foreach my $now (map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [Date::Utility->new($_)->epoch, Date::Utility->new($_)] } keys $data) {
         my $surface_data = $data->{$now->datetime}{surface_data};
-        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
             {
                 symbol        => $_,
                 recorded_date => $now
             }) for qw(USD JPY JPY-USD);
-        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
-                underlying        => BOM::Market::Underlying->new('frxUSDJPY'),
+                underlying    => BOM::Market::Underlying->new('frxUSDJPY'),
                 surface       => $surface_data,
                 recorded_date => $now
             });
@@ -57,4 +56,4 @@ subtest 'tuesday to friday close' => sub {
         is $c->ask_probability->amount, $data->{$now->datetime}{ask_probability}, 'ask_probability';
         is $c->timeindays->amount,      $data->{$now->datetime}{timeindays},      'timeindays';
     }
-}
+    }

@@ -5,10 +5,10 @@ use JSON qw(decode_json);
 use BOM::MarketData::Fetcher::VolSurface;
 
 use BOM::Market::Underlying;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
-my $ul              = BOM::Market::Underlying->new('R_50');
+my $ul = BOM::Market::Underlying->new('R_50');
 
 subtest "looks flat" => sub {
     plan tests => 630;

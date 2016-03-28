@@ -7,6 +7,7 @@ use VolSurface::Utils qw( get_strike_for_spot_delta );
 use BOM::Platform::Context qw(localize);
 use BOM::Utility::ErrorStrings qw( format_error_string );
 use List::Util qw(max);
+use Scalar::Util::Numeric qw(isint);
 
 sub make_barrier {
     my ($self, $supplied, $extra_params) = @_;
@@ -19,6 +20,18 @@ sub make_barrier {
             severity          => 100,
             message           => 'Undefined barrier',
             message_to_client => localize('We could not process this contract at this time.'),
+        });
+    }
+
+    if (    $self->underlying->market->integer_barrier
+        and not $self->built_with_bom_parameters
+        and $string_version !~ /^S-?\d+P$/i
+        and not isint($string_version))
+    {
+        $self->add_error({
+            severity          => 100,
+            message           => 'Invalid barrier',
+            message_to_client => localize('Barrier must be an integer.'),
         });
     }
 

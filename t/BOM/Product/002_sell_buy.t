@@ -16,7 +16,7 @@ use BOM::Database::DataMapper::Account;
 use BOM::Platform::Client;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Product::Transaction;
 use Data::Dumper;
 
@@ -117,7 +117,6 @@ subtest 'check duplicate sell with legacy line' => sub {
 
     lives_ok {
         # sell directly with model
-
         my $txn = $account->find_transaction(query => [id => $txn_id])->[0];
 
         my $financial_market_bet = BOM::Database::Model::FinancialMarketBet->new({
@@ -168,6 +167,12 @@ subtest 'check buy bet without quants bet params' => sub {
     }
     'Successfully buy a bet for an account, without quants bet params';
     ok $txn_id, "got transaction id";
+};
+
+subtest 'check if is valid to sell is correct for sold contracts' => sub {
+    my $contract = produce_contract('UPORDOWN_FRXUSDJPY_2_1311834639_29_JUL_11_784800_770900', 'USD', 1);
+    is $contract->is_valid_to_sell, 0, 'correct valid to sell for contract already marked as sold';
+    is $contract->primary_validation_error->message_to_client, 'This contract has been sold.', 'This contract has been sold.';
 };
 
 done_testing();

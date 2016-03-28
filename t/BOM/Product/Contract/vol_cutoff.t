@@ -5,7 +5,7 @@ use warnings;
 use Test::More tests => 6;
 use Test::Exception;
 use Test::NoWarnings;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use BOM::MarketData::VolSurface::Utils;
@@ -13,12 +13,12 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::Underlying;
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'partial_trading',
     {
-        type => 'early_closes',
+        type          => 'early_closes',
         recorded_date => $now,
-        calendar => {
+        calendar      => {
             '24-Dec-2015' => {
                 '18h00m' => ['FOREX'],
             },
@@ -30,19 +30,19 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             },
         },
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => 'USD',
         recorded_date => $now,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => 'JPY',
         recorded_date => $now,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -82,7 +82,6 @@ subtest 'vol_cutoff_during_early_close' => sub {
     my $p = $c->build_parameters;
     compare_cut_off($date_start, 5, $p, $exchange);
 };
-
 
 sub compare_cut_off {
     my ($date_start, $no_of_day, $pricing_param, $exchange) = @_;

@@ -7,8 +7,7 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Market::AggTicks;
 
 use BOM::Test::Runtime qw(:normal);
@@ -18,7 +17,6 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::MarketData::VolSurface::Utils;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-
 
 BOM::Market::AggTicks->new->flush;
 
@@ -43,14 +41,14 @@ my $first_day = Date::Utility->new($date_start)->truncate_to_day;
 my $next_day = Date::Utility->new($date_start + (3600 * 9));
 
 foreach my $day ($first_day, $next_day) {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol        => $_,
             recorded_date => $day,
-        }) for (qw/GBP JPY USD AUD EUR SGD/);
+        }) for (qw/GBP JPY USD AUD EUR SGD JPY-USD/);
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => $_,

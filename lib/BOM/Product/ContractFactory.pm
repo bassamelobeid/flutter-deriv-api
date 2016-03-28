@@ -18,6 +18,7 @@ use Cache::RedisDB;
 use List::Util qw( first );
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
+use YAML::XS qw(LoadFile);
 
 use BOM::Market::Data::Tick;
 use BOM::Platform::Context qw(request);
@@ -33,12 +34,16 @@ our @EXPORT_OK = qw( produce_contract make_similar_contract simple_contract_info
 require BOM::Product::Contract::Asiand;
 require BOM::Product::Contract::Asianu;
 require BOM::Product::Contract::Call;
+require BOM::Product::Contract::Calle;
+require BOM::Product::Contract::Pute;
 require BOM::Product::Contract::Digitdiff;
 require BOM::Product::Contract::Digiteven;
 require BOM::Product::Contract::Digitmatch;
 require BOM::Product::Contract::Digitodd;
 require BOM::Product::Contract::Digitover;
 require BOM::Product::Contract::Digitunder;
+require BOM::Product::Contract::Expirymisse;
+require BOM::Product::Contract::Expiryrangee;
 require BOM::Product::Contract::Expirymiss;
 require BOM::Product::Contract::Expiryrange;
 require BOM::Product::Contract::Invalid;
@@ -89,10 +94,13 @@ my %OVERRIDE_LIST = (
     },
 );
 
-sub produce_contract {
-    my ($build_arg, $maybe_currency) = @_;
+my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
 
-    my $params_ref = _args_to_ref($build_arg, $maybe_currency);
+sub produce_contract {
+    my ($build_arg, $maybe_currency, $maybe_sold) = @_;
+
+    my $params_ref = _args_to_ref($build_arg, $maybe_currency, $maybe_sold);
+
     # dereference here
     my %input_params = %$params_ref;
 
@@ -105,16 +113,19 @@ sub produce_contract {
     # common initialization for spreads and derivatives
     if (defined $OVERRIDE_LIST{$input_params{bet_type}}) {
         my $override_params = $OVERRIDE_LIST{$input_params{bet_type}};
-        delete $input_params{bet_type};
         $input_params{$_} = $override_params->{$_} for keys %$override_params;
     }
+
+    $input_params{bet_type} = 'LEGACY' unless exists $contract_type_config->{$input_params{bet_type}};
+    my %type_config = %{$contract_type_config->{$input_params{bet_type}}};
+    @input_params{keys %type_config} = values %type_config;
 
     my $contract_class;
     my $bet_type = ucfirst lc $input_params{bet_type};
     if (
         grep { /^$bet_type$/ }
         qw/
-        Asiand Asianu Call Digitdiff Digiteven Digitmatch Digitodd Digitover Digitunder Expirymiss
+        Expiryrangee Expirymisse Calle Pute Asiand Asianu Call Digitdiff Digiteven Digitmatch Digitodd Digitover Digitunder Expirymiss
         Expiryrange Notouch Onetouch Put Range Spreadd Spreadu Upordown Vanilla_call Vanilla_put
         /
         )
@@ -136,7 +147,7 @@ sub produce_contract {
     }
 
     my $contract_obj;
-    if ($contract_class->category_code eq 'spreads') {
+    if ($input_params{category} eq 'spreads') {
         $input_params{date_start} = Date::Utility->new if not $input_params{date_start};
         for (grep { defined $input_params{$_} } qw(stop_loss stop_profit)) {
             # copy them to supplied, we will build stop_loss & stop_profit later
@@ -278,12 +289,12 @@ sub produce_contract {
 }
 
 sub _args_to_ref {
-    my ($build_arg, $maybe_currency) = @_;
+    my ($build_arg, $maybe_currency, $maybe_sold) = @_;
 
     my $params_ref =
           (ref $build_arg eq 'HASH') ? $build_arg
         : ((ref $build_arg) =~ /BOM::Database::Model::FinancialMarketBet/) ? financial_market_bet_to_parameters($build_arg, $maybe_currency)
-        : (defined $build_arg) ? shortcode_to_parameters($build_arg, $maybe_currency)
+        : (defined $build_arg) ? shortcode_to_parameters($build_arg, $maybe_currency, $maybe_sold)
         :                        undef;
 
     # After all of that, we should have gotten a hash reference.

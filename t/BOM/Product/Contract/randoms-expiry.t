@@ -10,13 +10,13 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::Data::Tick;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Date::Utility;
 
 my $now = Date::Utility->new()->truncate_to_day->plus_time_interval('1h');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => $_}) for qw(RDMARS RDSUN RDMOON RDVENUS);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('index', {symbol => $_}) for qw(RDMARS RDSUN RDMOON RDVENUS);
 
 my @test_cases = ({
         underlying => 'RDSUN',
@@ -47,6 +47,7 @@ my @test_cases = ({
         ],
     },
 );
+
 foreach my $t (@test_cases) {
     my $u        = $t->{underlying};
     my @duration = ('24h', '1h1s', '1h', '15s');
@@ -63,8 +64,10 @@ foreach my $t (@test_cases) {
             quote  => 100,
             epoch  => $ds->epoch,
         });
-        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {
-                symbol => 'USD',
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'currency',
+            {
+                symbol        => 'USD',
                 recorded_date => $ds,
             });
 

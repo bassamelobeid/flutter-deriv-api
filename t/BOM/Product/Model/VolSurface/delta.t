@@ -18,14 +18,14 @@ use BOM::Test::Runtime qw(:normal);
 use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Delta;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new,
+        symbol        => $_,
+        recorded_date => Date::Utility->new,
     }) for (qw/EUR JPY USD/);
 
 initialize_realtime_ticks_db();
@@ -224,7 +224,7 @@ subtest get_market_rr_bf => sub {
 subtest 'Flagging System' => sub {
     plan tests => 9;
 
-    my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             recorded_date => Date::Utility->new,
@@ -260,7 +260,7 @@ subtest 'object creaion error check' => sub {
     my $surface       = {1 => {smile => {50 => 0.1}}};
     throws_ok { BOM::MarketData::VolSurface::Delta->new(surface => $surface, recorded_date => $recorded_date) }
     qr/Attribute \(symbol\) is required/,
-    'Cannot create volsurface without underlying';
+        'Cannot create volsurface without underlying';
     throws_ok { BOM::MarketData::VolSurface::Delta->new(surface => $surface, underlying => $underlying) }
     qr/Must pass both "surface" and "recorded_date" if passing either/, 'Cannot create volsurface without recorded_date';
     lives_ok { BOM::MarketData::VolSurface::Delta->new(surface => $surface, underlying => $underlying, recorded_date => $recorded_date) }
@@ -270,7 +270,7 @@ subtest 'object creaion error check' => sub {
 subtest effective_date => sub {
     plan tests => 2;
 
-    my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             recorded_date => Date::Utility->new('2012-03-09 21:15:00'),
@@ -279,7 +279,7 @@ subtest effective_date => sub {
 
     is($surface->_ON_day, 3, 'In winter, 21:15 on Friday is before rollover so _ON_day is 3.');
 
-    $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             recorded_date => Date::Utility->new('2012-03-16 21:15:00'),
@@ -292,7 +292,7 @@ subtest effective_date => sub {
 subtest cloning => sub {
     plan tests => 11;
 
-    my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             recorded_date => Date::Utility->new,
@@ -388,7 +388,7 @@ subtest 'get_volatility, part 1.' => sub {
 
     plan tests => scalar(@days_to_expiry) * 6 + 5;
 
-    my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             surface       => $expected_vols_delta,
@@ -433,11 +433,11 @@ subtest 'get_volatility, part 1.' => sub {
     }
 };
 
-subtest 'save surface to couch' => sub {
+subtest 'save surface to chronicle' => sub {
     plan tests => 1;
 
     my $surface = _get_surface();
-    lives_ok { $surface->save } 'can save surface to couch';
+    lives_ok { $surface->save } 'can save surface to chronicle';
 };
 
 # PRIVATE METHODS
@@ -467,7 +467,7 @@ subtest _convert_expiry_to_day => sub {
 subtest _validate_sought_points => sub {
     plan tests => 6;
 
-    my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             surface => {
@@ -569,14 +569,14 @@ subtest fetch_historical_surface_date => sub {
     plan tests => 3;
 
     # Save a couple of surface so that we have some history.
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => 'frxUSDJPY',
             recorded_date => Date::Utility->new->minus_time_interval('5m'),
         });
 
-    my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => 'frxUSDJPY',

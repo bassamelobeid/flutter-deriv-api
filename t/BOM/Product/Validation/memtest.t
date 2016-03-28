@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use Test::More tests => 2;
 use Test::NoWarnings;
@@ -27,9 +27,10 @@ my @underlyings = map { BOM::Market::Underlying->new($_) } map { (get_offerings_
 my $all                     = Finance::Asset->all_parameters;
 my @market_data_underlyings = map { BOM::Market::Underlying->new($_) } keys %$all;
 my @exchanges               = map { Finance::Asset->get_parameters_for($_->symbol)->{exchange_name} } @market_data_underlyings;
-my %known_surfaces = map {$_ => 1} qw(moneyness delta);
-my %volsurfaces = map { $_->symbol => 'volsurface_' . $_->volatility_surface_type } grep { $known_surfaces{$_->volatility_surface_type} } @market_data_underlyings;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+my %known_surfaces          = map { $_ => 1 } qw(moneyness delta);
+my %volsurfaces =
+    map { $_->symbol => 'volsurface_' . $_->volatility_surface_type } grep { $known_surfaces{$_->volatility_surface_type} } @market_data_underlyings;
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol        => $_->symbol,
@@ -38,15 +39,16 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 my @currencies =
     map { $_->market->name =~ /(forex|commodities)/ ? ($_->asset_symbol, $_->quoted_currency_symbol) : ($_->quoted_currency_symbol) } @underlyings;
 
-for (@currencies) {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+my @payout_curr = qw(USD GBP EUR AUD);
+for (@currencies, @payout_curr, 'AUD-JPY', 'AUD-CAD', 'JPY-AUD', 'CAD-AUD') {
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol        => $_,
             recorded_date => $now
         });
 }
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     $volsurfaces{$_},
     {
         symbol        => $_,
@@ -83,7 +85,7 @@ my %correlations = map {
     $_->symbol !~ /frx/
     } @market_data_underlyings;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',
     {
         symbol       => 'indices',
@@ -100,6 +102,10 @@ my %expiry_type = (
     intraday => '5h',
     tick     => '10t',
 );
+
+#Cycle test will complain because of data types it cannot handle (Redis's Socket has these data types)
+#So we just ignore those complaints here
+$SIG{__WARN__} = sub { my $w = shift; return if $w =~ /^Unhandled type: GLOB/; die $w; };
 
 sub _get_barrier {
     my $type = shift;
@@ -187,4 +193,4 @@ subtest 'memory cycle test' => sub {
             }
         }
     }
-}
+    }

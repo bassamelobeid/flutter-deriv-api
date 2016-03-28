@@ -6,7 +6,7 @@ extends 'BOM::Product::Pricing::Engine::Intraday';
 use JSON qw(from_json);
 use List::Util qw(max min sum);
 use Sereal qw(decode_sereal);
-use YAML::CacheLoader qw(LoadFile);
+use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
@@ -14,6 +14,7 @@ use BOM::Utility::ErrorStrings qw( format_error_string );
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
+use BOM::Platform::Static::Config;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -22,6 +23,13 @@ sub clone {
         %$changes
     });
 }
+
+my $coefficient = LoadFile('/home/git/regentmarkets/bom/config/files/intraday_trend_calibration.yml');
+
+has coefficients => (
+    is      => 'ro',
+    default => sub { $coefficient },
+);
 
 has [qw(average_tick_count long_term_prediction)] => (
     is         => 'ro',
@@ -67,7 +75,7 @@ has _supported_types => (
 );
 
 has [
-    qw(coefficients probability intraday_delta_correction short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta commission_markup risk_markup)
+    qw(probability intraday_delta_correction short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta commission_markup risk_markup)
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -78,10 +86,6 @@ has [qw(_delta_formula _vega_formula)] => (
     is         => 'ro',
     lazy_build => 1,
 );
-
-sub _build_coefficients {
-    return LoadFile('/home/git/regentmarkets/bom/config/files/intraday_trend_calibration.yml');
-}
 
 =head1 probability
 
@@ -435,16 +439,12 @@ sub _build_commission_markup {
     my $self = shift;
 
     my $bet = $self->bet;
-    my $comm_base_amount =
-        ($self->bet->built_with_bom_parameters)
-        ? BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor
-        : 1;
 
     my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
         name        => 'commission_scaling_factor',
         description => 'A scaling factor to control commission',
         set_by      => __PACKAGE__,
-        base_amount => $comm_base_amount,
+        base_amount => 1,
     });
 
     my $comm_markup = Math::Util::CalculatedValue::Validatable->new({
@@ -457,7 +457,7 @@ sub _build_commission_markup {
         name        => 'intraday_historical_fixed',
         description => 'fixed commission markup for Intraday::Forex pricer',
         set_by      => __PACKAGE__,
-        base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_fixed,
+        base_amount => BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_fixed},
     });
 
     $comm_markup->include_adjustment('info',  $comm_scale);
@@ -557,7 +557,7 @@ sub _build_risk_markup {
             name        => 'intraday_historical_iv_risk',
             description => 'Intraday::Forex markup for IV contracts only.',
             set_by      => 'quants.commission.intraday.historical_iv_risk',
-            base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_iv_risk / 100,
+            base_amount => BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_iv_risk} / 100,
         });
         $risk_markup->include_adjustment('add', $iv_risk);
     }
@@ -596,7 +596,7 @@ has [qw(_vega_formula _delta_formula)] => (
 sub _build_intraday_vega_correction {
     my $self = shift;
 
-    my $vmr = BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_vol_meanrev;
+    my $vmr = BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_vol_meanrev};
     my $vc  = Math::Util::CalculatedValue::Validatable->new({
         name        => 'vega_correction',
         description => 'correction for uncertianty of vol',

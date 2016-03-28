@@ -31,7 +31,7 @@ sub available_contracts_for_symbol {
     if ($exchange->trades_on($now)) {
         $open  = $exchange->opening_on($now)->epoch;
         $close = $exchange->closing_on($now)->epoch;
-        my $flyby = BOM::Product::Offerings::get_offerings_flyby;
+        my $flyby = BOM::Product::Offerings::get_offerings_flyby('japan');
         @offerings = $flyby->query({
                 underlying_symbol => $symbol,
                 start_type        => 'spot',
@@ -46,7 +46,6 @@ sub available_contracts_for_symbol {
 
         for my $o (@offerings) {
             my $cc = $o->{contract_category};
-            my $bc = $o->{barrier_category};
 
             my $cat = BOM::Product::Contract::Category->new($cc);
             $o->{contract_category_display} = $cat->display_name;
@@ -59,14 +58,14 @@ sub available_contracts_for_symbol {
                 contract     => $o,
                 date         => $now,
             });
-
         }
     }
     return {
-        available => \@offerings,
-        hit_count => scalar(@offerings),
-        open      => $open,
-        close     => $close,
+        available    => \@offerings,
+        hit_count    => scalar(@offerings),
+        open         => $open,
+        close        => $close,
+        feed_license => $underlying->feed_license
     };
 }
 
@@ -95,7 +94,7 @@ Daily contract:
 
 =cut
 
-my $cache_keyspace = 'FINDER_PREDEFINED_TRADING';
+my $cache_keyspace = 'FINDER_PREDEFINED_SET';
 my $cache_sep      = '==';
 
 sub _predefined_trading_period {
@@ -107,11 +106,11 @@ sub _predefined_trading_period {
     my $now_hour          = $now->hour;
     my $now_minute        = $now->minute;
     my $now_date          = $now->date;
-    my $trading_key       = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
+    my $trading_key       = join($cache_sep, $symbol, $now_date, $now_hour);
     my $today_close       = $exchange->closing_on($now);
     my $today_close_epoch = $today_close->epoch;
-    my $today             = $now->truncate_to_day;                                       # Start of the day object.
-    my $trading_periods;                                                                 #= Cache::RedisDB->get($cache_keyspace, $trading_key);
+    my $today             = $now->truncate_to_day;                                # Start of the day object.
+    my $trading_periods   = Cache::RedisDB->get($cache_keyspace, $trading_key);
 
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
@@ -320,7 +319,7 @@ sub _get_daily_trading_window {
 
 }
 
-=head2 _set_predefined_barriers
+=head2 _set_predefined_iarriers
 
 To set the predefined barriers on each trading period.
 We do a binary search to find out the boundaries barriers associated with theo_prob [0.05,0.95] of a digital call,
@@ -349,8 +348,7 @@ sub _set_predefined_barriers {
                 vol        => 0.1,
             });
         } qw(0.05 0.95);
-
-        @$available_barriers = _split_boundaries_barriers({
+        $available_barriers = _split_boundaries_barriers({
             pip_size           => $underlying->pip_size,
             start_tick         => $start_tick->quote,
             boundaries_barrier => \@boundaries_barrier
@@ -359,24 +357,118 @@ sub _set_predefined_barriers {
         # Expires at the end of the available period.
         Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - $now->epoch);
     }
+
+    my $expired_barriers = _get_expired_barriers({
+        available_barriers => $available_barriers,
+        start              => $date_start,
+        expiry             => $date_expiry,
+        now                => $now->epoch,
+        underlying         => $underlying
+    });
+
     if ($contract->{barriers} == 1) {
-        $contract->{available_barriers} = $available_barriers;
-        $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @{$available_barriers};
+        my @barriers = sort values %$available_barriers;
+
+        $contract->{expired_barriers}   = $contract->{barrier_category} ne 'american' ? [] : $expired_barriers;
+        $contract->{available_barriers} = \@barriers;
+        $contract->{barrier}            = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @barriers;
     } elsif ($contract->{barriers} == 2) {
-        my @lower_barriers  = grep { $current_tick_quote > $_ } @{$available_barriers};
-        my @higher_barriers = grep { $current_tick_quote < $_ } @{$available_barriers};
-        $contract->{available_barriers} = [\@lower_barriers, \@higher_barriers];
-        $contract->{high_barrier}       = $higher_barriers[0];
-        $contract->{low_barrier}        = $lower_barriers[0];
+        ($contract->{available_barriers}, $contract->{expired_barriers}) = _get_barriers_pair({
+            contract_category  => $contract->{contract_category},
+            available_barriers => $available_barriers,
+            expired_barriers   => $expired_barriers,
+        });
+
     }
 
     return;
 }
 
+=head2 _get_expired_barriers
+
+- To check is any of our available barriers is expired
+- reset the redis cache if there is new expired barriers
+
+=cut
+
+sub _get_expired_barriers {
+    my $args = shift;
+
+    my $available_barriers   = $args->{available_barriers};
+    my $date_start           = $args->{start};
+    my $date_expiry          = $args->{expiry};
+    my $now                  = $args->{now};
+    my $underlying           = $args->{underlying};
+    my $expired_barriers_key = join($cache_sep, $underlying->symbol, 'expired_barrier', $date_start, $date_expiry);
+    my $expired_barriers     = Cache::RedisDB->get($cache_keyspace, $expired_barriers_key);
+    my ($high, $low) = @{
+        $underlying->get_high_low_for_period({
+                start => $date_start,
+                end   => $now,
+            })}{'high', 'low'};
+    my @barriers                  = sort values %$available_barriers;
+    my %skip_list                 = map { $_ => 1 } (@$expired_barriers);
+    my @unexpired_barriers        = grep { !$skip_list{$_} } @barriers;
+    my $new_added_expired_barrier = 0;
+
+    if (defined $high and defined $low) {
+        foreach my $barrier (@unexpired_barriers) {
+            if ($barrier < $high && $barrier > $low) {
+                push @$expired_barriers, $barrier;
+                $new_added_expired_barrier++;
+            }
+        }
+    }
+    if ($new_added_expired_barrier > 0) {
+        Cache::RedisDB->set($cache_keyspace, $expired_barriers_key, $expired_barriers, $date_expiry - $now);
+    }
+
+    return $expired_barriers;
+
+}
+
+=head2 _get_barriers_pair
+
+- For staysinout contract, we need to pair the barriers symmetry, ie ( 45, 55), (40,60), (35,65), (20,80), (5,95) 
+- For endsinout contract, we need to pair barriers as follow: (45,55), (40,50), (50,60), (35,45), (55,65), (20,40), (60,80)
+
+Note: 45 is -5d from the spot at start and 55 is +5d from spot at start
+where d is the minimum increment that determine by divided the distance of boundaries by 90 (45 each side) 
+
+
+=cut
+
+sub _get_barriers_pair {
+    my $args = shift;
+
+    my $contract_category        = $args->{contract_category};
+    my $available_barriers       = $args->{available_barriers};
+    my $list_of_expired_barriers = $args->{expired_barriers};
+    my @barrier_pairs =
+        $contract_category eq 'staysinout'
+        ? ([45, 55], [40, 60], [35, 65], [20, 80], [5, 95])
+        : ([45, 55], [40, 50], [50, 60], [35, 45], [55, 65], [20, 40], [60, 80]);
+    my @barriers;
+    my @expired_barriers;
+    for my $pair (@barrier_pairs) {
+        my ($barrier_low, $barrier_high) = @$pair;
+        my $first_barrier  = $available_barriers->{$barrier_low};
+        my $second_barrier = $available_barriers->{$barrier_high};
+
+        if ($contract_category eq 'staysinout') {
+            push @expired_barriers, [$first_barrier, $second_barrier]
+                if (grep { $_ eq $first_barrier or $_ eq $second_barrier } @$list_of_expired_barriers);
+
+        }
+        push @barriers, [$first_barrier, $second_barrier];
+    }
+
+    return (\@barriers, \@expired_barriers);
+}
+
 =head2 _split_boundaries_barriers
 
-
--Split the boundaries barriers into 20 barriers.
+-Split the boundaries barriers into 10 barriers by divided the distance of boundaries by 90 (45 each side) - to be used as increment.
 The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
 - Included entry spot as well
 
@@ -389,11 +481,11 @@ sub _split_boundaries_barriers {
     my $spot_at_start               = $args->{start_tick};
     my @boundaries_barrier          = @{$args->{boundaries_barrier}};
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
-    my @steps                       = (1, 2, 3, 4, 5, 7, 9, 14, 24, 44);
+    my @steps                       = (5, 10, 15, 30, 45);
     my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
-    my @barriers                    = map { ($spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step) } @steps;
-    push @barriers, $spot_at_start;
-    return @barriers;
+    my %barriers                    = map { (50 - $_ => $spot_at_start - $_ * $minimum_step, 50 + $_ => $spot_at_start + $_ * $minimum_step) } @steps;
+    $barriers{50} = $spot_at_start;
+    return \%barriers;
 }
 
 =head2 _get_strike_from_call_bs_price

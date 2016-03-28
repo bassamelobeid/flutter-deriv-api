@@ -6,7 +6,7 @@ use warnings;
 use Test::More tests => 5;
 use Test::Exception;
 use Test::NoWarnings;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
@@ -15,19 +15,25 @@ use BOM::Product::ContractFactory qw(produce_contract);
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => 'USD',
-        recorded_date   => $now,
+        symbol        => 'USD',
+        recorded_date => $now,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => 'JPY',
-        recorded_date   => $now,
+        symbol        => 'JPY',
+        recorded_date => $now,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => 'JPY-USD',
+        recorded_date => $now,
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -135,7 +141,8 @@ subtest 'expiry conditions' => sub {
     $c = produce_contract($args);
     ok $c->is_expired, 'expired';
     ok $c->exit_tick,  'has exit tick';
-    cmp_ok $c->value,  '==', $c->payout, 'full payout';
+    ok $c->exit_tick->quote > $c->barrier->as_absolute;
+    cmp_ok $c->value, '==', $c->payout, 'full payout';
 };
 
 subtest 'shortcodes' => sub {

@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::Most tests => 8;
+use Test::Deep;
 use Test::NoWarnings;
 use Test::Exception;
 use BOM::Product::Contract::Category;
@@ -22,7 +23,7 @@ subtest 'callput' => sub {
     ok !$cat->is_path_dependent;
     is_deeply $cat->supported_expiries, ['intraday', 'daily', 'tick'];
     is_deeply $cat->supported_start_types, ['spot', 'forward'];
-    cat_type_match($cat);
+    cmp_bag $cat->available_types, ['CALLE', 'CALL', 'PUTE', 'PUT'];
 };
 
 subtest 'asian' => sub {
@@ -33,7 +34,7 @@ subtest 'asian' => sub {
     ok !$cat->is_path_dependent;
     is_deeply $cat->supported_expiries,    ['tick'];
     is_deeply $cat->supported_start_types, ['spot'];
-    cat_type_match($cat);
+    cmp_bag $cat->available_types, ['ASIANU', 'ASIAND'];
 };
 
 subtest 'digits' => sub {
@@ -44,7 +45,7 @@ subtest 'digits' => sub {
     ok !$cat->is_path_dependent;
     is_deeply $cat->supported_expiries,    ['tick'];
     is_deeply $cat->supported_start_types, ['spot'];
-    cat_type_match($cat);
+    cmp_bag $cat->available_types, ['DIGITMATCH', 'DIGITDIFF', 'DIGITODD', 'DIGITEVEN', 'DIGITOVER', 'DIGITUNDER'];
 };
 
 subtest 'touchnotouch' => sub {
@@ -55,7 +56,7 @@ subtest 'touchnotouch' => sub {
     ok $cat->is_path_dependent;
     is_deeply $cat->supported_expiries, ['intraday', 'daily'];
     is_deeply $cat->supported_start_types, ['spot'];
-    cat_type_match($cat);
+    cmp_bag $cat->available_types, ['ONETOUCH', 'NOTOUCH'];
 };
 
 subtest 'endsinout' => sub {
@@ -66,7 +67,7 @@ subtest 'endsinout' => sub {
     ok !$cat->is_path_dependent;
     is_deeply $cat->supported_expiries, ['intraday', 'daily'];
     is_deeply $cat->supported_start_types, ['spot'];
-    cat_type_match($cat);
+    cmp_bag $cat->available_types, ['EXPIRYRANGE', 'EXPIRYMISS', 'EXPIRYMISSE', 'EXPIRYRANGEE'];
 };
 
 subtest 'staysinout' => sub {
@@ -77,17 +78,5 @@ subtest 'staysinout' => sub {
     ok $cat->is_path_dependent;
     is_deeply $cat->supported_expiries, ['intraday', 'daily'];
     is_deeply $cat->supported_start_types, ['spot'];
-    cat_type_match($cat);
+    cmp_bag $cat->available_types, ['RANGE', 'UPORDOWN'];
 };
-
-sub cat_type_match {
-    my $cat = shift;
-
-    subtest 'Available types' => sub {
-        foreach my $class_name (@{$cat->available_types}) {
-            use_ok($class_name);
-            is $class_name->category_code, $cat->code, 'correctly sorted.';
-        }
-    };
-}
-

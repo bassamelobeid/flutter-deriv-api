@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 4);
+use Test::More (tests => 5);
 use Test::FailWarnings;
 use Test::Exception;
 use Test::MockModule;
@@ -10,30 +10,30 @@ use JSON qw(decode_json);
 
 use BOM::Market::Data::Tick;
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
         recorded_date => Date::Utility->new,
     }) for qw/frxUSDJPY R_100/;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/JPY USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_100',
         date   => Date::Utility->new
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'JPY',
@@ -191,6 +191,19 @@ subtest 'simple_contract_info' => sub {
     like $desc, qr#^USD 1.00#, 'our params got us what seems like it might be a description';
     ok(!$ticky,  "our params do not create a tick expiry contract.");
     ok($spready, "our params create a spread contract.");
+};
+
+subtest 'invalid contracts does not die' => sub {
+    my $invalid_shortcode = 'RUNBET_DOUBLEUP_GBP20_R_50_5';
+    lives_ok {
+        my $contract = produce_contract($invalid_shortcode, 'GBP');
+        isa_ok $contract, 'BOM::Product::Contract::Invalid';
+    } 'produce_contract on legacy shortcode lives';
+
+    lives_ok {
+        my @info = simple_contract_info($invalid_shortcode, 'GBP');
+        like($info[0], qr/Legacy contract. No further information is available/, 'legacy longcode');
+    } 'simple_contract_info for legacy shortcode lives';
 };
 
 1;

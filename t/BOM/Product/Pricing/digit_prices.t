@@ -11,24 +11,24 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('2014-11-11');
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'USD',
         date   => $now,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'R_50',
         date   => $now,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'R_50',
@@ -89,11 +89,11 @@ subtest 'prices' => sub {
         };
     }
 
-    $params->{barrier} = 9;
+    $params->{barrier}  = 9;
     $params->{bet_type} = 'DIGITDIFF';
     my $c = produce_contract($params);
     _check_amount($c->bs_probability, 0.9, 'bs_prob');
-    _check_amount($c->total_markup,   0.00909090909090909,  'markup not the minmum');
+    _check_amount($c->total_markup, 0.00909090909090909, 'markup not the minmum');
 };
 
 subtest 'invalid selections' => sub {

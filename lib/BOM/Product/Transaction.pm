@@ -34,6 +34,7 @@ use BOM::Product::CustomClientLimits;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Utility::Log4perl qw/get_logger/;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
+use BOM::Platform::Static::Config;
 
 extends 'BOM::Platform::Transaction';
 
@@ -269,7 +270,8 @@ sub stats_stop {
 sub calculate_limits {
     my $self = shift;
 
-    my $ql = BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+    my $app_config    = BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+    my $static_config = BOM::Platform::Static::Config::quants->{client_limits};
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
@@ -280,7 +282,7 @@ sub calculate_limits {
     if (not $contract->tick_expiry) {
         $self->limits->{max_open_bets}                      = $client->get_limit_for_open_positions;
         $self->limits->{max_payout_open_bets}               = $client->get_limit_for_payout;
-        $self->limits->{max_payout_per_symbol_and_bet_type} = $ql->payout_per_symbol_and_bet_type_limit;
+        $self->limits->{max_payout_per_symbol_and_bet_type} = $static_config->{payout_per_symbol_and_bet_type_limit}->{$currency};
     }
 
     $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
@@ -298,26 +300,18 @@ sub calculate_limits {
         and $self->limits->{max_30day_losses} = $lim;
 
     if ($client->loginid !~ /^VRT/ and $contract->market->name eq 'forex' and $contract->is_intraday and not $contract->is_atm_bet) {
-        $lim = $self->limits->{intraday_forex_iv_action} = from_json($ql->intraday_forex_iv);
+        $lim = $self->limits->{intraday_forex_iv_action} = {
+            turnover         => $app_config->intraday_forex_iv_turnover->$currency,
+            realized_profit  => $app_config->intraday_forex_iv_realized_profit->$currency,
+            potential_profit => $app_config->intraday_forex_iv_potential_profit->$currency,
+        };
         for (keys %$lim) {
             delete $lim->{$_} if $lim->{$_} == 0;
         }
     }
 
-    # formerly _validate_promo_code_limit
-    my $cpc = $client->client_promo_code;
-    if ($cpc and $cpc->status ne 'CANCEL') {
-        my $pc = $cpc->promotion;
-        if ($pc->promo_code_type eq 'FREE_BET') {
-            # our rule is that a client who use free bet, cannot win an amount more than
-            # 25 times the promo code value without any deposit. If the Client already
-            # has a balance more than the amount, we do not allow him to trade anymore.
-            $self->limits->{max_balance_without_real_deposit} = 25 * from_json($pc->promo_code_config)->{amount};
-        }
-    }
-
     if ($contract->is_spread) {
-        $self->limits->{spread_bet_profit_limit} = $ql->spreads_daily_profit_limit;
+        $self->limits->{spread_bet_profit_limit} = $app_config->spreads_daily_profit->$currency;
     }
 
     if ($contract->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
@@ -325,7 +319,7 @@ sub calculate_limits {
             +{
             bet_type => [map { {n => $_} } 'CALL', 'PUT'],
             name     => 'tick_expiry_engine_turnover_limit',
-            limit    => $ql->tick_expiry_engine_turnover_limit,
+            limit    => $app_config->tick_expiry_engine_daily_turnover->$currency,
             symbols  => [
                 map { {n => $_} } get_offerings_with_filter(
                     'underlying_symbol',
@@ -342,17 +336,17 @@ sub calculate_limits {
             +{
             bet_type => [map { {n => $_} } 'CALL', 'PUT'],
             name     => 'intraday_spot_index_turnover_limit',
-            limit    => $ql->intraday_spot_index_turnover_limit,
+            limit    => $static_config->{intraday_spot_index_turnover_limit}->{$currency},
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => 'indices'})],
             };
     }
 
-    if ($contract->underlying->submarket->name eq 'smart_index' or $contract->underlying->submarket->name eq 'smart_fx') {
+    if ($contract->underlying->submarket->name eq 'smart_fx') {
         push @{$self->limits->{specific_turnover_limits}},
             +{
-            name    => 'smarties_turnover_limit',
-            limit   => $ql->smarties_turnover_limit,
-            symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => ['smart_fx', 'smart_index']})],
+            name    => 'smartfx_turnover_limit',
+            limit   => $static_config->{smartfx_turnover_limit}->{$currency},
+            symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => 'smart_fx'})],
             };
     }
 
@@ -360,17 +354,8 @@ sub calculate_limits {
         push @{$self->limits->{specific_turnover_limits}},
             +{
             name    => 'stocks_turnover_limit',
-            limit   => $ql->stocks_turnover_limit,
+            limit   => $static_config->{stocks_turnover_limit}->{$currency},
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => 'stocks'})],
-            };
-    }
-
-    if ($contract->underlying->submarket->name eq 'smart_index') {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            name    => 'smart_index_turnover_limit',
-            limit   => $ql->smart_index_turnover_limit,
-            symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => 'smart_index'})],
             };
     }
 
@@ -379,7 +364,7 @@ sub calculate_limits {
             +{
             bet_type    => [map { {n => $_} } 'ASIANU', 'ASIAND'],
             name        => 'asian_turnover_limit',
-            limit       => $ql->asian_turnover_limit,
+            limit       => $app_config->asian_daily_turnover->$currency,
             tick_expiry => 1,
             };
     }
@@ -732,10 +717,9 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _validate_payout_limit
             _is_valid_to_sell
             _validate_available_currency
-            _validate_currency/,
-            # always sell at market price -- must be called after _is_valid_to_sell
-            sub { $_[0]->price($_[0]->contract->bid_price); return },
-            '_validate_date_pricing',
+            _validate_currency,
+            _validate_sell_pricing_adjustment
+            _validate_date_pricing/
             );
 
         $self->comment($self->_build_pricing_comment) unless defined $self->comment;
@@ -849,8 +833,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_daily_turnover, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_daily_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your daily turnover limit of [_1][_2].',
@@ -902,9 +885,7 @@ my %known_errors = (
         }
 
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($self->client->get_limit_for_account_balance, USD => $currency)), 1);
-        my $account = BOM::Database::DataMapper::Account->new({
+        my $account  = BOM::Database::DataMapper::Account->new({
             client_loginid => $self->client->loginid,
             currency_code  => $currency,
         });
@@ -959,8 +940,7 @@ my %known_errors = (
         my $retry = shift;
 
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($self->client->get_limit_for_account_balance, USD => $currency)), 1);
+        my $limit = to_monetary_number_format($self->client->get_limit_for_account_balance, 1);
 
         my $account = BOM::Database::DataMapper::Account->new({
             client_loginid => $self->client->loginid,
@@ -972,8 +952,8 @@ my %known_errors = (
             -type              => 'AccountBalanceExceedsLimit',
             -mesg              => 'Client balance is above the allowed limits',
             -message_to_client => BOM::Platform::Context::localize(
-                'Sorry, your account cash balance is too high ([_1]). Your maximum account balance is [_2].',
-                "$currency$balance", $limit
+                'Sorry, your account cash balance is too high ([_1]). Your maximum account balance is [_2].', "$currency$balance",
+                "$currency$limit"
             ),
         );
     },
@@ -991,15 +971,14 @@ my %known_errors = (
         }
 
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($self->client->get_limit_for_payout, USD => $currency)), 1);
+        my $limit = to_monetary_number_format($self->client->get_limit_for_payout, 1);
 
         return Error::Base->cuss(
             -type              => 'OpenPositionPayoutLimit',
             -mesg              => 'Client has reached maximum net payout for open positions',
             -message_to_client => BOM::Platform::Context::localize(
-                'Sorry, the aggregate payouts of contracts on your account cannot exceed [_2][_1].',
-                $limit, $currency
+                'Sorry, the aggregate payouts of contracts on your account cannot exceed [_1][_2].',
+                $currency, $limit
             ),
         );
     },
@@ -1028,8 +1007,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_daily_losses, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_daily_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your daily limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1044,8 +1022,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_7day_turnover, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_7day_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 7-day turnover limit of [_1][_2].',
@@ -1062,8 +1039,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_7day_losses, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_7day_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 7-day limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1087,8 +1063,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_30day_turnover, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_30day_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 30-day turnover limit of [_1][_2].',
@@ -1105,8 +1080,7 @@ my %known_errors = (
 
         my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit =
-            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_30day_losses, USD => $currency)), 1);
+        my $limit    = to_monetary_number_format($client->get_limit_for_30day_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 30-day limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1236,11 +1210,82 @@ sub _build_pricing_comment {
     return sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
 }
 
+sub _validate_sell_pricing_adjustment {
+    my $self = shift;
+
+    # always sell at recomputed bid price for spreads.
+    if ($self->contract->is_spread or not defined $self->price) {
+        $self->price($self->contract->bid_price);
+        return;
+    }
+
+    my $contract = $self->contract;
+    my $currency = $contract->currency;
+
+    my $requested         = $self->price / $self->payout;
+    my $recomputed        = $contract->bid_probability->amount;
+    my $move              = $recomputed - $requested;
+    my $commission_markup = 0;
+    if (not $contract->is_expired) {
+        if ($contract->new_interface_engine) {
+            $commission_markup = $contract->pricing_engine->commission_markup;
+        } else {
+            $commission_markup = $contract->bid_probability->peek_amount('commission_markup') || 0;
+        }
+    }
+    my $allowed_move = $commission_markup * 0.8;
+    $allowed_move = 0 if $recomputed == 1;
+    my ($amount, $recomputed_amount) = ($self->price, $contract->bid_price);
+
+    if ($move != 0) {
+        my $final_value;
+        if ($contract->is_expired) {
+            return Error::Base->cuss(
+                -type              => 'BetExpired',
+                -mesg              => 'Bet expired with a new price[' . $recomputed_amount . '] (old price[' . $amount . '])',
+                -message_to_client => BOM::Platform::Context::localize('The contract has expired'),
+            );
+        } elsif ($allowed_move == 0) {
+            $final_value = $recomputed_amount;
+        } elsif ($move < -$allowed_move) {
+            my $market_moved = BOM::Platform::Context::localize('The underlying market has moved too much since you priced the contract. ');
+            $market_moved .= BOM::Platform::Context::localize(
+                'The contract [_4] has changed from [_1][_2] to [_1][_3].',
+                $currency,
+                to_monetary_number_format($amount),
+                to_monetary_number_format($recomputed_amount),
+                'sell price'
+            );
+
+            return Error::Base->cuss(
+                -type => 'PriceMoved',
+                -mesg =>
+                    "Difference between submitted and newly calculated bet price: currency $currency, amount: $amount, recomputed amount: $recomputed_amount",
+                -message_to_client => $market_moved,
+            );
+        } else {
+            if ($move <= $allowed_move and $move >= -$allowed_move) {
+                $final_value = $amount;
+            } elsif ($move > $allowed_move) {
+                $self->execute_at_better_price(1);
+                $final_value = $recomputed_amount;
+            }
+        }
+
+        $self->price($final_value);
+    }
+
+    return;
+}
+
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
-    # spreads and digits prices don't jump
-    return if $self->contract->is_spread;
+    # always buy at recomputed ask price for spreads.
+    if ($self->contract->is_spread) {
+        $self->price($self->contract->ask_price);
+        return;
+    }
 
     my $amount_type = $self->amount_type;
     my $contract    = $self->contract;
@@ -1498,8 +1543,13 @@ sub __validate_stake_limit {
 
     my $contract        = $self->contract;
     my $landing_company = $client->landing_company;
-    my $stake_limit     = $landing_company->short eq 'maltainvest' ? 5 : $contract->staking_limits->{stake}->{min};
     my $currency        = $contract->currency;
+
+    my $stake_limit =
+        $landing_company->short eq 'maltainvest'
+        ? BOM::Platform::Static::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{$currency}
+        : $contract->staking_limits->{stake}->{min};
+
     if ($contract->ask_price < $stake_limit) {
         return Error::Base->cuss(
             -type => 'StakeTooLow',
@@ -1544,6 +1594,7 @@ Validate if payout is not over the client limits
 
 =cut
 
+# TODO: Checked with Quants, this is unused. Can be removed.
 sub __validate_payout_limit {
     my $self   = shift;
     my $client = shift;
@@ -1609,9 +1660,10 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
-    my %legal_allowed_cc =
-        map { $_ => 1 } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_contract_categories};
-    if (not $legal_allowed_cc{$contract->category_code}) {
+    my $lc = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid);
+
+    my %legal_allowed_ct = map { $_ => 1 } @{$lc->legal_allowed_contract_types};
+    if (not $legal_allowed_ct{$contract->code}) {
         return Error::Base->cuss(
             -type              => 'NotLegalContractCategory',
             -mesg              => 'Clients are not allowed to trade on this contract category as its restricted for this landing company',
@@ -1619,7 +1671,7 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
-    if (not grep { $market_name eq $_ } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_markets}) {
+    if (not grep { $market_name eq $_ } @{$lc->legal_allowed_markets}) {
         return Error::Base->cuss(
             -type              => 'NotLegalMarket',
             -mesg              => 'Clients are not allowed to trade on this markets as its restricted for this landing company',
@@ -1633,6 +1685,15 @@ sub __validate_jurisdictional_restrictions {
             -mesg => 'Clients are not allowed to place Random contracts as their country is restricted.',
             -message_to_client =>
                 BOM::Platform::Context::localize('Sorry, contracts on Random Indices are not available in your country of residence'),
+        );
+    }
+
+    my %legal_allowed_underlyings = map { $_ => 1 } @{$lc->legal_allowed_underlyings};
+    if (not $legal_allowed_underlyings{all} and not $legal_allowed_underlyings{$contract->underlying->symbol}) {
+        return Error::Base->cuss(
+            -type              => 'NotLegalUnderlying',
+            -mesg              => 'Clients are not allowed to trade on this underlying as its restricted for this landing company',
+            -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this underlying.'),
         );
     }
 
@@ -1801,7 +1862,11 @@ sub sell_expired_contracts {
     my %stats_attempt;
     my %stats_failure;
     for my $bet (@$bets) {
-        my $contract = produce_contract($bet->{short_code}, $currency);
+        my $contract;
+        my $error;
+        try { $contract = produce_contract($bet->{short_code}, $currency); } catch { $error = 1; };
+        next if $error;
+
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
         $stats_attempt{$logging_class}++;
         if (not $contract->is_expired) {

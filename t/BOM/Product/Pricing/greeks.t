@@ -10,26 +10,26 @@ use JSON qw(decode_json);
 use Date::Utility;
 use BOM::Test::Runtime qw(:normal);
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 my $date_pricing = '8-Nov-12';
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new($date_pricing),
-    }) for (qw/GBP JPY USD/);
+        symbol        => $_,
+        recorded_date => Date::Utility->new($date_pricing),
+    }) for (qw/GBP JPY USD JPY-USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
-        recorded_date   => Date::Utility->new($date_pricing),
+        recorded_date => Date::Utility->new($date_pricing),
     }) for qw( frxUSDJPY frxGBPJPY frxGBPUSD );
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'JPY',
@@ -43,12 +43,12 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             186 => 0.1,
             365 => 0.13,
         },
-        type         => 'implied',
-        implied_from => 'USD',
-        recorded_date   => Date::Utility->new($date_pricing),
+        type          => 'implied',
+        implied_from  => 'USD',
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'GBP',
@@ -62,9 +62,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             186 => 0.1,
             365 => 0.13,
         },
-        type         => 'implied',
-        implied_from => 'USD',
-        recorded_date   => Date::Utility->new($date_pricing),
+        type          => 'implied',
+        implied_from  => 'USD',
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
 my %bet_params = (

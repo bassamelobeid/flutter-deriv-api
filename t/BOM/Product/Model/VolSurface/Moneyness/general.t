@@ -1,3 +1,4 @@
+use Test::MockTime qw/:all/;
 use Test::Most qw(-Test::Deep);
 use Scalar::Util qw( looks_like_number );
 use Test::MockObject::Extends;
@@ -11,25 +12,25 @@ use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::Market::UnderlyingDB;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'HSI',
         recorded_date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/HKD USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'SPC',
@@ -39,6 +40,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 subtest clone => sub {
     plan tests => 5;
     my $now = Date::Utility->new('2012-06-14 08:00:00');
+    set_absolute_time($now->epoch);
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         quote      => 100,
@@ -70,6 +72,8 @@ subtest clone => sub {
 subtest 'get available strikes on surface' => sub {
     plan tests => 2;
     my $underlying = BOM::Market::Underlying->new('HSI');
+    my $now = Date::Utility->new('2012-06-14 08:00:00');
+    set_absolute_time($now->epoch);
     my $surface    = {
         'ON' => {smile => {100 => 0.1}},
         '1W' => {smile => {100 => 0.2}}};
@@ -77,7 +81,7 @@ subtest 'get available strikes on surface' => sub {
         underlying     => $underlying,
         spot_reference => $underlying->spot,
         surface        => $surface,
-        recorded_date  => Date::Utility->new('2012-06-14 08:00:00'),
+        recorded_date  => $now,
     );
     my $moneyness_points;
     lives_ok { $moneyness_points = $volsurface->moneynesses } 'can call moneynesses';

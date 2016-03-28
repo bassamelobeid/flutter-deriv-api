@@ -16,7 +16,7 @@ use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Format::Util::Numbers qw(roundnear);
 
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
@@ -24,32 +24,32 @@ $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platf
 
 initialize_realtime_ticks_db;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new
+        symbol        => $_,
+        recorded_date => Date::Utility->new
     }) for qw(EUR USD);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'GDAXI',
         recorded_date => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxEURUSD',
         recorded_date => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',
     {
         recorded_date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => $_,
@@ -188,42 +188,42 @@ my $transaction_4 = BOM::Product::Transaction->new({
 isnt $transaction_4->buy, 'undef', 'successful buy';
 my $start_time_5 = Date::Utility->new('2015-11-10 08:30:00')->epoch;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',
     {
         recorded_date => Date::Utility->new($start_time_5),
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new($start_time_5),
+        symbol        => $_,
+        recorded_date => Date::Utility->new($start_time_5),
     }) for qw(EUR USD);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'GDAXI',
-        recorded_date   => Date::Utility->new($start_time_5),
+        symbol        => 'GDAXI',
+        recorded_date => Date::Utility->new($start_time_5),
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'GDAXI',
-        recorded_date   => Date::Utility->new($start_time_5),
+        recorded_date => Date::Utility->new($start_time_5),
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxEURUSD',
-        recorded_date   => Date::Utility->new($start_time_5),
+        recorded_date => Date::Utility->new($start_time_5),
     });
 
-my $end_time_5   = $start_time_5 + 900;
-my $contract_5   = produce_contract('FLASHU_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
-my $p_5          = $contract_5->build_parameters;
+my $end_time_5 = $start_time_5 + 900;
+my $contract_5 = produce_contract('FLASHU_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
+my $p_5        = $contract_5->build_parameters;
 
 my $tick_params_5 = {
     symbol => 'not_checked',

@@ -4,13 +4,14 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use POSIX qw(floor);
 use Time::Duration::Concise;
 use List::Util qw(first);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Product::Offerings qw(get_offerings_flyby);
 use BOM::Product::Contract::Category;
 use BOM::Product::Contract::Strike;
 
@@ -18,8 +19,9 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 
 sub available_contracts_for_symbol {
-    my $args = shift;
-    my $symbol = $args->{symbol} || die 'no symbol';
+    my $args            = shift;
+    my $symbol          = $args->{symbol} || die 'no symbol';
+    my $landing_company = $args->{landing_company};
 
     my $now        = Date::Utility->new;
     my $underlying = BOM::Market::Underlying->new($symbol);
@@ -30,7 +32,7 @@ sub available_contracts_for_symbol {
         $close = $exchange->closing_on($now)->epoch;
     }
 
-    my $flyby = BOM::Product::Offerings::get_offerings_flyby;
+    my $flyby = get_offerings_flyby($landing_company);
     my @offerings = $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {
@@ -122,10 +124,11 @@ sub available_contracts_for_symbol {
     }
 
     return {
-        available => \@offerings,
-        hit_count => scalar(@offerings),
-        open      => $open,
-        close     => $close,
+        available    => \@offerings,
+        hit_count    => scalar(@offerings),
+        open         => $open,
+        close        => $close,
+        feed_license => $underlying->feed_license
     };
 }
 
@@ -172,7 +175,9 @@ sub _default_barrier {
         supplied_barrier => $approximate_barrier,
     );
 
-    return $duration > 86400 ? $strike->as_absolute : $strike->as_difference;
+    my $barrier = $duration >= 86400 ? $strike->as_absolute : $strike->as_difference;
+
+    return $underlying->market->integer_barrier ? floor($barrier) : $barrier;
 }
 
 1;
