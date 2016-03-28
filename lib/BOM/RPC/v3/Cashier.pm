@@ -31,11 +31,10 @@ use BOM::System::AuditLog;
 sub get_limits {
     my $params = shift;
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -51,7 +50,7 @@ sub get_limits {
 
     my $limit = +{
         map ({
-                $_ => amount_from_to_currency($client->get_limit({'for' => $_}), 'USD', $client->currency);
+                $_ => $client->get_limit({'for' => $_});
             } (qw/account_balance daily_turnover payout/)),
         open_positions => $client->get_limit_for_open_positions,
     };
@@ -65,6 +64,14 @@ sub get_limits {
         $lifetimelimit = 99999999;
     }
 
+    my $withdrawal_limit_curr;
+    if (first { $client->landing_company->short eq $_ } ('costarica', 'japan')) {
+        $withdrawal_limit_curr = $client->currency;
+    } else {
+        # limit in EUR for: MX, MLT, MF
+        $withdrawal_limit_curr = 'EUR';
+    }
+
     $limit->{num_of_days}       = $numdays;
     $limit->{num_of_days_limit} = $numdayslimit;
     $limit->{lifetime_limit}    = $lifetimelimit;
@@ -76,14 +83,15 @@ sub get_limits {
             start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
             exclude    => ['currency_conversion_transfer'],
         });
-        $withdrawal_for_x_days = roundnear(0.01, amount_from_to_currency($withdrawal_for_x_days, $client->currency, 'EUR'));
+        $withdrawal_for_x_days = roundnear(0.01, amount_from_to_currency($withdrawal_for_x_days, $client->currency, $withdrawal_limit_curr));
 
         # withdrawal since inception
         my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
-        $withdrawal_since_inception = roundnear(0.01, amount_from_to_currency($withdrawal_since_inception, $client->currency, 'EUR'));
+        $withdrawal_since_inception =
+            roundnear(0.01, amount_from_to_currency($withdrawal_since_inception, $client->currency, $withdrawal_limit_curr));
 
         $limit->{withdrawal_since_inception_monetary} = to_monetary_number_format($withdrawal_since_inception, 1);
-        $limit->{withdrawal_for_x_days_monetary}      = to_monetary_number_format($withdrawal_for_x_days,      $numdays);
+        $limit->{withdrawal_for_x_days_monetary}      = to_monetary_number_format($withdrawal_for_x_days,      1);
 
         my $remainder = roundnear(0.01, min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception)));
         if ($remainder < 0) {
@@ -98,11 +106,12 @@ sub get_limits {
 
 sub paymentagent_list {
     my $params = shift;
-    my ($language, $args) = ($params->{language}, $params->{args});
+    my ($language, $args) = @{$params}{qw/language args/};
 
     my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    if ($params->{token}) {
+        my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+        $client = BOM::Platform::Client->new({loginid => $client_loginid}) if $client_loginid;
     }
 
     my $broker_code = $client ? $client->broker_code : 'CR';
@@ -150,9 +159,16 @@ sub paymentagent_list {
 
 sub paymentagent_transfer {
     my $params = shift;
-    my ($loginid_fm, $website_name, $args) =
-        ($params->{client_loginid}, $params->{website_name}, $params->{args});
 
+    my $loginid_fm = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $loginid_fm;
+
+    my $client = BOM::Platform::Client->new({loginid => $loginid_fm});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my ($website_name, $args) = @{$params}{qw/website_name args/};
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
     my $loginid_to = uc $args->{transfer_to};
@@ -214,22 +230,21 @@ sub paymentagent_transfer {
         return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
     }
 
-    my $client_to = BOM::Platform::Client->new({loginid => $loginid_to});
+    my $client_to = try { BOM::Platform::Client->new({loginid => $loginid_to}) };
     unless ($client_to) {
         return $reject_error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
-    }
-
-    if ($args->{dry_run}) {
-        return {status => 2};
     }
 
     unless ($client_fm->landing_company->short eq $client_to->landing_company->short) {
         return $reject_error_sub->(localize('Cross-company payment agent transfers are not allowed.'));
     }
 
-    for ($currency) {
-        /^\w\w\w$/ || return $reject_error_sub->(localize('Sorry, the currency format is incorrect.'));
-        /^USD$/    || return $reject_error_sub->(localize('Sorry, only USD is allowed.'));
+    if ($loginid_to eq $loginid_fm) {
+        return $reject_error_sub->(localize('Sorry, it is not allowed.'));
+    }
+
+    if ($currency ne 'USD') {
+        return $reject_error_sub->(localize('Sorry, only USD is allowed.'));
     }
 
     unless ($client_fm->currency eq $currency) {
@@ -249,6 +264,13 @@ sub paymentagent_transfer {
 
     if ($client_fm->get_status('cashier_locked') || $client_fm->documents_expired) {
         return $reject_error_sub->(localize('There was an error processing the request.') . ' ' . localize('Your cashier section is locked.'));
+    }
+
+    if ($args->{dry_run}) {
+        return {
+            status              => 2,
+            client_to_full_name => $client_to->full_name,
+        };
     }
 
     # freeze loginID to avoid a race condition
@@ -307,6 +329,13 @@ sub paymentagent_transfer {
         return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
+    if ($client_to->default_account and $amount + $client_to->default_account->balance > $client_to->get_limit_for_account_balance) {
+        BOM::Platform::Transaction->unfreeze_client($loginid_fm);
+        BOM::Platform::Transaction->unfreeze_client($loginid_to);
+
+        return $reject_error_sub->(localize('Sorry, client balance will exceed limits with this payment.'));
+    }
+
     # execute the transfer
     my $now       = Date::Utility->new;
     my $today     = $now->datetime_ddmmmyy_hhmmss_TZ;
@@ -348,22 +377,32 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
         'template_loginid'   => $client_to->loginid
     });
 
-    return {status => 1};
+    return {
+        status              => 1,
+        client_to_full_name => $client_to->full_name,
+    };
 }
 
 sub paymentagent_withdraw {
     my $params = shift;
 
-    my ($client_loginid, $website_name, $args) =
-        ($params->{client_loginid}, $params->{website_name}, $params->{args});
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
-    my $client;
-    if ($client_loginid) {
-        $client = BOM::Platform::Client->new({loginid => $client_loginid});
-    }
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
+    }
+
+    my ($website_name, $args) = @{$params}{qw/website_name args/};
+
+    # expire token only when its not dry run
+    if (exists $args->{dry_run} and not $args->{dry_run}) {
+        if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email)->{error}) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => $err->{code},
+                    message_to_client => $err->{message_to_client}});
+        }
     }
 
     my $currency             = $args->{currency};
@@ -434,11 +473,11 @@ sub paymentagent_withdraw {
 
     # check that the currency is in correct format
     if ($client->currency ne $currency) {
-        return $error_sub->(localize('Sorry, your currency of [_1] is unavailable for Payment Agent Withdrawal', $client->currency));
+        return $error_sub->(localize('Sorry, your currency of [_1] is unavailable for Payment Agent Withdrawal', $currency));
     }
 
     if ($pa_client->currency ne $currency) {
-        return $error_sub->(localize("Sorry, the Payment Agent's currency [_1] is unavailable for Payment Agent Withdrawal", $pa_client->currency));
+        return $error_sub->(localize("Sorry, the Payment Agent's currency [_1] is unavailable for Payment Agent Withdrawal", $currency));
     }
 
     # check that the amount is in correct format
@@ -546,6 +585,8 @@ sub paymentagent_withdraw {
         . ' Timestamp: '
         . Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
 
+    $comment .= ". Client note: $further_instruction" if ($further_instruction);
+
     # execute the transfer.
     $client->payment_account_transfer(
         currency => $currency,
@@ -633,7 +674,7 @@ sub __client_withdrawal_notes {
     my $error    = $arg_ref->{'error'};
     my $currency = $client->currency;
 
-    my $balance = $client->default_account ? $client->default_account->balance : 0;
+    my $balance = $client->default_account ? to_monetary_number_format($client->default_account->balance) : 0;
     if ($error =~ /exceeds client balance/) {
         return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
     }
@@ -660,11 +701,10 @@ sub __client_withdrawal_notes {
 sub transfer_between_accounts {
     my $params = shift;
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -802,10 +842,10 @@ sub transfer_between_accounts {
     if ($err) {
         my $limit;
         if ($err =~ /exceeds client balance/) {
-            $limit = $currency . ' ' . sprintf('%.2f', $client_from->default_account->balance);
+            $limit = $currency . ' ' . to_monetary_number_format($client_from->default_account->balance);
         } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
             my $frozen_bonus = $1;
-            $limit = $currency . ' ' . sprintf('%.2f', ($client_from->default_account->balance - $frozen_bonus));
+            $limit = $currency . ' ' . to_monetary_number_format($client_from->default_account->balance - $frozen_bonus);
         } elsif ($err =~ /exceeds withdrawal limit \[(.+)\]\s+\((.+)\)/) {
             my $bal_1 = $1;
             my $bal_2 = $2;
@@ -875,11 +915,10 @@ sub transfer_between_accounts {
 sub topup_virtual {
     my $params = shift;
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }

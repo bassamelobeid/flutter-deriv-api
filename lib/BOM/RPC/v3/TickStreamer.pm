@@ -25,7 +25,7 @@ sub ticks_history {
         return $response;
     }
 
-    if ($args->{subscribe} eq '1') {
+    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
         my $license = BOM::RPC::v3::Contract::validate_license($symbol);
         if ($license and exists $license->{error}) {
             return $license;
@@ -40,7 +40,7 @@ sub ticks_history {
     if ($style eq 'ticks') {
         my $ticks = ticks({%$args, ul => $ul});    ## no critic
         my $history = {
-            prices => [map { $_->{price} } @$ticks],
+            prices => [map { $ul->pipsized_value($_->{price}) } @$ticks],
             times  => [map { $_->{time} } @$ticks],
         };
         $result  = {history => $history};

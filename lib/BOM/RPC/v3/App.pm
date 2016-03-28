@@ -8,21 +8,23 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
 
-sub __pre_hook {
-    my ($params) = @_;
-    return unless $params->{client_loginid};
-    return BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-}
-
 sub register {
     my $params = shift;
-    return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
     my $args         = $params->{args};
     my $name         = $args->{name};
+    my $scopes       = $args->{scopes};
     my $homepage     = $args->{homepage} // '';
     my $github       = $args->{github} // '';
     my $appstore     = $args->{appstore} // '';
@@ -58,6 +60,7 @@ sub register {
     my $app = $oauth->create_app({
         user_id      => $user_id,
         name         => $name,
+        scopes       => $scopes,
         homepage     => $homepage,
         github       => $github,
         appstore     => $appstore,
@@ -70,7 +73,14 @@ sub register {
 
 sub list {
     my $params = shift;
-    return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
@@ -81,7 +91,14 @@ sub list {
 
 sub get {
     my $params = shift;
-    return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
@@ -100,7 +117,14 @@ sub get {
 
 sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my $params = shift;
-    return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
@@ -110,6 +134,28 @@ sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my $status = $oauth->delete_app($user_id, $app_id);
 
     return $status ? 1 : 0;
+}
+
+sub oauth_apps {
+    my $params = shift;
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my $oauth = BOM::Database::Model::OAuth->new;
+    if ($params->{args} and $params->{args}->{revoke_app}) {
+        my $user = BOM::Platform::User->new({email => $client->email});
+        foreach my $c1 ($user->clients) {
+            $oauth->revoke_app($params->{args}->{revoke_app}, $c1->loginid);
+        }
+    }
+
+    return $oauth->get_used_apps_by_loginid($client_loginid);
 }
 
 1;

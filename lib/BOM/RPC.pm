@@ -10,6 +10,8 @@ use Time::HiRes;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 use BOM::Database::Rose::DB;
+use BOM::Database::Model::OAuth;
+use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
@@ -23,6 +25,7 @@ use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::App;
+use BOM::RPC::v3::NewAccount::Japan;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -54,8 +57,10 @@ sub register {
         sub {
             my ($params) = @_;
 
-            my $args = {country_code => $params->{country}};
-            if ($params->{client_loginid} and $params->{client_loginid} =~ /^(\D+)\d+$/) {
+            my $args = {};
+            $args->{country_code} = $params->{country} if exists $params->{country};
+            my $loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+            if ($loginid and $loginid =~ /^(\D+)\d+$/) {
                 $args->{broker_code} = $1;
             }
             $args->{language} = $params->{language} if ($params->{language});
@@ -125,12 +130,17 @@ sub startup {
                 '/get_account_status'        => register('get_account_status',        \&BOM::RPC::v3::Accounts::get_account_status),
                 '/change_password'           => register('change_password',           \&BOM::RPC::v3::Accounts::change_password),
                 '/cashier_password'          => register('cashier_password',          \&BOM::RPC::v3::Accounts::cashier_password),
+                '/reset_password'            => register('reset_password',            \&BOM::RPC::v3::Accounts::reset_password),
                 '/get_settings'              => register('get_settings',              \&BOM::RPC::v3::Accounts::get_settings),
                 '/set_settings'              => register('set_settings',              \&BOM::RPC::v3::Accounts::set_settings),
                 '/get_self_exclusion'        => register('get_self_exclusion',        \&BOM::RPC::v3::Accounts::get_self_exclusion),
                 '/set_self_exclusion'        => register('set_self_exclusion',        \&BOM::RPC::v3::Accounts::set_self_exclusion),
                 '/balance'                   => register('balance',                   \&BOM::RPC::v3::Accounts::balance),
                 '/api_token'                 => register('api_token',                 \&BOM::RPC::v3::Accounts::api_token),
+                '/login_history'             => register('login_history',             \&BOM::RPC::v3::Accounts::login_history),
+                '/set_account_currency'      => register('set_account_currency',      \&BOM::RPC::v3::Accounts::set_account_currency),
+                '/set_financial_assessment'  => register('set_financial_assessment',  \&BOM::RPC::v3::Accounts::set_financial_assessment),
+                '/get_financial_assessment'  => register('get_financial_assessment',  \&BOM::RPC::v3::Accounts::get_financial_assessment),
                 '/verify_email'              => register('verify_email',              \&BOM::RPC::v3::NewAccount::verify_email),
                 '/send_ask'                  => register('send_ask',                  \&BOM::RPC::v3::Contract::send_ask),
                 '/get_bid'                   => register('get_bid',                   \&BOM::RPC::v3::Contract::get_bid),
@@ -142,11 +152,13 @@ sub startup {
                 '/portfolio'                 => register('portfolio',                 \&BOM::RPC::v3::PortfolioManagement::portfolio),
                 '/sell_expired'              => register('sell_expired',              \&BOM::RPC::v3::PortfolioManagement::sell_expired),
                 '/proposal_open_contract'    => register('proposal_open_contract',    \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract),
+                '/jp_knowledge_test'         => register('jp_knowledge_test',         \&BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test),
 
                 '/app_register' => register('app_register', \&BOM::RPC::v3::App::register),
                 '/app_list'     => register('app_list',     \&BOM::RPC::v3::App::list),
                 '/app_get'      => register('app_get',      \&BOM::RPC::v3::App::get),
                 '/app_delete'   => register('app_delete',   \&BOM::RPC::v3::App::delete),
+                '/oauth_apps'   => register('oauth_apps',   \&BOM::RPC::v3::App::oauth_apps),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;

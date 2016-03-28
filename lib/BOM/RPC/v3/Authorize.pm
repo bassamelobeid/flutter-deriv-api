@@ -6,23 +6,36 @@ use warnings;
 use Date::Utility;
 
 use BOM::System::AuditLog;
+use BOM::RPC::v3::Utility;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Context qw (localize request);
 use BOM::RPC::v3::Utility;
+use BOM::Platform::SessionCookie;
 
 sub authorize {
     my $params = shift;
 
-    my $err = BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidToken',
-            message_to_client => BOM::Platform::Context::localize('The token is invalid.')});
-
-    my $loginid = BOM::RPC::v3::Utility::token_to_loginid $params->{token};
-    return $err unless $loginid;
+    my ($loginid, @scopes) = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $loginid});
-    return $err unless $client;
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
+
+    if ($client->get_status('disabled')) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'AccountDisabled',
+                message_to_client => BOM::Platform::Context::localize("Account is dsiabled")});
+    }
+
+    if ($client->get_self_exclusion and $client->get_self_exclusion->exclude_until) {
+        my $limit_excludeuntil = $client->get_self_exclusion->exclude_until;
+        if (Date::Utility->new->is_before(Date::Utility->new($limit_excludeuntil))) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'SelfExclusion',
+                    message_to_client => BOM::Platform::Context::localize("Sorry, you have excluded yourself until [_1].", $limit_excludeuntil)});
+        }
+    }
 
     my $account = $client->default_account;
 
@@ -34,17 +47,17 @@ sub authorize {
         email                => $client->email,
         account_id           => ($account ? $account->id : ''),
         landing_company_name => $client->landing_company->short,
-        country              => $client->residence
+        country              => $client->residence,
+        scopes               => \@scopes,
+        is_virtual           => ($client->is_virtual ? 1 : 0),
     };
 }
 
 sub logout {
     my $params = shift;
 
-    my $email   = $params->{client_email}   // '';
-    my $loginid = $params->{client_loginid} // '';
-
-    if ($email) {
+    if (my $email = $params->{client_email}) {
+        my $loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token}) // '';
         if (my $user = BOM::Platform::User->new({email => $email})) {
             $user->add_login_history({
                 environment => _login_env($params),
@@ -54,6 +67,12 @@ sub logout {
             $user->save;
         }
         BOM::System::AuditLog::log("user logout", "$email,$loginid");
+    }
+
+    # Invalidates token, but we can only do this if we have a session token
+    if ($params->{token_type} eq 'session_token') {
+        my $session = BOM::Platform::SessionCookie->new({token => $params->{token}});
+        $session->end_session if $session;
     }
 
     return {status => 1};

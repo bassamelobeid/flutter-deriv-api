@@ -5,7 +5,6 @@ addons:
     postgresql: "9.3"
 services:
     - redis-server
-    - couchdb
 cache: apt
 before_install:
     - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
@@ -14,8 +13,6 @@ before_install:
     - /tmp/travis-scripts/fixHostName.sh
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
-
-    - /tmp/travis-scripts/couchdb.sh
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
@@ -44,6 +41,7 @@ install:
     - /tmp/travis-scripts/setup_logs.sh
     - export BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom-test/data/config/log4perl.conf
     - . /tmp/travis-scripts/setup_perl5lib.sh
+    - /tmp/travis-scripts/setup_postfix.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
-    - forkprove --timer -lr t/
+    - forkprove --timer -lr -It/lib t/
