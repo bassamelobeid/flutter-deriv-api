@@ -3,14 +3,13 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 4;
 use Test::Deep;
 use Test::Exception;
 use Test::NoWarnings;
 
 use BOM::Product::Offerings qw(get_offerings_flyby get_offerings_with_filter);
 
-my $fb;
 my @expected_lc   = qw(japan-virtual fog costarica maltainvest japan malta iom);
 my %expected_type = (
     'japan-virtual' => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUTE', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISSE'],
@@ -47,17 +46,11 @@ my %expected_market = (
     malta       => ['random'],
     iom => ['commodities', 'forex', 'indices', 'random', 'stocks'],
 );
-lives_ok { $fb = get_offerings_flyby() } 'get flyby object';
 subtest 'landing_company specifics' => sub {
     lives_ok {
-        my @lc = $fb->values_for_key('landing_company');
-        cmp_bag(\@lc, \@expected_lc, 'get expected landing company list');
-    }
-    'landing company list';
-
-    lives_ok {
         foreach my $lc (@expected_lc) {
-            my @market_lc = $fb->query({landing_company => $lc}, ['market']);
+            my $fb = get_offerings_flyby($lc);
+            my @market_lc = $fb->values_for_key('market');
             cmp_bag(\@market_lc, $expected_market{$lc}, 'market list for ' . $lc);
         }
     }
@@ -65,7 +58,8 @@ subtest 'landing_company specifics' => sub {
 
     lives_ok {
         foreach my $lc (@expected_lc) {
-            my @type_lc = $fb->query({landing_company => $lc}, ['contract_type']);
+            my $fb = get_offerings_flyby($lc);
+            my @type_lc = $fb->values_for_key('contract_type');
             cmp_bag(\@type_lc, $expected_type{$lc}, 'contract type list for ' . $lc);
         }
     }
@@ -117,16 +111,15 @@ subtest 'offerings check' => sub {
         },
     );
     foreach my $testname (keys %test) {
+        my $fb = get_offerings_flyby($testname);
         my $result = $test{$testname};
         foreach my $market (keys %$result) {
             if ($result->{$market}) {
                 ok $fb->query({
-                    landing_company => $testname,
                     market          => $market
                 });
             } else {
                 ok !$fb->query({
-                    landing_company => $testname,
                     market          => $market
                 });
             }

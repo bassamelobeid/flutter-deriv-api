@@ -1102,7 +1102,7 @@ sub _validate_sell_pricing_adjustment {
     my $self = shift;
 
     # always sell at recomputed bid price for spreads.
-    if ($self->contract->is_spread) {
+    if ($self->contract->is_spread or not defined $self->price) {
         $self->price($self->contract->bid_price);
         return;
     }
