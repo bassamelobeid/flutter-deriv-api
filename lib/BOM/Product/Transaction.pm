@@ -1065,6 +1065,21 @@ sub _build_pricing_comment {
             [bs_prob => $contract->bs_probability->amount],
             [spot    => $contract->current_spot]);
 
+        if ($contract->entry_tick) {
+            push @comment_fields, (entry_spot       => $contract->entry_tick->quote);
+            push @comment_fields, (entry_spot_epoch => $contract->entry_tick->epoch);
+        }
+
+        if ($contract->exit_tick) {
+            push @comment_fields, (exit_spot       => $contract->exit_tick->quote);
+            push @comment_fields, (exit_spot_epoch => $contract->exit_tick->epoch);
+        }
+
+        if ($contract->is_path_dependent and $contract->is_expired and $contract->hit_tick) {
+            push @comment_fields, (hit_spot       => $contract->hit_tick->quote);
+            push @comment_fields, (hit_spot_epoch => $contract->hit_tick->epoch);
+        }
+
         my $news_factor = $contract->ask_probability->peek('news_factor');
         if ($news_factor) {
             push @comment_fields, news_fct => $news_factor->amount;
