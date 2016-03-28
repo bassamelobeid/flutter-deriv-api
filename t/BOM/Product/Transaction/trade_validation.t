@@ -854,6 +854,32 @@ subtest 'SELL - sell pricing adjustment' => sub {
 
         $mock_contract->unmock_all;
     };
+
+    subtest 'price is undefined' => sub {
+        my $mocked = Test::MockModule->new('BOM::Product::Contract');
+        $mocked->mock('bid_price', sub {return 50});
+        my $contract = produce_contract({
+            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            bet_type     => 'CALL',
+            currency     => 'GBP',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $now->epoch + 300,
+            date_pricing => Date::Utility->new($now->epoch - 100),
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $transaction = BOM::Product::Transaction->new({
+            client   => $client,
+            contract => $contract,
+            action   => 'SELL',
+            price    => undef,
+        });
+        my $error = $transaction->_validate_sell_pricing_adjustment;
+        is($error, undef, 'no error');
+        cmp_ok($transaction->price, '==', 50, 'SELL at the recomputed price');
+    };
 };
 
 subtest 'Purchase Sell Contract' => sub {
