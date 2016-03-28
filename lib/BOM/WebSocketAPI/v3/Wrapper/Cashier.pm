@@ -93,7 +93,9 @@ sub paymentagent_transfer {
             } else {
                 return {
                     msg_type              => 'paymentagent_transfer',
-                    paymentagent_transfer => $response->{status}};
+                    paymentagent_transfer => $response->{status},
+                    ($response->{client_to_full_name}) ? (client_to_full_name => $response->{client_to_full_name}) : (),
+                };
             }
         },
         {
