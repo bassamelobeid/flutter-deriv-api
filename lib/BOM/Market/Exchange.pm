@@ -804,9 +804,9 @@ sub standard_closing_on {
     my ($self, $when) = @_;
 
     $when = $self->trading_date_for($when);
-    my $standard_close = $when->truncate_to_day->plus_time_interval($self->market_times->{standard}->{daily_close});
 
-    return $self->closes_early_on($when) // $standard_close;
+    return $self->closes_early_on($when) if ($self->symbol eq 'FOREX' and $when->day_of_week == 5);
+    return $when->truncate_to_day->plus_time_interval($self->market_times->{standard}->{daily_close});
 }
 
 =head2 settlement_on
