@@ -168,6 +168,12 @@ sub register_and_return_new_client {
         $self->$_ || $self->$_('');
     }
 
+    # resolve Gender from Salutation
+    if ($self->salutation and not $self->gender) {
+        my $gender = (uc $self->salutation eq 'MR') ? 'm' : 'f';
+        $self->gender($gender);
+    }
+
     my $sql = "SELECT nextval('sequences.loginid_sequence_$broker')";
     my $dbh = $self->db->dbh;
     my $sth = $dbh->prepare($sql);
