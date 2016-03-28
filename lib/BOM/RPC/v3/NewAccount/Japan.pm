@@ -253,7 +253,7 @@ sub get_jp_settings {
             hedge_asset_amount
         );
 
-        my $assessment = from_json($jp_client->financial_assessment->data);
+        my $assessment = from_json($client->financial_assessment->data);
         $jp_settings{$_} = $assessment->{$_}->{score} for (@assessment_fields);
     }
     return %jp_settings;
