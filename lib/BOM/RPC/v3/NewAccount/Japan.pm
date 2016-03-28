@@ -238,7 +238,10 @@ sub get_jp_settings {
             $jp_settings{daily_loss_limit} = $client->get_self_exclusion->max_losses;
         }
 
-        my @assessment_fields = qw(
+        my $assessment = from_json($client->financial_assessment->data);
+        $jp_settings{$_} = $assessment->{$_} for ('trading_purpose', 'hedge_asset', 'hedge_asset_amount');
+
+        $jp_settings{$_} = $assessment->{$_}->{answer} for qw(
             annual_income
             financial_asset
             trading_experience_equities
@@ -248,13 +251,7 @@ sub get_jp_settings {
             trading_experience_investment_trust
             trading_experience_public_bond
             trading_experience_option_trading
-            trading_purpose
-            hedge_asset
-            hedge_asset_amount
         );
-
-        my $assessment = from_json($client->financial_assessment->data);
-        $jp_settings{$_} = $assessment->{$_}->{score} for (@assessment_fields);
     }
     return %jp_settings;
 }
