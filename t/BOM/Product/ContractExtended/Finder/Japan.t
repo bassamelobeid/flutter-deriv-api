@@ -95,8 +95,7 @@ subtest "predefined trading_period" => sub {
         },
     );
 
-    my @offerings = BOM::Product::Offerings::get_offerings_flyby->query({
-            landing_company   => 'japan',
+    my @offerings = BOM::Product::Offerings::get_offerings_flyby('japan')->query({
             underlying_symbol => 'frxUSDJPY',
             start_type        => 'spot',
             expiry_type       => ['intraday','daily'],
@@ -184,8 +183,7 @@ subtest "check_intraday trading_period_JPY" => sub {
         '2015-11-27 19:00:00' => {},
     );
 
-    my @i_offerings = BOM::Product::Offerings::get_offerings_flyby->query({
-            landing_company   => 'japan',
+    my @i_offerings = BOM::Product::Offerings::get_offerings_flyby('japan')->query({
             underlying_symbol => 'frxUSDJPY',
             start_type        => 'spot',
             expiry_type       => ['intraday'],
@@ -233,8 +231,7 @@ subtest "check_intraday trading_period_non_JPY" => sub {
         '2015-11-27 19:00:00' => {},
     );
 
-    my @e_offerings = BOM::Product::Offerings::get_offerings_flyby->query({
-            landing_company   => 'japan',
+    my @e_offerings = BOM::Product::Offerings::get_offerings_flyby('japan')->query({
             underlying_symbol => 'frxEURUSD',
             start_type        => 'spot',
             expiry_type       => ['intraday'],

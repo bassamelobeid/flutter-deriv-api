@@ -8,13 +8,7 @@ use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
 
-sub id              { return 280; }
-sub code            { return 'DIGITUNDER'; }
-sub pricing_code    { return 'DIGITUNDER'; }
-sub category_code   { return 'digits'; }
-sub display_name    { return 'under'; }
-sub sentiment       { return 'under'; }
-sub other_side_code { return 'DIGITOVER'; }
+sub code { return 'DIGITUNDER'; }
 
 sub localizable_description {
     return +{

@@ -20,7 +20,7 @@ subtest 'get_offerings_flyby' => sub {
             sort { $a cmp $b } (
                 'barrier_category',               'contract_category',
                 'contract_type',                  'contract_display',
-                'expiry_type',                    'landing_company' , 'market',
+                'expiry_type',                    'market',
                 'exchange_name',                  'sentiment',
                 'start_type',                     'submarket',
                 'underlying_symbol',              'min_contract_duration',
@@ -35,7 +35,7 @@ subtest 'get_offerings_flyby' => sub {
     subtest 'example queries' => sub {
         is(scalar $fb->query('"start_type" IS "forward" -> "market"'),          5,  'Forward-starting is offered on 5 markets.');
         is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 12, 'Tick expiries are offered on 12 underlyings.');
-        is(scalar $fb->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY" AND "landing_company" IS "iom"'), 10, '10 callput options on frxUSDJPY');
+        is(scalar get_offerings_flyby('iom')->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'), 10, '10 callput options on frxUSDJPY');
         is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 8,  'Eight underlyings trade on the RANDOM exchange');
         is(scalar $fb->query('"market" IS "random" -> "underlying_symbol"'),        12, '...out of 12 total random market symbols.');
     };

@@ -6,11 +6,7 @@ with 'BOM::Product::Role::SingleBarrier';
 
 use BOM::Product::Pricing::Engine::BlackScholes;
 
-sub code          { return 'VANILLA_PUT'; }
-sub pricing_code  { return 'VANILLA_PUT'; }
-sub category_code { return 'vanilla'; }
-sub payout_type   { return 'non-binary'; }
-sub payouttime    { return 'end'; }
+sub code { return 'VANILLA_PUT'; }
 
 sub _build_pricing_engine_name {
     return 'BOM::Product::Pricing::Engine::BlackScholes';
