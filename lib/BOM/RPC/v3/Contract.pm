@@ -158,17 +158,18 @@ sub get_bid {
             payout              => $contract->payout,
         };
 
-        my $contract_affected_by_missing_market_data =  (not $contract->may_settle_automatically and not @{$contract->corporate_actions}) ? 1 : 0;
+        my $contract_affected_by_missing_market_data = (not $contract->may_settle_automatically and not @{$contract->corporate_actions}) ? 1 : 0;
 
-        if ($contract_affected_by_missing_market_data){
-           $response = {
+        if ($contract_affected_by_missing_market_data) {
+            $response = {
                 error => {
-                message_to_client => BOM::Platform::Context::localize('There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'),
-                code              => "GetProposalFailure"
-            }};
-            return ;
+                    message_to_client => BOM::Platform::Context::localize(
+                        'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
+                    ),
+                    code => "GetProposalFailure"
+                }};
+            return;
         }
-
 
         if (not $contract->is_valid_to_sell and $contract->primary_validation_error) {
             $response->{validation_error} = $contract->primary_validation_error->message_to_client;
