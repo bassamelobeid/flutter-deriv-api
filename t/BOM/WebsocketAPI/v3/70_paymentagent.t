@@ -159,7 +159,7 @@ foreach my $key (@{$tokens}) {
                 verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
-    ok $res->{error}->{message} =~ /your currency of USD is unavailable/, 'your currency of USD is unavailable';
+    ok $res->{error}->{message} =~ /your currency of RMB is unavailable/, 'your currency of RMB is unavailable';
 
     $t = $t->send_ok({
             json => {
