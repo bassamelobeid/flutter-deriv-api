@@ -227,4 +227,36 @@ support@binary.com', $jp_client->last_name, $jp_client->first_name
     return {test_taken_epoch => $now->epoch};
 }
 
+sub get_jp_settings {
+    my $client = shift;
+
+    my %jp_settings;
+    if ($client->landing_company->short eq 'japan') {
+        $jp_settings{$_} = $client->$_ for ('gender', 'occupation');
+
+        if ($client->get_self_exclusion and $client->get_self_exclusion->max_losses) {
+            $jp_settings{daily_loss_limit} = $client->get_self_exclusion->max_losses;
+        }
+
+        my @assessment_fields = qw(
+            annual_income
+            financial_asset
+            trading_experience_equities
+            trading_experience_commodities
+            trading_experience_foreign_currency_deposit
+            trading_experience_margin_fx
+            trading_experience_investment_trust
+            trading_experience_public_bond
+            trading_experience_option_trading
+            trading_purpose
+            hedge_asset
+            hedge_asset_amount
+        );
+
+        my $assessment = from_json($jp_client->financial_assessment->data);
+        $jp_settings{$_} = $assessment->{$_}->{score} for (@assessment_fields);
+    }
+    return %jp_settings;
+}
+
 1;
