@@ -654,6 +654,28 @@ sub get_profit_for_days {
     return $result->[0];
 }
 
+sub get_details_by_transaction_ref {
+    my $self           = shift;
+    my $transaction_id = shift;
+    my $sql            = q{
+    SELECT 
+        a.client_loginid AS loginid,
+        b.short_code AS shortcode,
+        a.currency_code AS currency_code
+    FROM
+        transaction.transaction t
+        JOIN bet.financial_market_bet b ON t.financial_market_bet_id=b.id
+        JOIN transaction.account a on a.id=t.account_id
+    WHERE
+        t.id = $1
+   };
+
+    my $sth = $self->db->dbh->prepare($sql);
+    $sth->execute($transaction_id);
+
+    return $sth->fetchall_arrayref({})->[0];
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
