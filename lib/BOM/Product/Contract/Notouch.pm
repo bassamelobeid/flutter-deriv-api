@@ -4,13 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::AmericanExpiry';
 
-sub id              { return 140; }
-sub code            { return 'NOTOUCH'; }
-sub pricing_code    { return 'NOTOUCH'; }
-sub display_name    { return 'does not touch'; }
-sub category_code   { return 'touchnotouch'; }
-sub sentiment       { return 'low_vol'; }
-sub other_side_code { return 'ONETOUCH'; }
+sub code { return 'NOTOUCH'; }
 
 sub localizable_description {
     return +{

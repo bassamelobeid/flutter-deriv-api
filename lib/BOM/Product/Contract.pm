@@ -44,6 +44,11 @@ require BOM::Product::Pricing::Greeks::BlackScholes;
 
 sub is_spread { return 0 }
 
+has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
+    is      => 'ro',
+    default => undef,
+);
+
 has [qw(average_tick_count long_term_prediction)] => (
     is      => 'rw',
     default => undef,
@@ -59,8 +64,17 @@ has category => (
     isa     => 'bom_contract_category',
     coerce  => 1,
     handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers)],
-    default => sub { shift->category_code },
 );
+
+has category_code => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_category_code {
+    my $self = shift;
+    return $self->category->code;
+}
 
 has ticks_to_expiry => (
     is         => 'ro',
@@ -100,9 +114,6 @@ has date_expiry => (
     coerce   => 1,
     required => 1,
 );
-
-sub payout_type { return 'binary'; }    # Default for most contracts
-sub payouttime  { return 'end'; }
 
 #backtest - Enable optimizations for speedier back testing.  Not suitable for production.
 #tick_expiry - A boolean that indicates if a contract expires after a pre-specified number of ticks.

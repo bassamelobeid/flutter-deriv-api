@@ -10,13 +10,7 @@ use BOM::Product::Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
 
 # Static methods.
-sub id              { return 220; }
-sub code            { return 'DIGITDIFF'; }
-sub pricing_code    { return 'DIGITDIFF'; }
-sub category_code   { return 'digits'; }
-sub display_name    { return 'differs'; }
-sub sentiment       { return 'differ'; }
-sub other_side_code { return 'DIGITMATCH'; }
+sub code { return 'DIGITDIFF'; }
 
 sub localizable_description {
     return +{
