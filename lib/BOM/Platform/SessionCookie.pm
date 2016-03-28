@@ -166,6 +166,16 @@ LUA_SCRIPT
     return;
 }
 
+sub have_multiple_session {
+    my $self = shift;
+    return unless $self->{token};
+
+    my $sessions = BOM::System::RedisReplicated::redis_read()->smembers('LOGIN_SESSION_COLLECTION::' . md5_hex($self->{email}));
+    return 1 if ($sessions and scalar @$sessions > 1);
+
+    return;
+}
+
 sub _clear_session_collection {
     my $self = shift;
 
