@@ -2,16 +2,18 @@ package BOM::OAuth::O;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
-use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(localize);
-use BOM::Platform::Client;
-use BOM::Platform::User;
-use BOM::Database::Model::OAuth;
-
 # login
 use Email::Valid;
 use Mojo::Util qw(url_escape);
 use List::MoreUtils qw(any);
+
+use BOM::Platform::Runtime;
+use BOM::Platform::Context qw(localize);
+use BOM::Platform::Client;
+use BOM::Platform::User;
+use BOM::Platform::Static::Config;
+use BOM::Platform::Email qw(send_email);
+use BOM::Database::Model::OAuth;
 
 sub __oauth_model {
     state $oauth_model = BOM::Database::Model::OAuth->new;
@@ -45,12 +47,12 @@ sub authorize {
         return $uri;
     };
 
-    my $client;
+    my ($client, $session_token);
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq ($c->param('csrftoken') // ''))
         and $c->param('login'))
     {
-        $client = $c->__login($app) or return;
+        ($client, $session_token) = $c->__login($app) or return;
     } elsif ($c->req->method eq 'POST') {
         # we force login no matter user is in or not
         $client = $c->__get_client;
@@ -103,6 +105,24 @@ sub authorize {
             l         => \&localize,
             csrftoken => $c->csrf_token,
         );
+    }
+
+    if (my $session = BOM::Platform::SessionCookie->new({token => $session_token})) {
+        if ($session->have_multiple_sessions) {
+            send_email({
+                    from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    to      => $session->email,
+                    subject => localize('New sign-in activity'),
+                    message => [
+                        localize(
+                            'Your account [_1] was just used to sign in from [_2]. If this request was not performed by you, please review your settings. If you need further assistance contact Customer Support.',
+                            $session->email,
+                            $c->stash('request')->client_ip
+                        )
+                    ],
+                    use_email_template => 1,
+                });
+        }
     }
 
     my $uri = Mojo::URL->new($redirect_uri);
@@ -158,15 +178,15 @@ sub __login {
         $options
     );
     $c->__set_reality_check_cookie($user, $options);
+
+    my $session = BOM::Platform::SessionCookie->new({
+            loginid => $client->loginid,
+            email   => $client->email,
+            loginat => $r->session_cookie && $r->session_cookie->loginat,
+            scopes  => [qw(price chart trade password cashier)]});
+    my $session_token = $session->token;
     $c->cookie(
-        $app_config->cgi->cookie_name->login => url_escape(
-            BOM::Platform::SessionCookie->new({
-                    loginid => $client->loginid,
-                    email   => $client->email,
-                    loginat => $r->session_cookie && $r->session_cookie->loginat,
-                    scopes  => [qw(price chart trade password cashier)]}
-            )->token
-        ),
+        $app_config->cgi->cookie_name->login => url_escape($session_token),
         $options
     );
     $c->cookie(
@@ -181,7 +201,7 @@ sub __login {
     # reset csrf_token
     delete $c->session->{csrf_token};
 
-    return $client;
+    return ($client, $session_token);
 }
 
 sub __set_reality_check_cookie {
