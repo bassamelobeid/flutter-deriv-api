@@ -5,7 +5,7 @@
     </div>
     <div class="grd-grid-10 grd-grid-mobile-12">
       <h1><%= $l->('Authorize application') %></h1>
-      <p><%= $l->('[_1] would like permission to access your account <strong>[_2]</strong>', $app->{name}, $client->loginid) %></strong></p>
+      <p><%= $l->('[_1] would like permission to access your account [_2]', $app->{name}, $client->loginid) %></strong></p>
       <div class="separator-line"></div>
       <p><strong><%= $l->('Review Permissions') %></strong></p>
       <div class="grd-grid-12">
