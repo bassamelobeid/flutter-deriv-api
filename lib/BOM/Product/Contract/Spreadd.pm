@@ -6,15 +6,10 @@ use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 
 use BOM::Platform::Context qw(localize);
 use BOM::Product::Contract::Strike::Spread;
-# Static methods
 
-sub id              { return 260; }
-sub code            { return 'SPREADD'; }
-sub category_code   { return 'spreads'; }
-sub display_name    { return 'spread down'; }
-sub sentiment       { return 'down'; }
-sub other_side_code { return 'SPREADU'; }
-sub action          { return 'sell'; }
+# Static methods
+sub code   { return 'SPREADD'; }
+sub action { return 'sell'; }
 
 # The price of which the client bought at.
 has barrier => (

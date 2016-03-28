@@ -4,13 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::DoubleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
-sub id              { return 180; }
-sub code            { return 'EXPIRYMISS'; }
-sub pricing_code    { return 'EXPIRYMISS'; }
-sub category_code   { return 'endsinout'; }
-sub display_name    { return 'ends outside'; }
-sub sentiment       { return 'high_vol'; }
-sub other_side_code { return 'EXPIRYRANGE'; }
+sub code { return 'EXPIRYMISS'; }
 
 sub localizable_description {
     return +{

@@ -8,13 +8,8 @@ use BOM::Platform::Context qw(localize);
 use BOM::Product::Contract::Strike::Spread;
 
 # Static methods
-sub id              { return 250; }
-sub code            { return 'SPREADU'; }
-sub category_code   { return 'spreads'; }
-sub display_name    { return 'spread up'; }
-sub sentiment       { return 'up'; }
-sub other_side_code { return 'SPREADD'; }
-sub action          { return 'buy'; }
+sub code   { return 'SPREADU'; }
+sub action { return 'buy'; }
 
 # The price of which the client bought at.
 has barrier => (

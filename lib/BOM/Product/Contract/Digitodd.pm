@@ -8,13 +8,7 @@ use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
 
-sub id              { return 250; }
-sub code            { return 'DIGITODD'; }
-sub pricing_code    { return 'DIGITODD'; }
-sub category_code   { return 'digits'; }
-sub display_name    { return 'odd'; }
-sub sentiment       { return 'odd'; }
-sub other_side_code { return 'DIGITEVEN'; }
+sub code { return 'DIGITODD'; }
 
 sub localizable_description {
     return +{

@@ -6,13 +6,7 @@ with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 # Static methods
 
-sub id              { return 10; }
-sub code            { return 'CALL'; }
-sub pricing_code    { return 'CALL'; }
-sub category_code   { return 'callput'; }
-sub display_name    { return 'higher'; }
-sub sentiment       { return 'up'; }
-sub other_side_code { return 'PUT'; }
+sub code { return 'CALL'; }
 
 sub localizable_description {
     return +{
