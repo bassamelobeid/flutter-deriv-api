@@ -585,7 +585,7 @@ ohlc_daily:
     official: 1
 
 economic_events:
-  class_name: 'BOM::MarketData::EconomicEventCalendar'
+  class_name: 'Quant::Framework::EconomicEventCalendar'
   data:
     events:
         - impact: 1

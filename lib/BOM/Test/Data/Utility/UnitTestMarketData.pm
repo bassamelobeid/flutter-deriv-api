@@ -19,7 +19,7 @@ use strict;
 use warnings;
 
 use BOM::MarketData::CorrelationMatrix;
-use BOM::MarketData::EconomicEventCalendar;
+use Quant::Framework::EconomicEventCalendar;
 use BOM::Platform::Runtime;
 use Carp qw( croak );
 use YAML::XS;
