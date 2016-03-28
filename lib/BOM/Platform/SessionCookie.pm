@@ -166,7 +166,7 @@ LUA_SCRIPT
     return;
 }
 
-sub have_multiple_session {
+sub have_multiple_sessions {
     my $self = shift;
     return unless $self->{token};
 
