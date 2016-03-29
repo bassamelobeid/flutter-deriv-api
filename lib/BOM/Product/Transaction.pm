@@ -498,7 +498,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
 
         $self->calculate_limits;
 
-        $self->comment($self->_build_pricing_comment) unless defined $self->comment;
+        $self->comment(_build_pricing_comment($self->contract)) unless defined $self->comment;
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
@@ -620,7 +620,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _validate_date_pricing/
             );
 
-        $self->comment($self->_build_pricing_comment) unless defined $self->comment;
+        $self->comment(_build_pricing_comment($self->contract)) unless defined $self->comment;
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_sell;
@@ -1036,8 +1036,7 @@ sub _validate_currency {
 }
 
 sub _build_pricing_comment {
-    my $self     = shift;
-    my $contract = $self->contract;
+    my $contract = shift;
 
     my @comment_fields;
     if ($contract->is_spread) {
@@ -1051,7 +1050,6 @@ sub _build_pricing_comment {
         # This way the order of the fields is well-defined.
         @comment_fields = map { defined $_->[1] ? @$_ : (); } (
             [theo    => $contract->theo_price],
-            [trade   => $self->price],
             [iv      => $contract->pricing_vol],
             [win     => $contract->payout],
             [div     => $contract->q_rate],
@@ -1637,6 +1635,7 @@ sub sell_expired_contracts {
 
     my $now = Date::Utility->new;
     my @bets_to_sell;
+    my @quants_bet_variables;
     my @transdata;
     my %stats_attempt;
     my %stats_failure;
@@ -1667,6 +1666,19 @@ sub sell_expired_contracts {
                     staff_loginid => 'AUTOSELL',
                     source        => $source,
                     };
+
+                my $quants_bet_variables;
+                if (my $comment = _build_pricing_comment($contract)) {
+                    my $quants_bet_params =
+                        BOM::Database::Model::DataCollection::QuantsBetVariables->extract_parameters_from_line({line => "COMMENT:$comment"});
+                    if ($quants_bet_params) {
+                        $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+                            data_object_params => $quants_bet_params,
+                        });
+                    }
+                }
+                push @quants_bet_variables, $quants_bet_variables;
+
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
                 @{$bet}{qw/sell_price sell_time/} = ($bet->{buy_price}, $now->db_timestamp);
@@ -1709,7 +1721,8 @@ sub sell_expired_contracts {
             client_loginid => $loginid,
             currency_code  => $currency
         },
-        db => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        db                   => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        quants_bet_variables => \@quants_bet_variables,
     );
 
     my $sold = try {
