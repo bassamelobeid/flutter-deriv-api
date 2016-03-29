@@ -1085,20 +1085,18 @@ sub _build_pricing_comment {
             push @comment_fields, (entry_spot_epoch => $contract->entry_tick->epoch);
         }
 
+        my $tick;
         if ($action eq 'sell') {
-            my $tick = $contract->underlying->tick_at($contract->date_pricing->epoch, {allow_inconsistent => 1});
             # Can't use $contract->current_tick because it is not 100% true.
             # It depends on when the contract is priced at that second.
-            if ($tick) {
-                push @comment_fields, (exit_spot       => $contract->current_tick->quote);
-                push @comment_fields, (exit_spot_epoch => $contract->current_tick->epoch);
-            }
+            $tick = $contract->underlying->tick_at($contract->date_pricing->epoch, {allow_inconsistent => 1});
         } elsif ($action eq 'autosell_expired_contract') {
-            my $tick = ($contract->is_path_dependent and $contract->hit_tick) ? $contract->hit_tick : $contract->exit_tick;
-            if ($tick) {
-                push @comment_fields, (exit_spot       => $tick->quote);
-                push @comment_fields, (exit_spot_epoch => $tick->epoch);
-            }
+            $tick = ($contract->is_path_dependent and $contract->hit_tick) ? $contract->hit_tick : $contract->exit_tick;
+        }
+
+        if ($tick) {
+            push @comment_fields, (exit_spot       => $tick->quote);
+            push @comment_fields, (exit_spot_epoch => $tick->epoch);
         }
 
         my $news_factor = $contract->ask_probability->peek('news_factor');
