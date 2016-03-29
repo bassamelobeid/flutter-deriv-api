@@ -163,7 +163,7 @@ sub register_and_return_new_client {
     }
 
     # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
-    for (qw(citizen address_2 state postcode)) {
+    for (qw(citizen address_2 state postcode salutation)) {
         $self->$_ || $self->$_('');
     }
 

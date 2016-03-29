@@ -173,15 +173,37 @@ subtest 'Gender based on Salutation' => sub {
     }
 };
 
-subtest 'no salutation, gender default "m"' => sub {
-    my %details = %$open_account_details;
-    $details{salutation} = '';
-    $details{email} = 'test123@binary.com';
-    $details{first_name} = 'first-name-123';
+subtest 'no salutation, default Gender: m' => sub {
+    foreach my $i (0..1) {
+        my %details = %$open_account_details;
 
+        if ($i == 0) {
+            $details{salutation} = '';
+            note 'salutation = empty string';
+        } else {
+            delete $details{salutation};
+            note 'salutation not exists';
+        }
+
+        $details{email} = 'test++'.$i.'@binary.com';
+        $details{first_name} = 'first-name-'.$i;
+        $client = BOM::Platform::Client->register_and_return_new_client(\%details);
+
+        is($client->salutation, '', 'Salutation: ' . $client->salutation);
+        is($client->gender, 'm', 'default gender: m');
+    };
+};
+
+subtest 'no salutation, set Gender explicitly' => sub {
+    my %details = %$open_account_details;
+
+    $details{salutation} = '';
+    $details{gender} = 'f';
+    $details{email} = 'test++ff@binary.com';
+    $details{first_name} = 'first-name-ff';
     $client = BOM::Platform::Client->register_and_return_new_client(\%details);
 
     is($client->salutation, '', 'Salutation: ' . $client->salutation);
-    is($client->gender, 'm', 'default gender OK');
+    is($client->gender, 'f', 'gender: ' . $client->gender);
 };
 
