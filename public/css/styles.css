@@ -1,4 +1,4 @@
-body {margin: 0; background-color: white; color: #2a3052;}
+body {margin: 0; background-color: white; color: black;}
 button, input {padding: 0; margin: 0; font-size: .8rem; border: 0;}
 input:focus, bottun:focus, button, a:focus {outline: none;}
 a {display: block; text-decoration: none; color: #2a3052; font-family: Arial;}
@@ -6,21 +6,22 @@ a:hover {text-decoration: underline;}
 p {line-height: 1.4em;}
 
 .clear {clear: both;}
-.err, .err::-webkit-input-placeholder {color: #E4666F;}
+.err, .err::-webkit-input-placeholder {color: #c03; border-color: #c03;}
 .errorfield {font-family: Arial; font-style: italic; color: #c03; margin-top: 8px; text-align: center; font-size: 93%;}
 
-#wrapper {max-width: 300px; width: 100%; margin: 0 auto;}
-#header {text-align: center; margin-top: -35px; margin-bottom: -15px;}
-#header #logo {width: 100%; height: 8rem; background: url('/oauth2/images/binary-logo.svg') no-repeat center;}
+#wrapper {max-width: 300px; width: 100%; margin: 0 auto; font-family: roboto, sans-serif;}
+#header {text-align: center; margin: 10px 0;}
+#header #logo {max-width: 250px;}
+.login #header #logo {margin: 0 auto;}
 
 form input:-webkit-autofill, form input, form button {
-	box-sizing: border-box;
-	width: 100%;
-	height: 2.5rem;
-	margin-bottom: 2%;
-	background-color: white;
-	text-align: center;
-	font-size: 1rem;
+    box-sizing: border-box;
+    width: 100%;
+    height: 2.5rem;
+    margin-bottom: 2%;
+    background-color: white;
+    text-align: center;
+    font-size: 1rem;
 }
 form input {background: white; border: 1px solid #dedede; padding: 2px 3px;}
 
@@ -44,3 +45,17 @@ button, .button {cursor: pointer; display: block; margin: 0 auto;}
     display: block;
 }
 .button:hover span {background-color: #14602B;}
+
+/* Scope Confirmation */
+#wrapper.scope-confirms {max-width: 480px;}
+h1 {font-size: 30px; font-weight: 300; color: #e98024;}
+.separator-line {border-bottom: 1px solid #dedede; margin: 5px 0;}
+.scopes {background-color: #f2f2f2; padding: 5px; margin-bottom: 0.5em;}
+.bullet li {color: #e98024; list-style-type: circle; line-height: 1.8em;}
+.bullet li span {color: black;}
+.button2 span, .button2:hover span {background: white; border: 1px solid #c2c2c2; color: black;}
+.scope-confirms .button {width: 49%; float: left; margin-bottom: 0.2em;}
+.scope-confirms .button2 {margin-left: 2%;}
+@media screen and (max-width: 400px) {
+    .scope-confirms .button {width: 100%; float: none; margin-left: 0;}
+}

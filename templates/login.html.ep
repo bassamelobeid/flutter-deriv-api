@@ -1,14 +1,16 @@
-<div id="wrapper">
-	<div id="header">
-		<div id="logo"></div>
-	</div>
-	<form id="frmLogin" method="POST">
-		<% if (stash('error')) { %>
+<div id="wrapper" class="login">
+    <div id="header">
+        <div id="logo">
+            <img src="/oauth2/images/binary-logo.svg" alt="Binary.com" />
+        </div>
+    </div>
+    <form id="frmLogin" method="POST">
+        <% if (stash('error')) { %>
             <p class='errorfield'><%= stash('error') %></p>
         <% } %>
-		<div><input type="text" id="txtEmail" name="email" placeholder="<%= $l->('Email') %>" autocomplete="off" autofocus="autofocus" /></div>
-		<div><input type="password" id="txtPass" name="password" placeholder="<%= $l->('Password') %>" /></div>
-		<div><button type="submit" id="btnLogin" class="button" name="login" value='<%= $l->('Login') %>'><span>Login</span></button></div>
-		<input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
-	</form>
+        <div><input type="text" id="txtEmail" name="email" placeholder="<%= $l->('Email') %>" autocomplete="off" autofocus="autofocus" /></div>
+        <div><input type="password" id="txtPass" name="password" placeholder="<%= $l->('Password') %>" /></div>
+        <div><button type="submit" id="btnLogin" class="button" name="login" value='<%= $l->('Login') %>'><span>Login</span></button></div>
+        <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
+    </form>
 </div>

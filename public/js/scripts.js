@@ -13,8 +13,6 @@ window.onload = function() {
             if(!validate()) {
                 e.preventDefault();
                 return false;
-            } else {
-                $('#btnLogin').attr('disabled', 'disabled');
             }
         });
     }
