@@ -22,18 +22,7 @@ my $app = $oauth->create_app({
 });
 my $app_id = $app->{app_id};
 
-my $t = Test::Mojo->new('BOM::OAuth');
-
-$t = $t->get_ok("/authorize");
-$t->json_is('/error', 'invalid_request')->json_like('/error_description', qr/missing app_id/);
-
-$t = $t->get_ok("/authorize?app_id=XXX");
-$t->json_like('/error_description', qr/valid app_id/);
-
-$t = $t->get_ok("/authorize?app_id=$app_id");
-is $t->tx->res->headers->location, '/login', 'redirect to /login';
-
-## treat as logined b/c we do not have bom-web setup here
+## create test user to login
 my $email     = 'abc@binary.com';
 my $password  = 'jskjd8292922';
 my $hash_pwd  = BOM::System::Password::hashpw($password);
@@ -58,22 +47,42 @@ $user->add_loginid({loginid => $vr_1});
 $user->add_loginid({loginid => $cr_1});
 $user->save;
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $cr_1,
-    email   => $email,
-)->token;
-$t->ua->cookie_jar->add(
-    Mojo::Cookie::Response->new(
-        name   => 'login',
-        value  => $token,
-        domain => $t->tx->req->url->host,
-        path   => '/'
-    ));
+my $t = Test::Mojo->new('BOM::OAuth');
 
-# confirm_scopes
-$t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/confirm_scopes/);
+$t = $t->get_ok("/authorize");
+$t->json_is('/error', 'invalid_request')->json_like('/error_description', qr/missing app_id/);
+
+$t = $t->get_ok("/authorize?app_id=XXX");
+$t->json_like('/error_description', qr/valid app_id/);
+
+$t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
+
+# my $token = BOM::Platform::SessionCookie->new(
+#     loginid => $cr_1,
+#     email   => $email,
+# )->token;
+# $t->ua->cookie_jar->add(
+#     Mojo::Cookie::Response->new(
+#         name   => 'login',
+#         value  => $token,
+#         domain => $t->tx->req->url->host,
+#         path   => '/'
+#     ));
 
 my $csrftoken = $t->tx->res->dom->at('input[name=csrftoken]')->val;
+ok $csrftoken, 'csrftoken is there';
+$t->post_ok(
+    "/authorize?app_id=$app_id" => form => {
+        login     => 1,
+        email     => $email,
+        password  => $password,
+        csrftoken => $csrftoken
+    });
+
+# confirm_scopes after login
+$t = $t->content_like(qr/confirm_scopes/);
+
+$csrftoken = $t->tx->res->dom->at('input[name=csrftoken]')->val;
 ok $csrftoken, 'csrftoken is there';
 
 $t->post_ok(
@@ -81,14 +90,25 @@ $t->post_ok(
         confirm_scopes => 1,
         csrftoken      => $csrftoken
     });
+
 ok $t->tx->res->headers->location =~ 'https://www.example.com/', 'redirect to example';
 my ($code) = ($t->tx->res->headers->location =~ /token1=(.*?)$/);
 ok $code, 'got access code';
 ($code) = ($t->tx->res->headers->location =~ /token2=(.*?)$/);
 ok $code, 'got access code for another loginid';
 
-## second time won't have confirm scopes
-$t = $t->get_ok("/authorize?app_id=$app_id");
-ok $t->tx->res->headers->location =~ 'https://www.example.com/', 'redirect to example';
+## second time we'll see login again and POST will not require confirm scopes
+$t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
+
+$csrftoken = $t->tx->res->dom->at('input[name=csrftoken]')->val;
+$t->post_ok(
+    "/authorize?app_id=$app_id" => form => {
+        login     => 1,
+        email     => $email,
+        password  => $password,
+        csrftoken => $csrftoken
+    });
+
+ok $t->tx->res->headers->location =~ 'https://www.example.com/', 'redirect to example w/o confirm scopes';
 
 done_testing();
