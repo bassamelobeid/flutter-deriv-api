@@ -180,6 +180,57 @@ subtest 'User Login' => sub {
         ok $status->{error} =~ /account is unavailable/;
     };
 
+    subtest 'with self excluded accounts' => sub {
+        my ($user3, $vr_3, $cr_3, $cr_31);
+        my $new_email = 'test' . rand . '@binary.com';
+        lives_ok {
+            $vr_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'VRTC',
+                email       => $new_email,
+            });
+            $cr_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+                email       => $new_email,
+            });
+            $cr_31 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'CR',
+                email       => $new_email,
+            });
+
+            $user3 = BOM::Platform::User->create(
+                email    => $new_email,
+                password => $hash_pwd
+            );
+            $user3->add_loginid({loginid => $cr_3->loginid});
+            $user3->add_loginid({loginid => $cr_31->loginid});
+            $user3->save;
+        }
+        'create user with cr accounts only';
+
+        subtest 'cannot login if he has all self excluded account' => sub {
+            my $exclude_until_3  = Date::Utility->new()->plus_time_interval('365d')->date;
+            my $exclude_until_31 = Date::Utility->new()->plus_time_interval('300d')->date;
+
+            $cr_3->set_exclusion->exclude_until($exclude_until_3);
+            $cr_3->save;
+            $cr_31->set_exclusion->exclude_until($exclude_until_31);
+            $cr_31->save;
+
+            $status = $user3->login(%pass);
+
+            ok $status->{error} =~ /Sorry, you have excluded yourself until $exclude_until_31/,
+                'It should return the earlist until date in message error';
+        };
+
+        subtest 'if user has vr account and other accounts is self excluded' => sub {
+            $user3->add_loginid({loginid => $vr_3->loginid});
+            $user3->save;
+
+            $status = $user3->login(%pass);
+            is $status->{success}, 1, 'it should use vr account to login';
+        };
+    };
+
     subtest 'can login' => sub {
         $client_vr->clr_status('disabled');
         $client_vr->save;
