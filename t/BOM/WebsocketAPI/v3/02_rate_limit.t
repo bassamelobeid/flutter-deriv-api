@@ -2,9 +2,10 @@ use strict;
 use warnings;
 use Test::More;
 
+use BOM::Test::Data::Utility::UnitTestRedis;
+
 use BOM::WebSocketAPI::Websocket_v3;
 
-use BOM::Test::Data::Utility::UnitTestRedis;
 use Cache::RedisDB;
 Cache::RedisDB->redis()->flushall();
 

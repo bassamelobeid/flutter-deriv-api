@@ -9,10 +9,10 @@ use TestHelper qw/test_schema build_mojo_test/;
 use Cache::RedisDB;
 use Test::Exception;
 
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::System::Password;
 use BOM::Platform::User;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Transaction;
 
 ## do not send email

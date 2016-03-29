@@ -8,9 +8,9 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::SessionCookie;
 use BOM::Database::Model::OAuth;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $t = build_mojo_test();
 my ($session, $token, $res);

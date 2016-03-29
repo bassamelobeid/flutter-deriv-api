@@ -5,6 +5,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 
+use BOM::Test;
 use BOM::Platform::SessionCookie;
 
 build_test_R_50_data();
