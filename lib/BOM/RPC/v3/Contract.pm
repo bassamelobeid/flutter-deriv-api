@@ -158,7 +158,7 @@ sub get_bid {
             payout              => $contract->payout,
         };
 
-        my $contract_affected_by_missing_market_data = (not $contract->may_settle_automatically and not @{$contract->corporate_actions}) ? 1 : 0;
+        my $contract_affected_by_missing_market_data = (not $contract->may_settle_automatically and not @{$contract->corporate_actions and $contract->is_missing_market_data}) ? 1 : 0;
 
         if ($contract_affected_by_missing_market_data) {
             $response = {
