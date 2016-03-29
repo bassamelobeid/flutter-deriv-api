@@ -139,6 +139,24 @@ sub extract_parameters_from_line {
     if ($line =~ /COMMENT.*[^A-Za-z]emp(?:=|\[)([^\s\]=]+)(?:\])?(\s|$)/i) {
         $result->{'emp'} = $1;
     }
+    if ($line =~ /COMMENT.*[^A-Za-z]entry_spot(?:=|\[)([^\s\]=]+)(?:\])?(\s|$)/i) {
+        $result->{'entry_spot'} = $1;
+    }
+    if ($line =~ /COMMENT.*[^A-Za-z]entry_spot_epoch(?:=|\[)([^\s\]=]+)(?:\])?(\s|$)/i) {
+        $result->{'entry_spot_epoch'} = int($1);
+    }
+    if ($line =~ /COMMENT.*[^A-Za-z]exit_spot(?:=|\[)([^\s\]=]+)(?:\])?(\s|$)/i) {
+        $result->{'exit_spot'} = $1;
+    }
+    if ($line =~ /COMMENT.*[^A-Za-z]exit_spot_epoch(?:=|\[)([^\s\]=]+)(?:\])?(\s|$)/i) {
+        $result->{'exit_spot_epoch'} = int($1);
+    }
+    if ($line =~ /COMMENT.*[^A-Za-z]hit_spot(?:=|\[)([^\s\]=]+)(?:\])?(\s|$)/i) {
+        $result->{'hit_spot'} = $1;
+    }
+    if ($line =~ /COMMENT.*[^A-Za-z]hit_spot_epoch(?:=|\[)([^\s\]=]+)(?:\])?(\s|$)/i) {
+        $result->{'hit_spot_epoch'} = int($1);
+    }
     return $result;
 }
 
