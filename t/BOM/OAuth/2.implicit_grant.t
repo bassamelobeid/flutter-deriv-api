@@ -2,12 +2,16 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Mojo;
+use Test::MockModule;
 use BOM::System::Password;
 use BOM::Platform::User;
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Database::Model::OAuth;
+
+my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
+$email_mocked->mock('send_email', sub { return 1 });
 
 ## init
 my $oauth = BOM::Database::Model::OAuth->new;
