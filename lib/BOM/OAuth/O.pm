@@ -113,10 +113,10 @@ sub authorize {
             send_email({
                     from    => BOM::Platform::Static::Config::get_customer_support_email(),
                     to      => $session->email,
-                    subject => localize('New sign-in activity'),
+                    subject => localize('New Sign-In Activity Detected'),
                     message => [
                         localize(
-                            'Your account [_1] was just used to sign in from [_2]. If this request was not performed by you, please review your settings. If you need further assistance contact Customer Support.',
+                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
                             $session->email,
                             $c->stash('request')->client_ip
                         )
