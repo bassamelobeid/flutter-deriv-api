@@ -60,7 +60,7 @@ has is_expired => (
 );
 
 has missing_market_data => (
-    is      => 'ro',
+    is      => 'rw',
     isa     => 'Bool',
     default => 0
 );
