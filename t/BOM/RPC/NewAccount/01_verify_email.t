@@ -97,7 +97,7 @@ subtest 'Reset password for exists user' => sub {
     clear_mailbox();
 
     $params[1]->{email}        = $email;
-    $params[1]->{type}         = 'lost_password';
+    $params[1]->{type}         = 'reset_password';
     $params[1]->{website_name} = 'binary.com';
     $params[1]->{link}         = 'binary.com/some_url';
 
@@ -114,7 +114,7 @@ subtest 'Reset password for exists user' => sub {
 
 subtest 'Reset password for not exists user' => sub {
     $params[1]->{email}        = 'not_' . $email;
-    $params[1]->{type}         = 'lost_password';
+    $params[1]->{type}         = 'reset_password';
     $params[1]->{website_name} = 'binary.com';
     $params[1]->{link}         = 'binary.com/some_url';
 

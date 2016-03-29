@@ -64,6 +64,14 @@ sub get_limits {
         $lifetimelimit = 99999999;
     }
 
+    my $withdrawal_limit_curr;
+    if (first { $client->landing_company->short eq $_ } ('costarica', 'japan')) {
+        $withdrawal_limit_curr = $client->currency;
+    } else {
+        # limit in EUR for: MX, MLT, MF
+        $withdrawal_limit_curr = 'EUR';
+    }
+
     $limit->{num_of_days}       = $numdays;
     $limit->{num_of_days_limit} = $numdayslimit;
     $limit->{lifetime_limit}    = $lifetimelimit;
@@ -75,14 +83,15 @@ sub get_limits {
             start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
             exclude    => ['currency_conversion_transfer'],
         });
-        $withdrawal_for_x_days = roundnear(0.01, amount_from_to_currency($withdrawal_for_x_days, $client->currency, 'EUR'));
+        $withdrawal_for_x_days = roundnear(0.01, amount_from_to_currency($withdrawal_for_x_days, $client->currency, $withdrawal_limit_curr));
 
         # withdrawal since inception
         my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
-        $withdrawal_since_inception = roundnear(0.01, amount_from_to_currency($withdrawal_since_inception, $client->currency, 'EUR'));
+        $withdrawal_since_inception =
+            roundnear(0.01, amount_from_to_currency($withdrawal_since_inception, $client->currency, $withdrawal_limit_curr));
 
         $limit->{withdrawal_since_inception_monetary} = to_monetary_number_format($withdrawal_since_inception, 1);
-        $limit->{withdrawal_for_x_days_monetary}      = to_monetary_number_format($withdrawal_for_x_days,      $numdays);
+        $limit->{withdrawal_for_x_days_monetary}      = to_monetary_number_format($withdrawal_for_x_days,      1);
 
         my $remainder = roundnear(0.01, min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception)));
         if ($remainder < 0) {
@@ -221,22 +230,21 @@ sub paymentagent_transfer {
         return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
     }
 
-    my $client_to = BOM::Platform::Client->new({loginid => $loginid_to});
+    my $client_to = try { BOM::Platform::Client->new({loginid => $loginid_to}) };
     unless ($client_to) {
         return $reject_error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
-    }
-
-    if ($args->{dry_run}) {
-        return {status => 2};
     }
 
     unless ($client_fm->landing_company->short eq $client_to->landing_company->short) {
         return $reject_error_sub->(localize('Cross-company payment agent transfers are not allowed.'));
     }
 
-    for ($currency) {
-        /^\w\w\w$/ || return $reject_error_sub->(localize('Sorry, the currency format is incorrect.'));
-        /^USD$/    || return $reject_error_sub->(localize('Sorry, only USD is allowed.'));
+    if ($loginid_to eq $loginid_fm) {
+        return $reject_error_sub->(localize('Sorry, it is not allowed.'));
+    }
+
+    if ($currency ne 'USD') {
+        return $reject_error_sub->(localize('Sorry, only USD is allowed.'));
     }
 
     unless ($client_fm->currency eq $currency) {
@@ -256,6 +264,13 @@ sub paymentagent_transfer {
 
     if ($client_fm->get_status('cashier_locked') || $client_fm->documents_expired) {
         return $reject_error_sub->(localize('There was an error processing the request.') . ' ' . localize('Your cashier section is locked.'));
+    }
+
+    if ($args->{dry_run}) {
+        return {
+            status              => 2,
+            client_to_full_name => $client_to->full_name,
+        };
     }
 
     # freeze loginID to avoid a race condition
@@ -362,7 +377,10 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
         'template_loginid'   => $client_to->loginid
     });
 
-    return {status => 1};
+    return {
+        status              => 1,
+        client_to_full_name => $client_to->full_name,
+    };
 }
 
 sub paymentagent_withdraw {
@@ -455,11 +473,11 @@ sub paymentagent_withdraw {
 
     # check that the currency is in correct format
     if ($client->currency ne $currency) {
-        return $error_sub->(localize('Sorry, your currency of [_1] is unavailable for Payment Agent Withdrawal', $client->currency));
+        return $error_sub->(localize('Sorry, your currency of [_1] is unavailable for Payment Agent Withdrawal', $currency));
     }
 
     if ($pa_client->currency ne $currency) {
-        return $error_sub->(localize("Sorry, the Payment Agent's currency [_1] is unavailable for Payment Agent Withdrawal", $pa_client->currency));
+        return $error_sub->(localize("Sorry, the Payment Agent's currency [_1] is unavailable for Payment Agent Withdrawal", $currency));
     }
 
     # check that the amount is in correct format
