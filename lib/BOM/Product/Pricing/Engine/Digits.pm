@@ -9,21 +9,6 @@ use BOM::Utility::ErrorStrings qw( format_error_string );
 use List::Util qw(first min max);
 use Math::Util::CalculatedValue::Validatable;
 
-# Commissions for number of single-digit (base 10) wins
-# Quadratically interpolated to match the former tick trades and give nice "even-money" numbers.
-my @winning_digits_commission = (
-    0.000749452007383467,    # 0: invalid, but present to allow pricing
-    0.0015228426395939,      # 1: 10-for-1, with 1.5% commission on stake
-    0.00233459275496077,     # 2: interpolated
-    0.00318470235348408,     # 3: interpolated
-    0.00407317143516382,     # 4: interpolated
-    0.005,                   # 5: 50.50 for 50/50
-    0.00596518804799262,     # 6: interpolated
-    0.00696873557914168,     # 7: interpolated
-    0.00801064259344717,     # 8: interpolated
-    0.00909090909090909,     # 9: 10% return
-);
-
 has _supported_types => (
     is      => 'ro',
     isa     => 'HashRef',
@@ -129,7 +114,7 @@ sub _build_model_markup {
         name        => 'commission_markup',
         description => 'equivalent to tick trades',
         set_by      => __PACKAGE__,
-        base_amount => $winning_digits_commission[$self->winning_digits],
+        base_amount => 0.01,
     });
 
     my $risk_markup = Math::Util::CalculatedValue::Validatable->new({
