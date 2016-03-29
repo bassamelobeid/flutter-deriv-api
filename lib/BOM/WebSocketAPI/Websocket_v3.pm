@@ -244,6 +244,10 @@ my @dispatch = (
         'new_account_virtual',
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0
     ],
+    [
+        'reset_password',
+        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::reset_password, 0
+    ],
 
     # authenticated calls
     ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1, 'trade'],
@@ -260,10 +264,11 @@ my @dispatch = (
     ],
     ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1, 'trade'],
 
-    ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register, 1, 'admin'],
-    ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,     1, 'admin'],
-    ['app_get',      \&BOM::WebSocketAPI::v3::Wrapper::App::get,      1, 'admin'],
-    ['app_delete',   \&BOM::WebSocketAPI::v3::Wrapper::App::delete,   1, 'admin'],
+    ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register,   1, 'admin'],
+    ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,       1, 'admin'],
+    ['app_get',      \&BOM::WebSocketAPI::v3::Wrapper::App::get,        1, 'admin'],
+    ['app_delete',   \&BOM::WebSocketAPI::v3::Wrapper::App::delete,     1, 'admin'],
+    ['oauth_apps',   \&BOM::WebSocketAPI::v3::Wrapper::App::oauth_apps, 1, 'admin'],
 
     ['topup_virtual',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual,     1, 'trade'],
     ['get_limits',        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,        1, 'read'],
@@ -459,7 +464,12 @@ sub _failed_key_value {
     } elsif (
         $key !~ /^[A-Za-z0-9_-]{1,50}$/
         # !-~ to allow a range of acceptable characters. To find what is the range, look at ascii table
-        or $value !~ /^[\s\w\@_:!-~]{0,300}$/
+
+        # please don't remove: \p{Script=Common}\p{L}
+        # \p{L} is to match utf-8 characters
+        # \p{Script=Common} is to match double byte characters in Japanese keyboards, eg: '１−１−１'
+        # refer: http://perldoc.perl.org/perlunicode.html
+        or $value !~ /^[\p{Script=Common}\p{L}\s\w\@_:!-~]{0,300}$/
         )
     {
         return ($key, $value);

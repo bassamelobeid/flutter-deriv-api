@@ -35,7 +35,6 @@ sub verify_email {
     my $email = $args->{verify_email};
     my $type  = $args->{type};
 
-    my $link;
     my $code;
     if ($type eq 'account_opening') {
         $code = BOM::Platform::Token::Verification->new({
@@ -43,11 +42,11 @@ sub verify_email {
                 expires_in  => 3600,
                 created_for => 'account_opening'
             })->token;
-    } elsif ($type eq 'lost_password') {
+    } elsif ($type eq 'reset_password') {
         $code = BOM::Platform::Token::Verification->new({
                 email       => $email,
                 expires_in  => 3600,
-                created_for => 'lost_password'
+                created_for => 'reset_password'
             })->token;
     } elsif ($type eq 'paymentagent_withdraw') {
         $code = BOM::Platform::Token::Verification->new({
@@ -56,11 +55,6 @@ sub verify_email {
                 created_for => 'paymentagent_withdraw'
             })->token;
     }
-    $link = $r->url_for(
-        '/user/validate_link',
-        {
-            verify_token => $code,
-        });
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
@@ -75,7 +69,7 @@ sub verify_email {
             args         => $args,
             email        => $email,
             website_name => $r->website->display_name,
-            link         => $link->to_string,
+            code         => $code,
             type         => $type
         });
     return;

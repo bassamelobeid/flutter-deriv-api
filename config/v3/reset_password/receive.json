@@ -1,17 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Payment Agent Transfer Response",
+  "title": "Reset Password Response",
   "description": "",
   "properties": {
-    "paymentagent_transfer": {
+    "reset_password": {
       "type": "integer",
-      "description": "If 1, transfer success. If 2, dry-run success.",
-      "pattern": "^(2|1)$"
-    },
-    "client_to_full_name": {
-      "type": "string",
-      "description": "The transfer_to client full name"
+      "description": "1: password reset success, 0: password reset failure",
+      "pattern": "^(1|0)$"
     },
     "echo_req": {
       "title": "Echo request",
@@ -19,7 +15,7 @@
     },
     "msg_type": {
       "type": "string",
-      "description": "paymentagent_transfer"
+      "description": "reset_password"
     },
     "req_id": {
       "type": "integer",
