@@ -107,21 +107,23 @@ sub authorize {
         );
     }
 
-    my $session;
-    if ($session_token and $session = BOM::Platform::SessionCookie->new({token => $session_token} and $session->have_multiple_sessions)) {
-        send_email({
-                from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                to      => $session->email,
-                subject => localize('New sign-in activity'),
-                message => [
-                    localize(
-                        'Your account [_1] was just used to sign in from [_2]. If this request was not performed by you, please review your settings. If you need further assistance contact Customer Support.',
-                        $session->email,
-                        $c->stash('request')->client_ip
-                    )
-                ],
-                use_email_template => 1,
-            });
+    if ($session_token) {
+        my $session = BOM::Platform::SessionCookie->new({token => $session_token});
+        if ($session and $session->have_multiple_sessions) {
+            send_email({
+                    from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    to      => $session->email,
+                    subject => localize('New sign-in activity'),
+                    message => [
+                        localize(
+                            'Your account [_1] was just used to sign in from [_2]. If this request was not performed by you, please review your settings. If you need further assistance contact Customer Support.',
+                            $session->email,
+                            $c->stash('request')->client_ip
+                        )
+                    ],
+                    use_email_template => 1,
+                });
+        }
     }
 
     my $uri = Mojo::URL->new($redirect_uri);
