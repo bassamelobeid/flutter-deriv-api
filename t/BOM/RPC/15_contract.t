@@ -247,11 +247,49 @@ subtest 'send_ask' => sub {
 };
 
 subtest 'get_bid' => sub {
-    my $params = {language => 'ZH_CN'};
+    my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 899,
+        underlying => 'R_50',
+    });
+
+    my $exit_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 500,
+        underlying => 'R_50',
+    });
+    my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 100,
+        underlying => 'R_50',
+    });
+
+    my $contract = create_contract(
+        client        => $client,
+        spread        => 0,
+        exit_tick     => $exit_tick,
+        entry_tick    => $entry_tick,
+        current_tick  => $current_tick,
+        date_start    => $now->epoch - 900,
+        date_expiry   => $now->epoch - 600,
+        purchase_date => $now->epoch - 900
+    );
+    my $params = {
+        language    => 'ZH_CN',
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => $client->currency,
+        is_sold     => 0,
+    };
+
+    my $result =
+        $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
+        ->error_message_is(
+        '在合约期限内出现市场数据中断。对于真实资金账户，我们将尽力修正并恰当地结算合约，不然合约将取消及退款。对于虚拟资金交易，我们将取消交易，并退款。'
+        );
+    $params = {language => 'ZH_CN'};
+
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
         ->error_message_is('对不起，在处理您的请求时出错。');
 
-    my $contract = create_contract(
+    $contract = create_contract(
         client => $client,
         spread => 1
     );
@@ -264,7 +302,7 @@ subtest 'get_bid' => sub {
         is_sold     => 0,
     };
 
-    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (
         qw(ask_price
@@ -374,19 +412,23 @@ sub create_contract {
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
+    my $date_start    = $now->epoch - 100;
+    my $date_expiry   = $now->epoch - 50;
     my $underlying    = BOM::Market::Underlying->new('R_50');
+    my $purchase_date = $now->epoch - 101;
     my $contract_data = {
         underlying   => $underlying,
         bet_type     => 'FLASHU',
         currency     => 'USD',
         stake        => 100,
-        date_start   => $now->epoch - 100,
-        date_expiry  => $now->epoch - 50,
-        current_tick => $tick,
-        entry_tick   => $old_tick1,
-        exit_tick    => $old_tick2,
+        date_start   => $args{date_start} ? $args{date_start} : $date_start,
+        date_expiry  => $args{date_expiry} ? $args{date_expiry} : $date_expiry,
+        current_tick => $args{tick} ? $args{tick} : $tick,
+        entry_tick   => $args{entry_tick} ? $args{entry_tick} : $old_tick1,
+        exit_tick    => $args{exit_tick} ? $args{exit_tick} : $old_tick2,
         barrier      => 'S0P',
     };
+
     if ($args{spread}) {
         delete $contract_data->{date_expiry};
         delete $contract_data->{barrier};
@@ -404,7 +446,7 @@ sub create_contract {
         price         => 100,
         payout        => $contract->payout,
         amount_type   => 'stake',
-        purchase_date => $now->epoch - 101,
+        purchase_date => $args{purchase_date} ? $args{purchase_date} : $purchase_date,
     });
 
     my $error = $txn->buy(skip_validation => 1);
