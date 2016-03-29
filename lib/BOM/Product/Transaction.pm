@@ -498,7 +498,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
 
         $self->calculate_limits;
 
-        $self->comment(_build_pricing_comment($self->contract)) unless defined $self->comment;
+        $self->comment(_build_pricing_comment($self->contract, $self->price)) unless defined $self->comment;
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
@@ -620,7 +620,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _validate_date_pricing/
             );
 
-        $self->comment(_build_pricing_comment($self->contract)) unless defined $self->comment;
+        $self->comment(_build_pricing_comment($self->contract, $self->price)) unless defined $self->comment;
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_sell;
@@ -1036,7 +1036,7 @@ sub _validate_currency {
 }
 
 sub _build_pricing_comment {
-    my $contract = shift;
+    my ($contract, $price) = @_;
 
     my @comment_fields;
     if ($contract->is_spread) {
@@ -1062,6 +1062,11 @@ sub _build_pricing_comment {
             [volga   => $contract->volga],
             [bs_prob => $contract->bs_probability->amount],
             [spot    => $contract->current_spot]);
+
+        # only manual sell and buy has a price
+        if ($price) {
+            push @comment_fields, (trade => $price);
+        }
 
         if ($contract->entry_tick) {
             push @comment_fields, (entry_spot       => $contract->entry_tick->quote);
