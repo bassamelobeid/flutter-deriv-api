@@ -1143,57 +1143,42 @@ sub reality_check {
         return $auth_error;
     }
 
-    my $start   = $token_details->{epoch};
-    my @clients = ();
+    my $has_reality_check = $client->landing_company->has_reality_check;
+    return {} unless ($has_reality_check);
 
-    # get siblings for session token only as epoch/start is defined for session token only
-    @clients = grep { $_->landing_company->has_reality_check } $client->siblings if $start;
-
-    # push that client as well, only if it has reality check
-    push @clients, $client if $client->landing_company->has_reality_check;
-
-    return {
-        summary    => [],
-        start_time => 0
-    } unless (scalar @clients);
-
-    my $tm = time - 48 * 3600;    # 48 hours
+    my $start = $token_details->{epoch};
+    my $tm    = time - 48 * 3600;
     $start = $tm unless $start and $start > $tm;
 
-    my $summary = [];
-    for my $reality_check_client (@clients) {
-        my $record = {loginid => $reality_check_client->loginid};
+    BOM::Product::Transaction::sell_expired_contracts({
+        client => $client,
+    });
 
-        BOM::Product::Transaction::sell_expired_contracts({
-            client => $reality_check_client,
+    my $txn_dm = BOM::Database::DataMapper::Transaction->new({
+            client_loginid => $client->loginid,
+            db             => BOM::Database::ClientDB->new({
+                    client_loginid => $client->loginid,
+                    operation      => 'replica',
+                }
+            )->db,
         });
 
-        my $txn_dm = BOM::Database::DataMapper::Transaction->new({
-                client_loginid => $reality_check_client->loginid,
-                db             => BOM::Database::ClientDB->new({
-                        client_loginid => $reality_check_client->loginid,
-                        operation      => 'replica',
-                    }
-                )->db,
-            });
+    my $data = $txn_dm->get_reality_check_data_of_account(Date::Utility->new($start)) // {};
+    $data = $data->[0] if ($data and scalar @$data);
 
-        my $data = $txn_dm->get_reality_check_data_of_account(Date::Utility->new($start));
-        if ($data and scalar @$data) {
-            $data = $data->[0];
-            foreach (("buy_count", "buy_amount", "sell_count", "sell_amount")) {
-                $record->{$_} = $data->{$_};
-            }
-            $record->{currency}            => $data->{currency_code};
-            $record->{potential_profit}    => $data->{pot_profit};
-            $record->{open_contract_count} => $data->{open_cnt};
-        }
-        push @$summary, $record;
-    }
-
-    return {
-        summary    => $summary,
+    my $summary = {
+        loginid    => $client->loginid,
         start_time => $start
     };
+
+    foreach (("buy_count", "buy_amount", "sell_count", "sell_amount")) {
+        $summary->{$_} = $data->{$_} // 0;
+    }
+    $summary->{currency}            = $data->{currency_code} // '';
+    $summary->{potential_profit}    = $data->{pot_profit}    // 0;
+    $summary->{open_contract_count} = $data->{open_cnt}      // 0;
+
+    return $summary;
 }
 
 1;
