@@ -1168,7 +1168,11 @@ sub reality_check {
         });
 
     my $data = $txn_dm->get_reality_check_data_of_account(Date::Utility->new($start)) // {};
-    $data = $data->[0] if ($data and scalar @$data);
+    if ($data and scalar @$data) {
+        $data = $data->[0];
+    } else {
+        $data = {};
+    }
 
     my $summary = {
         loginid    => $client->loginid,

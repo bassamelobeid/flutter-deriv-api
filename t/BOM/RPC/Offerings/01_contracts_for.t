@@ -37,7 +37,7 @@ subtest "Request $method" => sub {
 
     is_deeply [sort keys %{$result}], [sort qw/ available close open hit_count spot feed_license /], 'It should return contracts_for object';
     ok @{$result->{available}}, 'It should return available contracts';
-    ok !grep {$_->{contract_type} =~ /^(CALL|PUT|EXPIRYMISS|EXPIRYRANGE)E$/} @{$result->{available}};
+    ok !grep { $_->{contract_type} =~ /^(CALL|PUT|EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 
     $params[1]{args}{region}        = 'japan';
     $params[1]{args}{contracts_for} = 'frxUSDJPY';
@@ -47,7 +47,7 @@ subtest "Request $method" => sub {
         [sort qw/ available close open hit_count spot feed_license /],
         'It should return contracts_for object for japan region';
     ok @{$result->{available}}, 'It should return available contracts only for japan region';
-    ok !grep {$_->{contract_type} =~ /^(CALL|PUT|EXPIRYMISS|EXPIRYRANGE)$/} @{$result->{available}};
+    ok !grep { $_->{contract_type} =~ /^(CALL|PUT|EXPIRYMISS|EXPIRYRANGE)$/ } @{$result->{available}};
 
     $params[1]{args}{contracts_for} = 'invalid symbol';
     $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if symbol does not exist')

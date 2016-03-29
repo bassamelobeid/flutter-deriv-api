@@ -55,9 +55,17 @@ my $session = BOM::Platform::SessionCookie->new(
 my $token = $session->token;
 
 my $result = $c->call_ok($method, {token => $token})->result;
-is $result->{start_time}, $session->{loginat}, 'Start time matches session login time';
+is_deeply $result, {}, 'empty record for client that has no reality check';
 
-is scalar @{$result->{summary}}, 2, 'Correct number of client';
-ok $result->{summary}->[0]->{loginid}, 'Contains loginid as key';
+$session = BOM::Platform::SessionCookie->new(
+    loginid => $test_client_mlt->loginid,
+    email   => $email
+);
+$token = $session->token;
+
+$result = $c->call_ok($method, {token => $token})->result;
+is $result->{start_time}, $session->{loginat}, 'Start time matches session login time';
+is $result->{loginid}, $test_client_mlt->loginid, 'Contains correct loginid';
+is $result->{open_contract_count}, 0, 'zero open contracts';
 
 done_testing();
