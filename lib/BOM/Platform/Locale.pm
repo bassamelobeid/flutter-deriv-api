@@ -34,9 +34,7 @@ sub translate_salutation {
         MS   => localize('Ms'),
         MISS => localize('Miss'),
         MRS  => localize('Mrs'),
-        DR   => localize('Dr'),
         MR   => localize('Mr'),
-        PROF => localize('Prof'),
     );
 
     return $translated_titles{uc $provided} || $provided;
