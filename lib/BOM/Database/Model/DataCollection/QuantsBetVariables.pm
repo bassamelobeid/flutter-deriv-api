@@ -151,12 +151,6 @@ sub extract_parameters_from_line {
     if ($line =~ /COMMENT.*[^A-Za-z]exit_spot_epoch(?:=|\[)([^\s\]=]+)(?:\])?(\s|$)/i) {
         $result->{'exit_spot_epoch'} = int($1);
     }
-    if ($line =~ /COMMENT.*[^A-Za-z]hit_spot(?:=|\[)([^\s\]=]+)(?:\])?(\s|$)/i) {
-        $result->{'hit_spot'} = $1;
-    }
-    if ($line =~ /COMMENT.*[^A-Za-z]hit_spot_epoch(?:=|\[)([^\s\]=]+)(?:\])?(\s|$)/i) {
-        $result->{'hit_spot_epoch'} = int($1);
-    }
     return $result;
 }
 
