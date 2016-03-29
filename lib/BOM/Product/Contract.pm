@@ -59,7 +59,7 @@ has is_expired => (
     lazy_build => 1,
 );
 
-has is_missing_market_data => (
+has missing_market_data => (
     is      => 'ro',
     isa     => 'Bool',
     default => 0
@@ -1284,7 +1284,7 @@ sub _build_entry_tick {
         my $max_delay   = $underlying->max_suspend_trading_feed_delay;
         my $start_delay = Time::Duration::Concise::Localize->new(interval => abs($when - $start->epoch));
         if ($start_delay->seconds > $max_delay->seconds) {
-            $self->is_missing_market_data = 1;
+            $self->missing_market_data(1);
             $self->add_error({
                     message => format_error_string(
                         'Entry tick too far away',
@@ -2101,7 +2101,7 @@ sub _build_exit_tick {
         my $max_delay = $underlying->max_suspend_trading_feed_delay;
         # We should not have gotten here otherwise.
         if (not $first_date->is_before($last_date)) {
-            $self->is_missing_market_data = 1;
+            $self->missing_market_data(1);
             $self->add_error({
                     message => format_error_string(
                         'Start tick is not before expiry tick',
@@ -2118,7 +2118,7 @@ sub _build_exit_tick {
             if (    not $self->is_path_dependent
                 and not $self->_has_ticks_before_close($exchange->closing_on($self->date_expiry)))
             {
-                $self->is_missing_market_data = 1;
+                $self->missing_market_data(1);
                 $self->add_error({
                         message => format_error_string(
                             'Missing ticks at close',
@@ -2129,7 +2129,7 @@ sub _build_exit_tick {
                     });
             }
         } elsif ($end_delay->seconds > $max_delay->seconds) {
-            $self->is_missing_market_data = 1;
+            $self->missing_market_data(1);
             $self->add_error({
                     message => format_error_string(
                         'Exit tick too far away',
@@ -2155,7 +2155,7 @@ sub _build_exit_tick {
         if ($self->tick_expiry) {
             my $actual_duration = Time::Duration::Concise->new(interval => $last_date->epoch - $first_date->epoch);
             if ($actual_duration->seconds > $self->max_tick_expiry_duration->seconds) {
-                $self->is_missing_market_data = 1;
+                $self->missing_market_data(1);
                 $self->add_error({
                         message => format_error_string(
                             'Tick expiry duration exceeds permitted maximum',
