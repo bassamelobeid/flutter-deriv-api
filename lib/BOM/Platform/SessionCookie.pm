@@ -170,6 +170,7 @@ sub have_multiple_sessions {
     my $self = shift;
     return unless $self->{token};
 
+    ## no critic
     return BOM::System::RedisReplicated::redis_write()->eval(<<LUA_SCRIPT, 0, "LOGIN_SESSION_COLLECTION::" . md5_hex($self->{email}), $self->{token});
 for k,v in pairs(redis.call("SMEMBERS", ARGV[1])) do
     if v ~= ARGV[2] and redis.call("GET", "LOGIN_SESSION::" .. v)then
