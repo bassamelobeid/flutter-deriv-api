@@ -256,26 +256,26 @@ subtest 'get_bid' => sub {
         epoch      => $now->epoch - 700,
         underlying => 'R_50',
     });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 100,
+    my $tick =BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
         underlying => 'R_50',
     });
 
     my $contract = create_contract(
         client        => $client,
         spread        => 0,
+        current_tick  => $tick,
         date_start    => $now->epoch - 900,
         date_expiry   => $now->epoch - 600,
         purchase_date => $now->epoch - 900
     );
     my $params = {
-        language    => 'ZH_CN',
+        language => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
         is_sold     => 0,
     };
-
     my $result =
         $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
         ->error_message_is(
@@ -405,7 +405,7 @@ sub create_contract {
         underlying => 'R_50',
     });
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    my $tick =  BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
@@ -417,6 +417,7 @@ sub create_contract {
         underlying   => $underlying,
         bet_type     => 'FLASHU',
         currency     => 'USD',
+        current_tick => $args{current_tick} ? $args{current_tick} : $tick,
         stake        => 100,
         date_start   => $args{date_start} ? $args{date_start} : $date_start,
         date_expiry  => $args{date_expiry} ? $args{date_expiry} : $date_expiry,
