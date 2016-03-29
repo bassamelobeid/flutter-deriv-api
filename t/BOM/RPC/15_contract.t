@@ -247,16 +247,16 @@ subtest 'send_ask' => sub {
 };
 
 subtest 'get_bid' => sub {
-    my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch - 899,
         underlying => 'R_50',
     });
 
-    my $exit_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 500,
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 700,
         underlying => 'R_50',
     });
-    my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch - 100,
         underlying => 'R_50',
     });
@@ -264,9 +264,6 @@ subtest 'get_bid' => sub {
     my $contract = create_contract(
         client        => $client,
         spread        => 0,
-        exit_tick     => $exit_tick,
-        entry_tick    => $entry_tick,
-        current_tick  => $current_tick,
         date_start    => $now->epoch - 900,
         date_expiry   => $now->epoch - 600,
         purchase_date => $now->epoch - 900
@@ -398,17 +395,17 @@ sub create_contract {
     #postpone 10 minutes to avoid conflicts
     $now = $now->plus_time_interval('10m');
 
-    my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch - 99,
         underlying => 'R_50',
     });
 
-    my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch - 52,
         underlying => 'R_50',
     });
 
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
@@ -423,9 +420,6 @@ sub create_contract {
         stake        => 100,
         date_start   => $args{date_start} ? $args{date_start} : $date_start,
         date_expiry  => $args{date_expiry} ? $args{date_expiry} : $date_expiry,
-        current_tick => $args{tick} ? $args{tick} : $tick,
-        entry_tick   => $args{entry_tick} ? $args{entry_tick} : $old_tick1,
-        exit_tick    => $args{exit_tick} ? $args{exit_tick} : $old_tick2,
         barrier      => 'S0P',
     };
 
