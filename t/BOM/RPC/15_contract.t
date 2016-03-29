@@ -256,7 +256,7 @@ subtest 'get_bid' => sub {
         epoch      => $now->epoch - 700,
         underlying => 'R_50',
     });
-    my $tick =BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
@@ -270,7 +270,7 @@ subtest 'get_bid' => sub {
         purchase_date => $now->epoch - 900
     );
     my $params = {
-        language => 'ZH_CN',
+        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
@@ -395,17 +395,17 @@ sub create_contract {
     #postpone 10 minutes to avoid conflicts
     $now = $now->plus_time_interval('10m');
 
-     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch - 99,
         underlying => 'R_50',
     });
 
-     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch - 52,
         underlying => 'R_50',
     });
 
-    my $tick =  BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
