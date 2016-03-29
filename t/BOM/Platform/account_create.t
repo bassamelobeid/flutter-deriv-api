@@ -38,16 +38,19 @@ my $vr_details = {
         email           => 'foo+id@binary.com',
         client_password => 'foobar',
         residence       => 'id',                  # Indonesia
+        salutation      => 'Ms',
     },
     MLT => {
         email           => 'foo+nl@binary.com',
         client_password => 'foobar',
         residence       => 'nl',                  # Netherlands
+        salutation      => 'Mr',
     },
     MX => {
         email           => 'foo+gb@binary.com',
         client_password => 'foobar',
         residence       => 'gb',                  # UK
+        salutation      => 'Mrs',
     },
 };
 
@@ -164,6 +167,10 @@ subtest 'create account' => sub {
     "create $broker acc OK, after verify email";
     is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
 
+    subtest 'gender from salutation' => sub {
+        my $expected = ($vr_details->{$broker}->{salutation} eq 'Mr') ? 'm' : 'f';
+        is($real_client->gender, $expected, "$vr_details->{$broker}->{salutation} is $expected");
+    };
 };
 
 subtest 'get_real_acc_opening_type' => sub {
