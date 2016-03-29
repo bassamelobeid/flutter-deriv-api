@@ -57,18 +57,6 @@ $t->json_like('/error_description', qr/valid app_id/);
 
 $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
 
-# my $token = BOM::Platform::SessionCookie->new(
-#     loginid => $cr_1,
-#     email   => $email,
-# )->token;
-# $t->ua->cookie_jar->add(
-#     Mojo::Cookie::Response->new(
-#         name   => 'login',
-#         value  => $token,
-#         domain => $t->tx->req->url->host,
-#         path   => '/'
-#     ));
-
 my $csrftoken = $t->tx->res->dom->at('input[name=csrftoken]')->val;
 ok $csrftoken, 'csrftoken is there';
 $t->post_ok(
