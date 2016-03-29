@@ -1086,7 +1086,10 @@ sub _build_pricing_comment {
         }
 
         if ($action eq 'sell') {
-            if ($contract->current_tick) {
+            my $tick = $contract->underlying->tick_at($contract->date_pricing->epoch, {allow_inconsistent => 1});
+            # Can't use $contract->current_tick because it is not 100% true.
+            # It depends on when the contract is priced at that second.
+            if ($tick) {
                 push @comment_fields, (exit_spot       => $contract->current_tick->quote);
                 push @comment_fields, (exit_spot_epoch => $contract->current_tick->epoch);
             }
