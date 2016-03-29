@@ -498,7 +498,12 @@ sub buy {    ## no critic (RequireArgUnpacking)
 
         $self->calculate_limits;
 
-        $self->comment(_build_pricing_comment($self->contract, $self->price)) unless defined $self->comment;
+        $self->comment(
+            _build_pricing_comment({
+                    contract => $self->contract,
+                    price    => $self->price,
+                    action   => 'buy'
+                })) unless defined $self->comment;
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
@@ -620,7 +625,12 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _validate_date_pricing/
             );
 
-        $self->comment(_build_pricing_comment($self->contract, $self->price)) unless defined $self->comment;
+        $self->comment(
+            _build_pricing_comment({
+                    contract => $self->contract,
+                    price    => $self->price,
+                    action   => 'sell'
+                })) unless defined $self->comment;
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_sell;
@@ -1036,7 +1046,9 @@ sub _validate_currency {
 }
 
 sub _build_pricing_comment {
-    my ($contract, $price) = @_;
+    my $args = shift;
+
+    my ($contract, $price, $action) = @{$args}{'contract', 'price', 'action'};
 
     my @comment_fields;
     if ($contract->is_spread) {
@@ -1073,14 +1085,17 @@ sub _build_pricing_comment {
             push @comment_fields, (entry_spot_epoch => $contract->entry_tick->epoch);
         }
 
-        if ($contract->exit_tick) {
-            push @comment_fields, (exit_spot       => $contract->exit_tick->quote);
-            push @comment_fields, (exit_spot_epoch => $contract->exit_tick->epoch);
-        }
-
-        if ($contract->is_path_dependent and $contract->is_expired and $contract->hit_tick) {
-            push @comment_fields, (hit_spot       => $contract->hit_tick->quote);
-            push @comment_fields, (hit_spot_epoch => $contract->hit_tick->epoch);
+        if ($action eq 'sell') {
+            if ($contract->current_tick) {
+                push @comment_fields, (exit_spot       => $contract->current_tick->quote);
+                push @comment_fields, (exit_spot_epoch => $contract->current_tick->epoch);
+            }
+        } elsif ($action eq 'autosell_expired_contract') {
+            my $tick = ($contract->is_path_dependent and $contract->hit_tick) ? $contract->hit_tick : $contract->exit_tick;
+            if ($tick) {
+                push @comment_fields, (exit_spot       => $tick->quote);
+                push @comment_fields, (exit_spot_epoch => $tick->epoch);
+            }
         }
 
         my $news_factor = $contract->ask_probability->peek('news_factor');
@@ -1673,7 +1688,11 @@ sub sell_expired_contracts {
                     };
 
                 my $quants_bet_variables;
-                if (my $comment = _build_pricing_comment($contract)) {
+                my $comment = _build_pricing_comment({
+                    contract => $contract,
+                    action   => 'autosell_expired_contract',
+                });
+                if ($comment) {
                     my $quants_bet_params =
                         BOM::Database::Model::DataCollection::QuantsBetVariables->extract_parameters_from_line({line => "COMMENT:$comment"});
                     if ($quants_bet_params) {
