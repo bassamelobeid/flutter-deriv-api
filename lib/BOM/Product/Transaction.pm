@@ -1677,7 +1677,7 @@ sub sell_expired_contracts {
 
         try {
             if ($contract->is_valid_to_sell) {
-                @{$bet}{qw/sell_price sell_time/} = ($contract->bid_price, $now->db_timestamp);
+                @{$bet}{qw/sell_price sell_time/} = ($contract->bid_price, $contract->date_pricing->db_timestamp);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
                     if $contract->category_code eq 'asian' and $contract->is_after_expiry;
                 push @bets_to_sell, $bet;
