@@ -73,7 +73,6 @@ $email_mocked->mock('send_email', sub { return 1 });
 {
     my $t = build_mojo_test();
 
-    $ENV{'REDIS_CACHE_SERVER'} = $ENV{'REDIS_CACHE_SERVER'} // '127.0.0.1:6379';
     Cache::RedisDB->redis();
     Cache::RedisDB->set('COMBINED_REALTIME', 'frxEURUSD', {quote => 1});
 
