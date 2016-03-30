@@ -1,5 +1,5 @@
 v2:
-	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/v2
+	prove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/v2
 
 v3:
 	bash -e /tmp/travis-scripts/websocket_tests.sh
@@ -8,10 +8,10 @@ structure:
 	forkprove --timer -I./lib  -I./t t/BOM/*.t
 
 leaktest:
-	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/leak/v3
+	prove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/leak/v3
 
 run_bench:
-	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' &
 	/home/git/regentmarkets/stress/websocket-bench/bin/r50_tick.pl &
 	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_server_ready localhost 5004 && bin/run_bench $(STRESS_NUM)
 
