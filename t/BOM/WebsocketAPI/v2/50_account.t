@@ -8,11 +8,10 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
+use BOM::Platform::SessionCookie;
 #we need this import here so the market-data db will be fresh for the test
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-
-use BOM::Platform::SessionCookie;
 
 my $t = build_mojo_test();
 

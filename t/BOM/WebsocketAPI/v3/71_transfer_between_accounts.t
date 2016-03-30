@@ -9,10 +9,10 @@ use TestHelper qw/test_schema build_mojo_test/;
 use Cache::RedisDB;
 use Test::Exception;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::System::Password;
 use BOM::Platform::User;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Transaction;
 
 ## do not send email
@@ -73,6 +73,7 @@ $email_mocked->mock('send_email', sub { return 1 });
 {
     my $t = build_mojo_test();
 
+    $ENV{'REDIS_CACHE_SERVER'} = $ENV{'REDIS_CACHE_SERVER'} // '127.0.0.1:6379';
     Cache::RedisDB->redis();
     Cache::RedisDB->set('COMBINED_REALTIME', 'frxEURUSD', {quote => 1});
 

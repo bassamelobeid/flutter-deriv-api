@@ -6,8 +6,6 @@ use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
-
-use BOM::Test;
 use BOM::Platform::Runtime;
 
 my $t = build_mojo_test();

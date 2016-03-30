@@ -5,12 +5,12 @@ use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
+use BOM::Platform::Token::Verification;
+use BOM::System::RedisReplicated;
 use List::Util qw(first);
 use RateLimitations qw (flush_all_service_consumers);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Token::Verification;
-use BOM::System::RedisReplicated;
 
 ## do not send email
 use Test::MockModule;

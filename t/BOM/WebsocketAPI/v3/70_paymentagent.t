@@ -8,8 +8,8 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use Test::Exception;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Transaction;
 
 ## do not send email

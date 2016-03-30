@@ -6,8 +6,6 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
 use Test::NoLeaks;
 
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
 use Mojo::UserAgent;
 use Mojo::IOLoop;
 use Mojo::IOLoop::Delay;
@@ -15,6 +13,7 @@ use BOM::WebSocketAPI;
 use Mojo::Server::Daemon;
 use Net::EmptyPort qw/empty_port/;
 
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
 SKIP: {

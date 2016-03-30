@@ -9,7 +9,6 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Net::EmptyPort qw(empty_port);
 
-use BOM::Test;
 use BOM::Platform::SessionCookie;
 use BOM::System::RedisReplicated;
 
