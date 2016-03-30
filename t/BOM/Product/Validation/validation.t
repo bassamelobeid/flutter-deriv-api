@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Time::HiRes;
 use Test::MockTime qw/:all/;
 use Test::Most qw(-Test::Deep);
 use Test::FailWarnings;
@@ -279,7 +280,8 @@ subtest 'invalid bet payout hobbling around' => sub {
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{currency} = 'USD';
-    $bet = produce_contract($bet_params);
+    $bet_params->{amount}   = 50000;
+    $bet                    = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we fix those things, it validates just fine.');
 };
 
@@ -331,7 +333,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     my $expected_reasons = [qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{amount}  = 1e5;
+    $bet_params->{amount}  = 50000;
     $bet_params->{barrier} = 'S10P';
     $bet                   = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we ask for a higher payout, it validates just fine.');
@@ -537,7 +539,8 @@ subtest 'volsurfaces become old and invalid' => sub {
     $bet                        = produce_contract($bet_params);
     $expected_reasons           = [qr/volsurface too old/];
 
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     test_error_list('buy', $bet, $expected_reasons);
 
@@ -566,7 +569,8 @@ subtest 'invalid start times' => sub {
         barrier      => 'S500P',
         current_tick => $tick,
     };
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
@@ -580,7 +584,8 @@ subtest 'invalid start times' => sub {
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{date_pricing} = $starting;
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we are starting now, validates just fine.');
@@ -603,7 +608,8 @@ subtest 'invalid start times' => sub {
     $bet_params->{date_pricing} = $starting - 30;
     $bet_params->{barrier}      = 'S0P';
 
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/volsurface too old/, qr/forward-starting.*blackout/];
@@ -630,7 +636,8 @@ subtest 'invalid start times' => sub {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/underlying.*in starting blackout/];
@@ -655,7 +662,8 @@ subtest 'invalid start times' => sub {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/Daily duration.*is outside/];
@@ -679,7 +687,8 @@ subtest 'invalid start times' => sub {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/underlying.*closed/];
@@ -703,7 +712,8 @@ subtest 'invalid expiry times' => sub {
         barrier      => 'S0P',
         current_tick => $tick,
     };
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     my $bet              = produce_contract($bet_params);
     my $expected_reasons = [qr/^Exchange is closed on expiry date/];
@@ -720,7 +730,8 @@ subtest 'invalid expiry times' => sub {
     $bet_params->{duration}     = '10h';
     $bet_params->{date_start}   = $underlying->exchange->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('9h');
     $bet_params->{date_pricing} = $bet_params->{date_start}->epoch - 1776;
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/must expire on same day/];
@@ -741,7 +752,8 @@ subtest 'invalid expiry times' => sub {
     $bet_params->{duration}     = '2h';
     $bet_params->{date_start}   = $underlying->exchange->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('1h');
     $bet_params->{date_pricing} = $bet_params->{date_start}->epoch - 1066;
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/closed at expiry/];
@@ -774,7 +786,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
     };
 
     my $dt_starting = Date::Utility->new($bet_params->{date_pricing});
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     my $bet              = produce_contract($bet_params);
     my $expected_reasons = [qr/Intraday duration.*not acceptable/];
@@ -836,7 +849,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet = produce_contract($bet_params);
 
@@ -851,7 +865,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
@@ -899,7 +914,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
             symbol        => 'GDAXI',
             date          => Date::Utility->new,
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/enough trading.*calendar days/];
@@ -1164,8 +1180,8 @@ subtest 'spot reference check' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol          => 'DJI',
-            recorded_date   => Date::Utility->new($bet_params->{date_pricing}),
+            symbol        => 'DJI',
+            recorded_date => Date::Utility->new($bet_params->{date_pricing}),
         });
     my $c                = produce_contract($bet_params);
     my $expected_reasons = [qr/spot too far from surface reference/];
@@ -1208,28 +1224,29 @@ subtest 'tentative events' => sub {
     my $now = Date::Utility->new('2016-03-18 05:00:00');
     set_absolute_time($now->epoch);
     my $blackout_start = $now->minus_time_interval('1h');
-    my $blackout_end = $now->plus_time_interval('1h');
+    my $blackout_end   = $now->plus_time_interval('1h');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'economic_events',
         {
             recorded_date => Date::Utility->new(),
-            events => [{
-                symbol        => 'USD',
-                release_date  => $now->epoch,
-                blankout      => $blackout_start->epoch,
-                blankout_end  => $blackout_end->epoch,
-                is_tentative  => 1,
-                event_name    => 'Test tentative',
-                impact        => 5,
-            }],
+            events        => [{
+                    symbol       => 'USD',
+                    release_date => $now->epoch,
+                    blankout     => $blackout_start->epoch,
+                    blankout_end => $blackout_end->epoch,
+                    is_tentative => 1,
+                    event_name   => 'Test tentative',
+                    impact       => 5,
+                }
+            ],
         });
     my $contract_args = {
         underlying => 'frxUSDJPY',
-        bet_type => 'CALL',
-        barrier => 'S0P',
-        duration => '2m',
-        payout => 10,
-        currency => 'USD',
+        bet_type   => 'CALL',
+        barrier    => 'S0P',
+        duration   => '2m',
+        payout     => 10,
+        currency   => 'USD',
     };
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('2m1s');
     my $c = produce_contract($contract_args);
@@ -1253,7 +1270,7 @@ subtest 'tentative events' => sub {
     delete $contract_args->{duration};
     $contract_args->{date_expiry} = $blackout_end->plus_time_interval('1s');
     $c = produce_contract($contract_args);
-    ok !$c->_validate_start_date, 'no error';
+    ok !$c->_validate_start_date,  'no error';
     ok !$c->_validate_expiry_date, 'no error';
 };
 
@@ -1300,16 +1317,49 @@ subtest 'integer barrier' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy if barrier is non integer';
     $c = produce_contract($params);
     ok $c->is_valid_to_sell, 'valid to sell at non integer barrier';
-    like ($c->primary_validation_error->message, qr/Invalid barrier/, 'correct error');
+    like($c->primary_validation_error->message, qr/Invalid barrier/, 'correct error');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
-            symbol         => $_,
-            recorded_date  => $now,
+            symbol        => $_,
+            recorded_date => $now,
         }) for qw(frxUSDJPY frxAUDJPY frxAUDUSD);
     $params->{underlying} = 'frxUSDJPY';
     $c = produce_contract($params);
     ok $c->is_valid_to_buy, 'valid to buy if barrier is non integer for forex';
+};
+
+subtest 'contract must be held' => sub {
+    my $args = {
+        underlying   => 'R_100',
+        bet_type     => 'CALL',
+        barrier      => 'S0P',
+        duration     => '15m',
+        currency     => 'USD',
+        payout       => 100,
+        current_tick => $tick,
+        date_start   => $oft_used_date,
+        date_pricing => $oft_used_date->epoch + 1,
+    };
+    my $c = produce_contract($args);
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    like(($c->primary_validation_error)[0]->{message}, qr/Contract not held long/, 'contract not held long enough');
+    $args->{date_pricing} = $oft_used_date->epoch + 61;
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_sell, 'valid to sell';
+
+    $args->{_date_pricing_milliseconds} = $oft_used_date->epoch + 0.1;
+    $args->{date_pricing}               = $oft_used_date->epoch;
+    $c                                  = produce_contract($args);
+    ok !$c->pricing_new,      'not pricing_new if it is 0.1 second from start';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    like(($c->primary_validation_error)[0]->{message}, qr/Contract not held long/, 'contract not held long enough');
+    delete $args->{$_} for qw(date_pricing _date_pricing_milliseconds);
+    # we set pricing_new to true if date_start is not provided.
+    delete $args->{date_start};
+    $c = produce_contract($args);
+    ok $c->pricing_new, 'is pricing_new when date_pricing == date_start';
+    ok $c->date_pricing->epoch == $c->date_start->epoch, 'date_pricing == date_start when pricing_new is set';
 };
 
 # Let's not surprise anyone else
