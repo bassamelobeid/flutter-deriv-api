@@ -94,7 +94,8 @@ has amount_type => (
 
 has comment => (
     is  => 'rw',
-    isa => 'Str'
+    isa => 'ArrayRef'
+    default => [],
 );
 
 has staff => (
@@ -384,8 +385,6 @@ sub prepare_bet_data_for_buy {
             -message_to_client => BOM::Platform::Context::localize("Start time is in the past"));
     }
 
-    my $comment = $self->comment // '';
-
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
     $self->contract_class($bet_class);
 
@@ -397,7 +396,7 @@ sub prepare_bet_data_for_buy {
         quantity          => 1,
         short_code        => scalar $contract->shortcode,
         buy_price         => $self->price,
-        remark            => $comment,
+        remark            => $self->comment->[0] || '',
         underlying_symbol => scalar $contract->underlying->symbol,
         bet_type          => scalar $contract->code,
         bet_class         => $bet_class,
@@ -442,10 +441,9 @@ sub prepare_bet_data_for_buy {
     }
 
     my $quants_bet_variables;
-    my $quants_bet_params = BOM::Database::Model::DataCollection::QuantsBetVariables->extract_parameters_from_line({line => "COMMENT:$comment"});
-    if ($quants_bet_params) {
+    if (my $comment_hash = $self->comment->[1]) {
         $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-            data_object_params => $quants_bet_params,
+            data_object_params => $comment_hash,
         });
     }
 
@@ -503,7 +501,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
                     contract => $self->contract,
                     price    => $self->price,
                     action   => 'buy'
-                })) unless defined $self->comment;
+                })) unless @{$self->comment};
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
@@ -576,13 +574,10 @@ sub prepare_bet_data_for_sell {
     };
 
     my $quants_bet_variables;
-    if (my $comment = $self->comment) {
-        my $quants_bet_params = BOM::Database::Model::DataCollection::QuantsBetVariables->extract_parameters_from_line({line => "COMMENT:$comment"});
-        if ($quants_bet_params) {
-            $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-                data_object_params => $quants_bet_params,
-            });
-        }
+    if (my $comment_hash = $self->comment->[1]) {
+        $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+            data_object_params => $comment_hash,
+        });
     }
 
     return (
@@ -630,7 +625,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
                     contract => $self->contract,
                     price    => $self->price,
                     action   => 'sell'
-                })) unless defined $self->comment;
+                })) unless @{$self->comment};
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_sell;
@@ -1114,7 +1109,10 @@ sub _build_pricing_comment {
         }
     }
 
-    return sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
+    my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
+    my %comment_hash = map {$_} @comment_fields;
+
+    return [$comment_str, \%comment_hash];
 }
 
 sub _validate_sell_pricing_adjustment {
@@ -1688,19 +1686,15 @@ sub sell_expired_contracts {
                     source        => $source,
                     };
 
-                my $quants_bet_variables;
-                my $comment = _build_pricing_comment({
+                my $comment_hash = _build_pricing_comment({
                     contract => $contract,
                     action   => 'autosell_expired_contract',
-                });
-                if ($comment) {
-                    my $quants_bet_params =
-                        BOM::Database::Model::DataCollection::QuantsBetVariables->extract_parameters_from_line({line => "COMMENT:$comment"});
-                    if ($quants_bet_params) {
-                        $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-                            data_object_params => $quants_bet_params,
-                        });
-                    }
+                })->[1];
+                my $quants_bet_variables;
+                if ($comment_hash) {
+                    $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+                        data_object_params => $comment_hash,
+                    });
                 }
                 push @quants_bet_variables, $quants_bet_variables;
 
@@ -1825,7 +1819,7 @@ sub report {
         . sprintf("%30s: %s\n", 'Price',                  $self->price)
         . sprintf("%30s: %s\n", 'Payout',                 $self->payout)
         . sprintf("%30s: %s\n", 'Amount Type',            $self->amount_type)
-        . sprintf("%30s: %s\n", 'Comment',                $self->comment || '')
+        . sprintf("%30s: %s\n", 'Comment',                $self->comment->[0] || '')
         . sprintf("%30s: %s\n", 'Staff',                  $self->staff)
         . sprintf("%30s: %s",   'Transaction Parameters', Dumper($self->transaction_parameters))
         . sprintf("%30s: %s\n", 'Transaction ID',         $self->transaction_id || -1)
