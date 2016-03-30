@@ -86,16 +86,17 @@ sub validate_payment {
             $lc_limits = $withdrawal_limits->malta;
         } elsif ($lc eq 'maltainvest') {
             $lc_limits = $withdrawal_limits->maltainvest;
+        } elsif ($lc eq 'japan') {
+            $lc_limits = $withdrawal_limits->japan;
         } else {
             die "Invalid landing company - $lc\n";
         }
 
-        if ($lc eq 'costarica') {
-            my $cr_limit = $lc_limits->limit_for_days;
-            if ($absamt >= $cr_limit) {
-                die "Withdrawal amount [$currency $absamt] exceeds withdrawal limit [$currency $cr_limit].\n";
+        if ($lc eq 'costarica' or $lc eq 'japan') {
+            my $limit = $lc_limits->limit_for_days;
+            if ($absamt >= $limit) {
+                die "Withdrawal amount [$currency $absamt] exceeds withdrawal limit [$currency $limit].\n";
             }
-
         } else {
             my $for_days = $lc_limits->for_days;
             my $since = DateTime->now->subtract(days => $for_days);
@@ -156,7 +157,7 @@ sub deposit_virtual_funds {
         currency     => $currency,
         amount       => $amount,
         payment_type => 'virtual_credit',
-        remark       => 'virtual money credit to account',
+        remark       => 'Virtual money credit to account',
     );
     return ($currency, $amount, $trx);
 }

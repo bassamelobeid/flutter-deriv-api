@@ -1,13 +1,9 @@
 #!/usr/bin/perl
 package t::ClientRefactoring::Test2;
-
-# PURPOSE: Perform unit tests on the refactored getter / setter of Client object
-
 use strict;
 use warnings;
 
 use utf8;
-
 use BOM::System::Password;
 use Format::Util::Strings qw( defang );
 use BOM::Platform::Client;
@@ -23,7 +19,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Crypt::NamedKeys;
 Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
 
-subtest 'Client getters, setters and create' => sub {
+subtest 'Client getters, setters' => sub {
     my $login_id = 'CR0011';
 
     # create client object
@@ -33,14 +29,14 @@ subtest 'Client getters, setters and create' => sub {
 
     is($client->broker, 'CR', 'client broker is CR');
 
-    Test::Exception::lives_ok { $client->first_name('shuwnyuan') } "set first name: shuwnyuan";
-    is($client->first_name, 'shuwnyuan', 'client first name is shuwnyuan');
+    Test::Exception::lives_ok { $client->first_name('first-name') } "set first name: first-name";
+    is($client->first_name, 'first-name', 'client first name is first-name');
 
     Test::Exception::lives_ok { $client->last_name('tee') } "set last name: tee";
     is($client->last_name, 'tee', 'client last name is tee');
 
-    Test::Exception::lives_ok { $client->email('shuwnyuan@regentmarkets.com') } 'set email: shuwnyuan@regentmarkets.com';
-    is($client->email, 'shuwnyuan@regentmarkets.com', 'client email is shuwnyuan@regentmarkets.com');
+    Test::Exception::lives_ok { $client->email('test@regentmarkets.com') } 'set email: test@regentmarkets.com';
+    is($client->email, 'test@regentmarkets.com', 'client email is test@regentmarkets.com');
 
     my $password = BOM::System::Password::hashpw('123456');
     Test::Exception::lives_ok { $client->password($password) } "set pwd 123456";
@@ -55,14 +51,14 @@ subtest 'Client getters, setters and create' => sub {
     Test::Exception::lives_ok { $client->residence('au') } 'set residence: au';
     is($client->residence, 'au', 'client residence is au');
 
-    Test::Exception::lives_ok { $client->city('Segamat') } 'set city: Segamat';
-    is($client->city, 'Segamat', 'client city is Segamat');
+    Test::Exception::lives_ok { $client->city('Cyberjaya') } 'set city: Cyberjaya';
+    is($client->city, 'Cyberjaya', 'client city is Cyberjaya');
 
     Test::Exception::lives_ok { $client->citizen('au') } 'set citizen: au';
     is($client->citizen, 'au', 'client citizen is au');
 
-    Test::Exception::lives_ok { $client->address_1('53, Jln Address 1') } 'set address_1: 53, Jln Address 1';
-    is($client->address_1, '53, Jln Address 1', 'client address_1 is: 53, Jln Address 1');
+    Test::Exception::lives_ok { $client->address_1('Jln Address 1') } 'set address_1: Jln Address 1';
+    is($client->address_1, 'Jln Address 1', 'client address_1 is: Jln Address 1');
 
     Test::Exception::lives_ok { $client->address_2('Jln Address 2') } 'set address_2: Jln Address 2';
     is($client->address_2, 'Jln Address 2', 'client address_2 is: Jln Address 2');
@@ -70,8 +66,8 @@ subtest 'Client getters, setters and create' => sub {
     Test::Exception::lives_ok { $client->state('VIC') } 'set state: VIC';
     is($client->state, 'VIC', 'client state is: VIC');
 
-    Test::Exception::lives_ok { $client->postcode('85010') } 'set postcode: 85010';
-    is($client->postcode, '85010', 'client postcode is: 85010');
+    Test::Exception::lives_ok { $client->postcode('55010') } 'set postcode: 55010';
+    is($client->postcode, '55010', 'client postcode is: 55010');
 
     Test::Exception::lives_ok { $client->date_joined('2009-02-20 06:08:00') } 'set date_joined: 2009-02-20 06:08:00GMT';
     is($client->date_joined, '2009-02-20 06:08:00', 'client date_joined is: 2009-02-20 06:08:00');
@@ -109,32 +105,34 @@ subtest 'Client getters, setters and create' => sub {
     Test::Exception::lives_ok { $client->restricted_ip_address("192.168.0.1") } "set restricted_ip_address: 192.168.0.1";
     is($client->restricted_ip_address, "192.168.0.1", "client restricted_ip_address is: 192.168.0.1");
 
-    Test::Exception::lives_ok { $client->save({'log' => 0, 'clerk' => 'shuwnyuan'}); } "Can save all the changes back to the client";
+    Test::Exception::lives_ok { $client->save({'log' => 0, 'clerk' => 'test'}); } "Can save all the changes back to the client";
+};
 
-    my $open_account_details = {
-        broker_code                   => 'CR',
-        salutation                    => 'Ms',
-        last_name                     => 'shuwnyuan',
-        first_name                    => 'tee',
-        myaffiliates_token            => '',
-        date_of_birth                 => '1979-01-01',
-        citizen                       => 'au',
-        residence                     => 'au',
-        email                         => 'shuwnyuan@regentmarkets.com',
-        address_line_1                => 'ADDR 1',
-        address_line_2                => 'ADDR 2',
-        address_city                  => 'Segamat',
-        address_state                 => 'State',
-        address_postcode              => '85010',
-        phone                         => '+60123456789',
-        secret_question               => "Mother's maiden name",
-        secret_answer                 => BOM::Platform::Client::Utility::encrypt_secret_answer('mei mei'),
-        myaffiliates_token_registered => 0,
-        checked_affiliate_exposures   => 0,
-    };
+my $open_account_details = {
+    broker_code                   => 'CR',
+    salutation                    => 'Ms',
+    last_name                     => 'last-name',
+    first_name                    => 'first-name',
+    myaffiliates_token            => '',
+    date_of_birth                 => '1979-01-01',
+    citizen                       => 'au',
+    residence                     => 'au',
+    email                         => 'test@regentmarkets.com',
+    address_line_1                => 'ADDR 1',
+    address_line_2                => 'ADDR 2',
+    address_city                  => 'Cyberjaya',
+    address_state                 => 'State',
+    address_postcode              => '55010',
+    phone                         => '+60123456789',
+    secret_question               => "Mother's maiden name",
+    secret_answer                 => BOM::Platform::Client::Utility::encrypt_secret_answer('mei mei'),
+    myaffiliates_token_registered => 0,
+    checked_affiliate_exposures   => 0,
+    client_password               => BOM::System::Password::hashpw('123456'),
+};
 
-    $open_account_details->{'client_password'} = BOM::System::Password::hashpw('123456');
-
+my $client;
+subtest 'create client' => sub {
     Test::Exception::lives_ok { $client = BOM::Platform::Client->register_and_return_new_client($open_account_details) } "create new client success";
     my $new_loginid = $client->loginid;
 
@@ -142,15 +140,70 @@ subtest 'Client getters, setters and create' => sub {
     $client = BOM::Platform::Client::get_instance({'loginid' => $new_loginid});
     $client->first_name('Amy');
     $client->last_name('mimi');
-    $client->email('shuwnyuan@betonmarkets.com');
+    $client->email('test@betonmarkets.com');
     Test::Exception::lives_ok { $client->save(); } "[save] call client save OK";
 
     BOM::Platform::Client::get_instance({'loginid' => $new_loginid});
     is($client->first_name, "Amy",                        "[save] client first_name is: Amy");
     is($client->last_name,  "mimi",                       "[save] client last_name is: mimi");
-    is($client->email,      'shuwnyuan@betonmarkets.com', '[save] client email is: shuwnyuan@betonmarkets.com');
+    is($client->email,      'test@betonmarkets.com', '[save] client email is: shuwnyuan@betonmarkets.com');
 
     $client->set_default_account('EUR');
     throws_ok { $client->set_payment_agent } qr/Payment Agent currency can only be in USD/, 'client with currency EUR cannot be paymentagent';
+};
+
+subtest 'Gender based on Salutation' => sub {
+    my %gender_map = (
+            Mr      => 'm',
+            Ms      => 'f',
+            Mrs     => 'f',
+            Miss    => 'f',
+        );
+
+    foreach my $salutation (keys %gender_map) {
+        my %details = %$open_account_details;
+        $details{salutation} = $salutation;
+        $details{email} = 'test+'.$salutation.'@binary.com';
+        $details{first_name} = 'first-name-'.$salutation;
+
+        $client = BOM::Platform::Client->register_and_return_new_client(\%details);
+
+        is($client->salutation, $salutation, 'Salutation: ' . $client->salutation);
+        is($client->gender, $gender_map{$salutation}, 'gender: ' . $client->gender);
+    }
+};
+
+subtest 'no salutation, default Gender: m' => sub {
+    foreach my $i (0..1) {
+        my %details = %$open_account_details;
+
+        if ($i == 0) {
+            $details{salutation} = '';
+            note 'salutation = empty string';
+        } else {
+            delete $details{salutation};
+            note 'salutation not exists';
+        }
+
+        $details{email} = 'test++'.$i.'@binary.com';
+        $details{first_name} = 'first-name-'.$i;
+        $client = BOM::Platform::Client->register_and_return_new_client(\%details);
+
+        is($client->salutation, '', 'Salutation: ' . $client->salutation);
+        is($client->gender, 'm', 'default gender: m');
+    };
+};
+
+subtest 'no salutation, set Gender explicitly' => sub {
+    my %details = %$open_account_details;
+
+    $details{salutation} = '';
+    $details{gender} = 'f';
+    $details{email} = 'test++ff@binary.com';
+    $details{first_name} = 'first-name-ff';
+    $client = BOM::Platform::Client->register_and_return_new_client(\%details);
+
+    is($client->salutation, '', 'Salutation: ' . $client->salutation);
+    is($client->gender, 'f', 'gender: ' . $client->gender);
 };
 
