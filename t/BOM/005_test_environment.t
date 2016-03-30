@@ -11,7 +11,7 @@ subtest "BOM tests must use any BOM::Test module before other BOM modules, check
         open my $fh, $t_filename or die $!;
         my $first_bom_module;
         while (<$fh>) {
-            last if ($first_bom_module) = $_ =~ /^use (BOM::.+);/; ## no struct test
+            last if ($first_bom_module) = $_ =~ /^use (BOM:.+);/;
         }
         close $fh;
         ok !$first_bom_module || $first_bom_module =~ /BOM::Test/, $t_filename;
