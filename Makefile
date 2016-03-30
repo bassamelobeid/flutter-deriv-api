@@ -5,7 +5,7 @@ v3:
 	bash -e /tmp/travis-scripts/websocket_tests.sh
 
 structure:
-	forkprove --timer -I./lib  -I./t t/BOM/*.t
+	prove --timer -I./lib  -I./t t/BOM/*.t
 
 leaktest:
 	prove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/leak/v3
