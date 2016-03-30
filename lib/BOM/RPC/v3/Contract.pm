@@ -140,7 +140,7 @@ sub get_bid {
         my $contract = produce_contract($short_code, $currency, $is_sold);
 
         my $contract_affected_by_missing_market_data =
-            (not $contract->may_settle_automatically and not @{$contract->corporate_actions and $contract->missing_market_data}) ? 1 : 0;
+            (not $contract->may_settle_automatically and not @{$contract->corporate_actions} and $contract->missing_market_data) ? 1 : 0;
         if ($contract_affected_by_missing_market_data) {
             $response = {
                 error => {
