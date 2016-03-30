@@ -109,7 +109,7 @@ sub authorize {
 
     if ($session_token) {
         my $session = BOM::Platform::SessionCookie->new({token => $session_token});
-        if ($session and $session->have_multiple_sessions) {
+        if ($session->have_multiple_sessions) {
             send_email({
                     from    => BOM::Platform::Static::Config::get_customer_support_email(),
                     to      => $session->email,
