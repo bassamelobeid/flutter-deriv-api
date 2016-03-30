@@ -95,7 +95,7 @@ has amount_type => (
 has comment => (
     is      => 'rw',
     isa     => 'ArrayRef',
-    default => [],
+    default => sub {[]},
 );
 
 has staff => (
