@@ -141,7 +141,7 @@ sub get_bid {
 
         my $contract_affected_by_missing_market_data =
             (not $contract->may_settle_automatically and not @{$contract->corporate_actions} and $contract->missing_market_data) ? 1 : 0;
-        if ($contract_affected_by_missing_market_data) {
+        if (not $contract->is_spread and $contract_affected_by_missing_market_data) {
             $response = {
                 error => {
                     message_to_client => BOM::Platform::Context::localize(
