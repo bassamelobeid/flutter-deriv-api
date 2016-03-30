@@ -169,7 +169,7 @@ subtest 'missing market data conditions' => sub {
     $args->{date_pricing} = $now->plus_time_interval('20m');
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
-        epoch      => $now->epoch + 1139,
+        epoch      => $now->epoch + 1000,
         quote      => 101,
     });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
