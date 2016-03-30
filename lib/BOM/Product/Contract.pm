@@ -730,8 +730,10 @@ sub _build_opposite_bet {
 
     # We should be looking to move forward in time to a bet starting now.
     if (not $self->pricing_new) {
-        foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-            $build_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
+        if ($self->entry_tick) {
+            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                $build_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
+            }
         }
         $build_parameters{date_start} = $self->date_pricing;
     }
