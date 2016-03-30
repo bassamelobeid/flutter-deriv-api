@@ -121,8 +121,9 @@ sub process_realtime_events {
     my @m = split(';', $message);
     my $feed_channels_type = $c->stash('feed_channel_type');
 
-    my %skip_symbol_list = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
-    my %skip_type_list   = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
+    my %skip_duration_list = map { $_ => 1 } qw(s m h);
+    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
+    my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
     foreach my $channel (keys %{$feed_channels_type}) {
         $channel =~ /(.*);(.*)/;
         my $symbol    = $1;
@@ -144,12 +145,18 @@ sub process_realtime_events {
                             quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
             if (exists $arguments->{subscribe} and $arguments->{subscribe} eq '1') {
-                unless ($skip_symbol_list{$arguments->{symbol}}
-                    and $skip_type_list{$arguments->{contract_type}}
-                    and $arguments->{duration_unit} eq 't')
-                {
-                    send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments) if $c->tx;
-                }
+                my $atm_contract = ($arguments->{contract_type} =~ /^(CALL|PUT)$/ and not $arguments->{barrier}) ? 1 : 0;
+                my $fixed_expiry = $arguments->{date_expiry} ? 1 : 0;
+                my $skip_tick_expiry =
+                    ($skip_symbol_list{$arguments->{symbol}} and $skip_type_list{$arguments->{contract_type}} and $arguments->{duration_unit} eq 't')
+                    ? 1
+                    : 0;
+                my $skip_intraday_atm_non_fixed_expiry =
+                    ($skip_duration_list{$arguments->{duration_unit}} and $atm_contract and not $fixed_expiry) ? 1 : 0;
+
+                return if ($skip_tick_expiry or $skip_intraday_atm_non_fixed_expiry);
+
+                send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments) if $c->tx;
             } else {
                 return;
             }
