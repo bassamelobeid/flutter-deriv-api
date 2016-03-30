@@ -56,7 +56,7 @@ my %deposit = (
     remark       => 'test deposit'
 );
 
-my %deposit_eur = (%deposit, currency => 'EUR');
+my %deposit_eur    = (%deposit,    currency => 'EUR');
 my %withdrawal_eur = (%withdrawal, currency => 'EUR');
 
 subtest 'General' => sub {
@@ -139,18 +139,23 @@ subtest 'CR withdrawal' => sub {
 
 subtest 'JP withdrawal' => sub {
     plan tests => 2;
-    my %deposit_jpy = (%deposit, currency => 'JPY');
+    my %deposit_jpy    = (%deposit,    currency => 'JPY');
     my %withdrawal_jpy = (%withdrawal, currency => 'JPY');
 
     subtest 'unauthenticated' => sub {
-        my $client = new_client('JPY', broker_code => 'JP', residence => 'jp');
+        my $client = new_client(
+            'JPY',
+            broker_code => 'JP',
+            residence   => 'jp'
+        );
         $client->smart_payment(%deposit_jpy, amount => 1100000);
         $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
         $client->save;
 
         throws_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000001) } qr/exceeds withdrawal limit/,
             'Non-Authed JP withdrawal greater than JPY 1,000,000';
-        throws_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000000) } qr/exceeds withdrawal limit/, 'Non-Authed JP withdrawal JPY 1,000,000';
+        throws_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000000) } qr/exceeds withdrawal limit/,
+            'Non-Authed JP withdrawal JPY 1,000,000';
         lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -999999) } 'Non-Authed JP withdrawal JPY 999,999';
     };
 
@@ -252,11 +257,13 @@ subtest 'Total EUR2300 MLT limitation.' => sub {
     };
 
     subtest 'unauthenticated' => sub {
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -2301) } qr/exceeds withdrawal limit \[EUR/, 'Unauthed, not allowed to withdraw EUR2301.';
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -2301) } qr/exceeds withdrawal limit \[EUR/,
+            'Unauthed, not allowed to withdraw EUR2301.';
         ok $client->validate_payment(%withdrawal_eur, amount => -2300), 'Unauthed, allowed to withdraw EUR2300.';
 
         $client->smart_payment(%withdrawal_eur, amount => -2000);
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -301) } qr/exceeds withdrawal limit \[EUR/, 'Unauthed, total withdrawal (2000+301) > EUR2300.';
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -301) } qr/exceeds withdrawal limit \[EUR/,
+            'Unauthed, total withdrawal (2000+301) > EUR2300.';
         ok $client->validate_payment(%withdrawal_eur, amount => -300), 'Unauthed, allowed to withdraw total EUR (2000+300).';
     };
 

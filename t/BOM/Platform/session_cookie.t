@@ -109,14 +109,26 @@ is scalar @$all_session, 0, 'All session ended correctly';
 $session_cookie3 = BOM::Platform::SessionCookie->new(
     loginid    => $loginid,
     email      => $email,
-    expires_in => 1
+    expires_in => 2
 );
 ok $session_cookie3->token, 'token not expired yet';
 
 # make sure token expires so sleeping
-sleep(4);
+sleep(5);
 
 $session_cookie3 = BOM::Platform::SessionCookie->new({token => $session_cookie3->token});
 is $session_cookie3->token, undef, 'token already expired';
+
+$session_cookie3 = BOM::Platform::SessionCookie->new(
+    loginid => $loginid,
+    email   => $email,
+);
+
+my $session_cookie4 = BOM::Platform::SessionCookie->new(
+    loginid => $loginid,
+    email   => $email,
+);
+
+ok $session_cookie4->have_multiple_sessions, 'Have multiple session';
 
 done_testing();
