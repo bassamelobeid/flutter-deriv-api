@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::NoWarnings;
 use Test::Exception;
 
@@ -61,6 +61,7 @@ lives_ok {
     ok $c->is_expired, 'contract expired';
     ok !$c->is_valid_to_sell,         'expired but not valid to sell';
     ok !$c->may_settle_automatically, 'expired but could not settle automatically';
+    ok $c->missing_market_data, 'missing market data';
     like $c->primary_validation_error->message, qr/No tick received/, 'right error message thrown';
 }
 'test missing tick settlement';
