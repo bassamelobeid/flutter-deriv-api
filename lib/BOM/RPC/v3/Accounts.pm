@@ -1150,10 +1150,15 @@ sub reality_check {
     my $has_reality_check = $client->landing_company->has_reality_check;
     return {} unless ($has_reality_check);
 
+    # we get token creation time and as cap limit if creation time is less than 48 hours from current
+    # time we default it to 48 hours, default 48 hours was decided To limit our definition of session
+    # if you change this please ask compliance first
     my $start = $token_details->{epoch};
     my $tm    = time - 48 * 3600;
     $start = $tm unless $start and $start > $tm;
 
+    # sell expired contracts so that reality check has proper
+    # count for open_contract_count
     BOM::Product::Transaction::sell_expired_contracts({
         client => $client,
     });
