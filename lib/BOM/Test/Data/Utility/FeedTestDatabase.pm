@@ -54,10 +54,10 @@ sub truncate_tables {
 }
 
 sub setup_ticks {
-    my $file      = shift;
-    my $feed_file = '/home/git/regentmarkets/bom-test/feed/combined/' . $file;
+    my $file       = shift;
+    my $feed_file  = '/home/git/regentmarkets/bom-test/feed/combined/' . $file;
     my $db_postfix = $ENV{DB_POSTFIX} // '';
-    my $db = 'feed' . $db_postfix;
+    my $db         = 'feed' . $db_postfix;
     my $command;
     $command = "PGPASSWORD=mRX1E3Mi00oS8LG";
     $command .= " /usr/lib/postgresql/9.1/bin/pg_restore -d $db";
@@ -171,8 +171,8 @@ sub _create_table_for_date {
 
     if ($table_present->[0] < 1) {
         my $db_postfix = $ENV{DB_POSTFIX} // '';
-        my $db = 'feed' . $db_postfix;
-        my $dbh = DBI->connect("dbi:Pg:dbname=$db;host=localhost;port=5433", 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
+        my $db         = 'feed' . $db_postfix;
+        my $dbh        = DBI->connect("dbi:Pg:dbname=$db;host=localhost;port=5433", 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
 
         # This operation is bound to raise an warning about how index was created.
         # We can ignore it.
