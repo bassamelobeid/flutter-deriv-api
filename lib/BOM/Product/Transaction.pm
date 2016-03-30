@@ -93,8 +93,8 @@ has amount_type => (
 );
 
 has comment => (
-    is  => 'rw',
-    isa => 'ArrayRef'
+    is      => 'rw',
+    isa     => 'ArrayRef',
     default => [],
 );
 
@@ -1110,7 +1110,7 @@ sub _build_pricing_comment {
     }
 
     my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
-    my %comment_hash = map {$_} @comment_fields;
+    my %comment_hash = map { $_ } @comment_fields;
 
     return [$comment_str, \%comment_hash];
 }
@@ -1687,9 +1687,9 @@ sub sell_expired_contracts {
                     };
 
                 my $comment_hash = _build_pricing_comment({
-                    contract => $contract,
-                    action   => 'autosell_expired_contract',
-                })->[1];
+                        contract => $contract,
+                        action   => 'autosell_expired_contract',
+                    })->[1];
                 my $quants_bet_variables;
                 if ($comment_hash) {
                     $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
