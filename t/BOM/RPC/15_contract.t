@@ -267,7 +267,7 @@ subtest 'get_bid' => sub {
         current_tick  => $tick,
         date_start    => $now->epoch - 900,
         date_expiry   => $now->epoch - 600,
-        purchase_date => $now->epoch - 900
+        purchase_date => $now->epoch - 901
     );
     my $params = {
         language    => 'ZH_CN',
