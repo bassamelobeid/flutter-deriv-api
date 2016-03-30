@@ -51,27 +51,27 @@ subtest 'prices' => sub {
     my %expectations = (
         DIGITMATCH => {
             bs_prob => 0.10,
-            markup  => 0.0015,
+            markup  => 0.01,
         },
         DIGITDIFF => {
             bs_prob => 0.90,
-            markup  => 0.00909090909090909,
+            markup  => 0.01,
         },
         DIGITODD => {
             bs_prob => 0.50,
-            markup  => 0.005,
+            markup  => 0.01,
         },
         DIGITEVEN => {
             bs_prob => 0.50,
-            markup  => 0.005,
+            markup  => 0.01,
         },
         DIGITOVER => {
             bs_prob => 0.40,
-            markup  => 0.0041,
+            markup  => 0.01,
         },
         DIGITUNDER => {
             bs_prob => 0.50,
-            markup  => 0.005,
+            markup  => 0.01,
         },
     );
 
@@ -93,7 +93,7 @@ subtest 'prices' => sub {
     $params->{bet_type} = 'DIGITDIFF';
     my $c = produce_contract($params);
     _check_amount($c->bs_probability, 0.9, 'bs_prob');
-    _check_amount($c->total_markup, 0.00909090909090909, 'markup not the minmum');
+    _check_amount($c->total_markup, 0.01, 'markup not the minmum');
 };
 
 subtest 'invalid selections' => sub {
