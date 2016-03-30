@@ -23,5 +23,5 @@ websocket_real_pricing:
     1m: 240
     1h: 14400
 websocket_reality_check:
-    10m: 2
-    1h: 12
+    2m: 1
+    1h: 30
