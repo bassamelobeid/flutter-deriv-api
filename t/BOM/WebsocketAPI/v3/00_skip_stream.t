@@ -51,6 +51,8 @@ $t = $t->send_ok({json => $proposal_param});
 # proposal response
 ok $t->message_ok, 'receive proposal';
 my $res = decode_json($t->message->[1]);
+use Data::Dumper;
+die Data::Dumper->Dumper([$t->message]);
 ok $res->{proposal};
 warn explain $res;
 
