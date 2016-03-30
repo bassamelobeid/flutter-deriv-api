@@ -12,7 +12,9 @@ use Date::Utility;
 use Test::BOM::RPC::Client;
 
 use utf8;
+
 set_absolute_time(Date::Utility->new('2016-03-18 00:00:00')->epoch);
+
 my ($t, $rpc_ct);
 my $method = 'contracts_for';
 
