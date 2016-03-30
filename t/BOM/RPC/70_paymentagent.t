@@ -4,9 +4,8 @@ use Test::More;
 use Test::Exception;
 use Test::MockModule;
 use Data::Dumper;
-
-use BOM::Test;
 use BOM::RPC::v3::Cashier;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Transaction;
 use BOM::Database::Model::AccessToken;
