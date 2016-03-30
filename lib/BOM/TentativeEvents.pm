@@ -17,14 +17,16 @@ sub generate_tentative_events_form {
 
     my $args   = shift;
     my $events = _get_tentative_events;
-    my @events = sort { $a->{estimated_release_date} <=> $b->{estimated_release_date} } map {
+    my @events =
+        sort { $a->{estimated_release_date} <=> $b->{estimated_release_date} }
+        grep { Date::Utility->new($_->{estimated_release_date})->is_after(Date::Utility->new) } map {
         my $event = $events->{$_};
         $event->{release_date} = Date::Utility->new($event->{estimated_release_date});
         $event->{date}         = $event->{release_date}->date_ddmmmyyyy;
         $event->{blankout}     = Date::Utility->new($event->{blankout})->time_hhmm if $event->{blankout};
         $event->{blankout_end} = Date::Utility->new($event->{blankout_end})->time_hhmm if $event->{blankout_end};
         $event;
-    } keys %$events;
+        } keys %$events;
     my $form = '';
     BOM::Platform::Context::template->process(
         'backoffice/economic_tentative_event_forms.html.tt',
