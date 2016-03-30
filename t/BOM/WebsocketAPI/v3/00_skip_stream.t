@@ -42,7 +42,7 @@ my $proposal_param = {
     "currency"      => "USD",
     "symbol"        => "R_50",
     "duration"      => "5",
-    "duration_unit" => "m",
+    "duration_unit" => "h",
     "barrier"       => "+13.12"
 };
 
@@ -51,8 +51,6 @@ $t = $t->send_ok({json => $proposal_param});
 # proposal response
 ok $t->message_ok, 'receive proposal';
 my $res = decode_json($t->message->[1]);
-use Data::Dumper;
-die Data::Dumper->Dumper([$t->message]);
 ok $res->{proposal};
 warn explain $res;
 
