@@ -21,11 +21,11 @@ bet_limits:
   holiday_blackout_start: 345
   holiday_blackout_end: 5
   maximum_payout:
-    USD: 100000
-    EUR: 100000
-    AUD: 100000
-    GBP: 100000
-    JPY: 10000000
+    USD: 50000
+    EUR: 50000
+    AUD: 50000
+    GBP: 50000
+    JPY: 5000000
   maximum_payout_on_new_markets:
     USD: 100
     EUR: 100
