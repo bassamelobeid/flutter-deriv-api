@@ -12,6 +12,7 @@ use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Token::Verification;
 use BOM::Platform::Static::Config;
+use BOM::System::Config;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -38,16 +39,21 @@ if (not $email) {
 
 my $lang = request()->language;
 
-my $link = request()->url_for(
-    '/user/validate_link',
-    {
-        verify_token => BOM::Platform::Token::Verification->new({
-                email       => $email,
-                expires_in  => 3600,
-                created_for => 'reset_password'
-            }
-        )->token,
-    });
+my $link;
+my $token = BOM::Platform::Token::Verification->new({
+        email       => $email,
+        expires_in  => 3600,
+        created_for => 'reset_password'
+    })->token;
+
+# don't want to touch url_for for this only, need this change else reset password url will have backoffice.binary.com if send from production
+if (BOM::System::Config::node->{node}->{www2}) {
+    $link = 'https://www2.binary.com/user/validate_link?verify_token=' . $token . '&l=' . uc $lang;
+} elsif (BOM::System::Config::env =~ /^production$/) {
+    $link = 'https://www.binary.com/user/validate_link?verify_token=' . $token . '&l=' . uc $lang;
+} else {
+    $link = request()->url_for('/user/validate_link', {verify_token => $token});
+}
 
 my $lost_pass_email;
 BOM::Platform::Context::template->process(
