@@ -38,16 +38,22 @@ sub new_account_virtual {
         $args->{myaffiliates_token} = delete $args->{affiliate_token};
     }
 
-    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $args->{email})->{error}) {
+    my $email = BOM::Platform::Token::Verification->new({token => $args->{verification_code}})->email;
+
+    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
                 message_to_client => $err->{message_to_client}});
     }
 
     my $acc = BOM::Platform::Account::Virtual::create_account({
-        details        => $args,
-        email_verified => 1
-    });
+            details => {
+                email           => $email,
+                client_password => $args->{client_password},
+                residence       => $args->{residence},
+            },
+            email_verified => 1
+        });
 
     return BOM::RPC::v3::Utility::create_error({
             code              => $acc->{error},
@@ -57,6 +63,7 @@ sub new_account_virtual {
     my $account = $client->default_account->load;
     return {
         client_id => $client->loginid,
+        email     => $email,
         currency  => $account->currency_code,
         balance   => $account->balance
     };
@@ -64,6 +71,7 @@ sub new_account_virtual {
 
 sub verify_email {
     my $params = shift;
+    my $email_content;
 
     if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'reset_password') {
         send_email({
@@ -72,20 +80,28 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        'Before we can help you change your password, please help us to verify your identity by clicking on the following link: '
-                            . $params->{link})
+                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span style="background: #f2f2f2; padding: 10px;">'
+                            . $params->{code}
+                            . '</span></p></p>'
+                    )
                 ],
                 use_email_template => 1
             });
     } elsif ($params->{type} eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $params->{email}})) {
             send_email({
-                from               => BOM::Platform::Static::Config::get_customer_support_email(),
-                to                 => $params->{email},
-                subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-                message            => [BOM::Platform::Context::localize('Your email address verification link is: ' . $params->{link})],
-                use_email_template => 1
-            });
+                    from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    to      => $params->{email},
+                    subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
+                    message => [
+                        BOM::Platform::Context::localize(
+                            '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account:<p><span style="background: #f2f2f2; padding: 10px;">'
+                                . $params->{code}
+                                . '</span></p></p><p>Enjoy trading with us on Binary.com.</p>'
+                        )
+                    ],
+                    use_email_template => 1
+                });
         } else {
             send_email({
                     from    => BOM::Platform::Static::Config::get_customer_support_email(),
@@ -93,7 +109,7 @@ sub verify_email {
                     subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
                     message => [
                         BOM::Platform::Context::localize(
-                            'Dear Valued Customer, <p style="margin-top:1em;line-height:200%;">It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p>'
+                            '<div style="line-height:200%;color:#333333;font-size:15px;"><p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p></div>'
                         )
                     ],
                     use_email_template => 1
@@ -106,8 +122,9 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        '<p>Dear Valued Customer,</p><p>In order to verify your withdrawal request, please click on the following link: </p><p> '
-                            . $params->{link} . ' </p>'
+                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span style="background: #f2f2f2; padding: 10px;">'
+                            . $params->{code}
+                            . '</span></p></p>'
                     )
                 ],
                 use_email_template => 1
