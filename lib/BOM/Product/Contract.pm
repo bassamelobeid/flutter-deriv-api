@@ -2449,6 +2449,23 @@ sub _validate_input_parameters {
                     localize("Start time on forward-starting contracts must be more than [_1] from now.", $forward_starting_blackout->as_string),
                 };
         }
+    } elsif ($self->expiry_daily) {
+        my $close = $self->underlying->exchange->closing_on($self->date_expiry);
+        # if it is not a trading day at expiry, we will catch that later.
+        if ($close and not $close->is_same_as($self->date_expiry)) {
+            push @errors,
+                {
+                message => format_error_string(
+                    'daily expiry must expire at close',
+                    expiry => $self->date_expiry->datetime,
+                    close  => $close->datetime
+                ),
+                message_to_client => localize(
+                    'Contracts on [_1] with duration more than 24 hours must expire at the end of a trading day.',
+                    $self->underlying->translated_display_name()
+                ),
+                };
+        }
     }
 
     return @errors;
@@ -2674,23 +2691,6 @@ sub _validate_expiry_date {
                     ),
                     };
             }
-        }
-    } elsif ($self->expiry_daily) {
-        my $close = $self->underlying->exchange->closing_on($self->date_expiry);
-        # if it is not a trading day at expiry, we will catch that later.
-        if ($close and not $close->is_same_as($self->date_expiry)) {
-            push @errors,
-                {
-                message => format_error_string(
-                    'daily expiry must expire at close',
-                    expiry => $self->date_expiry->datetime,
-                    close  => $close->datetime
-                ),
-                message_to_client => localize(
-                    'Contracts on [_1] with duration more than 24 hours must expire at the end of a trading day.',
-                    $underlying->translated_display_name()
-                ),
-                };
         }
     }
 
