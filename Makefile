@@ -17,13 +17,13 @@ unit_test_product_contract_extended:
 	@$(PROVE) -r t/BOM/Product/ContractFactory/ -r t/BOM/Product/ContractExtended/
 
 unit_test_product_all:
-	@$(PROVE) -r $$(ls -1d t/BOM/Persistence/* t/BOM/*.t t/BOM/Product/* | grep -v -e Product/Contract -e Product/ContractExtended -e Product/Validation -e Product/Pricing)
+	@$(PROVE) -vr $$(ls -1d t/BOM/Persistence/* t/BOM/*.t t/BOM/Product/* | grep -v -e Product/Contract -e Product/ContractExtended -e Product/Validation -e Product/Pricing)
 
 unit_test_validation:
 	@$(PROVE) -r t/BOM/Product/Validation
 
 unit_test_pricing:
-	@$(PROVE) -r $$(ls -1d t/BOM/Product/Pricing/*.t)
+	@$(PROVE) -vr $$(ls -1d t/BOM/Product/Pricing/*.t)
 
 unit_test_intraday:
 	@$(PROVE) -r t/BOM/Product/Pricing/Engine/IntradayHistorical
