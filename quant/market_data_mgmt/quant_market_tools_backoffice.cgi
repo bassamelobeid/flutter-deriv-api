@@ -122,9 +122,9 @@ if ($autoupdate) {
         $event_param->{id} = ForexFactory::generate_id(Date::Utility->new($id_date)->truncate_to_day()->epoch . $event_name . $symbol . $impact);
         push @{$ref->{events}}, $event_param;
         Quant::Framework::EconomicEventCalendar->new({
-                events        => $ref->{events},
-                recorded_date => Date::Utility->new,
-
+                events           => $ref->{events},
+                recorded_date    => Date::Utility->new,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             })->save;
 

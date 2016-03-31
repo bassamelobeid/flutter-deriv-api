@@ -76,6 +76,7 @@ sub update_event {
 
     my $update = Quant::Framework::EconomicEventCalendar->new({
             recorded_date    => Date::Utility->new(),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         })->update($existing);
     return $update ? 1 : 0;
