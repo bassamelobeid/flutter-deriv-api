@@ -158,6 +158,7 @@ sub get_bid {
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
             underlying          => $contract->underlying->symbol,
+            display_name        => $contract->underlying->display_name,
             is_expired          => $contract->is_expired,
             is_valid_to_sell    => $contract->is_valid_to_sell,
             is_forward_starting => $contract->is_forward_starting,
@@ -170,6 +171,7 @@ sub get_bid {
             longcode            => $contract->longcode,
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
+            contract_type       => $contract->code
         };
 
         if (not $contract->is_valid_to_sell and $contract->primary_validation_error) {
