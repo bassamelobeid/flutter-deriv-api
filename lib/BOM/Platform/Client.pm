@@ -111,7 +111,6 @@ for (qw/date_joined/) {
 
 my %DEFAULT_VALUES = (
     cashier_setting_password => '',
-    gender                   => 'm',
     latest_environment       => '',
     restricted_ip_address    => '',
 );
@@ -164,9 +163,16 @@ sub register_and_return_new_client {
     }
 
     # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
-    for (qw(citizen address_2 state postcode)) {
+    for (qw(citizen address_2 state postcode salutation)) {
         $self->$_ || $self->$_('');
     }
+
+    # resolve Gender from Salutation
+    if ($self->salutation and not $self->gender) {
+        my $gender = (uc $self->salutation eq 'MR') ? 'm' : 'f';
+        $self->gender($gender);
+    }
+    $self->gender('m') unless $self->gender;
 
     my $sql = "SELECT nextval('sequences.loginid_sequence_$broker')";
     my $dbh = $self->db->dbh;
@@ -831,6 +837,8 @@ sub login_error {
         return localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif ($client->get_status('disabled')) {
         return localize('This account is unavailable. For any questions please contact Customer Support.');
+    } elsif ($client->get_self_exclusion && $client->get_self_exclusion->exclude_until) {
+        return localize('Sorry, you have excluded yourself until [_1].', $client->get_self_exclusion->exclude_until);
     }
     return;
 }
