@@ -279,6 +279,7 @@ subtest 'invalid bet payout hobbling around' => sub {
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{currency} = 'USD';
+    $bet_params->{amount} = 50000;
     $bet = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we fix those things, it validates just fine.');
 };
@@ -331,7 +332,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     my $expected_reasons = [qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{amount}  = 1e5;
+    $bet_params->{amount}  = 50000;
     $bet_params->{barrier} = 'S10P';
     $bet                   = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we ask for a higher payout, it validates just fine.');
