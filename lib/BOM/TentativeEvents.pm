@@ -19,7 +19,7 @@ sub generate_tentative_events_form {
     my $events = _get_tentative_events;
     my @events =
         sort { $a->{estimated_release_date} <=> $b->{estimated_release_date} }
-        grep { Date::Utility->new($_->{estimated_release_date})->is_after(Date::Utility->new) } map {
+        grep { Date::Utility->new($_->{estimated_release_date})->is_after(Date::Utility->new->minus_time_interval('1d')) } map {
         my $event = $events->{$_};
         $event->{release_date} = Date::Utility->new($event->{estimated_release_date});
         $event->{date}         = $event->{release_date}->date_ddmmmyyyy;
