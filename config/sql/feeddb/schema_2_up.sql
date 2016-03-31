@@ -218,7 +218,7 @@ BEGIN
     END IF;
 
     -- Update the minutely table
-    EXECUTE 'INSERT INTO ' || minutely_tablename(NEW.ts) || ' SELECT ($1).*' USING NEW;
+    EXECUTE 'INSERT INTO feed.' || minutely_tablename(NEW.ts) || ' SELECT ($1).*' USING NEW;
     RETURN NULL;
 END;
 $ohlc_minutely_insert$
