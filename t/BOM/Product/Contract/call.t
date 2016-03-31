@@ -164,25 +164,24 @@ subtest 'missing market data conditions' => sub {
     ok $c->exit_tick,  'has exit tick';
     ok !$c->missing_market_data, 'has no misisng market data';
  
-    $args->{duration}     = '20m';
+    $args->{duration}     = '30m';
     $args->{date_start}   = $now;
-    $args->{date_pricing} = $now->plus_time_interval('20m');
+    $args->{date_pricing} = $now->plus_time_interval('30m');
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
-        epoch      => $now->epoch + 1000,
+        epoch      => $now->epoch + 1499,
         quote      => 101,
     });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
-        epoch      => $now->epoch + 1201,
+        epoch      => $now->epoch + 1801,
         quote      => 101,
     });
     $c = produce_contract($args);
     ok $c->is_expired, 'expired';
     ok $c->exit_tick,  'has exit tick';
     ok $c->missing_market_data, 'has misisng market data';
-}   
-;
+};
 
 
 subtest 'shortcodes' => sub {
