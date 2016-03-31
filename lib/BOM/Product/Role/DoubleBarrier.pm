@@ -14,7 +14,7 @@ sub BUILD {
             $self->add_error({
                 severity          => 5,
                 message           => 'High and low barriers inverted',
-                message_to_client => localize('The barriers are improperly entered for this contract.'),
+                message_to_client => localize('High barrier must be higher than low barrier.'),
             });
             $self->low_barrier($barrier1);
             $self->high_barrier($barrier2);
@@ -22,7 +22,7 @@ sub BUILD {
             $self->add_error({
                 severity          => 100,
                 message           => 'High and low barriers must be different',
-                message_to_client => localize('The barriers are improperly entered for this contract.'),
+                message_to_client => localize('High and low barriers must be different.'),
             });
             $self->low_barrier(
                 $barrier1->adjust({
