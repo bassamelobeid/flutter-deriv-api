@@ -37,6 +37,10 @@
           "type": "integer",
           "description": "Binary.com internal contract identifier"
         },
+        "contract_type": {
+          "type": "string",
+          "description": "Contract type, for example CALL, PUT"
+        },
         "currency": {
           "type": "string",
           "description": "Example: USD"
@@ -111,6 +115,10 @@
         "underlying": {
           "type": "string",
           "description": "Example: BSESENSEX30"
+        },
+        "display_name": {
+          "type": "string",
+          "description": "Display name of underlying"
         },
         "entry_tick": {
           "type": "number",
