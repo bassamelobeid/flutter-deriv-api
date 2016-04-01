@@ -1,20 +1,22 @@
+#!/usr/bin/perl
+package main;
+use strict 'vars';
 
-use strict;
-use warnings;
+use File::Temp;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Database::ClientDB;
-use File::Temp;
+use BOM::Platform::Plack qw/PrintContentType_XSendfile/;
+use BOM::Platform::Sysinit ();
 
-my %input = (
-    datetime => '2016-03-10',
-#    loginid => 'JP1035',
-);
+use f_brokerincludeall;
+BOM::Platform::Sysinit::init();
 
+my $broker = request()->broker->code;
+BOM::Backoffice::Auth0::can_access();
 
-my $datetime = $input{datetime};
-my $loginid;
-$loginid = $input{loginid} if $input{loginid};
+my $datetime = request()->param('datetime');
+my $loginid = request()->param('loginid');
 
 
 my $sql = qq{
@@ -95,11 +97,11 @@ foreach my $ref (@$open_contracts) {
     $bet_params->{date_pricing} = $datetime;
     my $contract = produce_contract($bet_params);
 
-    $ref->{mtm_price}    = $contract->is_valid_to_sell ? $contract->bid_price : '';
-    $ref->{entry_spot}   = $contract->entry_tick ? $contract->entry_tick->quote : '';
-    $ref->{current_spot} = $contract->current_spot;
+    $ref->{mtm_price}     = $contract->is_valid_to_sell ? $contract->bid_price : '';
+    $ref->{entry_spot}    = $contract->entry_tick ? $contract->entry_tick->quote : '';
+    $ref->{current_spot}  = $contract->current_spot;
+    $ref->{unrealized_pl} = ($ref->{mtm_price}) ? $ref->{mtm_price} - $ref->{buy_price} : '';
 }
-
 
 my @fields = qw(
     loginid
@@ -118,6 +120,7 @@ my @fields = qw(
     mtm_price
     entry_spot
     current_spot
+    unrealized_pl
 );
 
 local $\ = "\n";
@@ -131,6 +134,8 @@ print $fh join(',', @fields);
 foreach my $ref (@$open_contracts) {
     print $fh join(',', map { $ref->{$_} } @fields);
 }
-
 close $fh;
+
+PrintContentType_XSendfile($filename, 'application/octet-stream');
+BOM::Platform::Sysinit::code_exit();
 
