@@ -30,7 +30,7 @@ sub make_barrier {
     {
         $self->add_error({
             severity          => 100,
-            message           => 'Invalid barrier',
+            message           => 'Barrier is not an integer',
             message_to_client => localize('Barrier must be an integer.'),
         });
     }
