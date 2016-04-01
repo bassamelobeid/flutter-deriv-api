@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More tests => 3;
+use Test::More tests => 2;
 use Test::NoWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -67,17 +67,6 @@ subtest 'invalid start and expiry time' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like ($c->primary_validation_error->{message}, qr/forward-starting blackout/, 'forward starting blackout');
     $bet_params->{date_start} = $now->epoch + 5*60;
-    $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'valid to buy';
-};
-
-subtest 'invalid expiry time for multiday contracts' => sub {
-    $bet_params->{date_start} = $bet_params->{date_pricing} = $now;
-    $bet_params->{date_expiry} = $now->plus_time_interval('1d1s');
-    my $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like (($c->primary_validation_error)[0]->{message}, qr/daily expiry must expire at close/, 'throws error');
-    $bet_params->{date_expiry} = $now->truncate_to_day->plus_time_interval('1d23h59m59s');
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
 };

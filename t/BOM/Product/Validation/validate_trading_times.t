@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 4;
 use Test::NoWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -17,6 +17,14 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 my $weekend = Date::Utility->new('2016-03-26');
 my $weekday = Date::Utility->new('2016-03-29');
+my $usdjpy_weekend_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxUSDJPY',
+    epoch      => $weekend->epoch
+});
+my $usdjpy_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxUSDJPY',
+    epoch      => $weekday->epoch
+});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -67,14 +75,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }}});
 
 subtest 'trading hours' => sub {
-    my $usdjpy_weekend_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $weekend->epoch
-    });
-    my $usdjpy_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $weekday->epoch
-    });
     my $args = {
         bet_type     => 'CALL',
         underlying   => 'frxUSDJPY',
@@ -137,4 +137,62 @@ subtest 'trading hours' => sub {
     $c = produce_contract($args);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like(($c->primary_validation_error)[0]->{message_to_client}, qr/must expire during trading hours/, 'throws error message');
+};
+
+subtest 'invalid expiry time for multiday contracts' => sub {
+    my $now = Date::Utility->new;
+    my $fake_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch
+    });
+    my $bet_params = {
+        underlying   => 'R_100',
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_pricing => $now,
+        barrier      => 'S0P',
+        current_tick => $fake_tick,
+        date_pricing => $now,
+        date_start   => $now,
+        date_expiry  => $now->plus_time_interval('1d1s'),
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like (($c->primary_validation_error)[0]->{message}, qr/daily expiry must expire at close/, 'throws error');
+    $bet_params->{date_expiry} = $now->truncate_to_day->plus_time_interval('1d23h59m59s');
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+};
+
+subtest 'intraday must be same day' => sub {
+    my $eod = $weekday->plus_time_interval('22h');
+    my $eod_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'RDBULL',
+        epoch      => $eod->epoch
+    });
+    my $bet_params = {
+        underlying   => 'RDBULL',
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_pricing => $eod,
+        date_start   => $eod,
+        duration     => '59m59s',
+        barrier      => 'S0P',
+        current_tick => $eod_tick,
+    };
+    my $c = produce_contract($bet_params);
+    ok $c->underlying->intradays_must_be_same_day, 'intraday must be same day';
+    ok $c->is_valid_to_buy, 'valid to buy';
+    $bet_params->{duration} = '2h1s';
+    $c = produce_contract($bet_params);
+    ok $c->underlying->intradays_must_be_same_day, 'intraday must be same day';
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like (($c->primary_validation_error)[0]->{message}, qr/Intraday duration must expire on same day/, 'throws error');
+
+    $bet_params->{underlying} = 'R_100';
+    $c = produce_contract($bet_params);
+    ok !$c->underlying->intradays_must_be_same_day, 'intraday can cross day';
+    ok $c->is_valid_to_buy, 'valid to buy';
 };
