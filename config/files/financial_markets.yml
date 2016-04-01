@@ -130,7 +130,7 @@ indices:
     eod_blackout_start: '15m'
     sod_blackout_start: '10m'
     intradays_must_be_same_day: 1
-    max_suspend_trading_feed_delay: '1m30s'
+    max_suspend_trading_feed_delay: '5m'
     asset_type: 'index'
     equity: 1
     explanation: 'Indices represent the weighted value of a basket of companies, typically traded on the same exchange.'
@@ -168,7 +168,7 @@ stocks:
     eod_blackout_start: '1h'
     sod_blackout_start: '10m'
     display_order: 3
-    max_suspend_trading_feed_delay: '2m'
+    max_suspend_trading_feed_delay: '5m'
     max_failover_feed_delay: '3m'
     absolute_barrier_multiplier: 1
     prefer_discrete_dividend: 1
