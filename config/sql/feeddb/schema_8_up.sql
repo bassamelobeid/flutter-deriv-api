@@ -34,6 +34,11 @@ $tick_notify$
     my @grans                = qw(60 120 180 300 600 900 1800 3600 7200 14400 28800 86400);
     my $MAX_FEED_CHANNELS    = 80; # Listener must listen to all these.
 
+    $fake = spi_exec_query("select current_setting('feed.fake_aggretation_tick')::boolean", 1);
+    if ($fake->{rows}[0]->{current_setting}) {
+        return;
+    }
+
     $rv = spi_exec_query("SELECT * FROM feed.realtime_ohlc where underlying='$underlying'", 1);
 
     $openclose = spi_exec_query("SELECT * FROM feed.underlying_open_close where underlying='$underlying'", 1);
