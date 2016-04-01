@@ -32,6 +32,10 @@ __PACKAGE__->meta->setup(
         spot                    => { type => 'numeric' },
         emp                     => { type => 'numeric' },
         transaction_id          => { type => 'bigint', not_null => 1 },
+        entry_spot              => { type => 'numeric' },
+        entry_spot_epoch        => { type => 'bigint' },
+        exit_spot               => { type => 'numeric' },
+        exit_spot_epoch         => { type => 'bigint' },
     ],
 
     primary_key_columns => [ 'transaction_id' ],
