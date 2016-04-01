@@ -214,3 +214,6 @@
 "/cashier/forwardws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/logged_inws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
