@@ -397,7 +397,7 @@ sub send_pricing_table {
                         id     => $id,
                         prices => $table,
                     })}});
-
+    return;
 }
 
 1;
