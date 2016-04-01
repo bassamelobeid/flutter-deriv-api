@@ -97,13 +97,13 @@ sub proposal {
 sub pricing_table {
     my ($c, $args) = @_;
 
-    my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args->{properties});
+    my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args);
 
     if ($response and exists $response->{error}) {
         return $c->new_error('pricing_table', $response->{error}->{code}, $response->{error}->{message_to_client});
     }
 
-    my $symbol = $args->{properties}->{symbol};
+    my $symbol = $args->{symbol};
     my $id;
     if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args), $args)) {
         return $c->new_error('pricing_table',
