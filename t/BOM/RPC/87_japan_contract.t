@@ -26,11 +26,10 @@ subtest get_channel_name => sub {
 
     is(
         BOM::RPC::v3::Japan::Contract::get_channel_name({
-                properties => {
-                    symbol            => 'frxEURUSD',
-                    date_expiry       => 1459406383,
-                    contract_category => 'callput',
-                }}
+                symbol            => 'frxEURUSD',
+                date_expiry       => 1459406383,
+                contract_category => 'callput',
+            }
         ),
         'PricingTable::frxEURUSD::callput::1459406383',
         'get_channel_name'

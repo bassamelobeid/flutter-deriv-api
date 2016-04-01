@@ -10,12 +10,12 @@ use BOM::System::RedisReplicated;
 
 sub validate_table_props {
 
-    my $props = shift;
+    my $args = shift;
 
-    if (ref $props ne 'HASH') {
+    if (ref $args ne 'HASH') {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'WrongPricingTableProps',
-                message_to_client => BOM::Platform::Context::localize("Wrong pricing table props")});
+                code              => 'WrongPricingTableargs',
+                message_to_client => BOM::Platform::Context::localize("Wrong pricing table arguments")});
     }
 
     my %symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
@@ -24,22 +24,22 @@ sub validate_table_props {
     );
 
     # Japan has only Forex/Major-pairs contracts
-    if (not defined $props->{symbol} or not $symbols{$props->{symbol}}) {
+    if (not defined $args->{symbol} or not $symbols{$args->{symbol}}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidSymbol',
-                message_to_client => BOM::Platform::Context::localize("Symbol [_1] invalid", $props->{symbol})});
+                message_to_client => BOM::Platform::Context::localize("Symbol [_1] invalid", $args->{symbol})});
     }
 
-    if (not defined $props->{date_expiry} or $props->{date_expiry} !~ /^\d+$/) {
+    if (not defined $args->{date_expiry} or $args->{date_expiry} !~ /^\d+$/) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidDateExpiry',
-                message_to_client => BOM::Platform::Context::localize("Date expiry [_1] invalid", $props->{date_expiry})});
+                message_to_client => BOM::Platform::Context::localize("Date expiry [_1] invalid", $args->{date_expiry})});
     }
 
-    if (not defined $props->{contract_category} or $props->{contract_category} !~ /^[a-z]+$/i) {
+    if (not defined $args->{contract_category} or $args->{contract_category} !~ /^[a-z]+$/i) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidContractCategory',
-                message_to_client => BOM::Platform::Context::localize("Contract category [_1] invalid", $props->{contract_category})});
+                message_to_client => BOM::Platform::Context::localize("Contract category [_1] invalid", $args->{contract_category})});
     }
 
     return;
@@ -48,9 +48,8 @@ sub validate_table_props {
 
 sub get_channel_name {
 
-    my $args  = shift;
-    my $props = $args->{properties} || {};
-    my $id    = join "::", 'PricingTable', $props->{symbol}, $props->{contract_category}, $props->{date_expiry};
+    my $args = shift;
+    my $id = join "::", 'PricingTable', $args->{symbol}, $args->{contract_category}, $args->{date_expiry};
 
     return $id;
 }
