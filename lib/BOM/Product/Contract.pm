@@ -2212,6 +2212,14 @@ sub _validate_offerings {
             };
     }
 
+    if (first { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions}) {
+        push @errors,
+            {
+            message => format_error_string('Underlying trades suspended due to corporate actions', symbol => $underlying->symbol),
+            message_to_client => localize('Trading on [_1] is suspended at the moment.', $translated_name),
+            };
+    }
+
     if (not $self->offering_specifics->{permitted}) {
         my $message =
             ($self->built_with_bom_parameters)
@@ -2267,14 +2275,6 @@ sub _validate_underlying {
     my @errors;
     my $underlying      = $self->underlying;
     my $translated_name = $underlying->translated_display_name();
-
-    if (grep { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions}) {
-        push @errors,
-            {
-            message => format_error_string('Underlying trades suspended due to corporate actions', symbol => $underlying->symbol),
-            message_to_client => localize('Trading on [_1] is suspended at the moment.', $translated_name),
-            };
-    }
 
     if ($self->is_intraday and $underlying->deny_purchase_during($self->date_start, $self->date_expiry)) {
         push @errors,
