@@ -172,8 +172,8 @@ print "<form action=\""
     . "\" method=post>"
     . "<input type=hidden name=broker value=$broker>"
     . "DateTime: <input type=text size=30 name=datetime>  Note: In Japanese timezone, format: 2016-03-03 00:00:00"
-    . "<br />Loginid: <input type=text size=30 name=loginid> Note: Only input single loginid, if running report for particular client. For all clients, leave this field empty."
-    . " <input type=submit value='Generate report'>"
+    . "<br/>Loginid: <input type=text size=30 name=loginid> Note: Input single loginid if running report for single client. For all clients, leave this field empty."
+    . "<br/><input type=submit value='Generate report'>"
     . "</form>";
 
 code_exit_BO();
