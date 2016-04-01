@@ -24,7 +24,7 @@ sub authorize {
     if ($client->get_status('disabled')) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'AccountDisabled',
-                message_to_client => BOM::Platform::Context::localize("Account is dsiabled")});
+                message_to_client => BOM::Platform::Context::localize("Account is disabled.")});
     }
 
     if ($client->get_self_exclusion and $client->get_self_exclusion->exclude_until) {
