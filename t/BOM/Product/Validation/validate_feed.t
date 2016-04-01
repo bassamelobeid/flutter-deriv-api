@@ -17,8 +17,8 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Test::MockModule;
 
 my $now = Date::Utility->new('2016-03-15 01:00:00');
-my $delay = $now->minus_time_interval('1m31s');
-note('Forex maximum allowed feed delay is 1m30s');
+my $delay = $now->minus_time_interval('901s');
+note('Forex maximum allowed feed delay is 5 minutes');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_, recorded_date => $now}) for qw(USD JPY);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('volsurface_delta', {symbol => 'frxUSDJPY', recorded_date => $now});
