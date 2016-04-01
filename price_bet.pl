@@ -1,13 +1,14 @@
 
 use strict;
 use warnings;
-use BOM::Product::ContractFactory;
-use BOM::Product::ContractFactory::Parser;
+use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
+use BOM::Database::ClientDB;
 
-my %input = {
+my %input = (
     datetime => '2016-03-10',
 #    loginid => 'JP1035',
-};
+);
 
 
 my $datetime = $input{datetime};
@@ -40,7 +41,7 @@ SELECT
     CASE
         WHEN b.bet_class = 'higher_lower_bet'   THEN h.absolute_barrier::TEXT
         WHEN b.bet_class = 'touch_bet'          THEN tn.absolute_barrier::TEXT
-        WHEN b.bet_class = 'range_bet'          THEN r.absolute_higher_barrier::TEXT || ', ' || r.absolute_lower_barrier::TEXT
+        WHEN b.bet_class = 'range_bet'          THEN r.absolute_higher_barrier::TEXT || '; ' || r.absolute_lower_barrier::TEXT
     END as exercise_price,
 
     b.buy_price,
@@ -76,6 +77,8 @@ my @params = ($datetime, $datetime);
 if ($loginid) {
     $sql =~ s/##LOGINID_ONLY##/ AND loginid = ? /g;
     push @params, $loginid;
+} else {
+    $sql =~ s/##LOGINID_ONLY##//g;
 }
 
 my $dbh = BOM::Database::ClientDB->new({
@@ -91,8 +94,8 @@ foreach my $ref (@$open_contracts) {
     $bet_params->{date_pricing} = $datetime;
     my $contract = produce_contract($bet_params);
 
-    $ref->{mtm_price}    = $contract->is_valid_to_sell ? $contract->bid_price : undef;
-    $ref->{entry_spot}   = $contract->entry_tick ? $contract->entry_tick->quote : undef;
+    $ref->{mtm_price}    = $contract->is_valid_to_sell ? $contract->bid_price : '';
+    $ref->{entry_spot}   = $contract->entry_tick ? $contract->entry_tick->quote : '';
     $ref->{current_spot} = $contract->current_spot;
 }
 
@@ -117,7 +120,7 @@ my @fields = qw(
 );
 
 local $\ = "\n";
-open my $fh, '>', '/tmp/japan_open_contract.csv';
+open my $fh, '>:utf8', '/tmp/japan_open_contract.csv';
 print $fh join(',', @fields);
 
 foreach my $ref (@$open_contracts) {
