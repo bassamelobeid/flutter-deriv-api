@@ -1135,7 +1135,7 @@ subtest 'expiry_daily expiration time' => sub {
 
 subtest 'spot reference check' => sub {
 
-    my $now        = Date::Utility->new('2015-10-20 10:00');
+    my $now        = Date::Utility->new('2015-10-20 13:41:00');
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
