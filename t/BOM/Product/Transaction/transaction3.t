@@ -178,7 +178,7 @@ subtest 'IntradayLimitExceeded: turnover', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_turnover;
             (my $fname = $class) =~ s!::!/!g;
@@ -225,7 +225,7 @@ subtest 'IntradayLimitExceeded: turnover', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_turnover;
             (my $fname = $class) =~ s!::!/!g;
@@ -291,7 +291,7 @@ subtest 'IntradayLimitExceeded: potential profit', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_potential_profit;
             (my $fname = $class) =~ s!::!/!g;
@@ -338,7 +338,7 @@ subtest 'IntradayLimitExceeded: potential profit', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_potential_profit;
             (my $fname = $class) =~ s!::!/!g;
@@ -414,7 +414,7 @@ subtest 'IntradayLimitExceeded: realized profit', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_realized_profit;
             (my $fname = $class) =~ s!::!/!g;
@@ -478,7 +478,7 @@ subtest 'IntradayLimitExceeded: realized profit', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->intraday_forex_iv_realized_profit;
             (my $fname = $class) =~ s!::!/!g;

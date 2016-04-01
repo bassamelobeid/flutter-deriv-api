@@ -115,7 +115,6 @@ my $transaction = BOM::Product::Transaction->new({
     price         => $contract->ask_price,
     client        => $new_client,
     contract      => $contract,
-    comment       => '',
     purchase_date => $contract->date_start,
 });
 isnt $transaction->buy, 'undef', 'successful buy';
@@ -139,7 +138,6 @@ my $transaction_2 = BOM::Product::Transaction->new({
     price    => $contract_2->ask_price,
     client   => $new_client,
     contract => $contract_2,
-    comment  => ''
 });
 isnt $transaction_2->buy, 'undef', 'successful buy';
 
@@ -160,7 +158,6 @@ my $transaction_3 = BOM::Product::Transaction->new({
     price         => $contract_3->ask_price,
     client        => $new_client,
     contract      => $contract_3,
-    comment       => '',
     purchase_date => $contract_3->date_start,
 });
 isnt $transaction_3->buy, 'undef', 'successful buy';
@@ -182,7 +179,6 @@ my $transaction_4 = BOM::Product::Transaction->new({
     price         => $contract_4->ask_price,
     client        => $new_client,
     contract      => $contract_4,
-    comment       => '',
     purchase_date => $contract_4->date_start,
 });
 isnt $transaction_4->buy, 'undef', 'successful buy';
@@ -243,7 +239,6 @@ my $transaction_5 = BOM::Product::Transaction->new({
     price         => 53.14,
     client        => $new_client,
     contract      => $contract_5,
-    comment       => '',
     purchase_date => $start_time_5,
 });
 
@@ -269,7 +264,6 @@ my $transaction_6 = BOM::Product::Transaction->new({
     price    => 51.88,
     client   => $new_client,
     contract => $contract_6,
-    comment  => '',
 });
 isnt $transaction_6->buy(skip_validation => 1), 'undef', 'successful buy';
 
