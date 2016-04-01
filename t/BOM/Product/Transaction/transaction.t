@@ -332,7 +332,7 @@ subtest 'buy a spread bet' => sub {
         like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
         like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
         like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
-        like $report, qr/^\s*Comment: \Q${\$txn->comment}\E$/m,                                       'comment';
+        like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                       'comment';
         like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
         like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
         like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
@@ -431,7 +431,7 @@ subtest 'buy a spread bet' => sub {
         like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
         like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
         like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
-        like $report, qr/^\s*Comment: \Q${\$txn->comment}\E$/m,                                       'comment';
+        like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                       'comment';
         like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
         like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
         like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
@@ -618,7 +618,7 @@ subtest 'buy a bet', sub {
             like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
             like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
             like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
-            like $report, qr/^\s*Comment: \Q${\$txn->comment}\E$/m,                                       'comment';
+            like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                       'comment';
             like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
             like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
             like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
@@ -2072,7 +2072,7 @@ subtest 'max_losses validation', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(
                 get_limit_for_daily_losses => sub { note "mocked Client->get_limit_for_daily_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
@@ -2133,7 +2133,7 @@ subtest 'max_losses validation', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(
                 get_limit_for_daily_losses => sub { note "mocked Client->get_limit_for_daily_losses returning " . (3 * 5.20); 3 * 5.20 });
@@ -2197,7 +2197,7 @@ subtest 'max_7day_losses validation', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(
                 get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
@@ -2258,7 +2258,7 @@ subtest 'max_7day_losses validation', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (3 * 5.20); 3 * 5.20 }
             );
@@ -2322,7 +2322,7 @@ subtest 'max_30day_losses validation', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(
                 get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
@@ -2383,7 +2383,7 @@ subtest 'max_30day_losses validation', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(
                 get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20); 3 * 5.20 });

@@ -98,8 +98,9 @@ has amount_type => (
 );
 
 has comment => (
-    is  => 'rw',
-    isa => 'Str'
+    is      => 'rw',
+    isa     => 'ArrayRef',
+    default => sub { [] },
 );
 
 has staff => (
@@ -387,8 +388,6 @@ sub prepare_bet_data_for_buy {
             -message_to_client => BOM::Platform::Context::localize("Start time is in the past"));
     }
 
-    my $comment = $self->comment // '';
-
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
     $self->contract_class($bet_class);
 
@@ -398,7 +397,7 @@ sub prepare_bet_data_for_buy {
         quantity          => 1,
         short_code        => scalar $contract->shortcode,
         buy_price         => $self->price,
-        remark            => $comment,
+        remark            => $self->comment->[0] || '',
         underlying_symbol => scalar $contract->underlying->symbol,
         bet_type          => scalar $contract->code,
         bet_class         => $bet_class,
@@ -443,10 +442,9 @@ sub prepare_bet_data_for_buy {
     }
 
     my $quants_bet_variables;
-    my $quants_bet_params = BOM::Database::Model::DataCollection::QuantsBetVariables->extract_parameters_from_line({line => "COMMENT:$comment"});
-    if ($quants_bet_params) {
+    if (my $comment_hash = $self->comment->[1]) {
         $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-            data_object_params => $quants_bet_params,
+            data_object_params => $comment_hash,
         });
     }
 
@@ -494,7 +492,12 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
 
         $self->calculate_limits;
 
-        $self->comment($self->_build_pricing_comment) unless defined $self->comment;
+        $self->comment(
+            _build_pricing_comment({
+                    contract => $self->contract,
+                    price    => $self->price,
+                    action   => 'buy'
+                })) unless @{$self->comment};
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
@@ -672,13 +675,10 @@ sub prepare_bet_data_for_sell {
     };
 
     my $quants_bet_variables;
-    if (my $comment = $self->comment) {
-        my $quants_bet_params = BOM::Database::Model::DataCollection::QuantsBetVariables->extract_parameters_from_line({line => "COMMENT:$comment"});
-        if ($quants_bet_params) {
-            $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
-                data_object_params => $quants_bet_params,
-            });
-        }
+    if (my $comment_hash = $self->comment->[1]) {
+        $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+            data_object_params => $comment_hash,
+        });
     }
 
     return (
@@ -722,7 +722,12 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _validate_date_pricing/
             );
 
-        $self->comment($self->_build_pricing_comment) unless defined $self->comment;
+        $self->comment(
+            _build_pricing_comment({
+                    contract => $self->contract,
+                    price    => $self->price,
+                    action   => 'sell'
+                })) unless @{$self->comment};
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_sell;
@@ -1163,8 +1168,9 @@ sub _validate_currency {
 }
 
 sub _build_pricing_comment {
-    my $self     = shift;
-    my $contract = $self->contract;
+    my $args = shift;
+
+    my ($contract, $price, $action) = @{$args}{'contract', 'price', 'action'};
 
     my @comment_fields;
     if ($contract->is_spread) {
@@ -1178,7 +1184,6 @@ sub _build_pricing_comment {
         # This way the order of the fields is well-defined.
         @comment_fields = map { defined $_->[1] ? @$_ : (); } (
             [theo    => $contract->theo_price],
-            [trade   => $self->price],
             [iv      => $contract->pricing_vol],
             [win     => $contract->payout],
             [div     => $contract->q_rate],
@@ -1191,6 +1196,30 @@ sub _build_pricing_comment {
             [volga   => $contract->volga],
             [bs_prob => $contract->bs_probability->amount],
             [spot    => $contract->current_spot]);
+
+        # only manual sell and buy has a price
+        if ($price) {
+            push @comment_fields, (trade => $price);
+        }
+
+        if ($contract->entry_tick) {
+            push @comment_fields, (entry_spot       => $contract->entry_tick->quote);
+            push @comment_fields, (entry_spot_epoch => $contract->entry_tick->epoch);
+        }
+
+        my $tick;
+        if ($action eq 'sell') {
+            # Can't use $contract->current_tick because it is not 100% true.
+            # It depends on when the contract is priced at that second.
+            $tick = $contract->underlying->tick_at($contract->date_pricing->epoch);
+        } elsif ($action eq 'autosell_expired_contract') {
+            $tick = ($contract->is_path_dependent and $contract->hit_tick) ? $contract->hit_tick : $contract->exit_tick;
+        }
+
+        if ($tick) {
+            push @comment_fields, (exit_spot       => $tick->quote);
+            push @comment_fields, (exit_spot_epoch => $tick->epoch);
+        }
 
         my $news_factor = $contract->ask_probability->peek('news_factor');
         if ($news_factor) {
@@ -1207,7 +1236,10 @@ sub _build_pricing_comment {
         }
     }
 
-    return sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
+    my $comment_str = sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
+    my %comment_hash = map { $_ } @comment_fields;
+
+    return [$comment_str, \%comment_hash];
 }
 
 sub _validate_sell_pricing_adjustment {
@@ -1858,6 +1890,7 @@ sub sell_expired_contracts {
 
     my $now = Date::Utility->new;
     my @bets_to_sell;
+    my @quants_bet_variables;
     my @transdata;
     my %stats_attempt;
     my %stats_failure;
@@ -1879,7 +1912,7 @@ sub sell_expired_contracts {
 
         try {
             if ($contract->is_valid_to_sell) {
-                @{$bet}{qw/sell_price sell_time/} = ($contract->bid_price, $now->db_timestamp);
+                @{$bet}{qw/sell_price sell_time/} = ($contract->bid_price, $contract->date_pricing->db_timestamp);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
                     if $contract->category_code eq 'asian' and $contract->is_after_expiry;
                 push @bets_to_sell, $bet;
@@ -1888,6 +1921,19 @@ sub sell_expired_contracts {
                     staff_loginid => 'AUTOSELL',
                     source        => $source,
                     };
+
+                my $comment_hash = _build_pricing_comment({
+                        contract => $contract,
+                        action   => 'autosell_expired_contract',
+                    })->[1];
+                my $quants_bet_variables;
+                if ($comment_hash) {
+                    $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+                        data_object_params => $comment_hash,
+                    });
+                }
+                push @quants_bet_variables, $quants_bet_variables;
+
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
                 @{$bet}{qw/sell_price sell_time/} = ($bet->{buy_price}, $now->db_timestamp);
@@ -1897,6 +1943,7 @@ sub sell_expired_contracts {
                     staff_loginid => 'AUTOSELL',
                     source        => $source,
                     };
+                push @quants_bet_variables, undef;
             } else {
                 $stats_failure{$logging_class}{_normalize_error($contract->primary_validation_error)}++;
             }
@@ -1930,7 +1977,8 @@ sub sell_expired_contracts {
             client_loginid => $loginid,
             currency_code  => $currency
         },
-        db => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        db                   => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        quants_bet_variables => \@quants_bet_variables,
     );
 
     my $sold = try {
@@ -2007,7 +2055,7 @@ sub report {
         . sprintf("%30s: %s\n", 'Price',                  $self->price)
         . sprintf("%30s: %s\n", 'Payout',                 $self->payout)
         . sprintf("%30s: %s\n", 'Amount Type',            $self->amount_type)
-        . sprintf("%30s: %s\n", 'Comment',                $self->comment || '')
+        . sprintf("%30s: %s\n", 'Comment',                $self->comment->[0] || '')
         . sprintf("%30s: %s\n", 'Staff',                  $self->staff)
         . sprintf("%30s: %s",   'Transaction Parameters', Dumper($self->transaction_parameters))
         . sprintf("%30s: %s\n", 'Transaction ID',         $self->transaction_id || -1)
