@@ -73,7 +73,7 @@ ORDER BY t.transaction_time
 
 my @params = ($datetime, $datetime);
 
-if ($loginid}) {
+if ($loginid) {
     $sql =~ s/##LOGINID_ONLY##/ AND loginid = ? /g;
     push @params, $loginid;
 }
