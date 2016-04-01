@@ -4,6 +4,7 @@ use warnings;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Database::ClientDB;
+use File::Temp;
 
 my %input = (
     datetime => '2016-03-10',
@@ -120,7 +121,11 @@ my @fields = qw(
 );
 
 local $\ = "\n";
-open my $fh, '>:utf8', '/tmp/japan_open_contract.csv';
+my $filename = File::Temp->new(SUFFIX => '.csv')->filename;
+
+print "filename [$filename]...\n\n";
+
+open my $fh, '>:utf8', $filename;
 print $fh join(',', @fields);
 
 foreach my $ref (@$open_contracts) {
