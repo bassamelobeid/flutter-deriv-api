@@ -49,8 +49,8 @@ my $no_spreads = [qw(
         )];
 my $japan = [qw(
         CALLE
-        PUTE
-        EXPIRYMISSE
+        PUT
+        EXPIRYMISS
         EXPIRYRANGEE
         RANGE
         UPORDOWN
