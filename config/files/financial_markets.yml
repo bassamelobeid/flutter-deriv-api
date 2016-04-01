@@ -10,7 +10,6 @@ commodities:
     integer_number_of_day: 1
     max_suspend_trading_feed_delay: '5m'
     eod_blackout_expiry: '1m'
-    eod_blackout_start: '0s'
     sod_blackout_start: '10m'
     reduced_display_decimals: 1
     asset_type: 'currency'
@@ -53,9 +52,6 @@ forex:
     display_order: 1
     integer_number_of_day: 1
     max_suspend_trading_feed_delay: '5m'
-    eod_blackout_expiry: '0s'
-    eod_blackout_start: '0s'
-    sod_blackout_start: '0s'
     reduced_display_decimals: 1
     asset_type: 'currency'
     vol_cut_off: 'NY1000'
@@ -92,7 +88,6 @@ futures:
     outlier_tick: 0.10
     display_name: "Futures"
     eod_blackout_expiry: '1m'
-    eod_blackout_start: '0s'
     sod_blackout_start: '10m'
     max_failover_feed_delay: '3m'
     equity: 1
@@ -209,9 +204,6 @@ random:
     display_name: "Randoms"
     volatility_surface_type: "flat"
     deep_otm_threshold: 0.025
-    eod_blackout_expiry: '0s'
-    eod_blackout_start: '0s'
-    sod_blackout_start: '0s'
     display_order: 5
     asset_type: 'synthetic'
     generation_interval: '2s'
@@ -244,9 +236,6 @@ synthetic:
     suspicious_move: 0.07
     outlier_tick: 0.10
     display_name: "Synthetic"
-    eod_blackout_expiry: '0s'
-    eod_blackout_start: '0s'
-    sod_blackout_start: '0s'
     intradays_must_be_same_day: 1
     asset_type: 'index'
     equity: 1

@@ -379,9 +379,7 @@ sub _build_max_failover_feed_delay {
 
 has [qw(sod_blackout_start eod_blackout_start eod_blackout_expiry)] => (
     is         => 'ro',
-    isa        => 'bom_time_interval',
     lazy_build => 1,
-    coerce     => 1,
 );
 
 sub _build_sod_blackout_start {

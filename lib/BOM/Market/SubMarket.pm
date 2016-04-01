@@ -185,8 +185,6 @@ has weekend_outlier_tick => (
 
 has [qw(sod_blackout_start eod_blackout_start eod_blackout_expiry)] => (
     is         => 'ro',
-    isa        => 'bom_time_interval',
-    coerce     => 1,
     lazy_build => 1,
 );
 
