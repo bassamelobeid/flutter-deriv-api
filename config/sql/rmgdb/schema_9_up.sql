@@ -15,10 +15,14 @@ CREATE TABLE bet.spread_bet (
 );
 
 ALTER TABLE ONLY bet.spread_bet
-    ADD CONSTRAINT fk_spread_bet_financial_market_bet_id
-    FOREIGN KEY (financial_market_bet_id)
-    REFERENCES bet.financial_market_bet(id)
-    ON UPDATE RESTRICT ON DELETE RESTRICT;
+    DROP CONSTRAINT IF EXISTS fk_spread_bet_financial_market_bet_id;
+
+CREATE TRIGGER trig_ensure_fmb_id_exists
+  BEFORE INSERT OR UPDATE
+  ON bet.spread_bet
+  FOR EACH ROW
+  EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
+COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON bet.spread_bet IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
 
 ALTER TABLE ONLY bet.bet_dictionary
     DROP CONSTRAINT IF EXISTS bet_dictionary_table_name_check;
