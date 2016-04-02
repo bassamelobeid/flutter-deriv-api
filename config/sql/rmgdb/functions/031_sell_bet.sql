@@ -47,8 +47,7 @@ BEGIN
     -- transaction.account row is already locked FOR UPDATE by the current transaction.
     -- Otherwise, it is prone to deadlock.
 
-    UPDATE bet.financial_market_bet
-       SET sell_price=p_sell_price, sell_time=p_sell_time, is_sold=true, is_expired=true
+    DELETE FROM bet.financial_market_bet_open
      WHERE id=p_id
        AND account_id=p_account_id
        AND NOT is_sold
@@ -62,7 +61,12 @@ BEGIN
     END IF;
 
     -- exactly 1 row modified
-
+    v_fmb.sell_price := p_sell_price;
+    v_fmb.sell_time := p_sell_time;
+    v_fmb.is_sold := true;
+    v_fmb.is_expired := true;
+    INSERT INTO bet.financial_market_bet VALUES(v_fmb.*);
+    
     IF p_chld IS NOT NULL THEN
         EXECUTE 'UPDATE bet.' || v_fmb.bet_class || ' target SET '
              || (SELECT string_agg(k || ' = r.' || k, ', ') FROM json_object_keys(p_chld) k)
