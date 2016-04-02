@@ -76,7 +76,7 @@ BEGIN
 
     RESET log_min_messages;
 
-    INSERT INTO bet.financial_market_bet (
+    INSERT INTO bet.financial_market_bet_open (
         purchase_time,
         account_id,
         underlying_symbol,
