@@ -19,7 +19,7 @@
     "symbol": {
       "type": "string",
       "description": "Symbol code",
-      "pattern": "^\\w{2,30}$",
+      "pattern": "^\\w{2,30}$"
     },
     "contract_category": {
       "type": "string",
