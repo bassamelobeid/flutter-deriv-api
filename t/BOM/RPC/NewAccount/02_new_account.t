@@ -52,7 +52,6 @@ subtest 'Initialization' => sub {
 $method = 'new_account_virtual';
 subtest $method => sub {
     $params->{args}->{client_password}   = '123';
-    $params->{args}->{email}             = $email;
     $params->{args}->{verification_code} = 'wrong token';
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PasswordError', 'If password is weak it should return error')
