@@ -2633,7 +2633,7 @@ sub _validate_start_and_expiry_date {
         my $periods = $blackout->[1];
         foreach my $period (@$periods) {
             if (first { $_ >= $period->[0] and $_ <= $period->[1] } @$epochs) {
-                push @args, @$period;
+                push @args, (Date::Utility->new($period->[0])->time_hhmmss, Date::Utility->new($period->[1])->time_hhmmss);
                 return (
                     +{
                         message => format_error_string(
