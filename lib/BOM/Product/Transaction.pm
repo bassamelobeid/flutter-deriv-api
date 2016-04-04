@@ -1092,6 +1092,12 @@ sub _build_pricing_comment {
         if ($tick) {
             push @comment_fields, (exit_spot       => $tick->quote);
             push @comment_fields, (exit_spot_epoch => $tick->epoch);
+            if ($contract->two_barriers) {
+                push @comment_fields, (high_barrier => $contract->high_barrier->as_absolute) if $contract->high_barrier;
+                push @comment_fields, (low_barrier  => $contract->low_barrier->as_absolute)  if $contract->low_barrier;
+            } else {
+                push @comment_fields, (barrier => $contract->barrier->as_absolute) if $contract->barrier;
+            }
         }
 
         my $news_factor = $contract->ask_probability->peek('news_factor');
