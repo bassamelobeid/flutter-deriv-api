@@ -22,7 +22,7 @@ sub aes_keys {
 }
 
 sub randsrv {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_CONFIG} // '/etc/rmg/randsrv.yml');
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_RAND} // '/etc/rmg/randsrv.yml');
     return $config;
 }
 
