@@ -66,6 +66,7 @@ sub get_high_low_for_contract_period {
         my $start;
         my $end = $self->date_pricing->is_after($self->date_expiry) ? $self->date_settlement : $self->date_pricing;
         if ($self->entry_tick->epoch > $end->epoch) {
+            $self->missing_market_data(1);
             $start = $end;
             $self->add_error({
                     severity => 100,

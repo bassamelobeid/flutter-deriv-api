@@ -26,6 +26,29 @@ initialize_realtime_ticks_db();
 my $client  = BOM::Platform::Client->new({loginid => 'CR2002'});
 my $account = $client->set_default_account('USD');
 my $db      = $client->set_db('write');
+my $comment_str = 'vega[-0.04668] atmf_fct[1.00000] div[0.00730] recalc[3.46000] int[0.00252] theta[1.53101] iv[0.14200] emp[2.62000] fwdst_fct[1.00000] win[5.00000] trade[3.46000] dscrt_fct[1.00000] spot[1.42080] gamma[-5.51036] delta[-0.07218] theo[2.48000] base_spread[0.39126] ia_fct[1.00000] news_fct[1.00000]';
+my $comment_hash = {
+    vega => -0.04668,
+    atmf_fct => 1.00000,
+    div => 0.00730,
+    recalc => 3.46000,
+    int => 0.00252,
+    theta => 1.53101,
+    iv => 0.14200,
+    emp => 2.62000,
+    fwdst_fct => 1.00000,
+    win => 5.00000,
+    trade => 3.46000,
+    dscrt_fct => 1.00000,
+    spot => 1.42080,
+    gamma => -5.51036,
+    delta => -0.07218,
+    theo => 2.48000,
+    base_spread => 0.39126,
+    ia_fct => 1.00000,
+    news_fct => 1.00000,
+};
+my $comment = [$comment_str, $comment_hash];
 
 subtest 'check duplicate sell with Model' => sub {
     lives_ok {
@@ -51,8 +74,7 @@ subtest 'check duplicate sell with Model' => sub {
             contract => $contract,
             client   => $client,
             price    => 3.46,
-            comment =>
-                'vega[-0.04668] atmf_fct[1.00000] div[0.00730] recalc[3.46000] int[0.00252] theta[1.53101] iv[0.14200] emp[2.62000] fwdst_fct[1.00000] win[5.00000] trade[3.46000] dscrt_fct[1.00000] spot[1.42080] gamma[-5.51036] delta[-0.07218] theo[2.48000] base_spread[0.39126] ia_fct[1.00000] news_fct[1.00000]'
+            comment => $comment,
         });
         $txn_buy->buy(skip_validation => 1);
         $txn_id = $txn_buy->transaction_id;
@@ -65,8 +87,7 @@ subtest 'check duplicate sell with Model' => sub {
             contract => $contract,
             client   => $client,
             price    => 1.95,
-            comment =>
-                'vega[-0.04490] atmf_fct[1.00000] div[0.00730] recalc[1.95000] int[0.00252] theta[1.50299] iv[0.14200] emp[5.00000] fwdst_fct[1.00000] win[5.00000] trade[1.95000] dscrt_fct[1.00000] spot[1.42320] gamma[-5.30295] delta[-1.01635] theo[2.45000] base_spread[0.39178] ia_fct[1.00000] news_fct[1.00000]',
+            comment => $comment,
             contract_id => $txn_buy->contract_id,
         });
         $txn->sell(skip_validation => 1);
@@ -107,8 +128,7 @@ subtest 'check duplicate sell with legacy line' => sub {
             contract => $contract,
             client   => $client,
             price    => 1.2,
-            comment =>
-                'vega[0.01866] atmf_fct[1.00000] div[0.00252] recalc[1.20000] int[0.00107] theta[-0.58162] iv[0.11700] emp[0.81000] fwdst_fct[1.00000] win[2.00000] trade[1.20000] dscrt_fct[1.00000] spot[77.79000] gamma[3.09117] delta[0.03579] theo[1.00000] base_spread[0.20000] ia_fct[1.00000] news_fct[1.00000]',
+            comment => $comment,
         });
         $txn_buy->buy(skip_validation => 1);
         $txn_id = $txn_buy->transaction_id;
@@ -142,8 +162,7 @@ subtest 'check duplicate sell with legacy line' => sub {
         contract => $contract,
         client   => $client,
         price    => 0,
-        comment =>
-            'vega[0.01866] atmf_fct[1.00000] div[0.00252] recalc[1.20000] int[0.00107] theta[-0.58162] iv[0.11700] emp[0.81000] fwdst_fct[1.00000] win[2.00000] trade[1.20000] dscrt_fct[1.00000] spot[77.79000] gamma[3.09117] delta[0.03579] theo[1.00000] base_spread[0.20000] ia_fct[1.00000] news_fct[1.00000]',
+        comment => $comment,
         contract_id => $txn_buy->contract_id,
     });
     my $error = $txn->sell(skip_validation => 1);

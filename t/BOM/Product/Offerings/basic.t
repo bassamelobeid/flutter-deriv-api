@@ -20,7 +20,7 @@ subtest 'get_offerings_flyby' => sub {
             sort { $a cmp $b } (
                 'barrier_category',               'contract_category',
                 'contract_type',                  'contract_display',
-                'expiry_type',                    'landing_company' , 'market',
+                'expiry_type',                    'market',
                 'exchange_name',                  'sentiment',
                 'start_type',                     'submarket',
                 'underlying_symbol',              'min_contract_duration',

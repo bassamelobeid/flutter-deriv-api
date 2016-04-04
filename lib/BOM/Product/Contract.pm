@@ -44,6 +44,11 @@ require BOM::Product::Pricing::Greeks::BlackScholes;
 
 sub is_spread { return 0 }
 
+has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
+    is      => 'ro',
+    default => undef,
+);
+
 has [qw(average_tick_count long_term_prediction)] => (
     is      => 'rw',
     default => undef,
@@ -54,13 +59,28 @@ has is_expired => (
     lazy_build => 1,
 );
 
+has missing_market_data => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0
+);
+
 has category => (
     is      => 'ro',
     isa     => 'bom_contract_category',
     coerce  => 1,
     handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers)],
-    default => sub { shift->category_code },
 );
+
+has category_code => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_category_code {
+    my $self = shift;
+    return $self->category->code;
+}
 
 has ticks_to_expiry => (
     is         => 'ro',
@@ -100,9 +120,6 @@ has date_expiry => (
     coerce   => 1,
     required => 1,
 );
-
-sub payout_type { return 'binary'; }    # Default for most contracts
-sub payouttime  { return 'end'; }
 
 #backtest - Enable optimizations for speedier back testing.  Not suitable for production.
 #tick_expiry - A boolean that indicates if a contract expires after a pre-specified number of ticks.
@@ -1267,6 +1284,7 @@ sub _build_entry_tick {
         my $max_delay   = $underlying->max_suspend_trading_feed_delay;
         my $start_delay = Time::Duration::Concise::Localize->new(interval => abs($when - $start->epoch));
         if ($start_delay->seconds > $max_delay->seconds) {
+            $self->missing_market_data(1);
             $self->add_error({
                     message => format_error_string(
                         'Entry tick too far away',
@@ -2083,6 +2101,7 @@ sub _build_exit_tick {
         my $max_delay = $underlying->max_suspend_trading_feed_delay;
         # We should not have gotten here otherwise.
         if (not $first_date->is_before($last_date)) {
+            $self->missing_market_data(1);
             $self->add_error({
                     message => format_error_string(
                         'Start tick is not before expiry tick',
@@ -2099,6 +2118,7 @@ sub _build_exit_tick {
             if (    not $self->is_path_dependent
                 and not $self->_has_ticks_before_close($exchange->closing_on($self->date_expiry)))
             {
+                $self->missing_market_data(1);
                 $self->add_error({
                         message => format_error_string(
                             'Missing ticks at close',
@@ -2109,6 +2129,7 @@ sub _build_exit_tick {
                     });
             }
         } elsif ($end_delay->seconds > $max_delay->seconds) {
+            $self->missing_market_data(1);
             $self->add_error({
                     message => format_error_string(
                         'Exit tick too far away',
@@ -2134,6 +2155,7 @@ sub _build_exit_tick {
         if ($self->tick_expiry) {
             my $actual_duration = Time::Duration::Concise->new(interval => $last_date->epoch - $first_date->epoch);
             if ($actual_duration->seconds > $self->max_tick_expiry_duration->seconds) {
+                $self->missing_market_data(1);
                 $self->add_error({
                         message => format_error_string(
                             'Tick expiry duration exceeds permitted maximum',

@@ -214,7 +214,7 @@ SKIP: {
                 # _validate_trade_pricing_adjustment() is tested in trade_validation.t
                 $mock_transaction->mock(
                     _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-                $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+                $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
                 my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->tick_expiry_engine_daily_turnover;
                 (my $fname = $class) =~ s!::!/!g;
@@ -259,7 +259,7 @@ SKIP: {
                 # _validate_trade_pricing_adjustment() is tested in trade_validation.t
                 $mock_transaction->mock(
                     _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-                $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+                $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
                 my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->tick_expiry_engine_daily_turnover;
                 (my $fname = $class) =~ s!::!/!g;
@@ -326,7 +326,7 @@ subtest 'asian_daily_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->asian_daily_turnover;
             (my $fname = $class) =~ s!::!/!g;
@@ -372,7 +372,7 @@ subtest 'asian_daily_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->asian_daily_turnover;
             (my $fname = $class) =~ s!::!/!g;
@@ -444,7 +444,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit  => sub { note "mocked Transaction->_validate_stake_limit returning nothing";  () });
             $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note "mocked quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} returning 149.99";
             BOM::Platform::Static::Config::quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} = 149.99;
@@ -493,7 +493,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit  => sub { note "mocked Transaction->_validate_stake_limit returning nothing";  () });
             $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note "mocked quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} returning 150";
             BOM::Platform::Static::Config::quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} = 150;
@@ -556,7 +556,7 @@ subtest 'smartfx_turnover_limit', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note "mocked BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit}->{USD} returning 149.99";
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
@@ -607,7 +607,7 @@ subtest 'smartfx_turnover_limit', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
             (my $fname = $class) =~ s!::!/!g;
@@ -673,7 +673,7 @@ subtest 'spreads', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->spreads_daily_profit;
             (my $fname = $class) =~ s!::!/!g;
@@ -726,7 +726,7 @@ subtest 'spreads', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->spreads_daily_profit;
             (my $fname = $class) =~ s!::!/!g;
