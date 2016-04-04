@@ -50,7 +50,7 @@ sub entry_point {
 
     if (not $c->stash->{redis}) {
         state $url = do {
-            my $cf = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_CONFIG} || '/etc/rmg/chronicle.yml')->{read};
+            my $cf = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} || '/etc/rmg/chronicle.yml')->{read};
             defined($cf->{password})
                 ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
                 : "redis://$cf->{host}:$cf->{port}";
