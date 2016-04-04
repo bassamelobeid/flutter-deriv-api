@@ -296,9 +296,9 @@ sub sell_expired_contracts {
             try {
                 if ($bet->is_valid_to_sell) {
                     BOM::Product::Transaction::sell_expired_contracts({
-                        client => $client,
+                        client       => $client,
                         contract_ids => [$fmb_id],
-                        source => 'riskd_autosell',
+                        source       => 'riskd_autosell',
                         only_expired => 1,
                     });
 
