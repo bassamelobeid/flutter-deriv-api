@@ -2,12 +2,16 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Mojo;
+use Test::MockModule;
 use BOM::System::Password;
 use BOM::Platform::User;
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Database::Model::OAuth;
+
+my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
+$email_mocked->mock('send_email', sub { return 1 });
 
 ## init
 my $oauth = BOM::Database::Model::OAuth->new;
@@ -56,18 +60,6 @@ $t = $t->get_ok("/authorize?app_id=XXX");
 $t->json_like('/error_description', qr/valid app_id/);
 
 $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
-
-# my $token = BOM::Platform::SessionCookie->new(
-#     loginid => $cr_1,
-#     email   => $email,
-# )->token;
-# $t->ua->cookie_jar->add(
-#     Mojo::Cookie::Response->new(
-#         name   => 'login',
-#         value  => $token,
-#         domain => $t->tx->req->url->host,
-#         path   => '/'
-#     ));
 
 my $csrftoken = $t->tx->res->dom->at('input[name=csrftoken]')->val;
 ok $csrftoken, 'csrftoken is there';
