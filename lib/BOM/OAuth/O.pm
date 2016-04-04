@@ -93,7 +93,8 @@ sub authorize {
 
     ## if app_id=binarycom and referer is binary.com, we do not show the scope confirm screen
     if ($app_id eq 'binarycom' and not $is_all_approved) {
-        my $referer = $c->req->headers->header('Referer') // '';
+        my $r           = $c->stash('request');
+        my $referer     = $c->req->headers->header('Referer') // '';
         my $domain_name = $r->domain_name;
         if (index($referer, $domain_name) > -1) {
             $is_all_approved = 1;
