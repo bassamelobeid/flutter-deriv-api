@@ -12,7 +12,7 @@ use BOM::Product::Offerings qw(get_offerings_flyby get_offerings_with_filter);
 
 my @expected_lc   = qw(japan-virtual fog costarica maltainvest japan malta iom);
 my %expected_type = (
-    'japan-virtual' => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUTE', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISSE'],
+    'japan-virtual' => ['CALLE', 'NOTOUCH', 'ONETOUCH', 'PUT', 'RANGE', 'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
     fog             => [
         'ASIAND',   'ASIANU',    'CALL',       'DIGITDIFF',  'DIGITEVEN',   'DIGITMATCH',
         'DIGITODD', 'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',
@@ -24,7 +24,7 @@ my %expected_type = (
         'ONETOUCH', 'PUT',       'RANGE',      'SPREADD',    'SPREADU',     'UPORDOWN'
     ],
     maltainvest => ['CALL',  'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH', 'ONETOUCH', 'PUT',      'RANGE',        'UPORDOWN'],
-    japan       => ['CALLE', 'NOTOUCH',    'ONETOUCH',    'PUTE',    'RANGE',    'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISSE'],
+    japan       => ['CALLE', 'NOTOUCH',    'ONETOUCH',    'PUT',    'RANGE',    'UPORDOWN', 'EXPIRYRANGEE', 'EXPIRYMISS'],
     malta       => [
         'ASIAND',   'ASIANU',    'CALL',       'DIGITDIFF',  'DIGITEVEN',   'DIGITMATCH',
         'DIGITODD', 'DIGITOVER', 'DIGITUNDER', 'EXPIRYMISS', 'EXPIRYRANGE', 'NOTOUCH',
