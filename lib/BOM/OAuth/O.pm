@@ -89,6 +89,15 @@ sub authorize {
         }
     }
 
+    ## if app_id=binarycom and referer is binary.com, we do not show the scope confirm screen
+    if ($app_id eq 'binarycom' and not $is_all_approved) {
+        my $referer = $c->req->headers->header('Referer') // '';
+        my $domain_name = $r->domain_name;
+        if (index($referer, $domain_name) > -1) {
+            $is_all_approved = 1;
+        }
+    }
+
     ## check if it's confirmed
     $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid);
     unless ($is_all_approved) {
