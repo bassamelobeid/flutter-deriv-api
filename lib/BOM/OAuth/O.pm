@@ -110,19 +110,32 @@ sub authorize {
     if ($session_token) {
         my $session = BOM::Platform::SessionCookie->new({token => $session_token});
         if ($session->have_multiple_sessions) {
-            send_email({
-                    from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                    to      => $session->email,
-                    subject => localize('New Sign-In Activity Detected'),
-                    message => [
-                        localize(
-                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                            $session->email,
-                            $c->stash('request')->client_ip
-                        )
-                    ],
-                    use_email_template => 1,
-                });
+            my $last_login = $user->get_last_login_history_record;
+
+            if ($last_login and exists $last_login->{environment}) {
+                my $current_env = __get_details_from_environment($c->__login_env());
+                my $old_env     = __get_details_from_environment($last_login->{environment});
+
+                my ($old_ip) = $old_env->{ip} =~ /(^(\d{1,3}\.){2})/;
+                my ($new_ip) = $current_env->{ip} =~ /(^(\d{1,3}\.){2})/;
+
+                if ($old_ip ne $new_ip or $old_env->{country} ne $current_env->{country} or $old_env->{user_agent} ne $current_env->{country}) {
+                    send_email({
+                            from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                            to      => $session->email,
+                            subject => localize('New Sign-In Activity Detected'),
+                            message => [
+                                localize(
+                                    'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
+                                    $session->email,
+                                    $c->stash('request')->client_ip,
+                                    $current_env->{country},
+                                    $current_env->{user_agent})
+                            ],
+                            use_email_template => 1,
+                        });
+                }
+            }
         }
     }
 
@@ -303,6 +316,25 @@ sub __bad_request {
     my ($c, $error) = @_;
 
     return $c->throw_error('invalid_request', $error);
+}
+
+sub __get_details_from_environment {
+    my $env = shift;
+
+    return unless $env;
+
+    my ($ip) = $env =~ /(IP=(\d{1,3}\.){3}\d{1,3})/i;
+    $ip =~ s/IP=//i;
+    my ($country) = $env =~ /(IP_COUNTRY=\w{1,2})/i;
+    $country =~ s/IP_COUNTRY=//i;
+    my ($user_agent) = $env =~ /(User_AGENT.+(?=\sLANG))/i;
+    $user_agent =~ s/User_AGENT=//i;
+
+    return {
+        ip         => $ip,
+        country    => uc $country,
+        user_agent => $user_agent
+    };
 }
 
 1;
