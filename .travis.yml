@@ -11,7 +11,9 @@ addons:
     postgresql: "9.3"
 cache: apt
 before_install:
-    - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/evostrov/travis-scripts /tmp/travis-scripts
+    - (cd /tmp/travis-scripts && git checkout evgeniy/separate_redis_test_db)
+    # - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - dpkg -l | grep postgres
     - pg_lsclusters
     - /tmp/travis-scripts/fixHostName.sh
