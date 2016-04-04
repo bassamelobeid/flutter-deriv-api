@@ -1713,7 +1713,12 @@ sub sell_expired_contracts {
                     staff_loginid => 'AUTOSELL',
                     source        => $source,
                     };
-                push @quants_bet_variables, undef;
+                #empty list for virtual
+                my $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+                    data_object_params => {},
+                });
+
+                push @quants_bet_variables, $quants_bet_variables;
             } else {
                 $stats_failure{$logging_class}{_normalize_error($contract->primary_validation_error)}++;
             }
