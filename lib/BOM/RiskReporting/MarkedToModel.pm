@@ -37,8 +37,8 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Model::Constants;
 use DataDog::DogStatsd::Helper qw (stats_inc stats_timing stats_count);
 use BOM::Platform::Client;
-use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Utility::CurrencyConverter qw (in_USD);
+use BOM::Product::Transaction;
 
 # This report will only be run on the MLS.
 sub generate {
@@ -295,24 +295,12 @@ sub sell_expired_contracts {
         } else {
             try {
                 if ($bet->is_valid_to_sell) {
-                    BOM::Database::Helper::FinancialMarketBet->new({
-                            transaction_data => {
-                                staff_loginid => 'AUTOSELL',
-                            },
-                            bet_data => {
-                                id         => $fmb_id,
-                                sell_price => $bet->bid_price,
-                                sell_time  => $bet->date_pricing->db_timestamp,
-                            },
-                            account_data => {
-                                client_loginid => $client_id,
-                                currency_code  => $currency
-                            },
-                            db => BOM::Database::ClientDB->new({
-                                    client_loginid => $client_id,
-                                }
-                            )->db,
-                        })->sell_bet;
+                    BOM::Product::Transaction::sell_expired_contracts({
+                        client => $client,
+                        contract_ids => [$fmb_id],
+                        source => 'riskd_autosell',
+                        only_expired => 1,
+                    });
 
                     stats_inc("transaction.sell.success", $stats_data->{tags});
                     if ($rmgenv eq 'production' and $stats_data->{virtual} eq 'no') {
