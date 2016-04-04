@@ -16,6 +16,7 @@ use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::System::RedisReplicated;
 use Sereal::Encoder;
+use BOM::Platform::Runtime;
 
 sub trading_times {
     my $params = shift;
@@ -157,7 +158,9 @@ sub active_symbols {
         $landing_company_name = $client->landing_company->short if $client;
     }
 
-    my $key = join('::', ('legal_allowed_markets', $params->{args}->{active_symbols}, $params->{language}, $landing_company_name));
+    my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
+    my $key =
+        join('::', ('legal_allowed_markets', $params->{args}->{active_symbols}, $params->{language}, $landing_company_name, $appconfig_revision));
 
     my $active_symbols;
     if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($key)
