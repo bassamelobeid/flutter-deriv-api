@@ -38,7 +38,7 @@ sub redis_read {
 }
 
 sub _config {
-    return YAML::XS::LoadFile(($ENV{BOM_TEST_CONFIG_DIR} // '/etc/rmg') . '/redis-replicated.yml');
+    return YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml');
 }
 
 1;
