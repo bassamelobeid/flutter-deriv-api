@@ -62,8 +62,6 @@ sub confirm_scope {
 sub is_scope_confirmed {
     my ($self, $app_id, $loginid) = @_;
 
-    return 1 if $app_id eq 'binarycom';    # our app is all confirmed
-
     my ($confirmed_scopes) = $self->dbh->selectrow_array("
         SELECT true FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
     ", undef, $app_id, $loginid);
