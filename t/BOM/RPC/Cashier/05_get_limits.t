@@ -33,7 +33,7 @@ my %deposit = (
 );
 
 subtest 'CR' => sub {
-    my $email       = 'raunak@binary.com';
+    my $email  = 'raunak@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
@@ -87,7 +87,7 @@ subtest 'CR' => sub {
 
         $expected_result->{withdrawal_for_x_days_monetary}      = to_monetary_number_format($withdraw_amount, 1);
         $expected_result->{withdrawal_since_inception_monetary} = to_monetary_number_format($withdraw_amount, 1);
-        $expected_result->{remainder}                           = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
+        $expected_result->{remainder} = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -123,7 +123,7 @@ subtest 'CR' => sub {
 };
 
 subtest 'JP' => sub {
-    my $email       = 'test-jp@binary.com';
+    my $email  = 'test-jp@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'JP',
     });
@@ -167,7 +167,7 @@ subtest 'JP' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = to_monetary_number_format($withdraw_amount, 1);
         $expected_result->{'withdrawal_since_inception_monetary'} = to_monetary_number_format($withdraw_amount, 1);
-        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
+        $expected_result->{'remainder'} = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -190,7 +190,7 @@ subtest 'JP' => sub {
 };
 
 subtest 'MLT' => sub {
-    my $email       = 'test-mlt@binary.com';
+    my $email  = 'test-mlt@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MLT',
     });
@@ -233,7 +233,7 @@ subtest 'MLT' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = to_monetary_number_format($withdraw_amount, 1);
         $expected_result->{'withdrawal_since_inception_monetary'} = to_monetary_number_format($withdraw_amount, 1);
-        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
+        $expected_result->{'remainder'} = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -256,7 +256,7 @@ subtest 'MLT' => sub {
 };
 
 subtest 'MX' => sub {
-    my $email       = 'test-mlt@binary.com';
+    my $email  = 'test-mlt@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MX',
     });
@@ -299,7 +299,7 @@ subtest 'MX' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = to_monetary_number_format($withdraw_amount, 1);
         $expected_result->{'withdrawal_since_inception_monetary'} = to_monetary_number_format($withdraw_amount, 1);
-        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->limit_for_days - $withdraw_amount);
+        $expected_result->{'remainder'} = roundnear(0.01, $limits->limit_for_days - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
