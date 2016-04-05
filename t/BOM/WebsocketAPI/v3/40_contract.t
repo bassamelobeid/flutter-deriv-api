@@ -52,10 +52,10 @@ test_schema('proposal', $proposal);
 sleep 1;
 $t = $t->send_ok({
         json => {
-            buy   => 1,
-            price => $proposal->{proposal}->{ask_price}
+            buy        => 1,
+            price      => $proposal->{proposal}->{ask_price},
+            parameters => \%contractParameters,
         },
-        parameters => \%contractParameters,
     });
 
 ## skip proposal until we meet buy
