@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 
-use Test::More qw/tests 15/;
 use Test::Deep;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
