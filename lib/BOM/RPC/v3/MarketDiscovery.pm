@@ -16,6 +16,7 @@ use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::System::RedisReplicated;
 use Sereal::Encoder;
+use BOM::Platform::Runtime;
 
 sub trading_times {
     my $params = shift;
@@ -150,14 +151,15 @@ sub active_symbols {
     my $params = shift;
 
     my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
-    if ($params->{token}
-        and my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token}))
-    {
-        my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+
+    if ($params->{token} and my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token})) {
+        my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
         $landing_company_name = $client->landing_company->short if $client;
     }
 
-    my $key = join('::', ('legal_allowed_markets', $params->{args}->{active_symbols}, $params->{language}, $landing_company_name));
+    my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
+    my $key =
+        join('::', ('legal_allowed_markets', $params->{args}->{active_symbols}, $params->{language}, $landing_company_name, $appconfig_revision));
 
     my $active_symbols;
     if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($key)
