@@ -139,6 +139,7 @@ sub authorize {
         }
     }
 
+    delete $c->session->{__is_app_approved};
     my $uri = Mojo::URL->new($redirect_uri);
 
     ## create tokens for all loginids
