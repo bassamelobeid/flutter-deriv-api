@@ -96,7 +96,7 @@ sub get_loginid_by_access_token {
         UPDATE oauth.access_token
         SET last_used=NOW(), expires=?
         WHERE access_token = ? AND expires > NOW()
-        RETURNING loginid
+        RETURNING loginid, creation_time
     ", undef, $expires_time, $token);
 }
 
