@@ -100,13 +100,13 @@ if (exists $res->{proposal_open_contract}) {
     test_schema('proposal_open_contract', $res);
 }
 
-$t = $t->send_ok({
-        json => {
-            buy        => 1,
-            price      => $proposal->{proposal}->{ask_price},
-            parameters => \%contractParameters,
-        },
-    });
+# $t = $t->send_ok({
+#         json => {
+#             buy        => 1,
+#             price      => $proposal->{proposal}->{ask_price},
+#             parameters => \%contractParameters,
+#         },
+#     });
 
 # sleep 1;
 # ## skip proposal until we meet buy
