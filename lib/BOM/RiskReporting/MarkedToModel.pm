@@ -298,8 +298,6 @@ sub sell_expired_contracts {
                     BOM::Product::Transaction::sell_expired_contracts({
                         client       => $client,
                         contract_ids => [$fmb_id],
-                        source       => 'riskd_autosell',
-                        only_expired => 1,
                     });
 
                     stats_inc("transaction.sell.success", $stats_data->{tags});
