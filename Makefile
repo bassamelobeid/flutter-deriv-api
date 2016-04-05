@@ -10,4 +10,4 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 unit_test:
- 	prove --timer -It -rl t
+	prove --timer -l -I./t -r t/
