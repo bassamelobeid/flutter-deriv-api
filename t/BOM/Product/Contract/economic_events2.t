@@ -61,7 +61,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 event_name   => 'Unemployment Rate',
             }
         ],
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
     },
 );
 
