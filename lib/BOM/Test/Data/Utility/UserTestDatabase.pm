@@ -3,7 +3,8 @@ package BOM::Test::Data::Utility::UserTestDatabase;
 use MooseX::Singleton;
 
 sub _db_name {
-    return 'users';
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    return 'users' . $db_postfix;
 }
 
 sub _db_migrations_dir {
@@ -13,7 +14,7 @@ sub _db_migrations_dir {
 sub _build__connection_parameters {
     my $self = shift;
     return {
-        database => 'users',
+        database => $self->_db_name,
         domain   => 'TEST',
         driver   => 'Pg',
         host     => 'localhost',

@@ -13,7 +13,8 @@ use base qw( Exporter );
 our @EXPORT_OK = qw( setup_ticks );
 
 sub _db_name {
-    return 'feed';
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    return "feed$db_postfix";
 }
 
 sub _db_migrations_dir {
@@ -21,8 +22,9 @@ sub _db_migrations_dir {
 }
 
 sub _build__connection_parameters {
+    my $self = shift;
     return {
-        database => 'feed',
+        database => $self->_db_name,
         driver   => 'Pg',
         host     => 'localhost',
         port     => '5433',
@@ -52,12 +54,13 @@ sub truncate_tables {
 }
 
 sub setup_ticks {
-    my $file      = shift;
-    my $feed_file = '/home/git/regentmarkets/bom-test/feed/combined/' . $file;
-
+    my $file       = shift;
+    my $feed_file  = '/home/git/regentmarkets/bom-test/feed/combined/' . $file;
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    my $db         = 'feed' . $db_postfix;
     my $command;
     $command = "PGPASSWORD=mRX1E3Mi00oS8LG";
-    $command .= " /usr/lib/postgresql/9.1/bin/pg_restore -d feed";
+    $command .= " /usr/lib/postgresql/9.1/bin/pg_restore -d $db";
     $command .= " -Fc -a -p 5433";
     $command .= " -U write";
     $command .= " -h localhost ";
@@ -167,7 +170,9 @@ sub _create_table_for_date {
     my $table_present = $stmt->fetchrow_arrayref;
 
     if ($table_present->[0] < 1) {
-        my $dbh = DBI->connect('dbi:Pg:dbname=feed;host=localhost;port=5433', 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
+        my $db_postfix = $ENV{DB_POSTFIX} // '';
+        my $db         = 'feed' . $db_postfix;
+        my $dbh        = DBI->connect("dbi:Pg:dbname=$db;host=localhost;port=5433", 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
 
         # This operation is bound to raise an warning about how index was created.
         # We can ignore it.
