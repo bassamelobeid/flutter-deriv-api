@@ -23,7 +23,6 @@ subtest 'tuesday to friday close' => sub {
 
     foreach my $now (map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [Date::Utility->new($_)->epoch, Date::Utility->new($_)] } keys $data) {
         my $surface_data = $data->{$now->datetime}{surface_data};
-        print $surface_data ."\n";
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
             {
@@ -42,7 +41,6 @@ subtest 'tuesday to friday close' => sub {
             epoch      => $now->epoch,
             quote      => 118.290,
         });
-        print $tick  ."\n";
         my $c = produce_contract({
             bet_type     => 'ONETOUCH',
             underlying   => 'frxUSDJPY',
@@ -54,7 +52,6 @@ subtest 'tuesday to friday close' => sub {
             date_start   => $now,
             date_pricing => $now,
         });
-        print $c  ."\n";
 
         is $c->ask_probability->amount, $data->{$now->datetime}{ask_probability}, 'ask_probability';
         is $c->timeindays->amount,      $data->{$now->datetime}{timeindays},      'timeindays';
