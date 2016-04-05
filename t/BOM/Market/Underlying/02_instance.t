@@ -638,10 +638,10 @@ subtest 'max_suspend_trading_feed_delay' => sub {
     my %expectations = (
         'frxEURUSD' => 300,
         'frxBROUSD' => 300,
-        'AS51'      => 90,
-        'USAAPL'    => 120,
-        'R_100'     => 60,
-        'RDBULL'    => 60,
+        'AS51'      => 300,
+        'USAAPL'    => 300,
+        'R_100'     => 300,
+        'RDBULL'    => 300,
     );
 
     foreach my $ul (map { BOM::Market::Underlying->new($_) } (keys %expectations)) {
