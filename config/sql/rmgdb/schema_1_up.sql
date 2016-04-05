@@ -1695,7 +1695,7 @@ CREATE TRIGGER trig_ensure_fmb_id_exists
   ON quants_bet_variables
   FOR EACH ROW
   EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
-COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON transaction.transaction IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
+COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON quants_bet_variables IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
 
 ALTER TABLE ONLY quants_bet_variables
     ADD CONSTRAINT fk_quants_bet_variables_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction.transaction(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
