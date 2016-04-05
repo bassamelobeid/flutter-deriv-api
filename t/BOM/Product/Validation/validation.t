@@ -1344,7 +1344,7 @@ subtest 'contract must be held' => sub {
     my $c = produce_contract($args);
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like(($c->primary_validation_error)[0]->{message}, qr/Contract not held long/, 'contract not held long enough');
-    $args->{date_pricing} = $oft_used_date->epoch + 61;
+    $args->{date_pricing} = $oft_used_date->epoch + 301;
     $c = produce_contract($args);
     ok !$c->is_valid_to_sell, 'valid to sell';
 
