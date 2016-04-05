@@ -242,18 +242,10 @@ sub __validate_login {
     my $user = BOM::Platform::User->new({email => $email})
         or return localize('Invalid email and password combination.');
 
-    my $environment = $c->__login_env();
-    my $result      = $user->login(
+    my $result = $user->login(
         password    => $password,
-        environment => $environment,
+        environment => $c->__login_env(),
     );
-
-    $user->add_login_history({
-        action      => 'login',
-        environment => $environment,
-        successful  => ($result->{error}) ? 'f' : 't'
-    });
-
     return $result->{error} if $result->{error};
 
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
