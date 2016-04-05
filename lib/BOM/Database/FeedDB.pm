@@ -25,7 +25,8 @@ sub write_dbh {
 }
 
 sub any_event_connection_str {
-    return 'host=/var/run/postgresql port=6433 dbname=feed-replica user=read';
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    return "host=/var/run/postgresql port=6433 dbname=feed-replica$db_postfix user=read";
 }
 
 1;
