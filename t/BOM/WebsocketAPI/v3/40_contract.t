@@ -67,8 +67,8 @@ while (1) {
     my $res = decode_json($t->message->[1]);
     note explain $res;
     next if $res->{msg_type} eq 'proposal';
-
-    ok $res->{buy};
+    use Data::Dumper;
+    ok $res->{buy}, Dumper($res);
     ok $res->{buy}->{contract_id};
     ok $res->{buy}->{purchase_time};
 
