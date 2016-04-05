@@ -2483,33 +2483,35 @@ sub _validate_trading_times {
                 start  => $self->date_start->datetime
             ),
             message_to_client => $message . " " . localize("Try out the Random Indices which are always open.")};
-    } elsif ($self->is_intraday and not $exchange->is_open_at($self->date_expiry)) {
-        my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
-        push @errors,
-            {
-            message => format_error_string(
-                'underlying closed at expiry',
-                symbol => $underlying->symbol,
-                expiry => $self->date_expiry->datetime
-            ),
-            message_to_client => localize("Contract must expire during trading hours."),
-            info_link         => $times_link,
-            info_text         => localize('Trading Times'),
-            };
+    } elsif ($self->is_intraday) {
+        if (not $exchange->is_open_at($self->date_expiry)) {
+            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
+            push @errors,
+                {
+                message => format_error_string(
+                    'underlying closed at expiry',
+                    symbol => $underlying->symbol,
+                    expiry => $self->date_expiry->datetime
+                ),
+                message_to_client => localize("Contract must expire during trading hours."),
+                info_link         => $times_link,
+                info_text         => localize('Trading Times'),
+                };
+        } elsif ($underlying->intradays_must_be_same_day and $exchange->closing_on($self->date_start)->epoch < $self->date_expiry->epoch) {
+            push @errors,
+                {
+                message           => format_error_string('Intraday duration must expire on same day', symbol => $underlying->symbol),
+                message_to_client => localize(
+                    'Contracts on [_1] with durations under 24 hours must expire on the same trading day.',
+                    $underlying->translated_display_name()
+                ),
+                };
+        }
     } elsif (not $exchange->trades_on($self->date_expiry)) {
         push @errors,
             {
             message           => format_error_string('Exchange is closed on expiry date', expiry => $self->date_expiry->date),
             message_to_client => localize("The contract must expire on a trading day."),
-            };
-    } elsif ($underlying->intradays_must_be_same_day and $exchange->closing_on($self->date_start)->epoch < $self->date_expiry->epoch) {
-        push @errors,
-            {
-            message           => format_error_string('Intraday duration must expire on same day', symbol => $underlying->symbol),
-            message_to_client => localize(
-                'Contracts on [_1] with durations under 24 hours must expire on the same trading day.',
-                $underlying->translated_display_name()
-            ),
             };
     } elsif ($self->expiry_daily and not $self->date_expiry->is_same_as($exchange->closing_on($self->date_expiry))) {
         push @errors,
@@ -2549,7 +2551,8 @@ sub _build_date_start_blackouts {
     my $end_of_trading = $exchange->closing_on($start);
     if ($end_of_trading) {
         if ($self->is_intraday) {
-            my $eod_blackout = $self->tick_expiry ? $self->max_tick_expiry_duration : $underlying->eod_blackout_start;
+            my $eod_blackout =
+                ($self->tick_expiry and $underlying->resets_at_open) ? $self->max_tick_expiry_duration : $underlying->eod_blackout_start;
             push @periods, [$end_of_trading->minus_time_interval($eod_blackout)->epoch, $end_of_trading->epoch] if $eod_blackout;
         }
 
@@ -2621,16 +2624,15 @@ sub _validate_start_and_expiry_date {
     my $start_epoch     = $self->effective_start->epoch;
     my $end_epoch       = $self->date_expiry->epoch;
     my @blackout_checks = (
-        [[$start_epoch], $self->date_start_blackouts],
-        [[$end_epoch],   $self->date_expiry_blackouts],
-        [[$start_epoch, $end_epoch], $self->market_risk_blackouts],
+        [[$start_epoch], $self->date_start_blackouts,  "Trading is not available for [_1] from [_2] to [_3]"],
+        [[$end_epoch],   $self->date_expiry_blackouts, "Contracts on [_1] may not expire between [_2] and [_3]"],
+        [[$start_epoch, $end_epoch], $self->market_risk_blackouts, "Trading is not available for [_1] from [_2] to [_3]"],
     );
 
     my @args = ($self->underlying->translated_display_name);
 
     foreach my $blackout (@blackout_checks) {
-        my $epochs  = $blackout->[0];
-        my $periods = $blackout->[1];
+        my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];
         foreach my $period (@$periods) {
             if (first { $_ >= $period->[0] and $_ <= $period->[1] } @$epochs) {
                 push @args, (Date::Utility->new($period->[0])->time_hhmmss, Date::Utility->new($period->[1])->time_hhmmss);
@@ -2642,7 +2644,7 @@ sub _validate_start_and_expiry_date {
                             from   => $period->[0],
                             to     => $period->[1],
                         ),
-                        message_to_client => localize("Trading is not available for [_1] from [_2] to [_3]", @args),
+                        message_to_client => localize($message_to_client, @args),
                     });
             }
         }
