@@ -318,9 +318,10 @@ sub get_contract_by_id {
     my $contract_id = shift;
 
     my $sql = q{
-        SELECT fmb.*
+        SELECT fmb.*, t.id as buy_id
         FROM
             bet.financial_market_bet fmb
+            JOIN transaction.transaction t on t.financial_market_bet_id=fmb.id
         WHERE
             fmb.id = ?
     };
