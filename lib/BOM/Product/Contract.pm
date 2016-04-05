@@ -91,6 +91,13 @@ sub _build_ticks_to_expiry {
     return shift->tick_count + 1;
 }
 
+# This is needed to determine if a contract is newly priced
+# or it is repriced from an existing contract.
+# Milliseconds matters since UI is reacting much faster now.
+has _date_pricing_milliseconds => (
+    is => 'rw',
+);
+
 has [qw(date_start date_settlement date_pricing effective_start)] => (
     is         => 'ro',
     isa        => 'bom_date_object',
@@ -107,7 +114,9 @@ has duration => (is => 'ro');
 
 sub _build_date_pricing {
     my $self = shift;
-    my $now  = Date::Utility->new;
+    my $time = Time::HiRes::time();
+    $self->_date_pricing_milliseconds($time);
+    my $now = Date::Utility->new($time);
 
     return ($self->has_pricing_new and $self->pricing_new)
         ? $self->date_start
@@ -648,7 +657,10 @@ sub _build_current_tick {
 sub _build_pricing_new {
     my $self = shift;
 
-    return ($self->date_pricing->is_after($self->date_start)) ? 0 : 1;
+    # do not use $self->date_pricing here because milliseconds matters!
+    # _date_pricing_milliseconds will not be set if date_pricing is not built.
+    my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
+    return ($time > $self->date_start->epoch) ? 0 : 1;
 }
 
 sub _build_timeinyears {
@@ -723,9 +735,11 @@ sub _build_opposite_bet {
     }
 
     # We should be looking to move forward in time to a bet starting now.
-    if (not $self->pricing_new and $self->entry_tick) {
-        foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-            $build_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
+    if (not $self->pricing_new) {
+        if ($self->entry_tick) {
+            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                $build_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
+            }
         }
         $build_parameters{date_start} = $self->date_pricing;
     }
@@ -2412,7 +2426,8 @@ sub _validate_start_date {
     # Contracts must be held for a minimum duration before resale.
     if (my $orig_start = $self->build_parameters->{_original_date_start}) {
         # Does not apply to unstarted forward-starting contracts
-        if ($when->is_after($orig_start)) {
+        my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
+        if ($time > $orig_start->epoch) {
             my $minimum_hold = Time::Duration::Concise::Localize->new(
                 interval => '1m',
                 locale   => BOM::Platform::Context::request()->language
