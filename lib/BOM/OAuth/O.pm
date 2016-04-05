@@ -58,9 +58,8 @@ sub authorize {
         $client = $c->__get_client;
     }
 
-    # set session before render login
-    my $__is_app_approved = $c->session('__is_app_approved');
-    if ($app_id eq 'binarycom' and not defined $__is_app_approved) {
+    # set session on first page visit (GET)
+    if ($app_id eq 'binarycom' and $c->req->method eq 'GET') {
         my $r           = $c->stash('request');
         my $referer     = $c->req->headers->header('Referer') // '';
         my $domain_name = $r->domain_name;
@@ -105,7 +104,7 @@ sub authorize {
     }
 
     ## if app_id=binarycom and referer is binary.com, we do not show the scope confirm screen
-    if ($app_id eq 'binarycom' and $__is_app_approved) {
+    if ($app_id eq 'binarycom' and $c->session('__is_app_approved')) {
         $is_all_approved = 1;
     }
 
