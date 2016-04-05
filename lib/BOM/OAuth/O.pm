@@ -58,6 +58,19 @@ sub authorize {
         $client = $c->__get_client;
     }
 
+    # set session before render login
+    my $__is_app_approved = $c->session('__is_app_approved');
+    if ($app_id eq 'binarycom' and not defined $__is_app_approved) {
+        my $r           = $c->stash('request');
+        my $referer     = $c->req->headers->header('Referer') // '';
+        my $domain_name = $r->domain_name;
+        if (index($referer, $domain_name) > -1) {
+            $c->session('__is_app_approved' => 1);
+        } else {
+            $c->session('__is_app_approved' => 0);
+        }
+    }
+
     ## check user is logined
     unless ($client) {
         ## show login form
@@ -92,15 +105,7 @@ sub authorize {
     }
 
     ## if app_id=binarycom and referer is binary.com, we do not show the scope confirm screen
-    my $__is_app_approved = $c->session('__is_app_approved');
-    if ($app_id eq 'binarycom' and not defined $__is_app_approved) {
-        my $r           = $c->stash('request');
-        my $referer     = $c->req->headers->header('Referer') // '';
-        my $domain_name = $r->domain_name;
-        if (index($referer, $domain_name) > -1) {
-            $c->session('__is_app_approved' => 1);
-        }
-    } elsif ($app_id eq 'binarycom' and $__is_app_approved) {
+    if ($app_id eq 'binarycom' and $__is_app_approved) {
         $is_all_approved = 1;
     }
 
