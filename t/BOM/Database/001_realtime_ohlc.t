@@ -6,7 +6,6 @@ use Test::More;
 use Test::Deep;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-
 my $dbh = BOM::Database::FeedDB::write_dbh();
 
 my $p = "1.1,1.1,1.1,1.1";
