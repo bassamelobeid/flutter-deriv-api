@@ -118,10 +118,15 @@ sub authorize {
                     my $current_env = __get_details_from_environment($c->__login_env());
                     my $old_env     = __get_details_from_environment($last_login->{environment});
 
+                    # need to compare first two octet only
                     my ($old_ip) = $old_env->{ip} =~ /(^(\d{1,3}\.){2})/;
                     my ($new_ip) = $current_env->{ip} =~ /(^(\d{1,3}\.){2})/;
 
-                    if ($old_ip ne $new_ip or $old_env->{country} ne $current_env->{country} or $old_env->{user_agent} ne $current_env->{country}) {
+                    if ((
+                               $old_ip ne $new_ip
+                            or $old_env->{country} ne $current_env->{country})
+                        and $old_env->{user_agent} ne $current_env->{country})
+                    {
                         send_email({
                                 from    => BOM::Platform::Static::Config::get_customer_support_email(),
                                 to      => $session->email,
