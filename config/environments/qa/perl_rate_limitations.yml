@@ -22,3 +22,6 @@ websocket_call_email:
 websocket_real_pricing:
     1m: 240
     1h: 14400
+websocket_reality_check:
+    2m: 1
+    1h: 30
