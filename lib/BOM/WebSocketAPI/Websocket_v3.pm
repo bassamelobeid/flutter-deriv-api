@@ -237,6 +237,7 @@ my @dispatch = (
     ['set_account_currency',     \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency,     1, 'admin'],
     ['set_financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_financial_assessment, 1, 'admin'],
     ['get_financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_financial_assessment, 1, 'admin'],
+    ['reality_check',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::reality_check,            1, 'read'],
 
     ['verify_email', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0],
     [
@@ -341,6 +342,7 @@ my %rate_limit_map = (
     verify_email_real              => 'websocket_call_email',
     buy_real                       => 'websocket_real_pricing',
     sell_real                      => 'websocket_real_pricing',
+    reality_check_real             => 'websocket_reality_check',
     ping_virtual                   => '',
     time_virtual                   => '',
     portfolio_virtual              => 'websocket_call_expensive',
