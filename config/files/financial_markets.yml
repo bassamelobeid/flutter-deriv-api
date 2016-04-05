@@ -198,7 +198,7 @@ stocks:
             UPORDOWN: 40
             ONETOUCH: 40
             NOTOUCH: 40
-random:
+volidx:
     display_current_spot: 1
     suspicious_move: 0.5
     outlier_tick: 0.10
