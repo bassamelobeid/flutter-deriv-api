@@ -40,7 +40,13 @@ $t = $t->send_ok({
         json => {
             "proposal"  => 1,
             "subscribe" => 1,
-            %contractParameters
+            "amount"        => "10",
+            "basis"         => "payout",
+            "contract_type" => "CALL",
+            "currency"      => "USD",
+            "symbol"        => "R_50",
+            "duration"      => "2",
+            "duration_unit" => "m",
         }});
 BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 $t->message_ok;
