@@ -5,14 +5,14 @@ virtual_sell_transaction:
     1m:  20
     1h: 750
 virtual_batch_sell:
-    1m:  10                 # Excessive use of this service indicates an attempt to stay "at the limit"
+    1m:  10
     1h: 300
 websocket_call:
     1m:  240
     1h: 14400
 websocket_call_expensive:
-    1m: 20
-    1h: 1200
+    1m: 60
+    1h: 3600
 websocket_call_pricing:
     1m: 60
     1h: 3600
