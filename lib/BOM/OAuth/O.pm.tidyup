@@ -115,10 +115,8 @@ sub authorize {
                 my $last_login = $user->get_last_login_history_record;
 
                 if ($last_login and exists $last_login->{environment}) {
-                    my ($old_env, $user_agent, $r) = (
-                        __get_details_from_environment($last_login->{environment}),
-                        $c->req->headers->header('User-Agent') // '',
-                        $c->stash('request'));
+                    my ($old_env, $user_agent, $r) =
+                            (__get_details_from_environment($last_login->{environment}), $c->req->headers->header('User-Agent') // '', $c->stash('request'));
 
                     # need to compare first two octet only
                     my ($old_ip, $new_ip, $country_code) = ($old_env->{ip}, $r->client_ip // '', uc($r->country_code // ''));
@@ -135,8 +133,10 @@ sub authorize {
                                 message => [
                                     localize(
                                         'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                                        $session->email, $r->client_ip, $country_code, $user_agent
-                                    )
+                                        $session->email,
+                                        $r->client_ip,
+                                        $country_code,
+                                        $user_agent)
                                 ],
                                 use_email_template => 1,
                             });
