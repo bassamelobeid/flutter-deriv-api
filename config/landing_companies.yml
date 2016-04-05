@@ -259,8 +259,8 @@
       - touchnotouch
     legal_allowed_contract_types:
       - CALLE
-      - PUTE
-      - EXPIRYMISSE
+      - PUT
+      - EXPIRYMISS
       - EXPIRYRANGEE
       - RANGE
       - UPORDOWN
@@ -293,8 +293,8 @@
       - touchnotouch
     legal_allowed_contract_types:
       - CALLE
-      - PUTE
-      - EXPIRYMISSE
+      - PUT
+      - EXPIRYMISS
       - EXPIRYRANGEE
       - RANGE
       - UPORDOWN
