@@ -102,6 +102,7 @@ $t = $t->send_ok({
         },
     });
 
+sleep 1;
 ## skip proposal until we meet buy
 while (1) {
     $t = $t->message_ok;
