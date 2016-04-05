@@ -85,7 +85,7 @@
 "/get-started/how-to-trade-binaries":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/get-started/random-markets":
+"/get-started/volidx-markets":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/get-started/types-of-trades":
