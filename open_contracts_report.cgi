@@ -126,8 +126,6 @@ my @fields = qw(
 local $\ = "\n";
 my $filename = File::Temp->new(SUFFIX => '.csv')->filename;
 
-print "filename [$filename]...\n\n";
-
 open my $fh, '>:utf8', $filename;
 print $fh join(',', @fields);
 
