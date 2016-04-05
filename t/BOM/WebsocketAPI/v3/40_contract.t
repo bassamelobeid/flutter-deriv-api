@@ -102,21 +102,21 @@ $t = $t->send_ok({
         },
     });
 
-sleep 1;
-## skip proposal until we meet buy
-while (1) {
-    $t = $t->message_ok;
-    my $res = decode_json($t->message->[1]);
-    note explain $res;
-    next if $res->{msg_type} eq 'proposal';
+# sleep 1;
+# ## skip proposal until we meet buy
+# while (1) {
+#     $t = $t->message_ok;
+#     my $res = decode_json($t->message->[1]);
+#     note explain $res;
+#     next if $res->{msg_type} eq 'proposal';
 
-    ok $res->{buy};
-    ok $res->{buy}->{contract_id};
-    ok $res->{buy}->{purchase_time};
+#     ok $res->{buy};
+#     ok $res->{buy}->{contract_id};
+#     ok $res->{buy}->{purchase_time};
 
-    test_schema('buy', $res);
-    last;
-}
+#     test_schema('buy', $res);
+#     last;
+# }
 
 $t->finish_ok;
 
