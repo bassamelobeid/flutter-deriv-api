@@ -52,30 +52,6 @@ test_schema('proposal', $proposal);
 sleep 1;
 $t = $t->send_ok({
         json => {
-            buy        => 1,
-            price      => $proposal->{proposal}->{ask_price},
-            parameters => \%contractParameters,
-        },
-    });
-
-## skip proposal until we meet buy
-while (1) {
-    $t = $t->message_ok;
-    my $res = decode_json($t->message->[1]);
-    note explain $res;
-    next if $res->{msg_type} eq 'proposal';
-
-    ok $res->{buy};
-    ok $res->{buy}->{contract_id};
-    ok $res->{buy}->{purchase_time};
-
-    test_schema('buy', $res);
-    last;
-}
-
-sleep 1;
-$t = $t->send_ok({
-        json => {
             buy   => $proposal->{proposal}->{id},
             price => $proposal->{proposal}->{ask_price}}});
 
@@ -116,6 +92,29 @@ my $res = decode_json($t->message->[1]);
 if (exists $res->{proposal_open_contract}) {
     ok $res->{proposal_open_contract}->{contract_id};
     test_schema('proposal_open_contract', $res);
+}
+
+$t = $t->send_ok({
+        json => {
+            buy        => 1,
+            price      => $proposal->{proposal}->{ask_price},
+            parameters => \%contractParameters,
+        },
+    });
+
+## skip proposal until we meet buy
+while (1) {
+    $t = $t->message_ok;
+    my $res = decode_json($t->message->[1]);
+    note explain $res;
+    next if $res->{msg_type} eq 'proposal';
+
+    ok $res->{buy};
+    ok $res->{buy}->{contract_id};
+    ok $res->{buy}->{purchase_time};
+
+    test_schema('buy', $res);
+    last;
 }
 
 $t->finish_ok;
