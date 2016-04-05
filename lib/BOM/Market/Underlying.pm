@@ -2100,6 +2100,17 @@ sub get_applicable_corporate_actions_for_period {
     return @valid_actions;
 }
 
+has resets_at_open => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_resets_at_open {
+    my $self = shift;
+
+    return $self->submarket->resets_at_open;
+}
+
 no Moose;
 
 __PACKAGE__->meta->make_immutable(
