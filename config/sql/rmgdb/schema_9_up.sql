@@ -39,10 +39,10 @@ ALTER TABLE ONLY bet.bet_dictionary
                                'spread_bet')) IS TRUE
         );
 
-ALTER TABLE ONLY bet.financial_market_bet
+ALTER TABLE bet.financial_market_bet
     DROP CONSTRAINT IF EXISTS pk_check_bet_class_value;
 
-ALTER TABLE ONLY bet.financial_market_bet
+ALTER TABLE bet.financial_market_bet
     ADD CONSTRAINT pk_check_bet_class_value
         CHECK (
                (bet_class IN ('higher_lower_bet',
@@ -54,10 +54,10 @@ ALTER TABLE ONLY bet.financial_market_bet
                               'spread_bet')) IS TRUE
         ) NOT VALID;
 
-ALTER TABLE ONLY bet.financial_market_bet
+ALTER TABLE bet.financial_market_bet
     DROP CONSTRAINT IF EXISTS basic_validation;
 
-ALTER TABLE ONLY bet.financial_market_bet
+ALTER TABLE bet.financial_market_bet
     ADD CONSTRAINT basic_validation
         CHECK (
            (
@@ -79,7 +79,7 @@ ALTER TABLE ONLY bet.financial_market_bet
            ) IS TRUE
         ) NOT VALID;
 
-ALTER TABLE ONLY bet.financial_market_bet
+ALTER TABLE bet.financial_market_bet
    DROP CONSTRAINT IF EXISTS pk_check_bet_params_payout_price;
 
 CREATE TRIGGER prevent_action BEFORE DELETE ON bet.spread_bet
