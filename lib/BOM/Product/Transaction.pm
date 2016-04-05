@@ -1219,6 +1219,12 @@ sub _build_pricing_comment {
         if ($tick) {
             push @comment_fields, (exit_spot       => $tick->quote);
             push @comment_fields, (exit_spot_epoch => $tick->epoch);
+            if ($contract->two_barriers) {
+                push @comment_fields, (high_barrier => $contract->high_barrier->as_absolute) if $contract->high_barrier;
+                push @comment_fields, (low_barrier  => $contract->low_barrier->as_absolute)  if $contract->low_barrier;
+            } else {
+                push @comment_fields, (barrier => $contract->barrier->as_absolute) if $contract->barrier;
+            }
         }
 
         my $news_factor = $contract->ask_probability->peek('news_factor');
@@ -1943,7 +1949,12 @@ sub sell_expired_contracts {
                     staff_loginid => 'AUTOSELL',
                     source        => $source,
                     };
-                push @quants_bet_variables, undef;
+                #empty list for virtual
+                my $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
+                    data_object_params => {},
+                });
+
+                push @quants_bet_variables, $quants_bet_variables;
             } else {
                 $stats_failure{$logging_class}{_normalize_error($contract->primary_validation_error)}++;
             }
