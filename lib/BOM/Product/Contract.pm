@@ -2051,89 +2051,15 @@ sub _build_exit_tick {
     }
 
     if ($exit_tick and my $entry_tick = $self->entry_tick) {
-        my ($first_date, $last_date) = map { Date::Utility->new($_) } ($entry_tick->epoch, $exit_tick->epoch);
-        my $max_delay = $underlying->max_suspend_trading_feed_delay;
-        # We should not have gotten here otherwise.
-        if (not $first_date->is_before($last_date)) {
-            $self->missing_market_data(1);
-            $self->add_error({
-                    message => format_error_string(
-                        'Start tick is not before expiry tick',
-                        symbol => $underlying->symbol,
-                        start  => $first_date->datetime,
-                        expiry => $last_date->datetime
-                    ),
-                    message_to_client => localize("Missing market data for contract period."),
-                });
-        }
-        my $end_delay = Time::Duration::Concise->new(interval => $self->date_expiry->epoch - $last_date->epoch);
+        if ($entry_tick->epoch >= $exit_tick->epoch) {
+            #exit tick must be after entry tick
+        } elsif ($exit_tick->epoch > $self->date_expiry->epoch) {
+            # exit tick is after expiry
 
-        if ($self->expiry_daily and not $underlying->use_official_ohlc) {
-            if (    not $self->is_path_dependent
-                and not $self->_has_ticks_before_close($exchange->closing_on($self->date_expiry)))
-            {
-                $self->missing_market_data(1);
-                $self->add_error({
-                        message => format_error_string(
-                            'Missing ticks at close',
-                            symbol => $underlying->symbol,
-                            expiry => $self->date_expiry->datetime
-                        ),
-                        message_to_client => localize("Missing market data for exit spot."),
-                    });
-            }
-        } elsif ($end_delay->seconds > $max_delay->seconds) {
-            $self->missing_market_data(1);
-            $self->add_error({
-                    message => format_error_string(
-                        'Exit tick too far away',
-                        symbol    => $underlying->symbol,
-                        delay     => $end_delay->as_concise_string,
-                        permitted => $max_delay->as_concise_string,
-                        expiry    => $self->date_expiry->datetime
-                    ),
-                    message_to_client => localize("Missing market data for exit spot."),
-                });
-        }
-        if (not $self->expiry_daily and $underlying->intradays_must_be_same_day and $exchange->trading_days_between($first_date, $last_date)) {
-            $self->add_error({
-                    message => format_error_string(
-                        'Exit tick date differs from entry tick date on intraday',
-                        symbol => $underlying->symbol,
-                        start  => $last_date->datetime,
-                        expiry => $first_date->datetime,
-                    ),
-                    message_to_client => localize("Intraday contracts may not cross market open."),
-                });
-        }
-        if ($self->tick_expiry) {
-            my $actual_duration = Time::Duration::Concise->new(interval => $last_date->epoch - $first_date->epoch);
-            if ($actual_duration->seconds > $self->max_tick_expiry_duration->seconds) {
-                $self->missing_market_data(1);
-                $self->add_error({
-                        message => format_error_string(
-                            'Tick expiry duration exceeds permitted maximum',
-                            symbol    => $underlying->symbol,
-                            actual    => $actual_duration->as_concise_string,
-                            permitted => $self->max_tick_expiry_duration->as_concise_string
-                        ),
-                        message_to_client => localize("Missing market data for contract period."),
-                    });
-            }
         }
     }
 
     return $exit_tick;
-}
-
-sub _has_ticks_before_close {
-    my ($self, $closing) = @_;
-
-    my $underlying = $self->underlying;
-
-    my $closing_tick = $underlying->tick_at($closing->epoch, {allow_inconsistent => 1});
-
-    return (defined $closing_tick and $closing->epoch - $closing_tick->epoch > $underlying->max_suspend_trading_feed_delay->seconds) ? 0 : 1;
 }
 
 # Validation methods.
