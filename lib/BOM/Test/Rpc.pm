@@ -62,8 +62,8 @@ sub restart_rpc{
         die "Oops... Couldn't start redis-server: $!";
       }
   waitpid $pid, 0;
-  Net::EmptyPort::wait_port(6385, 10);
-  #unlink '/tmp/redis.cfg';
+  Net::EmptyPort::wait_port($cfg->{port}, 10);
+  #unlink $cfg->{config_file};
 
   return;
 
