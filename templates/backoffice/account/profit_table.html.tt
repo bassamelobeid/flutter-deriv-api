@@ -12,7 +12,7 @@
     [% IF contract.is_sold %]
         [% ident = contract.txn_id %]
     [% ELSE %]
-        [% ident = contract.buy_id %]
+        [% ident = contract.transaction_id %]
     [% END %]
     <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
         <div class="grd-grid-2">[% contract.purchase_date.datetime %]</div>
