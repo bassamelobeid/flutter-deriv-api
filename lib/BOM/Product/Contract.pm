@@ -2051,11 +2051,17 @@ sub _build_exit_tick {
     }
 
     if ($exit_tick and my $entry_tick = $self->entry_tick) {
+        my $message_to_client = localize("Missing market data for exit spot.");
         if ($entry_tick->epoch >= $exit_tick->epoch) {
-            #exit tick must be after entry tick
+            $self->add_errors({
+                message           => 'exit tick is before entry tick',
+                message_to_client => $message_to_client,
+            });
         } elsif ($exit_tick->epoch > $self->date_expiry->epoch) {
-            # exit tick is after expiry
-
+            $self->add_errors({
+                message           => 'exit tick is after contract expiry',
+                message_to_client => $message_to_client,
+            });
         }
     }
 
