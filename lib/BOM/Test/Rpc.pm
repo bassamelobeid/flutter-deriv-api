@@ -13,6 +13,7 @@ BEGIN {
 }
 
 sub start_rpc_if_not_running{
+  return unless $ENV{RPC_URL};
   my $rpc_port = (split /:/, $ENV{RPC_URL})[-1];
   return check_port($rpc_port) || restart_rpc();
 }
