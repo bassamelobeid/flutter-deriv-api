@@ -29,8 +29,9 @@ BEGIN {
     if ($environment =~ /^qa/) {
         ## no critic (RequireLocalizedPunctuationVars)
         $ENV{DB_POSTFIX} = '_test';
-        $ENV{RPC_URL}    = 'http://127.0.0.1:5006/';
     }
+
+    $ENV{RPC_URL}    = 'http://127.0.0.1:5006/';
 }
 
 1;
