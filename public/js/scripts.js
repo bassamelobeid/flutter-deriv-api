@@ -45,7 +45,7 @@ function validate() {
 }
 
 function validateEmail() {
-    return validateField(txtEmail, new RegExp(/^\w+([\+\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,4})+$/));
+    return validateField(txtEmail, new RegExp(/^\w+([\+\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,63})+$/));
 }
 
 function validatePass() {
