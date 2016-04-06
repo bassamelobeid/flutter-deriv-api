@@ -222,6 +222,7 @@ sub produce_contract {
                 }
                 $input_params{date_expiry} = Date::Utility->new($expiry);
             }
+            delete $input_params{duration};
         }
         $input_params{date_start}  //= 1;    # Error conditions if it's not legacy or run, I guess.
         $input_params{date_expiry} //= 1;
