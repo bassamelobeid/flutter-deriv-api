@@ -59,12 +59,6 @@ has is_expired => (
     lazy_build => 1,
 );
 
-has missing_market_data => (
-    is      => 'rw',
-    isa     => 'Bool',
-    default => 0
-);
-
 has category => (
     is      => 'ro',
     isa     => 'bom_contract_category',
@@ -1249,7 +1243,6 @@ sub _build_entry_tick {
     if ($entry_tick) {
         my $when = $entry_tick->epoch;
         if ($when < $entry_epoch or $when > $exit_epoch) {
-            $self->missing_market_data(1);
             $self->add_error({
                     message => format_error_string(
                         'Entry tick too far away',
