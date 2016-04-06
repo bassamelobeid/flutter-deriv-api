@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Exception;
 use Test::NoWarnings;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -18,15 +18,21 @@ my $now = Date::Utility->new('10-Mar-2015');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol        => $_,
         recorded_date => $now,
-    }) for qw(USD JPY AUD CAD JPY-USD AUD-USD);
+        symbol        => $_,
+    }) for qw( USD JPY JPY-USD );
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        recorded_date => $now->plus_time_interval('1s'),
+        symbol        => $_,
+    }) for qw( USD AUD CAD-AUD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(frxUSDJPY frxAUDCAD);
+    }) for qw (frxUSDJPY frxAUDCAD frxUSDCAD frxAUDUSD);
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch
@@ -235,7 +241,7 @@ $args = {
     bet_type     => 'CALL',
     underlying   => 'frxAUDCAD',
     date_start   => $now,
-    date_pricing => $now + 1,
+    date_pricing => $now->plus_time_interval('1s'),
     duration     => '10m',
     currency     => 'USD',
     payout       => 10,
@@ -249,9 +255,10 @@ subtest 'pips size changes' => sub {
         is $c->code,               'CALL';
         ok $c->is_intraday,        'is intraday';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-        cmp_ok $c->barrier->as_absolute, 'eq', 0.99360, 'correct absolute barrier';
-        cmp_ok $c->entry_tick->quote, 'eq', 0.99360, 'correct entry tick';
-        cmp_ok $c->ask_price, 'eq', 0.5, 'correct ask price';
+        cmp_ok $c->barrier->as_absolute, 'eq', '0.99360', 'correct absolute barrier (it will be pipsized) ';
+        cmp_ok $c->entry_tick->quote, 'eq', '0.9936', 'correct entry tick';
+        cmp_ok $c->current_spot, 'eq', '0.99360', 'correct current spot (it will be pipsized)';
+        cmp_ok $c->ask_price, '==', '5.3', 'correct ask price';
         $args->{date_pricing} = $now->plus_time_interval('10m');
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxAUDCAD',
@@ -268,7 +275,7 @@ subtest 'pips size changes' => sub {
         ok $c->exit_tick,  'has exit tick';
         ok $c->exit_tick->quote > $c->barrier->as_absolute;
         cmp_ok $c->value, '==', $c->payout, 'full payout';
-        cmp_ok $c->exit_tick->quote, 'eq', 0.99390, 'correct exit tick';
+        cmp_ok $c->exit_tick->quote, 'eq', '0.9939', 'correct exit tick';
 
     }
     'variable checking';
