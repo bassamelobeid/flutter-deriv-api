@@ -70,6 +70,7 @@ sub start_rpc {
 
 sub stop_rpc {
     my $cfg   = config();
+    return unless $cfg->{url};
     my $pfile = path($cfg->{pid_file});
 
     if ($pfile->exists) {
