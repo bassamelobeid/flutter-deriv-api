@@ -249,8 +249,8 @@ subtest 'pips size changes' => sub {
         is $c->code,               'CALL';
         ok $c->is_intraday,        'is intraday';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-        cmp_ok $c->barrier->as_absolute, '==', 0.99360, 'correct absolute barrier';
-        cmp_ok $c->entry_tick, '==', 0.99360, 'correct entry tick';
+        cmp_ok $c->barrier->as_absolute, 'eq', 0.99360, 'correct absolute barrier';
+        cmp_ok $c->entry_tick, 'eq', 0.99360, 'correct entry tick';
 
         $args->{date_pricing} = $now->plus_time_interval('10m');
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -268,7 +268,7 @@ subtest 'pips size changes' => sub {
         ok $c->exit_tick,  'has exit tick';
         ok $c->exit_tick->quote > $c->barrier->as_absolute;
         cmp_ok $c->value, '==', $c->payout, 'full payout';
-        cmp_ok $c->exit_tick, '==', 0.99390, 'correct exit tick';
+        cmp_ok $c->exit_tick, 'eq', 0.99390, 'correct exit tick';
 
     }
     'variable checking';
