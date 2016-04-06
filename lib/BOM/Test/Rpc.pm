@@ -86,7 +86,7 @@ sub stop_rpc {
             unlink $cfg->{config_file};
         }
     }
-
+    return;
 }
 
 sub wait_till_exit {
