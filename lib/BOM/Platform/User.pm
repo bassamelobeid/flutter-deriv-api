@@ -141,7 +141,10 @@ sub get_last_login_history_record {
     my $self = shift;
 
     my $login_history = $self->find_login_history(
-        query   => [action => 'login'],
+        query => [
+            action     => 'login',
+            successful => 't'
+        ],
         sort_by => 'history_date desc',
         limit   => 1
     );
