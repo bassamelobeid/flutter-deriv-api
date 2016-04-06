@@ -2541,16 +2541,6 @@ sub _validate_start_date {
 
     }
 
-    if ($self->tick_expiry && $self->underlying->market->name ne 'random') {
-        my $tick_expiry_blackout = $self->date_pricing->truncate_to_day->plus_time_interval('20h');
-        if ($self->date_start->is_after($tick_expiry_blackout)) {
-            push @errors,
-                {
-                message           => 'Tick Expiry Blackout',
-                message_to_client => localize("This contract is only available between 00:00:00 GMT to 20:00:00 GMT."),
-                };
-        }
-    }
 
     if ($self->is_intraday and not $self->is_atm_bet and $self->underlying->market->name eq 'forex') {
         my $start_epoch = $self->effective_start->epoch;
