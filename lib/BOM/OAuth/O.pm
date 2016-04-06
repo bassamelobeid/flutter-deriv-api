@@ -145,7 +145,7 @@ sub authorize {
 sub __login {
     my ($c, $app) = @_;
 
-    my ($err, $email, $password) = (undef, $c->params('email'), $c->param('password'));
+    my ($err, $email, $password) = (undef, $c->param('email'), $c->param('password'));
 
     if (not $email or not Email::Valid->address($email)) {
         $err = localize('Email not given.');
