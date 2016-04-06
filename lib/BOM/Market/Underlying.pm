@@ -1023,7 +1023,7 @@ sub interest_rate_for {
 
     # list of markets that have zero rate
     my %zero_rate = (
-        random => 1,
+        volidx => 1,
     );
 
     my $rate;
