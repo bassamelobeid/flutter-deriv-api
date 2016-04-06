@@ -242,9 +242,9 @@ SQL
 sub _dbh {
     #silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
     return if not defined _config()->{chronicle};
-
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
     state $dbh = DBI->connect_cached(
-        "dbi:Pg:dbname=chronicle;port=6432;host=/var/run/postgresql",
+        "dbi:Pg:dbname=chronicle$db_postfix;port=6432;host=/var/run/postgresql",
         "write", '',
         {
             RaiseError => 1,
