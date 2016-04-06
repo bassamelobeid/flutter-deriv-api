@@ -1062,6 +1062,34 @@ sub is_valid_to_buy {
     return ($self->built_with_bom_parameters) ? $valid : $self->_report_validation_stats('buy', $valid);
 }
 
+sub _check_entry_and_exit_ticks {
+    my $self = shift;
+
+    my $message_to_client = 'The buy price of this contract has been refunded due to missing market data.';
+    if (not $self->entry_tick) {
+        return +{
+            message           => 'entry tick is undefined',
+            message_to_client => $message_to_client,
+        };
+    }
+
+    if (not $self->exit_tick) {
+        return +{
+            message           => 'exit tick is undefined',
+            message_to_client => $message_to_client,
+        };
+    }
+
+    if ($self->entry_tick->epoch == $self->exit_tick->epoch) {
+        return +{
+            message           => 'only one tick throughout contract period',
+            message_to_client => $message_to_client,
+        };
+    }
+
+    return;
+}
+
 sub is_valid_to_sell {
     my $self = shift;
 
@@ -1073,7 +1101,10 @@ sub is_valid_to_sell {
         return 0;
     }
 
-    if (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
+    if ($self->is_expired) {
+        my $error = $self->_check_entry_and_exit_ticks;
+        $self->add_error($error) if $error;
+    } elsif (not $self->opposite_bet->is_valid_to_buy) {
         # Their errors are our errors, now!
         $self->add_error($self->opposite_bet->primary_validation_error);
     }
@@ -1236,27 +1267,9 @@ sub _build_entry_tick {
 
     my $underlying  = $self->underlying;
     my $entry_epoch = $self->date_start->epoch;
-    my $exit_epoch  = $self->date_expiry->epoch;
+
     # when will we decide to use next tick for forward starting contracts!
-    my $entry_tick = $self->is_forward_starting ? $self->underlying->tick_at($entry_epoch) : $self->underlying->next_tick_after($entry_epoch);
-
-    if ($entry_tick) {
-        my $when = $entry_tick->epoch;
-        if ($when < $entry_epoch or $when > $exit_epoch) {
-            $self->add_error({
-                    message => format_error_string(
-                        'Entry tick too far away',
-                        symbol    => $underlying->symbol,
-                        tick_time => $when,
-                        start     => $entry_epoch,
-                        exit      => $exit_epoch,
-                    ),
-                    message_to_client => localize("Missing market data for entry spot."),
-                });
-        }
-    }
-
-    return $entry_tick;
+    return $self->is_forward_starting ? $self->underlying->tick_at($entry_epoch) : $self->underlying->next_tick_after($entry_epoch);
 }
 
 # End of builders.
@@ -2041,21 +2054,6 @@ sub _build_exit_tick {
         $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
     } else {
         $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
-    }
-
-    if ($exit_tick and my $entry_tick = $self->entry_tick) {
-        my $message_to_client = localize("Missing market data for exit spot.");
-        if ($entry_tick->epoch == $exit_tick->epoch) {
-            $self->add_error({
-                message           => 'entry tick is the same as exit tick',
-                message_to_client => $message_to_client,
-            });
-        } elsif ($exit_tick->epoch > $self->date_expiry->epoch) {
-            $self->add_error({
-                message           => 'exit tick is after contract expiry',
-                message_to_client => $message_to_client,
-            });
-        }
     }
 
     return $exit_tick;
