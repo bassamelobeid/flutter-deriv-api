@@ -8,9 +8,6 @@ use Path::Tiny;
 use Net::EmptyPort qw( check_port );
 use Time::HiRes qw( usleep );
 
-BEGIN {
-  start_rpc_if_not_running();
-}
 
 sub start_rpc_if_not_running{
   return unless $ENV{RPC_URL};
@@ -42,3 +39,10 @@ EOC
 
 print $config;
 }
+
+BEGIN {
+  start_rpc_if_not_running();
+}
+
+
+1;
