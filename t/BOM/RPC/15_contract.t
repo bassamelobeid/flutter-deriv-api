@@ -40,7 +40,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol => $_,
-        date   => $now
+        recorded_date   => $now
     }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
@@ -425,7 +425,7 @@ subtest $method => sub {
         language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
-        currency    => $client->currency,
+        currency    => 'USD',
         is_sold     => 1,
     };
     $c->call_ok('get_bid', $params)->has_no_error->result_is_deeply({
