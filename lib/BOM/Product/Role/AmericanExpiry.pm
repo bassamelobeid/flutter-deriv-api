@@ -11,7 +11,7 @@ sub _build_is_expired {
     my ($barrier, $barrier2) =
         $self->two_barriers ? ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute) : ($self->barrier->as_absolute);
     my $spot = $self->entry_spot;
-    if ($spot == $barrier or ($barrier2 and $spot == $barrier2)) {
+    if ($spot and ($spot == $barrier or ($barrier2 and $spot == $barrier2))) {
         $self->add_error({
             alert             => 1,
             severity          => 100,

@@ -147,14 +147,9 @@ has basis_tick => (
 sub _build_basis_tick {
     my $self = shift;
 
-    # Getting basis tick can be tricky when we have feed outage or empty cache.
-    # We will have to give our best guess sometimes.
-    my $basis_tick =
-          ($self->entry_tick)   ? $self->entry_tick
-        : ($self->current_tick) ? $self->current_tick
-        :                         $self->underlying->tick_at(Date::Utility->new->epoch, {allow_inconsistent => 1});
+    my $basis_tick = ($self->built_with_bom_parameters) ? $self->entry_tick : $self->current_tick;
 
-    # if there's no tick in our system, don't die
+    # if there's no basis tick, don't die but catch the error.
     unless ($basis_tick) {
         $basis_tick = BOM::Market::Data::Tick->new({
             quote  => $self->underlying->pip_size,
@@ -371,20 +366,6 @@ has built_with_bom_parameters => (
     default => 0,
 );
 
-=item require_entry_tick_for_sale
-
-A Boolean which expresses whether we can give a best effort guess or if we
-need the correct price for sale. Defaults to false, should be set true for real
-transactions.
-
-=cut
-
-has require_entry_tick_for_sale => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => undef,
-);
-
 =item max_tick_expiry_duration
 
 A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
@@ -397,26 +378,6 @@ has max_tick_expiry_duration => (
     default => '5m',
     coerce  => 1,
 );
-
-=item hold_for_entry_tick
-
-A TimeInterval which expresses how long we should wait for an entry tick.  If set to 0, we can
-proceed without getting the entry_tick.
-
-=cut
-
-has hold_for_entry_tick => (
-    is         => 'ro',
-    isa        => 'bom_time_interval',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
-sub _build_hold_for_entry_tick {
-    my $self = shift;
-
-    return ($self->built_with_bom_parameters && $self->require_entry_tick_for_sale) ? '15s' : '0s';
-}
 
 has [qw(pricing_args)] => (
     is         => 'ro',
@@ -645,7 +606,7 @@ sub _build_current_spot {
 sub _build_entry_spot {
     my $self = shift;
 
-    return ($self->entry_tick) ? $self->entry_tick->quote : $self->current_spot;
+    return ($self->entry_tick) ? $self->entry_tick->quote : undef;
 }
 
 sub _build_current_tick {
@@ -1276,50 +1237,30 @@ sub _build_shortcode {
 sub _build_entry_tick {
     my $self = shift;
 
-    my $underlying = $self->underlying;
+    # entry tick if never defined if it is a newly priced contract.
+    return if $self->pricing_new;
 
-    $self->hold_for_entry_tick;
-    my $hold_seconds = $self->hold_for_entry_tick->seconds;
-    my $start = ($hold_seconds) ? $self->effective_start : $self->date_start;
-    my $entry_tick;
-
-    if ($hold_seconds or not $self->pricing_new) {
-        my $entry_time = $start->epoch;
-        my $hold_time  = time + $hold_seconds;
-        do {
-            if   ($self->is_forward_starting) { $entry_tick = $self->underlying->tick_at($entry_time); }
-            else                              { $entry_tick = $self->underlying->next_tick_after($entry_time); }
-        } while (not $entry_tick and sleep(0.5) and time <= $hold_time);
-
-    }
+    my $underlying  = $self->underlying;
+    my $entry_epoch = $self->date_start->epoch;
+    my $exit_epoch  = $self->date_expiry->epoch;
+    # when will we decide to use next tick for forward starting contracts!
+    my $entry_tick = $self->is_forward_starting ? $self->underlying->tick_at($entry_epoch) : $self->underlying->next_tick_after($entry_epoch);
 
     if ($entry_tick) {
-        my $when        = $entry_tick->epoch;
-        my $max_delay   = $underlying->max_suspend_trading_feed_delay;
-        my $start_delay = Time::Duration::Concise::Localize->new(interval => abs($when - $start->epoch));
-        if ($start_delay->seconds > $max_delay->seconds) {
+        my $when = $entry_tick->epoch;
+        if ($when < $entry_epoch or $when > $exit_epoch) {
             $self->missing_market_data(1);
             $self->add_error({
                     message => format_error_string(
                         'Entry tick too far away',
-                        symbol    => $self->underlying->symbol,
-                        delay     => $start_delay->as_concise_string,
-                        permitted => $max_delay->as_concise_string,
-                        start     => $start->datetime,
+                        symbol    => $underlying->symbol,
+                        tick_time => $when,
+                        start     => $entry_epoch,
+                        exit      => $exit_epoch,
                     ),
                     message_to_client => localize("Missing market data for entry spot."),
                 });
         }
-    } elsif ($hold_seconds) {
-        $self->add_error({
-                message => format_error_string(
-                    'No entry tick within limit',
-                    limit  => $self->hold_for_entry_tick->as_string,
-                    start  => $start->datetime,
-                    symbol => $self->underlying->symbol,
-                ),
-                message_to_client => localize("Prevailing market price cannot be determined."),
-            });
     }
 
     return $entry_tick;
@@ -1525,9 +1466,8 @@ sub _build_vol_at_strike {
 sub pricing_spot {
     my $self = shift;
 
-    # Use the entry_tick if we're supposed to wait for it.
-    # This will usually happen in a sell-back transaction and reflect the spot at the time of that transaction.
-    my $initial_spot = ($self->hold_for_entry_tick->seconds && $self->entry_tick) ? $self->entry_tick->quote : $self->current_spot;
+    # always use current spot to price for sale or buy.
+    my $initial_spot = $self->current_spot;
 
     if (not $initial_spot) {
         # If we could not get the correct spot to price, we will take the latest available spot at pricing time.
