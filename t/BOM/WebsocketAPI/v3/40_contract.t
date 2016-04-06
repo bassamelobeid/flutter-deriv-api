@@ -27,26 +27,17 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';
 
-my %contractParameters = (
-    "amount"        => "10",
-    "basis"         => "payout",
-    "contract_type" => "CALL",
-    "currency"      => "USD",
-    "symbol"        => "R_50",
-    "duration"      => "2",
-    "duration_unit" => "m",
-);
 $t = $t->send_ok({
         json => {
-            "proposal"  => 1,
-            "subscribe" => 1,
+            "proposal"      => 1,
+            "subscribe"     => 1,
             "amount"        => "10",
             "basis"         => "payout",
             "contract_type" => "CALL",
             "currency"      => "USD",
             "symbol"        => "R_50",
             "duration"      => "2",
-            "duration_unit" => "m",
+            "duration_unit" => "m"
         }});
 BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 $t->message_ok;
@@ -67,8 +58,8 @@ while (1) {
     my $res = decode_json($t->message->[1]);
     note explain $res;
     next if $res->{msg_type} eq 'proposal';
-    use Data::Dumper;
-    ok $res->{buy}, Dumper($res);
+
+    ok $res->{buy};
     ok $res->{buy}->{contract_id};
     ok $res->{buy}->{purchase_time};
 
@@ -99,30 +90,6 @@ if (exists $res->{proposal_open_contract}) {
     ok $res->{proposal_open_contract}->{contract_id};
     test_schema('proposal_open_contract', $res);
 }
-
-# $t = $t->send_ok({
-#         json => {
-#             buy        => 1,
-#             price      => $proposal->{proposal}->{ask_price},
-#             parameters => \%contractParameters,
-#         },
-#     });
-
-# sleep 1;
-# ## skip proposal until we meet buy
-# while (1) {
-#     $t = $t->message_ok;
-#     my $res = decode_json($t->message->[1]);
-#     note explain $res;
-#     next if $res->{msg_type} eq 'proposal';
-
-#     ok $res->{buy};
-#     ok $res->{buy}->{contract_id};
-#     ok $res->{buy}->{purchase_time};
-
-#     test_schema('buy', $res);
-#     last;
-# }
 
 $t->finish_ok;
 
