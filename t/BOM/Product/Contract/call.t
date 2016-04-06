@@ -256,7 +256,7 @@ subtest 'pips size changes' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxAUDCAD',
             epoch      => $now->epoch + 599,
-            quote      => 0.9938,
+            quote      => 0.9939,
         });
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'frxAUDCAD',
