@@ -86,8 +86,8 @@ cmp_deeply(_r('HASEXTRA'), {id=>4, underlying=>'HASEXTRA', ts=>2, ohlc=>"60:$p;1
 # Check if setting fake_aggretation_tick will bypass the notification
 $dbh->begin_work;
 $dbh->do('SET LOCAL feed.fake_aggregation_tick=true');
-$dbh->do("SELECT tick_notify('HASEXTRA', 3, CAST(5.1 as DOUBLE PRECISION))");
-cmp_deeply(_r('HASEXTRA'), {id=>4, underlying=>'HASEXTRA', ts=>2, ohlc=>"60:$p;120:$p;180:$p;300:$p;600:$p;900:$p;1800:$p;3600:$p;7200:$p;14400:$p;28800:$p;86400:$p;"}, "Even if we remove granuality still result must be all valid removing the extra in next call (extra begin 5)");
+my $res = $dbh->selectall_arrayref("SELECT tick_notify('HASEXTRA', 1, 1)");
+is($res->[0]->[0], undef , "If it is fake tick notification must stay off")
 $dbh->commit;
 
 sub _r {

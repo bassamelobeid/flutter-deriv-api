@@ -37,7 +37,7 @@ $tick_notify$
     my $fake_tick;
     eval {
         $fake = spi_exec_query("SELECT current_setting('feed.fake_aggregation_tick')::BOOLEAN", 1);
-        if ($fake->{rows}[0]->{current_setting}) {
+        if ($fake->{rows}[0]->{current_setting} eq 't') {
             $fake_tick=1;
         }
     };
