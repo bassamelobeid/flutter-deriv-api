@@ -137,7 +137,7 @@ sub loginid_list_cookie_val {
     return $self->{_cookie_val};
 }
 
-sub get_last_login_history_record {
+sub get_last_successful_login_history {
     my $self = shift;
 
     my $login_history = $self->find_login_history(

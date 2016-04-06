@@ -236,6 +236,9 @@ subtest 'User Login' => sub {
         $client_vr->save;
         $status = $user->login(%pass);
         is $status->{success}, 1, 'login successfully';
+        my $login_history = get_last_successful_login_history();
+        is $login_history->{action}, 'login', 'correct login history action';
+        is $login_history->{status}, 1,       'correct login history status';
     };
 
     subtest 'Suspend All logins' => sub {
@@ -252,6 +255,9 @@ subtest 'User Login' => sub {
         $status = $user->login(password => 'mRX1E3Mi00oS8LG');
         ok !$status->{success}, 'Bad password; cannot login';
         ok $status->{error} =~ /Incorrect email or password/;
+        my $login_history = get_last_successful_login_history();
+        is $login_history->{action}, 'login', 'correct login history action';
+        is $login_history->{status}, 1,       'correct login history status';
     };
 
     subtest 'Too Many Failed Logins' => sub {
