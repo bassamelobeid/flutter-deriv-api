@@ -142,4 +142,3 @@ subtest 'asian' => sub {
     }
     'build from shortcode'; 
 };
-};
