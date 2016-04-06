@@ -123,7 +123,7 @@ subtest 'invalid selections' => sub {
             });
             cmp_ok $c->ask_price, '>=', 0, 'We can compute a price for ' . $bt_code . ' with digit of ' . $bad_digit;
             ok !$c->is_valid_to_buy, '... but it is not valid to sell';
-            ok($c->primary_validation_error->message =~ /No winning digits/, '... and among the reasons is that the digit cannot win.');
+            ok(($c->primary_validation_error)[0]->{message} =~ /No winning digits/, '... and among the reasons is that the digit cannot win.');
 
         };
 
