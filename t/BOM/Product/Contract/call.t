@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 5;
 use Test::Exception;
 use Test::NoWarnings;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -144,45 +144,6 @@ subtest 'expiry conditions' => sub {
     ok $c->exit_tick->quote > $c->barrier->as_absolute;
     cmp_ok $c->value, '==', $c->payout, 'full payout';
 };
-
-subtest 'missing market data conditions' => sub {
-    $args->{duration}     = '15m';
-    $args->{date_start}   = $now;
-    $args->{date_pricing} = $now->plus_time_interval('15m');
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $now->epoch + 899,
-        quote      => 101,
-    });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $now->epoch + 901,
-        quote      => 101,
-    });
-    my $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->exit_tick,  'has exit tick';
-    ok !$c->missing_market_data, 'has no misisng market data';
- 
-    $args->{duration}     = '30m';
-    $args->{date_start}   = $now;
-    $args->{date_pricing} = $now->plus_time_interval('30m');
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $now->epoch + 1499,
-        quote      => 101,
-    });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
-        epoch      => $now->epoch + 1801,
-        quote      => 101,
-    });
-    $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->exit_tick,  'has exit tick';
-    ok $c->missing_market_data, 'has misisng market data';
-};
-
 
 subtest 'shortcodes' => sub {
     lives_ok {
