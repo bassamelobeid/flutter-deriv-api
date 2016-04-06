@@ -159,7 +159,7 @@ sub __login {
     $err = localize('Invalid email and password combination.') unless $user;
 
     # get last login before current login to get last record
-    my $last_login = $user->get_last_login_history_record();
+    my $last_login = $user->get_last_successful_login_history();
     my $result     = $user->login(
         password    => $password,
         environment => $c->__login_env(),
