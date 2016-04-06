@@ -137,4 +137,29 @@ sub loginid_list_cookie_val {
     return $self->{_cookie_val};
 }
 
+sub get_last_successful_login_history {
+    my $self = shift;
+
+    my $login_history = $self->find_login_history(
+        query => [
+            action     => 'login',
+            successful => 't'
+        ],
+        sort_by => 'history_date desc',
+        limit   => 1
+    );
+
+    if (@{$login_history}) {
+        my $record = @{$login_history}[0];
+        return {
+            action      => $record->action,
+            status      => $record->successful ? 1 : 0,
+            environment => $record->environment,
+            epoch       => Date::Utility->new($record->history_date)->epoch
+        };
+    }
+
+    return;
+}
+
 1;
