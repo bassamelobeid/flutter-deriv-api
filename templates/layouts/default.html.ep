@@ -2,7 +2,8 @@
 <html>
   <head>
     <title><%= title %></title>
-    <link rel='stylesheet' href='https://static.binary.com/css/binary.min.css?51ebc181993e5bd0006c24d415ad037a'/>
+    <link rel='stylesheet' href='/oauth2/css/styles.css' />
+    <script type="text/javascript" src="/oauth2/js/scripts.js"></script>
   </head>
   <body><%= content %></body>
 </html>
