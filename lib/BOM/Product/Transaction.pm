@@ -1535,7 +1535,7 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    if ($residence && $market_name eq 'volidx' && BOM::Platform::Runtime->instance->random_restricted_country($residence)) {
+    if ($residence && $market_name eq 'volidx' && BOM::Platform::Runtime->instance->volidx_restricted_country($residence)) {
         return Error::Base->cuss(
             -type => 'RandomRestrictedCountry',
             -mesg => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
