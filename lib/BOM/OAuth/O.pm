@@ -48,12 +48,12 @@ sub authorize {
         return $uri;
     };
 
-    my ($client, $session_token);
+    my $client;
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq ($c->param('csrftoken') // ''))
         and $c->param('login'))
     {
-        ($client, $session_token) = $c->__login($app) or return;
+        $client = $c->__login($app) or return;
     } elsif ($c->req->method eq 'POST') {
         # we force login no matter user is in or not
         $client = $c->__get_client;
@@ -108,44 +108,6 @@ sub authorize {
         );
     }
 
-    if ($session_token) {
-        my $session = BOM::Platform::SessionCookie->new({token => $session_token});
-        if ($session->have_multiple_sessions) {
-            try {
-                my $last_login = $user->get_last_login_history_record;
-
-                if ($last_login and exists $last_login->{environment}) {
-                    my ($old_env, $user_agent, $r) = (
-                        __get_details_from_environment($last_login->{environment}),
-                        $c->req->headers->header('User-Agent') // '',
-                        $c->stash('request'));
-
-                    # need to compare first two octet only
-                    my ($old_ip, $new_ip, $country_code) = ($old_env->{ip}, $r->client_ip // '', uc($r->country_code // ''));
-                    ($old_ip) = $old_ip =~ /(^(\d{1,3}\.){2})/;
-                    ($new_ip) = $new_ip =~ /(^(\d{1,3}\.){2})/;
-
-                    if (($old_ip ne $new_ip or $old_env->{country} ne $country_code)
-                        and $old_env->{user_agent} ne $user_agent)
-                    {
-                        send_email({
-                                from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                                to      => $session->email,
-                                subject => localize('New Sign-In Activity Detected'),
-                                message => [
-                                    localize(
-                                        'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                                        $session->email, $r->client_ip, $country_code, $user_agent
-                                    )
-                                ],
-                                use_email_template => 1,
-                            });
-                    }
-                }
-            };
-        }
-    }
-
     my $uri = Mojo::URL->new($redirect_uri);
 
     ## create tokens for all loginids
@@ -166,7 +128,35 @@ sub authorize {
 sub __login {
     my ($c, $app) = @_;
 
-    my ($err, $user, $client) = $c->__validate_login();
+    my ($err, $email, $password) = (undef, $c->params('email'), $c->param('password'));
+
+    if (not $email or not Email::Valid->address($email)) {
+        $err = localize('Email not given.');
+    }
+
+    if (not $password) {
+        $err = localize('Password not given.');
+    }
+
+    my $user = BOM::Platform::User->new({email => $email});
+    $err = localize('Invalid email and password combination.') unless $user;
+
+    # get last login before current login to get last record
+    my $last_login = $user->get_last_login_history_record();
+    my $result     = $user->login(
+        password    => $password,
+        environment => $c->__login_env(),
+    );
+
+    $err = $result->{error} if $result->{error};
+
+    # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
+    my @clients = $user->clients;
+    my $client  = $clients[0];
+    if ($result = $client->login_error()) {
+        $err = $result;
+    }
+
     if ($err) {
         $c->render(
             template => 'login',
@@ -219,10 +209,41 @@ sub __login {
         $options
     );
 
+    if ($session->have_multiple_sessions) {
+        try {
+            if ($last_login and exists $last_login->{environment}) {
+                my ($old_env, $user_agent, $r) =
+                    (__get_details_from_environment($last_login->{environment}), $c->req->headers->header('User-Agent') // '', $c->stash('request'));
+
+                # need to compare first two octet only
+                my ($old_ip, $new_ip, $country_code) = ($old_env->{ip}, $r->client_ip // '', uc($r->country_code // ''));
+                ($old_ip) = $old_ip =~ /(^(\d{1,3}\.){2})/;
+                ($new_ip) = $new_ip =~ /(^(\d{1,3}\.){2})/;
+
+                if (($old_ip ne $new_ip or $old_env->{country} ne $country_code)
+                    and $old_env->{user_agent} ne $user_agent)
+                {
+                    send_email({
+                            from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                            to      => $session->email,
+                            subject => localize('New Sign-In Activity Detected'),
+                            message => [
+                                localize(
+                                    'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
+                                    $session->email, $r->client_ip, $country_code, $user_agent
+                                )
+                            ],
+                            use_email_template => 1,
+                        });
+                }
+            }
+        };
+    }
+
     # reset csrf_token
     delete $c->session->{csrf_token};
 
-    return ($client, $session_token);
+    return $client;
 }
 
 sub __set_reality_check_cookie {
@@ -243,39 +264,6 @@ sub __set_reality_check_cookie {
     );
 
     return;
-}
-
-sub __validate_login {
-    my ($c) = @_;
-
-    my $email    = $c->param('email');
-    my $password = $c->param('password');
-
-    if (not $email or not Email::Valid->address($email)) {
-        return localize('Email not given.');
-    }
-
-    if (not $password) {
-        return localize('Password not given.');
-    }
-
-    my $user = BOM::Platform::User->new({email => $email})
-        or return localize('Invalid email and password combination.');
-
-    my $result = $user->login(
-        password    => $password,
-        environment => $c->__login_env(),
-    );
-    return $result->{error} if $result->{error};
-
-    # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
-    my @clients = $user->clients;
-    my $client  = $clients[0];
-    if ($result = $client->login_error()) {
-        return $result;
-    }
-
-    return (undef, $user, $client);
 }
 
 sub __login_env {
