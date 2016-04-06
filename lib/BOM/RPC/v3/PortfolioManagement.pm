@@ -34,7 +34,7 @@ sub portfolio {
     foreach my $row (@{__get_open_contracts($client)}) {
         my %trx = (
             contract_id    => $row->{id},
-            transaction_id => $row->{buy_id},
+            transaction_id => $row->{transaction_id},
             purchase_time  => Date::Utility->new($row->{purchase_time})->epoch,
             symbol         => $row->{underlying_symbol},
             payout         => $row->{payout_price},
