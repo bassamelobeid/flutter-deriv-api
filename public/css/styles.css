@@ -11,7 +11,7 @@ p {line-height: 1.4em;}
 
 #wrapper {max-width: 300px; width: 100%; margin: 0 auto; font-family: roboto, sans-serif;}
 #header {text-align: center; margin: 10px 0;}
-#header #logo {max-width: 250px;}
+#header #logo {width:100%; max-width: 250px;}
 .login #header #logo {margin: 0 auto;}
 
 form input, form button {
