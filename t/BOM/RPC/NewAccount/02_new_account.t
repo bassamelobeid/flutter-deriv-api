@@ -91,7 +91,10 @@ subtest $method => sub {
         ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
         ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-    ok $rpc_ct->result->{client_id} =~ /^VRTC\d+/, 'It should return new account data';
+    my $new_loginid = $rpc_ct->result->{client_id};
+    ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
+
+    is BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token}), $new_loginid, 'correct oauth token';
 };
 
 $method = 'new_account_real';
@@ -199,7 +202,10 @@ subtest $method => sub {
             'It should return new account data'
         )->result_value_is(sub { shift->{landing_company_shortcode} }, 'costarica', 'It should return new account data');
 
-        ok exists $rpc_ct->result->{client_id}, 'It should return new account data';
+        my $new_loginid = $rpc_ct->result->{client_id};
+        ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
+
+        is BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token}), $new_loginid, 'correct oauth token';
     };
 
 };
@@ -309,7 +315,10 @@ subtest $method => sub {
             'It should return new account data'
         )->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return new account data');
 
-        ok $rpc_ct->result->{client_id} =~ /^MF\d+/, 'It should return new account data';
+        my $new_loginid = $rpc_ct->result->{client_id};
+        ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
+
+        is BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token}), $new_loginid, 'correct oauth token';
     };
 };
 
@@ -426,7 +435,10 @@ subtest $method => sub {
             ->has_no_system_error->has_no_error->result_value_is(sub { shift->{landing_company} }, 'Binary KK', 'It should return new account data')
             ->result_value_is(sub { shift->{landing_company_shortcode} }, 'japan', 'It should return new account data');
 
-        ok $rpc_ct->result->{client_id} =~ /^JP\d+/, 'It should return new account data';
+        my $new_loginid = $rpc_ct->result->{client_id};
+        ok $new_loginid =~ /^JP\d+/, 'new JP loginid';
+
+        is BOM::Database::Model::OAuth->new->get_loginid_by_access_token($rpc_ct->result->{oauth_token}), $new_loginid, 'correct oauth token';
     };
 };
 
