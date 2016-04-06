@@ -116,7 +116,7 @@ sub proposal_open_contract {
 
     my @fmbs = ();
     if ($params->{contract_id}) {
-        @fmbs = @{__get_contract_by_id($client, $params->{contract_id})};
+        @fmbs = @{__get_contract_details_by_id($client, $params->{contract_id})};
         if (scalar @fmbs and $fmbs[0]->{account_id} ne $client->default_account->id) {
             @fmbs = ();
         }
@@ -157,7 +157,7 @@ sub proposal_open_contract {
     return $response;
 }
 
-sub __get_contract_by_id {
+sub __get_contract_details_by_id {
     my $client      = shift;
     my $contract_id = shift;
 
@@ -165,7 +165,7 @@ sub __get_contract_by_id {
         broker_code => $client->broker_code,
         operation   => 'replica'
     });
-    return $mapper->get_contract_by_id($contract_id);
+    return $mapper->get_contract_details_with_transaction_ids($contract_id);
 }
 
 1;
