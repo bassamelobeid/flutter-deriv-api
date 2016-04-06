@@ -625,7 +625,7 @@ sub _build_q_rate {
     my $rate;
     if ($underlying->market->prefer_discrete_dividend) {
         $rate = 0;
-    } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Asian' and $underlying->market->name eq 'random') {
+    } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Asian' and $underlying->market->name eq 'volidx') {
         $rate = $q_rate / 2;
     } else {
         $rate = $q_rate;
@@ -1610,10 +1610,10 @@ sub _build_staking_limits {
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $stake_max = $payout_max;
 
-    # Client likes lower stake/payout limit on random market.
+    # Client likes lower stake/payout limit on vol index market.
     my $payout_min =
-        ($self->underlying->market->name eq 'random')
-        ? $bet_limits->{min_payout}->{random}->{$curr}
+        ($self->underlying->market->name eq 'volidx')
+        ? $bet_limits->{min_payout}->{volidx}->{$curr}
         : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
 
@@ -1825,8 +1825,8 @@ sub _build_priced_with {
 
     my $underlying = $self->underlying;
 
-    # Everything should have a quoted currency, except our randoms.
-    # However, rather than check for random directly, just do a numeraire bet if we don't know what it is.
+    # Everything should have a quoted currency, except our volidx.
+    # However, rather than check for volidx directly, just do a numeraire bet if we don't know what it is.
     my $priced_with;
     if ($underlying->quoted_currency_symbol eq $self->currency or (none { $underlying->market->name eq $_ } (qw(forex commodities indices)))) {
         $priced_with = 'numeraire';
@@ -2485,7 +2485,7 @@ sub _validate_start_date {
                 symbol => $self->underlying->symbol,
                 start  => $self->date_start->datetime
             ),
-            message_to_client => $message . " " . localize("Try out the Random Indices which are always open.")};
+            message_to_client => $message . " " . localize("Try out the Volatility Indices which are always open.")};
     } elsif (my $open_seconds = ($exchange->seconds_since_open_at($self->date_start) // 0) < $underlying->sod_blackout_start->seconds) {
         my $blackout_time = $underlying->sod_blackout_start->as_string;
         push @errors,
@@ -2496,7 +2496,7 @@ sub _validate_start_date {
                 blackout => $blackout_time
             ),
             message_to_client => localize("Trading is available after the first [_1] of the session.", $blackout_time) . " "
-                . localize("Try out the Random Indices which are always open.")};
+                . localize("Try out the Volatility Indices which are always open.")};
     } elsif ($self->is_forward_starting and not $self->built_with_bom_parameters) {
         # Intraday cannot be bought in the 5 mins before the bet starts, unless we've built it for that purpose.
         if ($epoch_start < $when->epoch + $forward_starting_blackout->seconds) {
@@ -2894,7 +2894,7 @@ sub _validate_volsurface {
             };
     }
 
-    return @errors if $self->market->name eq 'random';
+    return @errors if $self->market->name eq 'volidx';
 
     my $surface          = $self->volsurface;
     my $now              = $self->date_pricing;
