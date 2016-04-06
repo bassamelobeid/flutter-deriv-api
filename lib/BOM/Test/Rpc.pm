@@ -59,10 +59,11 @@ sub restart_rpc{
         die 'Could not fork process to start rpc service: ' . $!;
       } elsif ($pid == 0) {
         exec "/usr/bin/env RPC_CONFIG=$cfg->{config_file} perl -MBOM::Test /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl daemon -m production -l $cfg->{url}jsonrpc";
-        die "Oops... Couldn't start redis-server: $!";
+        die "Oops... Couldn't start rpc service: $!";
       }
-  waitpid $pid, 0;
+  #waitpid $pid, 0;
   Net::EmptyPort::wait_port($cfg->{port}, 10);
+  path($cfg->{pid_file})->spew($pid);
   #unlink $cfg->{config_file};
 
   return;
