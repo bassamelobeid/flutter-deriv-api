@@ -331,6 +331,42 @@ sub get_contract_by_id {
     return $sth->fetchall_arrayref({});
 }
 
+sub get_contract_details_with_transaction_ids {
+    my $self        = shift;
+    my $contract_id = shift;
+
+    my $sql = q{
+        SELECT fmb.*, t.id as transaction_id, t.action_type
+        FROM
+            bet.financial_market_bet fmb
+            JOIN transaction.transaction t on t.financial_market_bet_id=fmb.id
+        WHERE
+            fmb.id = ?
+    };
+
+    my $sth = $self->db->dbh->prepare($sql);
+    $sth->execute($contract_id);
+
+    my $response = [];
+    my @fmbs     = @{$sth->fetchall_arrayref({})};
+
+    if (scalar @fmbs > 0) {
+        my $record = {transaction_ids => []};
+        foreach my $fmb (@fmbs) {
+            foreach my $column (keys %$fmb) {
+                if ($column eq 'action_type') {
+                    push $record->{transaction_ids}, {$column => $fmb->{transaction_id}};
+                } else {
+                    $record->{$column} = $fmb->{$column};
+                }
+            }
+        }
+        push $response, $record;
+    }
+
+    return $response;
+}
+
 ###
 # PRIVATE: convertor of rose to model
 sub _fmb_rose_to_fmb_model {
