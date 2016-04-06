@@ -87,7 +87,7 @@ cmp_deeply(_r('HASEXTRA'), {id=>4, underlying=>'HASEXTRA', ts=>2, ohlc=>"60:$p;1
 $dbh->begin_work;
 $dbh->do('SET LOCAL feed.fake_aggregation_tick=true');
 my $res = $dbh->selectall_arrayref("SELECT tick_notify('HASEXTRA', 1, 1)");
-is($res->[0]->[0], undef , "If it is fake tick notification must stay off")
+is($res->[0]->[0], undef , "If it is fake tick notification must stay off");
 $dbh->commit;
 
 sub _r {
