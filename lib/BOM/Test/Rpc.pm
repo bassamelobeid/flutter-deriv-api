@@ -17,7 +17,7 @@ sub start_rpc_if_not_running{
 
 sub restart_rpc{
   my $rpc_url = $ENV{RPC_URL};
-  my $config = <<EOC
+  my $config = <<EOC;
     app->log(Mojo::Log->new(
                             level => 'info',
                             path  => '/var/log/httpd/bom-rpc_trace.log'
@@ -37,7 +37,7 @@ sub restart_rpc{
   };
 EOC
 
-print $config;
+    print $config;
 }
 
 BEGIN {
