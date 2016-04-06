@@ -59,6 +59,18 @@ sub authorize {
         $client = $c->__get_client;
     }
 
+    # set session on first page visit (GET)
+    if ($app_id eq 'binarycom' and $c->req->method eq 'GET') {
+        my $r           = $c->stash('request');
+        my $referer     = $c->req->headers->header('Referer') // '';
+        my $domain_name = $r->domain_name;
+        if (index($referer, $domain_name) > -1) {
+            $c->session('__is_app_approved' => 1);
+        } else {
+            $c->session('__is_app_approved' => 0);
+        }
+    }
+
     ## check user is logined
     unless ($client) {
         ## show login form
@@ -90,6 +102,11 @@ sub authorize {
             my $uri = $redirect_handle->($response_type, 'scope_denied', $state);
             return $c->redirect_to($uri);
         }
+    }
+
+    ## if app_id=binarycom and referer is binary.com, we do not show the scope confirm screen
+    if ($app_id eq 'binarycom' and $c->session('__is_app_approved')) {
+        $is_all_approved = 1;
     }
 
     ## check if it's confirmed
