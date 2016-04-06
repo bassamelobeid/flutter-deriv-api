@@ -18,27 +18,15 @@ my $now = Date::Utility->new('10-Mar-2015');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol        => 'USD',
+        symbol        => $_,
         recorded_date => $now,
-    });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'currency',
-    {
-        symbol        => 'JPY',
-        recorded_date => $now,
-    });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'currency',
-    {
-        symbol        => 'JPY-USD',
-        recorded_date => $now,
-    });
+    }) for qw(USD JPY AUD CAD JPY-USD AUD-USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
+        symbol        => $_,
         recorded_date => $now
-    });
+    }) for qw(frxUSDJPY frxAUDCAD);
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch
@@ -47,6 +35,17 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch + 1,
     quote      => 100,
+});
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxAUDCAD',
+    epoch      => $now->epoch,
+    quote      => 0.9935
+});
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxAUDCAD',
+    epoch      => $now->epoch + 1,
+    quote      => 0.9936,
 });
 
 my $args = {
@@ -232,3 +231,29 @@ subtest 'shortcodes' => sub {
     }
     'builds shortcode from params for spot call';
 };
+
+$args = {
+    bet_type     => 'CALL',
+    underlying   => 'frxAUDCAD',
+    date_start   => $now,
+    date_pricing => $now,
+    duration     => '10m',
+    currency     => 'USD',
+    payout       => 10,
+    barrier      => 'S0P',
+};
+
+subtest 'pips size changes' => sub {
+    lives_ok {
+        my $c = produce_contract($args);
+        isa_ok $c, 'BOM::Product::Contract::Call';
+        is $c->code,        'CALL';
+        ok $c->is_intraday, 'is intraday';
+        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
+        cmp_ok $c->barrier->as_absolute, '==', 0.99360, 'correct absolute barrier';
+        cmp_ok $c->entry_tick, '==', 0.99360, 'correct entry tick';
+
+     }
+    'variable checking';
+};
+
