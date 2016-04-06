@@ -162,7 +162,7 @@ subtest 'missing market data conditions' => sub {
     ok $c->is_expired, 'expired';
     ok $c->exit_tick,  'has exit tick';
     ok !$c->missing_market_data, 'has no misisng market data';
- 
+
     $args->{duration}     = '30m';
     $args->{date_start}   = $now;
     $args->{date_pricing} = $now->plus_time_interval('30m');
@@ -177,11 +177,10 @@ subtest 'missing market data conditions' => sub {
         quote      => 101,
     });
     $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok $c->exit_tick,  'has exit tick';
+    ok $c->is_expired,          'expired';
+    ok $c->exit_tick,           'has exit tick';
     ok $c->missing_market_data, 'has misisng market data';
 };
-
 
 subtest 'shortcodes' => sub {
     lives_ok {
@@ -247,13 +246,31 @@ subtest 'pips size changes' => sub {
     lives_ok {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        is $c->code,        'CALL';
-        ok $c->is_intraday, 'is intraday';
+        is $c->code,               'CALL';
+        ok $c->is_intraday,        'is intraday';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
         cmp_ok $c->barrier->as_absolute, '==', 0.99360, 'correct absolute barrier';
         cmp_ok $c->entry_tick, '==', 0.99360, 'correct entry tick';
 
-     }
+        $args->{date_pricing} = $now->plus_time_interval('10m');
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxAUDCAD',
+            epoch      => $now->epoch + 599,
+            quote      => 0.9938,
+        });
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxAUDCAD',
+            epoch      => $now->epoch + 601,
+            quote      => 0.9938,
+        });
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->exit_tick,  'has exit tick';
+        ok $c->exit_tick->quote > $c->barrier->as_absolute;
+        cmp_ok $c->value, '==', $c->payout, 'full payout';
+        cmp_ok $c->exit_tick, '==', 0.99390, 'correct exit tick';
+
+    }
     'variable checking';
 };
 
