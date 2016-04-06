@@ -29,13 +29,19 @@ my $token = BOM::Platform::SessionCookie->new(
     email   => $email
 )->token;
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD AUD CAD-AUD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_50',
         date   => Date::Utility->new
     });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol => $_,
+        date   => $now
+    }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
@@ -380,6 +386,57 @@ subtest $method => sub {
                 "如果随机 50 指数在合约开始时间之后到50 秒钟时严格高于入市现价，将获得USD194.22的赔付额。",
             'display_name' => 'Random 50 Index',
             'date_expiry'  => $now->epoch - 50,
+        },
+        'result is ok'
+    );
+
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9935
+    });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch + 1,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9936
+    });
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch + 599,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9938
+    });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch + 601,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9939
+    });
+
+    $contract = create_contract(
+        client        => $client,
+        spread        => 0,
+        current_tick  => $tick,
+        date_start    => $now->epoch,
+        date_expiry   => $now->epoch + 10,
+        purchase_date => $now->epoch
+    );
+    $params = {
+        language    => 'ZH_CN',
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => $client->currency,
+        is_sold     => 1,
+    };
+    $c->call_ok('get_bid', $params)->has_no_error->result_is_deeply({
+            'symbol'       => 'frxAUDCAD',
+            'ask_price'    => 53,
+            'entry_tick'   => 0.99360,
+            'current_spot' => 0.99360,
+            'entry_spot'   => 0.99360,
+            'exit_tick'    => 0.99380,
+            'sell_spot'    => 0.99380,
+            'bid_price'    => 100
         },
         'result is ok'
     );
