@@ -24,6 +24,17 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Static::Config;
+use BOM::Database::Model::OAuth;
+
+sub _create_oauth_token {
+    my $loginid = shift;
+
+    my $oauth_model = BOM::Database::Model::OAuth->new;
+    my @scopes = qw(read admin trade payments);
+    my ($access_token, $expires_in) = $oauth_model->store_access_token_only('binarycom', $loginid, @scopes);
+
+    return $access_token;
+}
 
 sub new_account_virtual {
     my $params = shift;
@@ -62,10 +73,11 @@ sub new_account_virtual {
     my $client  = $acc->{client};
     my $account = $client->default_account->load;
     return {
-        client_id => $client->loginid,
-        email     => $email,
-        currency  => $account->currency_code,
-        balance   => $account->balance
+        client_id   => $client->loginid,
+        email       => $email,
+        currency    => $account->currency_code,
+        balance     => $account->balance,
+        oauth_token => _create_oauth_token($client->loginid),
     };
 }
 
@@ -175,11 +187,13 @@ sub new_account_real {
                 message_to_client => $error_map->{$err_code}});
     }
 
-    my $landing_company = $acc->{client}->landing_company;
+    my $client = $acc->{client};
+    my $landing_company = $client->landing_company;
     return {
-        client_id                 => $acc->{client}->loginid,
+        client_id                 => $client->loginid,
         landing_company           => $landing_company->name,
-        landing_company_shortcode => $landing_company->short
+        landing_company_shortcode => $landing_company->short,
+        oauth_token               => _create_oauth_token($client->loginid),
     };
 }
 
@@ -227,11 +241,13 @@ sub new_account_maltainvest {
                 message_to_client => $error_map->{$err_code}});
     }
 
-    my $landing_company = $acc->{client}->landing_company;
+    my $client = $acc->{client};
+    my $landing_company = $client->landing_company;
     return {
-        client_id                 => $acc->{client}->loginid,
+        client_id                 => $client->loginid,
         landing_company           => $landing_company->name,
-        landing_company_shortcode => $landing_company->short
+        landing_company_shortcode => $landing_company->short,
+        oauth_token               => _create_oauth_token($client->loginid),
     };
 }
 
@@ -285,11 +301,13 @@ sub new_account_japan {
                 message_to_client => $error_map->{$err_code}});
     }
 
-    my $landing_company = $acc->{client}->landing_company;
+    my $client = $acc->{client};
+    my $landing_company = $client->landing_company;
     return {
-        client_id                 => $acc->{client}->loginid,
+        client_id                 => $client->loginid,
         landing_company           => $landing_company->name,
-        landing_company_shortcode => $landing_company->short
+        landing_company_shortcode => $landing_company->short,
+        oauth_token               => _create_oauth_token($client->loginid),
     };
 }
 
