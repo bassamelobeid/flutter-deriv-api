@@ -30,7 +30,7 @@ sub _create_oauth_token {
     my $loginid = shift;
 
     my $oauth_model = BOM::Database::Model::OAuth->new;
-    my @scopes = qw(read admin trade payments);
+    my @scopes      = qw(read admin trade payments);
     my ($access_token, $expires_in) = $oauth_model->store_access_token_only('binarycom', $loginid, @scopes);
 
     return $access_token;
@@ -187,13 +187,13 @@ sub new_account_real {
                 message_to_client => $error_map->{$err_code}});
     }
 
-    my $client = $acc->{client};
-    my $landing_company = $client->landing_company;
+    my $new_client      = $acc->{client};
+    my $landing_company = $new_client->landing_company;
     return {
-        client_id                 => $client->loginid,
+        client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
         landing_company_shortcode => $landing_company->short,
-        oauth_token               => _create_oauth_token($client->loginid),
+        oauth_token               => _create_oauth_token($new_client->loginid),
     };
 }
 
@@ -241,13 +241,13 @@ sub new_account_maltainvest {
                 message_to_client => $error_map->{$err_code}});
     }
 
-    my $client = $acc->{client};
-    my $landing_company = $client->landing_company;
+    my $new_client      = $acc->{client};
+    my $landing_company = $new_client->landing_company;
     return {
-        client_id                 => $client->loginid,
+        client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
         landing_company_shortcode => $landing_company->short,
-        oauth_token               => _create_oauth_token($client->loginid),
+        oauth_token               => _create_oauth_token($new_client->loginid),
     };
 }
 
@@ -301,13 +301,13 @@ sub new_account_japan {
                 message_to_client => $error_map->{$err_code}});
     }
 
-    my $client = $acc->{client};
-    my $landing_company = $client->landing_company;
+    my $new_client      = $acc->{client};
+    my $landing_company = $new_client->landing_company;
     return {
-        client_id                 => $client->loginid,
+        client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
         landing_company_shortcode => $landing_company->short,
-        oauth_token               => _create_oauth_token($client->loginid),
+        oauth_token               => _create_oauth_token($new_client->loginid),
     };
 }
 
