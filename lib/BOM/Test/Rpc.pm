@@ -19,7 +19,6 @@ sub config{
           config_file => '/tmp/rpc.cfg',
           pid_file => '/tmp/bom-rpc.pid',
                };
-  print "port is $cfg->{port}\n";
   my $config = <<EOC;
   app->log(Mojo::Log->new(
                             level => 'info',
@@ -64,7 +63,7 @@ sub restart_rpc{
       }
   waitpid $pid, 0;
   Net::EmptyPort::wait_port(6385, 10);
-  unlink '/tmp/redis.cfg';
+  #unlink '/tmp/redis.cfg';
 
   return;
 
