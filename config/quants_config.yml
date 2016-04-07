@@ -45,7 +45,7 @@ bet_limits:
       AUD: 1
       GBP: 1
       JPY: 100
-    random:
+    volidx:
       USD: 0.7
       EUR: 0.7
       AUD: 0.7
