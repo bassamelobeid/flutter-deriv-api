@@ -121,7 +121,7 @@ sub login {
 
     if (@self_excluded > 0) {
         my %excluded = map { $_->loginid => 1 } @self_excluded;
-        $success->{self_exluded} = \%excluded;
+        $success->{self_excluded} = \%excluded;
     }
 
     return $success;
