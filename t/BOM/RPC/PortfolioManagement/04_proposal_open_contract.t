@@ -126,7 +126,7 @@ subtest $method => sub {
             is_sold     => $contract->is_sold,
         });
 
-        @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold /;
+        @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold transaction_ids/;
         push @expected_contract_fields, keys %$bid;
     }
     'Get extected data';

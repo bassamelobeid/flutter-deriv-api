@@ -141,7 +141,7 @@ sub proposal_open_contract {
         foreach my $fmb (@fmbs) {
             foreach my $column (keys %$fmb) {
                 if ($column eq 'action_type') {
-                    push $record->{transaction_ids}, {$column => $fmb->{transaction_id}};
+                    push $record->{transaction_ids}, {$fmb->{action_type} => $fmb->{transaction_id}};
                 } else {
                     $record->{$column} = $fmb->{$column};
                 }
