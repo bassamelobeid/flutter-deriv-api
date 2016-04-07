@@ -4,6 +4,7 @@ package BOM::Platform::User;
 use strict;
 use warnings;
 
+use Date::Utility;
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
@@ -84,7 +85,9 @@ sub login {
         BOM::System::AuditLog::log('Account disabled', $self->email);
     } elsif (
         @self_excluded = grep {
-            $_->get_self_exclusion and $_->get_self_exclusion->exclude_until
+            $_->get_self_exclusion
+                and $_->get_self_exclusion->exclude_until
+                and Date::Utility->new->is_before(Date::Utility->new($_->get_self_exclusion->exclude_until))
         } @clients
         and @self_excluded == @clients
         )
