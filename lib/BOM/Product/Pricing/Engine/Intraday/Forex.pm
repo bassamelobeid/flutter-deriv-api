@@ -564,7 +564,7 @@ sub _build_risk_markup {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
             name        => 'intraday_historical_iv_risk',
             description => 'Intraday::Forex markup for IV contracts only.',
-            set_by      => 'quants.commission.intraday.historical_iv_risk',
+            set_by      => __PACKAGE__,
             base_amount => $iv_risk_interpolator->linear($self->intraday_vanilla_delta->amount) / 100,
         });
         $risk_markup->include_adjustment('add', $iv_risk);
