@@ -1081,7 +1081,7 @@ sub is_valid_to_sell {
         if ($error) {
             $self->missing_market_data(1);
             $self->add_error({
-                message           => $message,
+                message           => $error,
                 message_to_client => localize('The buy price of this contract has been refunded due to missing market data.'),
             });
         }
