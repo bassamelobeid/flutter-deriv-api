@@ -22,7 +22,7 @@ sub config {
     my $config = <<EOC;
   app->log(Mojo::Log->new(
                             level => 'info',
-                            path  => '$log_file'
+                            path  => '$cfg->{log_file}'
                            ));
   app->renderer->default_format('json');
 
