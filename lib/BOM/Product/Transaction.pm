@@ -717,7 +717,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _validate_payout_limit
             _is_valid_to_sell
             _validate_available_currency
-            _validate_currency,
+            _validate_currency
             _validate_sell_pricing_adjustment
             _validate_date_pricing/
             );
