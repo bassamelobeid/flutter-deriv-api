@@ -2067,8 +2067,8 @@ sub _build_exit_tick {
     }
 
     if ($self->entry_tick and $self->exit_tick) {
-        my ($entry_tick_date, $exit_tick_date) = map { Date::Utility->new($_) } ($self->entry_tick->epoch, $self->exit_tick->epoch)
-            if (not $self->expiry_daily
+        my ($entry_tick_date, $exit_tick_date) = map { Date::Utility->new($_) } ($self->entry_tick->epoch, $self->exit_tick->epoch);
+        if (    not $self->expiry_daily
             and $underlying->intradays_must_be_same_day
             and $exchange->trading_days_between($entry_tick_date, $exit_tick_date))
         {
