@@ -17,11 +17,12 @@ sub config {
         port        => $port,
         config_file => '/tmp/rpc.cfg',
         pid_file    => '/tmp/bom-rpc.pid',
+        log_file    => '/tmp/bom-rpc_trace.log',
     };
     my $config = <<EOC;
   app->log(Mojo::Log->new(
                             level => 'info',
-                            path  => '/tmp/bom-rpc_trace.log'
+                            path  => '$log_file'
                            ));
   app->renderer->default_format('json');
 
@@ -58,10 +59,13 @@ sub start_rpc {
     } elsif ($pid == 0) {
         exec
             "/usr/bin/env RPC_CONFIG=$cfg->{config_file} perl -MBOM::Test /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl daemon -m production -l $cfg->{url}jsonrpc";
-        die "Oops... Couldn't start rpc service: $!";
+        die "Oops... Couldn't start rpc service: $!, please see log file $cfg->{log_file}";
     }
 
-    Net::EmptyPort::wait_port($cfg->{port}, 10);
+    unless (Net::EmptyPort::wait_port($cfg->{port}, 10)) {
+        die "Rpc service still not ready, what happened?\n";
+    }
+
     path($cfg->{pid_file})->spew($pid);
 
     return;
@@ -69,7 +73,7 @@ sub start_rpc {
 }
 
 sub stop_rpc {
-    my $cfg   = config();
+    my $cfg = config();
     return unless $cfg->{url};
     my $pfile = path($cfg->{pid_file});
 
