@@ -1,16 +1,6 @@
 #!/usr/bin/perl
 package main;
 
-=head1 NAME
-
-update_vol.cgi
-
-=head1 DESCRIPTION
-
-Handles moneyness update AJAX requests; saves submitted surfaces to Couch.
-
-=cut
-
 use strict;
 use warnings;
 use open qw[ :encoding(UTF-8) ];
