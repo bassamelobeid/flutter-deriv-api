@@ -1065,50 +1065,6 @@ sub is_valid_to_buy {
     return ($self->built_with_bom_parameters) ? $valid : $self->_report_validation_stats('buy', $valid);
 }
 
-sub _check_entry_and_exit_ticks {
-    my $self = shift;
-
-    my $message_to_client = localize('The buy price of this contract has been refunded due to missing market data.');
-
-    if (not $self->entry_tick) {
-        $self->missing_market_data(1);
-        return +{
-            message           => 'entry tick is undefined',
-            message_to_client => $message_to_client,
-        };
-    }
-
-    # A start now contract will not be bought if we have missing feed.
-    # We are doing the same thing for forward starting contracts.
-    if ($self->is_forward_starting
-        and ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds))
-    {
-        $self->missing_market_data(1);
-        return +{
-            message           => 'entry tick is too old',
-            message_to_client => $message_to_client,
-        };
-    }
-
-    if (not $self->exit_tick) {
-        $self->missing_market_data(1);
-        return +{
-            message           => 'exit tick is undefined',
-            message_to_client => $message_to_client,
-        };
-    }
-
-    if ($self->entry_tick->epoch == $self->exit_tick->epoch) {
-        $self->missing_market_data(1);
-        return +{
-            message           => 'only one tick throughout contract period',
-            message_to_client => $message_to_client,
-        };
-    }
-
-    return;
-}
-
 sub is_valid_to_sell {
     my $self = shift;
 
@@ -1122,7 +1078,13 @@ sub is_valid_to_sell {
 
     if ($self->is_expired) {
         my $error = $self->_check_entry_and_exit_ticks;
-        $self->add_error($error) if $error;
+        if ($error) {
+            $self->missing_market_data(1);
+            $self->add_error({
+                message           => $message,
+                message_to_client => localize('The buy price of this contract has been refunded due to missing market data.'),
+            });
+        }
     } elsif (not $self->opposite_bet->is_valid_to_buy) {
         # Their errors are our errors, now!
         $self->add_error($self->opposite_bet->primary_validation_error);
@@ -1140,6 +1102,21 @@ sub is_valid_to_sell {
 }
 
 # PRIVATE method.
+
+sub _check_entry_and_exit_ticks {
+    my $self = shift;
+
+    return 'entry tick is undefined' if not $self->entry_tick;
+    # A start now contract will not be bought if we have missing feed.
+    # We are doing the same thing for forward starting contracts.
+    my $entry_tick_delay = ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds);
+    return 'entry tick is too old' if $self->is_forwarding_starting and $entry_tick_delay;
+    return 'exit tick is undefined' if not $self->exit_tick;
+    return 'only one tick throughout contract period' if $self->entry_tick->epoch == $self->exit_tick->epoch;
+
+    return;
+}
+
 #  If your price is payout * some probability, just use this.
 sub _price_from_prob {
     my ($self, $prob_method) = @_;
