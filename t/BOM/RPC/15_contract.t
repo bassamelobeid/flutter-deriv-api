@@ -253,7 +253,7 @@ subtest 'get_bid' => sub {
     });
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 700,
+        epoch      => $now->epoch - 850,
         underlying => 'R_50',
     });
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -266,7 +266,7 @@ subtest 'get_bid' => sub {
         spread        => 0,
         current_tick  => $tick,
         date_start    => $now->epoch - 900,
-        date_expiry   => $now->epoch - 600,
+        date_expiry   => $now->epoch - 500,
         purchase_date => $now->epoch - 901
     );
     my $params = {

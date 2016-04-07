@@ -13,30 +13,37 @@ use BOM::Platform::Runtime;
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Token::Verification;
 
-sub token_to_loginid {
+sub get_token_details {
     my $token = shift;
 
     return unless $token;
 
-    my $loginid;
+    my ($loginid, $creation_time, $epoch);
     my @scopes = qw/read trade admin payments/;    # scopes is everything for session token
     if (length $token == 15) {                     # access token
         my $m = BOM::Database::Model::AccessToken->new;
-        $loginid = $m->get_loginid_by_token($token);
+        ($loginid, $creation_time) = $m->get_loginid_by_token($token);
         return unless $loginid;
+        $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
         @scopes = $m->get_scopes_by_access_token($token);
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         my $m = BOM::Database::Model::OAuth->new;
-        $loginid = $m->get_loginid_by_access_token($token);
+        ($loginid, $creation_time) = $m->get_loginid_by_access_token($token);
         return unless $loginid;
+        $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
         @scopes = $m->get_scopes_by_access_token($token);
     } else {
         my $session = BOM::Platform::SessionCookie->new(token => $token);
         return unless $session and $session->validate_session;
         $loginid = $session->loginid;
+        $epoch   = $session->{loginat};
     }
 
-    return wantarray ? ($loginid, @scopes) : $loginid;    # backwards
+    return {
+        loginid => $loginid,
+        scopes  => \@scopes,
+        epoch   => $epoch,
+    };
 }
 
 sub create_error {

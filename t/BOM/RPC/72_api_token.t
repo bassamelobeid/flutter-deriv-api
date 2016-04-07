@@ -23,7 +23,7 @@ my $test_loginid = create_test_user();
 
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
 # need to mock it as to access api token we need token beforehand
-$mock_utility->mock('token_to_loginid', sub { return $test_loginid });
+$mock_utility->mock('get_token_details', sub { return {loginid => $test_loginid} });
 
 my $res = BOM::RPC::v3::Accounts::api_token({
     client_loginid => $test_loginid,

@@ -24,6 +24,17 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Static::Config;
+use BOM::Database::Model::OAuth;
+
+sub _create_oauth_token {
+    my $loginid = shift;
+
+    my $oauth_model = BOM::Database::Model::OAuth->new;
+    my @scopes      = qw(read admin trade payments);
+    my ($access_token, $expires_in) = $oauth_model->store_access_token_only('binarycom', $loginid, @scopes);
+
+    return $access_token;
+}
 
 sub new_account_virtual {
     my $params = shift;
@@ -62,10 +73,11 @@ sub new_account_virtual {
     my $client  = $acc->{client};
     my $account = $client->default_account->load;
     return {
-        client_id => $client->loginid,
-        email     => $email,
-        currency  => $account->currency_code,
-        balance   => $account->balance
+        client_id   => $client->loginid,
+        email       => $email,
+        currency    => $account->currency_code,
+        balance     => $account->balance,
+        oauth_token => _create_oauth_token($client->loginid),
     };
 }
 
@@ -137,10 +149,10 @@ sub verify_email {
 sub new_account_real {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -175,21 +187,23 @@ sub new_account_real {
                 message_to_client => $error_map->{$err_code}});
     }
 
-    my $landing_company = $acc->{client}->landing_company;
+    my $new_client      = $acc->{client};
+    my $landing_company = $new_client->landing_company;
     return {
-        client_id                 => $acc->{client}->loginid,
+        client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
-        landing_company_shortcode => $landing_company->short
+        landing_company_shortcode => $landing_company->short,
+        oauth_token               => _create_oauth_token($new_client->loginid),
     };
 }
 
 sub new_account_maltainvest {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -227,21 +241,23 @@ sub new_account_maltainvest {
                 message_to_client => $error_map->{$err_code}});
     }
 
-    my $landing_company = $acc->{client}->landing_company;
+    my $new_client      = $acc->{client};
+    my $landing_company = $new_client->landing_company;
     return {
-        client_id                 => $acc->{client}->loginid,
+        client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
-        landing_company_shortcode => $landing_company->short
+        landing_company_shortcode => $landing_company->short,
+        oauth_token               => _create_oauth_token($new_client->loginid),
     };
 }
 
 sub new_account_japan {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -285,11 +301,13 @@ sub new_account_japan {
                 message_to_client => $error_map->{$err_code}});
     }
 
-    my $landing_company = $acc->{client}->landing_company;
+    my $new_client      = $acc->{client};
+    my $landing_company = $new_client->landing_company;
     return {
-        client_id                 => $acc->{client}->loginid,
+        client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
-        landing_company_shortcode => $landing_company->short
+        landing_company_shortcode => $landing_company->short,
+        oauth_token               => _create_oauth_token($new_client->loginid),
     };
 }
 
