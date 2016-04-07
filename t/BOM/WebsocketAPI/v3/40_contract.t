@@ -112,8 +112,8 @@ while (1) {
     note explain $res;
     next if $res->{msg_type} eq 'proposal';
 
-    note explain $res;
-    ok $res->{buy};
+    # note explain $res;
+    ok $res->{buy}, Dumper $res;
     ok $res->{buy}->{contract_id};
     ok $res->{buy}->{purchase_time};
 
