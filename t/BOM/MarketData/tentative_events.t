@@ -14,9 +14,8 @@ use BOM::MarketData::EconomicEventCalendar;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 my $c_read = BOM::System::Chronicle::get_chronicle_reader;
-
 my $tentative = {
-    'estimated_release_date' => 1457395200,
+    'estimated_release_date' => time,
     'event_name'             => 'Trade Balance',
     'id'                     => 'f4b74431c78eab54',
     'impact'                 => 5,
