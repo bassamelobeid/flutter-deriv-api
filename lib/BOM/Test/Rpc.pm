@@ -64,6 +64,8 @@ sub start_rpc {
 
     unless (Net::EmptyPort::wait_port($cfg->{port}, 10)) {
         my $error = "Rpc service still not ready, what happened?\n";
+        #when run test with prove, 'die' cannot display the error message
+        #So I print this error before die.
         print STDERR $error;
         die $error;
     }
