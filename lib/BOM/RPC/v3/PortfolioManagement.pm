@@ -118,7 +118,7 @@ sub proposal_open_contract {
 
     # this flag is to tell whether to club both buy sell fmb record
     # don't want to place logic in FinancialMarketBet as thats only for query
-    # we need to pass transaction_ids => [ {buy => 123}, {sell => 456} ] in case
+    # we need to pass transaction_ids => {buy => 123, sell => 456} in case
     # client request by contract id else we send all open contracts so no need to club
     # in that case
     my $club_records = 1;
@@ -135,13 +135,13 @@ sub proposal_open_contract {
     my $response = {};
     if (scalar @fmbs > 0) {
         my @records = ();
-        my $record = {transaction_ids => []};
+        my $record  = {};
 
-        # populate transaction_ids as transaction_ids => [ {buy => 123}, {sell => 456} ]
+        # populate transaction_ids as transaction_ids => {buy => 123, sell => 456}
         foreach my $fmb (@fmbs) {
             foreach my $column (keys %$fmb) {
                 if ($column eq 'action_type') {
-                    push $record->{transaction_ids}, {$fmb->{action_type} => $fmb->{transaction_id}};
+                    $record->{transaction_ids}->{$fmb->{action_type}} = $fmb->{transaction_id};
                 } else {
                     $record->{$column} = $fmb->{$column};
                 }
