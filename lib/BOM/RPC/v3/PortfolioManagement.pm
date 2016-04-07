@@ -115,39 +115,66 @@ sub proposal_open_contract {
     }
 
     my @fmbs = ();
+
+    # this flag is to tell whether to club both buy sell fmb record
+    # don't want to place logic in FinancialMarketBet as thats only for query
+    # we need to pass transaction_ids => [ {buy => 123}, {sell => 456} ] in case
+    # client request by contract id else we send all open contracts so no need to club
+    # in that case
+    my $club_records = 1;
     if ($params->{contract_id}) {
         @fmbs = @{__get_contract_details_by_id($client, $params->{contract_id})};
         if (scalar @fmbs and $fmbs[0]->{account_id} ne $client->default_account->id) {
             @fmbs = ();
         }
     } else {
-        @fmbs = @{__get_open_contracts($client)};
+        @fmbs         = @{__get_open_contracts($client)};
+        $club_records = 0;
     }
 
     my $response = {};
     if (scalar @fmbs > 0) {
+        my @records = ();
+        my $record = {transaction_ids => []};
+
+        # populate transaction_ids as transaction_ids => [ {buy => 123}, {sell => 456} ]
         foreach my $fmb (@fmbs) {
-            my $id = $fmb->{id};
+            foreach my $column (keys %$fmb) {
+                if ($column eq 'action_type') {
+                    push $record->{transaction_ids}, {$column => $fmb->{transaction_id}};
+                } else {
+                    $record->{$column} = $fmb->{$column};
+                }
+            }
+            # push every record in case of all open contracts
+            push $records, $record unless $club_record;
+        }
+        # get only one record for buy sell as all other details are same
+        push $records, $record if $club_record;
+
+        foreach my $details (@records) {
+            my $id = $details->{id};
             my $sell_time;
-            $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
+            $sell_time = Date::Utility->new($details->{sell_time})->epoch if $details->{sell_time};
             my $bid = BOM::RPC::v3::Contract::get_bid({
-                short_code  => $fmb->{short_code},
+                short_code  => $details->{short_code},
                 contract_id => $id,
                 currency    => $client->currency,
-                is_sold     => $fmb->{is_sold},
+                is_sold     => $details->{is_sold},
                 sell_time   => $sell_time
             });
             if (exists $bid->{error}) {
                 $response->{$id} = $bid;
             } else {
                 $response->{$id} = {
-                    buy_price     => $fmb->{buy_price},
-                    purchase_time => Date::Utility->new($fmb->{purchase_time})->epoch,
-                    account_id    => $fmb->{account_id},
-                    is_sold       => $fmb->{is_sold},
+                    transaction_ids => $details->{transaction_ids},
+                    buy_price       => $details->{buy_price},
+                    purchase_time   => Date::Utility->new($details->{purchase_time})->epoch,
+                    account_id      => $details->{account_id},
+                    is_sold         => $details->{is_sold},
                     $sell_time ? (sell_time => $sell_time) : (),
-                    defined $fmb->{sell_price}
-                    ? (sell_price => sprintf('%.2f', $fmb->{sell_price}))
+                    defined $details->{sell_price}
+                    ? (sell_price => sprintf('%.2f', $details->{sell_price}))
                     : (),
                     %$bid
                 };
