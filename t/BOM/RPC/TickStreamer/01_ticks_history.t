@@ -142,8 +142,8 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{end}   = $now->minus_time_interval('6h30m')->epoch;
     $params->{args}->{count} = 2000;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $rpc_ct->result->{data}->{history}->{times}->[0], $now->minus_time_interval('7h')->epoch,
-        'It should return latest existed tick for last day if client sent invalid start time';
+    is $rpc_ct->result->{data}->{history}->{times}->[0], $now->minus_time_interval('6h30m')->epoch - $params->{args}->{count},
+        'It should return ticks which is 2000 seconds from the end time';
 
     $params->{args}->{start} = $now->minus_time_interval('1d')->epoch;
     $params->{args}->{end}   = $now->epoch;
@@ -162,14 +162,14 @@ subtest '_validate_start_end' => sub {
     delete $params->{args}->{start} ;
     $params->{args}->{count} = 10;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $rpc_ct->result->{data}->{history}->{times}->[-1] , $now->epoch - 10 , 'It should start at 10s from now';
+    is $rpc_ct->result->{data}->{history}->{times}->[0] , $now->epoch - 10 , 'It should start at 10s from now';
 
     $params->{args}->{count} = 4999;
     $params->{args}->{granularity} = 120;
     $params->{args}->{style} = "candles",
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is @{$rpc_ct->result->{data}->{history}->{times}}, 4999, 'It should return 4999 candle';
-    is $rpc_ct->result->{data}->{history}->{times}->[-1] , $now->epoch - (4999 * 120) , 'It should start at '. (4999 * 120). 's from now';
+    is $rpc_ct->result->{data}->{history}->{times}->[0] , $now->epoch - (4999 * 120) , 'It should start at '. (4999 * 120). 's from now';
     
     $params->{args}->{ticks_history} = 'HSI';
     $params->{args}->{start}         = $now->minus_time_interval('1h30m')->epoch;
