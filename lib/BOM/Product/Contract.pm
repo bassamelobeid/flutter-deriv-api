@@ -157,7 +157,7 @@ sub _build_basis_tick {
             symbol => $self->underlying->symbol,
         });
         $self->add_error({
-            message           => format_error_string('Could not retrieve a quote', symbol => $self->underlying->symbol),
+            message           => format_error_string('Waiting for entry tick', symbol => $self->underlying->symbol),
             message_to_client => localize('Waiting for entry tick.'),
         });
     }
@@ -1283,12 +1283,9 @@ sub _build_entry_tick {
 
     # entry tick if never defined if it is a newly priced contract.
     return if $self->pricing_new;
-
-    my $underlying  = $self->underlying;
     my $entry_epoch = $self->date_start->epoch;
-
-    # when will we decide to use next tick for forward starting contracts!
-    return $self->is_forward_starting ? $self->underlying->tick_at($entry_epoch) : $self->underlying->next_tick_after($entry_epoch);
+    return $self->underlying->tick_at($entry_epoch) if $self->is_forward_starting;
+    return $self->underlying->next_tick_after($entry_epoch);
 }
 
 # End of builders.

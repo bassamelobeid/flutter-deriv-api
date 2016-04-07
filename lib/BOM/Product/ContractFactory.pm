@@ -222,6 +222,9 @@ sub produce_contract {
                 }
                 $input_params{date_expiry} = Date::Utility->new($expiry);
             }
+            # This doesn't hurt us now because we use date_expiry to reprice contracts.
+            # If we ever use duration to reprice a contract, the opposite contract will be wrong.
+            # Delete it here to be extra safe!
             delete $input_params{duration};
         }
         $input_params{date_start}  //= 1;    # Error conditions if it's not legacy or run, I guess.

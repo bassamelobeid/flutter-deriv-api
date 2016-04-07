@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 6;
 use Test::NoWarnings;
 
 use Time::HiRes;
@@ -77,6 +77,37 @@ subtest 'entry tick before contract start (only forward starting contracts)' => 
     is $c->entry_tick->quote + 0, 101, 'entry tick is 101';
     is $c->exit_tick->quote + 0,  103, 'exit tick is 103';
     ok $c->is_valid_to_sell, 'valid to sell';
+};
+
+subtest 'waiting for entry tick' => sub {
+    create_ticks();
+    $bet_params->{date_start}          = $now;
+    $bet_params->{date_pricing}        = $now->epoch + 1;
+    $bet_params->{duration}            = '1h';
+    $bet_params->{is_forward_starting} = 1;
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    like($c->primary_validation_error->message, qr/Waiting for entry tick/, 'throws error');
+    create_ticks([101, $now->epoch, 'R_100']);
+    $c = produce_contract($bet_params);
+    ok $c->entry_tick,       'entry tick defined';
+    ok $c->is_valid_to_sell, 'valid to sell';
+    $bet_params->{date_pricing} = $now->epoch + 301;    # 1 second too far
+    $c = produce_contract($bet_params);
+    ok !$c->is_expired,       'not expired';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    like($c->primary_validation_error->message, qr/Quote too old/, 'throws error');
+    create_ticks([101, $now->epoch + 1, 'R_100']);
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_sell, 'valid to sell once you have a close enough tick';
+};
+
+subtest 'opposite bet with duration' => sub {
+    $bet_params->{date_start}   = $now;
+    $bet_params->{date_pricing} = $now->epoch + 5;
+    $bet_params->{duration}     = '10m';
+    my $c = produce_contract($bet_params);
+    is $c->opposite_bet->date_expiry->epoch, $c->date_expiry->epoch, 'date expiry does not change for opposite bet';
 };
 
 sub create_ticks {
