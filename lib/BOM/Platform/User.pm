@@ -120,11 +120,8 @@ sub login {
     my $success = {success => 1};
 
     if (@self_excluded > 0) {
-        my $excluded;
-        foreach (@self_excluded) {
-            $excluded->{$_->loginid} = 1;
-        }
-        $success->{self_exluded} = $excluded;
+        my %excluded = map { $_->loginid => 1 } @self_excluded;
+        $success->{self_exluded} = \%excluded;
     }
 
     return $success;
