@@ -1996,7 +1996,7 @@ sub _build_corporate_actions {
 
     my $corp = Quant::Framework::CorporateAction->new(
         symbol           => $self->symbol,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
 
     my $available_actions = $corp->actions;
