@@ -560,7 +560,7 @@ sub _build_risk_markup {
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
     $risk_markup->include_adjustment('add', $self->eod_market_risk_markup);
 
-    if ($self->is_path_dependent) {
+    if ($bet->is_path_dependent) {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
             name        => 'intraday_historical_iv_risk',
             description => 'Intraday::Forex markup for IV contracts only.',
