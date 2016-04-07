@@ -5,7 +5,7 @@ use Date::Utility;
 # login
 use Email::Valid;
 use Mojo::Util qw(url_escape);
-use List::MoreUtils qw(any);
+use List::MoreUtils qw(any firstval);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
@@ -269,6 +269,14 @@ sub __validate_login {
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
     my @clients = $user->clients;
     my $client  = $clients[0];
+
+    # get 1st loginid, which is not currently self-excluded until
+    if (exists $result->{self_excluded}) {
+        $client = firstval { !exists $result->{self_excluded}->{$_->loginid} } (@clients);
+    }
+    # in case all loginids are self-excluded, default to 1st again, error (excluded_until) will be shown by $client->login_error()
+    $client ||= $clients[0];
+
     if ($result = $client->login_error()) {
         return $result;
     }
