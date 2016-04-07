@@ -85,7 +85,7 @@ sub get_open_bets_of_account {
     my $self = shift;
 
     my $sql = q{
-        SELECT fmb.*, t.id transaction_id
+        SELECT fmb.*, t.id transaction_id, t.action_type
         FROM
             bet.financial_market_bet fmb
             JOIN transaction.transaction t on (action_type='buy' and t.financial_market_bet_id=fmb.id)
@@ -332,7 +332,6 @@ sub get_contract_by_id {
 }
 
 # we need to get all transactions id for particular contract
-# and as fmb details are same so just return one fmb with multiple transaction ids
 sub get_contract_details_with_transaction_ids {
     my $self        = shift;
     my $contract_id = shift;
@@ -349,24 +348,7 @@ sub get_contract_details_with_transaction_ids {
     my $sth = $self->db->dbh->prepare($sql);
     $sth->execute($contract_id);
 
-    my $response = [];
-    my @fmbs     = @{$sth->fetchall_arrayref({})};
-
-    if (scalar @fmbs > 0) {
-        my $record = {transaction_ids => []};
-        foreach my $fmb (@fmbs) {
-            foreach my $column (keys %$fmb) {
-                if ($column eq 'action_type') {
-                    push $record->{transaction_ids}, {$column => $fmb->{transaction_id}};
-                } else {
-                    $record->{$column} = $fmb->{$column};
-                }
-            }
-        }
-        push $response, $record;
-    }
-
-    return $response;
+    return $sth->fetchall_arrayref({});
 }
 
 ###
