@@ -96,7 +96,7 @@ if (exists $res->{proposal_open_contract}) {
     test_schema('proposal_open_contract', $res);
 }
 
-sleep 5;
+sleep 1;
 $t = $t->send_ok({
         json => {
             buy        => 1,
