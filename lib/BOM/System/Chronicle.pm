@@ -105,16 +105,28 @@ sub get_chronicle_writer {
 }
 
 sub get_chronicle_reader {
+    my $for_date = shift;
     state $redis = BOM::System::RedisReplicated::redis_read();
-    my $dbh = _dbh();
 
-    state $instance;
-    $instance //= Data::Chronicle::Reader->new(
+    state $historical_instance;
+    state $live_instance;
+
+    if ( $for_date ) {
+        $historical_instance //= Data::Chronicle::Reader->new(
+            cache_reader => $redis,
+            db_handle    => _dbh(),
+        );
+
+        return $historical_instance;
+    }
+
+    #if for_date is not specified, we are doing live_pricing, so no need to send database handler
+    $live_instance //= Data::Chronicle::Reader->new(
         cache_reader => $redis,
-        db_handle    => $dbh
+        db_handle    => _dbh(),
     );
 
-    return $instance;
+    return $live_instance;
 }
 
 =head3 C<< set("category1", "name1", $value1)  >>
