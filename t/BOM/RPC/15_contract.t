@@ -39,8 +39,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol => $_,
-        recorded_date   => $now
+        symbol        => $_,
+        recorded_date => $now
     }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
@@ -390,56 +390,69 @@ subtest $method => sub {
         'result is ok'
     );
 
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch,
-        underlying => 'frxAUDCAD',
-        quote      => 0.9935
-    });
-
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch + 1,
+        epoch      => $now->epoch - 899,
         underlying => 'frxAUDCAD',
         quote      => 0.9936
     });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch + 599,
+        epoch      => $now->epoch - 501,
         underlying => 'frxAUDCAD',
         quote      => 0.9938
     });
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch + 601,
+        epoch      => $now->epoch - 499,
         underlying => 'frxAUDCAD',
         quote      => 0.9939
     });
 
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9935
+    });
     $contract = create_contract(
         client        => $client,
         spread        => 0,
         current_tick  => $tick,
-        date_start    => $now->epoch,
-        date_expiry   => $now->epoch + 10,
-        purchase_date => $now->epoch
+        underlying    => 'frxAUDCAD',
+        date_start    => $now->epoch - 900,
+        date_expiry   => $now->epoch - 500,
+        purchase_date => $now->epoch - 901
     );
     $params = {
-        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => 'USD',
-        is_sold     => 1,
+        language    => 'zh_CN',
     };
-    $c->call_ok('get_bid', $params)->has_no_error->result_is_deeply({
-            'symbol'       => 'frxAUDCAD',
-            'ask_price'    => 53,
-            'entry_tick'   => 0.99360,
-            'current_spot' => 0.99360,
-            'entry_spot'   => 0.99360,
-            'exit_tick'    => 0.99380,
-            'sell_spot'    => 0.99380,
-            'bid_price'    => 100
-        },
-        'result is ok'
-    );
+
+    my $res = $c->call_ok('get_bid', $params)->result;
+
+    my $expected_result = {
+        'ask_price'       => 208.18,
+        'barrier'         => '0.99360',
+        'bid_price'       => 208.18,
+        'contract_id'     => 10,
+        'currency'        => 'USD',
+        'date_expiry'     => 1127287060,
+        'date_settlement' => 1127287060,
+        'date_start'      => 1127286660,
+        'entry_spot'      => '0.99360',
+        'entry_tick'      => '0.99360',
+        'entry_tick_time' => 1127286661,
+        'exit_tick'       => '0.99380',
+        'exit_tick_time'  => 1127287059,
+        'longcode' =>
+            '如果澳元/加元在合约开始时间之后到6 分钟 40 秒钟时严格高于入市现价，将获得USD208.18的赔付额。',
+        'shortcode'  => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
+        'underlying' => 'frxAUDCAD',
+    };
+
+    foreach my $key (keys %$expected_result) {
+        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
+    }
 
 };
 
@@ -466,9 +479,10 @@ sub create_contract {
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
+    my $symbol        = $args{underlying} ? $args{underlying} : 'R_50';
     my $date_start    = $now->epoch - 100;
     my $date_expiry   = $now->epoch - 50;
-    my $underlying    = BOM::Market::Underlying->new('R_50');
+    my $underlying    = BOM::Market::Underlying->new($symbol);
     my $purchase_date = $now->epoch - 101;
     my $contract_data = {
         underlying   => $underlying,
