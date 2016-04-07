@@ -63,25 +63,8 @@ sub get_high_low_for_contract_period {
     my $ok_through_expiry = 0;                                     # Must be confirmed.
     my $exit_tick = $self->is_after_expiry && $self->exit_tick;    # Can still be undef if the tick is not yet in the DB.
     if (not $self->pricing_new and $self->entry_tick and $self->entry_tick->epoch < $self->date_pricing->epoch) {
-        my $start;
+        my $start = $self->date_start;
         my $end = $self->date_pricing->is_after($self->date_expiry) ? $self->date_settlement : $self->date_pricing;
-        if ($self->entry_tick->epoch > $end->epoch) {
-            $self->missing_market_data(1);
-            $start = $end;
-            $self->add_error({
-                    severity => 100,
-                    message  => format_error_string(
-                        'No tick received throughout the duration of the contract',
-                        start  => $self->date_start->datetime,
-                        expiry => $self->date_expiry->datetime,
-                    ),
-                    message_to_client => localize("Missing market data for contract duration"),
-                });
-        } else {
-            # Contract doesn't reasonably start until the entry tick arrives.
-            # Also, ticks after settlement do not apply
-            $start = $self->entry_tick;
-        }
         ($high, $low, $close) = @{
             $self->underlying->get_high_low_for_period({
                     start => $start->epoch,

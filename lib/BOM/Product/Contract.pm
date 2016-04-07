@@ -59,6 +59,12 @@ has is_expired => (
     lazy_build => 1,
 );
 
+has missing_market_data => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0
+);
+
 has category => (
     is      => 'ro',
     isa     => 'bom_contract_category',
@@ -1066,7 +1072,9 @@ sub _check_entry_and_exit_ticks {
     my $self = shift;
 
     my $message_to_client = 'The buy price of this contract has been refunded due to missing market data.';
+
     if (not $self->entry_tick) {
+        $self->missing_market_data(1);
         return +{
             message           => 'entry tick is undefined',
             message_to_client => $message_to_client,
@@ -1074,6 +1082,7 @@ sub _check_entry_and_exit_ticks {
     }
 
     if (not $self->exit_tick) {
+        $self->missing_market_data(1);
         return +{
             message           => 'exit tick is undefined',
             message_to_client => $message_to_client,
@@ -1081,26 +1090,11 @@ sub _check_entry_and_exit_ticks {
     }
 
     if ($self->entry_tick->epoch == $self->exit_tick->epoch) {
+        $self->missing_market_data(1);
         return +{
             message           => 'only one tick throughout contract period',
             message_to_client => $message_to_client,
         };
-    }
-
-    my ($entry_tick_date, $exit_tick_date) = map { Date::Utility->new($_) } ($self->entry_tick->epoch, $self->exit_tick->epoch)
-        if (not $self->expiry_daily
-        and $underlying->intradays_must_be_same_day
-        and $exchange->trading_days_between($entry_tick_date, $exit_tick_date))
-    {
-        $self->add_error({
-                message => format_error_string(
-                    'Exit tick date differs from entry tick date on intraday',
-                    symbol => $underlying->symbol,
-                    start  => $exit_tick_date->datetime,
-                    expiry => $entry_tick_date->datetime,
-                ),
-                message_to_client => localize("Intraday contracts may not cross market open."),
-            });
     }
 
     return;
@@ -2070,6 +2064,24 @@ sub _build_exit_tick {
         $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
     } else {
         $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
+    }
+
+    if ($self->entry_tick and $self->exit_tick) {
+        my ($entry_tick_date, $exit_tick_date) = map { Date::Utility->new($_) } ($self->entry_tick->epoch, $self->exit_tick->epoch)
+            if (not $self->expiry_daily
+            and $underlying->intradays_must_be_same_day
+            and $exchange->trading_days_between($entry_tick_date, $exit_tick_date))
+        {
+            $self->add_error({
+                    message => format_error_string(
+                        'Exit tick date differs from entry tick date on intraday',
+                        symbol => $underlying->symbol,
+                        start  => $exit_tick_date->datetime,
+                        expiry => $entry_tick_date->datetime,
+                    ),
+                    message_to_client => localize("Intraday contracts may not cross market open."),
+                });
+        }
     }
 
     return $exit_tick;
