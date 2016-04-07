@@ -317,7 +317,7 @@ test_with_feed(
         is($bet->value,      0, 'Bet outcome lost');
 
         # WIN TEST
-        $bet_params->{date_start}  = 1205852400;    # 18-Mar-08 15h00 15:00:01 15:00 098.34 098.38 98.3597 FXN
+        $bet_params->{date_start}  = 1205852401;    # 18-Mar-08 15h00 15:00:01 15:00 098.34 098.38 98.3597 FXN
         $bet_params->{date_expiry} = 1205856000;    # 18-Mar-08 16h00 16:00:01 16:00 098.23 098.23 98.2328 TDF
 
         $bet = produce_contract($bet_params);
@@ -1529,7 +1529,7 @@ test_with_feed(
         my $bet = produce_contract($bet_params);
         ok($bet->is_expired,        'The bet is expired');
         ok(!$bet->is_valid_to_sell, 'but we still cannot sell it');
-        like($bet->primary_validation_error->message, qr/^Entry tick too far away/, 'because the entry tick came too early on the forward starter.');
+        like($bet->primary_validation_error->message, qr/entry tick is too old/, 'because the entry tick came too early on the forward starter.');
 
     });
 
@@ -1555,7 +1555,7 @@ test_with_feed([
         my $bet = produce_contract($bet_params);
         ok($bet->is_expired,        'The bet is expired');
         ok(!$bet->is_valid_to_sell, 'but we still cannot sell it');
-        like($bet->primary_validation_error->message, qr/entry tick is the same as exit tick/, 'because entry and exit are the same tick.');
+        like($bet->primary_validation_error->message, qr/only one tick throughout contract period/, 'because entry and exit are the same tick.');
 
     });
 
