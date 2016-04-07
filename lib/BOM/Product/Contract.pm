@@ -1083,7 +1083,9 @@ sub _check_entry_and_exit_ticks {
 
     # A start now contract will not be bought if we have missing feed.
     # We are doing the same thing for forward starting contracts.
-    if ($self->is_forward_starting and ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds)) {
+    if ($self->is_forward_starting
+        and ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds))
+    {
         $self->missing_market_data(1);
         return +{
             message           => 'entry tick is too old',
