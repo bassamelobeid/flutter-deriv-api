@@ -88,6 +88,12 @@ sub _migrate_changesets {
     $dbh->{PrintError} = 0;
 
     # first teminate all other connections
+    my $pooler = DBI->connect(
+        'DBI:Pg:dbname=pgbouncer;host=/var/run/postgresql;port=6432',
+        'postgres', '',
+         {RaiseError=>1, pg_server_prepare=>0}
+    );
+    $pooler->do('PAUSE');
     $dbh->do(
         'select pid, pg_terminate_backend(pid) terminated
            from pg_stat_get_activity(NULL::integer) s(datid, pid)
@@ -96,6 +102,7 @@ sub _migrate_changesets {
     $dbh->do('drop database if exists ' . $self->_db_name);
     $dbh->do('create database ' . $self->_db_name);
     $dbh->disconnect();
+    $pooler->do('RESUME');
 
     my $m = DBIx::Migration->new({
         'dsn'      => $self->dsn,
