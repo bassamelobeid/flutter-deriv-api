@@ -1071,12 +1071,22 @@ sub is_valid_to_buy {
 sub _check_entry_and_exit_ticks {
     my $self = shift;
 
-    my $message_to_client = 'The buy price of this contract has been refunded due to missing market data.';
+    my $message_to_client = localize('The buy price of this contract has been refunded due to missing market data.');
 
     if (not $self->entry_tick) {
         $self->missing_market_data(1);
         return +{
             message           => 'entry tick is undefined',
+            message_to_client => $message_to_client,
+        };
+    }
+
+    # A start now contract will not be bought if we have missing feed.
+    # We are doing the same thing for forward starting contracts.
+    if ($self->is_forward_starting and ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds)) {
+        $self->missing_market_data(1);
+        return +{
+            message           => 'entry tick is too old',
             message_to_client => $message_to_client,
         };
     }
