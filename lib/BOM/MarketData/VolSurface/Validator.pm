@@ -32,7 +32,7 @@ use List::Util qw( min reduce );
 use BOM::Utility::Log4perl qw( get_logger );
 use Math::Business::BlackScholes::Binaries;
 
-use List::MoreUtils qw(indexes);
+use List::MoreUtils qw(indexes any);
 use Date::Utility;
 use BOM::Platform::Runtime;
 use VolSurface::Utils qw( get_strike_for_spot_delta );
@@ -390,7 +390,9 @@ sub _check_structure {
             my @vol_levels_for_smile = sort { $a <=> $b } keys %{$smile};
 
             if ($type eq 'delta') {
-                if (not @volatility_level ~~ @vol_levels_for_smile) {
+                my $levels_mismatch = (@volatility_level != @vol_levels_for_smile)
+                    or (any { $volatility_level[$_] != $vol_levels_for_smile[$_] } (0 .. @volatility_level - 1));
+                if ($levels_mismatch) {
                     get_logger('QUANT')
                         ->croak('Deltas['
                             . join(',', @vol_levels_for_smile)
