@@ -147,7 +147,7 @@ has basis_tick => (
 sub _build_basis_tick {
     my $self = shift;
 
-    my $basis_tick = ($self->entry_tick) ? $self->entry_tick : $self->current_tick;
+    my $basis_tick = (not $self->pricing_new) ? $self->entry_tick : $self->current_tick;
 
     # if there's no basis tick, don't die but catch the error.
     unless ($basis_tick) {
