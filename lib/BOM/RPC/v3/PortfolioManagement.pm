@@ -147,10 +147,10 @@ sub proposal_open_contract {
                 }
             }
             # push every record in case of all open contracts
-            push $records, $record unless $club_record;
+            push $records, $record unless $club_records;
         }
         # get only one record for buy sell as all other details are same
-        push $records, $record if $club_record;
+        push $records, $record if $club_records;
 
         foreach my $details (@records) {
             my $id = $details->{id};
