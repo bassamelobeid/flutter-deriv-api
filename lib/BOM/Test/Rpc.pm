@@ -63,7 +63,9 @@ sub start_rpc {
     }
 
     unless (Net::EmptyPort::wait_port($cfg->{port}, 10)) {
-        die "Rpc service still not ready, what happened?\n";
+        my $error = "Rpc service still not ready, what happened?\n";
+        print STDERR $error;
+        die $error;
     }
 
     path($cfg->{pid_file})->spew($pid);
