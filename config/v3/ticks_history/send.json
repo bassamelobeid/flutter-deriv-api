@@ -18,7 +18,7 @@
     },
     "start": {
       "type": "integer",
-      "description": "Epoch value representing the start-datetime of the ticks (default: 1 yr ago)"
+      "description": "Epoch value representing the start-datetime of the ticks (default: 1 day ago)"
     },
     "count": {
       "type": "integer",
