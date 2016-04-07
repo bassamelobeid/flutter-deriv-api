@@ -69,7 +69,7 @@ FROM
 WHERE
     t.action_type = 'buy'
     AND (t.transaction_time AT TIME ZONE 'UTC' AT TIME ZONE 'JST') < ?
-    AND (b.is_sold = false OR b.sell_time >= ?)
+    AND ( b.is_sold = false OR (b.sell_time AT TIME ZONE 'UTC' AT TIME ZONE 'JST' >= ?) )
     ##LOGINID_ONLY##
 ORDER BY t.transaction_time
 };
