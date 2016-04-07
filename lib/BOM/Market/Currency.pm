@@ -61,7 +61,7 @@ has holidays => (
 
 sub _build_holidays {
     my $self             = shift;
-    my $chronicle_reader = BOM::System::Chronicle::get_chronicle_reader();
+    my $chronicle_reader = BOM::System::Chronicle::get_chronicle_reader($self->for_date);
 
     my $holidays_ref = Quant::Framework::Holiday::get_holidays_for($chronicle_reader, $self->symbol, $self->for_date);
     my %holidays = map { Date::Utility->new($_)->days_since_epoch => $holidays_ref->{$_} } keys %$holidays_ref;
@@ -114,7 +114,7 @@ sub _build_interest {
     return Quant::Framework::InterestRate->new({
         symbol           => $self->symbol,
         for_date         => $self->for_date,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
 }
@@ -150,7 +150,7 @@ sub rate_implied_from {
     $self->_cached->{$implied_symbol} = Quant::Framework::ImpliedRate->new({
         symbol           => $implied_symbol,
         for_date         => $self->for_date,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
 
