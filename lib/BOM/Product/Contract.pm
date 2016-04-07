@@ -705,9 +705,6 @@ sub _build_opposite_bet {
         $build_parameters{date_start} = $self->date_pricing;
     }
 
-    # Secret hidden parameter for sell-time checking;
-    $build_parameters{_original_date_start} = $self->date_start;
-
     return $self->_produce_contract_ref->(\%build_parameters);
 }
 
@@ -2326,29 +2323,6 @@ sub _validate_start_date {
           ($self->tick_expiry and $underlying->intradays_must_be_same_day) ? $self->max_tick_expiry_duration
         : ($self->date_expiry->date eq $self->date_pricing->date) ? $underlying->eod_blackout_start
         :                                                           undef;
-    # Contracts must be held for a minimum duration before resale.
-    if (my $orig_start = $self->build_parameters->{_original_date_start}) {
-        # Does not apply to unstarted forward-starting contracts
-        my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
-        if ($time > $orig_start->epoch) {
-            my $minimum_hold = Time::Duration::Concise::Localize->new(
-                interval => '1m',
-                locale   => BOM::Platform::Context::request()->language
-            );
-            my $held = Time::Duration::Concise::Localize->new(interval => $epoch_start - $orig_start->epoch);
-            if ($held->seconds < $minimum_hold->seconds) {
-                push @errors, {
-                    message => format_error_string(
-                        'Contract not held long enough',
-                        held => $held->as_concise_string,
-                        min  => $minimum_hold->as_concise_string,
-                    ),
-                    message_to_client => localize('Contract must be held for [_1] before resale is offered.', $minimum_hold->as_string),
-
-                };
-            }
-        }
-    }
 
     if (not $epoch_expiry > $epoch_start) {
         push @errors,
