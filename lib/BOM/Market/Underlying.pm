@@ -1061,7 +1061,7 @@ sub dividend_rate_for {
     if ($self->market->name eq 'random') {
         my $div = Quant::Framework::Dividend->new({
             symbol           => $self->symbol,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         });
         my @rates = values %{$div->rates};
@@ -1099,7 +1099,7 @@ sub get_discrete_dividend_for_period {
     my %valid_dividends;
     my $discrete_points = Quant::Framework::Dividend->new(
         symbol           => $self->asset->symbol,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     )->discrete_points;
 

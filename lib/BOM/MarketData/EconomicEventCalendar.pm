@@ -40,10 +40,15 @@ has document => (
 );
 
 has chronicle_reader => (
-    is      => 'ro',
-    isa     => 'Data::Chronicle::Reader',
-    default => sub { BOM::System::Chronicle::get_chronicle_reader() },
+    is         => 'ro',
+    isa        => 'Data::Chronicle::Reader',
+    lazy_build => 1,
 );
+
+sub _build_chronicle_reader {
+    my $self = shift;
+    return BOM::System::Chronicle::get_chronicle_reader($self->for_date);
+}
 
 has chronicle_writer => (
     is      => 'ro',
