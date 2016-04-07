@@ -391,7 +391,7 @@ sub _check_structure {
 
             if ($type eq 'delta') {
                 my $levels_mismatch = (@volatility_level != @vol_levels_for_smile)
-                    or (any { $volatility_level[$_] != $vol_levels_for_smile[$_] } (0 .. @volatility_level - 1));
+                    || (any { $volatility_level[$_] != $vol_levels_for_smile[$_] } (0 .. @volatility_level - 1));
                 if ($levels_mismatch) {
                     get_logger('QUANT')
                         ->croak('Deltas['
