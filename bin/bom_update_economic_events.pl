@@ -6,9 +6,8 @@ use Moose;
 with 'App::Base::Script';
 with 'BOM::Utility::Logging';
 
-use BOM::MarketData::Fetcher::EconomicEvent;
 use ForexFactory;
-use BOM::MarketData::EconomicEventCalendar;
+use Quant::Framework::EconomicEventCalendar;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Utility::Log4perl;
@@ -46,11 +45,13 @@ sub script_run {
 
     try {
 
-        my $tentative_count = grep {$_->{is_tentative}} @$events_received;
+        my $tentative_count = grep { $_->{is_tentative} } @$events_received;
 
-        BOM::MarketData::EconomicEventCalendar->new({
-                events        => $events_received,
-                recorded_date => Date::Utility->new(),
+        Quant::Framework::EconomicEventCalendar->new({
+                events           => $events_received,
+                recorded_date    => Date::Utility->new(),
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             })->save;
 
         print "stored " . (scalar @$events_received) . " events ($tentative_count are tentative events) in chronicle...\n";
