@@ -4,6 +4,7 @@ package BOM::Platform::User;
 use strict;
 use warnings;
 
+use Date::Utility;
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
@@ -84,7 +85,9 @@ sub login {
         BOM::System::AuditLog::log('Account disabled', $self->email);
     } elsif (
         @self_excluded = grep {
-            $_->get_self_exclusion and $_->get_self_exclusion->exclude_until
+            $_->get_self_exclusion
+                and $_->get_self_exclusion->exclude_until
+                and Date::Utility->new->is_before(Date::Utility->new($_->get_self_exclusion->exclude_until))
         } @clients
         and @self_excluded == @clients
         )
@@ -135,6 +138,31 @@ sub loginid_list_cookie_val {
     my $self = shift;
     $self->{_cookie_val} || $self->clients;
     return $self->{_cookie_val};
+}
+
+sub get_last_successful_login_history {
+    my $self = shift;
+
+    my $login_history = $self->find_login_history(
+        query => [
+            action     => 'login',
+            successful => 't'
+        ],
+        sort_by => 'history_date desc',
+        limit   => 1
+    );
+
+    if (@{$login_history}) {
+        my $record = @{$login_history}[0];
+        return {
+            action      => $record->action,
+            status      => $record->successful ? 1 : 0,
+            environment => $record->environment,
+            epoch       => Date::Utility->new($record->history_date)->epoch
+        };
+    }
+
+    return;
 }
 
 1;
