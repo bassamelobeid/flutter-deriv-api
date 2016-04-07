@@ -177,7 +177,7 @@ subtest $method => sub {
             $rpc_ct->call_ok($method, $params)
                 ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails',
                 'It should return error when try to create account without residence')
-                ->error_message_is('Please provide complete details for account opening.',
+                ->error_message_is('Пожалуйста, предоставьте полные данные для открытия счёта.',
                 'It should return error when try to create account without residence');
         }
 
@@ -187,7 +187,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
+            ->error_message_is('Пожалуйста, предоставьте полные данные для открытия счёта.', 'It should return error if missing any details');
 
         $params->{args}->{first_name} = $client_details->{first_name};
         $rpc_ct->call_ok($method, $params)
@@ -279,7 +279,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if client does not accept risk')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if client does not accept risk');
+            ->error_message_is('Пожалуйста, предоставьте полные данные для открытия счёта.', 'It should return error if client does not accept risk');
 
         $params->{args}->{residence} = 'de';
         @{$params->{args}}{keys %$client_details} = values %$client_details;
@@ -287,7 +287,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
+            ->error_message_is('Пожалуйста, предоставьте полные данные для открытия счёта.', 'It should return error if missing any details');
 
         $params->{args}->{first_name}  = $client_details->{first_name};
         $params->{args}->{residence}   = 'de';
@@ -393,7 +393,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
+            ->error_message_is('Пожалуйста, предоставьте полные данные для открытия счёта.', 'It should return error if missing any details');
 
         $params->{args}->{first_name} = $client_details->{first_name};
         $rpc_ct->call_ok($method, $params)
