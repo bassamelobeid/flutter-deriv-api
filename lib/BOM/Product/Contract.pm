@@ -157,8 +157,8 @@ sub _build_basis_tick {
             symbol => $self->underlying->symbol,
         });
         $self->add_error({
-            message => format_error_string('Could not retrieve a quote', symbol => $self->underlying->symbol),
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+            message           => format_error_string('Could not retrieve a quote', symbol => $self->underlying->symbol),
+            message_to_client => localize('Waiting for entry tick.'),
         });
     }
 

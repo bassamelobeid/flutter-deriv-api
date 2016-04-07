@@ -63,12 +63,12 @@ sub get_high_low_for_contract_period {
     my $ok_through_expiry = 0;                                     # Must be confirmed.
     my $exit_tick = $self->is_after_expiry && $self->exit_tick;    # Can still be undef if the tick is not yet in the DB.
     if (not $self->pricing_new and $self->entry_tick and $self->entry_tick->epoch < $self->date_pricing->epoch) {
-        my $start = $self->date_start;
-        my $end = $self->date_pricing->is_after($self->date_expiry) ? $self->date_settlement : $self->date_pricing;
+        my $start_epoch = $self->date_start->epoch + 1;            # exlusive of tick at contract start.
+        my $end_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_settlement->epoch : $self->date_pricing->epoch;
         ($high, $low, $close) = @{
             $self->underlying->get_high_low_for_period({
-                    start => $start->epoch,
-                    end   => $end->epoch,
+                    start => $start_epoch,
+                    end   => $end_epoch,
                 })}{'high', 'low', 'close'};
         # The two intraday queries run off different tables, so we have to make sure our consistent
         # exit tick was included. expiry_daily may have differences, but should be fine anyway.
