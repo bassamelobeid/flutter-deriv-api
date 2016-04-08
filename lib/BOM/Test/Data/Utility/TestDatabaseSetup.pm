@@ -94,7 +94,7 @@ sub _migrate_changesets {
     # first teminate all other connections
     my $pooler = $self->db_handler('pgbouncer');
     $pooler->{RaiseError} = 1;
-    $pooler->{pg_server_prepare} => 0;
+    $pooler->{pg_server_prepare} = 0;
     $pooler->do('PAUSE');
     $dbh->do(
         'select pid, pg_terminate_backend(pid) terminated
