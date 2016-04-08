@@ -17,7 +17,7 @@
     },
     "parameters": {
       "type": "object",
-      "description": "Parameters for contract buy",
+      "description": "Optional field, used to pass the parameters for contract buy",
       "properties": {
         "amount": {
           "type": "number",

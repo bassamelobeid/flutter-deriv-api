@@ -16,12 +16,10 @@ sub buy {
     # if parameters are not empty, take parameters from args without asking propsal
     # calling forget_buy_proposal instead of forget_one as we need args for contract proposal
     my $contract_parameters =
-           BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $args->{buy})
-        or $args->{parameters}
-        or return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
+           $args->{parameters}
+        || BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $args->{buy})
+        || return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
 
-    use Data::Dumper;
-    $c->app->log->info(Dumper($contract_parameters));
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c, 'buy',
         sub {
