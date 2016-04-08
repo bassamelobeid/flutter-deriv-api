@@ -45,7 +45,7 @@ sub ticks_history {
 
     my ($publish, $result, $type);
     if ($style eq 'ticks') {
-        my $ticks   = _ticks($args);    ## no critic
+        my $ticks   = _ticks($args);
         my $history = {
             prices => [map { $ul->pipsized_value($_->{price}) } @$ticks],
             times  => [map { $_->{time} } @$ticks],
@@ -54,7 +54,7 @@ sub ticks_history {
         $type    = "history";
         $publish = 'tick';
     } elsif ($style eq 'candles') {
-        my @candles = @{_candles($args)};    ## no critic
+        my @candles = @{_candles($args)};
         if (@candles) {
             $result = {
                 candles => \@candles,
@@ -170,8 +170,7 @@ sub _validate_start_end {
     my $args = shift;
 
     my $ul = $args->{ul} || return BOM::RPC::v3::Utility::create_error({
-            ;
-                code => 'NoSymbolProvided',
+            code              => 'NoSymbolProvided',
             message_to_client => BOM::Platform::Context::localize("Please provide an underlying symbol.")});
 
     unless ($ul->feed_license =~ /^(realtime|delayed|daily)$/) {
