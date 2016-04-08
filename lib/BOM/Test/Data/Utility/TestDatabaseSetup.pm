@@ -43,6 +43,8 @@ sub dsn {
     my $self                = shift;
     my $db                  = shift || $self->_db_name;
     my $connection_settings = $self->_connection_parameters;
+    my $port = $connection_settings->{port};
+    $port += 1000 if $db eq 'pgbouncer';
     return 'dbi:Pg:dbname=' . $db . ';host=' . $connection_settings->{'host'} . ';port=' . $connection_settings->{'port'};
 }
 
@@ -88,14 +90,9 @@ sub _migrate_changesets {
     $dbh->{PrintError} = 0;
 
     # first teminate all other connections
-    my $pooler = DBI->connect(
-        'DBI:Pg:dbname=pgbouncer;host=/var/run/postgresql;port=6432',
-        'postgres',
-        '',
-        {
-            RaiseError        => 1,
-            pg_server_prepare => 0
-        });
+    my $pooler = $self->db_handler('pgbouncer');
+    $pooler->{RaiseError} = 1;
+    $pooler->{pg_server_prepare} => 0;
     $pooler->do('PAUSE');
     $dbh->do(
         'select pid, pg_terminate_backend(pid) terminated
