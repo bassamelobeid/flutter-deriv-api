@@ -161,13 +161,11 @@ sub get_bid {
             my $contract_affected_by_missing_market_data =
                 (not $contract->may_settle_automatically and not @{$contract->corporate_actions} and $contract->missing_market_data) ? 1 : 0;
             if ($contract_affected_by_missing_market_data) {
-                $response = {
-                    error => {
-                        message_to_client => BOM::Platform::Context::localize(
+                $response = BOM::RPC::v3::Utility::create_error({
+                        code              => "GetProposalFailure",
+                        message_to_client => localize(
                             'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
-                        ),
-                        code => "GetProposalFailure"
-                    }};
+                        )});
                 return;
             }
         }
