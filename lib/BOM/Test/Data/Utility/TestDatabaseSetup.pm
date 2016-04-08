@@ -90,9 +90,12 @@ sub _migrate_changesets {
     # first teminate all other connections
     my $pooler = DBI->connect(
         'DBI:Pg:dbname=pgbouncer;host=/var/run/postgresql;port=6432',
-        'postgres', '',
-         {RaiseError=>1, pg_server_prepare=>0}
-    );
+        'postgres',
+        '',
+        {
+            RaiseError        => 1,
+            pg_server_prepare => 0
+        });
     $pooler->do('PAUSE');
     $dbh->do(
         'select pid, pg_terminate_backend(pid) terminated
