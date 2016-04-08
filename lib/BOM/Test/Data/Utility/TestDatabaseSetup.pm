@@ -45,7 +45,7 @@ sub dsn {
     my $connection_settings = $self->_connection_parameters;
     my $port                = $connection_settings->{port};
     $port += 1000 if $db eq 'pgbouncer';
-    return 'dbi:Pg:dbname=' . $db . ';host=' . $connection_settings->{'host'} . ';port=' . $connection_settings->{'port'};
+    return 'dbi:Pg:dbname=' . $db . ';host=' . $connection_settings->{'host'} . ';port=' . $port;
 }
 
 sub db_handler {
