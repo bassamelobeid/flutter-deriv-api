@@ -1927,16 +1927,19 @@ sub forward_starts_on {
     # With 0s blackout, skip open if we weren't open at the previous start.
     # Basically, Monday morning/holiday forex.
     my $start_at =
-        ($sod_bo->seconds == 0 and not $exchange->is_open_at($opening->minus_time_interval($intraday_interval)))
+        (not $sod_bo and not $exchange->is_open_at($opening->minus_time_interval($intraday_interval)))
         ? $opening->plus_time_interval($intraday_interval)
-        : $opening->plus_time_interval($sod_bo);
+        : $sod_bo ? $opening->plus_time_interval($sod_bo)
+        :           $opening;
 
-    my $end_at = $exchange->closing_on($day)->minus_time_interval($eod_bo);
+    my $end_at = $eod_bo ? $exchange->closing_on($day)->minus_time_interval($eod_bo) : $exchange->closing_on($day);
     my @trading_periods;
     if (my $breaks = $exchange->trading_breaks($day)) {
         my @breaks = @$breaks;
         if (@breaks == 1) {
-            @trading_periods = ([$start_at, $breaks[0][0]->minus_time_interval($eod_bo)], [$breaks[0][1]->plus_time_interval($sod_bo), $end_at]);
+            my $first_half_close = $eod_bo ? $breaks[0][0]->minus_time_interval($eod_bo) : $breaks[0][0];
+            my $second_half_open = $sod_bo ? $breaks[0][1]->plus_time_interval($sod_bo)  : $breaks[0][1];
+            @trading_periods = ([$start_at, $first_half_close], [$second_half_open, $end_at]);
         } else {
             push @trading_periods, [$start_at, $breaks[0][0]];
             push @trading_periods, [$breaks[0][1],  $breaks[1][0]];
