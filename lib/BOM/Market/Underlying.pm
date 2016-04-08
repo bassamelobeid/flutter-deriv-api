@@ -2104,7 +2104,7 @@ sub get_applicable_corporate_actions_for_period {
 }
 
 has resets_at_open => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
