@@ -36,7 +36,7 @@ sub ticks_history {
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
 
-    $response = _validate_start_end({%$args, ul => $ul});
+    $response = _validate_start_end({%$args, ul => $ul});    ## no critic
     if ($response and exists $response->{error}) {
         return $response;
     } else {
