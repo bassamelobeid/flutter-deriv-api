@@ -44,6 +44,7 @@ use Try::Tiny;
 use BOM::Market::Types;
 use YAML::XS qw(LoadFile);
 use BOM::Platform::Static::Config;
+use Time::HiRes;
 
 with 'BOM::Market::Role::ExpiryConventions';
 
@@ -1642,6 +1643,8 @@ low   => The low over the period.
 sub get_high_low_for_period {
     my ($self, $args) = @_;
 
+    # Sleep for 10ms to give feed replicas a bit of time to catch the latest tick if the sell time is now
+    Time::HiRes::sleep(0.01) if Date::Utility->new($args->{end})->epoch == time;
     my @ohlcs = $self->get_ohlc_data_for_period($args);
 
     my ($final_high, $final_low, $final_close);
