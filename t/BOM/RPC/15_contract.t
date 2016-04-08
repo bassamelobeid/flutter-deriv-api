@@ -186,16 +186,16 @@ subtest 'get_ask' => sub {
         BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
         {
             error => {
-                message => '不在此段期间提供交易。',
-                code    => "ContractBuyValidationError",
+                message_to_client => '不在此段期间提供交易。',
+                code              => "ContractBuyValidationError",
             }});
 
     is_deeply(
         BOM::RPC::v3::Contract::_get_ask({}),
         {
             error => {
-                message => '无法创建合约',
-                code    => "ContractCreationFailure",
+                message_to_client => '无法创建合约',
+                code              => "ContractCreationFailure",
             }});
 
 };
