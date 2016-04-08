@@ -209,3 +209,9 @@
 "/new_account/maltainvestws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/user/lost_passwordws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"user/reset_passwordws";
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
