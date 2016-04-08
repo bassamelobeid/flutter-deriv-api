@@ -565,7 +565,7 @@ sub _build_risk_markup {
             name        => 'intraday_historical_iv_risk',
             description => 'Intraday::Forex markup for IV contracts only.',
             set_by      => __PACKAGE__,
-            base_amount => $iv_risk_interpolator->linear($self->intraday_vanilla_delta->amount) / 100,
+            base_amount => $iv_risk_interpolator->linear($self->intraday_vanilla_delta->amount),
         });
         $risk_markup->include_adjustment('add', $iv_risk);
     }
