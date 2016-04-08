@@ -97,11 +97,14 @@ sub _migrate_changesets {
     $pooler->do('PAUSE');
     # there is a warning here. I don't know what's the meaning.
     #Warning was 'WARNING:  PID 31811 is not a PostgreSQL server process' at /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/TestDatabaseSetup.pm line 98.
-    $dbh->do(
-        'select pid, pg_terminate_backend(pid) terminated
+    {
+        local $SIG{__WARN__} = sub { my $msg = shift; print STDERR $msg unless ($msg =~ /is not a PostgreSQL server process/) };
+        $dbh->do(
+            'select pid, pg_terminate_backend(pid) terminated
            from pg_stat_get_activity(NULL::integer) s(datid, pid)
           where pid<>pg_backend_pid()'
-    );
+        );
+    }
     $dbh->do('drop database if exists ' . $self->_db_name);
     $dbh->do('create database ' . $self->_db_name);
     $dbh->disconnect();
