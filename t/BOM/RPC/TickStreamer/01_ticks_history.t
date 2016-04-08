@@ -91,6 +91,10 @@ subtest 'ticks_history' => sub {
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is wrong symbol param')
         ->error_message_is('Символ wrong недействителен', 'It should return error if there is wrong symbol param');
 
+    $params->{args}->{ticks_history} = 'DFMGI';
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('StreamingNotAllowed', 'Streaming not allowed for chartonly contracts.');
+
     $params->{args}->{ticks_history} = 'TOP40';
     $params->{args}->{subscribe}     = '1';
     $rpc_ct->call_ok($method, $params)
