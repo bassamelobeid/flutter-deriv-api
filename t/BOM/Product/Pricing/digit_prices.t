@@ -98,10 +98,16 @@ subtest 'prices' => sub {
 
 subtest 'invalid selections' => sub {
 
+    my $now = time;
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_50',
+        epoch => $now,
+    });
     my $params = {
         currency    => 'USD',
         amount      => 100,
-        date_start  => time,
+        date_start  => $now,
+        date_pricing  => $now,
         underlying  => 'R_50',
         tick_expiry => 1,
         tick_count  => 10,
@@ -123,7 +129,7 @@ subtest 'invalid selections' => sub {
             });
             cmp_ok $c->ask_price, '>=', 0, 'We can compute a price for ' . $bt_code . ' with digit of ' . $bad_digit;
             ok !$c->is_valid_to_buy, '... but it is not valid to sell';
-            ok($c->primary_validation_error->message =~ /No winning digits/, '... and among the reasons is that the digit cannot win.');
+            like($c->primary_validation_error->message, qr/No winning digits/, '... and among the reasons is that the digit cannot win.');
 
         };
 
