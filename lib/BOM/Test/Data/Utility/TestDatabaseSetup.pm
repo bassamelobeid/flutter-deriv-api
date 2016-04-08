@@ -51,7 +51,7 @@ sub dsn {
 sub db_handler {
     my $self     = shift;
     my $db       = shift;
-    my $password = $db eq 'pgbouncer' ? '' : $self->_connection_parameters->{'password'};
+    my $password = ($db // '') eq 'pgbouncer' ? '' : $self->_connection_parameters->{'password'};
     my $dbh      = DBI->connect($self->dsn($db), 'postgres', $password)
         or croak $DBI::errstr;
     return $dbh;
