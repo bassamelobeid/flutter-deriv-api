@@ -1,27 +1,17 @@
 random_index:
     name: random_index
-    display_name: "Constant Volatility"
+    display_name: "Continuous Indices"
     display_order: 1
     market: volidx
     explanation: 'Associated with a number that represents the relative volatility of the market. For example, the Volatility 100 Index is twice as volatile as the Volatility 50 Index.'
 random_daily:
     name: random_daily
-    display_name: "Varying Volatility"
+    display_name: "Daily Reset Indices"
     display_order: 2
     intradays_must_be_same_day: 1
     resets_at_open: 1
     market: volidx
     explanation: 'Represent a single day of trading with different market factors. They are reset at the start of each trading day (00:00GMT).'
-    sod_blackout_start: '1m'
-    eod_blackout_expiry: '1m'
-random_nightly:
-    name: random_nightly
-    display_name: "Constant Volatility with drift"
-    display_order: 3
-    intradays_must_be_same_day: 1
-    resets_at_open: 1
-    market: volidx
-    explanation: 'Represent a single day of trading with different market factors. They are reset at the start of each trading day (12:00GMT).'
     sod_blackout_start: '1m'
     eod_blackout_expiry: '1m'
 asia_oceania:
