@@ -142,7 +142,7 @@ sub proposal_open_contract {
                 $response->{$id} = $bid;
             } else {
                 my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
-                $transaction_ids->{sell} = $fmb->{sell_transaction_id} if exists $fmb->{sell_transaction_id};
+                $transaction_ids->{sell} = $fmb->{sell_transaction_id} if (defined $fmb->{sell_transaction_id});
 
                 $response->{$id} = {
                     transaction_ids => $transaction_ids,
