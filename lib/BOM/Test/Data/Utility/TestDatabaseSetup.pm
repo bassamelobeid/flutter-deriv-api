@@ -47,7 +47,7 @@ sub dsn {
     $port += 1000 if $db eq 'pgbouncer';
     my $host = $connection_settings->{host};
     $host = '/var/run/postgresql' if $db eq 'pgbouncer';
-    return 'dbi:Pg:dbname=' . $db . ';host=' . $connection_settings->{'host'} . ';port=' . $port;
+    return 'dbi:Pg:dbname=' . $db . ';host=' . $host . ';port=' . $port;
 }
 
 sub db_handler {
