@@ -7,6 +7,7 @@ use Try::Tiny;
 use List::Util;
 use Mail::Sender;
 use DateTime;
+use Date::Utility;
 use Cache::RedisDB;
 use Format::Util::Numbers qw(roundnear);
 use BOM::Utility::Log4perl qw( get_logger );
@@ -837,7 +838,10 @@ sub login_error {
         return localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif ($client->get_status('disabled')) {
         return localize('This account is unavailable. For any questions please contact Customer Support.');
-    } elsif ($client->get_self_exclusion && $client->get_self_exclusion->exclude_until) {
+    } elsif ($client->get_self_exclusion
+        && $client->get_self_exclusion->exclude_until
+        && Date::Utility->new->is_before(Date::Utility->new($client->get_self_exclusion->exclude_until)))
+    {
         return localize('Sorry, you have excluded yourself until [_1].', $client->get_self_exclusion->exclude_until);
     }
     return;
