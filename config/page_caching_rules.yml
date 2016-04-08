@@ -217,3 +217,9 @@
 "/logged_inws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/user/authorised_apps":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/applications":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
