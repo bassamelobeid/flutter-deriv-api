@@ -23,13 +23,14 @@ sub _db_migrations_dir {
 sub _build__connection_parameters {
     my $self = shift;
     return {
-        database => $self->_db_name,
-        domain   => 'TEST',
-        driver   => 'Pg',
-        host     => 'localhost',
-        port     => '5432',
-        user     => 'postgres',
-        password => 'mRX1E3Mi00oS8LG',
+        database       => $self->_db_name,
+        domain         => 'TEST',
+        driver         => 'Pg',
+        host           => 'localhost',
+        port           => '5432',
+        user           => 'postgres',
+        password       => 'mRX1E3Mi00oS8LG',
+        pgbouncer_port => '6432',
     };
 }
 

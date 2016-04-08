@@ -43,17 +43,16 @@ sub dsn {
     my $self                = shift;
     my $db                  = shift || $self->_db_name;
     my $connection_settings = $self->_connection_parameters;
-    my $port                = $connection_settings->{port};
-    $port += 1000 if $db eq 'pgbouncer';
-    my $host = $connection_settings->{host};
-    $host = '/var/run/postgresql' if $db eq 'pgbouncer';
+    my $port                = $db eq 'pgbouncer' ? $connection_settings->{pgbouncer_port} : $connection_settings->{port};
+    my $host                = $db eq 'pgbouncer' ? '/var/run/postgres' : $connection_settings->{host};
     return 'dbi:Pg:dbname=' . $db . ';host=' . $host . ';port=' . $port;
 }
 
 sub db_handler {
-    my $self = shift;
-    my $db   = shift;
-    my $dbh  = DBI->connect($self->dsn($db), 'postgres', $self->_connection_parameters->{'password'})
+    my $self     = shift;
+    my $db       = shift;
+    my $password = $db eq 'pgbouncer' ? '' : $self->_connection_parameters->{'password'};
+    my $dbh      = DBI->connect($self->dsn($db), 'postgres', $password)
         or croak $DBI::errstr;
     return $dbh;
 }
@@ -93,7 +92,7 @@ sub _migrate_changesets {
 
     # first teminate all other connections
     my $pooler = $self->db_handler('pgbouncer');
-    $pooler->{RaiseError} = 1;
+    $pooler->{RaiseError}        = 1;
     $pooler->{pg_server_prepare} = 0;
     $pooler->do('PAUSE');
     $dbh->do(
