@@ -93,9 +93,7 @@ sub ticks {
 
 sub candles {
     my $args = shift;
-
     $args = _validate_start_end($args);
-
     my $ul          = $args->{ul} || die 'no underlying';
     my $start_time  = $args->{start};
     my $end_time    = $args->{end};
@@ -103,7 +101,6 @@ sub candles {
     my $count       = $args->{count};
 
     my @all_ohlc;
-
     # This ohlc_daily_list is the only one will get ohlc from feed.tick for a period
     if ($end_time - $start_time <= $granularity) {
         my $ohlc = $ul->feed_api->ohlc_daily_list({
@@ -168,14 +165,12 @@ sub _validate_start_end {
 
     my $ul    = $args->{ul} || die 'no underlying';
     my $start = $args->{start};
-    my $end   = $args->{end} || time();
+    my $end   = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
     my $count = $args->{count};
     # default it to 1s in case of tick request
     my $granularity = $args->{granularity} || 1;
-
     # if no start but there is count, use count to calculate the start time to look back
     $start = (not $start and $count) ? $end - ($count * $granularity) : $start;
-
     # we must not return to the client any ticks/candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
     # max allow 3 years
