@@ -741,7 +741,8 @@ sub _build_opposite_bet {
                 $build_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
             }
         }
-        $build_parameters{date_start} = $self->date_pricing;
+        $build_parameters{date_start}   = $self->date_pricing;
+        $build_parameters{date_pricing} = $self->date_pricing;
     }
 
     # Secret hidden parameter for sell-time checking;
