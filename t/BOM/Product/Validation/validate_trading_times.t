@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::NoWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -14,9 +14,10 @@ use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use Test::MockModule;
 
-my $weekend = Date::Utility->new('2016-03-26');
-my $weekday = Date::Utility->new('2016-03-29');
+my $weekend             = Date::Utility->new('2016-03-26');
+my $weekday             = Date::Utility->new('2016-03-29');
 my $usdjpy_weekend_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $weekend->epoch
@@ -140,7 +141,7 @@ subtest 'trading hours' => sub {
 };
 
 subtest 'invalid expiry time for multiday contracts' => sub {
-    my $now = Date::Utility->new;
+    my $now       = Date::Utility->new;
     my $fake_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
         epoch      => $now->epoch
@@ -159,14 +160,14 @@ subtest 'invalid expiry time for multiday contracts' => sub {
     };
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like (($c->primary_validation_error)[0]->{message}, qr/daily expiry must expire at close/, 'throws error');
+    like(($c->primary_validation_error)[0]->{message}, qr/daily expiry must expire at close/, 'throws error');
     $bet_params->{date_expiry} = $now->truncate_to_day->plus_time_interval('1d23h59m59s');
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
 };
 
 subtest 'intraday must be same day' => sub {
-    my $eod = $weekday->plus_time_interval('22h');
+    my $eod      = $weekday->plus_time_interval('22h');
     my $eod_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'RDBULL',
         epoch      => $eod->epoch
@@ -189,10 +190,64 @@ subtest 'intraday must be same day' => sub {
     $c = produce_contract($bet_params);
     ok $c->underlying->intradays_must_be_same_day, 'intraday must be same day';
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like (($c->primary_validation_error)[0]->{message}, qr/Intraday duration must expire on same day/, 'throws error');
+    like(($c->primary_validation_error)[0]->{message}, qr/Intraday duration must expire on same day/, 'throws error');
 
     $bet_params->{underlying} = 'R_100';
     $c = produce_contract($bet_params);
     ok !$c->underlying->intradays_must_be_same_day, 'intraday can cross day';
+    ok $c->is_valid_to_buy, 'valid to buy';
+};
+
+subtest 'too many holiday for multiday indices contracts' => sub {
+    my $mock = Test::MockModule->new('BOM::Market::Exchange');
+    $mock->mock('_object_expired', sub { return 1 });
+    my $hsi         = BOM::Market::Underlying->new('HSI');
+    my $monday_open = $hsi->exchange->opening_on(Date::Utility->new('2016-04-04'))->plus_time_interval('15m');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxUSDHKD',
+            recorded_date => $monday_open
+        });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol        => 'HSI',
+            recorded_date => $monday_open
+        });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'holiday',
+        {
+            recorded_date => $monday_open,
+            calendar      => {
+                $monday_open->plus_time_interval('2d')->date => {
+                    'Test Holiday' => ['HKSE'],
+                },
+                $monday_open->plus_time_interval('1d')->date => {
+                    'Test Holiday 2' => ['HKSE'],
+                },
+            },
+        });
+    my $hsi_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'HSI',
+        epoch      => $monday_open->epoch,
+        quote      => 7150
+    });
+    my $bet_params = {
+        underlying   => 'HSI',
+        bet_type     => 'CALL',
+        barrier      => 'S10P',
+        payout       => 100,
+        date_start   => $monday_open,
+        date_pricing => $monday_open,
+        duration     => '4d',
+        currency     => 'USD',
+        current_tick => $hsi_tick,
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like($c->primary_validation_error->message, qr/Not enough trading days for calendar days/, 'throws error');
+    $bet_params->{barrier} = 'S0P';
+    $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
 };

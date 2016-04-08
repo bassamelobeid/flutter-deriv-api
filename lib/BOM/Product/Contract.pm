@@ -2484,10 +2484,12 @@ sub _validate_trading_times {
     my $self = shift;
 
     my @errors;
-    my $underlying = $self->underlying;
-    my $exchange   = $underlying->exchange;
+    my $underlying  = $self->underlying;
+    my $exchange    = $underlying->exchange;
+    my $date_expiry = $self->date_expiry;
+    my $date_start  = $self->date_start;
 
-    if (not($exchange->trades_on($self->date_start) and $exchange->is_open_at($self->date_start))) {
+    if (not($exchange->trades_on($date_start) and $exchange->is_open_at($date_start))) {
         my $message =
             ($self->is_forward_starting) ? localize("The market must be open at the start time.") : localize('This market is presently closed.');
         push @errors,
@@ -2495,24 +2497,32 @@ sub _validate_trading_times {
             message => format_error_string(
                 'underlying is closed at start',
                 symbol => $underlying->symbol,
-                start  => $self->date_start->datetime
+                start  => $date_start->datetime
             ),
             message_to_client => $message . " " . localize("Try out the Random Indices which are always open.")};
-    } elsif ($self->is_intraday) {
-        if (not $exchange->is_open_at($self->date_expiry)) {
+    } elsif (not $exchange->trades_on($date_expiry)) {
+        push @errors,
+            {
+            message           => format_error_string('Exchange is closed on expiry date', expiry => $date_expiry->date),
+            message_to_client => localize("The contract must expire on a trading day."),
+            };
+    }
+
+    if ($self->is_intraday) {
+        if (not $exchange->is_open_at($date_expiry)) {
             my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             push @errors,
                 {
                 message => format_error_string(
                     'underlying closed at expiry',
                     symbol => $underlying->symbol,
-                    expiry => $self->date_expiry->datetime
+                    expiry => $date_expiry->datetime
                 ),
                 message_to_client => localize("Contract must expire during trading hours."),
                 info_link         => $times_link,
                 info_text         => localize('Trading Times'),
                 };
-        } elsif ($underlying->intradays_must_be_same_day and $exchange->closing_on($self->date_start)->epoch < $self->date_expiry->epoch) {
+        } elsif ($underlying->intradays_must_be_same_day and $exchange->closing_on($date_start)->epoch < $date_expiry->epoch) {
             push @errors,
                 {
                 message           => format_error_string('Intraday duration must expire on same day', symbol => $underlying->symbol),
@@ -2522,25 +2532,54 @@ sub _validate_trading_times {
                 ),
                 };
         }
-    } elsif (not $exchange->trades_on($self->date_expiry)) {
-        push @errors,
-            {
-            message           => format_error_string('Exchange is closed on expiry date', expiry => $self->date_expiry->date),
-            message_to_client => localize("The contract must expire on a trading day."),
-            };
-    } elsif ($self->expiry_daily and not $self->date_expiry->is_same_as($exchange->closing_on($self->date_expiry))) {
-        push @errors,
-            {
-            message => format_error_string(
-                'daily expiry must expire at close',
-                expiry            => $self->date_expiry->datetime,
-                underlying_symbol => $underlying->symbol
-            ),
-            message_to_client => localize(
-                'Contracts on [_1] with duration more than 24 hours must expire at the end of a trading day.',
-                $underlying->translated_display_name()
-            ),
-            };
+    } elsif ($self->expiry_daily) {
+        if (not $date_expiry->is_same_as($exchange->closing_on($date_expiry))) {
+            push @errors,
+                {
+                message => format_error_string(
+                    'daily expiry must expire at close',
+                    expiry            => $date_expiry->datetime,
+                    underlying_symbol => $underlying->symbol
+                ),
+                message_to_client => localize(
+                    'Contracts on [_1] with duration more than 24 hours must expire at the end of a trading day.',
+                    $underlying->translated_display_name()
+                ),
+                };
+        }
+
+        if (not $self->is_atm_bet) {
+            # For definite ATM contracts we do not have to check for upcoming holidays.
+            my $times_text    = localize('Trading Times');
+            my $trading_days  = $self->exchange->trading_days_between($date_start, $date_expiry);
+            my $holiday_days  = $self->exchange->holiday_days_between($date_start, $date_expiry);
+            my $calendar_days = $date_expiry->days_between($date_start);
+
+            if ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
+                my $safer_expiry = $date_expiry;
+                my $trade_count  = $trading_days;
+                while ($trade_count < 4) {
+                    $safer_expiry = $underlying->trade_date_after($safer_expiry);
+                    $trade_count++;
+                }
+                my $message =
+                    ($self->built_with_bom_parameters)
+                    ? localize('Resale of this contract is not offered due to market holidays during contract period.')
+                    : localize("Too many market holidays during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
+                my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
+                push @errors,
+                    {
+                    message => format_error_string(
+                        'Not enough trading days for calendar days',
+                        trading  => $trading_days,
+                        calendar => $calendar_days,
+                    ),
+                    message_to_client => $message,
+                    info_link         => $times_link,
+                    info_text         => $times_text,
+                    };
+            }
+        }
     }
 
     return @errors;
@@ -2589,11 +2628,20 @@ sub _build_date_expiry_blackouts {
 
     my @periods;
     my $underlying = $self->underlying;
+    my $date_start = $self->date_start;
 
     if ($self->is_intraday) {
         my $end_of_trading = $underlying->exchange->closing_on($self->date_start);
         if ($end_of_trading and my $expiry_blackout = $underlying->eod_blackout_expiry) {
             push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch];
+        }
+    } elsif ($self->expiry_daily and $underlying->market->equity and not $self->is_atm_bet) {
+        my $start_of_period = BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_start};
+        my $end_of_period   = BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_end};
+        if ($self->date_start->day_of_year >= $start_of_period or $self->date_start->day_of_year <= $end_of_period) {
+            my $year = $self->date_start->day_of_year > $start_of_period ? $date_start->year : $date_start->year - 1;
+            my $end_blackout = Date::Utility->new($year . '-12-31')->plus_time_interval($end_of_period . 'd23h59m59s');
+            push @periods, [$self->date_start->epoch, $end_blackout->epoch];
         }
     }
 
@@ -2627,7 +2675,6 @@ sub _build_market_risk_blackouts {
         if (not $self->is_atm_bet and $self->underlying->market->name eq 'forex') {
             push @blackout_periods, [$_->{blankout}, $_->{blankout_end}] for @{$self->tentative_events};
         }
-
     }
 
     return \@blackout_periods;
@@ -2650,7 +2697,13 @@ sub _validate_start_and_expiry_date {
         my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];
         foreach my $period (@$periods) {
             if (first { $_ >= $period->[0] and $_ <= $period->[1] } @$epochs) {
-                push @args, (Date::Utility->new($period->[0])->time_hhmmss, Date::Utility->new($period->[1])->time_hhmmss);
+                my $start = Date::Utility->new($period->[0]);
+                my $end   = Date::Utility->new($period->[1]);
+                if ($start->day_of_year == $end->day_of_year) {
+                    push @args, ($start->time_hhmmss, $end->time_hhmmss);
+                } else {
+                    push @args, ($start->date, $end->date);
+                }
                 return (
                     +{
                         message => format_error_string(
@@ -2837,80 +2890,6 @@ sub _subvalidate_lifetime_days {
             info_text         => $asset_text,
             };
     }
-    if (not $self->is_atm_bet) {
-        # For definite ATM contracts we do not have to check for upcoming holidays.
-        my $times_text    = localize('Trading Times');
-        my $trading_days  = $self->exchange->trading_days_between($date_start, $date_expiry);
-        my $holiday_days  = $self->exchange->holiday_days_between($date_start, $date_expiry);
-        my $calendar_days = $date_expiry->days_between($date_start);
-
-        if ($calendar_days <= 7 and $holiday_days > 0) {
-            my $safer_expiry = $underlying->trade_date_after($self->date_pricing->plus_time_interval('7d'));
-            my $message =
-                ($self->built_with_bom_parameters)
-                ? localize('Resale of this contract is not offered due to market holiday during contract period.')
-                : localize("Market holiday during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
-            # It's only safer, not safe, because if there are more holidays it still might go nuts.
-            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
-            push @errors,
-                {
-                message           => format_error_string('underlying holidays in contract period', symbol => $self->underlying->symbol),
-                message_to_client => $message,
-                info_link         => $times_link,
-                info_text         => $times_text,
-                };
-        } elsif ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
-            my $safer_expiry = $date_expiry;
-            my $trade_count  = $trading_days;
-            while ($trade_count < 4) {
-                $safer_expiry = $underlying->trade_date_after($safer_expiry);
-                $trade_count++;
-            }
-            my $message =
-                ($self->built_with_bom_parameters)
-                ? localize('Resale of this contract is not offered due to market holidays during contract period.')
-                : localize("Too many market holidays during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
-            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
-            push @errors,
-                {
-                message => format_error_string(
-                    'Not enough trading days for calendar days',
-                    trading  => $trading_days,
-                    calendar => $calendar_days,
-                ),
-                message_to_client => $message,
-                info_link         => $times_link,
-                info_text         => $times_text,
-                };
-        }
-    }
-    if (
-            $underlying->market->equity
-        and $date_start->day_of_year >= BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_start}
-        and (  $date_expiry->day_of_year > $date_start->day_of_year
-            or $date_expiry->day_of_year <= BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_end}))
-    {
-        # Assumes that the black out period always extends over Jan 1 into the next year.
-        my $year = $date_expiry->year;
-        $year-- if ($date_expiry->day_of_year < $date_start->day_of_year);    # Expiry is into next year, already.
-        my $end_of_bo =
-            Date::Utility->new('31-Dec-' . $year)
-            ->plus_time_interval(BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_end} . 'd');
-        my $message =
-            ($self->built_with_bom_parameters)
-            ? localize('Resale of this contract is not offered due to end-of-year market holidays.')
-            : localize('Contract can not expire during the end-of-year holiday period. Select an expiry date after [_1].', $end_of_bo->date);
-        push @errors,
-            {
-            message => format_error_string(
-                'contained within holiday blackout period',
-                'blackout start' => $date_start->datetime,
-                'blackout end'   => $date_expiry->datetime,
-            ),
-            message_to_client => $message,
-            };
-    }
-
     return @errors;
 }
 

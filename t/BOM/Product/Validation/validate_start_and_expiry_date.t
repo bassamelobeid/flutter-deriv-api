@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::NoWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -187,8 +187,8 @@ subtest 'date start blackouts' => sub {
     $bet_params->{barrier}      = 'S0P';
     $c                          = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 11:56:59 to 11:59:59/, 'throws error');
-    $bet_params->{date_start} = $bet_params->{date_pricing} = $rdmars_close->epoch - 181;
+    like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 11:54:59 to 11:59:59/, 'throws error');
+    $bet_params->{date_start} = $bet_params->{date_pricing} = $rdmars_close->epoch - 301;
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
     $bet_params->{underlying} = 'R_100';
@@ -248,6 +248,54 @@ subtest 'date_expiry blackouts' => sub {
     $bet_params->{current_tick} = $usdjpy_tick;
     $c                          = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
+};
+
+subtest 'date expiry blackout - year end holidays for equity' => sub {
+    my $year_end   = Date::Utility->new('2016-12-30');
+    my $date_start = BOM::Market::Underlying->new('HSI')->exchange->opening_on($year_end)->plus_time_interval('15m');
+    my $tick       = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'HSI',
+        epoch      => $date_start->epoch,
+        quote      => 7195,
+    });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol        => 'HSI',
+            recorded_date => $date_start
+        });
+    my $bet_params = {
+        bet_type     => 'CALL',
+        underlying   => 'HSI',
+        date_start   => $date_start,
+        date_pricing => $date_start,
+        barrier      => 'S10P',
+        currency     => 'USD',
+        payout       => 10,
+        duration     => '5d',
+        current_tick => $tick,
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->is_atm_bet,      'not ATM contract';
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like($c->primary_validation_error->message_to_client, qr/not expire between 2016-12-30 and 2017-01-05/, 'throws error');
+    $bet_params->{barrier} = 'S0P';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy for ATM';
+    $bet_params->{barrier}  = 'S10P';
+    $bet_params->{duration} = '7d';
+    $c                      = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy for non ATM past holiday blackout period';
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $_,
+            recorded_date => $date_start
+        }) for qw(frxUSDJPY frxUSDHKD);
+    $bet_params->{underlying} = 'frxUSDJPY';
+    $bet_params->{duration}   = '5d';
+    $c                        = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy for Forex during holiday blackout period';
 };
 
 subtest 'market_risk blackouts' => sub {
