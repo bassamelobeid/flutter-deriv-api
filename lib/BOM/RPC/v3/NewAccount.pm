@@ -340,7 +340,10 @@ sub _get_client_details {
             );
             $args->{date_of_birth} = $dob->ymd;
         }
-        catch { return; } or return {error => 'invalid DOB'};
+        catch { return; } or return {
+            error => {
+                code    => 'InvalidDateOfBirth',
+                message => localize('Date of birth is invalid')}};
     }
 
     foreach my $key (@fields) {

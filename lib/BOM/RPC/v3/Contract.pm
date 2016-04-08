@@ -76,7 +76,7 @@ sub prepare_ask {
     return \%p2;
 }
 
-sub get_ask {
+sub _get_ask {
     my $p2 = shift;
 
     my $response;
@@ -86,17 +86,15 @@ sub get_ask {
 
         if (!$contract->is_valid_to_buy) {
             if (my $pve = $contract->primary_validation_error) {
-                $response = {
-                    error => {
-                        message => $pve->message_to_client,
-                        code    => "ContractBuyValidationError"
-                    }};
+                $response = BOM::RPC::v3::Utility::create_error({
+                    message_to_client => $pve->message_to_client,
+                    code              => "ContractBuyValidationError"
+                });
             } else {
-                $response = {
-                    error => {
-                        message => BOM::Platform::Context::localize("Cannot validate contract"),
-                        code    => "ContractValidationError"
-                    }};
+                $response = BOM::RPC::v3::Utility::create_error({
+                    message_to_client => localize("Cannot validate contract"),
+                    code              => "ContractValidationError"
+                });
             }
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
@@ -120,11 +118,10 @@ sub get_ask {
         stats_timing('compute_price.buy.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
     catch {
-        $response = {
-            error => {
-                message => BOM::Platform::Context::localize("Cannot create contract"),
-                code    => "ContractCreationFailure"
-            }};
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => BOM::Platform::Context::localize("Cannot create contract"),
+            code              => "ContractCreationFailure"
+        });
     };
 
     return $response;
@@ -204,11 +201,10 @@ sub get_bid {
         stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
     catch {
-        $response = {
-            error => {
-                message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
-                code              => "GetProposalFailure"
-            }};
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+            code              => "GetProposalFailure"
+        });
     };
 
     return $response;
@@ -223,13 +219,7 @@ sub send_ask {
     my %details = %{$args};
     my $response;
     try {
-        $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
-        if (exists $response->{error}) {
-            $response = BOM::RPC::v3::Utility::create_error({
-                code              => $response->{error}->{code},
-                message_to_client => $response->{error}->{message},
-            });
-        }
+        $response = _get_ask(prepare_ask(\%details));
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
@@ -264,11 +254,10 @@ sub get_contract_details {
         };
     }
     catch {
-        $response = {
-            error => {
-                message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
-                code              => "GetContractDetails"
-            }};
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => localize('Sorry, an error occurred while processing your request.'),
+            code              => "GetContractDetails"
+        });
     };
     return $response;
 }
