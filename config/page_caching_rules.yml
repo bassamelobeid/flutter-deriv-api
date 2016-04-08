@@ -49,9 +49,6 @@
 "/group-information":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/charting":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/country":
   header:
     Cache-Control: "private, max-age=604800"
@@ -217,7 +214,7 @@
 "/logged_inws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/user/authorised_apps":
+"/user/authorised_appsws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/applications":
