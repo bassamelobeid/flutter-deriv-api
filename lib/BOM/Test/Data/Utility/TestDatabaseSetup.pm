@@ -98,7 +98,10 @@ sub _migrate_changesets {
     # there is a warning here. I don't know what's the meaning.
     #Warning was 'WARNING:  PID 31811 is not a PostgreSQL server process' at /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/TestDatabaseSetup.pm line 98.
     {
-        local $SIG{__WARN__} = sub { my $msg = shift; print STDERR $msg unless ($msg =~ /is not a PostgreSQL server process/) };
+        local $SIG{__WARN__} = sub {
+            my $msg = shift;
+            print STDERR $msg if ($msg !~ /is not a PostgreSQL server process/);
+        };
         $dbh->do(
             'select pid, pg_terminate_backend(pid) terminated
            from pg_stat_get_activity(NULL::integer) s(datid, pid)
