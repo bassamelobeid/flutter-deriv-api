@@ -69,8 +69,8 @@ sub entry_point {
                 # set correct request context for localize
                 BOM::Platform::Context::request($c->stash('request'))
                     if $channel =~ /^FEED::/;
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg)
-                    if $channel =~ /^FEED::/;
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
+                    if $channel =~ /^(?:FEED|PricingTable)::/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
                     if $channel =~ /^TXNUPDATE::transaction_/;
             });
@@ -168,12 +168,13 @@ my @dispatch = (
         'ticks_history',
         \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history, 0
     ],
-    ['proposal',       \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,     0],
-    ['forget',         \&BOM::WebSocketAPI::v3::Wrapper::System::forget,         0],
-    ['forget_all',     \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,     0],
-    ['ping',           \&BOM::WebSocketAPI::v3::Wrapper::System::ping,           0],
-    ['time',           \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,    0],
-    ['website_status', \&BOM::WebSocketAPI::v3::Wrapper::System::website_status, 0],
+    ['proposal',       \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,      0],
+    ['pricing_table',  \&BOM::WebSocketAPI::v3::Wrapper::Streamer::pricing_table, 0],
+    ['forget',         \&BOM::WebSocketAPI::v3::Wrapper::System::forget,          0],
+    ['forget_all',     \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,      0],
+    ['ping',           \&BOM::WebSocketAPI::v3::Wrapper::System::ping,            0],
+    ['time',           \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,     0],
+    ['website_status', \&BOM::WebSocketAPI::v3::Wrapper::System::website_status,  0],
     [
         'contracts_for',
         \&BOM::WebSocketAPI::v3::Wrapper::Offerings::contracts_for, 0
@@ -237,6 +238,7 @@ my @dispatch = (
     ['set_account_currency',     \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency,     1, 'admin'],
     ['set_financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_financial_assessment, 1, 'admin'],
     ['get_financial_assessment', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_financial_assessment, 1, 'admin'],
+    ['reality_check',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::reality_check,            1, 'read'],
 
     ['verify_email', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0],
     [
@@ -337,16 +339,19 @@ my %rate_limit_map = (
     statement_real                 => 'websocket_call_expensive',
     profit_table_real              => 'websocket_call_expensive',
     proposal_real                  => 'websocket_real_pricing',
+    pricing_table_real             => 'websocket_real_pricing',
     proposal_open_contract_real    => 'websocket_real_pricing',
     verify_email_real              => 'websocket_call_email',
     buy_real                       => 'websocket_real_pricing',
     sell_real                      => 'websocket_real_pricing',
+    reality_check_real             => 'websocket_reality_check',
     ping_virtual                   => '',
     time_virtual                   => '',
     portfolio_virtual              => 'websocket_call_expensive',
     statement_virtual              => 'websocket_call_expensive',
     profit_table_virtual           => 'websocket_call_expensive',
     proposal_virtual               => 'websocket_call_pricing',
+    pricing_table_virtual          => 'websocket_call_pricing',
     proposal_open_contract_virtual => 'websocket_call_pricing',
     verify_email_virtual           => 'websocket_call_email',
 );
@@ -489,14 +494,16 @@ sub rpc {
     $params->{country} = $country_code;
 
     my $client = MojoX::JSON::RPC::Client->new;
-    my $url    = 'http://127.0.0.1:5005/' . $method;
+    my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
     if (BOM::System::Config::env eq 'production') {
         if (BOM::System::Config::node->{node}->{www2}) {
-            $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/' . $method;
+            $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
         } else {
-            $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/' . $method;
+            $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
         }
     }
+
+    $url .= $method;
 
     my $callobj = {
         id     => Data::UUID->new()->create_str(),

@@ -9,6 +9,7 @@ use Scalar::Util qw (looks_like_number);
 
 use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Contract;
+use BOM::RPC::v3::Japan::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 
@@ -89,6 +90,27 @@ sub proposal {
     return;
 }
 
+sub pricing_table {
+    my ($c, $args) = @_;
+
+    my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args);
+
+    if ($response and exists $response->{error}) {
+        return $c->new_error('pricing_table', $response->{error}->{code}, $response->{error}->{message_to_client});
+    }
+
+    my $symbol = $args->{symbol};
+    my $id;
+    if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args), $args)) {
+        return $c->new_error('pricing_table',
+            'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for pricing table subscription.'));
+    }
+    my $msg = BOM::RPC::v3::Japan::Contract::get_table($args);
+    send_pricing_table($c, $id, $args, $msg);
+
+    return;
+}
+
 sub send_ask {
     my ($c, $id, $args) = @_;
 
@@ -112,13 +134,12 @@ sub send_ask {
 }
 
 sub process_realtime_events {
-    my ($c, $message) = @_;
+    my ($c, $message, $chan) = @_;
 
-    my @m = split(';', $message);
+    my @m                  = split(';', $message);
     my $feed_channels_type = $c->stash('feed_channel_type');
-
-    my %skip_symbol_list = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
-    my %skip_type_list   = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
+    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
+    my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
     foreach my $channel (keys %{$feed_channels_type}) {
         $channel =~ /(.*);(.*)/;
         my $symbol    = $1;
@@ -138,6 +159,8 @@ sub process_realtime_events {
                             symbol => $symbol,
                             epoch  => $m[1],
                             quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
+        } elsif ($type =~ /^pricing_table:/ and $chan eq BOM::RPC::v3::Japan::Contract::get_channel_name($arguments)) {
+            send_pricing_table($c, $feed_channels_type->{$channel}->{uuid}, $arguments, $message);
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
             if (exists $arguments->{subscribe} and $arguments->{subscribe} eq '1') {
                 unless ($skip_symbol_list{$arguments->{symbol}}
@@ -179,7 +202,9 @@ sub process_realtime_events {
 }
 
 sub _feed_channel {
+
     my ($c, $subs, $symbol, $type, $args) = @_;
+
     my $uuid;
 
     my $feed_channel      = $c->stash('feed_channel')      || {};
@@ -189,7 +214,7 @@ sub _feed_channel {
     if ($subs eq 'subscribe') {
         my $count = 0;
         foreach my $k (keys $feed_channel_type) {
-            $count++ if ($k =~ /^.*?;proposal:/);
+            $count++ if ($k =~ /^.*?;(?:proposal|pricing_table):/);
         }
         if ($count > 5 || exists $feed_channel_type->{"$symbol;$type"}) {
             return;
@@ -198,14 +223,18 @@ sub _feed_channel {
         $feed_channel->{$symbol} += 1;
         $feed_channel_type->{"$symbol;$type"}->{args} = $args if $args;
         $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
-        $redis->subscribe(["FEED::$symbol"], sub { });
+
+        my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
+        $redis->subscribe([$channel_name], sub { });
     }
 
     if ($subs eq 'unsubscribe') {
         $feed_channel->{$symbol} -= 1;
+        my $args = $feed_channel_type->{"$symbol;$type"}->{args};
         delete $feed_channel_type->{"$symbol;$type"};
         if ($feed_channel->{$symbol} <= 0) {
-            $redis->unsubscribe(["FEED::$symbol"], sub { });
+            my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
+            $redis->unsubscribe([$channel_name], sub { });
             delete $feed_channel->{$symbol};
         }
     }
@@ -343,6 +372,27 @@ sub process_transaction_updates {
             }
         }
     }
+    return;
+}
+
+sub send_pricing_table {
+    my $c         = shift;
+    my $id        = shift;
+    my $arguments = shift;
+    my $message   = shift;
+    my $table     = JSON::from_json($message);
+    $c->send({
+            json => {
+                msg_type => 'pricing_table',
+                echo_req => $arguments,
+                (exists $arguments->{req_id})
+                ? (req_id => $arguments->{req_id})
+                : (),
+                (
+                    pricing_table => {
+                        id     => $id,
+                        prices => $table,
+                    })}});
     return;
 }
 
