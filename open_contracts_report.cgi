@@ -31,9 +31,19 @@ SELECT
     (b.expiry_time AT TIME ZONE 'UTC' AT TIME ZONE 'JST')::TEXT  as trading_end_time,
 
     CASE
-        WHEN b.bet_class = 'higher_lower_bet'   THEN 'Ladder'
-        WHEN b.bet_class = 'touch_bet'          THEN 'Touch / No Touch'
-        WHEN b.bet_class = 'range_bet'          THEN 'Range In / Out'
+        WHEN b.bet_type = 'CALLE'           THEN 'Ladder Higher'
+        WHEN b.bet_type = 'PUT'             THEN 'Ladder Lower'
+
+        WHEN b.bet_type = 'ONETOUCH'        THEN 'Touch'
+        WHEN b.bet_type = 'NOTOUCH'         THEN 'No Touch'
+
+        WHEN b.bet_type = 'EXPIRYRANGEE'    THEN 'Ends In (Ends Between)'
+        WHEN b.bet_type = 'EXPIRYMISS'      THEN 'Ends Out (Ends Outside)'
+
+        WHEN b.bet_type = 'RANGE'           THEN 'Stays In (Stays Between)'
+        WHEN b.bet_type = 'UPORDOWN'        THEN 'Stays Out (Goes Outside)'
+
+        ELSE 'others'
     END as bet_type,
 
     regexp_replace(b.underlying_symbol, 'frx', '') as currency_pair,
