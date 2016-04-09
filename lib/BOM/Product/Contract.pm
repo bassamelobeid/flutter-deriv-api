@@ -2394,7 +2394,13 @@ sub _validate_input_parameters {
     my $epoch_expiry = $self->date_expiry->epoch;
     my $epoch_start  = $self->date_start->epoch;
 
-    if ($epoch_expiry == $epoch_start) {
+    if ($self->is_after_expiry) {
+        push @errors,
+            {
+            message           => format_error_string('already expired contract'),
+            message_to_client => localize("Contract has already expired."),
+            };
+    } elsif ($epoch_expiry == $epoch_start) {
         push @errors,
             {
             message => format_error_string(
@@ -2719,26 +2725,6 @@ sub _validate_start_and_expiry_date {
     }
 
     return;
-}
-
-sub _validate_expiry_date {
-    my $self = shift;
-
-    my @errors;
-    my $underlying   = $self->underlying;
-    my $epoch_expiry = $self->date_expiry->epoch;
-    my $exchange     = $self->exchange;
-    my $times_text   = localize('Trading Times');
-
-    if ($self->is_expired and not $self->is_path_dependent) {
-        push @errors,
-            {
-            message           => format_error_string('already expired contract'),
-            message_to_client => localize("Contract has already expired."),
-            };
-    }
-
-    return @errors;
 }
 
 sub _validate_lifetime {
