@@ -2450,6 +2450,12 @@ sub _validate_input_parameters {
             message           => format_error_string('already expired contract'),
             message_to_client => localize("Contract has already expired."),
             };
+    } elsif ($self->build_parameters->{pricing_vol}) {
+        push @errors,
+            {
+            message           => format_error_string('forced (not calculated) IV'),
+            message_to_client => localize("Prevailing market price cannot be determined."),
+            };
     }
 
     return @errors;
@@ -2784,88 +2790,60 @@ sub _validate_lifetime {
 sub _validate_volsurface {
     my $self = shift;
 
-    my @errors;
+    my $volsurface = $self->volsurface;
+    return if (first { $volsurface->type eq $_ } qw(phased flat));
 
-    if ($self->build_parameters->{pricing_vol}) {
-        push @errors,
-            {
-            message           => format_error_string('forced (not calculated) IV'),
-            message_to_client => localize("Prevailing market price cannot be determined."),
-            };
-    }
-
-    return @errors if $self->market->name eq 'random';
-
-    my $surface          = $self->volsurface;
     my $now              = $self->date_pricing;
-    my $standard_message = localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name());
-    my $surface_age      = Time::Duration::Concise::Localize->new(
-        interval => $now->epoch - $surface->recorded_date->epoch,
-        locale   => BOM::Platform::Context::request()->language
-    );
+    my $standard_message = localize('Trading is suspended due to missing market data.');
+    my $surface_age      = ($now->epoch - $volsurface->recorded_date->epoch) / 3600;
 
-    if ($surface->get_smile_flags) {
-        push @errors,
-            {
+    if ($volsurface->get_smile_flags) {
+        return ({
             message           => format_error_string('Volsurface has smile flags', symbol => $self->underlying->symbol),
             message_to_client => $standard_message,
-            };
+        });
     }
+
+    my $too_old = 0;
     if (    $self->market->name eq 'forex'
         and $self->pricing_engine_name !~ /Intraday::Forex/
         and $self->timeindays->amount < 4
-        and $surface_age->hours > 6)
+        and $surface_age > 6)
     {
-        push @errors,
-            {
-            message => format_error_string(
-                'volsurface too old',
-                symbol => $self->underlying->symbol,
-                age    => $surface_age->as_concise_string,
-                max    => '6h'
-            ),
-            message_to_client => $standard_message,
-            };
-    } elsif ($self->market->name eq 'indices' and $surface_age->hours > 24 and not $self->is_atm_bet) {
-        push @errors,
-            {
-            message => format_error_string(
-                'volsurface too old',
-                symbol => $self->underlying->symbol,
-                age    => $surface_age->as_concise_string,
-                max    => '4h',
-            ),
-            message_to_client => $standard_message,
-            };
-    } elsif ($surface->recorded_date->days_between($self->exchange->trade_date_before($now)) < 0) {
-        push @errors,
-            {
-            message => format_error_string(
-                'volsurface too old',
-                symbol          => $self->underlying->symbol,
-                'recorded date' => $surface->recorded_date->datetime,
-                'trade date'    => $now->datetime
-            ),
-            message_to_client => $standard_message,
-            };
+        $too_old = $surface_age;
+    } elsif ($volsurface->recorded_date->days_between($self->exchange->trade_date_before($now)) < 0) {
+        # This complex check for surface cannot be 24 hours old is to avoid false positive on Mondays.
+        $too_old = $surface_age;
     }
 
-    if ($self->volsurface->type eq 'moneyness') {
-        if (abs($surface->spot_reference - $self->current_spot) / $self->current_spot * 100 > 5) {
-            push @errors,
-                {
+    if ($too_old) {
+        return ({
                 message => format_error_string(
-                    'spot too far from surface reference',
-                    symbol              => $self->underlying->symbol,
-                    spot                => $self->current_spot,
-                    'surface reference' => $surface->spot_reference
+                    'volsurface too old',
+                    symbol => $self->underlying->symbol,
+                    age    => $surface_age . 'h',
+                    max    => (($self->market->name eq 'forex') ? '6h' : '24h'),
                 ),
                 message_to_client => $standard_message,
-                };
+            });
+    }
+
+    if ($volsurface->type eq 'moneyness') {
+        my $current_spot = $self->current_spot;
+        if (abs($volsurface->spot_reference - $current_spot) / $current_spot * 100 > 5) {
+            return ({
+                    message => format_error_string(
+                        'spot too far from surface reference',
+                        symbol              => $self->underlying->symbol,
+                        spot                => $current_spot,
+                        'surface reference' => $volsurface->spot_reference
+                    ),
+                    message_to_client => $standard_message,
+                });
         }
     }
 
-    return @errors;
+    return;
 }
 
 sub _validate_eod_market_risk {
