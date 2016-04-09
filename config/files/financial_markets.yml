@@ -119,8 +119,8 @@ indices:
     display_name: "Indices"
     integer_barrier: 1
     display_order: 2
-    eod_blackout_expiry: '59s'
-    eod_blackout_start: '14m59s'
+    eod_blackout_expiry: '1m'
+    eod_blackout_start: '15m'
     sod_blackout_start: '10m'
     intradays_must_be_same_day: 1
     asset_type: 'index'
@@ -156,8 +156,8 @@ stocks:
     outlier_tick: 0.10
     display_name: "Stocks"
     volatility_surface_type: "moneyness"
-    eod_blackout_expiry: '59s'
-    eod_blackout_start: '59m59s'
+    eod_blackout_expiry: '1m'
+    eod_blackout_start: '1h'
     sod_blackout_start: '10m'
     display_order: 3
     max_failover_feed_delay: '3m'

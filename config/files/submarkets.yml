@@ -84,6 +84,7 @@ energy:
     display_name: "Energy"
     display_order: 2
     market: commodities
+    eod_blackout_expiry: '1m'
 australia:
     name: australia
     offered: 0
