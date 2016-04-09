@@ -640,7 +640,7 @@ subtest 'invalid start times' => sub {
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/underlying.*in starting blackout/];
+    $expected_reasons = [qr/blackout period \[symbol: GDAXI\] \[from: 1364457600\] \[to: 1364458200\]/];
     test_error_list('buy', $bet, $expected_reasons);
 
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -762,7 +762,7 @@ subtest 'invalid expiry times' => sub {
     $bet_params->{duration} = '59m34s';
 
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/end of day expiration blackout/];
+    $expected_reasons = [qr/blackout period \[symbol: GDAXI\] \[from: 1364488141\] \[to: 1364488200\]/];
     test_error_list('buy', $bet, $expected_reasons);
 
 };
@@ -1142,8 +1142,8 @@ subtest 'expiry_daily expiration time' => sub {
             recorded_date => Date::Utility->new($params->{date_pricing}),
         });
     my $c = produce_contract($params);
-    ok $c->_validate_expiry_date;
-    my $err = ($c->_validate_expiry_date)[0]->{message_to_client};
+    ok $c->_validate_trading_times;
+    my $err = ($c->_validate_trading_times)[0]->{message_to_client};
     is $err, 'Contracts on Australian Index with durations under 24 hours must expire on the same trading day.', 'correct message';
 
 };
@@ -1250,28 +1250,27 @@ subtest 'tentative events' => sub {
     };
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('2m1s');
     my $c = produce_contract($contract_args);
-    ok !$c->_validate_expiry_date, 'no error if contract expiring 1 second before tentative event\'s blackout period';
+    ok !$c->_validate_start_and_expiry_date, 'no error if contract expiring 1 second before tentative event\'s blackout period';
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('2m');
     $c = produce_contract($contract_args);
-    ok !$c->_validate_expiry_date, 'no error if contract is atm';
+    ok !$c->_validate_start_and_expiry_date, 'no error if contract is atm';
     $contract_args->{barrier} = 'S20P';
     $c = produce_contract($contract_args);
-    ok $c->_validate_expiry_date, 'throws error if contract expiring on the tentative event\'s blackout period';
-    cmp_ok(($c->_validate_expiry_date)[0]->{message}, 'eq', 'tentative economic events blackout period', 'correct error message');
+    ok $c->_validate_start_and_expiry_date, 'throws error if contract expiring on the tentative event\'s blackout period';
+    cmp_ok(($c->_validate_start_and_expiry_date)[0]->{message}, 'eq', 'blackout period [symbol: frxUSDJPY] [from: 1458273600] [to: 1458280800]', 'correct error message');
 
     $c = produce_contract({%$contract_args, underlying => 'frxGBPJPY'});
-    ok !$c->_validate_expiry_date, 'no error if event is not affecting the underlying';
+    ok !$c->_validate_start_and_expiry_date, 'no error if event is not affecting the underlying';
 
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_end;
     $c = produce_contract($contract_args);
-    ok $c->_validate_start_date, 'throws error if contract starts on tentative event\'s blackout end';
-    cmp_ok(($c->_validate_start_date)[0]->{message}, 'eq', 'tentative economic events blackout period', 'correct error message');
+    ok $c->_validate_start_and_expiry_date, 'throws error if contract starts on tentative event\'s blackout end';
+    cmp_ok(($c->_validate_start_and_expiry_date)[0]->{message}, 'eq', 'blackout period [symbol: frxUSDJPY] [from: 1458273600] [to: 1458280800]', 'correct error message');
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('1s');
     delete $contract_args->{duration};
     $contract_args->{date_expiry} = $blackout_end->plus_time_interval('1s');
     $c = produce_contract($contract_args);
-    ok !$c->_validate_start_date,  'no error';
-    ok !$c->_validate_expiry_date, 'no error';
+    ok !$c->_validate_start_and_expiry_date,  'no error';
 };
 
 subtest 'integer barrier' => sub {

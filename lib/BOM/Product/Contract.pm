@@ -2502,11 +2502,10 @@ sub _validate_trading_times {
             ),
             message_to_client => $message . " " . localize("Try out the Random Indices which are always open.")};
     } elsif (not $exchange->trades_on($date_expiry)) {
-        push @errors,
-            {
+        return ({
             message           => format_error_string('Exchange is closed on expiry date', expiry => $date_expiry->date),
             message_to_client => localize("The contract must expire on a trading day."),
-            };
+        });
     }
 
     if ($self->is_intraday) {
@@ -2687,9 +2686,9 @@ sub _validate_start_and_expiry_date {
     my $start_epoch     = $self->effective_start->epoch;
     my $end_epoch       = $self->date_expiry->epoch;
     my @blackout_checks = (
-        [[$start_epoch], $self->date_start_blackouts,  "Trading is not available for [_1] from [_2] to [_3]"],
-        [[$end_epoch],   $self->date_expiry_blackouts, "Contracts on [_1] may not expire between [_2] and [_3]"],
-        [[$start_epoch, $end_epoch], $self->market_risk_blackouts, "Trading is not available for [_1] from [_2] to [_3]"],
+        [[$start_epoch], $self->date_start_blackouts,  "Trading is not available from [_2] to [_3]"],
+        [[$end_epoch],   $self->date_expiry_blackouts, "Contract may not expire between [_2] and [_3]"],
+        [[$start_epoch, $end_epoch], $self->market_risk_blackouts, "Trading is not available from [_2] to [_3]"],
     );
 
     my @args = ($self->underlying->translated_display_name);
