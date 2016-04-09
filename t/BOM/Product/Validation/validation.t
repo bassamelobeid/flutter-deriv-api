@@ -762,7 +762,7 @@ subtest 'invalid expiry times' => sub {
     $bet_params->{duration} = '59m34s';
 
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/blackout period \[symbol: GDAXI\] \[from: 1364488141\] \[to: 1364488200\]/];
+    $expected_reasons = [qr/blackout period \[symbol: GDAXI\] \[from: 1364488140\] \[to: 1364488200\]/];
     test_error_list('buy', $bet, $expected_reasons);
 
 };

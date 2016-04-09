@@ -52,7 +52,7 @@ foreach my $ds (@date_start) {
 }
 
 my @date_start_2 = ('2016-02-15 08:25:01', '2016-02-15 08:30:00');
-my @duration_2   = ('20m',                 '10h59m');
+my @duration_2   = ('20m',                 '10h58m59s');
 my $count_2      = 0;
 foreach my $ds_2 (@date_start_2) {
     $ds_2 = Date::Utility->new($ds_2);
@@ -81,6 +81,8 @@ foreach my $ds_2 (@date_start_2) {
     };
     my $c_2 = produce_contract($pp_2);
     ok $c_2->is_valid_to_buy, 'valid to buy';
+    $DB::single=1;
+    1;
 
     $count_2++;
 }
