@@ -2394,13 +2394,7 @@ sub _validate_input_parameters {
     my $epoch_expiry = $self->date_expiry->epoch;
     my $epoch_start  = $self->date_start->epoch;
 
-    if ($self->is_after_expiry) {
-        push @errors,
-            {
-            message           => format_error_string('already expired contract'),
-            message_to_client => localize("Contract has already expired."),
-            };
-    } elsif ($epoch_expiry == $epoch_start) {
+    if ($epoch_expiry == $epoch_start) {
         push @errors,
             {
             message => format_error_string(
@@ -2450,6 +2444,12 @@ sub _validate_input_parameters {
                     localize("Start time on forward-starting contracts must be more than [_1] from now.", $forward_starting_blackout->as_string),
                 };
         }
+    } elsif ($self->is_after_expiry) {
+        push @errors,
+            {
+            message           => format_error_string('already expired contract'),
+            message_to_client => localize("Contract has already expired."),
+            };
     }
 
     return @errors;
@@ -2730,153 +2730,50 @@ sub _validate_start_and_expiry_date {
 sub _validate_lifetime {
     my $self = shift;
 
-    return
-          ($self->tick_expiry)   ? $self->_subvalidate_lifetime_tick_expiry
-        : (!$self->expiry_daily) ? $self->_subvalidate_lifetime_intraday
-        :                          $self->_subvalidate_lifetime_days;
-}
+    my $permitted = $self->permitted_expiries;
+    my ($min_duration, $max_duration) = @{$permitted}{'min', 'max'};
 
-sub _subvalidate_lifetime_tick_expiry {
-    my $self = shift;
-
-    my @errors;
-    my $expiries = $self->permitted_expiries;
-
-    my $min_tick = $expiries->{min} // 0;    # Do we accidentally autoviv here?
-    my $max_tick = $expiries->{max} // 0;
-    my $invalid_duration_message =
-        $min_tick == 0
-        ? localize('Trading is not offered for this duration')
-        : localize('Number of ticks must be between [_1] and [_2]', $min_tick, $max_tick);
-    my $tick_count = $self->tick_count;
-
-    if ($tick_count > $max_tick or $tick_count < $min_tick) {
-        push @errors,
-            {
-            message => format_error_string(
-                'Invalid tick count for tick expiry',
-                actual => $tick_count,
-                min    => $min_tick,
-                max    => $max_tick
-            ),
-            message_to_client => $invalid_duration_message,
-            };
-    } elsif (my $entry = $self->entry_tick and my $exit = $self->exit_tick) {
-        my $actual_duration = Time::Duration::Concise::Localize->new(interval => $exit->epoch - $entry->epoch);
-        if ($actual_duration->seconds > $self->max_tick_expiry_duration->seconds) {
-            push @errors,
-                {
-                message => format_error_string(
-                    'Tick expiry duration exceeds permitted maximum',
-                    actual    => $actual_duration->as_concise_string,
-                    permitted => $self->max_tick_expiry_duration->as_concise_string,
-                    symbol    => $self->underlying->symbol
-                ),
-                message_to_client => localize("Missing market data for contract period."),
-                };
-        }
-    }
-
-    return @errors;
-}
-
-sub _subvalidate_lifetime_intraday {
-    my $self = shift;
-
-    my @errors;
-    my $expiries_ref = $self->permitted_expiries;
-    my $duration = $self->get_time_to_expiry({from => $self->date_start})->seconds;
+    my $message_to_client =
+        $self->built_with_bom_parameters ? localize('Resale of this contract is not offered.') : localize('Trading is not offered for this duration.');
 
     # This might be empty because we don't have short-term expiries on some contracts, even though
     # it's a valid bet type for multi-day contracts.
-    my $shortest = Time::Duration::Concise::Localize->new(
-        interval => ($expiries_ref->{min}) ? $expiries_ref->{min}->as_concise_string : 0,
-        locale => BOM::Platform::Context::request()->language
-    );
-    my $longest = Time::Duration::Concise::Localize->new(
-        interval => ($expiries_ref->{max}) ? $expiries_ref->{max}->as_concise_string : 0,
-        locale => BOM::Platform::Context::request()->language
-    );
-    if ($self->built_with_bom_parameters) {
-        if ($shortest->seconds == 0) {
-            # Apparently not offered after conversion from ATM
-            push @errors,
-                {
-                message           => format_error_string('Intraday resale not permitted'),
-                message_to_client => localize('Resale of this contract is not offered.')};
-        } elsif ($duration < $shortest->seconds) {
-            push @errors,
-                {
-                message           => format_error_string('Intraday resale too short'),
-                message_to_client => localize('Resale of this contract is not offered with less than [_1] remaining.', $shortest->as_string)};
-        }
+    if (not($min_duration and $max_duration)) {
+        return ({
+            message           => format_error_string('invalid intraday duration'),
+            message_to_client => $message_to_client,
+        });
+    }
+
+    my $duration;
+    if ($self->tick_expiry) {
+        $duration = $self->tick_count;
+    } elsif (not $self->expiry_daily) {
+        $duration = $self->get_time_to_expiry({from => $self->date_start})->seconds;
+        ($min_duration, $max_duration) = ($min_duration->seconds, $max_duration->seconds);
     } else {
-        if (not keys %$expiries_ref or $duration < $shortest->seconds or $duration > $longest->seconds) {
-            my $asset_text = localize('Asset Index');
-            my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
-            push @errors,
-                {
+        my $exchange = $self->exchange;
+        $duration = $exchange->trading_date_for($self->date_expiry)->days_between($exchange->trading_date_for($self->date_start));
+        ($min_duration, $max_duration) = ($min_duration->days, $max_duration->days);
+    }
+
+    if ($duration < $min_duration or $duration > $max_duration) {
+        my $asset_text = localize('Asset Index');
+        my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
+        return ({
                 message => format_error_string(
-                    'Intraday duration not acceptable',
+                    'Invalid duration',
                     'duration seconds' => $duration,
                     symbol             => $self->underlying->symbol,
                     code               => $self->code
                 ),
-                message_to_client => localize('Trading is not offered for this duration.'),
+                message_to_client => $message_to_client,
                 info_link         => $asset_link,
                 info_text         => $asset_text,
-                };
-        }
-
+            });
     }
 
-    return @errors;
-}
-
-sub _subvalidate_lifetime_days {
-    my $self = shift;
-
-    my @errors;
-    my $underlying  = $self->underlying;
-    my $exchange    = $underlying->exchange;
-    my $date_expiry = $self->date_expiry;
-    my $date_start  = $self->date_start;
-
-    my $expiries_ref = $self->permitted_expiries;
-
-    my $no_time = Time::Duration::Concise::Localize->new(
-        interval => '0',
-        locale   => BOM::Platform::Context::request()->language
-    );
-    my $min = $expiries_ref->{min} // $no_time;
-    my $max = $expiries_ref->{max} // $no_time;
-
-    my $duration_days = $exchange->trading_date_for($date_expiry)->days_between($exchange->trading_date_for($date_start));
-
-    if ($duration_days < $min->days or $duration_days > $max->days) {
-        if ($duration_days > $max->days) {
-            $self->date_expiry($exchange->closing_on($self->date_start->plus_time_interval($max->days . 'd')));
-        }
-        my $message =
-            ($self->built_with_bom_parameters)
-            ? localize('Resale of this contract is not offered.')
-            : localize("Trading is not offered for this duration.");
-        my $asset_text = localize('Asset Index');
-        my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
-        push @errors,
-            {
-            message => format_error_string(
-                'Daily duration is outside acceptable range',
-                actual => $duration_days,
-                min    => $min->as_concise_string,
-                max    => $max->as_concise_string
-            ),
-            message_to_client => $message,
-            info_link         => $asset_link,
-            info_text         => $asset_text,
-            };
-    }
-    return @errors;
+    return;
 }
 
 sub _validate_volsurface {
