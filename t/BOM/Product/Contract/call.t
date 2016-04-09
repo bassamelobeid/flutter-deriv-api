@@ -24,7 +24,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        recorded_date => $now->plus_time_interval('1s'),
+        recorded_date => $now,
         symbol        => $_,
     }) for qw( USD AUD CAD-AUD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
