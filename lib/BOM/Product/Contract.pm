@@ -2734,7 +2734,9 @@ sub _validate_lifetime {
     my ($min_duration, $max_duration) = @{$permitted}{'min', 'max'};
 
     my $message_to_client =
-        $self->built_with_bom_parameters ? localize('Resale of this contract is not offered.') : localize('Trading is not offered for this duration.');
+        $self->built_with_bom_parameters
+        ? localize('Resale of this contract is not offered.')
+        : localize('Trading is not offered for this duration.');
 
     # This might be empty because we don't have short-term expiries on some contracts, even though
     # it's a valid bet type for multi-day contracts.
@@ -2745,16 +2747,19 @@ sub _validate_lifetime {
         });
     }
 
-    my $duration;
+    my ($duration, $message);
     if ($self->tick_expiry) {
         $duration = $self->tick_count;
+        $message  = 'Invalid tick count for tick expiry';
     } elsif (not $self->expiry_daily) {
         $duration = $self->get_time_to_expiry({from => $self->date_start})->seconds;
         ($min_duration, $max_duration) = ($min_duration->seconds, $max_duration->seconds);
+        $message = 'Intraday duration not acceptable';
     } else {
         my $exchange = $self->exchange;
         $duration = $exchange->trading_date_for($self->date_expiry)->days_between($exchange->trading_date_for($self->date_start));
         ($min_duration, $max_duration) = ($min_duration->days, $max_duration->days);
+        $message = 'Daily duration is outside acceptable range';
     }
 
     if ($duration < $min_duration or $duration > $max_duration) {
@@ -2762,7 +2767,7 @@ sub _validate_lifetime {
         my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
         return ({
                 message => format_error_string(
-                    'Invalid duration',
+                    $message,
                     'duration seconds' => $duration,
                     symbol             => $self->underlying->symbol,
                     code               => $self->code
