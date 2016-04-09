@@ -57,13 +57,13 @@ foreach my $t (@test_cases) {
         afternoon => [
             qr/expire on the same trading day/,
             qr/expire on the same trading day/,
-            qr/Trading is not available for from 12:00:00 to 12:01:00/,
+            qr/Trading is not available from 12:00:00 to 12:01:00/,
             qr/Contract may not expire between 11:59:00 and 11:59:59/
         ],
         midnight => [
             qr/expire on the same trading day/,
             qr/expire on the same trading day/,
-            qr/Trading is not available for from 00:00:00 to 00:01:00/,
+            qr/Trading is not available from 00:00:00 to 00:01:00/,
             qr/Contract may not expire between 23:59:00 and 23:59:59/
         ],
     );
