@@ -8,7 +8,7 @@ commodities:
     display_name: "Commodities"
     display_order: 4
     integer_number_of_day: 1
-    eod_blackout_expiry: '1m'
+    eod_blackout_expiry: '59s'
     sod_blackout_start: '10m'
     reduced_display_decimals: 1
     asset_type: 'currency'
@@ -85,7 +85,7 @@ futures:
     suspicious_move: 0.07
     outlier_tick: 0.10
     display_name: "Futures"
-    eod_blackout_expiry: '1m'
+    eod_blackout_expiry: '59s'
     sod_blackout_start: '10m'
     max_failover_feed_delay: '3m'
     equity: 1
@@ -119,8 +119,8 @@ indices:
     display_name: "Indices"
     integer_barrier: 1
     display_order: 2
-    eod_blackout_expiry: '1m'
-    eod_blackout_start: '15m'
+    eod_blackout_expiry: '59s'
+    eod_blackout_start: '14m59s'
     sod_blackout_start: '10m'
     intradays_must_be_same_day: 1
     asset_type: 'index'
@@ -156,8 +156,8 @@ stocks:
     outlier_tick: 0.10
     display_name: "Stocks"
     volatility_surface_type: "moneyness"
-    eod_blackout_expiry: '1m'
-    eod_blackout_start: '1h'
+    eod_blackout_expiry: '59s'
+    eod_blackout_start: '59m59s'
     sod_blackout_start: '10m'
     display_order: 3
     max_failover_feed_delay: '3m'
