@@ -29,15 +29,19 @@ use BOM::Platform::Email qw(send_email);
 use BOM::System::AuditLog;
 
 use BOM::Database::Model::HandoffToken;
+use BOM::Platform::Client::DoughFlowClient;
+use BOM::Database::DataMapper::Payment::DoughFlow;
+use BOM::Platform::Helper::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
 sub cashier {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
+    my $client_loginid = $token_details->{loginid};
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
