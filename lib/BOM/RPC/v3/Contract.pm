@@ -138,20 +138,6 @@ sub get_bid {
     try {
         my $tv = [Time::HiRes::gettimeofday];
         my $contract = produce_contract($short_code, $currency, $is_sold);
-        if (not $contract->is_spread) {
-            my $contract_affected_by_missing_market_data =
-                (not $contract->may_settle_automatically and not @{$contract->corporate_actions} and $contract->missing_market_data) ? 1 : 0;
-            if ($contract_affected_by_missing_market_data) {
-                $response = {
-                    error => {
-                        message_to_client => BOM::Platform::Context::localize(
-                            'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
-                        ),
-                        code => "GetProposalFailure"
-                    }};
-                return;
-            }
-        }
         $response = {
             ask_price           => sprintf('%.2f', $contract->ask_price),
             bid_price           => sprintf('%.2f', $contract->bid_price),
@@ -171,6 +157,20 @@ sub get_bid {
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
         };
+        if (not $contract->is_spread) {
+            my $contract_affected_by_missing_market_data =
+                (not $contract->may_settle_automatically and not @{$contract->corporate_actions} and $contract->missing_market_data) ? 1 : 0;
+            if ($contract_affected_by_missing_market_data) {
+                $response = {
+                    error => {
+                        message_to_client => BOM::Platform::Context::localize(
+                            'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
+                        ),
+                        code => "GetProposalFailure"
+                    }};
+                return;
+            }
+        }
 
         if (not $contract->is_valid_to_sell and $contract->primary_validation_error) {
             $response->{validation_error} = $contract->primary_validation_error->message_to_client;
@@ -247,11 +247,10 @@ sub send_ask {
 sub get_contract_details {
     my $params = shift;
 
-    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
