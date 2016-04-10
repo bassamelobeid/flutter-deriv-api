@@ -97,10 +97,7 @@ sub _migrate_changesets {
     $pooler->do('PAUSE');
     #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
     {
-        local $SIG{__WARN__} = sub {
-            my $msg = shift;
-            print STDERR $msg if ($msg !~ /is not a PostgreSQL server process/);
-        };
+        local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
         $dbh->do(
             'select pid, pg_terminate_backend(pid) terminated
            from pg_stat_get_activity(NULL::integer) s(datid, pid)
