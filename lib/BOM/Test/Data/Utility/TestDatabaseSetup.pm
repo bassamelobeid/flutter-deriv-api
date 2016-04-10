@@ -95,8 +95,7 @@ sub _migrate_changesets {
     $pooler->{RaiseError}        = 1;
     $pooler->{pg_server_prepare} = 0;
     $pooler->do('PAUSE');
-    # there is a warning here. I don't know what's the meaning.
-    #Warning was 'WARNING:  PID 31811 is not a PostgreSQL server process' at /home/git/regentmarkets/bom-test/lib/BOM/Test/Data/Utility/TestDatabaseSetup.pm line 98.
+    #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
     {
         local $SIG{__WARN__} = sub {
             my $msg = shift;
