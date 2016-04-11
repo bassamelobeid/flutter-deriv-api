@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 877;
+use Test::More tests => 709;
 use Test::Exception;
 use Test::NoWarnings;
 

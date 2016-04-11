@@ -23,7 +23,7 @@ unit_test_validation:
 	@$(PROVE) -r t/BOM/Product/Validation
 
 unit_test_pricing:
-	@$(PROVE) -v -r $$(ls -1d t/BOM/Product/Pricing/*.t)
+	@$(PROVE) -r $$(ls -1d t/BOM/Product/Pricing/*.t)
 
 unit_test_intraday:
 	@$(PROVE) -r t/BOM/Product/Pricing/Engine/IntradayHistorical
