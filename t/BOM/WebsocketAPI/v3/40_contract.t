@@ -28,7 +28,7 @@ is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';
 
 my %contractParameters = (
-    "amount"        => "10",
+    "amount"        => "5",
     "basis"         => "payout",
     "contract_type" => "CALL",
     "currency"      => "USD",
@@ -54,7 +54,7 @@ my $ask_price = $proposal->{proposal}->{ask_price};
 $t = $t->send_ok({
         json => {
             buy   => $proposal->{proposal}->{id},
-            price => $ask_price
+            price => $ask_price || 0
         }});
 
 ## skip proposal until we meet buy
@@ -100,7 +100,7 @@ sleep 1;
 $t = $t->send_ok({
         json => {
             buy        => 1,
-            price      => $ask_price,
+            price      => $ask_price || 0,
             parameters => \%contractParameters,
         },
     });
@@ -113,7 +113,7 @@ while (1) {
     next if $res->{msg_type} eq 'proposal';
 
     # note explain $res;
-    ok $res->{buy}, Dumper $res;
+    ok $res->{buy};
     ok $res->{buy}->{contract_id};
     ok $res->{buy}->{purchase_time};
 
