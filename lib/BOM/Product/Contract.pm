@@ -2313,7 +2313,7 @@ sub _validate_stake {
 
     my $contract_stake = $self->ask_price;
 
-    return $self->ask_probability->all_errors if (not $self->ask_probability->confirm_validity);
+    return ($self->ask_probability->all_errors)[0] if (not $self->ask_probability->confirm_validity);
 
     my $contract_payout = $self->payout;
     my $limits          = $self->staking_limits->{stake};
@@ -2756,6 +2756,7 @@ sub _validate_volsurface {
     if (    $self->market->name eq 'forex'
         and $self->pricing_engine_name !~ /Intraday::Forex/
         and $self->timeindays->amount < 4
+        and not $self->is_atm_bet
         and $surface_age > 6)
     {
         $exceeded = '6h';
