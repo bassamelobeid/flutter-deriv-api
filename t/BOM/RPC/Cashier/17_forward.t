@@ -20,12 +20,11 @@ my $res = BOM::RPC::v3::Cashier::cashier({
 });
 is $res->{error}->{code}, 'ASK_TNC_APPROVAL';
 
-BOM::RPC::v3::Accounts::tnc_approval({token => $token});
-$res = BOM::RPC::v3::Cashier::cashier({
-    token => 'blabla',
-    cashier => 'deposit'
-});
-
-print Dumper(\$res); use Data::Dumper;
+# BOM::RPC::v3::Accounts::tnc_approval({token => $token});
+# $res = BOM::RPC::v3::Cashier::cashier({
+#     token => 'blabla',
+#     cashier => 'deposit'
+# });
+# print Dumper(\$res); use Data::Dumper;
 
 done_testing();
