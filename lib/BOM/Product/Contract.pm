@@ -2264,8 +2264,7 @@ sub _validate_input_parameters {
         if ($epoch_start < $when_epoch + $fs_blackout_seconds) {
             return {
                 message => format_error_string('forward-starting blackout', 'blackout' => $fs_blackout_seconds . 's'),
-                message_to_client =>
-                    localize("Start time on forward-starting contracts must be more than 5 minutes from now."),
+                message_to_client => localize("Start time on forward-starting contracts must be more than 5 minutes from now."),
             };
         }
     } elsif ($self->is_after_expiry) {
