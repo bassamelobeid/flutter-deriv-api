@@ -5,8 +5,7 @@
   "description": "Cashier",
   "properties": {
     "cashier": {
-      "type": "string",
-      "pattern": "^(deposit|withdraw)$",
+      "enum": ["deposit", "withdraw"],
       "required": "1",
       "description": "either deposit or withdraw, default to deposit"
     },

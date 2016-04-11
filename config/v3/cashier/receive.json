@@ -2,11 +2,11 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Cashier Response",
-  "description": "",
+  "description": "Cashier Response Item",
   "properties": {
     "cashier": {
       "type": "string",
-      "description": "cashier url, Note possible error codes: ASK_TNC_APPROVAL, ASK_AUTHENTICATE, ASK_UK_FUNDS_PROTECTION, ASK_CURRENCY, ASK_EMAIL_VERIFY, ASK_FIX_ADDRESS"
+      "description": "cashier url, Note possible error codes: ASK_TNC_APPROVAL (API tnc_approval), ASK_AUTHENTICATE, ASK_UK_FUNDS_PROTECTION, ASK_CURRENCY (API set_account_currency), ASK_EMAIL_VERIFY (verify_email), ASK_FIX_ADDRESS"
     },
     "echo_req": {
       "title": "Echo request",
