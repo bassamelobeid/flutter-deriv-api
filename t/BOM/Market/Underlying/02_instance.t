@@ -153,13 +153,13 @@ subtest 'all attributes on a variety of underlyings' => sub {
 
         my $underlying = BOM::Market::Underlying->new($symbol);
         my $market     = $underlying->market->name;
-        my $markets    = scalar grep { $market eq $_ } qw(indices random commodities forex config futures);
+        my $markets    = scalar grep { $market eq $_ } qw(indices volidx commodities forex config futures);
         is($markets, 1, $symbol . ' has exactly one of our expected markets');
 
         my $special_market;
         if ($market eq 'config') { $special_market = 1 }
 
-        if ($market eq 'random') {
+        if ($market eq 'volidx') {
             is($underlying->quoted_currency_symbol, '', 'Randoms are not quoted in a currency');
             is($underlying->spot_spread_size,       0,  "Randoms have no spot spread size");
         } elsif ($special_market) {
