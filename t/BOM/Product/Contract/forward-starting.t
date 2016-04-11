@@ -69,37 +69,6 @@ subtest 'forward starting with stake' => sub {
     cmp_ok $c->payout, ">", 10, 'payout is > 10';
 };
 
-subtest 'forward starting on random nightly' => sub {
-    $now = Date::Utility->new->truncate_to_day;
-    my $c = produce_contract({
-        bet_type     => 'CALL',
-        underlying   => 'RDBULL',
-        duration     => '10m',
-        barrier      => 'S0P',
-        currency     => 'USD',
-        amount_type  => 'payout',
-        amount       => 10,
-        date_pricing => $now->epoch - 300,
-        date_start   => $now
-    });
-    ok $c->is_forward_starting;
-    ok $c->_validate_start_date;
-    my @err = $c->_validate_start_date;
-    like($err[0]->{message}, qr/in starting blackout/);
-    $c = produce_contract({
-        bet_type     => 'CALL',
-        underlying   => 'RDBULL',
-        duration     => '10m',
-        barrier      => 'S0P',
-        currency     => 'USD',
-        amount_type  => 'payout',
-        amount       => 10,
-        date_pricing => $now->epoch - 300,
-        date_start   => $now->epoch + 301
-    });
-    ok !$c->_validate_start_date;
-};
-
 subtest 'forward starting on random daily' => sub {
     $now = Date::Utility->new->truncate_to_day->plus_time_interval('12h');
     my $c = produce_contract({

@@ -27,7 +27,7 @@ my %skip_category = (
 
 my $expectation = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/slope_config.yml');
 my @underlying_symbols =
-    ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', 'R_100', 'R_25', 'RDMARS', 'RDMOON', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
+    ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', 'R_100', 'R_25', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
 my $payout_currency = 'USD';
 my $spot            = 100;
 

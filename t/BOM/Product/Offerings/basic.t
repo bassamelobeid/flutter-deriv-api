@@ -37,7 +37,7 @@ subtest 'get_offerings_flyby' => sub {
         is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 12, 'Tick expiries are offered on 12 underlyings.');
         is(scalar get_offerings_flyby('iom')->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'), 10, '10 callput options on frxUSDJPY');
         is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 8,  'Eight underlyings trade on the RANDOM exchange');
-        is(scalar $fb->query('"market" IS "random" -> "underlying_symbol"'),        12, '...out of 12 total random market symbols.');
+        is(scalar $fb->query('"market" IS "volidx" -> "underlying_symbol"'),        12, '...out of 12 total random market symbols.');
     };
 };
 
@@ -77,7 +77,7 @@ subtest 'get_permitted_expiries' => sub {
     my $r100 = get_permitted_expiries({underlying_symbol => 'R_100'});
 
     eq_or_diff(get_permitted_expiries(), {}, 'Get an empty result when no guidance is provided.');
-    eq_or_diff($r100, get_permitted_expiries({market => 'random'}), 'R_100 has the broadest offering, so it matches with the random market');
+    eq_or_diff($r100, get_permitted_expiries({market => 'volidx'}), 'R_100 has the broadest offering, so it matches with the random market');
     is $r100->{tick}->{min}, 5, "R_100 has something with 5 tick expiries";
     is $r100->{daily}->{max}->days, 365, "... all the way out to a year.";
 
