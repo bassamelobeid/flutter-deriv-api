@@ -232,6 +232,7 @@ $p_5->{current_tick} = $tick_5;
 $p_5->{pricing_vol}  = 0.151867027083599;
 my $mock = Test::MockModule->new('BOM::Product::Contract');
 # we need a vol for this.
+$mock->mock('_validate_input_parameters', sub { () });
 $mock->mock('_validate_volsurface', sub { () });
 $contract_5 = produce_contract($p_5);
 set_absolute_time($start_time_5);
