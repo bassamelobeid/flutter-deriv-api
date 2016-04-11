@@ -45,6 +45,7 @@ subtest 'invalid start and expiry time' => sub {
     $bet_params->{date_start} = $now;
     $bet_params->{date_pricing} = $now->epoch + 1;
     $bet_params->{date_expiry} = $now->epoch + 20 *60;
+    $bet_params->{entry_tick} = $fake_tick;
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like ($c->primary_validation_error->{message}, qr/starts in the past/, 'start < now');
