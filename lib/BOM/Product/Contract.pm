@@ -1,16 +1,15 @@
 package BOM::Product::Contract;
 
 use Moose;
-use Carp;
 
 # very bad name, not sure why it needs to be
 # attached to Validatable.
 use MooseX::Role::Validatable::Error;
 use BOM::Market::Currency;
 use BOM::Product::Contract::Category;
-use Time::HiRes qw(time sleep);
+use Time::HiRes qw(time);
 use List::Util qw(min max first);
-use List::MoreUtils qw(none uniq);
+use List::MoreUtils qw(none);
 use Scalar::Util qw(looks_like_number);
 
 use BOM::Market::UnderlyingDB;
@@ -21,7 +20,7 @@ use BOM::Market::Data::Tick;
 use BOM::MarketData::CorrelationMatrix;
 use BOM::Market::Exchange;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
-use Time::Duration::Concise::Localize;
+use Time::Duration::Concise;
 use BOM::Product::Types;
 use BOM::MarketData::VolSurface::Utils;
 use BOM::Platform::Context qw(request localize);
@@ -30,7 +29,6 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Utility::ErrorStrings qw( format_error_string );
-use BOM::MarketData::VolSurface::Utils;
 use BOM::Platform::Static::Config;
 
 # require Pricing:: modules to avoid circular dependency problems.
@@ -39,7 +37,6 @@ require BOM::Product::Pricing::Engine::Intraday::Index;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 require Pricing::Engine::EuropeanDigitalSlope;
 require Pricing::Engine::TickExpiry;
-
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
 sub is_spread { return 0 }
@@ -264,12 +261,6 @@ has _produce_contract_ref => (
     required => 1,
 );
 
-has max_missing_ticks => (
-    is      => 'ro',
-    isa     => 'Int',
-    default => 5,
-);
-
 has currency => (
     is       => 'ro',
     isa      => 'Str',
@@ -446,7 +437,6 @@ has underlying => (
 has exchange => (
     is      => 'ro',
     isa     => 'BOM::Market::Exchange',
-    lazy    => 1,
     default => sub { return shift->underlying->exchange; },
 );
 
@@ -1977,9 +1967,8 @@ sub _get_time_to_end {
     # Don't worry about how long past expiry
     # Let it die if they gave us nonsense.
 
-    return Time::Duration::Concise::Localize->new(
+    return Time::Duration::Concise->new(
         interval => max(0, $end_point->epoch - $from->epoch),
-        locale   => BOM::Platform::Context::request()->language
     );
 }
 
@@ -2271,15 +2260,12 @@ sub _validate_input_parameters {
         };
     } elsif ($self->is_forward_starting and not $self->built_with_bom_parameters) {
         # Intraday cannot be bought in the 5 mins before the bet starts, unless we've built it for that purpose.
-        my $forward_starting_blackout = Time::Duration::Concise::Localize->new(
-            interval => '5m',
-            locale   => BOM::Platform::Context::request()->language
-        );
-        if ($epoch_start < $when_epoch + $forward_starting_blackout->seconds) {
+        my $fs_blackout_seconds = 300;
+        if ($epoch_start < $when_epoch + $fs_blackout_seconds) {
             return {
-                message => format_error_string('forward-starting blackout', 'blackout' => $forward_starting_blackout->as_concise_string),
+                message => format_error_string('forward-starting blackout', 'blackout' => $fs_blackout_seconds . 's'),
                 message_to_client =>
-                    localize("Start time on forward-starting contracts must be more than [_1] from now.", $forward_starting_blackout->as_string),
+                    localize("Start time on forward-starting contracts must be more than 5 minutes from now."),
             };
         }
     } elsif ($self->is_after_expiry) {
