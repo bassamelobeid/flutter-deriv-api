@@ -209,3 +209,6 @@
 "/new_account/maltainvestws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/paymentagent/transferws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
