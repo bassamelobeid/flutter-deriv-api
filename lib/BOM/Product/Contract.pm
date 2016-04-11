@@ -147,7 +147,15 @@ has basis_tick => (
 sub _build_basis_tick {
     my $self = shift;
 
-    my $basis_tick = (not $self->pricing_new) ? $self->entry_tick : $self->current_tick;
+    my ($basis_tick, $potential_error);
+
+    if (not $self->pricing_new) {
+        $basis_tick      = $self->entry_tick;
+        $potential_error = localize('Waiting for entry tick.');
+    } else {
+        $basis_tick = $self->current_tick;
+        $potential_error = localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),;
+    }
 
     # if there's no basis tick, don't die but catch the error.
     unless ($basis_tick) {
@@ -158,7 +166,7 @@ sub _build_basis_tick {
         });
         $self->add_error({
             message           => format_error_string('Waiting for entry tick', symbol => $self->underlying->symbol),
-            message_to_client => localize('Waiting for entry tick.'),
+            message_to_client => $potential_error,
         });
     }
 
