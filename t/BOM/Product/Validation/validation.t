@@ -768,8 +768,6 @@ subtest 'invalid expiry times' => sub {
 };
 
 subtest 'invalid lifetimes.. how rude' => sub {
-    plan tests => 10;
-
     my $underlying = BOM::Market::Underlying->new('frxEURUSD');
     my $starting   = $oft_used_date->epoch - 3600;
 
@@ -820,43 +818,9 @@ subtest 'invalid lifetimes.. how rude' => sub {
 
     ok($bet->is_valid_to_buy, '..but when we pick a shorter duration, validates just fine.');
 
-    $bet_params->{date_start}   = Date::Utility->new('2013-03-26 22:01:34')->epoch;
-    $bet_params->{duration}     = '3d';
-    $bet_params->{date_pricing} = $bet_params->{date_start};
-    $bet_params->{barrier}      = 'S10P';
-    $bet                        = produce_contract($bet_params);
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_start})});
-
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => 'frxEURUSD',
-            recorded_date => Date::Utility->new($bet_params->{date_start}),
-        });
-
-    $expected_reasons = [qr/buying suspended between NY1600 and GMT0000/];
-    test_error_list('buy', $bet, $expected_reasons);
-
     $underlying = BOM::Market::Underlying->new('GDAXI');
-
-    $bet_params->{underlying}   = $underlying;
-    $bet_params->{duration}     = '11d';
-    $bet_params->{date_start}   = $underlying->exchange->opening_on(Date::Utility->new('24-Dec-12'))->plus_time_interval('15m');
-    $bet_params->{date_pricing} = $bet_params->{date_start};
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'index',
-        {
-            symbol        => 'GDAXI',
-            date          => Date::Utility->new,
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
-        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-
-    $bet = produce_contract($bet_params);
-
-    $expected_reasons = [qr/trading days.*calendar days/, qr/holiday blackout period/];
-    test_error_list('buy', $bet, $expected_reasons);
-
+    $bet_params->{underlying} = $underlying;
     $bet_params->{date_start}   = $underlying->exchange->opening_on(Date::Utility->new('6-Dec-12'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -888,6 +852,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
 
     $bet_params->{bet_type} = 'CALL';
     $bet_params->{duration} = '1d';
+    $bet_params->{barrier}  = 'S10P';
     $bet                    = produce_contract($bet_params);
     $expected_reasons       = [qr/Daily duration.*outside acceptable range/];
     test_error_list('buy', $bet, $expected_reasons);
