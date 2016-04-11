@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 5;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::MockTime qw(set_absolute_time);
@@ -70,7 +70,7 @@ subtest 'forward starting with stake' => sub {
 };
 
 subtest 'forward starting on random daily' => sub {
-    $now = Date::Utility->new->truncate_to_day->plus_time_interval('12h');
+    $now = Date::Utility->new->truncate_to_day;
     my $c = produce_contract({
         bet_type     => 'CALL',
         underlying   => 'RDBULL',

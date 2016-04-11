@@ -30,7 +30,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw(AEX FPCS);
 subtest "available contracts for symbol" => sub {
     my %input = (
-        random  => ['R_100',     'RDMARS',    'RDBEAR'],
+        random  => ['R_100',     'RDBEAR'],
         forex   => ['frxUSDJPY', 'frxAUDCAD', 'WLDUSD'],
         indices => ['AEX',       'SYNAEX'],
         stocks  => ['FPCS'],
