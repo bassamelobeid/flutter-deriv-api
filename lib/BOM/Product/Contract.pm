@@ -147,14 +147,17 @@ has basis_tick => (
 sub _build_basis_tick {
     my $self = shift;
 
-    # Getting basis tick can be tricky when we have feed outage or empty cache.
-    # We will have to give our best guess sometimes.
-    my $basis_tick =
-          ($self->entry_tick)   ? $self->entry_tick
-        : ($self->current_tick) ? $self->current_tick
-        :                         $self->underlying->tick_at(Date::Utility->new->epoch, {allow_inconsistent => 1});
+    my ($basis_tick, $potential_error);
 
-    # if there's no tick in our system, don't die
+    if (not $self->pricing_new) {
+        $basis_tick      = $self->entry_tick;
+        $potential_error = localize('Waiting for entry tick.');
+    } else {
+        $basis_tick = $self->current_tick;
+        $potential_error = localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name);
+    }
+
+    # if there's no basis tick, don't die but catch the error.
     unless ($basis_tick) {
         $basis_tick = BOM::Market::Data::Tick->new({
             quote  => $self->underlying->pip_size,
@@ -162,8 +165,8 @@ sub _build_basis_tick {
             symbol => $self->underlying->symbol,
         });
         $self->add_error({
-            message => format_error_string('Could not retrieve a quote', symbol => $self->underlying->symbol),
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+            message           => format_error_string('Waiting for entry tick', symbol => $self->underlying->symbol),
+            message_to_client => $potential_error,
         });
     }
 
@@ -226,9 +229,6 @@ sub _build_is_forward_starting {
 
 sub _build_permitted_expiries {
     my $self = shift;
-
-    my $underlying  = $self->underlying;
-    my $expiry_type = $self->expiry_type;
 
     my $expiries_ref = $self->offering_specifics->{permitted};
     return $expiries_ref;
@@ -371,20 +371,6 @@ has built_with_bom_parameters => (
     default => 0,
 );
 
-=item require_entry_tick_for_sale
-
-A Boolean which expresses whether we can give a best effort guess or if we
-need the correct price for sale. Defaults to false, should be set true for real
-transactions.
-
-=cut
-
-has require_entry_tick_for_sale => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => undef,
-);
-
 =item max_tick_expiry_duration
 
 A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.
@@ -397,26 +383,6 @@ has max_tick_expiry_duration => (
     default => '5m',
     coerce  => 1,
 );
-
-=item hold_for_entry_tick
-
-A TimeInterval which expresses how long we should wait for an entry tick.  If set to 0, we can
-proceed without getting the entry_tick.
-
-=cut
-
-has hold_for_entry_tick => (
-    is         => 'ro',
-    isa        => 'bom_time_interval',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
-sub _build_hold_for_entry_tick {
-    my $self = shift;
-
-    return ($self->built_with_bom_parameters && $self->require_entry_tick_for_sale) ? '15s' : '0s';
-}
 
 has [qw(pricing_args)] => (
     is         => 'ro',
@@ -638,7 +604,7 @@ sub _build_current_spot {
 sub _build_entry_spot {
     my $self = shift;
 
-    return ($self->entry_tick) ? $self->entry_tick->quote : $self->current_spot;
+    return ($self->entry_tick) ? $self->entry_tick->quote : undef;
 }
 
 sub _build_current_tick {
@@ -737,9 +703,6 @@ sub _build_opposite_bet {
         $build_parameters{date_start}   = $self->date_pricing;
         $build_parameters{date_pricing} = $self->date_pricing;
     }
-
-    # Secret hidden parameter for sell-time checking;
-    $build_parameters{_original_date_start} = $self->date_start;
 
     return $self->_produce_contract_ref->(\%build_parameters);
 }
@@ -1112,7 +1075,16 @@ sub is_valid_to_sell {
         return 0;
     }
 
-    if (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
+    if ($self->is_after_expiry) {
+        my $error = $self->_check_entry_and_exit_ticks;
+        if ($error) {
+            $self->missing_market_data(1);
+            $self->add_error({
+                message           => $error,
+                message_to_client => localize('The buy price of this contract has been refunded due to missing market data.'),
+            });
+        }
+    } elsif (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
         # Their errors are our errors, now!
         $self->add_error($self->opposite_bet->primary_validation_error);
     }
@@ -1129,6 +1101,21 @@ sub is_valid_to_sell {
 }
 
 # PRIVATE method.
+
+sub _check_entry_and_exit_ticks {
+    my $self = shift;
+
+    return 'entry tick is undefined' if not $self->entry_tick;
+    # A start now contract will not be bought if we have missing feed.
+    # We are doing the same thing for forward starting contracts.
+    my $entry_tick_delay = ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds);
+    return 'entry tick is too old' if $self->is_forward_starting and $entry_tick_delay;
+    return 'exit tick is undefined' if not $self->exit_tick;
+    return 'only one tick throughout contract period' if $self->entry_tick->epoch == $self->exit_tick->epoch;
+
+    return;
+}
+
 #  If your price is payout * some probability, just use this.
 sub _price_from_prob {
     my ($self, $prob_method) = @_;
@@ -1270,53 +1257,11 @@ sub _build_shortcode {
 sub _build_entry_tick {
     my $self = shift;
 
-    my $underlying = $self->underlying;
-
-    $self->hold_for_entry_tick;
-    my $hold_seconds = $self->hold_for_entry_tick->seconds;
-    my $start = ($hold_seconds) ? $self->effective_start : $self->date_start;
-    my $entry_tick;
-
-    if ($hold_seconds or not $self->pricing_new) {
-        my $entry_time = $start->epoch;
-        my $hold_time  = time + $hold_seconds;
-        do {
-            if   ($self->is_forward_starting) { $entry_tick = $self->underlying->tick_at($entry_time); }
-            else                              { $entry_tick = $self->underlying->next_tick_after($entry_time); }
-        } while (not $entry_tick and sleep(0.5) and time <= $hold_time);
-
-    }
-
-    if ($entry_tick) {
-        my $when        = $entry_tick->epoch;
-        my $max_delay   = $underlying->max_suspend_trading_feed_delay;
-        my $start_delay = Time::Duration::Concise::Localize->new(interval => abs($when - $start->epoch));
-        if ($start_delay->seconds > $max_delay->seconds) {
-            $self->missing_market_data(1);
-            $self->add_error({
-                    message => format_error_string(
-                        'Entry tick too far away',
-                        symbol    => $self->underlying->symbol,
-                        delay     => $start_delay->as_concise_string,
-                        permitted => $max_delay->as_concise_string,
-                        start     => $start->datetime,
-                    ),
-                    message_to_client => localize("Missing market data for entry spot."),
-                });
-        }
-    } elsif ($hold_seconds) {
-        $self->add_error({
-                message => format_error_string(
-                    'No entry tick within limit',
-                    limit  => $self->hold_for_entry_tick->as_string,
-                    start  => $start->datetime,
-                    symbol => $self->underlying->symbol,
-                ),
-                message_to_client => localize("Prevailing market price cannot be determined."),
-            });
-    }
-
-    return $entry_tick;
+    # entry tick if never defined if it is a newly priced contract.
+    return if $self->pricing_new;
+    my $entry_epoch = $self->date_start->epoch;
+    return $self->underlying->tick_at($entry_epoch) if $self->is_forward_starting;
+    return $self->underlying->next_tick_after($entry_epoch);
 }
 
 # End of builders.
@@ -1519,9 +1464,8 @@ sub _build_vol_at_strike {
 sub pricing_spot {
     my $self = shift;
 
-    # Use the entry_tick if we're supposed to wait for it.
-    # This will usually happen in a sell-back transaction and reflect the spot at the time of that transaction.
-    my $initial_spot = ($self->hold_for_entry_tick->seconds && $self->entry_tick) ? $self->entry_tick->quote : $self->current_spot;
+    # always use current spot to price for sale or buy.
+    my $initial_spot = $self->current_spot;
 
     if (not $initial_spot) {
         # If we could not get the correct spot to price, we will take the latest available spot at pricing time.
@@ -2104,90 +2048,25 @@ sub _build_exit_tick {
         $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
     }
 
-    if ($exit_tick and my $entry_tick = $self->entry_tick) {
-        my ($first_date, $last_date) = map { Date::Utility->new($_) } ($entry_tick->epoch, $exit_tick->epoch);
-        my $max_delay = $underlying->max_suspend_trading_feed_delay;
-        # We should not have gotten here otherwise.
-        if (not $first_date->is_before($last_date)) {
-            $self->missing_market_data(1);
-            $self->add_error({
-                    message => format_error_string(
-                        'Start tick is not before expiry tick',
-                        symbol => $underlying->symbol,
-                        start  => $first_date->datetime,
-                        expiry => $last_date->datetime
-                    ),
-                    message_to_client => localize("Missing market data for contract period."),
-                });
-        }
-        my $end_delay = Time::Duration::Concise->new(interval => $self->date_expiry->epoch - $last_date->epoch);
-
-        if ($self->expiry_daily and not $underlying->use_official_ohlc) {
-            if (    not $self->is_path_dependent
-                and not $self->_has_ticks_before_close($exchange->closing_on($self->date_expiry)))
-            {
-                $self->missing_market_data(1);
-                $self->add_error({
-                        message => format_error_string(
-                            'Missing ticks at close',
-                            symbol => $underlying->symbol,
-                            expiry => $self->date_expiry->datetime
-                        ),
-                        message_to_client => localize("Missing market data for exit spot."),
-                    });
-            }
-        } elsif ($end_delay->seconds > $max_delay->seconds) {
-            $self->missing_market_data(1);
-            $self->add_error({
-                    message => format_error_string(
-                        'Exit tick too far away',
-                        symbol    => $underlying->symbol,
-                        delay     => $end_delay->as_concise_string,
-                        permitted => $max_delay->as_concise_string,
-                        expiry    => $self->date_expiry->datetime
-                    ),
-                    message_to_client => localize("Missing market data for exit spot."),
-                });
-        }
-        if (not $self->expiry_daily and $underlying->intradays_must_be_same_day and $exchange->trading_days_between($first_date, $last_date)) {
+    if ($self->entry_tick and $exit_tick) {
+        my ($entry_tick_date, $exit_tick_date) = map { Date::Utility->new($_) } ($self->entry_tick->epoch, $exit_tick->epoch);
+        if (    not $self->expiry_daily
+            and $underlying->intradays_must_be_same_day
+            and $exchange->trading_days_between($entry_tick_date, $exit_tick_date))
+        {
             $self->add_error({
                     message => format_error_string(
                         'Exit tick date differs from entry tick date on intraday',
                         symbol => $underlying->symbol,
-                        start  => $last_date->datetime,
-                        expiry => $first_date->datetime,
+                        start  => $exit_tick_date->datetime,
+                        expiry => $entry_tick_date->datetime,
                     ),
                     message_to_client => localize("Intraday contracts may not cross market open."),
                 });
         }
-        if ($self->tick_expiry) {
-            my $actual_duration = Time::Duration::Concise->new(interval => $last_date->epoch - $first_date->epoch);
-            if ($actual_duration->seconds > $self->max_tick_expiry_duration->seconds) {
-                $self->missing_market_data(1);
-                $self->add_error({
-                        message => format_error_string(
-                            'Tick expiry duration exceeds permitted maximum',
-                            symbol    => $underlying->symbol,
-                            actual    => $actual_duration->as_concise_string,
-                            permitted => $self->max_tick_expiry_duration->as_concise_string
-                        ),
-                        message_to_client => localize("Missing market data for contract period."),
-                    });
-            }
-        }
     }
 
     return $exit_tick;
-}
-
-sub _has_ticks_before_close {
-    my ($self, $closing) = @_;
-
-    my $underlying = $self->underlying;
-
-    my $closing_tick = $underlying->tick_at($closing->epoch, {allow_inconsistent => 1});
-
-    return (defined $closing_tick and $closing->epoch - $closing_tick->epoch > $underlying->max_suspend_trading_feed_delay->seconds) ? 0 : 1;
 }
 
 # Validation methods.

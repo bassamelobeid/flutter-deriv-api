@@ -1292,13 +1292,6 @@ sub _is_valid_to_sell {
     my $self     = shift;
     my $contract = $self->contract;
 
-    # we shouldn't we recreating contract for spreads.
-    if ($contract->date_pricing->is_after($contract->date_start) and not $contract->is_spread) {
-        # It's started, get one prepared for sale.
-        $contract = make_similar_contract($contract, {for_sale => 1});
-        $self->contract($contract);
-    }
-
     if (not $contract->is_valid_to_sell) {
         return Error::Base->cuss(
             -type              => 'InvalidtoSell',

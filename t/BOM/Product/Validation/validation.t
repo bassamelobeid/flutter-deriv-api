@@ -611,6 +611,7 @@ subtest 'invalid start times' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
+    $bet_params->{entry_tick} = $tick;
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/forward-starting.*blackout/];
     test_error_list('buy', $bet, $expected_reasons);
@@ -1303,22 +1304,18 @@ subtest 'contract must be held' => sub {
         currency     => 'USD',
         payout       => 100,
         current_tick => $tick,
+        entry_tick   => $tick,
         date_start   => $oft_used_date,
         date_pricing => $oft_used_date->epoch + 1,
     };
     my $c = produce_contract($args);
-    ok !$c->is_valid_to_sell, 'not valid to sell';
-    like(($c->primary_validation_error)[0]->{message}, qr/Contract not held long/, 'contract not held long enough');
-    $args->{date_pricing} = $oft_used_date->epoch + 301;
-    $c = produce_contract($args);
-    ok !$c->is_valid_to_sell, 'valid to sell';
+    ok $c->is_valid_to_sell, 'valid to sell';
 
     $args->{_date_pricing_milliseconds} = $oft_used_date->epoch + 0.1;
     $args->{date_pricing}               = $oft_used_date->epoch;
     $c                                  = produce_contract($args);
     ok !$c->pricing_new,      'not pricing_new if it is 0.1 second from start';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
-    like(($c->primary_validation_error)[0]->{message}, qr/Contract not held long/, 'contract not held long enough');
+    ok $c->is_valid_to_sell, 'valid to sell right after buy';
     delete $args->{$_} for qw(date_pricing _date_pricing_milliseconds);
     # we set pricing_new to true if date_start is not provided.
     delete $args->{date_start};
