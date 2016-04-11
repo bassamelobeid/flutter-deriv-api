@@ -87,14 +87,14 @@ sub _validate_barrier {
             severity          => 100,
             message           => 'At least one barrier is undefined on double barrier contract.',
             message_to_client => localize('The barriers are improperly entered for this contract.'),
-            };
+        };
     }
     if ($high_barrier->supplied_type ne $low_barrier->supplied_type) {
         return {
             severity          => 5,
             message           => 'Mixed absolute and relative barriers',
             message_to_client => localize('Proper barriers could not be determined.'),
-            };
+        };
     }
     if ($self->is_path_dependent) {
         my $high_pip_move = $self->high_barrier->pip_difference;
@@ -110,7 +110,7 @@ sub _validate_barrier {
                 ),
                 severity          => 1,
                 message_to_client => localize('Barriers must be on either side of the spot.'),
-                };
+            };
         } elsif (abs($high_pip_move) < $min_allowed or abs($low_pip_move) < $min_allowed) {
             return {
                 message => format_error_string(
@@ -121,7 +121,7 @@ sub _validate_barrier {
                 ),
                 severity          => 1,
                 message_to_client => localize('Barrier must be at least ' . $min_allowed . ' pips away from the spot.'),
-                };
+            };
         }
     }
     my ($min_move, $max_move) = (0.25, 2.5);
@@ -142,7 +142,7 @@ sub _validate_barrier {
                 ? localize('Low barrier is out of acceptable range. Please adjust the low barrier.')
                 : localize('High barrier is out of acceptable range. Please adjust the high barrier.'),
                 ,
-                };
+            };
         }
     }
 

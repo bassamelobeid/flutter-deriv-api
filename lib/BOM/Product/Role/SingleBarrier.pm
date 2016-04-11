@@ -56,7 +56,7 @@ sub _validate_barrier {
             ),
             severity          => 91,
             message_to_client => localize('Barrier is out of acceptable range.'),
-            };
+        };
     } elsif ($self->is_path_dependent and abs($pip_move) < $self->minimum_allowable_move) {
         return {
             message => format_error_string(
@@ -66,7 +66,7 @@ sub _validate_barrier {
             ),
             severity          => 1,
             message_to_client => localize('Barrier must be at least ' . $self->minimum_allowable_move . ' pips away from the spot.'),
-            };
+        };
     }
 
     return;
