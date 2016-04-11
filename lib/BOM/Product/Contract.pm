@@ -2297,36 +2297,6 @@ sub _validate_input_parameters {
     return;
 }
 
-sub _validate_sellback_conditions {
-    my $self = shift;
-
-    # Contracts must be held for a minimum duration before resale.
-    if (my $orig_start = $self->build_parameters->{_original_date_start}) {
-        # Does not apply to unstarted forward-starting contracts
-        my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
-        if ($time > $orig_start->epoch) {
-            my $minimum_hold = Time::Duration::Concise::Localize->new(
-                interval => '1m',
-                locale   => BOM::Platform::Context::request()->language
-            );
-            my $held = Time::Duration::Concise::Localize->new(interval => $self->date_start->epoch - $orig_start->epoch);
-            if ($held->seconds < $minimum_hold->seconds) {
-                return {
-                    message => format_error_string(
-                        'Contract not held long enough',
-                        held => $held->as_concise_string,
-                        min  => $minimum_hold->as_concise_string,
-                    ),
-                    message_to_client => localize('Contract must be held for [_1] before resale is offered.', $minimum_hold->as_string),
-
-                };
-            }
-        }
-    }
-
-    return;
-}
-
 sub _validate_trading_times {
     my $self = shift;
 
@@ -2689,7 +2659,7 @@ sub confirm_validity {
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     my @validation_methods =
-        qw(_validate_input_parameters _validate_trading_times _validate_offerings _validate_lifetime  _validate_volsurface _validate_barrier _validate_feed _validate_start_and_expiry_date _validate_sellback_conditions _validate_stake _validate_payout);
+        qw(_validate_input_parameters _validate_trading_times _validate_offerings _validate_lifetime  _validate_volsurface _validate_barrier _validate_feed _validate_start_and_expiry_date  _validate_stake _validate_payout);
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method) {
