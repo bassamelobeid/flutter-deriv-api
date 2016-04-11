@@ -154,7 +154,7 @@ sub _build_basis_tick {
         $potential_error = localize('Waiting for entry tick.');
     } else {
         $basis_tick = $self->current_tick;
-        $potential_error = localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),;
+        $potential_error = localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name);
     }
 
     # if there's no basis tick, don't die but catch the error.
