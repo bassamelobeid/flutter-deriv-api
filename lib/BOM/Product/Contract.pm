@@ -1077,7 +1077,7 @@ sub is_valid_to_sell {
         return 0;
     }
 
-    if ($self->is_expired) {
+    if ($self->is_after_expiry) {
         my $error = $self->_check_entry_and_exit_ticks;
         if ($error) {
             $self->missing_market_data(1);
@@ -1086,7 +1086,7 @@ sub is_valid_to_sell {
                 message_to_client => localize('The buy price of this contract has been refunded due to missing market data.'),
             });
         }
-    } elsif (not $self->opposite_bet->is_valid_to_buy) {
+    } elsif (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
         # Their errors are our errors, now!
         $self->add_error($self->opposite_bet->primary_validation_error);
     }
