@@ -73,7 +73,7 @@ subtest 'forward starting on random daily' => sub {
     $now = Date::Utility->new->truncate_to_day->plus_time_interval('12h');
     my $c = produce_contract({
         bet_type     => 'CALL',
-        underlying   => 'RDMARS',
+        underlying   => 'RDBULL',
         duration     => '10m',
         barrier      => 'S0P',
         currency     => 'USD',
@@ -88,7 +88,7 @@ subtest 'forward starting on random daily' => sub {
     like($err[0]->{message}, qr/in starting blackout/);
     $c = produce_contract({
         bet_type     => 'CALL',
-        underlying   => 'RDMARS',
+        underlying   => 'RDBULL',
         duration     => '10m',
         barrier      => 'S0P',
         currency     => 'USD',
@@ -115,22 +115,6 @@ subtest 'end of day blockout period for random nightly and random daily' => sub 
     });
     ok $c->_validate_expiry_date, 'throw error if contract ends in 1m before expiry';
     my $valid_c = make_similar_contract($c, {duration => '8m59s'});
-    ok !$valid_c->_validate_expiry_date;
-
-    $now = Date::Utility->new->truncate_to_day->plus_time_interval('11h49m');
-    $c   = produce_contract({
-        bet_type     => 'CALL',
-        underlying   => 'RDYIN',
-        duration     => '10m',
-        barrier      => 'S0P',
-        currency     => 'USD',
-        amount_type  => 'payout',
-        amount       => 10,
-        date_pricing => $now->epoch,
-        date_start   => $now->epoch,
-    });
-    ok $c->_validate_expiry_date, 'throw error if contract ends in 1m before expiry';
-    $valid_c = make_similar_contract($c, {duration => '8m59s'});
     ok !$valid_c->_validate_expiry_date;
 };
 
