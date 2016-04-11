@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 5;
 use Test::NoWarnings;
 
 use Time::HiRes;
@@ -100,14 +100,6 @@ subtest 'waiting for entry tick' => sub {
     create_ticks([101, $now->epoch + 1, 'R_100']);
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_sell, 'valid to sell once you have a close enough tick';
-};
-
-subtest 'opposite bet with duration' => sub {
-    $bet_params->{date_start}   = $now;
-    $bet_params->{date_pricing} = $now->epoch + 5;
-    $bet_params->{duration}     = '10m';
-    my $c = produce_contract($bet_params);
-    is $c->opposite_bet->date_expiry->epoch, $c->date_expiry->epoch, 'date expiry does not change for opposite bet';
 };
 
 sub create_ticks {

@@ -222,9 +222,6 @@ sub _build_is_forward_starting {
 sub _build_permitted_expiries {
     my $self = shift;
 
-    my $underlying  = $self->underlying;
-    my $expiry_type = $self->expiry_type;
-
     my $expiries_ref = $self->offering_specifics->{permitted};
     return $expiries_ref;
 }
