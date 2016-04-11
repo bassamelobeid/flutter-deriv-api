@@ -2848,11 +2848,10 @@ sub confirm_validity {
         qw(_validate_input_parameters _validate_trading_times _validate_offerings _validate_lifetime  _validate_volsurface _validate_barrier _validate_feed _validate_start_and_expiry_date _validate_sellback_conditions _validate_stake _validate_payout _validate_eod_market_risk);
 
     foreach my $method (@validation_methods) {
-        my $err = $self->$method;
-        if ($err) {
+        if (my $err = $self->$method) {
             $self->add_error($err);
-            return 0;
         }
+        return 0 if ($self->primary_validation_error);
     }
 
     return 1;
