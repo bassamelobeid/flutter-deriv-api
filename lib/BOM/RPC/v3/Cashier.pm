@@ -47,6 +47,13 @@ sub cashier {
         return $auth_error;
     }
 
+    if ($client->is_virtual) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'CashierForwardError',
+            message_to_client => localize('This is a virtual-money account. Please switch to real-money account and deposit funds.'),
+        });
+    }
+
     my $app_config = BOM::Platform::Runtime->instance->app_config;
 
     my $action = $params->{cashier} // 'deposit';
@@ -63,18 +70,16 @@ sub cashier {
         @siblings && $siblings[0]->default_account->currency_code;
     };
 
-    my $landing_company = $client->landing_company;
-    if (not $client->is_virtual) {
-        my $current_tnc_version = $app_config->cgi->terms_conditions_version;
-        my $client_tnc_status   = $client->get_status('tnc_approval');
-        if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version)) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_TNC_APPROVAL',
-                message_to_client => localize('TNC Approval is required.'),
-            });
-        }
+    my $current_tnc_version = $app_config->cgi->terms_conditions_version;
+    my $client_tnc_status   = $client->get_status('tnc_approval');
+    if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version)) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ASK_TNC_APPROVAL',
+            message_to_client => localize('TNC Approval is required.'),
+        });
     }
 
+    my $landing_company = $client->landing_company;
     if ($landing_company->short eq 'maltainvest') {
         # $c->authenticate()
         return BOM::RPC::v3::Utility::create_error({
@@ -83,7 +88,7 @@ sub cashier {
             }) unless $client->client_fully_authenticated;
     }
 
-    if (not $client->is_virtual and $client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
+    if ($client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_UK_FUNDS_PROTECTION',
             message_to_client => localize('Client is not fully authenticated.'),
@@ -105,8 +110,6 @@ sub cashier {
 
     if ($action eq 'deposit' and $client->get_status('unwelcome')) {
         $error = localize('Your account is restricted to withdrawals only.');
-    } elsif ($client->is_virtual) {
-        $error = localize('This is a virtual-money account. Please switch to real-money account and deposit funds.');
     } elsif ($client->documents_expired) {
         $error = localize(
             'Your identity documents have passed their expiration date. Kindly send a scan of a valid ID to <a href="mailto:[_1]">[_1]</a> to unlock your cashier.',

@@ -10,12 +10,12 @@ use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
 
 my $test_loginid = create_test_user();
-my $token = 'blabla';
+my $token        = 'blabla';
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
 $mock_utility->mock('get_token_details', sub { return {loginid => $test_loginid} });
 
 my $res = BOM::RPC::v3::Cashier::cashier({
-    token => $token,
+    token   => $token,
     cashier => 'deposit'
 });
 is $res->{error}->{code}, 'ASK_TNC_APPROVAL';
