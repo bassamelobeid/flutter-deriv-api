@@ -2793,43 +2793,44 @@ sub _validate_volsurface {
     my $volsurface = $self->volsurface;
     return if (first { $volsurface->type eq $_ } qw(phased flat));
 
-    my $now              = $self->date_pricing;
-    my $standard_message = localize('Trading is suspended due to missing market data.');
-    my $surface_age      = ($now->epoch - $volsurface->recorded_date->epoch) / 3600;
+    my $now               = $self->date_pricing;
+    my $message_to_client = localize('Trading is suspended due to missing market data.');
+    my $surface_age       = ($now->epoch - $volsurface->recorded_date->epoch) / 3600;
 
     if ($volsurface->get_smile_flags) {
         return ({
             message           => format_error_string('Volsurface has smile flags', symbol => $self->underlying->symbol),
-            message_to_client => $standard_message,
+            message_to_client => $message_to_client,
         });
     }
 
-    my $too_old = 0;
+    my $exceeded;
     if (    $self->market->name eq 'forex'
         and $self->pricing_engine_name !~ /Intraday::Forex/
         and $self->timeindays->amount < 4
         and $surface_age > 6)
     {
-        $too_old = $surface_age;
+        $exceeded = '6h';
+    } elsif ($self->market->name eq 'indices' and $surface_age > 24 and not $self->is_atm_bet) {
+        $exceeded = '24h';
     } elsif ($volsurface->recorded_date->days_between($self->exchange->trade_date_before($now)) < 0) {
-        # This complex check for surface cannot be 24 hours old is to avoid false positive on Mondays.
-        $too_old = $surface_age;
+        # will discuss if this can be removed.
+        $exceeded = 'different day';
     }
 
-    if ($too_old) {
+    if ($exceeded) {
         return ({
                 message => format_error_string(
                     'volsurface too old',
                     symbol => $self->underlying->symbol,
                     age    => $surface_age . 'h',
-                    max    => (($self->market->name eq 'forex') ? '6h' : '24h'),
+                    max    => $exceeded,
                 ),
-                message_to_client => $standard_message,
+                message_to_client => $message_to_client,
             });
     }
 
-    if ($volsurface->type eq 'moneyness') {
-        my $current_spot = $self->current_spot;
+    if ($volsurface->type eq 'moneyness' and my $current_spot = $self->current_spot) {
         if (abs($volsurface->spot_reference - $current_spot) / $current_spot * 100 > 5) {
             return ({
                     message => format_error_string(
@@ -2838,7 +2839,7 @@ sub _validate_volsurface {
                         spot                => $current_spot,
                         'surface reference' => $volsurface->spot_reference
                     ),
-                    message_to_client => $standard_message,
+                    message_to_client => $message_to_client,
                 });
         }
     }
