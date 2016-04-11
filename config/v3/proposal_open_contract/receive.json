@@ -174,7 +174,7 @@
         "transaction_ids": {
           "type": "object",
           "title": "Transaction ids for contract",
-          "description": "Every contract has buy and sell transaction ids, i.e. when you purchase a contract we associate it with buy transaction id, when you sell or contract is already sold we associate that with sell transaction id.",
+          "description": "Every contract has buy and sell transaction ids, i.e. when you purchase a contract we associate it with buy transaction id, and if contract is already sold we associate that with sell transaction id.",
           "properties":{
             "buy": {
               "type": "integer",
