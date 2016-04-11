@@ -886,6 +886,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $expected_reasons = [qr/enough trading.*calendar days/];
     test_error_list('buy', $bet, $expected_reasons);
 };
+
 subtest 'underlying with critical corporate actions' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',

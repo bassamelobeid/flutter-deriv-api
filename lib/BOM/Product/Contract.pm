@@ -2796,41 +2796,6 @@ sub _validate_volsurface {
     return;
 }
 
-sub _validate_eod_market_risk {
-    my $self = shift;
-
-    my $ny_1700 = BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start);
-    my $ny_1600 = $ny_1700->minus_time_interval('1h');
-
-    if (
-        first { $self->market->name eq $_ } (qw(forex commodities))
-            and $self->timeindays->amount <= 3
-        and (
-            $ny_1600->is_before($self->date_start)
-            or (    $self->is_intraday
-                and $ny_1600->is_before($self->date_expiry)))
-        and not $self->is_atm_bet
-        )
-    {
-        my $message =
-            ($self->built_with_bom_parameters)
-            ? localize('Resale of this contract is not offered.')
-            : localize('The contract is not available after [_1] GMT.', $ny_1600->time_hhmm);
-        return {
-            message => format_error_string(
-                'Underlying buying suspended between NY1600 and GMT0000',
-                symbol   => $self->underlying->symbol,
-                duration => $self->remaining_time->as_concise_string
-            ),
-            message_to_client => $message . ' ',
-            info_link         => request()->url_for('/resources/asset_indexws'),
-            info_text         => localize('View Asset Index'),
-        };
-    }
-
-    return;
-}
-
 has primary_validation_error => (
     is       => 'rw',
     init_arg => undef,
@@ -2845,7 +2810,7 @@ sub confirm_validity {
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     my @validation_methods =
-        qw(_validate_input_parameters _validate_trading_times _validate_offerings _validate_lifetime  _validate_volsurface _validate_barrier _validate_feed _validate_start_and_expiry_date _validate_sellback_conditions _validate_stake _validate_payout _validate_eod_market_risk);
+        qw(_validate_input_parameters _validate_trading_times _validate_offerings _validate_lifetime  _validate_volsurface _validate_barrier _validate_feed _validate_start_and_expiry_date _validate_sellback_conditions _validate_stake _validate_payout);
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method) {
