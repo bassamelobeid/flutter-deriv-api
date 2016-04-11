@@ -531,13 +531,6 @@ frxAUDJPY: &active_fx
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxAUDNZD: *inactive_fx
 frxAUDPLN: *inactive_fx
 frxAUDUSD: *active_fx
