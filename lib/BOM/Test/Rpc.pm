@@ -59,7 +59,7 @@ sub start_rpc {
         die 'Could not fork process to start rpc service: ' . $!;
     } elsif ($pid == 0) {
         exec
-            "/usr/bin/env RPC_CONFIG=$cfg->{config_file} perl -MBOM::Test /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl daemon -m production -l $cfg->{url}jsonrpc";
+            "/usr/bin/env RPC_CONFIG=$cfg->{config_file} perl -MBOM::Test /home/git/regentmarkets/cpan/local/bin/hypnotoad /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl";
         die "Oops... Couldn't start rpc service: $!, please see log file $cfg->{log_file}";
     }
 
@@ -70,8 +70,6 @@ sub start_rpc {
         print STDERR $error;
         die $error;
     }
-
-    path($cfg->{pid_file})->spew($pid);
 
     return;
 
@@ -87,13 +85,24 @@ sub stop_rpc {
         if (kill(0, $pid)) {
             my $cmd = path("/proc/$pid/cmdline")->slurp;
             kill 'SIGTERM', $pid if $cmd =~ /rpc/;
-            waitpid($pid, 0);
+            wait_till_exit($pid, 10);
         }
-        unlink($cfg->{pid_file});
         unlink $cfg->{config_file};
     }
     return;
 }
+
+sub wait_till_exit {
+    my ($pid, $timeout) = @_;
+    my $start = time;
+    while (time - $start < $timeout and kill ZERO => $pid) {
+        #usleep 1e5;
+        print "wait $pid...\n";
+        sleep 1;
+    }
+    return;
+}
+
 
 BEGIN {
     start_rpc_if_not_running();
