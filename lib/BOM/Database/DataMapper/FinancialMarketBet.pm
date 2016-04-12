@@ -85,7 +85,7 @@ sub get_open_bets_of_account {
     my $self = shift;
 
     my $sql = q{
-        SELECT fmb.*, t.id buy_id
+        SELECT fmb.*, t.id buy_transaction_id
         FROM
             bet.financial_market_bet fmb
             JOIN transaction.transaction t on (action_type='buy' and t.financial_market_bet_id=fmb.id)
@@ -323,6 +323,33 @@ sub get_contract_by_id {
             bet.financial_market_bet fmb
         WHERE
             fmb.id = ?
+    };
+
+    my $sth = $self->db->dbh->prepare($sql);
+    $sth->execute($contract_id);
+
+    return $sth->fetchall_arrayref({});
+}
+
+# we need to get buy sell transactions id for particular contract
+sub get_contract_details_with_transaction_ids {
+    my $self        = shift;
+    my $contract_id = shift;
+
+    my $sql = q{
+        SELECT ff.*, tt.id as sell_transaction_id FROM
+        (
+            SELECT fmb.*, t.id as buy_transaction_id
+            FROM
+                bet.financial_market_bet fmb
+                JOIN transaction.transaction t
+                    on t.financial_market_bet_id=fmb.id AND t.action_type = 'buy'
+            WHERE
+                fmb.id = ?
+        ) ff
+
+        LEFT JOIN transaction.transaction tt
+            ON tt.financial_market_bet_id=ff.id AND tt.action_type = 'sell'
     };
 
     my $sth = $self->db->dbh->prepare($sql);
