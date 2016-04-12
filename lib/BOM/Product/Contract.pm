@@ -437,6 +437,7 @@ has underlying => (
 has exchange => (
     is      => 'ro',
     isa     => 'BOM::Market::Exchange',
+    lazy    => 1,
     default => sub { return shift->underlying->exchange; },
 );
 
