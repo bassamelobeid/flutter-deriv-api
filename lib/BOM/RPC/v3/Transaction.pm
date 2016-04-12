@@ -12,6 +12,7 @@ use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
+use BOM::Database::DataMapper::FinancialMarketBet;
 
 sub buy {
     my $params = shift;
@@ -89,7 +90,7 @@ sub sell {
     my ($source, $args) = ($params->{source}, $params->{args});
     my $id = $args->{sell};
 
-    my @fmbs = @{BOM::RPC::v3::PortfolioManagement::__get_contract_by_id($client, $id)};
+    my @fmbs = @{__get_contract_by_id($client, $id)};
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidSellContractProposal',
             message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless @fmbs;
@@ -119,6 +120,17 @@ sub sell {
         balance_after  => $trx->balance_after,
         sold_for       => abs($trx->amount),
     };
+}
+
+sub __get_contract_by_id {
+    my $client      = shift;
+    my $contract_id = shift;
+
+    my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
+        broker_code => $client->broker_code,
+        operation   => 'replica'
+    });
+    return $mapper->get_contract_by_id($contract_id);
 }
 
 1;
