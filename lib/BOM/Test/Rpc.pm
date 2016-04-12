@@ -86,23 +86,10 @@ sub stop_rpc {
         if (kill(0, $pid)) {
             my $cmd = path("/proc/$pid/cmdline")->slurp;
             kill 'SIGTERM', $pid if $cmd =~ /rpc/;
-            wait_till_exit($pid, 10);
+            waitpid($pid,0);
         }
-        if (kill(0, $pid)) {
-            die "cannot stop rpc service!";
-        } else {
-            unlink($cfg->{pid_file});
-            unlink $cfg->{config_file};
-        }
-    }
-    return;
-}
-
-sub wait_till_exit {
-    my ($pid, $timeout) = @_;
-    my $start = time;
-    while ((time - $start < $timeout) and kill ZERO => $pid) {
-        usleep 1e5;
+        unlink($cfg->{pid_file});
+        unlink $cfg->{config_file};
     }
     return;
 }
