@@ -825,6 +825,11 @@ WLDAUD: &10
             GBP: 1000
             AUD: 1000
             JPY: 100000
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
 WLDEUR: *10
 WLDGBP: *10
 WLDUSD: *10
@@ -873,6 +878,11 @@ frxAUDJPY:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -891,13 +901,6 @@ frxAUDJPY:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxAUDNZD: *11
 frxAUDPLN: *11
 frxAUDUSD:
@@ -926,6 +929,11 @@ frxAUDUSD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -944,13 +952,6 @@ frxAUDUSD:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxBROUSD:
   callput:
     intraday:
@@ -984,6 +985,11 @@ frxEURAUD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1002,13 +1008,6 @@ frxEURAUD:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxEURCAD:
   callput:
     daily:
@@ -1035,6 +1034,11 @@ frxEURCAD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1053,13 +1057,6 @@ frxEURCAD:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxEURCHF:
   callput:
     daily:
@@ -1086,6 +1083,11 @@ frxEURCHF:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1104,13 +1106,6 @@ frxEURCHF:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxEURGBP:
   callput:
     daily:
@@ -1137,6 +1132,11 @@ frxEURGBP:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1155,13 +1155,6 @@ frxEURGBP:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxEURJPY:
   callput:
     daily:
@@ -1188,6 +1181,11 @@ frxEURJPY:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1206,13 +1204,6 @@ frxEURJPY:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxEURNZD: *11
 frxEURUSD:
   callput:
@@ -1240,6 +1231,11 @@ frxEURUSD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1258,13 +1254,6 @@ frxEURUSD:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxGBPAUD:
   callput:
     daily:
@@ -1291,6 +1280,11 @@ frxGBPAUD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1309,13 +1303,6 @@ frxGBPAUD:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxGBPCAD:
   callput:
     daily:
@@ -1374,6 +1361,11 @@ frxGBPJPY:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1392,13 +1384,6 @@ frxGBPJPY:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxGBPNOK:
   callput:
     intraday:
@@ -1440,6 +1425,11 @@ frxGBPUSD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1458,13 +1448,6 @@ frxGBPUSD:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxNZDJPY:
   callput:
     daily:
@@ -1534,6 +1517,11 @@ frxUSDCAD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1552,13 +1540,6 @@ frxUSDCAD:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxUSDCHF:
   callput:
     daily:
@@ -1585,6 +1566,11 @@ frxUSDCHF:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1603,13 +1589,6 @@ frxUSDCHF:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxUSDJPY:
   callput:
     daily:
@@ -1636,6 +1615,11 @@ frxUSDJPY:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1654,13 +1638,6 @@ frxUSDJPY:
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxUSDMXN:
   callput:
     daily:
