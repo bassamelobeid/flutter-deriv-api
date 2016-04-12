@@ -46,7 +46,7 @@ button, .button {cursor: pointer; display: block; margin: 0 auto; background: #2
 .button:hover {background-color: #14602B;}
 
 /* Scope Confirmation */
-#wrapper.scope-confirms {max-width: 480px;}
+#wrapper.scope-confirms {width: 95%; max-width: 480px;}
 h1 {font-size: 30px; font-weight: 300; color: #e98024;}
 .separator-line {border-bottom: 1px solid #dedede; margin: 5px 0;}
 .scopes {background-color: #f2f2f2; padding: 5px; margin-bottom: 0.5em;}
