@@ -90,7 +90,7 @@ subtest 'get_permitted_expiries' => sub {
         contract_category => 'touchnotouch'
     });
 
-    ok exists $fx_tnt->{intraday},  'Some forex symbols have intraday touches';
+    ok !exists $fx_tnt->{intraday},  'no touchnotouch intraday on fx';
     ok !exists $mp_tnt->{intraday}, '... but not on minor_pairs';
     ok !exists $fx_tnt->{tick},     '... nor does forex have tick touches';
     ok !exists $mp_tnt->{tick},     '... especially not on minor_pairs.';
@@ -101,8 +101,6 @@ subtest 'get_permitted_expiries' => sub {
     });
     ok !exists $r100_tnt->{tick},    'None of which is surprising, since they are not on R_100, either';
     ok exists $r100_tnt->{intraday}, '... but you can play them intraday';
-    cmp_ok $r100_tnt->{intraday}->{min}->seconds, '<', $fx_tnt->{intraday}->{min}->seconds, '... for an even shorter duration than on forex.';
-    cmp_ok $r100_tnt->{intraday}->{max}->seconds, '>', $fx_tnt->{intraday}->{max}->seconds, '... or longer on the top end.';
 
     my $r100_digits_tick = get_permitted_expiries({
         underlying_symbol => 'R_100',
@@ -140,7 +138,7 @@ subtest 'get_historical_pricer_durations' => sub {
     use BOM::Market::Underlying;
     my $eu = BOM::Market::Underlying->new('frxEURUSD');
 
-    ok exists $eu_tnt->{intraday}, 'EUR/USD touchnotouch has intraday durations';
+    ok !exists $eu_tnt->{intraday}, 'EUR/USD touchnotouch has intraday durations';
     ok !exists $eu_tnt->{daily},   '... but not daily';
     ok !exists $eu_tnt->{tick},    '... nor tick';
     SKIP: {
@@ -191,12 +189,6 @@ subtest 'get_contract_specifics' => sub {
     my $result = get_contract_specifics($params);
 
     ok exists $result->{payout_limit}, 'Things which can be sold also have the payout_limit set';
-    ok exists $result->{permitted},    'and also have permitted durations';
-    ok exists $result->{permitted}->{min}, '... including minimum';
-    ok exists $result->{permitted}->{max}, '... and maximum';
-    ok exists $result->{historical}, 'Maybe also when to use an historical pricer';
-    ok exists $result->{historical}->{min}, '... including minimum';
-    ok exists $result->{historical}->{max}, '... and maximum';
 
     $params->{underlying_symbol} = 'R_100';
     $result = get_contract_specifics($params);
