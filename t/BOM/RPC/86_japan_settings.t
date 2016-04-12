@@ -107,7 +107,7 @@ my @jp_only = qw(
 
 subtest 'VRTJ get_settings' => sub {
     $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
-    is $res->{$_}, undef, "undef: $_" for (@jp_only);
+    is $res->{jp_settings}, undef, "no JP settings for Japan Virtual Acc");
 };
 
 subtest 'JP get_settings' => sub {
@@ -118,13 +118,13 @@ subtest 'JP get_settings' => sub {
 
     $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
 
-    my %jp_expected = (
+    my %jp_only = (
         salutation    => '',
         country_code  => 'jp',
         date_of_birth => Date::Utility->new($jp_client_details{date_of_birth})->epoch
     );
 
-    my @all = qw(
+    my @common = qw(
         gender
         first_name
         last_name
@@ -136,10 +136,9 @@ subtest 'JP get_settings' => sub {
         address_postcode
         phone
     );
-    @all = (@all, @jp_only);
-    $jp_expected{$_} = $jp_client_details{$_} for (@all);
 
-    is($res->{$_}, $jp_expected{$_}, "OK: $_") for (keys %jp_expected);
+    is($res->{$_}, $jp_client_details{$_}, "OK: $_" ) for (@common);
+    is($res->{jp_settings}->{$_}, $jp_only{$_}, "OK: $_") for (keys %jp_only);
 };
 
 subtest 'non-JP client get_settings' => sub {
@@ -182,9 +181,8 @@ subtest 'non-JP client get_settings' => sub {
 
     subtest 'VRTC - get_settings' => sub {
         $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
-        is($res->{$_}, undef, "undef : $_") for (@jp_only);
+        is($res->{jp_settings}, undef, "no jp_settings for VRTC");
     };
-
 };
 
 sub create_vr_account {
