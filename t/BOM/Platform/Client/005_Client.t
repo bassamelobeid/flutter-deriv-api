@@ -10,7 +10,7 @@ use BOM::Platform::Client;
 my $login_id = 'CR0011';
 my $client;
 
-is(scalar(keys BOM::Platform::Client::client_status_types), 12, "correct number of client status");
+is(scalar(keys BOM::Platform::Client::client_status_types), 10, "correct number of client status");
 
 Test::Exception::lives_ok { $client = BOM::Platform::Client::get_instance({loginid => $login_id}) } "Can create client $login_id";
 

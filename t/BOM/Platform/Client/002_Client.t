@@ -10,7 +10,7 @@ use BOM::Platform::Client;
 my $login_id = 'CR0009';
 
 subtest 'Almost all accessor/modifiers' => sub {
-    plan tests => 50;
+    plan tests => 39;
 
     my $client;
     lives_ok { $client = BOM::Platform::Client::get_instance({'loginid' => $login_id}); }
