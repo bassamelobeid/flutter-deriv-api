@@ -50,7 +50,7 @@ sub cashier {
     if ($client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'CashierForwardError',
-            message_to_client => localize('This is a virtual-money account. Please switch to real-money account and deposit funds.'),
+            message_to_client => localize('This is a virtual-money account. Please switch to a real-money account to deposit funds.'),
         });
     }
 
