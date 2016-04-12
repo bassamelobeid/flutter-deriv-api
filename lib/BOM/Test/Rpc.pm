@@ -85,7 +85,7 @@ sub stop_rpc {
         chomp(my $pid = $pfile->slurp);
         if (kill(0, $pid)) {
             my $cmd = path("/proc/$pid/cmdline")->slurp;
-            kill 9, $pid if $cmd =~ /rpc/;
+            kill 'SIGTERM', $pid if $cmd =~ /rpc/;
             wait_till_exit($pid, 3);
         }
         if (kill(0, $pid)) {
