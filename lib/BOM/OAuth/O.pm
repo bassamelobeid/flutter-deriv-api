@@ -6,7 +6,7 @@ use Try::Tiny;
 # login
 use Email::Valid;
 use Mojo::Util qw(url_escape);
-use List::MoreUtils qw(any);
+use List::MoreUtils qw(any firstval);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
@@ -145,33 +145,48 @@ sub authorize {
 sub __login {
     my ($c, $app) = @_;
 
-    my ($err, $email, $password) = (undef, $c->param('email'), $c->param('password'));
+    my ($email, $password) = ($c->param('email'), $c->param('password'));
+    my ($user, $client, $last_login, $err);
 
-    if (not $email or not Email::Valid->address($email)) {
-        $err = localize('Email not given.');
-    }
+    LOGIN:
+    {
+        if (not $email or not Email::Valid->address($email)) {
+            $err = localize('Email not given.');
+            last;
+        }
 
-    if (not $password) {
-        $err = localize('Password not given.');
-    }
+        if (not $password) {
+            $err = localize('Password not given.');
+            last;
+        }
 
-    my $user = BOM::Platform::User->new({email => $email});
-    $err = localize('Invalid email and password combination.') unless $user;
+        $user = BOM::Platform::User->new({email => $email});
+        unless ($user) {
+            $err = localize('Invalid email and password combination.');
+            last;
+        }
 
-    # get last login before current login to get last record
-    my $last_login = $user->get_last_successful_login_history();
-    my $result     = $user->login(
-        password    => $password,
-        environment => $c->__login_env(),
-    );
+        # get last login before current login to get last record
+        $last_login = $user->get_last_successful_login_history();
+        my $result = $user->login(
+            password    => $password,
+            environment => $c->__login_env(),
+        );
 
-    $err = $result->{error} if $result->{error};
+        last if ($err = $result->{error});
 
-    # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
-    my @clients = $user->clients;
-    my $client  = $clients[0];
-    if ($result = $client->login_error()) {
-        $err = $result;
+        # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
+        my @clients = $user->clients;
+        $client = $clients[0];
+
+        # get 1st loginid, which is not currently self-excluded until
+        if (exists $result->{self_excluded}) {
+            $client = firstval { !exists $result->{self_excluded}->{$_->loginid} } (@clients);
+        }
+
+        if ($result = $client->login_error()) {
+            $err = $result;
+        }
     }
 
     if ($err) {
