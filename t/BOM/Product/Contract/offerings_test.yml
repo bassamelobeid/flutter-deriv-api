@@ -825,6 +825,11 @@ WLDAUD: &10
             GBP: 1000
             AUD: 1000
             JPY: 100000
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
 WLDEUR: *10
 WLDGBP: *10
 WLDUSD: *10
@@ -873,6 +878,11 @@ frxAUDJPY:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -926,6 +936,11 @@ frxAUDUSD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -984,6 +999,11 @@ frxEURAUD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1035,6 +1055,11 @@ frxEURCAD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1086,6 +1111,11 @@ frxEURCHF:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1137,6 +1167,11 @@ frxEURGBP:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1188,6 +1223,11 @@ frxEURJPY:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1240,6 +1280,11 @@ frxEURUSD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1291,6 +1336,11 @@ frxGBPAUD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1374,6 +1424,11 @@ frxGBPJPY:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1440,6 +1495,11 @@ frxGBPUSD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1534,6 +1594,11 @@ frxUSDCAD:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1585,6 +1650,11 @@ frxUSDCHF:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -1636,6 +1706,11 @@ frxUSDJPY:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
