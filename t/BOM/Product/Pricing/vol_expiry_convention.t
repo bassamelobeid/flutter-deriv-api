@@ -17,6 +17,7 @@ use YAML::XS qw(LoadFile);
 use BOM::Market::Underlying;
 use Storable qw(dclone);
 
+Cache::RedisDB->flushall;
 subtest 'tuesday to friday close' => sub {
     my $expiry = Date::Utility->new('2016-01-22 21:00:00');
     my $data   = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/vol_expiry_test.yml');
