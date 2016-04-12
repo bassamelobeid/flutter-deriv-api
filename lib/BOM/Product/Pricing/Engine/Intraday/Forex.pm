@@ -15,6 +15,7 @@ use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
 use BOM::Platform::Static::Config;
+use Math::Function::Interpolator;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -532,6 +533,13 @@ sub _build_commission_markup {
     return $comm_markup;
 }
 
+my $iv_risk_interpolator = Math::Function::Interpolator->new(
+    points => {
+        0.05 => 0.15,
+        0.5  => 0,
+        0.95 => 0.15,
+    });
+
 =head1 risk_markup
 
 Markup added to accommdate for pricing uncertainty
@@ -552,12 +560,12 @@ sub _build_risk_markup {
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
     $risk_markup->include_adjustment('add', $self->eod_market_risk_markup);
 
-    if (not $bet->is_atm_bet) {
+    if ($bet->is_path_dependent) {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
             name        => 'intraday_historical_iv_risk',
             description => 'Intraday::Forex markup for IV contracts only.',
-            set_by      => 'quants.commission.intraday.historical_iv_risk',
-            base_amount => BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_iv_risk} / 100,
+            set_by      => __PACKAGE__,
+            base_amount => $iv_risk_interpolator->linear($self->intraday_vanilla_delta->amount),
         });
         $risk_markup->include_adjustment('add', $iv_risk);
     }
