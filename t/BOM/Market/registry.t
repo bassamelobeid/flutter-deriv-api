@@ -98,7 +98,7 @@ subtest 'Market builds or configs test' => sub {
         ok $forex->foreign_bs_probability;
         ok $forex->absolute_barrier_multiplier;
 
-        cmp_deeply($forex->providers, ['panda', 'idata', 'olsen']);
+        cmp_deeply($forex->providers, ['idata', 'panda', 'olsen']);
 
         is $forex->license, 'realtime';
         ok !$forex->official_ohlc;
@@ -148,7 +148,7 @@ subtest 'Market builds or configs test' => sub {
         ok !$commodities->foreign_bs_probability;
         ok $commodities->absolute_barrier_multiplier;
 
-        cmp_deeply($commodities->providers,, ['panda', 'idata', 'sd'],);
+        cmp_deeply($commodities->providers,, ['idata', 'panda', 'sd'],);
 
         is $commodities->license, 'realtime';
         ok !$commodities->official_ohlc;
