@@ -21,12 +21,14 @@
       "properties": {
         "amount": {
           "type": "number",
-          "description":"Proposed payout or stake value"
+          "description":"Proposed payout or stake value",
+          "required": "1"
         },
         "basis": {
           "type": "string",
           "description":"Indicate whether amount is 'payout' or 'stake'",
-          "pattern": "^(payout|stake)$"
+          "pattern": "^(payout|stake)$",
+          "required": "1"
         },
         "contract_type": {
           "type": "string",
