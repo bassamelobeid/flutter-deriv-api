@@ -2117,6 +2117,16 @@ sub _build_resets_at_open {
     return $self->submarket->resets_at_open;
 }
 
+has always_available => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_always_available {
+    my $self = shift;
+    return $self->submarket->always_available;
+}
+
 no Moose;
 
 __PACKAGE__->meta->make_immutable(

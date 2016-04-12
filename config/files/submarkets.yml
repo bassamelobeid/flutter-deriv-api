@@ -4,6 +4,7 @@ random_index:
     display_order: 1
     market: random
     explanation: 'Associated with a number that represents the relative volatility of the market. For example, the Random 100 Index is twice as volatile as the Random 50 Index.'
+    always_available: 1
 random_daily:
     name: random_daily
     display_name: "Quotidians"

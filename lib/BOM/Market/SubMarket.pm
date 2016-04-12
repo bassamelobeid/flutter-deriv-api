@@ -208,6 +208,11 @@ has spread_divisor => (
     default => 1,
 );
 
+has always_available => (
+    is      => 'ro',
+    default => 0,
+);
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
