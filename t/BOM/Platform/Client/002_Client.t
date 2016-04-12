@@ -102,28 +102,6 @@ subtest 'Almost all accessor/modifiers' => sub {
     Test::Exception::lives_ok { $client->save } "Can save the disabled changes back to client";
     is($client->get_status('disabled'), undef, "the client is enabled");
 
-    Test::Exception::lives_ok {
-        $client->set_status('ok', 'fuguo wei', 'I don not like him');
-    }
-    "can set the ok client attribute";
-
-    Test::Exception::lives_ok { $client->save } "Can save the ok changes back to client";
-
-    $return = $client->get_status('ok');
-    is($return && $return->reason, 'I don not like him', "the client is ok and the reason is: I don not like him");
-    is($return->staff_name, 'fuguo wei', "The ok operation clerk is fuguo wei");
-
-    Test::Exception::lives_ok { $client->set_status('ok', 'fuguo wei', 'He is hacker') } "can upd the ok client status";
-    Test::Exception::lives_ok { $client->save } "Can update the ok reason";
-
-    $return = $client->get_status('ok');
-    is($return && $return->reason, 'He is hacker', "the client is ok update the reason to: He is hacker");
-    is($return->staff_name, 'fuguo wei', "The ok operation clerk is fuguo wei");
-
-    Test::Exception::lives_ok { $client->clr_status('ok') } "can remove the ok client attribute";
-    Test::Exception::lives_ok { $client->save } "Can save the ok changes back to client";
-    is($client->get_status('ok'), undef, "the client is not ok");
-
     is($client->payment_agent_withdrawal_expiration_date, undef, "payment_agent_withdrawal_expiration_date is undef");
     Test::Exception::lives_ok {
         $client->payment_agent_withdrawal_expiration_date('2013-01-01');
