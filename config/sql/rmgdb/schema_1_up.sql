@@ -597,33 +597,6 @@ CREATE TABLE financial_market_bet (
     CONSTRAINT pk_check_bet_params_underlying_symbol CHECK ((((bet_class)::text = 'legacy_bet'::text) OR (underlying_symbol IS NOT NULL)))
 );
 
-CREATE TABLE bet.financial_market_bet_open
-(
-/* we are inheriting all columns and check constraints from fmb */
-  CONSTRAINT fmbo_is_not_sold CHECK (is_sold=FALSE)
-)
-inherits (bet.financial_market_bet);
-ALTER TABLE bet.financial_market_bet_open
-  OWNER TO postgres;
-GRANT SELECT, UPDATE, INSERT ON TABLE bet.financial_market_bet_open TO read;
-GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE bet.financial_market_bet_open TO write;
-
-CREATE OR REPLACE FUNCTION bet.ensure_fmb_id_exists()
-  RETURNS trigger AS
-$BODY$BEGIN
-PERFORM id FROM bet.financial_market_bet WHERE id= NEW.financial_market_bet_id;
-IF NOT FOUND THEN RAISE EXCEPTION 'Apparently a matching bet.financial_market_bet.id cannot be found'; END IF;
-RETURN NEW;
-End;$BODY$
-  LANGUAGE plpgsql STABLE
-  COST 100;
-ALTER FUNCTION bet.ensure_fmb_id_exists()
-  OWNER TO postgres;
-COMMENT ON FUNCTION bet.ensure_fmb_id_exists() IS 'With our open bets going into a transitional table, we cannot employ a conventional foreign key on bet.financial_market_bet (fmb).
-However, since that transitional table is a child of fmb, we can check for the existence of a record in fmb to at least ensure that we have a record in place to which this is related.
-Since fmb is setup to only accept inserts, we don`t need to create something on that end to handle updates/deletes there.
-This trigger function can be used on any table which has a column named financial_market_bet_id referring to bet.financial_market_bet.id'; 
-
 CREATE TABLE higher_lower_bet (
     financial_market_bet_id bigint NOT NULL,
     relative_barrier character varying(20),
@@ -1275,9 +1248,6 @@ ALTER TABLE ONLY digit_bet
 ALTER TABLE ONLY financial_market_bet
     ADD CONSTRAINT pk_financial_market_bet PRIMARY KEY (id);
 
-ALTER TABLE ONLY financial_market_bet_open
-    ADD CONSTRAINT pk_financial_market_bet_open PRIMARY KEY (id);
-
 ALTER TABLE ONLY higher_lower_bet
     ADD CONSTRAINT pk_higher_lower_bet PRIMARY KEY (financial_market_bet_id);
 
@@ -1494,16 +1464,6 @@ CREATE INDEX fmb_purchase_time_idx ON financial_market_bet USING btree (purchase
 
 CREATE INDEX fmb_sell_time_idx ON financial_market_bet USING btree (sell_time);
 
-CREATE INDEX fmbo_account_id_bet_class_idx ON financial_market_bet_open USING btree (account_id, bet_class);
-
-CREATE INDEX fmbo_account_id_purchase_time_bet_class_idx ON financial_market_bet_open USING btree (account_id, date(purchase_time), bet_class);
-
-CREATE INDEX fmbo_account_id_purchase_time_idx ON financial_market_bet_open USING btree (account_id, purchase_time DESC);
-
-CREATE INDEX fmbo_ready_to_sell_idx ON financial_market_bet_open USING btree (expiry_time);
-
-CREATE INDEX fmbo_purchase_time_idx ON financial_market_bet_open USING btree (purchase_time);
-
 SET search_path = betonmarkets, pg_catalog;
 
 CREATE INDEX client_email_idx ON client USING btree (email);
@@ -1556,9 +1516,6 @@ SET search_path = bet, pg_catalog;
 
 CREATE TRIGGER prevent_action BEFORE DELETE ON financial_market_bet FOR EACH STATEMENT EXECUTE PROCEDURE public.prevent_action();
 
-CREATE TRIGGER prevent_update_action BEFORE UPDATE ON financial_market_bet FOR EACH ROW WHEN (NEW.id <> OLD.id) EXECUTE PROCEDURE public.prevent_action();
-COMMENT ON TRIGGER prevent_update_action ON financial_market_bet IS 'Since we cannot maintain a formal foreign key constraint on this table with our data transitioning through financial_market_bet_open, along with validating all ids inserted on related tables and preventing deletes on this table, we can ensure that no update can occur that would change and id value';
-
 CREATE TRIGGER prevent_action BEFORE DELETE ON higher_lower_bet FOR EACH STATEMENT EXECUTE PROCEDURE public.prevent_action();
 
 CREATE TRIGGER prevent_action BEFORE DELETE ON range_bet FOR EACH STATEMENT EXECUTE PROCEDURE public.prevent_action();
@@ -1591,14 +1548,8 @@ CREATE TRIGGER prevent_action BEFORE DELETE ON account FOR EACH STATEMENT EXECUT
 
 SET search_path = bet, pg_catalog;
 
-ALTER TABLE ONLY digit_bet DROP CONSTRAINT IF EXISTS fk_digit_bet_financial_market_bet_id;
-
-CREATE TRIGGER trig_ensure_fmb_id_exists
-  BEFORE INSERT OR UPDATE
-  ON digit_bet
-  FOR EACH ROW
-  EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
-COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON digit_bet IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
+ALTER TABLE ONLY digit_bet
+    ADD CONSTRAINT fk_digit_bet_financial_market_bet_id FOREIGN KEY (financial_market_bet_id) REFERENCES financial_market_bet(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 ALTER TABLE ONLY financial_market_bet
     ADD CONSTRAINT fk_financial_market_bet_account_id FOREIGN KEY (account_id) REFERENCES transaction.account(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
@@ -1606,56 +1557,20 @@ ALTER TABLE ONLY financial_market_bet
 ALTER TABLE ONLY financial_market_bet
     ADD CONSTRAINT fk_fmb_bet_type FOREIGN KEY (bet_type) REFERENCES bet_dictionary(bet_type) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
-ALTER TABLE ONLY financial_market_bet_open
-    ADD CONSTRAINT fk_financial_market_bet_open_account_id FOREIGN KEY (account_id) REFERENCES transaction.account(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
+ALTER TABLE ONLY higher_lower_bet
+    ADD CONSTRAINT fk_higher_lower_bet_financial_market_bet_id FOREIGN KEY (financial_market_bet_id) REFERENCES financial_market_bet(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
-ALTER TABLE ONLY financial_market_bet_open
-    ADD CONSTRAINT fk_fmb_open_bet_type FOREIGN KEY (bet_type) REFERENCES bet_dictionary(bet_type) ON UPDATE RESTRICT ON DELETE RESTRICT;
+ALTER TABLE ONLY legacy_bet
+    ADD CONSTRAINT fk_legacy_bet_financial_market_bet_id FOREIGN KEY (financial_market_bet_id) REFERENCES financial_market_bet(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
-ALTER TABLE ONLY higher_lower_bet DROP CONSTRAINT IF EXISTS fk_higher_lower_bet_financial_market_bet_id;
+ALTER TABLE ONLY range_bet
+    ADD CONSTRAINT fk_range_bet_financial_market_bet_id FOREIGN KEY (financial_market_bet_id) REFERENCES financial_market_bet(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
-CREATE TRIGGER trig_ensure_fmb_id_exists
-  BEFORE INSERT OR UPDATE
-  ON higher_lower_bet
-  FOR EACH ROW
-  EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
-COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON higher_lower_bet IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
+ALTER TABLE ONLY run_bet
+    ADD CONSTRAINT fk_run_bet_financial_market_bet_id FOREIGN KEY (financial_market_bet_id) REFERENCES financial_market_bet(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
-ALTER TABLE ONLY legacy_bet DROP CONSTRAINT IF EXISTS fk_legacy_bet_financial_market_bet_id;
-
-CREATE TRIGGER trig_ensure_fmb_id_exists
-  BEFORE INSERT OR UPDATE
-  ON legacy_bet
-  FOR EACH ROW
-  EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
-COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON legacy_bet IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
-
-ALTER TABLE ONLY range_bet DROP CONSTRAINT IF EXISTS fk_range_bet_financial_market_bet_id;
-
-CREATE TRIGGER trig_ensure_fmb_id_exists
-  BEFORE INSERT OR UPDATE
-  ON range_bet
-  FOR EACH ROW
-  EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
-COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON range_bet IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
-
-ALTER TABLE ONLY run_bet DROP CONSTRAINT IF EXISTS fk_run_bet_financial_market_bet_id;
-
-CREATE TRIGGER trig_ensure_fmb_id_exists
-  BEFORE INSERT OR UPDATE
-  ON run_bet
-  FOR EACH ROW
-  EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
-COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON run_bet IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
-
-ALTER TABLE ONLY touch_bet DROP CONSTRAINT IF EXISTS fk_touch_bet_financial_market_bet_id;
-
-CREATE TRIGGER trig_ensure_fmb_id_exists
-  BEFORE INSERT OR UPDATE
-  ON touch_bet
-  FOR EACH ROW
-  EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
-COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON touch_bet IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
+ALTER TABLE ONLY touch_bet
+    ADD CONSTRAINT fk_touch_bet_financial_market_bet_id FOREIGN KEY (financial_market_bet_id) REFERENCES financial_market_bet(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 SET search_path = betonmarkets, pg_catalog;
 
@@ -1688,14 +1603,8 @@ ALTER TABLE ONLY self_exclusion
 
 SET search_path = data_collection, pg_catalog;
 
-ALTER TABLE quants_bet_variables DROP CONSTRAINT IF EXISTS fk_quants_bet_variables_financial_market_bet_id;
-
-CREATE TRIGGER trig_ensure_fmb_id_exists
-  BEFORE INSERT OR UPDATE
-  ON quants_bet_variables
-  FOR EACH ROW
-  EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
-COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON quants_bet_variables IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
+ALTER TABLE ONLY quants_bet_variables
+    ADD CONSTRAINT fk_quants_bet_variables_financial_market_bet_id FOREIGN KEY (financial_market_bet_id) REFERENCES bet.financial_market_bet(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 ALTER TABLE ONLY quants_bet_variables
     ADD CONSTRAINT fk_quants_bet_variables_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction.transaction(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
@@ -1761,15 +1670,8 @@ ALTER TABLE ONLY account
 ALTER TABLE ONLY transaction
     ADD CONSTRAINT fk_transaction_account_id FOREIGN KEY (account_id) REFERENCES account(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
-ALTER TABLE ONLY transaction DROP CONSTRAINT IF EXISTS fk_transaction_financial_market_bet_id;
-
-CREATE TRIGGER trig_ensure_fmb_id_exists
-  BEFORE INSERT OR UPDATE
-  ON transaction
-  FOR EACH ROW
-  WHEN ((new.financial_market_bet_id IS NOT NULL))
-  EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
-COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON transaction IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
+ALTER TABLE ONLY transaction
+    ADD CONSTRAINT fk_transaction_financial_market_bet_id FOREIGN KEY (financial_market_bet_id) REFERENCES bet.financial_market_bet(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 ALTER TABLE ONLY transaction
     ADD CONSTRAINT fk_transaction_payment_id FOREIGN KEY (payment_id) REFERENCES payment.payment(id) ON UPDATE RESTRICT ON DELETE RESTRICT;

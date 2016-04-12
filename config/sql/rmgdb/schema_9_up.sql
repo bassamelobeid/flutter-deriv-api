@@ -15,14 +15,10 @@ CREATE TABLE bet.spread_bet (
 );
 
 ALTER TABLE ONLY bet.spread_bet
-    DROP CONSTRAINT IF EXISTS fk_spread_bet_financial_market_bet_id;
-
-CREATE TRIGGER trig_ensure_fmb_id_exists
-  BEFORE INSERT OR UPDATE
-  ON bet.spread_bet
-  FOR EACH ROW
-  EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
-COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON bet.spread_bet IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
+    ADD CONSTRAINT fk_spread_bet_financial_market_bet_id
+    FOREIGN KEY (financial_market_bet_id)
+    REFERENCES bet.financial_market_bet(id)
+    ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 ALTER TABLE ONLY bet.bet_dictionary
     DROP CONSTRAINT IF EXISTS bet_dictionary_table_name_check;
@@ -39,10 +35,10 @@ ALTER TABLE ONLY bet.bet_dictionary
                                'spread_bet')) IS TRUE
         );
 
-ALTER TABLE bet.financial_market_bet
+ALTER TABLE ONLY bet.financial_market_bet
     DROP CONSTRAINT IF EXISTS pk_check_bet_class_value;
 
-ALTER TABLE bet.financial_market_bet
+ALTER TABLE ONLY bet.financial_market_bet
     ADD CONSTRAINT pk_check_bet_class_value
         CHECK (
                (bet_class IN ('higher_lower_bet',
@@ -54,10 +50,10 @@ ALTER TABLE bet.financial_market_bet
                               'spread_bet')) IS TRUE
         ) NOT VALID;
 
-ALTER TABLE bet.financial_market_bet
+ALTER TABLE ONLY bet.financial_market_bet
     DROP CONSTRAINT IF EXISTS basic_validation;
 
-ALTER TABLE bet.financial_market_bet
+ALTER TABLE ONLY bet.financial_market_bet
     ADD CONSTRAINT basic_validation
         CHECK (
            (
@@ -79,7 +75,7 @@ ALTER TABLE bet.financial_market_bet
            ) IS TRUE
         ) NOT VALID;
 
-ALTER TABLE bet.financial_market_bet
+ALTER TABLE ONLY bet.financial_market_bet
    DROP CONSTRAINT IF EXISTS pk_check_bet_params_payout_price;
 
 CREATE TRIGGER prevent_action BEFORE DELETE ON bet.spread_bet
