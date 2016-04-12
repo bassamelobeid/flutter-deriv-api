@@ -86,7 +86,7 @@ sub stop_rpc {
         if (kill(0, $pid)) {
             my $cmd = path("/proc/$pid/cmdline")->slurp;
             kill 'SIGTERM', $pid if $cmd =~ /rpc/;
-            wait_till_exit($pid, 3);
+            wait_till_exit($pid, 10);
         }
         if (kill(0, $pid)) {
             die "cannot stop rpc service!";
