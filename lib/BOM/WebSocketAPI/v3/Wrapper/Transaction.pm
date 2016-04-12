@@ -13,8 +13,8 @@ use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 sub buy {
     my ($c, $args) = @_;
 
-    # if parameters are not empty, take parameters from args without asking propsal
-    # calling forget_buy_proposal instead of forget_one as we need args for contract proposal
+    # 1. Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
+    # 2. Calling forget_buy_proposal instead of forget_one as we need args for contract proposal
     my $contract_parameters =
            $args->{parameters}
         || BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $args->{buy})
