@@ -86,7 +86,7 @@ sub stop_rpc {
         if (kill(0, $pid)) {
             my $cmd = path("/proc/$pid/cmdline")->slurp;
             kill 'SIGTERM', $pid if $cmd =~ /rpc/;
-            waitpid($pid,0);
+            waitpid($pid, 0);
         }
         unlink($cfg->{pid_file});
         unlink $cfg->{config_file};
