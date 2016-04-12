@@ -62,7 +62,7 @@ sub start_rpc {
             "/usr/bin/env RPC_CONFIG=$cfg->{config_file} perl -MBOM::Test /home/git/regentmarkets/cpan/local/bin/hypnotoad /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl";
         die "Oops... Couldn't start rpc service: $!, please see log file $cfg->{log_file}";
     }
-
+    waitpid($pid,0);
     unless (Net::EmptyPort::wait_port($cfg->{port}, 20)) {
         my $error = "Rpc service still not ready, what happened?\n";
         #when run test with prove, 'die' cannot display the error message
