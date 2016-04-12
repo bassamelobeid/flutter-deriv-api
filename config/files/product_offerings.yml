@@ -465,6 +465,11 @@ WLDAUD: &smart_fx
             AUD: 1000
             EUR: 1000
             JPY: 100000
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
 WLDEUR: *smart_fx
 WLDGBP: *smart_fx
 WLDUSD: *smart_fx
@@ -513,6 +518,11 @@ frxAUDJPY: &active_fx
           historical_pricer_min: 15m
           max: 5h
           min: 15m
+    tick:
+      spot:
+        euro_atm:
+          max: 10
+          min: 5
   endsinout:
     daily:
       spot:
@@ -531,13 +541,6 @@ frxAUDJPY: &active_fx
         american:
           max: 365d
           min: 1d
-    intraday:
-      spot:
-        american:
-          historical_pricer_max: 5h
-          historical_pricer_min: 15m
-          max: 5h
-          min: 1h
 frxAUDNZD: *inactive_fx
 frxAUDPLN: *inactive_fx
 frxAUDUSD: *active_fx
