@@ -26,54 +26,57 @@ my $usdjpy_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tic
     underlying => 'frxUSDJPY',
     epoch      => $weekday->epoch
 });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'currency',
-    {
-        symbol        => $_,
-        recorded_date => $weekday
-    }) for qw(USD JPY HKD);
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'index',
-    {
-        symbol        => 'HSI',
-        recorded_date => $weekday
-    });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_delta',
-    {
-        symbol        => $_,
-        recorded_date => $weekday
-    }) for qw(frxUSDJPY frxUSDHKD);
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_moneyness',
-    {
-        symbol        => 'HSI',
-        recorded_date => $weekday
-    });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'correlation_matrix',
-    {
-        recorded_date => $weekday,
-        symbol        => 'indices',
-        correlations  => {
-            'HSI' => {
-                USD => {
-                    '3M'  => 0.1,
-                    '12M' => 0.1
-                },
-                GBP => {
-                    '3M'  => 0.1,
-                    '12M' => 0.1
-                },
-                AUD => {
-                    '3M'  => 0.1,
-                    '12M' => 0.1
-                },
-                EUR => {
-                    '3M'  => 0.1,
-                    '12M' => 0.1
-                },
-            }}});
+
+for my $date ($weekend, $weekday) {
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'currency',
+        {
+            symbol        => $_,
+            recorded_date => $date
+        }) for qw(USD JPY HKD);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'index',
+        {
+            symbol        => 'HSI',
+            recorded_date => $date
+        });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $_,
+            recorded_date => $date
+        }) for qw(frxUSDJPY frxUSDHKD);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol        => 'HSI',
+            recorded_date => $date
+        });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'correlation_matrix',
+        {
+            recorded_date => $date,
+            symbol        => 'indices',
+            correlations  => {
+                'HSI' => {
+                    USD => {
+                        '3M'  => 0.1,
+                        '12M' => 0.1
+                    },
+                    GBP => {
+                        '3M'  => 0.1,
+                        '12M' => 0.1
+                    },
+                    AUD => {
+                        '3M'  => 0.1,
+                        '12M' => 0.1
+                    },
+                    EUR => {
+                        '3M'  => 0.1,
+                        '12M' => 0.1
+                    },
+                }}});
+}
 
 subtest 'trading hours' => sub {
     my $args = {

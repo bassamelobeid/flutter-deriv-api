@@ -2280,7 +2280,8 @@ sub _validate_input_parameters {
         };
     } elsif ($self->expiry_daily) {
         my $date_expiry = $self->date_expiry;
-        if (my $closing = $self->exchange->closing_on($date_expiry) and not $date_expiry->is_same_as($closing)) {
+        my $closing     = $self->exchange->closing_on($date_expiry);
+        if ($closing and not $date_expiry->is_same_as($closing)) {
             return {
                 message => format_error_string(
                     'daily expiry must expire at close',

@@ -454,6 +454,12 @@ subtest 'volsurfaces become old and invalid' => sub {
             recorded_date => Date::Utility->new($starting)->minus_time_interval('10d'),
         });
 
+
+    my $tick       = BOM::Market::Data::Tick->new({
+        symbol => 'frxUSDJPY',
+        epoch => $starting,
+        quote => 100
+        });
     my $bet_params = {
         underlying   => $underlying,
         bet_type     => 'DOUBLEDOWN',
