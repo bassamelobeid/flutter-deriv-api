@@ -2278,6 +2278,21 @@ sub _validate_input_parameters {
             message           => format_error_string('forced (not calculated) IV'),
             message_to_client => localize("Prevailing market price cannot be determined."),
         };
+    } elsif ($self->expiry_daily) {
+        my $date_expiry = $self->date_expiry;
+        if (my $closing = $self->exchange->closing_on($date_expiry) and not $date_expiry->is_same_as($closing)) {
+            return {
+                message => format_error_string(
+                    'daily expiry must expire at close',
+                    expiry            => $date_expiry->datetime,
+                    underlying_symbol => $self->underlying->symbol
+                ),
+                message_to_client => localize(
+                    'Contracts on [_1] with duration more than 24 hours must expire at the end of a trading day.',
+                    $self->underlying->translated_display_name
+                ),
+            };
+        }
     }
 
     return;
@@ -2330,51 +2345,35 @@ sub _validate_trading_times {
                 ),
             };
         }
-    } elsif ($self->expiry_daily) {
-        if (not $date_expiry->is_same_as($exchange->closing_on($date_expiry))) {
+    } elsif ($self->expiry_daily and not $self->is_atm_bet) {
+        # For definite ATM contracts we do not have to check for upcoming holidays.
+        my $times_text    = localize('Trading Times');
+        my $trading_days  = $self->exchange->trading_days_between($date_start, $date_expiry);
+        my $holiday_days  = $self->exchange->holiday_days_between($date_start, $date_expiry);
+        my $calendar_days = $date_expiry->days_between($date_start);
+
+        if ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
+            my $safer_expiry = $date_expiry;
+            my $trade_count  = $trading_days;
+            while ($trade_count < 4) {
+                $safer_expiry = $underlying->trade_date_after($safer_expiry);
+                $trade_count++;
+            }
+            my $message =
+                ($self->built_with_bom_parameters)
+                ? localize('Resale of this contract is not offered due to market holidays during contract period.')
+                : localize("Too many market holidays during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
+            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             return {
                 message => format_error_string(
-                    'daily expiry must expire at close',
-                    expiry            => $date_expiry->datetime,
-                    underlying_symbol => $underlying->symbol
+                    'Not enough trading days for calendar days',
+                    trading  => $trading_days,
+                    calendar => $calendar_days,
                 ),
-                message_to_client => localize(
-                    'Contracts on [_1] with duration more than 24 hours must expire at the end of a trading day.',
-                    $underlying->translated_display_name()
-                ),
+                message_to_client => $message,
+                info_link         => $times_link,
+                info_text         => $times_text,
             };
-        }
-
-        if (not $self->is_atm_bet) {
-            # For definite ATM contracts we do not have to check for upcoming holidays.
-            my $times_text    = localize('Trading Times');
-            my $trading_days  = $self->exchange->trading_days_between($date_start, $date_expiry);
-            my $holiday_days  = $self->exchange->holiday_days_between($date_start, $date_expiry);
-            my $calendar_days = $date_expiry->days_between($date_start);
-
-            if ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
-                my $safer_expiry = $date_expiry;
-                my $trade_count  = $trading_days;
-                while ($trade_count < 4) {
-                    $safer_expiry = $underlying->trade_date_after($safer_expiry);
-                    $trade_count++;
-                }
-                my $message =
-                    ($self->built_with_bom_parameters)
-                    ? localize('Resale of this contract is not offered due to market holidays during contract period.')
-                    : localize("Too many market holidays during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
-                my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
-                return {
-                    message => format_error_string(
-                        'Not enough trading days for calendar days',
-                        trading  => $trading_days,
-                        calendar => $calendar_days,
-                    ),
-                    message_to_client => $message,
-                    info_link         => $times_link,
-                    info_text         => $times_text,
-                };
-            }
         }
     }
 
