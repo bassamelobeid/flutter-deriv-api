@@ -2574,8 +2574,6 @@ sub _validate_volsurface {
     my $self = shift;
 
     my $volsurface = $self->volsurface;
-    return if (first { $volsurface->type eq $_ } qw(phased flat));
-
     my $now               = $self->date_pricing;
     my $message_to_client = localize('Trading is suspended due to missing market data.');
     my $surface_age       = ($now->epoch - $volsurface->recorded_date->epoch) / 3600;
@@ -2644,8 +2642,11 @@ sub confirm_validity {
 
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
-    my @validation_methods =
-        qw(_validate_input_parameters _validate_trading_times _validate_offerings _validate_lifetime  _validate_volsurface _validate_barrier _validate_feed _validate_start_and_expiry_date  _validate_stake _validate_payout);
+    # This is the default list of validations.
+    my @validation_methods = qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed _validate_stake _validate_payout);
+
+    push @validation_methods, '_validate_volsurface' if (not ($self->volsurface->type eq 'flat' or $self->volsurface->type eq 'phased'));
+    push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) if not $self->underlying->always_available;
 
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method) {
