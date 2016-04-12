@@ -103,7 +103,6 @@ sub wait_till_exit {
     return;
 }
 
-
 BEGIN {
     start_rpc_if_not_running();
 }
