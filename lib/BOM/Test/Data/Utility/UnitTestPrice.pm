@@ -30,7 +30,7 @@ sub create_pricing_data {
     } elsif ($underlying->market->name eq 'commodities') {
         my $symbol = 'frx' . $underlying->asset_symbol . $payout_currency;
         push @quanto_list, $symbol;
-    } elsif ($underlying->market->name ne 'random') {
+    } elsif ($underlying->market->name ne 'volidx') {
         if (my $symbol = _order_symbol($underlying->quoted_currency_symbol, $payout_currency)) {
             push @quanto_list, $symbol;
         }
