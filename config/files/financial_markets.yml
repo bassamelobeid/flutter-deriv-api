@@ -17,8 +17,8 @@ commodities:
     explanation: 'Commodities are traded items with directly usable qualities.'
     license: "realtime"
     providers:
-        - 'panda'
         - 'idata'
+        - 'panda'
         - 'sd'
     intradays_must_be_same_day: 1
     markups:
@@ -58,8 +58,8 @@ forex:
     explanation: 'Forex (or foreign exchange) represents the ratio between the values of two currencies.'
     license: "realtime"
     providers:
-        - 'panda'
         - 'idata'
+        - 'panda'
         - 'olsen'
     markups:
         apply_traded_markets_markup: 1
