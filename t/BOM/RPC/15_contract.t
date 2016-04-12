@@ -319,6 +319,8 @@ subtest 'get_bid' => sub {
             longcode
             shortcode
             payout
+            contract_type
+            display_name
             ));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
 
