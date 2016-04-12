@@ -144,7 +144,7 @@ subtest 'Return not expired client contracts' => sub {
 
         $expected_contract_data = {
             contract_id    => $fmb->{id},
-            transaction_id => $fmb->{buy_id},
+            transaction_id => $fmb->{buy_transaction_id},
             purchase_time  => Date::Utility->new($fmb->{purchase_time})->epoch,
             symbol         => $fmb->{underlying_symbol},
             payout         => $fmb->{payout_price},
