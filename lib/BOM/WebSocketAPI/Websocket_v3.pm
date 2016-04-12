@@ -523,6 +523,10 @@ sub rpc {
             DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$method"]});
 
+            if ($c->stash('debug')) {
+                $c->app->log->warn("RPC call time in debug mode: " . 1000 * Time::HiRes::tv_interval($tv));
+            }
+
             # unconditionally stop any further processing if client is already disconnected
             return unless $self->tx;
 
