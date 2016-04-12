@@ -47,7 +47,7 @@ $t = $t->send_ok({
             buy   => $proposal->{proposal}->{id},
             price => $proposal->{proposal}->{ask_price}}});
 
-my ($res, $first_contract_id);
+my ($res, $contract_id);
 ## skip proposal until we meet buy
 while (1) {
     $t   = $t->message_ok;
@@ -56,42 +56,7 @@ while (1) {
     next if $res->{msg_type} eq 'proposal';
 
     ok $res->{buy}->{contract_id};
-    $first_contract_id = $res->{buy}->{contract_id};
-    last;
-}
-
-$t = $t->send_ok({
-        json => {
-            "proposal"      => 1,
-            "subscribe"     => 1,
-            "amount"        => "2",
-            "basis"         => "payout",
-            "contract_type" => "CALL",
-            "currency"      => "USD",
-            "symbol"        => "R_50",
-            "duration"      => "2",
-            "duration_unit" => "m"
-        }});
-BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998050;445.6823;');
-$t->message_ok;
-$proposal = decode_json($t->message->[1]);
-
-sleep 1;
-$t = $t->send_ok({
-        json => {
-            buy   => $proposal->{proposal}->{id},
-            price => $proposal->{proposal}->{ask_price}}});
-
-my $second_contract_id;
-## skip proposal until we meet buy
-while (1) {
-    $t   = $t->message_ok;
-    $res = decode_json($t->message->[1]);
-    note explain $res;
-    next if $res->{msg_type} eq 'proposal';
-
-    ok $res->{buy}->{contract_id};
-    $second_contract_id = $res->{buy}->{contract_id};
+    $contract_id = $res->{buy}->{contract_id};
     last;
 }
 
@@ -101,20 +66,13 @@ $t = $t->send_ok({
             subscribe              => 1
         }});
 
-my $contract_count = 0;
-for (my $i = 0; $i < 4; $i++) {
-    last if ($contract_count == 2);
-    $t   = $t->message_ok;
-    $res = decode_json($t->message->[1]);
-    note explain $res;
-    ok $res->{proposal_open_contract}->{contract_id};
-    test_schema('proposal_open_contract', $res);
-    if ($first_contract_id eq $res->{proposal_open_contract}->{contract_id} or $second_contract_id eq $res->{proposal_open_contract}->{contract_id}) {
-        $contract_count++;
-    }
-}
+$t   = $t->message_ok;
+$res = decode_json($t->message->[1]);
+note explain $res;
+ok $res->{proposal_open_contract}->{contract_id};
+test_schema('proposal_open_contract', $res);
 
-is $contract_count, 2, 'got correct number of proposal open contracts';
+is $res->{proposal_open_contract}->{contract_id}, $contract_id, 'got correct contract from proposal open contracts';
 
 $t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok;
 $t->finish_ok;
