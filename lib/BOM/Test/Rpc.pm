@@ -30,6 +30,7 @@ sub config {
     hypnotoad => {
                   listen   => ["$cfg->{url}"],
                   workers  => 10,
+                  clients  => 1,
                   pid_file => '$cfg->{pid_file}',
                   user     => 'nobody',
                   group    => 'nogroup',
