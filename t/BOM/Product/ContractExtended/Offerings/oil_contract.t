@@ -31,7 +31,7 @@ foreach my $ds (@date_start) {
         'currency',
         {
             symbol        => $_,
-            recorded_date => $ds,
+            recorded_date => Date::Utility->new($ds->epoch - 600),
         }) for qw (USD BRO);
 
     my $pp = {
