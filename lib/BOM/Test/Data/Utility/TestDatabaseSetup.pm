@@ -23,7 +23,6 @@ sub prepare_unit_test_database {
 
     try {
         $self->_migrate_changesets;
-        $self->_import_sample_data;
         $self->_alter_user_mapping if ($self->_db_migrations_dir eq 'rmgdb');
         $self->_post_import_operations;
     }
@@ -125,6 +124,9 @@ sub _migrate_changesets {
         $m->psql(sort glob $self->collectordb_changesets_location . '/functions/*.sql')
             if -d $self->collectordb_changesets_location . '/functions';
     }
+
+    $m->psql($self->changesets_location . '/unit_test_dml.sql')
+        if -f $self->changesets_location . '/unit_test_dml.sql';
 
     return 1;
 }
