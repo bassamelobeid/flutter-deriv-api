@@ -240,6 +240,19 @@ sub build_client_warning_message {
             });
     }
 
+    if (my $jp_activation = $client->get_status('jp_activation_pending')) {
+        push(
+            @output,
+            {
+                clerk      => $jp_activation->staff_name,
+                reason     => $jp_activation->reason,
+                warning    => 'red',
+                section    => 'JP Activation Pending',
+                editlink   => $edit_client_with_status->('jpactivationpending'),
+                removelink => $remove_client_from->('jpactivationpending'),
+            });
+    }
+
     if (my $ok = $client->get_status('ok')) {
         my $onclick = "onclick='return append_dccode(this)'";
         push(
