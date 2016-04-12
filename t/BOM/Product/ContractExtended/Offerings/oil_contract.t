@@ -81,8 +81,6 @@ foreach my $ds_2 (@date_start_2) {
     };
     my $c_2 = produce_contract($pp_2);
     ok $c_2->is_valid_to_buy, 'valid to buy';
-    $DB::single=1;
-    1;
 
     $count_2++;
 }
