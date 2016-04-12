@@ -140,5 +140,5 @@ subtest 'asian' => sub {
         is $c->underlying->pip_size, 0.0001, 'underlying pip size';
         cmp_ok $c->barrier->as_absolute, '==', 101.50000, 'correct barrier with one more decimal in pip size';
     }
-    'build from shortcode';
+    'build from shortcode'; 
 };
