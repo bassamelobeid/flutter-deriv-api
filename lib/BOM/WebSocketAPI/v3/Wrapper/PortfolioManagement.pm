@@ -63,6 +63,8 @@ sub proposal_open_contract {
                         } else {
                             # need to do this as args are passed back to client as response echo_req
                             my $details = {%$args};
+                            # we don't want to leak account_id to client
+                            $details->{account_id} = delete $response->{$contract_id}->{account_id};
                             my $id;
                             if (    exists $args->{subscribe}
                                 and $args->{subscribe} eq '1'
@@ -71,22 +73,21 @@ sub proposal_open_contract {
                             {
                                 # these keys needs to be deleted from args (check send_proposal)
                                 # populating here cos we stash them in redis channel
-                                $details->{short_code}    = $response->{$contract_id}->{shortcode};
-                                $details->{contract_id}   = $contract_id;
-                                $details->{currency}      = $response->{$contract_id}->{currency};
-                                $details->{buy_price}     = $response->{$contract_id}->{buy_price};
-                                $details->{sell_price}    = $response->{$contract_id}->{sell_price};
-                                $details->{sell_time}     = $response->{$contract_id}->{sell_time};
-                                $details->{purchase_time} = $response->{$contract_id}->{purchase_time};
-                                $details->{is_sold}       = $response->{$contract_id}->{is_sold};
-                                $details->{account_id}    = $response->{$contract_id}->{account_id};
+                                $details->{short_code}      = $response->{$contract_id}->{shortcode};
+                                $details->{contract_id}     = $contract_id;
+                                $details->{currency}        = $response->{$contract_id}->{currency};
+                                $details->{buy_price}       = $response->{$contract_id}->{buy_price};
+                                $details->{sell_price}      = $response->{$contract_id}->{sell_price};
+                                $details->{sell_time}       = $response->{$contract_id}->{sell_time};
+                                $details->{purchase_time}   = $response->{$contract_id}->{purchase_time};
+                                $details->{is_sold}         = $response->{$contract_id}->{is_sold};
+                                $details->{transaction_ids} = $response->{$contract_id}->{transaction_ids};
 
                                 # need underlying to cancel streaming when manual sell occurs
                                 $details->{underlying} = $response->{$contract_id}->{underlying};
 
                                 # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe',
-                                    $response->{$contract_id}->{account_id},
+                                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $details->{account_id},
                                     $contract_id, $details);
 
                                 $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
@@ -118,13 +119,14 @@ sub proposal_open_contract {
 sub send_proposal {
     my ($c, $id, $args) = @_;
 
-    my $details       = {%$args};
-    my $contract_id   = delete $details->{contract_id};
-    my $sell_time     = delete $details->{sell_time};
-    my $account_id    = delete $details->{account_id};
-    my $buy_price     = delete $details->{buy_price};
-    my $purchase_time = delete $details->{purchase_time};
-    my $sell_price    = delete $details->{sell_price};
+    my $details         = {%$args};
+    my $contract_id     = delete $details->{contract_id};
+    my $sell_time       = delete $details->{sell_time};
+    my $account_id      = delete $details->{account_id};
+    my $buy_price       = delete $details->{buy_price};
+    my $purchase_time   = delete $details->{purchase_time};
+    my $sell_price      = delete $details->{sell_price};
+    my $transaction_ids = delete $details->{transaction_ids};
 
     delete $details->{underlying};
 
@@ -148,8 +150,9 @@ sub send_proposal {
                     msg_type               => 'proposal_open_contract',
                     proposal_open_contract => {
                         $id ? (id => $id) : (),
-                        buy_price     => $buy_price,
-                        purchase_time => $purchase_time,
+                        buy_price       => $buy_price,
+                        purchase_time   => $purchase_time,
+                        transaction_ids => $transaction_ids,
                         (defined $sell_price) ? (sell_price => sprintf('%.2f', $sell_price)) : (),
                         (defined $sell_time) ? (sell_time => $sell_time) : (),
                         %$response
