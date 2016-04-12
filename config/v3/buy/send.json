@@ -7,7 +7,7 @@
     "buy": {
       "type": "string",
       "pattern": "^(?:[\\w-]{32,128}|1)$",
-      "description": "The id received from a Price Proposal call",
+      "description": "The id received from a Price Proposal call or \"1\" if contract buy parameters are passed in \"parameters\" field",
       "required": "1"
     },
     "price": {
