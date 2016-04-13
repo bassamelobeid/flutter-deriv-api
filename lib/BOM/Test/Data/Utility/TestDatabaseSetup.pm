@@ -146,8 +146,8 @@ sub _migrate_changesets {
             CORE::exit 254;
         }
 
-        print $psql_in "SET client_min_messages TO warning;\n"          or die "Cannot write to psql: $!\n";
-        print $psql_in "SET session_replication_role TO 'replica';\n"   or die "Cannot write to psql: $!\n";
+        print $psql_in "SET client_min_messages TO warning;\n"        or die "Cannot write to psql: $!\n";
+        print $psql_in "SET session_replication_role TO 'replica';\n" or die "Cannot write to psql: $!\n";
         my $name = $self->changesets_location . '/unit_test_dml.sql';
         print $psql_in "\\i $name\n"                                    or die "Cannot write to psql: $!\n";
         print $psql_in ";\nSET session_replication_role TO 'origin';\n" or die "Cannot write to psql: $!\n";
