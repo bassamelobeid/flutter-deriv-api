@@ -95,12 +95,13 @@ print "<form id='clientdetailsDCC' action='"
     . "</form>";
 
 Bar("CLOSED/DISABLED ACCOUNTS");
-my $client_login                = request()->param('login_id') || $broker . '';
-my $untrusted_disabled_action   = "Disabled/Closed Accounts";
-my $untrusted_cashier_action    = "Cashier Lock Section";
-my $untrusted_unwelcome_action  = "Unwelcome loginIDs";
-my $untrusted_withdrawal_action = "Withdrawal locked";
-my $file_path                   = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/";
+my $client_login                 = request()->param('login_id') || $broker . '';
+my $untrusted_disabled_action    = "Disabled/Closed Accounts";
+my $untrusted_cashier_action     = "Cashier Lock Section";
+my $untrusted_unwelcome_action   = "Unwelcome loginIDs";
+my $untrusted_withdrawal_action  = "Withdrawal locked";
+my $jp_activation_pending_action = "JP Activation Pending";
+my $file_path                    = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/";
 
 # if redirect from client details page
 if (request()->param('editlink') and $client_login and request()->param('untrusted_action_type')) {
@@ -124,6 +125,7 @@ print "<form action=\""
         . "<option value=\"lockcashierlogins\">$untrusted_cashier_action</option>"
         . "<option value=\"unwelcomelogins\">$untrusted_unwelcome_action</option>"
         . "<option value=\"lockwithdrawal\">$untrusted_withdrawal_action</option>"
+        . "<option value=\"jpactivationpending\">$jp_activation_pending_action</option>"
         . "</select>"
     );
 
