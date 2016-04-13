@@ -7,6 +7,7 @@ use File::Slurp;
 use Try::Tiny;
 use DBIx::Migration;
 use BOM::Platform::Runtime;
+use File::Temp qw/tempfile/;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
@@ -145,11 +146,11 @@ sub _migrate_changesets {
             CORE::exit 254;
         }
 
-        print $psql_in "SET client_min_messages TO warning;\n" or die "Cannot write to psql: $!\n";
-        print $psql_in "SET session_replication_role TO 'replica'\n" or die "Cannot write to psql: $!\n";
+        print $psql_in "SET client_min_messages TO warning;\n"          or die "Cannot write to psql: $!\n";
+        print $psql_in "SET session_replication_role TO 'replica';\n"   or die "Cannot write to psql: $!\n";
         my $name = $self->changesets_location . '/unit_test_dml.sql';
-        print $psql_in "\\i $name\n" or die "Cannot write to psql: $!\n";
-        print $psql_in "SET session_replication_role TO 'origin'\n" or die "Cannot write to psql: $!\n";
+        print $psql_in "\\i $name\n"                                    or die "Cannot write to psql: $!\n";
+        print $psql_in ";\nSET session_replication_role TO 'origin';\n" or die "Cannot write to psql: $!\n";
         close $psql_in and return;
 
         $! and die "Cannot write to psql: $!\n";
