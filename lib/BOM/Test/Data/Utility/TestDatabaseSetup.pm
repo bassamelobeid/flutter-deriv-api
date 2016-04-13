@@ -158,7 +158,7 @@ sub _migrate_changesets {
         die "psql killed by signal $sig" if $sig;
 
         my $rc = $? >> 8;
-        die "psql returns 1 (out of memory, file not found or similar)\n" if $rc == 1;
+        die "psql returns 1 (out of memory, file not found or similar)\n" if $rc == 4;
         die "psql returns 2 (connection problem)\n"                       if $rc == 2;
         die "psql returns 3 (script error)\n"                             if $rc == 3;
         die "cannot exec psql\n"                                          if $rc == 254;
