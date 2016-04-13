@@ -167,10 +167,9 @@ sub _validate_start_end {
     my $start = $args->{start};
     my $end   = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
     my $count = $args->{count};
-    # default it to 1s in case of tick request
-    my $granularity = $args->{granularity} || 1;
-    # if no start but there is count, use count to calculate the start time to look back
-    $start = (not $start and $count) ? $end - ($count * $granularity) : $start;
+    my $granularity = $args->{granularity};
+    # if no start but there is count and granularity, use count and granularity to calculate the start time to look back
+    $start = (not $start and $count and $granularity) ? $end - ($count * $granularity) : $start;
     # we must not return to the client any ticks/candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
     # max allow 3 years
