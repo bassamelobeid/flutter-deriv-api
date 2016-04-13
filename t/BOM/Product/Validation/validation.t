@@ -1317,7 +1317,7 @@ subtest 'integer barrier' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy if barrier is non integer';
     $c = produce_contract($params);
     ok $c->is_valid_to_sell, 'valid to sell at non integer barrier';
-    like ($c->primary_validation_error->message, qr/Barrier is not an integer/, 'correct error');
+    like($c->primary_validation_error->message, qr/Barrier is not an integer/, 'correct error');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
@@ -1363,35 +1363,35 @@ subtest 'contract must be held' => sub {
 };
 
 subtest 'sellback tick expiry contracts' => sub {
-    my $now = Date::Utility->new;
+    my $now       = Date::Utility->new;
     my $fake_tick = BOM::Market::Data::Tick->new({
         underlying => 'R_100',
-        epoch => $now->epoch,
-        quote => 100,
+        epoch      => $now->epoch,
+        quote      => 100,
     });
     my $params = {
-        bet_type => 'CALL',
-        barrier => 'S0P',
-        underlying => 'R_100',
-        duration => '5t',
-        date_start => $now,
+        bet_type     => 'CALL',
+        barrier      => 'S0P',
+        underlying   => 'R_100',
+        duration     => '5t',
+        date_start   => $now,
         date_pricing => $now->epoch + 1,
-        currency => 'USD',
-        payout => 10,
+        currency     => 'USD',
+        payout       => 10,
         current_tick => $fake_tick,
-        entry_tick => $fake_tick,
+        entry_tick   => $fake_tick,
     };
     my $c = produce_contract($params);
     ok !$c->is_valid_to_sell, 'not valid to sell';
-    like ($c->primary_validation_error->{message}, qr/resale of tick expiry contract/, 'throws error');
+    like($c->primary_validation_error->{message}, qr/resale of tick expiry contract/, 'throws error');
     $params->{exit_tick} = BOM::Market::Data::Tick->new({
         underlying => 'R_100',
-        epoch => $now->epoch + 10,
-        quote => 101,
+        epoch      => $now->epoch + 10,
+        quote      => 101,
     });
     $params->{date_pricing} = $now->epoch + 11;
     $c = produce_contract($params);
-    ok $c->is_expired, 'expired';
+    ok $c->is_expired,       'expired';
     ok $c->is_valid_to_sell, 'valid to sell';
 };
 
