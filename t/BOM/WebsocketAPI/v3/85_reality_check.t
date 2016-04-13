@@ -33,9 +33,5 @@ $t = $t->send_ok({json => {reality_check => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
 test_schema('reality_check', $res);
 
-$t = $t->send_ok({json => {reality_check => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
-is $res->{error}->{code}, 'RateLimit', 'Only 1 request in short span of time for reality check';
-
 done_testing();
 
