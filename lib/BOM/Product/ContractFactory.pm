@@ -232,30 +232,8 @@ sub produce_contract {
         foreach my $barrier_name (grep { defined $input_params{$_} } @barriers) {
             my $possible = $input_params{$barrier_name};
             if (ref($possible) !~ /BOM::Product::Contract::Strike/) {
-                my $barrier_string_name = 'supplied_' . $barrier_name;
-                if ($possible && (uc(substr($possible, -1)) eq 'D')) {
-                    $input_params{'supplied_delta_' . $barrier_name} = $possible;
-                    # They gave us a delta instead of a Strike string
-                    substr($possible, -1, 1, '');    # Now just the number.
-                    my $underlying = $input_params{underlying};
-                    # A close enough approximation if they are using deltas.
-                    my $tid  = Time::Duration::Concise->new(interval => $input_params{date_expiry}->epoch - $input_params{date_start}->epoch)->days;
-                    my $tiy  = $tid / 365;
-                    my $tick = $input_params{entry_tick} // $underlying->tick_at($input_params{date_start}, {allow_inconsistent => 1});
-                    $input_params{$barrier_string_name} = get_strike_for_spot_delta({
-                        delta            => $possible,
-                        option_type      => 'VANILLA_CALL',
-                        atm_vol          => 0.10,                                                       # Everything here is an approximation.
-                        t                => $tiy,
-                        r_rate           => ($tid > 1) ? $underlying->interest_rate_for($tiy) : 0,
-                        q_rate           => ($tid > 1) ? $underlying->dividend_rate_for($tiy) : 0,
-                        spot             => $tick->quote,
-                        premium_adjusted => $underlying->market_convention->{delta_premium_adjusted},
-                    });
-                } else {
-                    # Some sort of string which Strike can presumably use.
-                    $input_params{$barrier_string_name} = $possible;
-                }
+                # Some sort of string which Strike can presumably use.
+                $input_params{'supplied_' . $barrier_name} = $possible;
                 delete $input_params{$barrier_name};
             }
         }
