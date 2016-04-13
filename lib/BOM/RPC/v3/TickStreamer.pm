@@ -178,9 +178,9 @@ sub _validate_start_end {
                 message_to_client => BOM::Platform::Context::localize("Streaming for this symbol is not available due to license restrictions.")});
     }
 
-    my $start = $args->{start};
-    my $end   = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
-    my $count = $args->{count};
+    my $start       = $args->{start};
+    my $end         = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
+    my $count       = $args->{count};
     my $granularity = $args->{granularity};
     # if no start but there is count and granularity, use count and granularity to calculate the start time to look back
     $start = (not $start and $count and $granularity) ? $end - ($count * $granularity) : $start;
