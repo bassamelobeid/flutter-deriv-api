@@ -54,7 +54,8 @@ sub authorize {
         and $c->param('login'))
     {
         $client = $c->__login($app) or return;
-    } elsif ($c->req->method eq 'POST') {
+        $c->session('__is_logined', 1);
+    } elsif ($c->req->method eq 'POST' and $c->session('__is_logined')) {
         # we force login no matter user is in or not
         $client = $c->__get_client;
     }
@@ -138,6 +139,10 @@ sub authorize {
 
     $uri .= '#' . join('&', @accts);
     $uri .= '&state=' . $state if defined $state;
+
+    ## clear session
+    delete $c->session->{__is_logined};
+    delete $c->session->{__is_app_approved};
 
     $c->redirect_to($uri);
 }
