@@ -169,7 +169,7 @@ subtest 'get_ask' => sub {
         "duration_unit" => "s",
         "symbol"        => "R_50",
     };
-    my $result = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
@@ -183,19 +183,19 @@ subtest 'get_ask' => sub {
 
     $params->{symbol} = "invalid symbol";
     is_deeply(
-        BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
+        BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
         {
             error => {
-                message => '不在此段期间提供交易。',
-                code    => "ContractBuyValidationError",
+                message_to_client => '不在此段期间提供交易。',
+                code              => "ContractBuyValidationError",
             }});
 
     is_deeply(
-        BOM::RPC::v3::Contract::get_ask({}),
+        BOM::RPC::v3::Contract::_get_ask({}),
         {
             error => {
-                message => '无法创建合约',
-                code    => "ContractCreationFailure",
+                message_to_client => '无法创建合约',
+                code              => "ContractCreationFailure",
             }});
 
 };
@@ -237,7 +237,7 @@ subtest 'send_ask' => sub {
                 args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
-        $mock_contract->mock('get_ask', sub { die });
+        $mock_contract->mock('_get_ask', sub { die });
         $c->call_ok(
             'send_ask',
             {
