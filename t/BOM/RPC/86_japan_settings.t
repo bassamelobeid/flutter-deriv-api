@@ -90,9 +90,11 @@ subtest 'create VRTJ & JP client' => sub {
 };
 
 my @jp_only = qw(
+    gender
+    occupation
+    daily_loss_limit
     annual_income
     financial_asset
-    daily_loss_limit
     trading_experience_equities
     trading_experience_commodities
     trading_experience_foreign_currency_deposit
@@ -118,17 +120,15 @@ subtest 'JP get_settings' => sub {
 
     $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
 
-    my %jp_only = (
+    my %jp_specific = (
         salutation    => '',
         country_code  => 'jp',
         date_of_birth => Date::Utility->new($jp_client_details{date_of_birth})->epoch
     );
 
-    my @common = qw(
-        gender
+    my @settings = qw(
         first_name
         last_name
-        occupation
         address_line_1
         address_line_2
         address_city
@@ -137,8 +137,12 @@ subtest 'JP get_settings' => sub {
         phone
     );
 
-    is($res->{$_}, $jp_client_details{$_}, "OK: $_" ) for (@common);
-    is($res->{jp_settings}->{$_}, $jp_only{$_}, "OK: $_") for (keys %jp_only);
+    # fields common for all clients
+    is($res->{$_}, $jp_client_details{$_}, "OK: $_" ) for (@settings);
+    is($res->{$_}, $jp_specific{$_}, "OK: $_" ) for (keys %jp_specific);
+
+    # fields only for Japan real client
+    is($res->{jp_settings}->{$_}, $jp_client_details{$_}, "OK: $_") for (@jp_only);
 };
 
 subtest 'non-JP client get_settings' => sub {
