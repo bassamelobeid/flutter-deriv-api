@@ -7,7 +7,7 @@
     "buy": {
       "type": "string",
       "pattern": "^(?:[\\w-]{32,128}|1)$",
-      "description": "The id received from a Price Proposal call or \"1\" if contract buy parameters are passed in \"parameters\" field",
+      "description": "The id received from a Price Proposal call or 1 if contract buy parameters are passed in parameters field",
       "required": "1"
     },
     "price": {
@@ -25,9 +25,8 @@
           "required": "1"
         },
         "basis": {
-          "type": "string",
           "description":"Indicate whether amount is 'payout' or 'stake'",
-          "pattern": "^(payout|stake)$",
+          "enum": ["payout", "stake"],
           "required": "1"
         },
         "contract_type": {
@@ -55,9 +54,8 @@
           "description":"Duration quantity"
         },
         "duration_unit": {
-          "type": "string",
           "description":"Duration unit is s(seconds), m(minutes), h(hours), d(days), t(ticks)",
-          "pattern": "^(d|m|s|h|t)$"
+          "enum": ["d", "m", "s", "h", "t"]
         },
         "symbol": {
           "type": "string",
@@ -67,22 +65,21 @@
         },
         "barrier": {
           "type": "string",
-          "description":"Barrier for the contract (or last digit prediction for digit contracts).",
+          "description":"Barrier for the contract (or last digit prediction for digit contracts). Contracts less than 24 hours in duration would need a relative barrier (barriers which need +/-), meaning that the entry spot would be adjusted accordingly with that amount to define a barrier.",
           "pattern": "^[+-]?\\d+\\.?\\d*$"
         },
         "barrier2": {
           "type": "string",
           "pattern": "^[+-]?\\d+\\.?\\d*$",
-          "description":"Low barrier for the contract (for contracts with two barriers)"
+          "description":"Low barrier for the contract (for contracts with two barriers). Contracts less than 24 hours in duration would need a relative barrier (barriers which need +/-), meaning that the entry spot would be adjusted accordingly with that amount to define a barrier."
         },
         "amount_per_point": {
           "type": "number",
           "description":"[For spread contracts only] Amount per point"
         },
         "stop_type": {
-          "type": "string",
           "description":"[For spread contracts only] Stop type (dollar or point)",
-          "pattern": "^(dollar|point)$"
+          "enum": ["dollar","point"]
         },
         "stop_profit": {
           "type": "number",
