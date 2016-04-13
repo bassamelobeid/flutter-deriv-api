@@ -74,6 +74,11 @@ sub startup {
                 $c->stash(language => uc $lang);
                 $c->res->headers->header('Content-Language' => $lang);
             }
+
+            if ($request->param('debug')) {
+                $c->stash(debug => 1);
+            }
+
         });
 
     $app->helper(
