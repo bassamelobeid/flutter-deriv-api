@@ -30,7 +30,7 @@ subtest 'iom countries' => sub {
         is($c_config->{gaming_company},    'iom', 'gaming company = iom');
 
         is(BOM::Platform::Runtime->instance->restricted_country($c),            !1,    '! restricted_country');
-        is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     !1,    '! random_restricted_country');
+        is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     !1,    '!volidx _restricted_country');
         is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'fog', 'virtual_company_for_country');
         is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    'iom', 'gaming_company_for_country');
         is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'iom', 'financial_company_for_country');
@@ -47,7 +47,7 @@ subtest 'EU countries' => sub {
         is($c_config->{financial_company}, 'maltainvest', 'financial company = maltainvest');
 
         is(BOM::Platform::Runtime->instance->restricted_country($c),            !1,            '! restricted_country');
-        is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     !1,            '! random_restricted_country');
+        is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     !1,            '! volidx_restricted_country');
         is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'fog',         'virtual_company_for_country');
         is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    'malta',       'gaming_company_for_country');
         is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'maltainvest', 'financial_company_for_country');
@@ -56,7 +56,7 @@ subtest 'EU countries' => sub {
 
 my @mf_only_country = qw( de es fr gr it lu );
 @countries = @mf_only_country;
-subtest 'EU countries, no Random' => sub {
+subtest 'EU countries, no Volatility Indices' => sub {
     foreach my $c (@countries) {
         my $c_config = $configs->{$c};
         isnt $c_config->{name},            undef,         "$c [$c_config->{name}]";
@@ -64,7 +64,7 @@ subtest 'EU countries, no Random' => sub {
         is $c_config->{financial_company}, 'maltainvest', 'financial company = maltainvest';
 
         is(BOM::Platform::Runtime->instance->restricted_country($c),            !1,            '! restricted_country');
-        is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     1,             'random_restricted_country');
+        is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     1,             'volidx_restricted_country');
         is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'fog',         'virtual_company_for_country');
         is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    undef,         '! gaming_company_for_country');
         is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'maltainvest', 'financial_company_for_country');
@@ -81,7 +81,7 @@ subtest 'restricted countries' => sub {
         is($c_config->{financial_company}, 'none', 'no financial company');
 
         is(BOM::Platform::Runtime->instance->restricted_country($c),            1,     'restricted_country');
-        is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     1,     '! random_restricted_country');
+        is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     1,     '! volidx_restricted_country');
         is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'fog', 'virtual_company_for_country');
         is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    undef, '! gaming_company_for_country');
         is(BOM::Platform::Runtime->instance->financial_company_for_country($c), undef, '! financial_company_for_country');
@@ -96,7 +96,7 @@ subtest 'japan' => sub {
     is($c_config->{financial_company}, 'japan', 'financial company');
 
     is(BOM::Platform::Runtime->instance->restricted_country($c),            !1,              '! restricted_country');
-    is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     1,               'random_restricted_country');
+    is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     1,               'volidx_restricted_country');
     is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'japan-virtual', 'virtual_company_for_country');
     is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    undef,           '! gaming_company_for_country');
     is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'japan',         'financial_company_for_country');
@@ -118,11 +118,11 @@ subtest 'CR countries' => sub {
 
         if ($c eq 'sg') {
             is($c_config->{gaming_company},                                      'none', 'Sg no gaming company');
-            is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),  1,      'random_restricted_country');
+            is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),  1,      'volidx_restricted_country');
             is(BOM::Platform::Runtime->instance->gaming_company_for_country($c), undef,  '! gaming_company_for_country');
         } else {
             is($c_config->{gaming_company},                                      'costarica', 'gaming company = costarica');
-            is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),  !1,          '! random_restricted_country');
+            is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),  !1,          '! volidx_restricted_country');
             is(BOM::Platform::Runtime->instance->gaming_company_for_country($c), 'costarica', 'gaming_company_for_country');
         }
 
