@@ -107,7 +107,7 @@ my @jp_only = qw(
 
 subtest 'VRTJ get_settings' => sub {
     $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
-    is $res->{jp_settings}, undef, "no JP settings for Japan Virtual Acc");
+    is($res->{jp_settings}, undef, "no JP settings for Japan Virtual Acc");
 };
 
 subtest 'JP get_settings' => sub {
