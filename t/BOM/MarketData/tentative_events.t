@@ -13,7 +13,7 @@ use BOM::System::Chronicle;
 use BOM::MarketData::EconomicEventCalendar;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
-my $c_read = BOM::System::Chronicle::get_chronicle_reader;
+my $c_read    = BOM::System::Chronicle::get_chronicle_reader;
 my $tentative = {
     'estimated_release_date' => time,
     'event_name'             => 'Trade Balance',
@@ -59,8 +59,8 @@ subtest 'saving tentative events' => sub {
 
 my %new_tentative = %$tentative;
 subtest 'update tentative events' => sub {
-    my $blackout      = 1456876900 - 3600;
-    my $blackout_end  = 1456876900 + 3600;
+    my $blackout     = 1456876900 - 3600;
+    my $blackout_end = 1456876900 + 3600;
     $new_tentative{blankout}     = $blackout;
     $new_tentative{blankout_end} = $blackout_end;
 
@@ -97,10 +97,11 @@ subtest 'update tentative events' => sub {
         ok $eco->update(\%new_tentative);
         my $ref = $c_read->get('economic_events', 'economic_events');
         is scalar(@{$ref->{events}}), 2, 'number of events is still two';
-        my $te = (grep {$_->{id} eq $new_tentative{id}} @{$ref->{events}})[0];
-        is $te->{blankout}, $new_tentative{blankout}, 'updated blankout';
+        my $te = (grep { $_->{id} eq $new_tentative{id} } @{$ref->{events}})[0];
+        is $te->{blankout},     $new_tentative{blankout},     'updated blankout';
         is $te->{blankout_end}, $new_tentative{blankout_end}, 'updated blankout_end';
-    } 'update again with different blockout time';
+    }
+    'update again with different blockout time';
 };
 
 subtest 'retry with same events' => sub {
@@ -113,7 +114,7 @@ subtest 'retry with same events' => sub {
         lives_ok {
             my $ref = $c_read->get('economic_events', 'economic_events');
             is scalar(@{$ref->{events}}), 2, 'one event retrieved';
-            is $ref->{events}->[0]->{event_name}, $regular->{event_name},   'saved the correct event';
+            is $ref->{events}->[0]->{event_name}, $regular->{event_name}, 'saved the correct event';
             is $ref->{events}->[1]->{event_name}, $new_tentative{event_name}, 'saved the correct event';
             ok $ref->{events}->[1]->{release_date};
         }
@@ -132,7 +133,7 @@ subtest 'retry with same events' => sub {
 };
 
 subtest 'tentative event happened' => sub {
-    my $now = time;
+    my $now      = time;
     my %happened = %{$tentative};
     delete $happened{is_tentative};
     $happened{release_date} = $now;
@@ -145,7 +146,7 @@ subtest 'tentative event happened' => sub {
         lives_ok {
             my $ref = $c_read->get('economic_events', 'economic_events');
             is scalar(@{$ref->{events}}), 2, 'one event retrieved';
-            my $updated_tentative = (grep {$_->{id} eq $happened{id}} @{$ref->{events}})[0];
+            my $updated_tentative = (grep { $_->{id} eq $happened{id} } @{$ref->{events}})[0];
             is $updated_tentative->{actual_release_date}, $now, 'updated actual_release_date';
             is $updated_tentative->{estimated_release_date}, $happened{estimated_release_date}, 'estimated_release_date unchanged';
             is $updated_tentative->{release_date}, $now, 'updated release_date';
