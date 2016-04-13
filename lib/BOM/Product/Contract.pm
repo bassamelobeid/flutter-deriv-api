@@ -2679,6 +2679,15 @@ sub _subvalidate_lifetime_tick_expiry {
         : localize('Number of ticks must be between [_1] and [_2]', $min_tick, $max_tick);
     my $tick_count = $self->tick_count;
 
+    if ($self->tick_expiry and $self->built_with_bom_parameters) {
+        # we don't offer sellback on tick expiry contracts.
+        push @errors,
+            {
+            message           => format_error_string('resale of tick expiry contract'),
+            message_to_client => localize('Resale of this contract is not offered.'),
+            };
+    }
+
     if ($tick_count > $max_tick or $tick_count < $min_tick) {
         push @errors,
             {
