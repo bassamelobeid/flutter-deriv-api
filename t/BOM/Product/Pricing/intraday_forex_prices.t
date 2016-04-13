@@ -90,17 +90,9 @@ subtest 'prices without economic events' => sub {
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
                 is $c->ask_probability->amount, $expected->{$c->shortcode}, 'correct ask probability [' . $c->shortcode . ']';
-                is $c->pricing_engine->probability->amount, 0, 'theo';
-                is $c->pricing_engine->risk_markup->amount, 0, 'risk';
-                is $c->pricing_engine->commission_markup->amount, 0, 'commission';
-                is $c->pricing_engine->commission_markup->peek_amount('intraday_historical_fixed'), 0, 'historical_iv_fixed';
-                is $c->pricing_engine->commission_markup->peek_amount('stitching_adjustment'), 0, 'stitching_adjustment';
-                is $c->pricing_engine->commission_markup->peek_amount('model_uncertainty_markup'), 0, 'model_uncertainty_markup';
-                is $c->pricing_engine->commission_markup->peek_amount('quiet_period_markup'), 0, 'quiet_period_markup';
 
             }
             'survived';
-                die;
         }
     }
 };
