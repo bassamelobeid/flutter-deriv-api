@@ -116,24 +116,10 @@ sub produce_contract {
         $input_params{$_} = $override_params->{$_} for keys %$override_params;
     }
 
-    $input_params{bet_type} = 'LEGACY' unless exists $contract_type_config->{$input_params{bet_type}};
+    $input_params{bet_type} = 'INVALID' unless exists $contract_type_config->{$input_params{bet_type}};
     my %type_config = %{$contract_type_config->{$input_params{bet_type}}};
     @input_params{keys %type_config} = values %type_config;
-
-    my $contract_class;
-    my $bet_type = ucfirst lc $input_params{bet_type};
-    if (
-        grep { /^$bet_type$/ }
-        qw/
-        Expiryrangee Expirymisse Calle Pute Asiand Asianu Call Digitdiff Digiteven Digitmatch Digitodd Digitover Digitunder Expirymiss
-        Expiryrange Notouch Onetouch Put Range Spreadd Spreadu Upordown Vanilla_call Vanilla_put
-        /
-        )
-    {
-        $contract_class = 'BOM::Product::Contract::' . $bet_type;
-    } else {
-        $contract_class = 'BOM::Product::Contract::Invalid';
-    }
+    my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $input_params{bet_type};
 
     # We might need this for build so, pre-coerce;
     if ((ref $input_params{underlying}) !~ /BOM::Market::Underlying/) {
