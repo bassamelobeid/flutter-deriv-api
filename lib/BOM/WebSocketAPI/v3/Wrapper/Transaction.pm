@@ -14,11 +14,12 @@ use BOM::RPC::v3::Contract;
 sub buy {
     my ($c, $args) = @_;
 
+    # 1. Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
     my $args_parameters = $args->{parameters};
     if (defined $args_parameters) {
         $args_parameters = BOM::RPC::v3::Contract::prepare_ask($args->{parameters});
     }
-    # 1. Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
+
     # 2. Calling forget_buy_proposal instead of forget_one as we need args for contract proposal
     my $contract_parameters =
            $args_parameters
