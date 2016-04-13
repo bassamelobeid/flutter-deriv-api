@@ -1472,9 +1472,12 @@ sub pricing_spot {
     my $self = shift;
 
     # always use current spot to price for sale or buy.
-    my $initial_spot = $self->current_spot;
-
-    if (not $initial_spot) {
+    my $initial_spot;
+    if ($self->current_tick) {
+        $initial_spot = $self->current_tick->quote;
+        # take note of this only when we are trying to sell a contract
+        $self->sell_tick($self->current_tick) if $self->built_with_bom_parameters;
+    } else {
         # If we could not get the correct spot to price, we will take the latest available spot at pricing time.
         # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
         $initial_spot = $self->underlying->tick_at($self->date_pricing->epoch, {allow_inconsistent => 1});
@@ -1495,6 +1498,17 @@ sub pricing_spot {
 
     return $initial_spot;
 }
+
+=head2 sell_tick
+
+The tick that we sold the contract at.
+
+=cut
+
+has sell_tick => (
+    is      => 'rw',
+    default => undef,
+);
 
 has offering_specifics => (
     is         => 'ro',
