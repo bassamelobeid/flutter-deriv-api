@@ -821,7 +821,7 @@ subtest $method => sub {
     $mocked_client->unmock_all;
 
     is($c->tcall($method, $params)->{status}, 1, 'set password success');
-    my $subject = 'cashier password updated';
+    my $subject = '收银台密码已更新';
     my %msg     = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
@@ -840,7 +840,7 @@ subtest $method => sub {
     $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
     $test_client->save;
     is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，您输入的收银台密码不正确', 'return error if not correct');
-    $subject = 'Failed attempt to unlock cashier section';
+    $subject = '无法解锁收银台';
     %msg     = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
@@ -858,7 +858,7 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{status}, 0, 'unlock password ok');
     $test_client->load;
     ok(!$test_client->cashier_setting_password, 'cashier password unset');
-    $subject = 'cashier password updated';
+    $subject = '收银台密码已更新';
     %msg     = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
