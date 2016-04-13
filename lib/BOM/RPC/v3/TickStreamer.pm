@@ -36,9 +36,16 @@ sub ticks_history {
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
 
+    $response = _validate_start_end({%$args, ul => $ul});    ## no critic
+    if ($response and exists $response->{error}) {
+        return $response;
+    } else {
+        $args = $response;
+    }
+
     my ($publish, $result, $type);
     if ($style eq 'ticks') {
-        my $ticks = ticks({%$args, ul => $ul});    ## no critic
+        my $ticks   = _ticks($args);
         my $history = {
             prices => [map { $ul->pipsized_value($_->{price}) } @$ticks],
             times  => [map { $_->{time} } @$ticks],
@@ -47,7 +54,7 @@ sub ticks_history {
         $type    = "history";
         $publish = 'tick';
     } elsif ($style eq 'candles') {
-        my @candles = @{candles({%$args, ul => $ul})};    ## no critic
+        my @candles = @{_candles($args)};
         if (@candles) {
             $result = {
                 candles => \@candles,
@@ -72,12 +79,10 @@ sub ticks_history {
     };
 }
 
-sub ticks {
+sub _ticks {
     my $args = shift;
 
-    $args = _validate_start_end($args);
-
-    my $ul    = $args->{ul} || die 'no underlying';
+    my $ul    = $args->{ul};
     my $start = $args->{start};
     my $end   = $args->{end};
     my $count = $args->{count};
@@ -91,12 +96,10 @@ sub ticks {
     return [map { {time => $_->epoch, price => $_->quote} } reverse @$ticks];
 }
 
-sub candles {
+sub _candles {
     my $args = shift;
 
-    $args = _validate_start_end($args);
-
-    my $ul          = $args->{ul} || die 'no underlying';
+    my $ul          = $args->{ul};
     my $start_time  = $args->{start};
     my $end_time    = $args->{end};
     my $granularity = $args->{granularity} // 60;
@@ -166,7 +169,16 @@ sub candles {
 sub _validate_start_end {
     my $args = shift;
 
-    my $ul    = $args->{ul} || die 'no underlying';
+    my $ul = $args->{ul} || return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoSymbolProvided',
+            message_to_client => BOM::Platform::Context::localize("Please provide an underlying symbol.")});
+
+    unless ($ul->feed_license =~ /^(realtime|delayed|daily)$/) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'StreamingNotAllowed',
+                message_to_client => BOM::Platform::Context::localize("Streaming for this symbol is not available due to license restrictions.")});
+    }
+
     my $start = $args->{start};
     my $end   = $args->{end};
     my $count = $args->{count};

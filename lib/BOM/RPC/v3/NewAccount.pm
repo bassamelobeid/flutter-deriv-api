@@ -332,6 +332,7 @@ sub _get_client_details {
         address_city address_state address_postcode phone secret_question secret_answer);
 
     if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
+        my $dob_error;
         try {
             my $dob = DateTime->new(
                 year  => $1,
@@ -340,7 +341,13 @@ sub _get_client_details {
             );
             $args->{date_of_birth} = $dob->ymd;
         }
-        catch { return; } or return {error => 'invalid DOB'};
+        catch {
+            $dob_error = {
+                error => {
+                    code    => 'InvalidDateOfBirth',
+                    message => localize('Date of birth is invalid')}};
+        };
+        return $dob_error if $dob_error;
     }
 
     foreach my $key (@fields) {
