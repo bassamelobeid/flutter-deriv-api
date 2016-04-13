@@ -344,7 +344,7 @@ my %rate_limit_map = (
     verify_email_real              => 'websocket_call_email',
     buy_real                       => 'websocket_real_pricing',
     sell_real                      => 'websocket_real_pricing',
-    reality_check_real             => 'websocket_reality_check',
+    reality_check_real             => 'websocket_call_expensive',
     ping_virtual                   => '',
     time_virtual                   => '',
     portfolio_virtual              => 'websocket_call_expensive',
@@ -522,6 +522,10 @@ sub rpc {
                 {tags => ["rpc:$method"]});
             DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$method"]});
+
+            if ($self->stash('debug')) {
+                $self->app->log->warn("RPC call time for $method in debug mode: " . 1000 * Time::HiRes::tv_interval($tv));
+            }
 
             # unconditionally stop any further processing if client is already disconnected
             return unless $self->tx;
