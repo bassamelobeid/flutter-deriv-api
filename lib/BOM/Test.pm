@@ -43,19 +43,13 @@ will use test redis instance instead of development.
 
 =cut
 
-=item $ENV{BOM_TEST_DATA_DIR}
-
-This variable will be set if test is running on qa devbox. Variable can be use in any test to find test data dir.
-
-=cut
-
 BEGIN {
-    ## no critic (Variables::RequireLocalizedPunctuationVars)
     my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
-    $ENV{BOM_TEST_DATA_DIR} = abs_path("$file_path../../data");
+    my $test_data_dir = abs_path("$file_path../../data");
+    my $config_dir    = $test_data_dir . '/config';
 
-    my $config_dir = $ENV{BOM_TEST_DATA_DIR} . '/config';
     if (BOM::System::Config::env =~ /^qa/) {
+        ## no critic (Variables::RequireLocalizedPunctuationVars)
 
         # Redis rand and replicated servers config
         $ENV{BOM_TEST_REDIS_REPLICATED} = $config_dir . '/redis-replicated.yml';

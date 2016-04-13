@@ -3,7 +3,9 @@ package BOM::Test::Data::Utility::UnitTestRedis;
 use strict;
 use warnings;
 
-use BOM::Test;
+use File::Spec;
+use Cwd qw/abs_path/;
+
 use BOM::Market::Underlying;
 use BOM::Market::AggTicks;
 
@@ -22,7 +24,10 @@ sub initialize_realtime_ticks_db {
 }
 
 sub get_test_realtime_ticks {
-    return YAML::XS::LoadFile($ENV{BOM_TEST_DATA_DIR} . '/test_realtime_ticks.yml');
+    my (undef, $file_path, undef) = File::Spec->splitpath(__FILE__);
+    my $test_data_dir = abs_path("$file_path../../../../../data");
+
+    return YAML::XS::LoadFile($test_data_dir . '/test_realtime_ticks.yml');
 }
 
 ##################################################################################################
