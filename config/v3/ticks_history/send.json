@@ -18,7 +18,7 @@
     },
     "start": {
       "type": "integer",
-      "description": "Epoch value representing the start-datetime of the ticks (default: 1 day ago if count and granularity are undef)"
+      "description": "Epoch value representing the start-datetime of the ticks (For styles: 'ticks', it will default to 1 day ago. For styles: 'candle', it will default to 1 day ago if count and granularity are undef )"
     },
     "count": {
       "type": "integer",
