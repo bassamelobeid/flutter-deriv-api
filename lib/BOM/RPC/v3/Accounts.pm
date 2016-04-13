@@ -574,7 +574,7 @@ sub get_settings {
             )
         ),
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
-        $jp_real_settings  ? (jp_settings => $jp_real_settings) : (),
+        $jp_real_settings  ? (jp_settings       => $jp_real_settings)  : (),
     };
 }
 
