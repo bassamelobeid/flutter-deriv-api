@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 5);
+use Test::More (tests => 4);
 use Test::FailWarnings;
 use Test::Exception;
 use Test::MockModule;
@@ -77,37 +77,6 @@ subtest 'produce_contract' => sub {
     delete $contract_params->{bet_type};
     throws_ok { $contract = produce_contract($contract_params) } qr/bet_type.*required/, 'Improper construction arguments bubble up.';
 
-};
-
-subtest 'contract with delta barriers' => sub {
-    plan tests => 6;
-
-    my $contract_params = {
-        bet_type   => 'CALL',
-        duration   => '14d',
-        underlying => 'frxUSDJPY',
-        payout     => 1,
-        currency   => 'USD',
-        barrier    => '0.55D',
-        entry_spot => 100,
-    };
-    my $contract;
-    lives_ok {
-        $contract = produce_contract($contract_params);
-    }
-    'produce a contract';
-
-    isa_ok($contract, 'BOM::Product::Contract');
-    cmp_ok($contract->barrier->as_absolute, '<', 99.8, 'Probably properly set barrier for 55 vanilla call delta');
-    note "You don't really want to reuse these hash-refs, the factory will change them.";
-    $contract_params->{barrier} = '0.45d';
-    lives_ok {
-        $contract = produce_contract($contract_params);
-    }
-    'produce a contract';
-
-    isa_ok($contract, 'BOM::Product::Contract');
-    cmp_ok($contract->barrier->as_absolute, '>', 100.1, 'Probably properly set barrier for 45 vanilla call delta');
 };
 
 subtest 'make_similar_contract' => sub {
