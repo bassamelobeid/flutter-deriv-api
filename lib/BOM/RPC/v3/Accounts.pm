@@ -395,7 +395,6 @@ sub cashier_password {
             send_email({
                     'from' => BOM::Platform::Static::Config::get_customer_support_email(),
                     'to'   => $client->email,
-                    # TODO: this 'localize' is not tested because there is no translation yet
                     'subject' => localize("[_1] cashier password updated", $client->loginid),
                     'message' => [
                         localize(
@@ -421,7 +420,6 @@ sub cashier_password {
             send_email({
                     'from' => BOM::Platform::Static::Config::get_customer_support_email(),
                     'to'   => $client->email,
-                    # TODO: this 'localize' is not tested because there is no translation yet
                     'subject' => localize("[_1]-Failed attempt to unlock cashier section", $client->loginid),
                     'message' => [
                         localize(
@@ -443,7 +441,6 @@ sub cashier_password {
             send_email({
                     'from' => BOM::Platform::Static::Config::get_customer_support_email(),
                     'to'   => $client->email,
-                    # TODO: this 'localize' is not tested because there is no translation yet
                     'subject' => localize("[_1] cashier password updated", $client->loginid),
                     'message' => [
                         localize(
