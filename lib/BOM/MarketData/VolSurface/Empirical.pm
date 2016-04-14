@@ -11,7 +11,7 @@ use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 
-use BOM::MarketData::Fetcher::EconomicEvent;
+use Quant::Framework::EconomicEventCalendar;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
 use BOM::Market::Underlying;
