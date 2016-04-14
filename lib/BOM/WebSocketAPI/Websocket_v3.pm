@@ -348,7 +348,7 @@ my %rate_limit_map = (
     verify_email_real              => 'websocket_call_email',
     buy_real                       => 'websocket_real_pricing',
     sell_real                      => 'websocket_real_pricing',
-    reality_check_real             => 'websocket_reality_check',
+    reality_check_real             => 'websocket_call_expensive',
     ping_virtual                   => '',
     time_virtual                   => '',
     portfolio_virtual              => 'websocket_call_expensive',
@@ -439,7 +439,7 @@ sub __handle {
         if ($loginid) {
             my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
-                {tags => [$tag, $descriptor->{category}, "loginid:$loginid", "account_type:$account_type"]});
+                {tags => [$tag, $descriptor->{category}, "account_type:$account_type"]});
         }
 
         my $result = $descriptor->{handler}->($c, $p1);
@@ -579,6 +579,13 @@ sub rpc {
 
             $data->{echo_req} = $args;
             $data->{req_id} = $req_id if $req_id;
+
+            if ($self->stash('debug')) {
+                $data->{debug} = {
+                    time   => 1000 * Time::HiRes::tv_interval($tv),
+                    method => $method
+                };
+            }
 
             if ($send) {
                 $tv = [Time::HiRes::gettimeofday];
