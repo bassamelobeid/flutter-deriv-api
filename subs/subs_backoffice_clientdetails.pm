@@ -253,39 +253,6 @@ sub build_client_warning_message {
             });
     }
 
-    if (my $ok = $client->get_status('ok')) {
-        my $onclick = "onclick='return append_dccode(this)'";
-        push(
-            @output,
-            {
-                clerk    => $ok->staff_name,
-                reason   => $ok->reason,
-                warning  => 'blue',
-                section  => 'Add to OK Login',
-                editlink => '<a href="'
-                    . request()->url_for(
-                    "backoffice/f_clientloginid.cgi",
-                    {
-                        trusted_action      => 'insert_data',
-                        editlink            => 1,
-                        login_id            => $login_id,
-                        broker              => $broker,
-                        trusted_action_type => 'oklogins'
-                    })
-                    . "\" $onclick>edit</a>",
-                removelink => '<a href="'
-                    . request()->url_for(
-                    "backoffice/untrusted_client_edit.cgi",
-                    {
-                        trusted_action      => 'remove_data',
-                        login_id            => $login_id,
-                        broker              => $broker,
-                        trusted_action_type => 'oklogins'
-                    })
-                    . "\" $onclick>remove</a>",
-            });
-    }
-
     # build the table
     my $output;
     if (@output) {
