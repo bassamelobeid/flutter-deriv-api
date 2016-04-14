@@ -39,6 +39,7 @@ my $CLIENT_STATUS_TYPES = {
     age_verification          => 1,
     cashier_locked            => 1,
     disabled                  => 1,
+    ok                        => 1,
     unwelcome                 => 1,
     withdrawal_locked         => 1,
     ukgc_funds_protection     => 1,    # UKGC License condition 4.2.1 for UK clients only
