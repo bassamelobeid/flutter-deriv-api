@@ -800,17 +800,15 @@ We have two types of expiries:
 sub is_after_expiry {
     my $self = shift;
 
-    my $after_expiry = 0;
+    return 1
+        if (not($self->tick_expiry || $self->get_time_to_settlment->seconds));
 
-    if ($self->tick_expiry) {
-        $after_expiry = 1
-            if $self->date_pricing->epoch - $self->date_start->epoch > 3
-            and $self->exit_tick;    # we consider tick expiry contracts to expire once we have exit tick
-    } else {
-        $after_expiry = 1 if !$self->get_time_to_settlement->seconds;
-    }
+    my $duration_seconds = $self->date_pricing->epoch - $self->date_start->epoch;
+    return 1
+        if ($self->exit_tick
+        || $duration_seconds > $self->max_tick_expiry_duration->seconds);
 
-    return $after_expiry;
+    return;
 }
 
 sub may_settle_automatically {
@@ -2082,7 +2080,7 @@ sub _build_exit_tick {
             $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
         } while (not $exit_tick and sleep(0.5) and time <= $hold_time);
 
-       $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1}) unless $exit_tick;
+        $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1}) unless $exit_tick;
     }
 
     if ($self->entry_tick and $exit_tick) {
