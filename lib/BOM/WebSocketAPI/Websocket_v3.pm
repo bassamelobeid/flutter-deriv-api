@@ -576,9 +576,11 @@ sub rpc {
             $data->{echo_req} = $args;
             $data->{req_id} = $req_id if $req_id;
 
-
             if ($self->stash('debug')) {
-                $data->{debug} = {time=>1000 * Time::HiRes::tv_interval($tv), method=>$method};
+                $data->{debug} = {
+                    time   => 1000 * Time::HiRes::tv_interval($tv),
+                    method => $method
+                };
             }
 
             if ($send) {
