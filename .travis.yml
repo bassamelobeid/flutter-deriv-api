@@ -11,13 +11,6 @@ services:
     - redis-server
 cache: apt
 env:
-    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=1
-    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=2
-    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=3
-    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=4
-    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=5
-    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=6
-    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=7
     - TEST_SUITE=v2
     - TEST_SUITE=v3
     - TEST_SUITE=structure
@@ -42,7 +35,6 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/stress
     - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
     - /tmp/travis-scripts/redis.sh
 
