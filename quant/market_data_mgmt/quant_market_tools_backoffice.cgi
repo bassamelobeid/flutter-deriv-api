@@ -8,7 +8,7 @@ use BOM::Platform::Plack qw( PrintContentType );
 use SuperDerivatives::Correlation qw( upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
 use BOM::Platform::Sysinit ();
-use BOM::MarketData::EconomicEventCalendar;
+use Quant::Framework::EconomicEventCalendar;
 use BOM::System::Chronicle;
 use Try::Tiny;
 BOM::Platform::Sysinit::init();
@@ -21,7 +21,6 @@ use ForexFactory;
 use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use Date::Utility;
-use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Context;
 use BOM::MarketData::CorrelationMatrix;
@@ -122,10 +121,12 @@ if ($autoupdate) {
         my $id_date = $release_date || $estimated_release_date;
         $event_param->{id} = ForexFactory::generate_id(Date::Utility->new($id_date)->truncate_to_day()->epoch . $event_name . $symbol . $impact);
         push @{$ref->{events}}, $event_param;
-        BOM::MarketData::EconomicEventCalendar->new(
-            events        => $ref->{events},
-            recorded_date => Date::Utility->new,
-        )->save;
+        Quant::Framework::EconomicEventCalendar->new({
+                events           => $ref->{events},
+                recorded_date    => Date::Utility->new,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            })->save;
 
         print 'Econmic Announcement saved!</br></br>';
         $save_economic_event = 0;

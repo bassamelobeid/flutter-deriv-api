@@ -4,11 +4,15 @@ use strict;
 use warnings;
 
 use BOM::System::Chronicle;
-use BOM::MarketData::EconomicEventCalendar;
+use Quant::Framework::EconomicEventCalendar;
 
 sub _get_tentative_events {
 
-    my $tentative_events = BOM::MarketData::EconomicEventCalendar->new->get_tentative_events || {};
+    my $tentative_events = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        }
+        )->get_tentative_events
+        || {};
 
     return $tentative_events;
 }
@@ -72,7 +76,11 @@ sub update_event {
     my $diff = $existing->{blankout_end} - $existing->{blankout};
     return "Blackout start and Blackout end must be 2 hours apart. E.g. 5pm - 7pm" if ($diff != 7200);
 
-    my $update = BOM::MarketData::EconomicEventCalendar->new(recorded_date => Date::Utility->new())->update($existing);
+    my $update = Quant::Framework::EconomicEventCalendar->new({
+            recorded_date    => Date::Utility->new(),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        })->update($existing);
     return $update ? 1 : 0;
 }
 
