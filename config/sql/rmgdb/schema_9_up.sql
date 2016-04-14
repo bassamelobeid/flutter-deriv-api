@@ -144,4 +144,3 @@ UPDATE pg_constraint
    AND conname='basic_validation';
 
 COMMIT;
-
