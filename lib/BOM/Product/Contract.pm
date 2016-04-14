@@ -933,7 +933,7 @@ sub _build_total_markup {
         # we allowed tick expiry total markup to be less than zero
         # because of equal tick discount.
         %min = ();
-    } elsif ($self->has_payout) {
+    } elsif ($self->has_payout and $self->payout != 0) {
         %min = (minimum => 0.02 / $self->payout);
     } else {
         %min = (minimum => 0);
@@ -2212,14 +2212,6 @@ sub _validate_payout {
     my $limits          = $self->staking_limits->{payout};
     my $payout_max      = $limits->{max};
     my $payout_min      = $limits->{min};
-
-    if (not first { $_ eq $payout_currency } @{request()->available_currencies}) {
-        push @errors,
-            {
-            message           => format_error_string('Bad payout currency', currency => $payout_currency),
-            message_to_client => localize('Invalid payout currency.'),
-            };
-    }
 
     if ($bet_payout < $payout_min or $bet_payout > $payout_max) {
         push @errors,
