@@ -801,7 +801,7 @@ sub is_after_expiry {
     my $self = shift;
 
     return 1
-        if (not($self->tick_expiry || $self->get_time_to_settlment->seconds));
+        if (not($self->tick_expiry || $self->get_time_to_settlement->seconds));
 
     my $duration_seconds = $self->date_pricing->epoch - $self->date_start->epoch;
     return 1
