@@ -48,7 +48,7 @@ sub _throttle {
 
 sub get_result {
     my $self = shift;
-    _throttle($self->{client_id});
+    _throttle($self->{client_id}) unless ($self->{force_recheck});
     return $self->SUPER::get_result();
 }
 
