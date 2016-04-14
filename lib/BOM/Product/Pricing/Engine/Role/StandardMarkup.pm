@@ -21,7 +21,7 @@ use Math::Function::Interpolator;
 use BOM::Platform::Context qw(request localize);
 use BOM::Product::Pricing::Greeks::BlackScholes;
 use BOM::MarketData::VolSurface::Utils;
-use BOM::MarketData::Fetcher::EconomicEvent;
+use Quant::Framework::EconomicEventCalendar;
 use BOM::Platform::Static::Config;
 
 =head1 ATTRIBUTES
@@ -515,9 +515,13 @@ sub _get_economic_events {
     state $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
     my $underlying = $self->bet->underlying;
 
-    my $raw_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+    my $raw_events = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        }
+        )->get_latest_events_for_period({
             from => Date::Utility->new($start),
             to   => Date::Utility->new($end)});
+
     my $default_underlying = 'frxUSDJPY';
     my @events;
     foreach my $event (@$raw_events) {

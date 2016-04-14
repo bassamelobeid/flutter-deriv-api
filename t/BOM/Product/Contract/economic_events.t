@@ -46,9 +46,10 @@ $mocked->mock(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
-        symbol        => 'USD',
-        release_date  => $now,
-        recorded_date => Date::Utility->new(),
+        symbol           => 'USD',
+        release_date     => $now,
+        recorded_date    => Date::Utility->new(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
     },
 );
 
