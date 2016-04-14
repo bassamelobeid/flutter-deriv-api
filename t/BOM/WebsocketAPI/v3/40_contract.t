@@ -27,17 +27,20 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';
 
+my %contractParameters = (
+    "amount"        => "5",
+    "basis"         => "payout",
+    "contract_type" => "CALL",
+    "currency"      => "USD",
+    "symbol"        => "R_50",
+    "duration"      => "2",
+    "duration_unit" => "m",
+);
 $t = $t->send_ok({
         json => {
-            "proposal"      => 1,
-            "subscribe"     => 1,
-            "amount"        => "10",
-            "basis"         => "payout",
-            "contract_type" => "CALL",
-            "currency"      => "USD",
-            "symbol"        => "R_50",
-            "duration"      => "2",
-            "duration_unit" => "m"
+            "proposal"  => 1,
+            "subscribe" => 1,
+            %contractParameters
         }});
 BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 $t->message_ok;
@@ -47,10 +50,12 @@ ok $proposal->{proposal}->{ask_price};
 test_schema('proposal', $proposal);
 
 sleep 1;
+my $ask_price = $proposal->{proposal}->{ask_price};
 $t = $t->send_ok({
         json => {
             buy   => $proposal->{proposal}->{id},
-            price => $proposal->{proposal}->{ask_price}}});
+            price => $ask_price || 0
+        }});
 
 ## skip proposal until we meet buy
 while (1) {
@@ -89,6 +94,31 @@ my $res = decode_json($t->message->[1]);
 if (exists $res->{proposal_open_contract}) {
     ok $res->{proposal_open_contract}->{contract_id};
     test_schema('proposal_open_contract', $res);
+}
+
+sleep 1;
+$t = $t->send_ok({
+        json => {
+            buy        => 1,
+            price      => $ask_price || 0,
+            parameters => \%contractParameters,
+        },
+    });
+
+## skip proposal until we meet buy
+while (1) {
+    $t = $t->message_ok;
+    my $res = decode_json($t->message->[1]);
+    note explain $res;
+    next if $res->{msg_type} eq 'proposal';
+
+    # note explain $res;
+    ok $res->{buy};
+    ok $res->{buy}->{contract_id};
+    ok $res->{buy}->{purchase_time};
+
+    test_schema('buy', $res);
+    last;
 }
 
 $t->finish_ok;
