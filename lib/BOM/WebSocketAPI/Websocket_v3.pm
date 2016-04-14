@@ -435,7 +435,7 @@ sub __handle {
         if ($loginid) {
             my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
-                {tags => [$tag, $descriptor->{category}, "loginid:$loginid", "account_type:$account_type"]});
+                {tags => [$tag, $descriptor->{category}, "account_type:$account_type"]});
         }
 
         my $result = $descriptor->{handler}->($c, $p1);
@@ -523,10 +523,6 @@ sub rpc {
             DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$method"]});
 
-            if ($self->stash('debug')) {
-                $self->app->log->warn("RPC call time for $method in debug mode: " . 1000 * Time::HiRes::tv_interval($tv));
-            }
-
             # unconditionally stop any further processing if client is already disconnected
             return unless $self->tx;
 
@@ -579,6 +575,11 @@ sub rpc {
 
             $data->{echo_req} = $args;
             $data->{req_id} = $req_id if $req_id;
+
+
+            if ($self->stash('debug')) {
+                $data->{debug} = {time=>1000 * Time::HiRes::tv_interval($tv), method=>$method};
+            }
 
             if ($send) {
                 $tv = [Time::HiRes::gettimeofday];
