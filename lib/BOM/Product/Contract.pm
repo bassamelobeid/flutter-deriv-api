@@ -160,7 +160,8 @@ sub _build_basis_tick {
     # if there's no basis tick, don't die but catch the error.
     unless ($basis_tick) {
         $basis_tick = BOM::Market::Data::Tick->new({
-            quote  => $self->underlying->pip_size,
+            # slope pricer will die with illegal division by zero error when we get the slope
+            quote  => $self->underlying->pip_size * 2,
             epoch  => 1,
             symbol => $self->underlying->symbol,
         });
