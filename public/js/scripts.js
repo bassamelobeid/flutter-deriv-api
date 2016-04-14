@@ -45,7 +45,7 @@ function validate() {
 }
 
 function validateEmail() {
-    return validateField(txtEmail, new RegExp(/^\w+([\+\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,63})+$/));
+    return validateField(txtEmail, new RegExp(/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$/));
 }
 
 function validatePass() {
