@@ -1486,7 +1486,7 @@ sub pricing_spot {
         # If we could not get the correct spot to price, we will take the latest available spot at pricing time.
         # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
         $initial_spot = $self->underlying->tick_at($self->date_pricing->epoch, {allow_inconsistent => 1});
-        $initial_spot //= $self->underlying->pip_size;
+        $initial_spot //= $self->underlying->pip_size * 2;
         $self->add_error({
                 message => format_error_string(
                     'Undefined spot',
