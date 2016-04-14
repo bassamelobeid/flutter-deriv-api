@@ -27,7 +27,7 @@ use BOM::MarketData::VolSurface::Utils;
 use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::MarketData::Fetcher::EconomicEvent;
+use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Utility::ErrorStrings qw( format_error_string );
 use BOM::MarketData::VolSurface::Utils;
@@ -1460,7 +1460,10 @@ sub _build_applicable_economic_events {
     my $start = $current_epoch - $seconds_to_expiry - 3600;
     my $end   = $current_epoch + $seconds_to_expiry + 3600;
 
-    return BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+    return Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        }
+        )->get_latest_events_for_period({
             from => Date::Utility->new($start),
             to   => Date::Utility->new($end)});
 }
@@ -1797,12 +1800,16 @@ sub _market_data {
                 $underlying->asset_symbol           => 1,
             );
 
-            my $ee = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
-                from => $from,
-                to   => $to
-            });
+            my $ee = Quant::Framework::EconomicEventCalendar->new({
+                    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                }
+                )->get_latest_events_for_period({
+                    from => $from,
+                    to   => $to
+                });
+
             my @applicable_news =
-                sort { $a->[0] <=> $b->[0] } map { [$_->{release_date}->epoch, $_] } grep { $applicable_symbols{$_->{symbol}} } @$ee;
+                sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
 
             return @applicable_news;
         },
