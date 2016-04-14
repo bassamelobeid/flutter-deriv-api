@@ -239,7 +239,7 @@ subtest 'invalid underlying is a weak foundation' => sub {
 };
 
 subtest 'invalid bet payout hobbling around' => sub {
-    plan tests => 6;
+    plan tests => 5;
 
     my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
     my $starting   = $oft_used_date->epoch;
@@ -271,12 +271,6 @@ subtest 'invalid bet payout hobbling around' => sub {
     $bet_params->{amount} = 12.345;
     $bet                  = produce_contract($bet_params);
     $expected_reasons     = [qr/too many decimal places/];
-    test_error_list('buy', $bet, $expected_reasons);
-
-    $bet_params->{amount}   = 1e5;
-    $bet_params->{currency} = 'JPY';
-    $bet                    = produce_contract($bet_params);
-    $expected_reasons       = [qr/Bad payout currency/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{currency} = 'USD';
