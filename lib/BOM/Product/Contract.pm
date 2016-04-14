@@ -2318,14 +2318,6 @@ sub _validate_payout {
     my $payout_max      = $limits->{max};
     my $payout_min      = $limits->{min};
 
-    if (not first { $_ eq $payout_currency } @{request()->available_currencies}) {
-        push @errors,
-            {
-            message           => format_error_string('Bad payout currency', currency => $payout_currency),
-            message_to_client => localize('Invalid payout currency.'),
-            };
-    }
-
     if ($bet_payout < $payout_min or $bet_payout > $payout_max) {
         push @errors,
             {
