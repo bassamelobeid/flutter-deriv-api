@@ -1089,7 +1089,7 @@ sub is_valid_to_sell {
             $self->missing_market_data(1);
             $self->add_error({
                 message           => $error,
-                message_to_client => localize('The buy price of this contract has been refunded due to missing market data.'),
+                message_to_client => localize('The buy price of this contract will be refunded due to missing market data.'),
             });
         }
     } elsif (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
