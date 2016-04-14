@@ -1362,6 +1362,28 @@ subtest 'contract must be held' => sub {
     ok $c->date_pricing->epoch == $c->date_start->epoch, 'date_pricing == date_start when pricing_new is set';
 };
 
+subtest 'zero payout' => sub {
+    lives_ok {
+        my $fake_tick = BOM::Market::Data::Tick->new({
+            underlying => 'R_100',
+            epoch => time,
+            quote => 100,
+        });
+        my $c = produce_contract({
+            bet_type => 'CALL',
+            underlying => 'R_100',
+            barrier => 'S0P',
+            currency => 'USD',
+            payout => 0,
+            duration => '15m',
+            current_tick => $fake_tick,
+            entry_tick => $fake_tick,
+        });
+        ok !$c->is_valid_to_buy, 'not valid to buy';
+        like ($c->primary_validation_error->{message}, qr/Empty or zero stake/, 'throws error');
+    } 'does not die if payout is zero';
+};
+
 # Let's not surprise anyone else
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig_suspended),
     'Switched RANGE bets back on, if they were.');
