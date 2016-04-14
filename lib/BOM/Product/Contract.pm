@@ -801,13 +801,9 @@ sub is_after_expiry {
     my $self = shift;
 
     return 1
-        if (not($self->tick_expiry || $self->get_time_to_settlement->seconds));
-
-    my $duration_seconds = $self->date_pricing->epoch - $self->date_start->epoch;
-    return 1
-        if ($self->exit_tick
-        || $duration_seconds > $self->max_tick_expiry_duration->seconds);
-
+        if ($self->tick_expiry
+        && ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds)));
+    return 1 if $self->get_time_to_settlement->seconds == 0;
     return;
 }
 
@@ -2069,18 +2065,20 @@ sub _build_exit_tick {
             $exit_tick = $ticks_since_start[-1];
             $self->date_expiry(Date::Utility->new($exit_tick->epoch));
         }
-    } elsif ($self->expiry_daily) {
-        # Expiration based on daily OHLC
-        $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
-    } else {
-        # In the case of missing feed at contract expiry, we will not wait for the next tick to settle the contract.
-        # We will wait for 1 second to make sure there's no more tick on date_expiry's second.
-        my $hold_time = time + 1;
-        do {
-            $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
-        } while (not $exit_tick and sleep(0.5) and time <= $hold_time);
+    } elsif ($self->is_after_expiry) {
+        if ($self->expiry_daily) {
+            # Expiration based on daily OHLC
+            $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
+        } else {
+            # In the case of missing feed at contract expiry, we will not wait for the next tick to settle the contract.
+            # We will wait for 1 second to make sure there's no more tick on date_expiry's second.
+            my $hold_time = time + 1;
+            do {
+                $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
+            } while (not $exit_tick and sleep(0.5) and time <= $hold_time);
 
-        $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1}) unless $exit_tick;
+            $exit_tick = $underlying->tick_at($self->date_expiry->epoch, {allow_inconsistent => 1}) unless $exit_tick;
+        }
     }
 
     if ($self->entry_tick and $exit_tick) {
