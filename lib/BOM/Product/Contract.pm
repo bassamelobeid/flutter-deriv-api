@@ -2057,8 +2057,6 @@ sub _build_exit_tick {
     my $self = shift;
 
     my $underlying = $self->underlying;
-    my $exchange   = $self->exchange;
-
     my $exit_tick;
     if ($self->tick_expiry) {
         my $tick_number       = $self->ticks_to_expiry;
@@ -2075,14 +2073,20 @@ sub _build_exit_tick {
         # Expiration based on daily OHLC
         $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
     } else {
-        $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
+        # In the case of missing feed at contract expiry, we will not wait for the next tick to settle the contract.
+        # Hence, we will wait for 1 second for the next tick before settling the contract with inconsistent tick.
+        # Only hold 1 second for intraday.
+        my $hold_time = time + 1;
+        do {
+            $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
+        } while (not $exit_tick and sleep(0.5) and time <= $hold_time);
     }
 
     if ($self->entry_tick and $exit_tick) {
         my ($entry_tick_date, $exit_tick_date) = map { Date::Utility->new($_) } ($self->entry_tick->epoch, $exit_tick->epoch);
         if (    not $self->expiry_daily
             and $underlying->intradays_must_be_same_day
-            and $exchange->trading_days_between($entry_tick_date, $exit_tick_date))
+            and $self->exchange->trading_days_between($entry_tick_date, $exit_tick_date))
         {
             $self->add_error({
                     message => format_error_string(
