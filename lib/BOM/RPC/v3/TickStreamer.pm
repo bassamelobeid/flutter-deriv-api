@@ -106,7 +106,6 @@ sub _candles {
     my $count       = $args->{count};
 
     my @all_ohlc;
-
     # This ohlc_daily_list is the only one will get ohlc from feed.tick for a period
     if ($end_time - $start_time <= $granularity) {
         my $ohlc = $ul->feed_api->ohlc_daily_list({
@@ -179,10 +178,12 @@ sub _validate_start_end {
                 message_to_client => BOM::Platform::Context::localize("Streaming for this symbol is not available due to license restrictions.")});
     }
 
-    my $start = $args->{start};
-    my $end   = $args->{end};
-    my $count = $args->{count};
-
+    my $start       = $args->{start};
+    my $end         = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
+    my $count       = $args->{count};
+    my $granularity = $args->{granularity};
+    # if no start but there is count and granularity, use count and granularity to calculate the start time to look back
+    $start = (not $start and $count and $granularity) ? $end - ($count * $granularity) : $start;
     # we must not return to the client any ticks/candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
     # max allow 3 years
