@@ -122,7 +122,8 @@ sub send_email {
                 contactus_url          => request()->url_for('contact'),
                 content                => $message,
                 email_template_toemail => URL::Encode::url_encode($email),
-                email_template_loginid => $template_loginid
+                email_template_loginid => $template_loginid,
+                language               => request()->language,
             };
             BOM::Platform::Context::template->process('email/common_email.html.tt', $vars, \$mail_message)
                 || die BOM::Platform::Context::template->error();
