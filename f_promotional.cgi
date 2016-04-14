@@ -344,13 +344,6 @@ if ($table_elements) {
 
 print $output;
 
-Bar('Bulk-add client affiliate exposures.');
-BOM::Platform::Context::template->process(
-    'backoffice/bulkadd_exposures.html.tt',
-    {
-        action => request()->url_for('backoffice/bulkadd_exposures.cgi'),
-    },
-);
 
 Bar('Fetch Myaffiliate Payment');
 BOM::Platform::Context::template->process(
