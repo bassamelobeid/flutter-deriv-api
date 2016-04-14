@@ -27,7 +27,7 @@ use BOM::MarketData::VolSurface::Utils;
 use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::MarketData::Fetcher::EconomicEvent;
+use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Utility::ErrorStrings qw( format_error_string );
 use BOM::MarketData::VolSurface::Utils;
@@ -969,7 +969,7 @@ sub _build_total_markup {
         # we allowed tick expiry total markup to be less than zero
         # because of equal tick discount.
         %min = ();
-    } elsif ($self->has_payout) {
+    } elsif ($self->has_payout and $self->payout != 0) {
         %min = (minimum => 0.02 / $self->payout);
     } else {
         %min = (minimum => 0);
@@ -1460,7 +1460,10 @@ sub _build_applicable_economic_events {
     my $start = $current_epoch - $seconds_to_expiry - 3600;
     my $end   = $current_epoch + $seconds_to_expiry + 3600;
 
-    return BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+    return Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        }
+        )->get_latest_events_for_period({
             from => Date::Utility->new($start),
             to   => Date::Utility->new($end)});
 }
@@ -1797,12 +1800,16 @@ sub _market_data {
                 $underlying->asset_symbol           => 1,
             );
 
-            my $ee = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
-                from => $from,
-                to   => $to
-            });
+            my $ee = Quant::Framework::EconomicEventCalendar->new({
+                    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                }
+                )->get_latest_events_for_period({
+                    from => $from,
+                    to   => $to
+                });
+
             my @applicable_news =
-                sort { $a->[0] <=> $b->[0] } map { [$_->{release_date}->epoch, $_] } grep { $applicable_symbols{$_->{symbol}} } @$ee;
+                sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
 
             return @applicable_news;
         },
@@ -2310,14 +2317,6 @@ sub _validate_payout {
     my $limits          = $self->staking_limits->{payout};
     my $payout_max      = $limits->{max};
     my $payout_min      = $limits->{min};
-
-    if (not first { $_ eq $payout_currency } @{request()->available_currencies}) {
-        push @errors,
-            {
-            message           => format_error_string('Bad payout currency', currency => $payout_currency),
-            message_to_client => localize('Invalid payout currency.'),
-            };
-    }
 
     if ($bet_payout < $payout_min or $bet_payout > $payout_max) {
         push @errors,
