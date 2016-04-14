@@ -969,7 +969,7 @@ sub _build_total_markup {
         # we allowed tick expiry total markup to be less than zero
         # because of equal tick discount.
         %min = ();
-    } elsif ($self->has_payout) {
+    } elsif ($self->has_payout and $self->payout != 0) {
         %min = (minimum => 0.02 / $self->payout);
     } else {
         %min = (minimum => 0);
