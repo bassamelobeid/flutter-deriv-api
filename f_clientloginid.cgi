@@ -213,6 +213,65 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Payments'])) {
 
 print '<br /><input type="submit" value="Monitor Disabled Accounts">' . '</form>';
 
+Bar("TRUSTED CLIENTS");
+
+my $trusted_ok_login = "Add to OK Login";
+
+my %form_action = (
+    'oklogins' => $trusted_ok_login,
+);
+
+print "<b>Choose loginID and action</b><br />";
+print "<br />Action: <select onchange=\"\$('#'+this.value).siblings().hide();\$('#'+this.value).show();\">"
+    . "<option>--------------------SELECT A ACTION--------------------</option>";
+
+foreach my $action (keys %form_action) {
+    my $selected = request()->param('trusted_action_type') eq $action ? ' selected="selected"' : '';
+    print '<option value="' . $action . '"' . $selected . '>' . $form_action{$action} . '</option>';
+}
+
+print '</select>';
+print '<br /><br />';
+
+print '<div id="trust_client_wrapper">';
+
+# Others - Clients allowed for ok login
+print '<div id="oklogins"' . (request()->param('trusted_action_type') eq 'oklogins' ? '' : ' style="display:none"') . '>';
+print "<hr><b>OK Login : $trusted_ok_login</b>"
+    . "<br />Note : If a client is having persistant problems logging in, you can add client to this status to over-ride several security checks. Also if client is flagged as having 2 countries attached to client's IP/client details, add the client to this status to allow access to the cashier section.";
+
+# if redirect from client details page
+if (request()->param('editlink') and $client_login and request()->param('trusted_reason') and request()->param('trusted_action_type') eq 'oklogins') {
+    print "<br /><br /><font color=blue>This line has already exist in <b>$broker."
+        . request()->param('trusted_action_type')
+        . "</b>: "
+        . "<b>$client_login "
+        . request()->param('trusted_reason') . " ("
+        . request()->param('clerk') . ")</b>"
+        . "<br />To change the reason, kindly select from the dropdown selection list below, input the dual control code and click 'Go'.</font>";
+}
+
+print "<br /><br /><form action=\""
+    . request()->url_for('backoffice/trusted_client_edit.cgi')
+    . "\" method=\"post\">"
+    . "Login ID&nbsp; : <input type=\"text\" size=\"45\" name=\"login_id\" value=\"$client_login\">"
+    . "<br />Reason&nbsp;&nbsp;&nbsp; : <select id=\"loginlist\" name=\"trusted_reason\">"
+    . "<option>--------------------SELECT A REASON--------------------</option>";
+foreach my $trusted_login (get_trusted_allow_login_reason()) {
+    my $selected = request()->param('trusted_reason') eq $trusted_login ? ' selected="selected"' : '';
+    print "<option value=\"$trusted_login\"$selected>$trusted_login</option>";
+}
+
+print "</select>";
+print "<br />Please specify here (optional) : <input type=\"text\" size=\"92\" name=\"additional_info\">";
+
+print "<input type=\"hidden\" name=\"broker\" value=\"$broker\">"
+    . "<input type=\"hidden\" name=\"trusted_action_type\" value=\"oklogins\">"
+    . "<input type=\"hidden\" name=\"trusted_action\" value=\"insert_data\">";
+
+print "&nbsp;&nbsp;<input type=\"submit\" name=\"close_disable_button\" value=\"Go\">" . "</form>";
+print '</div>';
+print '</div>';
 
 # Monitor client lists
 Bar("Monitor client lists");
@@ -230,6 +289,8 @@ print "<br /><br /><form action=\""
     . "<option value='cashier_locked'>Cashier Lock Section</option>"
     . "<option value='withdrawal_locked'>Withdrawal Lock Section</option>"
     . "<option value='unwelcome'>Unwelcome loginIDs</option>"
+    . "<option value=''>----TRUSTED CLIENT SECTION----</option>"
+    . "<option value='ok'>Add to OK Logins</option>"
     . "</select>"
     . '<br /><input type=checkbox value="1" name=onlyfunded>Only funded accounts'
     . '<br /><input type=checkbox value="1" name=onlynonzerobalance>Only nonzero balance'
