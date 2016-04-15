@@ -1332,7 +1332,7 @@ subtest 'max_payout_open_bets validation', sub {
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
         my $mock_contract    = Test::MockModule->new('BOM::Product::Contract');
         # we are not testing for price accuracy here so it is fine.
-        $mock_contract->mock('ask_price', sub {note 'mocking ask_price to 5.37'; 5.37});
+        $mock_contract->mock('ask_probability', sub {note 'mocking ask_probability to 0.537'; 0.537});
         my $contract = produce_contract({
             underlying   => 'frxUSDJPY',
             bet_type     => 'FLASHU',
