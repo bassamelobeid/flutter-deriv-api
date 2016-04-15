@@ -433,9 +433,9 @@ subtest $method => sub {
     my $res = $c->call_ok('get_bid', $params)->result;
 
     my $expected_result = {
-        'ask_price'       => 205.70,
+        'ask_price'       => '205.70',
         'barrier'         => '0.99360',
-        'bid_price'       => 205.70,
+        'bid_price'       => '205.70',
         'contract_id'     => 10,
         'currency'        => 'USD',
         'date_expiry'     => 1127287060,
@@ -453,7 +453,7 @@ subtest $method => sub {
     };
 
     foreach my $key (keys %$expected_result) {
-        cmp_ok $res->{$key}, 'eq', "$expected_result->{$key}", "$key are matching ";
+        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
     }
 
 };
