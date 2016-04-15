@@ -1357,7 +1357,7 @@ subtest 'max_payout_open_bets validation', sub {
             BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{maltainvest}->{USD} = 29.99;
             my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
 
-            if ($now->is_a_weekend) {
+            if ($now->is_a_weekend or ($now->day_of_week == 5 and $contract->date_expiry->is_after($now->truncate_to_day->plus_time_interval('21h')))) {
                 $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
                 $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
