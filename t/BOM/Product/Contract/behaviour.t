@@ -102,6 +102,37 @@ subtest 'waiting for entry tick' => sub {
     ok $c->is_valid_to_sell, 'valid to sell once you have a close enough tick';
 };
 
+subtest 'tick expiry contract settlement' => sub {
+    create_ticks([100, $now->epoch - 1, 'R_100'],[101, $now->epoch + 1, 'R_100']);
+    $bet_params->{date_start} = $now;
+    $bet_params->{date_pricing} = $now->epoch + 299;
+    $bet_params->{duration} = '5t';
+    my $c = produce_contract($bet_params);
+    ok $c->tick_expiry, 'tick expiry contract';
+    ok !$c->is_expired, 'not expired';
+    ok !$c->exit_tick, 'no exit tick';
+    ok !$c->is_after_expiry, 'not after expiry';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    like ($c->primary_validation_error->message, qr/resale of tick expiry contract/, 'throws error');
+
+    $bet_params->{date_pricing} = $now->epoch + 301;
+    $c = produce_contract($bet_params);
+    ok $c->tick_expiry, 'tick expiry contract';
+    ok !$c->is_expired, 'not expired';
+    ok !$c->exit_tick, 'no exit tick';
+    ok $c->is_after_expiry, 'is after expiry';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    like ($c->primary_validation_error->message, qr/exit tick is undefined after max allowed time for tick/, 'throws error');
+
+    create_ticks([100, $now->epoch - 1, 'R_100'],[101, $now->epoch + 1, 'R_100'],[101, $now->epoch + 2, 'R_100'],[102, $now->epoch + 3, 'R_100'],[104, $now->epoch + 4, 'R_100'],[102, $now->epoch + 5, 'R_100'],[102, $now->epoch + 299, 'R_100']);
+    $bet_params->{date_pricing} = $now->epoch + 299;
+    $c = produce_contract($bet_params);
+    ok $c->tick_expiry, 'tick expiry contract';
+    ok $c->is_expired, 'expired';
+    ok $c->exit_tick, 'has exit tick';
+    ok $c->is_valid_to_sell, 'valid to sell';
+};
+
 sub create_ticks {
     my @ticks = @_;
 
