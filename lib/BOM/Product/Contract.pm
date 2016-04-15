@@ -1078,8 +1078,12 @@ sub is_valid_to_sell {
     }
 
     if ($self->is_after_expiry) {
-        my $error = $self->_check_entry_and_exit_ticks;
-        if ($error) {
+        if (not $self->exit_tick) {
+            $self->add_error({
+                message           => 'waiting for exit tick',
+                message_to_client => localize('Please wait for contract settlement.'),
+            });
+        } elsif (my $error = $self->_invalid_exit_conditions) {
             $self->missing_market_data(1);
             $self->add_error({
                 message           => $error,
@@ -1104,17 +1108,17 @@ sub is_valid_to_sell {
 
 # PRIVATE method.
 
-sub _check_entry_and_exit_ticks {
+sub _invalid_exit_conditions {
     my $self = shift;
 
     return 'entry tick is undefined' if not $self->entry_tick;
     # A start now contract will not be bought if we have missing feed.
     # We are doing the same thing for forward starting contracts.
-    my $entry_tick_delay = ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds);
-    return 'entry tick is too old' if $self->is_forward_starting and $entry_tick_delay;
-    return 'exit tick is undefined'                   if not $self->exit_tick;
+    return 'entry tick is too old'
+        if ($self->is_forward_starting
+        and ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds));
     return 'only one tick throughout contract period' if $self->entry_tick->epoch == $self->exit_tick->epoch;
-    return 'entry tick is after exit tick'            if $self->entry_tick->epoch > $self->exit_tick->epoch;
+    return 'entry tick is after exit tick' if $self->entry_tick->epoch > $self->exit_tick->epoch;
 
     return;
 }
