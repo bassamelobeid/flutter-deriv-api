@@ -453,7 +453,7 @@ subtest $method => sub {
     };
 
     foreach my $key (keys %$expected_result) {
-        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
+        cmp_ok $res->{$key}, 'eq', "$expected_result->{$key}", "$key are matching ";
     }
 
 };
