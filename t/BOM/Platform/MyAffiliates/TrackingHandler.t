@@ -55,23 +55,6 @@ subtest 'Client logged in' => sub {
         broker_code => 'CR',
     });
 
-    subtest 'Exposure' => sub {
-        my $number_of_exposures = $client->client_affiliate_exposure_count;
-        my $existing_cookie_value = to_json({t => 'pq4yxSo2Q5MxbH2GzcxdS2nD7zGQDrlS'});
-
-        my $request = BOM::Platform::Context::Request->new(
-            cookies => {'affiliate_tracking' => $existing_cookie_value},
-            loginid => $client->loginid
-        );
-        BOM::Platform::Context::request($request);
-        my $handler = BOM::Platform::MyAffiliates::TrackingHandler->new();
-        is $handler->myaffiliates_token, 'pq4yxSo2Q5MxbH2GzcxdS2nD7zGQDrlS', "Client exposed to token";
-        my $new_number_of_exposures = $client->client_affiliate_exposure_count;
-        is scalar $new_number_of_exposures, ($number_of_exposures + 1), 'Client registered as exposed to token';
-
-        exposure_cookie_is_deleted($handler->tracking_cookie);
-    };
-
     subtest 'Legacy Affiliate Tracker' => sub {
         my $number_of_exposures = $client->client_affiliate_exposure_count;
         # assuming CR1234 was never an affiliate in the BOM system.
