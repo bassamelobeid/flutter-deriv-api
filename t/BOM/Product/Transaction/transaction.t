@@ -1330,6 +1330,9 @@ subtest 'max_payout_open_bets validation', sub {
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
+        my $mock_contract    = Test::MockModule->new('BOM::Product::Contract');
+        # we are not testing for price accuracy here so it is fine.
+        $mock_contract->mock('ask_price', sub {note 'mocking ask_price to 5.37'; 5.37});
         my $contract = produce_contract({
             underlying   => 'frxUSDJPY',
             bet_type     => 'FLASHU',
@@ -1345,13 +1348,13 @@ subtest 'max_payout_open_bets validation', sub {
             contract    => $contract,
             price       => 5.37,
             payout      => $contract->payout,
+            purchase_date => $contract->date_start,
             amount_type => 'payout',
         });
 
         my $error = do {
             note "Set max_payout_open_positions for MF Client => 29.99";
             BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{maltainvest}->{USD} = 29.99;
-            my $mock_contract    = Test::MockModule->new('BOM::Product::Contract');
             my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
 
             if ($now->is_a_weekend) {
@@ -1367,6 +1370,7 @@ subtest 'max_payout_open_bets validation', sub {
                     price       => 5.37,
                     payout      => $contract->payout,
                     amount_type => 'payout',
+                    purchase_date => $contract->date_start,
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Product::Transaction->new({
@@ -1375,6 +1379,7 @@ subtest 'max_payout_open_bets validation', sub {
                     price       => 5.37,
                     payout      => $contract->payout,
                     amount_type => 'payout',
+                    purchase_date => $contract->date_start,
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
@@ -1407,6 +1412,7 @@ subtest 'max_payout_open_bets validation', sub {
         };
 
         is $error, undef, 'no error';
+        $mock_contract->unmock_all;
     }
     'survived';
     restore_time();
