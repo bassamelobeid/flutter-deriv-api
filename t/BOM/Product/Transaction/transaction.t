@@ -16,6 +16,7 @@ use BOM::Platform::Static::Config;
 
 use Date::Utility;
 use BOM::Product::Transaction;
+use Math::Util::CalculatedValue::Validatable;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -1332,7 +1333,13 @@ subtest 'max_payout_open_bets validation', sub {
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
         my $mock_contract    = Test::MockModule->new('BOM::Product::Contract');
         # we are not testing for price accuracy here so it is fine.
-        $mock_contract->mock('ask_price', sub {note 'mocking ask_price to 5.37'; 5.37});
+        my $fake_ask_prob = Math::Util::CalculatedValue::Validatable->new({
+            name => 'ask_probability',
+            description => 'fake ask probability',
+            set_by => 'test',
+            base_amount => 0.537
+        });
+        $mock_contract->mock('ask_probability', sub {note 'mocking ask_probability to 0.537'; $fake_ask_prob});
         my $contract = produce_contract({
             underlying   => 'frxUSDJPY',
             bet_type     => 'FLASHU',
@@ -1357,7 +1364,7 @@ subtest 'max_payout_open_bets validation', sub {
             BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{maltainvest}->{USD} = 29.99;
             my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
 
-            if ($now->is_a_weekend) {
+            if ($now->is_a_weekend or ($now->day_of_week == 5 and $contract->date_expiry->is_after($now->truncate_to_day->plus_time_interval('21h')))) {
                 $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
                 $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
