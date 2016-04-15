@@ -233,3 +233,6 @@
 "/paymentagent/transferws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/get-started-jp":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
