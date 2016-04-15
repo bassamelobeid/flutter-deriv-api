@@ -160,10 +160,10 @@ sub _build_basis_tick {
     # if there's no basis tick, don't die but catch the error.
     unless ($basis_tick) {
         $basis_tick = BOM::Market::Data::Tick->new({
-            # slope pricer will die with illegal division by zero error when we get the slope
-            quote  => $self->underlying->pip_size * 2,
-            epoch  => 1,
-            symbol => $self->underlying->symbol,
+# slope pricer will die with illegal division by zero error when we get the slope
+                quote  => $self->underlying->pip_size * 2,
+                epoch  => 1,
+                symbol => $self->underlying->symbol,
         });
         $self->add_error({
             message           => format_error_string('Waiting for entry tick', symbol => $self->underlying->symbol),
@@ -175,7 +175,8 @@ sub _build_basis_tick {
 }
 
 #expiry_daily - Does this bet expire at close of the exchange?
-has [qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries)]
+has [
+    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries)]
     => (
     is         => 'ro',
     lazy_build => 1,
@@ -184,8 +185,10 @@ has [qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_c
 sub _build_is_atm_bet {
     my $self = shift;
 
-    # If more euro_atm options are added, use something like Offerings to replace static 'callput'
-    return ($self->category->code eq 'callput' and defined $self->barrier and $self->barrier->pip_difference == 0) ? 1 : 0;
+# If more euro_atm options are added, use something like Offerings to replace static 'callput'
+    return ($self->category->code eq 'callput' and defined $self->barrier and $self->barrier->pip_difference == 0)
+        ? 1
+        : 0;
 }
 
 sub _build_expiry_daily {
@@ -202,7 +205,10 @@ sub _build_is_intraday {
 sub _build_expiry_type {
     my $self = shift;
 
-    return ($self->tick_expiry) ? 'tick' : ($self->expiry_daily) ? 'daily' : 'intraday';
+    return
+          ($self->tick_expiry)  ? 'tick'
+        : ($self->expiry_daily) ? 'daily'
+        :                         'intraday';
 }
 
 sub _build_start_type {
@@ -225,7 +231,9 @@ sub _build_translated_display_name {
 
 sub _build_is_forward_starting {
     my $self = shift;
-    return ($self->allow_forward_starting and $self->date_pricing->is_before($self->date_start)) ? 1 : 0;
+    return ($self->allow_forward_starting and $self->date_pricing->is_before($self->date_start))
+        ? 1
+        : 0;
 }
 
 sub _build_permitted_expiries {
@@ -394,6 +402,7 @@ has [qw(pricing_args)] => (
 has build_parameters => (
     is  => 'ro',
     isa => 'HashRef',
+
     # Required until it goes away entirely.
     required => 1,
 );
@@ -494,7 +503,10 @@ sub _build_greek_engine {
 sub _build_pricing_engine_name {
     my $self = shift;
 
-    my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
+    my $engine_name =
+        $self->is_path_dependent
+        ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated'
+        : 'Pricing::Engine::EuropeanDigitalSlope';
 
     if ($self->tick_expiry) {
         my @symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
@@ -502,16 +514,24 @@ sub _build_pricing_engine_name {
             contract_category => 'callput',
             expiry_type       => 'tick',
         );
-        $engine_name = 'Pricing::Engine::TickExpiry' if _match_symbol(\@symbols, $self->underlying->symbol);
+        $engine_name = 'Pricing::Engine::TickExpiry'
+            if _match_symbol(\@symbols, $self->underlying->symbol);
     } elsif (
-        $self->is_intraday and not $self->is_forward_starting and grep {
+        $self->is_intraday
+        and not $self->is_forward_starting
+        and grep {
             $self->market->name eq $_
         } qw(forex indices)
         )
     {
-        my $func = $self->market->name eq 'forex' ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
+        my $func =
+            $self->market->name eq 'forex'
+            ? 'symbols_for_intraday_fx'
+            : 'symbols_for_intraday_index';
         my @symbols = BOM::Market::UnderlyingDB->instance->$func;
-        if (_match_symbol(\@symbols, $self->underlying->symbol) and my $loc = $self->offering_specifics->{historical}) {
+        if (_match_symbol(\@symbols, $self->underlying->symbol)
+            and my $loc = $self->offering_specifics->{historical})
+        {
             my $duration = $self->remaining_time;
             my $name = $self->market->name eq 'indices' ? 'Index' : 'Forex';
             $engine_name = 'BOM::Product::Pricing::Engine::Intraday::' . $name
@@ -570,7 +590,10 @@ has remaining_time => (
 sub _build_remaining_time {
     my $self = shift;
 
-    my $when = ($self->date_pricing->is_after($self->date_start)) ? $self->date_pricing : $self->date_start;
+    my $when =
+        ($self->date_pricing->is_after($self->date_start))
+        ? $self->date_pricing
+        : $self->date_start;
 
     return $self->get_time_to_expiry({
         from => $when,
@@ -592,7 +615,9 @@ sub _build_q_rate {
     my $rate;
     if ($underlying->market->prefer_discrete_dividend) {
         $rate = 0;
-    } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Asian' and $underlying->market->name eq 'random') {
+    } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Asian'
+        and $underlying->market->name eq 'random')
+    {
         $rate = $q_rate / 2;
     } else {
         $rate = $q_rate;
@@ -660,12 +685,19 @@ sub _build_timeindays {
     my $start_date = $self->effective_start;
 
     my $atid;
+
     # If market is Forex, We go with integer days as per the market convention
-    if ($self->market->integer_number_of_day and $self->pricing_engine_name !~ /Intraday::Forex/) {
+    if (    $self->market->integer_number_of_day
+        and $self->pricing_engine_name !~ /Intraday::Forex/)
+    {
         my $utils        = BOM::MarketData::VolSurface::Utils->new;
         my $days_between = $self->date_expiry->days_between($self->date_start);
-        $atid = $utils->is_before_rollover($self->date_start) ? ($days_between + 1) : $days_between;
+        $atid =
+            $utils->is_before_rollover($self->date_start)
+            ? ($days_between + 1)
+            : $days_between;
     }
+
     # If intraday or not FX, then use the exact duration with fractions of a day.
     $atid ||= $self->get_time_to_expiry({
             from => $start_date,
@@ -688,24 +720,33 @@ sub _build_opposite_bet {
 
     # Start by making a copy of the parameters we used to build this bet.
     my %build_parameters = %{$self->build_parameters};
+
     # Note from which extant bet we are building this.
     $build_parameters{'built_with_bom_parameters'} = 1;
 
     # Always switch out the bet type for the other side.
     $build_parameters{'bet_type'} = $self->other_side_code;
+
     # Don't set the shortcode, as it will change between these.
     delete $build_parameters{'shortcode'};
+
     # Save a round trip.. copy the volsurfaces
     foreach my $vol_param (qw(volsurface empirical_volsurface fordom forqqq domqqq)) {
         my $predicate = 'has_' . $vol_param;
-        $build_parameters{$vol_param} = $self->$vol_param if ($self->$predicate);
+        $build_parameters{$vol_param} = $self->$vol_param
+            if ($self->$predicate);
     }
 
     # We should be looking to move forward in time to a bet starting now.
     if (not $self->pricing_new) {
         if ($self->entry_tick) {
-            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                $build_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
+            foreach my $barrier (
+                $self->two_barriers
+                ? ('high_barrier', 'low_barrier')
+                : ('barrier'))
+            {
+                $build_parameters{$barrier} = $self->$barrier->as_absolute
+                    if defined $self->$barrier;
             }
         }
         $build_parameters{date_start}   = $self->date_pricing;
@@ -723,9 +764,9 @@ sub _build_empirical_volsurface {
 sub _build_volsurface {
     my $self = shift;
 
-    # Due to the craziness we have in volsurface cutoff. This complexity is needed!
-    # FX volsurface has cutoffs at either 21:00 or 23:59 or the early close time.
-    # Index volsurfaces shouldn't have cutoff concept. But due to the system design, an index surface cuts at the close of trading time on a non-DST day.
+# Due to the craziness we have in volsurface cutoff. This complexity is needed!
+# FX volsurface has cutoffs at either 21:00 or 23:59 or the early close time.
+# Index volsurfaces shouldn't have cutoff concept. But due to the system design, an index surface cuts at the close of trading time on a non-DST day.
     my %submarkets = (
         major_pairs => 1,
         minor_pairs => 1
@@ -735,7 +776,10 @@ sub _build_volsurface {
     if ($submarkets{$self->underlying->submarket->name}) {
         my $exchange       = $self->exchange;
         my $effective_date = $vol_utils->effective_date_for($self->date_pricing);
-        $effective_date = $exchange->trades_on($effective_date) ? $effective_date : $exchange->trade_date_after($effective_date);
+        $effective_date =
+              $exchange->trades_on($effective_date)
+            ? $effective_date
+            : $exchange->trade_date_after($effective_date);
         my $cutoff_date = $exchange->closing_on($effective_date);
 
         $cutoff_str = $cutoff_date->time_cutoff;
@@ -757,7 +801,10 @@ sub _build_longcode {
     my $self = shift;
 
     my $expiry_type = $self->expiry_type;
-    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->is_forward_starting and $self->fixed_expiry;
+    $expiry_type .= '_fixed_expiry'
+        if $expiry_type eq 'intraday'
+        and not $self->is_forward_starting
+        and $self->fixed_expiry;
     my $localizable_description = $self->localizable_description->{$expiry_type};
 
     my ($when_end, $when_start);
@@ -766,7 +813,10 @@ sub _build_longcode {
         $when_start = '';
     } elsif ($expiry_type eq 'intraday') {
         $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
-        $when_start = $self->is_forward_starting ? $self->date_start->db_timestamp : localize('contract start time');
+        $when_start =
+              $self->is_forward_starting
+            ? $self->date_start->db_timestamp
+            : localize('contract start time');
     } elsif ($expiry_type eq 'daily') {
         my $close = $self->underlying->exchange->closing_on($self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
@@ -780,7 +830,10 @@ sub _build_longcode {
         $when_start = localize('first tick');
     }
     my $payout = to_monetary_number_format($self->payout);
-    my @barriers = ($self->two_barriers) ? ($self->high_barrier, $self->low_barrier) : ($self->barrier);
+    my @barriers =
+          ($self->two_barriers)
+        ? ($self->high_barrier, $self->low_barrier)
+        : ($self->barrier);
     @barriers = map { $_->display_text if $_ } @barriers;
 
     return localize($localizable_description,
@@ -800,10 +853,16 @@ We have two types of expiries:
 sub is_after_expiry {
     my $self = shift;
 
-    return 1
-        if ($self->tick_expiry
-        && ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds)));
-    return 1 if $self->get_time_to_settlement->seconds == 0;
+    if ($self->tick_expiry) {
+        return 1
+            if (
+            not $self->pricing_new
+            and ($self->exit_tick
+                || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds)));
+    } else {
+        return 1 if $self->get_time_to_settlement->seconds == 0;
+    }
+
     return;
 }
 
@@ -811,7 +870,9 @@ sub may_settle_automatically {
     my $self = shift;
 
     # For now, only trigger this condition when the bet is past expiry.
-    return (not $self->get_time_to_settlement->seconds and not $self->is_valid_to_sell) ? 0 : 1;
+    return (not $self->get_time_to_settlement->seconds and not $self->is_valid_to_sell)
+        ? 0
+        : 1;
 }
 
 has corporate_actions => (
@@ -827,7 +888,9 @@ sub _build_corporate_actions {
 
     if ($underlying->market->affected_by_corporate_actions) {
         my $first_day_close = $underlying->exchange->closing_on($self->date_start);
-        if ($first_day_close and not $self->date_expiry->is_before($first_day_close)) {
+        if ($first_day_close
+            and not $self->date_expiry->is_before($first_day_close))
+        {
             @actions = $self->underlying->get_applicable_corporate_actions_for_period({
                 start => $self->date_start,
                 end   => $self->date_pricing,
@@ -890,7 +953,8 @@ sub _build_discounted_probability {
 sub _build_bid_probability {
     my $self = shift;
 
-    return $self->default_probabilities->{bid_probability} if $self->primary_validation_error;
+    return $self->default_probabilities->{bid_probability}
+        if $self->primary_validation_error;
 
     # Effectively you get the same price as if you bought the other side to cancel.
     my $marked_down = Math::Util::CalculatedValue::Validatable->new({
@@ -924,6 +988,7 @@ sub _build_total_markup {
 
     my %min;
     if ($self->pricing_engine_name =~ /TickExpiry/) {
+
         # we allowed tick expiry total markup to be less than zero
         # because of equal tick discount.
         %min = ();
@@ -951,7 +1016,8 @@ sub _build_total_markup {
 sub _build_ask_probability {
     my $self = shift;
 
-    return $self->default_probabilities->{ask_probability} if $self->primary_validation_error;
+    return $self->default_probabilities->{ask_probability}
+        if $self->primary_validation_error;
 
     # Eventually we'll return the actual object.
     # And start from an actual object.
@@ -964,8 +1030,8 @@ sub _build_ask_probability {
         $minimum = $self->theo_probability->amount;
     }
 
-    # The above is a pretty unacceptable way to acheive this result. You do that stuff at the
-    # Engine level.. or work it into your markup.  This is nonsense.
+# The above is a pretty unacceptable way to acheive this result. You do that stuff at the
+# Engine level.. or work it into your markup.  This is nonsense.
 
     my $marked_up = Math::Util::CalculatedValue::Validatable->new({
         name        => 'ask_probability',
@@ -1002,6 +1068,7 @@ sub _build_ask_probability {
         });
         $marked_up->include_adjustment('add', $max_prob_markup);
     }
+
     # If BS is very high, we don't want that business, even if it makes sense.
     # Also, if the market supplement would absolutely drive us out of [0,1]
     # Then it is nonsense to be ignored.
@@ -1063,7 +1130,9 @@ sub is_valid_to_buy {
 
     my $valid = $self->confirm_validity;
 
-    return ($self->built_with_bom_parameters) ? $valid : $self->_report_validation_stats('buy', $valid);
+    return ($self->built_with_bom_parameters)
+        ? $valid
+        : $self->_report_validation_stats('buy', $valid);
 }
 
 sub is_valid_to_sell {
@@ -1078,7 +1147,7 @@ sub is_valid_to_sell {
     }
 
     if ($self->is_after_expiry) {
-        if (not $self->exit_tick) {
+        if (not $self->exit_tick and not $self->tick_expiry) {
             $self->add_error({
                 message           => 'waiting for exit tick',
                 message_to_client => localize('Please wait for contract settlement.'),
@@ -1112,13 +1181,17 @@ sub _invalid_exit_conditions {
     my $self = shift;
 
     return 'entry tick is undefined' if not $self->entry_tick;
+
     # A start now contract will not be bought if we have missing feed.
     # We are doing the same thing for forward starting contracts.
     return 'entry tick is too old'
         if ($self->is_forward_starting
         and ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds));
-    return 'only one tick throughout contract period' if $self->entry_tick->epoch == $self->exit_tick->epoch;
-    return 'entry tick is after exit tick' if $self->entry_tick->epoch > $self->exit_tick->epoch;
+    return 'exit tick is undefined' if not $self->exit_tick;
+    return 'only one tick throughout contract period'
+        if $self->entry_tick->epoch == $self->exit_tick->epoch;
+    return 'entry tick is after exit tick'
+        if $self->entry_tick->epoch > $self->exit_tick->epoch;
 
     return;
 }
@@ -1127,10 +1200,15 @@ sub _invalid_exit_conditions {
 sub _price_from_prob {
     my ($self, $prob_method) = @_;
     my $price;
-    if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
+    if (    $self->date_pricing->is_after($self->date_start)
+        and $self->is_expired)
+    {
         $price = $self->value;
     } else {
-        $price = (defined $self->$prob_method) ? $self->payout * $self->$prob_method->amount : undef;
+        $price =
+            (defined $self->$prob_method)
+            ? $self->payout * $self->$prob_method->amount
+            : undef;
     }
     return (defined $price) ? roundnear(0.01, $price) : undef;
 }
@@ -1157,6 +1235,7 @@ sub _build_theo_probability {
     my $self = shift;
 
     my $theo;
+
     # Have to keep it this way until we remove CalculatedValue in Contract.
     if ($self->new_interface_engine) {
         $theo = Math::Util::CalculatedValue::Validatable->new({
@@ -1178,6 +1257,7 @@ sub _build_bs_probability {
     my $self = shift;
 
     my $bs_prob;
+
     # Have to keep it this way until we remove CalculatedValue in Contract.
     if ($self->new_interface_engine) {
         $bs_prob = Math::Util::CalculatedValue::Validatable->new({
@@ -1248,7 +1328,10 @@ sub _build_theo_price {
 sub _build_shortcode {
     my $self = shift;
 
-    my $shortcode_date_start = $self->is_forward_starting ? $self->date_start->epoch . 'F' : $self->date_start->epoch;
+    my $shortcode_date_start =
+          $self->is_forward_starting
+        ? $self->date_start->epoch . 'F'
+        : $self->date_start->epoch;
     my $shortcode_date_expiry =
           ($self->tick_expiry)  ? $self->tick_count . 'T'
         : ($self->fixed_expiry) ? $self->date_expiry->epoch . 'F'
@@ -1267,7 +1350,8 @@ sub _build_entry_tick {
     # entry tick if never defined if it is a newly priced contract.
     return if $self->pricing_new;
     my $entry_epoch = $self->date_start->epoch;
-    return $self->underlying->tick_at($entry_epoch) if $self->is_forward_starting;
+    return $self->underlying->tick_at($entry_epoch)
+        if $self->is_forward_starting;
     return $self->underlying->next_tick_after($entry_epoch);
 }
 
@@ -1331,8 +1415,9 @@ sub _build_pricing_vol {
     } elsif ($pen =~ /Intraday::Forex/) {
         my $volsurface       = $self->empirical_volsurface;
         my $duration_seconds = $self->timeindays->amount * 86400;
-        # volatility doesn't matter for less than 10 minutes ATM contracts,
-        # where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
+
+# volatility doesn't matter for less than 10 minutes ATM contracts,
+# where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
         my $uses_flat_vol = ($self->is_atm_bet and $duration_seconds < 10 * 60) ? 1 : 0;
         $vol = $volsurface->get_volatility({
             fill_cache            => !$self->backtest,
@@ -1380,10 +1465,12 @@ sub _build_economic_events_for_volatility_calculation {
     my $effective_start   = $self->effective_start;
     my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
     my $current_epoch     = $effective_start->epoch;
-    # Go back another hour because we expect the maximum impact on any news would not last for more than an hour.
+
+# Go back another hour because we expect the maximum impact on any news would not last for more than an hour.
     my $start = $current_epoch - $seconds_to_expiry - 3600;
-    # Plus 5 minutes for the shifting logic.
-    # If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
+
+# Plus 5 minutes for the shifting logic.
+# If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
     my $end = $current_epoch + $seconds_to_expiry + 300;
 
     return [grep { $_->{release_date} >= $start and $_->{release_date} <= $end } @$all_events];
@@ -1401,6 +1488,7 @@ sub _build_applicable_economic_events {
     my $effective_start   = $self->effective_start;
     my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
     my $current_epoch     = $effective_start->epoch;
+
     # Go back and forward an hour to get all the tentative events.
     my $start = $current_epoch - $seconds_to_expiry - 3600;
     my $end   = $current_epoch + $seconds_to_expiry + 3600;
@@ -1478,11 +1566,13 @@ sub pricing_spot {
     my $initial_spot;
     if ($self->current_tick) {
         $initial_spot = $self->current_tick->quote;
+
         # take note of this only when we are trying to sell a contract
-        $self->sell_tick($self->current_tick) if $self->built_with_bom_parameters;
+        $self->sell_tick($self->current_tick)
+            if $self->built_with_bom_parameters;
     } else {
-        # If we could not get the correct spot to price, we will take the latest available spot at pricing time.
-        # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
+# If we could not get the correct spot to price, we will take the latest available spot at pricing time.
+# This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
         $initial_spot = $self->underlying->tick_at($self->date_pricing->epoch, {allow_inconsistent => 1});
         $initial_spot //= $self->underlying->pip_size * 2;
         $self->add_error({
@@ -1567,9 +1657,12 @@ sub _build_staking_limits {
     push @possible_payout_maxes, $bet_limits->{maximum_payout_on_new_markets}->{$curr}
         if ($underlying->is_newly_added);
     push @possible_payout_maxes, $bet_limits->{maximum_payout_on_less_than_7day_indices_call_put}->{$curr}
-        if ($self->underlying->market->name eq 'indices' and not $self->is_atm_bet and $self->timeindays->amount < 7);
+        if ($self->underlying->market->name eq 'indices'
+        and not $self->is_atm_bet
+        and $self->timeindays->amount < 7);
 
-    my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
+    my $payout_max =
+        min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $stake_max = $payout_max;
 
     # Client likes lower stake/payout limit on random market.
@@ -1579,7 +1672,7 @@ sub _build_staking_limits {
         : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
 
-    # err is included here to allow the web front-end access to the same message generated in the back-end.
+# err is included here to allow the web front-end access to the same message generated in the back-end.
     return {
         stake => {
             min => $stake_min,
@@ -1710,6 +1803,7 @@ sub _market_data {
         },
         get_volatility => sub {
             my ($args, $surface_data) = @_;
+
             # if there's new surface data, calculate vol from that.
             my $vol;
             if ($volsurface->type eq 'phased') {
@@ -1747,7 +1841,8 @@ sub _market_data {
                 symbol   => $args->{underlying_symbol},
                 for_date => $for_date
             });
-            my ($from, $to) = map { Date::Utility->new($args->{$_}) } qw(start end);
+            my ($from, $to) =
+                map { Date::Utility->new($args->{$_}) } qw(start end);
             my %applicable_symbols = (
                 USD                                 => 1,
                 AUD                                 => 1,
@@ -1767,7 +1862,8 @@ sub _market_data {
                 });
 
             my @applicable_news =
-                sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
+                sort { $a->{release_date} <=> $b->{release_date} }
+                grep { $applicable_symbols{$_->{symbol}} } @$ee;
 
             return @applicable_news;
         },
@@ -1791,10 +1887,12 @@ sub _build_priced_with {
 
     my $underlying = $self->underlying;
 
-    # Everything should have a quoted currency, except our randoms.
-    # However, rather than check for random directly, just do a numeraire bet if we don't know what it is.
+# Everything should have a quoted currency, except our randoms.
+# However, rather than check for random directly, just do a numeraire bet if we don't know what it is.
     my $priced_with;
-    if ($underlying->quoted_currency_symbol eq $self->currency or (none { $underlying->market->name eq $_ } (qw(forex commodities indices)))) {
+    if ($underlying->quoted_currency_symbol eq $self->currency
+        or (none { $underlying->market->name eq $_ } (qw(forex commodities indices))))
+    {
         $priced_with = 'numeraire';
     } elsif ($underlying->asset_symbol eq $self->currency) {
         $priced_with = 'base';
@@ -1817,6 +1915,7 @@ sub _build_mu {
     if (first { $self->underlying->market->name eq $_ } (qw(forex commodities indices))) {
         my $rho = $self->rho->{fd_dq};
         my $vol = $self->atm_vols;
+
         # See [1] for Quanto Formula
         $mu = $self->r_rate - $self->q_rate - $rho * $vol->{fordom} * $vol->{domqqq};
     }
@@ -1838,7 +1937,9 @@ sub _build_rho {
         $rhos{fd_dq} = 0;
     } elsif ($self->priced_with eq 'base') {
         $rhos{fd_dq} = -1;
-    } elsif ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities') {
+    } elsif ($self->underlying->market->name eq 'forex'
+        or $self->underlying->market->name eq 'commodities')
+    {
         $rhos{fd_dq} =
             $w * (($atm_vols->{forqqq}**2 - $atm_vols->{fordom}**2 - $atm_vols->{domqqq}**2) / (2 * $atm_vols->{fordom} * $atm_vols->{domqqq}));
     } elsif ($self->underlying->market->name eq 'indices') {
@@ -1927,7 +2028,11 @@ sub _build_forqqq {
 
     my $result = {};
 
-    if ($self->priced_with eq 'quanto' and ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities')) {
+    if (
+        $self->priced_with eq 'quanto'
+        and (  $self->underlying->market->name eq 'forex'
+            or $self->underlying->market->name eq 'commodities'))
+    {
         $result->{underlying} = BOM::Market::Underlying->new({
             symbol   => 'frx' . $self->underlying->asset_symbol . $self->currency,
             for_date => $self->underlying->for_date
@@ -1958,7 +2063,9 @@ sub _build_discount_rate {
 
     my %args = (
         symbol => $self->currency,
-        $self->underlying->for_date ? (for_date => $self->underlying->for_date) : (),
+        $self->underlying->for_date
+        ? (for_date => $self->underlying->for_date)
+        : (),
     );
     my $curr_obj = BOM::Market::Currency->new(%args);
 
@@ -2000,7 +2107,10 @@ sub _get_time_to_end {
     my ($self, $attributes) = @_;
 
     my $end_point = $attributes->{to};
-    my $from = ($attributes and $attributes->{from}) ? $attributes->{from} : $self->date_pricing;
+    my $from =
+        ($attributes and $attributes->{from})
+        ? $attributes->{from}
+        : $self->date_pricing;
 
     # Don't worry about how long past expiry
     # Let it die if they gave us nonsense.
@@ -2024,10 +2134,13 @@ sub barrier_display_info {
     my $spot = defined $tick ? $tick->quote : undef;
     my @barriers;
     if ($self->two_barriers) {
-        push @barriers, {barrier  => $self->high_barrier->as_absolute} if $self->high_barrier;
-        push @barriers, {barrier2 => $self->low_barrier->as_absolute}  if $self->low_barrier;
+        push @barriers, {barrier => $self->high_barrier->as_absolute}
+            if $self->high_barrier;
+        push @barriers, {barrier2 => $self->low_barrier->as_absolute}
+            if $self->low_barrier;
     } else {
-        @barriers = $self->barrier ? ({barrier => $self->barrier->as_absolute}) : ();
+        @barriers =
+            $self->barrier ? ({barrier => $self->barrier->as_absolute}) : ();
     }
 
     my %barriers;
@@ -2036,10 +2149,16 @@ sub barrier_display_info {
             my $which  = keys %$barrier;
             my $strike = values %$barrier;
             $barriers{$which}->{amnt} = $underlying->pipsized_value($strike);
-            $barriers{$which}->{dir}  = ($spot > $strike) ? localize('minus') : ($spot < $strike) ? localize('plus') : '';
-            $barriers{$which}->{diff} = $underlying->pipsized_value(abs($spot - $strike)) || '';                             # Do not show 0 for 0.
+            $barriers{$which}->{dir} =
+                  ($spot > $strike) ? localize('minus')
+                : ($spot < $strike) ? localize('plus')
+                :                     '';
+            $barriers{$which}->{diff} = $underlying->pipsized_value(abs($spot - $strike))
+                || '';    # Do not show 0 for 0.
             $barriers{$which}->{desc} =
-                !$self->two_barriers ? localize('barrier') : $strike > $spot ? localize('high barrier') : localize('low barrier');
+                 !$self->two_barriers ? localize('barrier')
+                : $strike > $spot     ? localize('high barrier')
+                :                       localize('low barrier');
         }
     }
 
@@ -2063,6 +2182,7 @@ sub _build_exit_tick {
                     start_time => $self->date_start->epoch + 1,
                     limit      => $tick_number,
                 })};
+
         # We wait for the n-th tick to settle tick expiry contract.
         # But the maximum waiting period is 5 minutes.
         if (@ticks_since_start == $tick_number) {
@@ -2070,6 +2190,7 @@ sub _build_exit_tick {
             $self->date_expiry(Date::Utility->new($exit_tick->epoch));
         }
     } elsif ($self->expiry_daily) {
+
         # Expiration based on daily OHLC
         $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
     } else {
@@ -2077,7 +2198,8 @@ sub _build_exit_tick {
     }
 
     if ($self->entry_tick and $exit_tick) {
-        my ($entry_tick_date, $exit_tick_date) = map { Date::Utility->new($_) } ($self->entry_tick->epoch, $exit_tick->epoch);
+        my ($entry_tick_date, $exit_tick_date) =
+            map { Date::Utility->new($_) } ($self->entry_tick->epoch, $exit_tick->epoch);
         if (    not $self->expiry_daily
             and $underlying->intradays_must_be_same_day
             and $self->exchange->trading_days_between($entry_tick_date, $exit_tick_date))
@@ -2149,7 +2271,9 @@ sub _validate_underlying {
         }
     }
 
-    if ($self->is_intraday and $underlying->deny_purchase_during($self->date_start, $self->date_expiry)) {
+    if (    $self->is_intraday
+        and $underlying->deny_purchase_during($self->date_start, $self->date_expiry))
+    {
         push @errors,
             {
             message           => format_error_string('Underlying buy trades suspended for period', symbol => $underlying->symbol),
@@ -2167,9 +2291,12 @@ sub _validate_contract {
 
     my @errors;
     my $contract_code = $self->code;
+
     # check if trades are suspended on that claimtype
     my $suspend_claim_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
-    if ($suspend_claim_types and first { $contract_code eq $_ } @{$suspend_claim_types}) {
+    if ($suspend_claim_types
+        and first { $contract_code eq $_ } @{$suspend_claim_types})
+    {
         push @errors,
             {
             message           => format_error_string('Trading suspended for contract type', code => $contract_code),
@@ -2228,6 +2355,7 @@ sub _validate_payout {
     $payout_as_string =~ s/[\.0]+$//;           # Strip trailing zeroes and decimal points to be more friendly.
 
     if ($bet_payout =~ /\.[0-9]{3,}/) {
+
         # We did the best we could to clean up looks like still too many decimals
         push @errors,
             {
@@ -2252,7 +2380,8 @@ sub _validate_stake {
     my $contract_payout = $self->payout;
     my $limits          = $self->staking_limits->{stake};
 
-    push @errors, $self->ask_probability->all_errors if (not $self->ask_probability->confirm_validity);
+    push @errors, $self->ask_probability->all_errors
+        if (not $self->ask_probability->confirm_validity);
 
     my $stake_minimum = $limits->{min};
     my $stake_maximum = $limits->{max};
@@ -2278,9 +2407,12 @@ sub _validate_stake {
             };
     }
 
-    # Compared as strings of maximum visible client currency width to avoid floating-point issues.
+# Compared as strings of maximum visible client currency width to avoid floating-point issues.
     if (sprintf("%.2f", $contract_stake) eq sprintf("%.2f", $contract_payout)) {
-        my $message = ($self->built_with_bom_parameters) ? localize('Current market price is 0.') : localize('This contract offers no return.');
+        my $message =
+            ($self->built_with_bom_parameters)
+            ? localize('Current market price is 0.')
+            : localize('This contract offers no return.');
         push @errors,
             {
             message           => format_error_string('stake same as payout'),
@@ -2303,10 +2435,16 @@ sub _validate_start_date {
     my $epoch_start  = $self->date_start->epoch;
     my $epoch_expiry = $self->date_expiry->epoch;
 
-    my $expiry_closing            = $exchange->closing_on($self->date_expiry);
-    my $start_date_closing        = $exchange->closing_on($self->date_start);
-    my $sec_to_close              = ($expiry_closing) ? $expiry_closing->epoch - $self->date_pricing->epoch : 0;
-    my $start_date_sec_to_close   = ($start_date_closing) ? $start_date_closing->epoch - $self->date_pricing->epoch : 0;
+    my $expiry_closing     = $exchange->closing_on($self->date_expiry);
+    my $start_date_closing = $exchange->closing_on($self->date_start);
+    my $sec_to_close =
+        ($expiry_closing)
+        ? $expiry_closing->epoch - $self->date_pricing->epoch
+        : 0;
+    my $start_date_sec_to_close =
+        ($start_date_closing)
+        ? $start_date_closing->epoch - $self->date_pricing->epoch
+        : 0;
     my $when                      = $self->date_pricing;
     my $forward_starting_blackout = Time::Duration::Concise::Localize->new(
         interval => '5m',
@@ -2336,6 +2474,7 @@ sub _validate_start_date {
             message_to_client => localize('Start time is invalid.'),
             };
     }
+
     # Bet can not start in the past
     if (not $self->built_with_bom_parameters and $epoch_start < $when->epoch) {
         push @errors,
@@ -2344,10 +2483,13 @@ sub _validate_start_date {
             message_to_client => localize("Start time is in the past"),
             };
     }
+
     # exchange needs to be open when the bet starts.
     if (not $exchange->is_open_at($self->date_start)) {
         my $message =
-            ($self->is_forward_starting) ? localize("The market must be open at the start time.") : localize('This market is presently closed.');
+            ($self->is_forward_starting)
+            ? localize("The market must be open at the start time.")
+            : localize('This market is presently closed.');
         push @errors,
             {
             message => format_error_string(
@@ -2367,8 +2509,10 @@ sub _validate_start_date {
             ),
             message_to_client => localize("Trading is available after the first [_1] of the session.", $blackout_time) . " "
                 . localize("Try out the Random Indices which are always open.")};
-    } elsif ($self->is_forward_starting and not $self->built_with_bom_parameters) {
-        # Intraday cannot be bought in the 5 mins before the bet starts, unless we've built it for that purpose.
+    } elsif ($self->is_forward_starting
+        and not $self->built_with_bom_parameters)
+    {
+# Intraday cannot be bought in the 5 mins before the bet starts, unless we've built it for that purpose.
         if ($epoch_start < $when->epoch + $forward_starting_blackout->seconds) {
             push @errors,
                 {
@@ -2377,7 +2521,9 @@ sub _validate_start_date {
                     localize("Start time on forward-starting contracts must be more than [_1] from now.", $forward_starting_blackout->as_string),
                 };
         }
-    } elsif ($eod_blackout_start and $sec_to_close < $eod_blackout_start->seconds) {
+    } elsif ($eod_blackout_start
+        and $sec_to_close < $eod_blackout_start->seconds)
+    {
         my $localized_eod_blackout_start = Time::Duration::Concise::Localize->new(
             interval => $eod_blackout_start->seconds,
             locale   => BOM::Platform::Context::request()->language
@@ -2394,7 +2540,11 @@ sub _validate_start_date {
             info_link => request()->url_for('/resources/market_timesws', undef, {no_host => 1}),
             info_text => localize('Trading Times'),
             };
-    } elsif ($underlying->market->name eq 'indices' and not $self->is_intraday and not $self->is_atm_bet and $self->timeindays->amount <= 7) {
+    } elsif ($underlying->market->name eq 'indices'
+        and not $self->is_intraday
+        and not $self->is_atm_bet
+        and $self->timeindays->amount <= 7)
+    {
         if ($start_date_sec_to_close < 3600) {
             push @errors,
                 {
@@ -2411,9 +2561,18 @@ sub _validate_start_date {
 
     }
 
-    if ($self->is_intraday and not $self->is_atm_bet and $self->underlying->market->name eq 'forex') {
+    if (    $self->is_intraday
+        and not $self->is_atm_bet
+        and $self->underlying->market->name eq 'forex')
+    {
         my $start_epoch = $self->effective_start->epoch;
-        if (my $tentative = first { $start_epoch >= $_->{blankout} and $start_epoch <= $_->{blankout_end} } @{$self->tentative_events}) {
+        if (
+            my $tentative = first {
+                $start_epoch >= $_->{blankout}
+                    and $start_epoch <= $_->{blankout_end}
+            }
+            @{$self->tentative_events})
+        {
             push @errors,
                 {
                 message           => format_error_string('tentative economic events blackout period'),
@@ -2464,7 +2623,10 @@ sub _validate_expiry_date {
                 locale   => BOM::Platform::Context::request()->language
             );
             my $closing = $exchange->closing_on($self->date_start);
-            if ($closing and $underlying->intradays_must_be_same_day and $closing->epoch < $self->date_expiry->epoch) {
+            if (    $closing
+                and $underlying->intradays_must_be_same_day
+                and $closing->epoch < $self->date_expiry->epoch)
+            {
                 push @errors,
                     {
                     message           => format_error_string('Intraday duration must expire on same day', symbol => $underlying->symbol),
@@ -2490,9 +2652,17 @@ sub _validate_expiry_date {
             }
         }
 
-        if (not $self->is_atm_bet and $self->underlying->market->name eq 'forex') {
+        if (not $self->is_atm_bet
+            and $self->underlying->market->name eq 'forex')
+        {
             my $expiry_epoch = $self->date_expiry->epoch;
-            if (my $tentative = first { $expiry_epoch >= $_->{blankout} and $expiry_epoch <= $_->{blankout_end} } @{$self->tentative_events}) {
+            if (
+                my $tentative = first {
+                    $expiry_epoch >= $_->{blankout}
+                        and $expiry_epoch <= $_->{blankout_end}
+                }
+                @{$self->tentative_events})
+            {
                 push @errors,
                     {
                     message           => format_error_string('tentative economic events blackout period'),
@@ -2505,6 +2675,7 @@ sub _validate_expiry_date {
         }
     } elsif ($self->expiry_daily) {
         my $close = $self->underlying->exchange->closing_on($self->date_expiry);
+
         # if it is not a trading day at expiry, we will catch that later.
         if ($close and not $close->is_same_as($self->date_expiry)) {
             push @errors,
@@ -2549,6 +2720,7 @@ sub _subvalidate_lifetime_tick_expiry {
     my $tick_count = $self->tick_count;
 
     if ($self->tick_expiry and $self->built_with_bom_parameters) {
+
         # we don't offer sellback on tick expiry contracts.
         push @errors,
             {
@@ -2594,18 +2766,23 @@ sub _subvalidate_lifetime_intraday {
     my $expiries_ref = $self->permitted_expiries;
     my $duration = $self->get_time_to_expiry({from => $self->date_start})->seconds;
 
-    # This might be empty because we don't have short-term expiries on some contracts, even though
-    # it's a valid bet type for multi-day contracts.
+# This might be empty because we don't have short-term expiries on some contracts, even though
+# it's a valid bet type for multi-day contracts.
     my $shortest = Time::Duration::Concise::Localize->new(
-        interval => ($expiries_ref->{min}) ? $expiries_ref->{min}->as_concise_string : 0,
+        interval => ($expiries_ref->{min})
+        ? $expiries_ref->{min}->as_concise_string
+        : 0,
         locale => BOM::Platform::Context::request()->language
     );
     my $longest = Time::Duration::Concise::Localize->new(
-        interval => ($expiries_ref->{max}) ? $expiries_ref->{max}->as_concise_string : 0,
+        interval => ($expiries_ref->{max})
+        ? $expiries_ref->{max}->as_concise_string
+        : 0,
         locale => BOM::Platform::Context::request()->language
     );
     if ($self->built_with_bom_parameters) {
         if ($shortest->seconds == 0) {
+
             # Apparently not offered after conversion from ATM
             push @errors,
                 {
@@ -2618,7 +2795,10 @@ sub _subvalidate_lifetime_intraday {
                 message_to_client => localize('Resale of this contract is not offered with less than [_1] remaining.', $shortest->as_string)};
         }
     } else {
-        if (not keys %$expiries_ref or $duration < $shortest->seconds or $duration > $longest->seconds) {
+        if (   not keys %$expiries_ref
+            or $duration < $shortest->seconds
+            or $duration > $longest->seconds)
+        {
             my $asset_text = localize('Asset Index');
             my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
             push @errors,
@@ -2684,6 +2864,7 @@ sub _subvalidate_lifetime_days {
             };
     }
     if (not $self->is_atm_bet) {
+
         # For definite ATM contracts we do not have to check for upcoming holidays.
         my $times_text    = localize('Trading Times');
         my $trading_days  = $self->exchange->trading_days_between($date_start, $date_expiry);
@@ -2696,7 +2877,8 @@ sub _subvalidate_lifetime_days {
                 ($self->built_with_bom_parameters)
                 ? localize('Resale of this contract is not offered due to market holiday during contract period.')
                 : localize("Market holiday during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
-            # It's only safer, not safe, because if there are more holidays it still might go nuts.
+
+# It's only safer, not safe, because if there are more holidays it still might go nuts.
             my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             push @errors,
                 {
@@ -2705,7 +2887,10 @@ sub _subvalidate_lifetime_days {
                 info_link         => $times_link,
                 info_text         => $times_text,
                 };
-        } elsif ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
+        } elsif ($underlying->market->equity
+            and $trading_days <= 4
+            and $holiday_days >= 2)
+        {
             my $safer_expiry = $date_expiry;
             my $trade_count  = $trading_days;
             while ($trade_count < 4) {
@@ -2736,9 +2921,10 @@ sub _subvalidate_lifetime_days {
         and (  $date_expiry->day_of_year > $date_start->day_of_year
             or $date_expiry->day_of_year <= BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_end}))
     {
-        # Assumes that the black out period always extends over Jan 1 into the next year.
+# Assumes that the black out period always extends over Jan 1 into the next year.
         my $year = $date_expiry->year;
-        $year-- if ($date_expiry->day_of_year < $date_start->day_of_year);    # Expiry is into next year, already.
+        $year--
+            if ($date_expiry->day_of_year < $date_start->day_of_year);    # Expiry is into next year, already.
         my $end_of_bo =
             Date::Utility->new('31-Dec-' . $year)
             ->plus_time_interval(BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_end} . 'd');
@@ -2805,7 +2991,10 @@ sub _validate_volsurface {
             ),
             message_to_client => $standard_message,
             };
-    } elsif ($self->market->name eq 'indices' and $surface_age->hours > 24 and not $self->is_atm_bet) {
+    } elsif ($self->market->name eq 'indices'
+        and $surface_age->hours > 24
+        and not $self->is_atm_bet)
+    {
         push @errors,
             {
             message => format_error_string(
