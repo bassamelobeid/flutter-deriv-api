@@ -107,8 +107,7 @@ sub validate_payment {
 
             # avoids obscure rounding errors after currency conversion
             if ($absamt > $wd_left + 0.001) {
-                die sprintf "Withdrawal amount [%s %.2f] exceeds withdrawal limit [%s %.2f].\n",
-                    $currency, $absamt, $currency, $wd_left;
+                die sprintf "Withdrawal amount [%s %.2f] exceeds withdrawal limit [%s %.2f].\n", $currency, $absamt, $currency, $wd_left;
             }
         } else {
             my $for_days = $lc_limits->for_days;
