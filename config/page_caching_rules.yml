@@ -233,6 +233,12 @@
 "/paymentagent/transferws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/user/reality_check_frequencyws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/user/reality_check_summaryws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/get-started-jp":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
