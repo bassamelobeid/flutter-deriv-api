@@ -149,7 +149,7 @@ sub _build_basis_tick {
 
     my ($basis_tick, $potential_error);
 
-    if (not $self->pricing_new) {
+    if (not($self->pricing_new or $self->is_after_expiry)) {
         $basis_tick      = $self->entry_tick;
         $potential_error = localize('Waiting for entry tick.');
     } else {
@@ -1147,17 +1147,9 @@ sub is_valid_to_sell {
     }
 
     if ($self->is_after_expiry) {
-        if (not $self->exit_tick and not $self->tick_expiry) {
-            $self->add_error({
-                message           => 'waiting for exit tick',
-                message_to_client => localize('Please wait for contract settlement.'),
-            });
-        } elsif (my $error = $self->_invalid_exit_conditions) {
-            $self->missing_market_data(1);
-            $self->add_error({
-                message           => $error,
-                message_to_client => localize('The buy price of this contract will be refunded due to missing market data.'),
-            });
+        if (my ($ref, $hold_for_exit_tick) = $self->_validate_settlement_conditions) {
+            $self->missing_market_data(1) if not $hold_for_exit_tick;
+            $self->add_error($ref);
         }
     } elsif (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
         # Their errors are our errors, now!
@@ -1176,24 +1168,44 @@ sub is_valid_to_sell {
 }
 
 # PRIVATE method.
-
-sub _invalid_exit_conditions {
+sub _validate_settlement_conditions {
     my $self = shift;
 
-    return 'entry tick is undefined' if not $self->entry_tick;
+    my $message;
+    my $hold_for_exit_tick = 0;
+    if ($self->tick_expiry) {
+        $message = 'exit tick undefined after 5 minutes of contract start' if not $self->exit_tick;
+    } else {
+        # intraday or daily expiry
+        if (not $self->entry_tick) {
+            $message = 'entry tick is undefined';
+        } elsif ($self->is_forward_starting
+            and ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds))
+        {
+            # A start now contract will not be bought if we have missing feed.
+            # We are doing the same thing for forward starting contracts.
+            $message = 'entry tick is too old';
+        } elsif (not $self->exit_tick) {
+            $message            = 'exit tick is undefined';
+            $hold_for_exit_tick = 1;
+        } elsif ($self->entry_tick->epoch == $self->exit_tick->epoch) {
+            $message = 'only one tick throughout contract period';
+        } elsif ($self->entry_tick->epoch > $self->exit_tick->epoch) {
+            $message = 'entry tick is after exit tick';
+        }
+    }
 
-    # A start now contract will not be bought if we have missing feed.
-    # We are doing the same thing for forward starting contracts.
-    return 'entry tick is too old'
-        if ($self->is_forward_starting
-        and ($self->date_start->epoch - $self->entry_tick->epoch > $self->underlying->max_suspend_trading_feed_delay->seconds));
-    return 'exit tick is undefined' if not $self->exit_tick;
-    return 'only one tick throughout contract period'
-        if $self->entry_tick->epoch == $self->exit_tick->epoch;
-    return 'entry tick is after exit tick'
-        if $self->entry_tick->epoch > $self->exit_tick->epoch;
+    return if not $message;
 
-    return;
+    my $refund = 'The buy price of this contract will be refunded due to missing market data.';
+    my $wait   = 'Please wait for contract settlement.';
+
+    my $ref = {
+        message           => $message,
+        message_to_client => ($hold_for_exit_tick ? $wait : $refund),
+    };
+
+    return ($ref, $hold_for_exit_tick);
 }
 
 #  If your price is payout * some probability, just use this.
