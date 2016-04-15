@@ -265,18 +265,6 @@ table#client_edit td{
             </select>
         </td>
     </tr>
-    [% IF client.broker == 'CR' %]
-    <tr>
-        <td class="label">Show Authenticate</td>
-        <td>:
-            <select name="can_authenticate">
-                [% can_authenticate = client.get_status('can_authenticate') %]
-                <option value="yes" [% IF can_authenticate %]selected="selected"[% END %]>YES</option>
-                <option value="no" [% UNLESS can_authenticate %]selected="selected"[% END %]>NO</option>
-            </select>
-        </td>
-    </tr>
-    [% END %]
     <tr>
         <td class="small_header" colspan="2">#Custom Limits </td>
     </tr>
