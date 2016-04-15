@@ -1348,6 +1348,7 @@ subtest 'max_payout_open_bets validation', sub {
             contract    => $contract,
             price       => 5.37,
             payout      => $contract->payout,
+            purchase_date => $contract->date_start,
             amount_type => 'payout',
         });
 
@@ -1369,6 +1370,7 @@ subtest 'max_payout_open_bets validation', sub {
                     price       => 5.37,
                     payout      => $contract->payout,
                     amount_type => 'payout',
+                    purchase_date => $contract->date_start,
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Product::Transaction->new({
@@ -1377,6 +1379,7 @@ subtest 'max_payout_open_bets validation', sub {
                     price       => 5.37,
                     payout      => $contract->payout,
                     amount_type => 'payout',
+                    purchase_date => $contract->date_start,
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
