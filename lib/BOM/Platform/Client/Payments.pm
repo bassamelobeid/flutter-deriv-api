@@ -92,10 +92,23 @@ sub validate_payment {
             die "Invalid landing company - $lc\n";
         }
 
+        # for CR & JP, only check for lifetime limits (in client's currency)
         if ($lc eq 'costarica' or $lc eq 'japan') {
-            my $limit = $lc_limits->limit_for_days;
-            if ($absamt >= $limit) {
-                die "Withdrawal amount [$currency $absamt] exceeds withdrawal limit [$currency $limit].\n";
+            my $wd_epoch = $account->find_payment(
+                select => '-sum(amount) as amount',
+                query  => [
+                    amount               => {lt => 0},
+                    payment_gateway_code => {ne => 'currency_conversion_transfer'}
+                ],
+                )->[0]->amount
+                || 0;
+
+            my $wd_left = $lc_limits->lifetime_limit - $wd_epoch;
+
+            # avoids obscure rounding errors after currency conversion
+            if ($absamt > $wd_left + 0.001) {
+                die sprintf "Withdrawal amount [%s %.2f] exceeds withdrawal limit [%s %.2f].\n",
+                    $currency, $absamt, $currency, $wd_left;
             }
         } else {
             my $for_days = $lc_limits->for_days;
