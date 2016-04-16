@@ -800,10 +800,13 @@ We have two types of expiries:
 sub is_after_expiry {
     my $self = shift;
 
-    return 1
-        if ($self->tick_expiry
-        && ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds)));
-    return 1 if $self->get_time_to_settlement->seconds == 0;
+    if ($self->tick_expiry) {
+        return 1
+            if ($self->exit_tick || ($self->date_pricing->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds));
+    } else {
+        return 1 if $self->get_time_to_settlement->seconds == 0;
+    }
+
     return;
 }
 
