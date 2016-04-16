@@ -149,7 +149,7 @@ sub _build_basis_tick {
 
     my ($basis_tick, $potential_error);
 
-    if (not($self->pricing_new or $self->is_after_expiry)) {
+    if (not $self->pricing_new) {
         $basis_tick      = $self->entry_tick;
         $potential_error = localize('Waiting for entry tick.');
     } else {
