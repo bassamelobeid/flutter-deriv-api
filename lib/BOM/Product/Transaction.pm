@@ -1084,7 +1084,7 @@ sub _build_pricing_comment {
         if ($action eq 'sell') {
             # Can't use $contract->current_tick because it is not 100% true.
             # It depends on when the contract is priced at that second.
-            $tick = $contract->underlying->tick_at($contract->date_pricing->epoch);
+            $tick = $contract->sell_tick;
         } elsif ($action eq 'autosell_expired_contract') {
             $tick = ($contract->is_path_dependent and $contract->hit_tick) ? $contract->hit_tick : $contract->exit_tick;
         }

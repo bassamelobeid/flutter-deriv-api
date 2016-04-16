@@ -16,6 +16,7 @@ use BOM::Platform::Static::Config;
 
 use Date::Utility;
 use BOM::Product::Transaction;
+use Math::Util::CalculatedValue::Validatable;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -1330,6 +1331,15 @@ subtest 'max_payout_open_bets validation', sub {
 
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
+        my $mock_contract    = Test::MockModule->new('BOM::Product::Contract');
+        # we are not testing for price accuracy here so it is fine.
+        my $fake_ask_prob = Math::Util::CalculatedValue::Validatable->new({
+            name => 'ask_probability',
+            description => 'fake ask probability',
+            set_by => 'test',
+            base_amount => 0.537
+        });
+        $mock_contract->mock('ask_probability', sub {note 'mocking ask_probability to 0.537'; $fake_ask_prob});
         my $contract = produce_contract({
             underlying   => 'frxUSDJPY',
             bet_type     => 'FLASHU',
@@ -1344,21 +1354,20 @@ subtest 'max_payout_open_bets validation', sub {
         # I am passing in purchase_time as contract->date_start.
         # We are getting false positive failure of 'ContractAlreadyStarted' on this way too often.
         my $txn = BOM::Product::Transaction->new({
-            client        => $cl,
-            contract      => $contract,
-            price         => 5.37,
-            payout        => $contract->payout,
-            amount_type   => 'payout',
-            purchase_time => $contract->date_start->epoch,
+            client      => $cl,
+            contract    => $contract,
+            price       => 5.37,
+            payout      => $contract->payout,
+            purchase_date => $contract->date_start,
+            amount_type => 'payout',
         });
 
         my $error = do {
             note "Set max_payout_open_positions for MF Client => 29.99";
             BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{maltainvest}->{USD} = 29.99;
-            my $mock_contract    = Test::MockModule->new('BOM::Product::Contract');
             my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
 
-            if ($now->is_a_weekend) {
+            if ($now->is_a_weekend or ($now->day_of_week == 5 and $contract->date_expiry->is_after($now->truncate_to_day->plus_time_interval('21h')))) {
                 $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
                 $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
@@ -1371,6 +1380,7 @@ subtest 'max_payout_open_bets validation', sub {
                     price       => 5.37,
                     payout      => $contract->payout,
                     amount_type => 'payout',
+                    purchase_date => $contract->date_start,
                 })->buy, undef, '1st bet bought';
 
             is +BOM::Product::Transaction->new({
@@ -1379,6 +1389,7 @@ subtest 'max_payout_open_bets validation', sub {
                     price       => 5.37,
                     payout      => $contract->payout,
                     amount_type => 'payout',
+                    purchase_date => $contract->date_start,
                 })->buy, undef, '2nd bet bought';
 
             $txn->buy;
@@ -1411,6 +1422,7 @@ subtest 'max_payout_open_bets validation', sub {
         };
 
         is $error, undef, 'no error';
+        $mock_contract->unmock_all;
     }
     'survived';
     restore_time();

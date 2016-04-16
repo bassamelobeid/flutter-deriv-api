@@ -90,6 +90,7 @@ subtest 'prices without economic events' => sub {
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
                 is $c->ask_probability->amount, $expected->{$c->shortcode}, 'correct ask probability [' . $c->shortcode . ']';
+
             }
             'survived';
         }
