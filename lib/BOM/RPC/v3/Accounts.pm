@@ -545,8 +545,8 @@ sub get_settings {
     $jp_account_status = BOM::RPC::v3::NewAccount::Japan::get_jp_account_status($client) if ($client->landing_company->short eq 'japan-virtual');
 
     # get Japan specific a/c details (eg: daily loss, occupation, trading experience), for Japan real a/c client
-    my %jp_real_settings;
-    %jp_real_settings = BOM::RPC::v3::NewAccount::Japan::get_jp_settings($client) if ($client->landing_company->short eq 'japan');
+    my $jp_real_settings;
+    $jp_real_settings = BOM::RPC::v3::NewAccount::Japan::get_jp_settings($client) if ($client->landing_company->short eq 'japan');
 
     return {
         email        => $client->email,
@@ -571,7 +571,7 @@ sub get_settings {
             )
         ),
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
-        %jp_real_settings ? (%jp_real_settings) : (),
+        $jp_real_settings  ? (jp_settings       => $jp_real_settings)  : (),
     };
 }
 
