@@ -20,7 +20,6 @@ use Quant::Framework::Utils::Test;
 
 initialize_realtime_ticks_db();
 
-my $now    = Date::Utility->new('2005-09-21 06:46:00');
 my $email  = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -32,20 +31,6 @@ my $token = BOM::Platform::SessionCookie->new(
     loginid => $client->loginid,
     email   => $email
 )->token;
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD AUD CAD-AUD);
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'randomindex',
-    {
-        symbol => 'R_50',
-        date   => Date::Utility->new
-    });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_delta',
-    {
-        symbol        => $_,
-        recorded_date => $now
-    }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
 #Create_doc for symbol FPFP
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -90,7 +75,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 ###
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
+#request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
 
 subtest 'get_corporate_actions' => sub {
 
@@ -143,14 +128,14 @@ subtest 'get_corporate_actions' => sub {
     my $expiry = $contract->date_expiry->truncate_to_day;
 
     my $params = {
-        language    => 'ZH_CN',
+#        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
         is_sold     => 0,
     };
 
-    $params = {language => 'ZH_CN'};
+#    $params = {language => 'ZH_CN'};
 
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
