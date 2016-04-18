@@ -134,7 +134,7 @@ sub _get_ask {
 }
 
 sub get_corporate_actions {
-    my $param = shift;
+    my $params = shift;
     my ($short_code, $contract_id, $currency, $is_sold) = @{$params}{qw/short_code contratc_id currency is_sold/};
 
     my $response;
