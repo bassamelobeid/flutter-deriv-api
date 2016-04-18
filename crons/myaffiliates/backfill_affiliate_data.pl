@@ -28,11 +28,9 @@ BOM::Platform::Sysinit::init();
 my $runtime = Date::Utility->new;
 
 my $backfill_manager            = BOM::Platform::MyAffiliates::BackfillManager->new;
-my @mark_first_deposits_report  = $backfill_manager->mark_first_deposits;
 my @backfill_promo_codes_report = $backfill_manager->backfill_promo_codes;
 
 my $full_report = ['Mark First Deposits:', ''];
-push @{$full_report}, @mark_first_deposits_report;
 push @{$full_report}, ('', 'Promo Codes:', '');
 push @{$full_report}, @backfill_promo_codes_report;
 
