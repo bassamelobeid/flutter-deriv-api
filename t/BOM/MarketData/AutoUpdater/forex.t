@@ -35,13 +35,15 @@ BOM::Market::Underlying->new({symbol => 'frxGBPINR'})->set_combined_realtime({
     quote => 100,
 });
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('holiday', {
-    recorded_date => $fake_date,
-    calendar => {
-        '2013-01-01' => {
-            'New Year' => ['FOREX'],
-        }
-    },
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'holiday',
+    {
+        recorded_date => $fake_date,
+        calendar      => {
+            '2013-01-01' => {
+                'New Year' => ['FOREX'],
+            }
+        },
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
@@ -51,7 +53,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
 
 subtest 'Basics.' => sub {
-    my $auf     = BOM::MarketData::AutoUpdater::Forex->new(file => ['t/data/bbdl/vol_points/2012-08-13/fx000000.csv']);
+    my $auf = BOM::MarketData::AutoUpdater::Forex->new(file => ['t/data/bbdl/vol_points/2012-08-13/fx000000.csv']);
     my @symbols = @{$auf->symbols_to_update};
     ok(scalar(@symbols), 'symbols_to_update is non-empty by default.');
     cmp_ok(scalar(@symbols), '==', (grep { /^frx/ } @symbols), 'All symbols_to_udpate are FX.');
