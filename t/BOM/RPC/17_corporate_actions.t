@@ -155,6 +155,7 @@ subtest 'get_corporate_actions' => sub {
             is_double_barrier
             ohlc
             original_barrier
+            adjusted_barrier
             ));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
 

@@ -169,6 +169,13 @@ sub get_corporate_actions {
             });
             my $is_double_barrier = $contract->category->two_barriers;
 
+            if ($is_double_barrier) {
+                $response->{original_low_barrier}  = $contract->barrier->adjustment->{prev_obj}->as_absolute;
+                $response->{original_high_barrier} = $contract->barrier2->adjustment->{prev_obj}->as_absolute;
+            } else {
+                $response->{original_barrier} = $contract->barrier->adjustment->{prev_obj}->as_absolute;
+            }
+
             if (scalar @{$corporate_action} > 0) {
                 foreach my $key (keys $ohlc) {
                     my $action_desc;
@@ -192,11 +199,18 @@ sub get_corporate_actions {
                         last   => $last,
                         action => $action_desc,
                     };
+                    #if ($is_double_barrier) {
+                    #    $response->{original_low_barrier}  = $contract->barrier->adjustment->{prev_obj}->as_absolute;
+                    #    $response->{original_high_barrier} = $contract->barrier2->adjustment->{prev_obj}->as_absolute;
+                    #} else {
+                    #    $response->{original_barrier} = $contract->barrier->adjustment->{prev_obj}->as_absolute;
+                    #}
+
                     if ($is_double_barrier) {
-                        $response->{original_low_barrier}  = $contract->barrier->adjustment->{prev_obj}->as_absolute;
-                        $response->{original_high_barrier} = $contract->barrier2->adjustment->{prev_obj}->as_absolute;
+                        $response->{adjusted_low_barrier}  = $contract->barrier->as_absolute;
+                        $response->{adjusted_high_barrier} = $contract->barrier2->as_absolute;
                     } else {
-                        $response->{original_barrier} = $contract->barrier->adjustment->{prev_obj}->as_absolute;
+                        $response->{adjusted_barrier} = $contract->barrier->as_absolute;
                     }
 
                 }
