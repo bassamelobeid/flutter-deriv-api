@@ -864,6 +864,10 @@ sub set_self_exclusion {
         my $ret = $client->set_exclusion->session_duration_limit($args{session_duration_limit});
         $message .= "- Maximum session duration: $ret\n";
     }
+    if ($args{exclude_until}) {
+        my $ret = $client->set_exclusion->exclude_until($args{exclude_until});
+        $message .= "- Exclude from website until: $ret\n";
+    }
 
     if ($message) {
         my $compliance_email = BOM::Platform::Runtime->instance->app_config->compliance->email;
