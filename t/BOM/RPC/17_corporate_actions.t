@@ -128,6 +128,8 @@ subtest 'get_corporate_actions' => sub {
     };
     my $contract = produce_contract($bet_params);
 
+    my $purchase_date = $now->epoch - 101;
+
     #Create new transactions.
     my $txn = BOM::Product::Transaction->new({
         client        => $client,
@@ -135,7 +137,7 @@ subtest 'get_corporate_actions' => sub {
         price         => 100,
         payout        => $contract->payout,
         amount_type   => 'stake',
-        purchase_date => $args{purchase_date} ? $args{purchase_date} : $purchase_date,
+        purchase_date => $purchase_date,
     });
 
     my $expiry = $contract->date_expiry->truncate_to_day;
@@ -150,7 +152,7 @@ subtest 'get_corporate_actions' => sub {
 
     $params = {language => 'ZH_CN'};
 
-    $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
+    my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (
         qw(ask_price
