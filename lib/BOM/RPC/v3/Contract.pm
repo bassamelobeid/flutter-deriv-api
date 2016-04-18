@@ -14,6 +14,12 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing);
 
+my %name_mapper = (
+    DVD_CASH   => localize('Cash Dividend'),
+    DVD_STOCK  => localize('Stock Dividend'),
+    STOCK_SPLT => localize('Stock Split'),
+);
+
 sub validate_symbol {
     my $symbol    = shift;
     my @offerings = get_offerings_with_filter('underlying_symbol');
@@ -125,6 +131,28 @@ sub _get_ask {
     };
 
     return $response;
+}
+
+sub get_corporate_actions {
+    my $param = shift;
+    my ($short_code, $contract_id, $currency, $is_sold) = @{$params}{qw/short_code contratc_id currency is_sold/};
+
+    my $response;
+    try {
+        my $tv = [Time::HiRes::gettimeofday];
+        my $contract = produce_contract($short_code, $currency, $is_sold);
+
+	$response = { 
+            contract_id         => $contract_id,
+            underlying          => $contract->underlying->symbol,
+            display_name        => $contract->underlying->display_name,
+            currency            => $contract->currency,
+            longcode            => $contract->longcode,
+            shortcode           => $contract->shortcode,
+            payout              => $contract->payout,
+            contract_type       => $contract->code
+        };
+   }
 }
 
 sub get_bid {
