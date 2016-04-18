@@ -182,7 +182,43 @@ subtest 'get_corporate_actions_one_action' => sub {
         purchase_date => $purchase_date,
     });
 
+    $params = {
+#        language    => 'ZH_CN',
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => $client->currency,
+        is_sold     => 0,
+    };
+
     $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
+
+    is_deeply([sort keys %{$result}], [sort @expected_keys]);
+
+    #One action double barrier bet
+    $bet_params = {
+        underlying   => $underlying,
+        bet_type     => 'EXPIRYRANGE',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $starting->plus_time_interval('5m1s'),
+        duration     => '7d',
+        high_barrier => 102,
+        low_barrier  => 98,
+        entry_tick   => $entry_tick,
+        date_pricing => $date_pricing,
+    };
+
+    $contract = produce_contract($bet_params);
+
+    #Create new transactions.
+    $txn = BOM::Product::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => 100,
+        payout        => $contract->payout,
+        amount_type   => 'stake',
+        purchase_date => $purchase_date,
+    });
 
     $params = {
 #        language    => 'ZH_CN',
@@ -192,7 +228,7 @@ subtest 'get_corporate_actions_one_action' => sub {
         is_sold     => 0,
     };
 
-    is_deeply([sort keys %{$result}], [sort @expected_keys]);
+    $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
 };
 
