@@ -93,28 +93,53 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
 
 subtest 'get_corporate_actions' => sub {
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 899,
-        underlying => 'R_50',
-    });
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 850,
-        underlying => 'R_50',
-    });
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch,
-        underlying => 'R_50',
-    });
+    #Create corporate actions
+    my $one_action = {
+        11223344 => {
+            description    => 'Test corp act 1',
+            flag           => 'U',
+            modifier       => 'divide',
+            value          => 1.25,
+            effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
+            type           => 'DVD_STOCK',
+        }};
 
-    my $contract = create_contract(
+    Quant::Framework::Utils::Test::create_doc(
+        'corporate_action',
+        {
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            actions          => $one_action,
+        });
+
+    #create bet params for the corp act
+    my $closing_time = $starting->plus_time_interval('1d')->truncate_to_day->plus_time_interval('23h59m59s');
+    my $bet_params   = {
+        underlying   => $underlying,
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $starting,
+        duration     => '1d',
+        barrier      => 'S0P',
+        entry_tick   => $entry_tick,
+        date_pricing => $closing_time,
+    };
+    my $contract = produce_contract($bet_params);
+
+    #Create new transactions.
+    my $txn = BOM::Product::Transaction->new({
         client        => $client,
-        spread        => 0,
-        current_tick  => $tick,
-        date_start    => $now->epoch - 900,
-        date_expiry   => $now->epoch - 500,
-        purchase_date => $now->epoch - 901
-    );
+        contract      => $contract,
+        price         => 100,
+        payout        => $contract->payout,
+        amount_type   => 'stake',
+        purchase_date => $args{purchase_date} ? $args{purchase_date} : $purchase_date,
+    });
+
+    my $expiry = $contract->date_expiry->truncate_to_day;
+
     my $params = {
         language    => 'ZH_CN',
         short_code  => $contract->shortcode,
@@ -122,30 +147,10 @@ subtest 'get_corporate_actions' => sub {
         currency    => $client->currency,
         is_sold     => 0,
     };
-    my $result =
-        $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
-        ->error_message_is(
-        '在合约期限内出现市场数据中断。对于真实资金账户，我们将尽力修正并恰当地结算合约，不然合约将取消及退款。对于虚拟资金交易，我们将取消交易，并退款。'
-        );
+
     $params = {language => 'ZH_CN'};
 
-    $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
-        ->error_message_is('对不起，在处理您的请求时出错。');
-
-    $contract = create_contract(
-        client => $client,
-        spread => 1
-    );
-
-    $params = {
-        language    => 'ZH_CN',
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => $client->currency,
-        is_sold     => 0,
-    };
-
-    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (
         qw(ask_price
@@ -169,32 +174,6 @@ subtest 'get_corporate_actions' => sub {
             display_name
             ));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
-
-    $contract = create_contract(
-        client => $client,
-        spread => 0
-    );
-
-    $params = {
-        language    => 'ZH_CN',
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => $client->currency,
-        is_sold     => 0,
-    };
-
-    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-
-    push @expected_keys, qw(
-        barrier
-        exit_tick_time
-        exit_tick
-        entry_tick
-        entry_tick_time
-        current_spot
-        entry_spot
-    );
-    is_deeply([sort keys %{$result}], [sort @expected_keys], 'keys of result is correct');
 
 };
 
