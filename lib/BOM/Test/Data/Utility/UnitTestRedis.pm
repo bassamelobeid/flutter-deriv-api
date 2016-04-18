@@ -29,6 +29,7 @@ sub restart_redis_server {
     my $config = <<'EOC';
 daemonize yes
 port 6385
+bind 127.0.0.1
 timeout 0
 loglevel notice
 logfile /tmp/redis_bom_test.log

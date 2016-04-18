@@ -43,13 +43,16 @@ sub dsn {
     my $self                = shift;
     my $db                  = shift || $self->_db_name;
     my $connection_settings = $self->_connection_parameters;
-    return 'dbi:Pg:dbname=' . $db . ';host=' . $connection_settings->{'host'} . ';port=' . $connection_settings->{'port'};
+    my $port                = $db eq 'pgbouncer' ? $connection_settings->{pgbouncer_port} : $connection_settings->{port};
+    my $host                = $db eq 'pgbouncer' ? '/var/run/postgresql' : $connection_settings->{host};
+    return 'dbi:Pg:dbname=' . $db . ';host=' . $host . ';port=' . $port;
 }
 
 sub db_handler {
-    my $self = shift;
-    my $db   = shift;
-    my $dbh  = DBI->connect($self->dsn($db), 'postgres', $self->_connection_parameters->{'password'})
+    my $self     = shift;
+    my $db       = shift;
+    my $password = ($db // '') eq 'pgbouncer' ? '' : $self->_connection_parameters->{'password'};
+    my $dbh      = DBI->connect($self->dsn($db), 'postgres', $password)
         or croak $DBI::errstr;
     return $dbh;
 }
@@ -88,14 +91,23 @@ sub _migrate_changesets {
     $dbh->{PrintError} = 0;
 
     # first teminate all other connections
-    $dbh->do(
-        'select pid, pg_terminate_backend(pid) terminated
+    my $pooler = $self->db_handler('pgbouncer');
+    $pooler->{RaiseError}        = 1;
+    $pooler->{pg_server_prepare} = 0;
+    $pooler->do('PAUSE');
+    #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
+    {
+        local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
+        $dbh->do(
+            'select pid, pg_terminate_backend(pid) terminated
            from pg_stat_get_activity(NULL::integer) s(datid, pid)
           where pid<>pg_backend_pid()'
-    );
+        );
+    }
     $dbh->do('drop database if exists ' . $self->_db_name);
     $dbh->do('create database ' . $self->_db_name);
     $dbh->disconnect();
+    $pooler->do('RESUME');
 
     my $m = DBIx::Migration->new({
         'dsn'      => $self->dsn,
