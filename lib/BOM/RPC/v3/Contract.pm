@@ -165,7 +165,7 @@ sub get_corporate_actions {
                 start => $contract->date_start,
                 end   => $end
             });
-            my $is_double_barrier = $contract->bet_type->two_barriers;
+            my $is_double_barrier = $contract->category->two_barriers;
 
             if (scalar @{$corporate_action} > 0) {
                 foreach my $key (keys $ohlc) {

@@ -155,25 +155,16 @@ subtest 'get_corporate_actions' => sub {
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (
-        qw(ask_price
-            bid_price
-            current_spot_time
-            contract_id
+        qw(contract_id
             underlying
-            is_expired
             is_valid_to_sell
-            is_forward_starting
-            is_path_dependent
-            is_intraday
             date_start
             date_expiry
             date_settlement
             currency
             longcode
             shortcode
-            payout
             contract_type
-            display_name
             ));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
 
