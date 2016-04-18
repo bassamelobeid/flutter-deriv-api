@@ -514,7 +514,8 @@ if ($client->self_exclusion) {
 Bar("$loginid PAYMENT AGENT DETAILS");
 
 # Show Payment-Agent details if this client is also a Payment Agent.
-if (my $payment_agent = $client->payment_agent) {
+my $payment_agent = $client->payment_agent;
+if ($payment_agent) {
     print '<table class="collapsed">';
 
     foreach my $column ($payment_agent->meta->columns) {
@@ -532,7 +533,7 @@ if ($client->landing_company->allows_payment_agents) {
         {
             broker   => $broker,
             loginid  => $loginid,
-            whattodo => "show"
+            whattodo => $payment_agent ? "show" : "create"
         }) . "\">$loginid payment agent details</a></p>";
 } else {
     print '<p>Payment Agents are not available for this account.</p>';
