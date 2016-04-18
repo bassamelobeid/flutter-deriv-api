@@ -37,7 +37,6 @@ use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 my $CLIENT_STATUS_TYPES = {
     age_verification          => 1,
-    can_authenticate          => 1,
     cashier_locked            => 1,
     disabled                  => 1,
     ok                        => 1,
