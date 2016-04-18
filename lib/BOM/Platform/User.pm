@@ -116,7 +116,15 @@ sub login {
     $cfl->delete if $cfl;    # delete client failed login
     BOM::System::AuditLog::log('successful login', $self->email);
     stats_inc("business.log_in.success");
-    return {success => 1};
+
+    my $success = {success => 1};
+
+    if (@self_excluded > 0) {
+        my %excluded = map { $_->loginid => 1 } @self_excluded;
+        $success->{self_excluded} = \%excluded;
+    }
+
+    return $success;
 }
 
 # Get my enabled client objects, in loginid order but with reals up first.  Use the replica db for speed.

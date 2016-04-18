@@ -1,8 +1,7 @@
 commission:
   intraday:
-    historical_fixed: 0.0125
+    historical_fixed: 0.02
     historical_vol_meanrev: 0.10
-    historical_iv_risk: 10
   digital_spread:
     level_multiplier: 1.4
   maximum_total_markup: 50
