@@ -90,9 +90,11 @@ subtest 'create VRTJ & JP client' => sub {
 };
 
 my @jp_only = qw(
+    gender
+    occupation
+    daily_loss_limit
     annual_income
     financial_asset
-    daily_loss_limit
     trading_experience_equities
     trading_experience_commodities
     trading_experience_foreign_currency_deposit
@@ -107,7 +109,7 @@ my @jp_only = qw(
 
 subtest 'VRTJ get_settings' => sub {
     $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
-    is $res->{$_}, undef, "undef: $_" for (@jp_only);
+    is($res->{jp_settings}, undef, "no JP settings for Japan Virtual Acc");
 };
 
 subtest 'JP get_settings' => sub {
@@ -118,17 +120,15 @@ subtest 'JP get_settings' => sub {
 
     $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
 
-    my %jp_expected = (
+    my %jp_specific = (
         salutation    => '',
         country_code  => 'jp',
         date_of_birth => Date::Utility->new($jp_client_details{date_of_birth})->epoch
     );
 
-    my @all = qw(
-        gender
+    my @settings = qw(
         first_name
         last_name
-        occupation
         address_line_1
         address_line_2
         address_city
@@ -136,10 +136,13 @@ subtest 'JP get_settings' => sub {
         address_postcode
         phone
     );
-    @all = (@all, @jp_only);
-    $jp_expected{$_} = $jp_client_details{$_} for (@all);
 
-    is($res->{$_}, $jp_expected{$_}, "OK: $_") for (keys %jp_expected);
+    # fields common for all clients
+    is($res->{$_}, $jp_client_details{$_}, "OK: $_" ) for (@settings);
+    is($res->{$_}, $jp_specific{$_}, "OK: $_" ) for (keys %jp_specific);
+
+    # fields only for Japan real client
+    is($res->{jp_settings}->{$_}, $jp_client_details{$_}, "OK: $_") for (@jp_only);
 };
 
 subtest 'non-JP client get_settings' => sub {
@@ -182,9 +185,8 @@ subtest 'non-JP client get_settings' => sub {
 
     subtest 'VRTC - get_settings' => sub {
         $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
-        is($res->{$_}, undef, "undef : $_") for (@jp_only);
+        is($res->{jp_settings}, undef, "no jp_settings for VRTC");
     };
-
 };
 
 sub create_vr_account {

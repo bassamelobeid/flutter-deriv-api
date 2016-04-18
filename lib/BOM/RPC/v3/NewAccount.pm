@@ -92,10 +92,8 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span style="background: #f2f2f2; padding: 10px;">'
-                            . $params->{code}
-                            . '</span></p></p>'
-                    )
+                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span style="background: #f2f2f2; padding: 10px;">[_1]</span></p></p>',
+                        $params->{code})
                 ],
                 use_email_template => 1
             });
@@ -107,10 +105,8 @@ sub verify_email {
                     subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
                     message => [
                         BOM::Platform::Context::localize(
-                            '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account:<p><span style="background: #f2f2f2; padding: 10px;">'
-                                . $params->{code}
-                                . '</span></p></p><p>Enjoy trading with us on Binary.com.</p>'
-                        )
+                            '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span style="background: #f2f2f2; padding: 10px;">[_1]</span></p></p><p>Enjoy trading with us on Binary.com.</p>',
+                            $params->{code})
                     ],
                     use_email_template => 1
                 });
@@ -120,9 +116,11 @@ sub verify_email {
                     to      => $params->{email},
                     subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
                     message => [
-                        BOM::Platform::Context::localize(
-                            '<div style="line-height:200%;color:#333333;font-size:15px;"><p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p></div>'
-                        )
+                        '<div style="line-height:200%;color:#333333;font-size:15px;">'
+                            . BOM::Platform::Context::localize(
+                            '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p>'
+                            )
+                            . '</div>'
                     ],
                     use_email_template => 1
                 });
@@ -134,10 +132,8 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span style="background: #f2f2f2; padding: 10px;">'
-                            . $params->{code}
-                            . '</span></p></p>'
-                    )
+                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span style="background: #f2f2f2; padding: 10px;">[_1]</span></p></p>',
+                        $params->{code})
                 ],
                 use_email_template => 1
             });
@@ -345,6 +341,7 @@ sub _get_client_details {
         address_city address_state address_postcode phone secret_question secret_answer);
 
     if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
+        my $dob_error;
         try {
             my $dob = DateTime->new(
                 year  => $1,
@@ -353,7 +350,13 @@ sub _get_client_details {
             );
             $args->{date_of_birth} = $dob->ymd;
         }
-        catch { return; } or return {error => 'invalid DOB'};
+        catch {
+            $dob_error = {
+                error => {
+                    code    => 'InvalidDateOfBirth',
+                    message => localize('Date of birth is invalid')}};
+        };
+        return $dob_error if $dob_error;
     }
 
     foreach my $key (@fields) {

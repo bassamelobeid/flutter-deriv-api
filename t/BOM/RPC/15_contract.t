@@ -29,13 +29,19 @@ my $token = BOM::Platform::SessionCookie->new(
     email   => $email
 )->token;
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD AUD CAD-AUD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_50',
         date   => Date::Utility->new
     });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
@@ -169,7 +175,7 @@ subtest 'get_ask' => sub {
         "duration_unit" => "s",
         "symbol"        => "R_50",
     };
-    my $result = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
@@ -183,19 +189,19 @@ subtest 'get_ask' => sub {
 
     $params->{symbol} = "invalid symbol";
     is_deeply(
-        BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
+        BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
         {
             error => {
-                message => '不在此段期间提供交易。',
-                code    => "ContractBuyValidationError",
+                message_to_client => '不在此段期间提供交易。',
+                code              => "ContractBuyValidationError",
             }});
 
     is_deeply(
-        BOM::RPC::v3::Contract::get_ask({}),
+        BOM::RPC::v3::Contract::_get_ask({}),
         {
             error => {
-                message => '无法创建合约',
-                code    => "ContractCreationFailure",
+                message_to_client => '无法创建合约',
+                code              => "ContractCreationFailure",
             }});
 
 };
@@ -237,7 +243,7 @@ subtest 'send_ask' => sub {
                 args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
-        $mock_contract->mock('get_ask', sub { die });
+        $mock_contract->mock('_get_ask', sub { die });
         $c->call_ok(
             'send_ask',
             {
@@ -386,6 +392,70 @@ subtest $method => sub {
         'result is ok'
     );
 
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 899,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9936
+    });
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 501,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9938
+    });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 499,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9939
+    });
+
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9935
+    });
+    $contract = create_contract(
+        client        => $client,
+        spread        => 0,
+        current_tick  => $tick,
+        underlying    => 'frxAUDCAD',
+        date_start    => $now->epoch - 900,
+        date_expiry   => $now->epoch - 500,
+        purchase_date => $now->epoch - 901
+    );
+    $params = {
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => 'USD',
+        language    => 'zh_CN',
+    };
+
+    my $res = $c->call_ok('get_bid', $params)->result;
+
+    my $expected_result = {
+        'ask_price'       => '205.70',
+        'barrier'         => '0.99360',
+        'bid_price'       => '205.70',
+        'contract_id'     => 10,
+        'currency'        => 'USD',
+        'date_expiry'     => 1127287060,
+        'date_settlement' => 1127287060,
+        'date_start'      => 1127286660,
+        'entry_spot'      => '0.99360',
+        'entry_tick'      => '0.99360',
+        'entry_tick_time' => 1127286661,
+        'exit_tick'       => '0.99380',
+        'exit_tick_time'  => 1127287059,
+        'longcode' =>
+            '如果澳元/加元在合约开始时间之后到6 分钟 40 秒钟时严格高于入市现价，将获得USD205.70的赔付额。',
+        'shortcode'  => 'CALL_FRXAUDCAD_205.7_1127286660_1127287060_S0P_0',
+        'underlying' => 'frxAUDCAD',
+    };
+
+    foreach my $key (keys %$expected_result) {
+        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
+    }
+
 };
 
 done_testing();
@@ -411,9 +481,10 @@ sub create_contract {
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
+    my $symbol        = $args{underlying} ? $args{underlying} : 'R_50';
     my $date_start    = $now->epoch - 100;
     my $date_expiry   = $now->epoch - 50;
-    my $underlying    = BOM::Market::Underlying->new('R_50');
+    my $underlying    = BOM::Market::Underlying->new($symbol);
     my $purchase_date = $now->epoch - 101;
     my $contract_data = {
         underlying   => $underlying,
