@@ -93,17 +93,6 @@ sub cashier {
             code              => 'ASK_UK_FUNDS_PROTECTION',
             message_to_client => localize('Client is not fully authenticated.'),
         });
-
-        # if ($r->param('ukgc_funds_protection') and $r->param('ukgc_funds_protection') eq 'ok') {
-        #     $client->set_status('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds');
-        #     $client->save;
-        # } else {
-        #     return $c->render_tt(
-        #         template => 'cashier/ukgc_funds_protection_message',
-        #         action   => $action,
-        #         currency => $currency,
-        #     );
-        # }
     }
 
     my $error = '';
