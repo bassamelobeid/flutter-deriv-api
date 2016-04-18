@@ -77,7 +77,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 #request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
 
-subtest 'get_corporate_actions' => sub {
+subtest 'get_corporate_actions_one_action' => sub {
 
     #Create corporate actions
     my $one_action = {
@@ -113,8 +113,6 @@ subtest 'get_corporate_actions' => sub {
     };
     my $contract = produce_contract($bet_params);
 
-    print "Test \n ";
-
     my $purchase_date = $date->epoch;
 
     #Create new transactions.
@@ -139,8 +137,6 @@ subtest 'get_corporate_actions' => sub {
 
 #    $params = {language => 'ZH_CN'};
 
-    print "before call ok \n";
-
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (
@@ -157,6 +153,45 @@ subtest 'get_corporate_actions' => sub {
             original_barrier
             adjusted_barrier
             ));
+    is_deeply([sort keys %{$result}], [sort @expected_keys]);
+
+    #one action on single barrier path dependent bet.
+    my $date_pricing = $starting->plus_time_interval('1d');
+
+    $bet_params = {
+        underlying   => $underlying,
+        bet_type     => 'ONETOUCH',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $starting,
+        duration     => '7d',
+        barrier      => 99,
+        entry_tick   => $entry_tick,
+        date_pricing => $date_pricing,
+    };
+
+    $contract = produce_contract($bet_params);
+
+    #Create new transactions.
+    $txn = BOM::Product::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => 100,
+        payout        => $contract->payout,
+        amount_type   => 'stake',
+        purchase_date => $purchase_date,
+    });
+
+    $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
+
+    $params = {
+#        language    => 'ZH_CN',
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => $client->currency,
+        is_sold     => 0,
+    };
+
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
 
 };
