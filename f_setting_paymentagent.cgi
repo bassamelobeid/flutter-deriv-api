@@ -82,6 +82,11 @@ if ($whattodo eq 'show') {
     code_exit_BO();
 } elsif ($whattodo eq 'apply') {
     my $pa = BOM::Platform::Client::PaymentAgent->new({loginid => $loginid});
+    unless ($pa) {
+        my $client = BOM::Platform::Client->new({loginid => $loginid});
+        # if its new so we need to set it
+        $pa = $client->set_payment_agent unless $pa;
+    }
     # curr-codes are hidden fields set at form-build time.
     # set 1st curr-code if USD or GBP present.
     # set 2nd curr-code if both are present.

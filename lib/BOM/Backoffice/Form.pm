@@ -819,4 +819,8 @@ sub _select_yes_no {
             text  => localize('No')}];
 }
 
+sub _email_check_regexp {
+    return '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$';
+}
+
 1;
