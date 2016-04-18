@@ -127,43 +127,7 @@ sub _migrate_changesets {
     }
 
     if (-f $self->changesets_location . '/unit_test_dml.sql') {
-        my ($fh, $fn) = tempfile undef, UNLINK => 1;
-        $fh->autoflush(1);
-
-        my ($dbname, $dbuser, $dbhost, $dbport, $dbpass) = @{$m->{_dbh}}{qw/pg_db pg_user pg_host pg_port pg_pass/};
-
-        local @ENV{qw/PGPASSFILE PGHOST PGPORT PGDATABASE PGUSER/} = ($fn, $dbhost, $dbport, $dbname, $dbuser);
-        print $fh "$dbhost:$dbport:$dbname:$dbuser:$dbpass\n";
-
-        local $SIG{PIPE} = 'IGNORE';
-
-        my $pid = open my $psql_in, '|-';    ## no critic
-        die "Cannot start psql: $!\n" unless defined $pid;
-        unless ($pid) {
-            open STDOUT, '>', '/dev/null' or warn "Cannot open /dev/null: $!\n";
-            exec qw/psql -q -v ON_ERROR_STOP=1/;
-            warn "Cannot exec psql: $!\n";
-            CORE::exit 254;
-        }
-
-        print $psql_in "SET client_min_messages TO warning;\n"        or die "Cannot write to psql: $!\n";
-        print $psql_in "SET session_replication_role TO 'replica';\n" or die "Cannot write to psql: $!\n";
-        my $name = $self->changesets_location . '/unit_test_dml.sql';
-        print $psql_in "\\i $name\n"                                    or die "Cannot write to psql: $!\n";
-        print $psql_in ";\nSET session_replication_role TO 'origin';\n" or die "Cannot write to psql: $!\n";
-        close $psql_in and return;
-
-        $! and die "Cannot write to psql: $!\n";
-
-        my $sig = $? & 0x7f;    # ignore the highest bit which indicates a coredump
-        die "psql killed by signal $sig" if $sig;
-
-        my $rc = $? >> 8;
-        die "psql returns 1 (out of memory, file not found or similar)\n" if $rc == 4;
-        die "psql returns 2 (connection problem)\n"                       if $rc == 2;
-        die "psql returns 3 (script error)\n"                             if $rc == 3;
-        die "cannot exec psql\n"                                          if $rc == 254;
-        die "psql returns unexpected code $rc\n";
+        $m->psql_full("SET session_replication_role TO 'replica';\n", ";\nSET session_replication_role TO 'origin';\n", $self->changesets_location . '/unit_test_dml.sql')
     }
 
     return 1;
