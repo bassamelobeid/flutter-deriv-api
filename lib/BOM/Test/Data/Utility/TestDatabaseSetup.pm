@@ -107,15 +107,17 @@ sub _migrate_changesets {
             push @bouncer_dbs, $b_db;
 
             try {
-                $pooler->do('DISABLE "'.$b_db.'"');
+                $pooler->do('DISABLE "' . $b_db . '"');
                 #$pooler->do('PAUSE "'.$b_db.'"');
-            } catch {
+            }
+            catch {
                 print "[pgbouncer] DISABLE $b_db error [$_]";
             };
 
             try {
-                $pooler->do('KILL "'.$b_db.'"');
-            } catch {
+                $pooler->do('KILL "' . $b_db . '"');
+            }
+            catch {
                 print "[pgbouncer] KILL $b_db error [$_]";
             };
         }
@@ -168,13 +170,15 @@ sub _migrate_changesets {
 
         try {
             $pooler->do('ENABLE "' . $b_db . '"');
-        } catch {
+        }
+        catch {
             print "[pgbouncer] ENABLE $b_db error [$_]";
         };
 
         try {
             $pooler->do('RESUME "' . $b_db . '"');
-        } catch {
+        }
+        catch {
             print "[pgbouncer] RESUME $b_db error [$_]";
         };
     }
