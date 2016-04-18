@@ -2,7 +2,6 @@ use strict;
 use warnings;
 use utf8;
 use Test::BOM::RPC::Client;
-use Test::MockTime qw/:all/;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
@@ -30,7 +29,8 @@ my $token = BOM::Platform::SessionCookie->new(
     email   => $email
 )->token;
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD AUD CAD-AUD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_ , recorded_date => $now}) for qw(USD AUD CAD-AUD);
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
@@ -415,7 +415,6 @@ subtest $method => sub {
         underlying => 'frxAUDCAD',
         quote      => 0.9935
     });
-    set_absolute_time($now->epoch - 500);
 
     $contract = create_contract(
         client        => $client,
@@ -424,7 +423,8 @@ subtest $method => sub {
         underlying    => 'frxAUDCAD',
         date_start    => $now->epoch - 900,
         date_expiry   => $now->epoch - 500,
-        purchase_date => $now->epoch - 901
+        purchase_date => $now->epoch - 901,
+        date_pricing  => $now->epoch,
     );
     $params = {
         short_code  => $contract->shortcode,
@@ -434,7 +434,6 @@ subtest $method => sub {
         is_sold     => 1,
     };
     my $res = $c->call_ok('get_bid', $params)->result;
-
     my $expected_result = {
         'ask_price'       => '208.18',
         'barrier'         => '0.99360',
@@ -499,6 +498,7 @@ sub create_contract {
         date_expiry  => $args{date_expiry} ? $args{date_expiry} : $date_expiry,
         barrier      => 'S0P',
     };
+    if ($args{date_pricing}) { $contract_data->{date_pricing} = $args{date_pricing}; }
 
     if ($args{spread}) {
         delete $contract_data->{date_expiry};
