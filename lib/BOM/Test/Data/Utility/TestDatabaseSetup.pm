@@ -95,24 +95,30 @@ sub _migrate_changesets {
     $pooler->{RaiseError}        = 1;
     $pooler->{pg_server_prepare} = 0;
 
-    my @bouncer_dbs;
-    if ($self->_db_name eq 'regentmarkets') {
-        @bouncer_dbs = ('fog-write', 'fog-replica');
-    } else {
-        my %map = (
-            auth      => 'authdb',
-            users     => 'userdb',
-            chronicle => 'chronicle',
-            feed      => 'feed-replica',
-        );
-        @bouncer_dbs = ($map{$self->_db_name});
-    }
-
     my $b_db;
-    foreach (@bouncer_dbs) {
-        $b_db = $_;
-        $pooler->do('DISABLE "' . $b_db . '"');
-        $pooler->do('KILL "' . $b_db . '"');
+    my @bouncer_dbs;
+
+    my $sth = $pooler->prepare('SHOW DATABASES');
+    $sth->execute;
+
+    while (my $row = $sth->fetchrow_hashref) {
+        if ($row->{database} eq $self->_db_name) {
+            $b_db = $row->{name};
+            push @bouncer_dbs, $b_db;
+
+            try {
+                $pooler->do('DISABLE "'.$b_db.'"');
+                #$pooler->do('PAUSE "'.$b_db.'"');
+            } catch {
+                print "[pgbouncer] DISABLE $b_db error [$_]";
+            };
+
+            try {
+                $pooler->do('KILL "'.$b_db.'"');
+            } catch {
+                print "[pgbouncer] KILL $b_db error [$_]";
+            };
+        }
     }
 
     #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
@@ -159,8 +165,18 @@ sub _migrate_changesets {
 
     foreach (@bouncer_dbs) {
         $b_db = $_;
-        $pooler->do('ENABLE "' . $b_db . '"');
-        $pooler->do('RESUME "' . $b_db . '"');
+
+        try {
+            $pooler->do('ENABLE "' . $b_db . '"');
+        } catch {
+            print "[pgbouncer] ENABLE $b_db error [$_]";
+        };
+
+        try {
+            $pooler->do('RESUME "' . $b_db . '"');
+        } catch {
+            print "[pgbouncer] RESUME $b_db error [$_]";
+        };
     }
 
     return 1;
