@@ -142,17 +142,81 @@ sub get_corporate_actions {
         my $tv = [Time::HiRes::gettimeofday];
         my $contract = produce_contract($short_code, $currency, $is_sold);
 
-	$response = { 
-            contract_id         => $contract_id,
-            underlying          => $contract->underlying->symbol,
-            display_name        => $contract->underlying->display_name,
-            currency            => $contract->currency,
-            longcode            => $contract->longcode,
-            shortcode           => $contract->shortcode,
-            payout              => $contract->payout,
-            contract_type       => $contract->code
+        $response = {
+            contract_id   => $contract_id,
+            underlying    => $contract->underlying->symbol,
+            display_name  => $contract->underlying->display_name,
+            currency      => $contract->currency,
+            longcode      => $contract->longcode,
+            shortcode     => $contract->shortcode,
+            payout        => $contract->payout,
+            contract_type => $contract->code
         };
-   }
+
+        my $underlying = BOM::Market::Underlying->new($contract->underlying->symbol);
+
+        #Codes to add CA info
+        if ($underlying->market->affected_by_corporate_actions) {
+
+            my $end              = $contract->date_expiry > Date::Utility->new->epoch ? Date::Utility->new->epoch : $contract->date_expiry;
+            my $table_info       = {};
+            my $corporate_action = $contract->corporate_actions;
+            my $ohlc             = $underlying->get_daily_ohlc_table({
+                start => $contract->date_start,
+                end   => $end
+            });
+            my $is_double_barrier = $contract->bet_type->two_barriers;
+
+            if (scalar @{$corporate_action} > 0) {
+                foreach my $key (keys $ohlc) {
+                    my $action_desc;
+                    my $date = Date::Utility->new($ohlc->[$key]->[0])->epoch;
+                    foreach my $action (@{$corporate_action}) {
+                        if ($date == Date::Utility->new($action->{effective_date})->epoch) {
+                            $action_desc = $name_mapper{$action->{type}} . " " . $action->{value} . ":1";
+                        }
+                    }
+
+                    my $open         = $ohlc->[$key]->[1];
+                    my $high         = $ohlc->[$key]->[2];
+                    my $low          = $ohlc->[$key]->[3];
+                    my $last         = $ohlc->[$key]->[4];
+                    my $display_date = Date::Utility->new($ohlc->[$key]->[0])->date_ddmmmyyyy;
+                    $table_info->{$display_date} = {
+                        date   => $display_date,
+                        open   => $open,
+                        high   => $high,
+                        low    => $low,
+                        last   => $last,
+                        action => $action_desc,
+                    };
+                    if ($is_double_barrier) {
+                        $response->{original_low_barrier}  = $contract->barrier->adjustment->{prev_obj}->as_absolute;
+                        $response->{original_high_barrier} = $contract->barrier2->adjustment->{prev_obj}->as_absolute;
+                    } else {
+                        $response->{original_barrier} = $contract->barrier->adjustment->{prev_obj}->as_absolute;
+                    }
+
+                }
+            }
+
+            $response->{is_double_barrier} = $is_double_barrier;
+            $response->{ohlc}              = $table_info;
+        }
+        my $pen = $contract->pricing_engine_name;
+        $pen =~ s/::/_/g;
+        stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
+
+    }
+    catch {
+        $response = {
+            error => {
+                message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+                code              => "GetCorporateActionsFailure"
+            }};
+    };
+
+    return $response;
 }
 
 sub get_bid {
