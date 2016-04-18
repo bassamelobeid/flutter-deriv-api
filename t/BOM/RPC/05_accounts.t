@@ -1299,7 +1299,11 @@ subtest 'get and set self_exclusion' => sub {
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
 
     delete $params->{args};
-    is($c->tcall('get_self_exclusion', $params)->{error}{message_to_client}, '令牌无效。', 'this client is inivalid now');
+    is(
+        $c->tcall('get_self_exclusion', $params)->{error}{message_to_client},
+        '对不起，您已禁止自己，直到2016-11-18T00:00:00。',
+        'this client has self excluded'
+    );
 
     $test_client->load();
     my $self_excl = $test_client->get_self_exclusion;
