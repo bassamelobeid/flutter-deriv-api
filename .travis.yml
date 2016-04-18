@@ -11,7 +11,6 @@ services:
     - redis-server
 cache: apt
 env:
-    - TEST_SUITE=v2
     - TEST_SUITE=v3
     - TEST_SUITE=structure
     - TEST_SUITE=leaktest
