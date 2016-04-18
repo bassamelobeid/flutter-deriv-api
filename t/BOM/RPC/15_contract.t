@@ -29,7 +29,8 @@ my $token = BOM::Platform::SessionCookie->new(
     email   => $email
 )->token;
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD AUD CAD-AUD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_ , recorded_date => $now}) for qw(USD AUD CAD-AUD);
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
@@ -414,6 +415,7 @@ subtest $method => sub {
         underlying => 'frxAUDCAD',
         quote      => 0.9935
     });
+
     $contract = create_contract(
         client        => $client,
         spread        => 0,
@@ -421,21 +423,21 @@ subtest $method => sub {
         underlying    => 'frxAUDCAD',
         date_start    => $now->epoch - 900,
         date_expiry   => $now->epoch - 500,
-        purchase_date => $now->epoch - 901
+        purchase_date => $now->epoch - 901,
+        date_pricing  => $now->epoch,
     );
     $params = {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => 'USD',
         language    => 'zh_CN',
+        is_sold     => 1,
     };
-
     my $res = $c->call_ok('get_bid', $params)->result;
-
     my $expected_result = {
-        'ask_price'       => '205.70',
+        'ask_price'       => '208.18',
         'barrier'         => '0.99360',
-        'bid_price'       => '205.70',
+        'bid_price'       => '208.18',
         'contract_id'     => 10,
         'currency'        => 'USD',
         'date_expiry'     => 1127287060,
@@ -447,8 +449,8 @@ subtest $method => sub {
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287059,
         'longcode' =>
-            '如果澳元/加元在合约开始时间之后到6 分钟 40 秒钟时严格高于入市现价，将获得USD205.70的赔付额。',
-        'shortcode'  => 'CALL_FRXAUDCAD_205.7_1127286660_1127287060_S0P_0',
+            '如果澳元/加元在合约开始时间之后到6 分钟 40 秒钟时严格高于入市现价，将获得USD208.18的赔付额。',
+        'shortcode'  => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
         'underlying' => 'frxAUDCAD',
     };
 
@@ -496,6 +498,7 @@ sub create_contract {
         date_expiry  => $args{date_expiry} ? $args{date_expiry} : $date_expiry,
         barrier      => 'S0P',
     };
+    if ($args{date_pricing}) { $contract_data->{date_pricing} = $args{date_pricing}; }
 
     if ($args{spread}) {
         delete $contract_data->{date_expiry};
