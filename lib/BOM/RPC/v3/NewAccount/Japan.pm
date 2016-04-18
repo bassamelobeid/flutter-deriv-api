@@ -230,18 +230,18 @@ support@binary.com', $jp_client->last_name, $jp_client->first_name
 sub get_jp_settings {
     my $client = shift;
 
-    my %jp_settings;
+    my $jp_settings;
     if ($client->landing_company->short eq 'japan') {
-        $jp_settings{$_} = $client->$_ for ('gender', 'occupation');
+        $jp_settings->{$_} = $client->$_ for ('gender', 'occupation');
 
         if ($client->get_self_exclusion and $client->get_self_exclusion->max_losses) {
-            $jp_settings{daily_loss_limit} = $client->get_self_exclusion->max_losses;
+            $jp_settings->{daily_loss_limit} = $client->get_self_exclusion->max_losses;
         }
 
         my $assessment = from_json($client->financial_assessment->data);
-        $jp_settings{$_} = $assessment->{$_} for ('trading_purpose', 'hedge_asset', 'hedge_asset_amount');
+        $jp_settings->{$_} = $assessment->{$_} for ('trading_purpose', 'hedge_asset', 'hedge_asset_amount');
 
-        $jp_settings{$_} = $assessment->{$_}->{answer} for qw(
+        $jp_settings->{$_} = $assessment->{$_}->{answer} for qw(
             annual_income
             financial_asset
             trading_experience_equities
@@ -253,7 +253,7 @@ sub get_jp_settings {
             trading_experience_option_trading
         );
     }
-    return %jp_settings;
+    return $jp_settings;
 }
 
 1;

@@ -393,9 +393,8 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from' => BOM::Platform::Static::Config::get_customer_support_email(),
-                    'to'   => $client->email,
-                    # TODO: this 'localize' is not tested because there is no translation yet
+                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'to'      => $client->email,
                     'subject' => localize("[_1] cashier password updated", $client->loginid),
                     'message' => [
                         localize(
@@ -419,9 +418,8 @@ sub cashier_password {
         if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
             BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
-                    'from' => BOM::Platform::Static::Config::get_customer_support_email(),
-                    'to'   => $client->email,
-                    # TODO: this 'localize' is not tested because there is no translation yet
+                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'to'      => $client->email,
                     'subject' => localize("[_1]-Failed attempt to unlock cashier section", $client->loginid),
                     'message' => [
                         localize(
@@ -441,9 +439,8 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from' => BOM::Platform::Static::Config::get_customer_support_email(),
-                    'to'   => $client->email,
-                    # TODO: this 'localize' is not tested because there is no translation yet
+                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'to'      => $client->email,
                     'subject' => localize("[_1] cashier password updated", $client->loginid),
                     'message' => [
                         localize(
@@ -548,8 +545,8 @@ sub get_settings {
     $jp_account_status = BOM::RPC::v3::NewAccount::Japan::get_jp_account_status($client) if ($client->landing_company->short eq 'japan-virtual');
 
     # get Japan specific a/c details (eg: daily loss, occupation, trading experience), for Japan real a/c client
-    my %jp_real_settings;
-    %jp_real_settings = BOM::RPC::v3::NewAccount::Japan::get_jp_settings($client) if ($client->landing_company->short eq 'japan');
+    my $jp_real_settings;
+    $jp_real_settings = BOM::RPC::v3::NewAccount::Japan::get_jp_settings($client) if ($client->landing_company->short eq 'japan');
 
     return {
         email        => $client->email,
@@ -574,7 +571,7 @@ sub get_settings {
             )
         ),
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
-        %jp_real_settings ? (%jp_real_settings) : (),
+        $jp_real_settings  ? (jp_settings       => $jp_real_settings)  : (),
     };
 }
 

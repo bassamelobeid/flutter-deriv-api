@@ -80,7 +80,6 @@ subtest 'Initialization' => sub {
     }
     'Setup ticks';
 };
-
 subtest 'ticks_history' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is no symbol param')
@@ -90,6 +89,12 @@ subtest 'ticks_history' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is wrong symbol param')
         ->error_message_is('Символ wrong недействителен', 'It should return error if there is wrong symbol param');
+
+    $params->{args}->{ticks_history} = 'DFMGI';
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('StreamingNotAllowed', 'Streaming not allowed for chartonly contracts.')
+        ->error_message_is('Streaming for this symbol is not available due to license restrictions.',
+        'It should return error for chartonly contract');
 
     $params->{args}->{ticks_history} = 'TOP40';
     $params->{args}->{subscribe}     = '1';
@@ -142,8 +147,7 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{end}   = $now->minus_time_interval('6h30m')->epoch;
     $params->{args}->{count} = 2000;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $rpc_ct->result->{data}->{history}->{times}->[0], $now->minus_time_interval('7h')->epoch,
-        'It should return latest existed tick for last day if client sent invalid start time';
+    is $rpc_ct->result->{data}->{history}->{times}->[0], 1331683200, 'It should return ticks which is 2000 seconds from the end time';
 
     $params->{args}->{start} = $now->minus_time_interval('1d')->epoch;
     $params->{args}->{end}   = $now->epoch;
@@ -159,6 +163,20 @@ subtest '_validate_start_end' => sub {
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is @{$rpc_ct->result->{data}->{history}->{times}}, 500, 'It should return 500 ticks if sent very big count';
 
+    delete $params->{args}->{start};
+    $params->{args}->{count} = 10;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is $rpc_ct->result->{data}->{history}->{times}->[0], 1331708391, 'It should start at 10s from now';
+    is @{$rpc_ct->result->{data}->{history}->{times}}, 10, 'It should return 10 ticks';
+
+    $params->{args}->{style}       = "candles";
+    $params->{args}->{count}       = 4000;
+    $params->{args}->{granularity} = 5;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is @{$result->{data}->{candles}}, 3941, 'It should return 3941 candle (due to misisng ticks)';
+    is $result->{data}->{candles}->[0]->{epoch}, $now->epoch - (4000 * 5), 'It should start at ' . (4000 * 5) . 's from end';
+
+    $params->{args}->{style} = 'ticks';
     $params->{args}->{ticks_history} = 'HSI';
     $params->{args}->{start}         = $now->minus_time_interval('1h30m')->epoch;
     $params->{args}->{end}           = $now->plus_time_interval('1d')->epoch;
