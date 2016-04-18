@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use utf8;
 use Test::BOM::RPC::Client;
+use Test::MockTime qw/:all/;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
@@ -414,6 +415,8 @@ subtest $method => sub {
         underlying => 'frxAUDCAD',
         quote      => 0.9935
     });
+    set_absolute_time($now->epoch - 500);
+
     $contract = create_contract(
         client        => $client,
         spread        => 0,
@@ -428,14 +431,14 @@ subtest $method => sub {
         contract_id => $contract->id,
         currency    => 'USD',
         language    => 'zh_CN',
+        is_sold     => 1,
     };
-
     my $res = $c->call_ok('get_bid', $params)->result;
 
     my $expected_result = {
-        'ask_price'       => '205.70',
+        'ask_price'       => '208.18',
         'barrier'         => '0.99360',
-        'bid_price'       => '205.70',
+        'bid_price'       => '208.18',
         'contract_id'     => 10,
         'currency'        => 'USD',
         'date_expiry'     => 1127287060,
@@ -447,8 +450,8 @@ subtest $method => sub {
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287059,
         'longcode' =>
-            '如果澳元/加元在合约开始时间之后到6 分钟 40 秒钟时严格高于入市现价，将获得USD205.70的赔付额。',
-        'shortcode'  => 'CALL_FRXAUDCAD_205.7_1127286660_1127287060_S0P_0',
+            '如果澳元/加元在合约开始时间之后到6 分钟 40 秒钟时严格高于入市现价，将获得USD208.18的赔付额。',
+        'shortcode'  => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
         'underlying' => 'frxAUDCAD',
     };
 
