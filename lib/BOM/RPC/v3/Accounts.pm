@@ -864,14 +864,6 @@ sub set_self_exclusion {
         my $ret = $client->set_exclusion->session_duration_limit($args{session_duration_limit});
         $message .= "- Maximum session duration: $ret\n";
     }
-    if ($args{exclude_until}) {
-        my $ret = $client->set_exclusion->exclude_until($args{exclude_until});
-        $message .= "- Exclude from website until: $ret\n";
-
-        ## remove all tokens (FIX for SessionCookie which do not have remove by loginid now)
-        ## but it should be OK since we check self_exclusion on every call
-        BOM::Database::Model::AccessToken->new->remove_by_loginid($client->loginid);
-    }
 
     if ($message) {
         my $compliance_email = BOM::Platform::Runtime->instance->app_config->compliance->email;
