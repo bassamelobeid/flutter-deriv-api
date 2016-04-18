@@ -145,6 +145,7 @@ sub startup {
                 '/verify_email'              => register('verify_email',              \&BOM::RPC::v3::NewAccount::verify_email),
                 '/send_ask'                  => register('send_ask',                  \&BOM::RPC::v3::Contract::send_ask),
                 '/get_bid'                   => register('get_bid',                   \&BOM::RPC::v3::Contract::get_bid),
+                '/get_corporate_actions'     => register('get_corporate_actions',     \&BOM::RPC::v3::Contract::get_corporate_actions),
                 '/get_contract_details'      => register('get_contract_details',      \&BOM::RPC::v3::Contract::get_contract_details),
                 '/new_account_real'          => register('new_account_real',          \&BOM::RPC::v3::NewAccount::new_account_real),
                 '/new_account_maltainvest'   => register('new_account_maltainvest',   \&BOM::RPC::v3::NewAccount::new_account_maltainvest),

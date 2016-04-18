@@ -113,6 +113,8 @@ subtest 'get_corporate_actions' => sub {
     };
     my $contract = produce_contract($bet_params);
 
+    print "Test \n ";
+
     my $purchase_date = $date->epoch;
 
     #Create new transactions.
@@ -137,19 +139,22 @@ subtest 'get_corporate_actions' => sub {
 
 #    $params = {language => 'ZH_CN'};
 
+    print "before call ok \n";
+
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (
         qw(contract_id
             underlying
-            is_valid_to_sell
-            date_start
-            date_expiry
-            date_settlement
+            display_name
             currency
             longcode
             shortcode
+            payout
             contract_type
+            is_double_barrier
+            ohlc
+            original_barrier
             ));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
 
