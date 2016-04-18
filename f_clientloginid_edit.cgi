@@ -511,10 +511,10 @@ if ($client->self_exclusion) {
         }) . "\">self-exclusion</a> settings.";
 }
 
-# Show Payment-Agent panel if this client is also a Payment Agent.
-if (my $payment_agent = $client->payment_agent) {
-    Bar("$loginid IS OR HAS APPLIED TO BECOME A PAYMENT AGENT");
+Bar("$loginid PAYMENT AGENT DETAILS");
 
+# Show Payment-Agent details if this client is also a Payment Agent.
+if (my $payment_agent = $client->payment_agent) {
     print '<table class="collapsed">';
 
     foreach my $column ($payment_agent->meta->columns) {
@@ -523,6 +523,9 @@ if (my $payment_agent = $client->payment_agent) {
     }
 
     print '</table>';
+}
+
+if ($client->landing_company->allows_payment_agents) {
     print "<p><a href=\""
         . request()->url_for(
         'backoffice/f_setting_paymentagent.cgi',
@@ -531,6 +534,8 @@ if (my $payment_agent = $client->payment_agent) {
             loginid  => $loginid,
             whattodo => "show"
         }) . "\">Edit $loginid payment agent details</a></p>";
+} else {
+    print '<p>Payment Agents are not available for this account.</p>';
 }
 
 Bar("CLIENT $client");
