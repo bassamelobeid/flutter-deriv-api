@@ -230,6 +230,7 @@ subtest 'get_corporate_actions_one_action' => sub {
 
     $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
+    is_deeply([sort keys %{$result}], [sort @expected_keys]);
 };
 
 done_testing();
