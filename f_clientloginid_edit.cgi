@@ -533,7 +533,7 @@ if ($client->landing_company->allows_payment_agents) {
             broker   => $broker,
             loginid  => $loginid,
             whattodo => "show"
-        }) . "\">Edit $loginid payment agent details</a></p>";
+        }) . "\">$loginid payment agent details</a></p>";
 } else {
     print '<p>Payment Agents are not available for this account.</p>';
 }
