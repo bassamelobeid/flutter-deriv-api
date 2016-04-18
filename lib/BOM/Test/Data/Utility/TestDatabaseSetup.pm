@@ -127,7 +127,7 @@ sub _migrate_changesets {
     }
 
     if (-f $self->changesets_location . '/unit_test_dml.sql') {
-#        $m->psql_full("SET session_replication_role TO 'replica';\n", ";\nSET session_replication_role TO 'origin';\n", $self->changesets_location . '/unit_test_dml.sql')
+        $m->psql_full("SET session_replication_role TO 'replica';\n", ";\nSET session_replication_role TO 'origin';\n", $self->changesets_location . '/unit_test_dml.sql');
     }
 
     return 1;
