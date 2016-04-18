@@ -94,7 +94,27 @@ sub _migrate_changesets {
     my $pooler = $self->db_handler('pgbouncer');
     $pooler->{RaiseError}        = 1;
     $pooler->{pg_server_prepare} = 0;
-    $pooler->do('PAUSE');
+
+    my @bouncer_dbs;
+    if ($self->_db_name eq 'regentmarkets') {
+        @bouncer_dbs = ('fog-write', 'fog-replica');
+    } else {
+        my %map = (
+            auth      => 'authdb',
+            users     => 'userdb',
+            chronicle => 'chronicle',
+            feed      => 'feed-replica',
+        );
+        @bouncer_dbs = ($map{$self->_db_name});
+    }
+
+    my $b_db;
+    foreach (@bouncer_dbs) {
+        $b_db = $_;
+        $pooler->do('DISABLE "' . $b_db . '"');
+        $pooler->do('KILL "' . $b_db . '"');
+    }
+
     #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
     {
         local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
@@ -107,7 +127,6 @@ sub _migrate_changesets {
     $dbh->do('drop database if exists ' . $self->_db_name);
     $dbh->do('create database ' . $self->_db_name);
     $dbh->disconnect();
-    $pooler->do('RESUME');
 
     my $m = DBIx::Migration->new({
         'dsn'      => $self->dsn,
@@ -136,6 +155,12 @@ sub _migrate_changesets {
         # apply DB functions
         $m->psql(sort glob $self->collectordb_changesets_location . '/functions/*.sql')
             if -d $self->collectordb_changesets_location . '/functions';
+    }
+
+    foreach (@bouncer_dbs) {
+        $b_db = $_;
+        $pooler->do('ENABLE "' . $b_db . '"');
+        $pooler->do('RESUME "' . $b_db . '"');
     }
 
     return 1;
