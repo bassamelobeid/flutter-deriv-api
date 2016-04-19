@@ -1092,7 +1092,11 @@ sub _validate_settlement_conditions {
     my $message;
     my $hold_for_exit_tick = 0;
     if ($self->tick_expiry) {
-        $message = 'exit tick undefined after 5 minutes of contract start' if not $self->exit_tick;
+        if (not $self->exit_tick) {
+            $message = 'exit tick undefined after 5 minutes of contract start';
+        } elsif ($self->exit_tick->epoch - $self->date_start->epoch > $self->max_tick_expiry_duration->seconds) {
+            $message = 'no ticks within 5 minutes after contract start';
+        }
     } else {
         # intraday or daily expiry
         if (not $self->entry_tick) {
