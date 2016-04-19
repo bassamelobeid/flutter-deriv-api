@@ -159,8 +159,10 @@ sub process_realtime_events {
                             symbol => $symbol,
                             epoch  => $m[1],
                             quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
-        } elsif ($type =~ /^pricing_table:/ and $chan eq BOM::RPC::v3::Japan::Contract::get_channel_name($arguments)) {
-            send_pricing_table($c, $feed_channels_type->{$channel}->{uuid}, $arguments, $message);
+        } elsif ($type =~ /^pricing_table:/) {
+            if ($chan eq BOM::RPC::v3::Japan::Contract::get_channel_name($arguments)) {
+                send_pricing_table($c, $feed_channels_type->{$channel}->{uuid}, $arguments, $message);
+            }
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
             if (exists $arguments->{subscribe} and $arguments->{subscribe} eq '1') {
                 unless ($skip_symbol_list{$arguments->{symbol}}
