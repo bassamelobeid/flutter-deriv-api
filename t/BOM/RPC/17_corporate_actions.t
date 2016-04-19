@@ -75,7 +75,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 ###
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-#request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
+request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
 
 subtest 'get_corporate_actions_one_action' => sub {
 
@@ -128,7 +128,7 @@ subtest 'get_corporate_actions_one_action' => sub {
     my $expiry = $contract->date_expiry->truncate_to_day;
 
     my $params = {
-#        language    => 'ZH_CN',
+        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
@@ -181,7 +181,7 @@ subtest 'get_corporate_actions_one_action' => sub {
     });
 
     $params = {
-#        language    => 'ZH_CN',
+        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
