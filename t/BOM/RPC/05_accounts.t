@@ -1299,9 +1299,9 @@ subtest 'get and set self_exclusion' => sub {
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
 
     delete $params->{args};
-    is(
+    like(
         $c->tcall('get_self_exclusion', $params)->{error}{message_to_client},
-        '对不起，您已禁止自己，直到2016-11-18T00:00:00。',
+        qr/对不起，您已禁止自己，直到/,
         'this client has self excluded'
     );
 
