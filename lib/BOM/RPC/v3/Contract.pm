@@ -211,9 +211,6 @@ sub get_corporate_actions {
             $response->{is_double_barrier} = $is_double_barrier;
             $response->{ohlc}              = $table_info;
         }
-        my $pen = $contract->pricing_engine_name;
-        $pen =~ s/::/_/g;
-        stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
 
     }
     catch {
