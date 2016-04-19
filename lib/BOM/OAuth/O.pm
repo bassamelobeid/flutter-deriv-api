@@ -10,6 +10,7 @@ use List::MoreUtils qw(any firstval);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context::Request::Urls qw(url_for);
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Static::Config;
@@ -76,11 +77,12 @@ sub authorize {
     unless ($client) {
         ## show login form
         return $c->render(
-            template => 'login',
+            template => $c->session('__is_app_approved') == 1 ? 'loginbinary' : 'login',
             layout   => 'default',
 
             app       => $app,
             l         => \&localize,
+            r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
     }
