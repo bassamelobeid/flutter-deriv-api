@@ -2591,6 +2591,8 @@ sub _validate_lifetime {
     if ($self->tick_expiry) {
         $duration = $self->tick_count;
         $message  = 'Invalid tick count for tick expiry';
+        # slightly different message for tick expiry.
+        $message_to_client = localize('Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration) if $min_duration != 0;
     } elsif (not $self->expiry_daily) {
         $duration = $self->get_time_to_expiry({from => $self->date_start})->seconds;
         ($min_duration, $max_duration) = ($min_duration->seconds, $max_duration->seconds);
