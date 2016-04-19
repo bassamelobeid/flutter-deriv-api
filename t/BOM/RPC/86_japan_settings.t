@@ -138,8 +138,8 @@ subtest 'JP get_settings' => sub {
     );
 
     # fields common for all clients
-    is($res->{$_}, $jp_client_details{$_}, "OK: $_" ) for (@settings);
-    is($res->{$_}, $jp_specific{$_}, "OK: $_" ) for (keys %jp_specific);
+    is($res->{$_}, $jp_client_details{$_}, "OK: $_") for (@settings);
+    is($res->{$_}, $jp_specific{$_},       "OK: $_") for (keys %jp_specific);
 
     # fields only for Japan real client
     is($res->{jp_settings}->{$_}, $jp_client_details{$_}, "OK: $_") for (@jp_only);

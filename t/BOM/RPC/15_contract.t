@@ -29,7 +29,12 @@ my $token = BOM::Platform::SessionCookie->new(
     email   => $email
 )->token;
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_ , recorded_date => $now}) for qw(USD AUD CAD-AUD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw(USD AUD CAD-AUD);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
