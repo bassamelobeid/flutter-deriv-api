@@ -184,6 +184,7 @@ sub get_corporate_actions {
                     my $date = Date::Utility->new($ohlc->[$key]->[0])->epoch;
                     foreach my $action (@{$corporate_action}) {
                         if ($date == Date::Utility->new($action->{effective_date})->epoch) {
+                            #the :1 is for displaying stock split ratio. eg: 2:1.
                             $action_desc = $name_mapper{$action->{type}} . " " . $action->{value} . ":1";
                         }
                     }
