@@ -278,7 +278,7 @@ subtest 'get_bid' => sub {
         date_expiry   => $now->epoch - 500,
         purchase_date => $now->epoch - 901
     );
-    $DB::single=1;
+
     my $params = {
         language    => 'ZH_CN',
         short_code  => $contract->shortcode,
