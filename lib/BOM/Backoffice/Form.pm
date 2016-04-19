@@ -8,14 +8,16 @@ use HTML::FormBuilder;
 use HTML::FormBuilder::Validation;
 use HTML::FormBuilder::Select;
 use JSON qw(to_json);
+use Locale::SubCountry;
 
 use BOM::Platform::Context qw(request localize template);
+use BOM::Platform::Locale;
 use BOM::Platform::Client;
 
 sub get_self_exclusion_form {
-    my $arg_ref          = shift;
-    my $client           = $arg_ref->{client};
-    my $csrftoken        = $arg_ref->{csrftoken};
+    my $arg_ref   = shift;
+    my $client    = $arg_ref->{client};
+    my $csrftoken = $arg_ref->{csrftoken};
 
     my $loginID = $client->loginid;
     my $broker  = $client->broker;
@@ -358,7 +360,7 @@ sub get_self_exclusion_form {
             'type'  => 'submit',
             'value' => localize('Update Settings')
         },
-        'error'      => {
+        'error' => {
             'id'    => 'invalidinputfound',
             'class' => 'errorfield'
         },
@@ -435,6 +437,390 @@ sub get_self_exclusion_form {
 
     $form_self_exclusion->set_server_side_checks($server_side_validation_sub);
     return $form_self_exclusion;
+}
+
+sub get_payment_agent_registration_form {
+    my ($loginid, $brokercode) = @_;
+
+    # input field for pa_name
+    my $input_field_pa_name = {
+        'label' => {
+            'text' => localize('Your name/company'),
+            'for'  => 'pa_name',
+        },
+        'input' => {
+            'id'        => 'pa_name',
+            'name'      => 'pa_name',
+            'type'      => 'text',
+            'maxlength' => 60,
+        },
+        'error' => {
+            'id'    => 'errorpa_name',
+            'class' => 'errorfield'
+        },
+        'validation' => [
+
+            # max length = 60
+            {
+                'type'    => 'regexp',
+                'regexp'  => '^.{1,60}$',
+                'err_msg' => localize('Please enter a valid name.'),
+            },
+        ]};
+
+    # Input field for target country
+    my %world_country = Locale::SubCountry::World->new->full_name_code_hash;
+    my $target_country_option = [{value => ''}];
+    foreach my $country_name (sort keys %world_country) {
+        push @$target_country_option,
+            {
+            value => lc($world_country{$country_name}),
+            text  => $country_name
+            };
+    }
+
+    my $input_field_pa_target_country = {
+        label => {
+            text => localize('In what country do you want to offer your service'),
+            for  => 'pa_target_country',
+        },
+        input => HTML::FormBuilder::Select->new(
+            id      => 'pa_target_country',
+            name    => 'pa_target_country',
+            options => $target_country_option,
+        ),
+        error => {
+            id    => 'errorpa_target_country',
+            class => 'errorfield'
+        },
+        validation => [{
+                type    => 'regexp',
+                regexp  => '^\w{2}$',
+                err_msg => localize('Please enter the country where you want to offer your service'),
+            }]};
+
+    # input field for pa_summary
+    my $input_field_pa_summary = {
+        'label' => {
+            'text' => localize('Short summary of your Payment Agent service'),
+            'for'  => 'pa_summary'
+        },
+        'input' => {
+            'id'        => 'pa_summary',
+            'name'      => 'pa_summary',
+            'type'      => 'text',
+            'maxlength' => 60,
+        },
+        'error' => {
+            'id'    => 'errorpa_summary',
+            'class' => 'errorfield'
+        },
+    };
+
+    # Input field for pa_email
+    my $input_field_pa_email = {
+        'label' => {
+            'text' => localize('Your email address'),
+            'for'  => 'pa_email',
+        },
+        'input' => {
+            'id'        => 'pa_email',
+            'name'      => 'pa_email',
+            'type'      => 'text',
+            'maxlength' => 100,
+        },
+        'error' => {
+            'id'    => 'errorpa_email',
+            'class' => 'errorfield'
+        },
+        'validation' => [{
+                'type'    => 'regexp',
+                'regexp'  => '\w+',
+                'err_msg' => localize('Please enter your email address.'),
+            },
+            {
+                'type'    => 'regexp',
+                'regexp'  => _email_check_regexp(),
+                'err_msg' => localize('Sorry, you have entered an incorrect email address.'),
+            },
+        ]};
+
+    # input field for pa_tel
+    my $input_field_pa_tel = {
+        'label' => {
+            'text' => localize('Your phone number'),
+            'for'  => 'pa_tel',
+        },
+        'input' => {
+            'id'        => 'pa_tel',
+            'name'      => 'pa_tel',
+            'type'      => 'text',
+            'maxlength' => 35,
+        },
+        'error' => {
+            'id'    => 'errorpa_tel',
+            'class' => 'errorfield',
+        },
+        'validation' => [
+
+            # min length = 6
+            {
+                'type'    => 'regexp',
+                'regexp'  => '^(|.{6}.*)$',
+                'err_msg' => localize('Invalid telephone number (too short).'),
+            },
+
+            # max length = 35
+            {
+                'type'    => 'regexp',
+                'regexp'  => '^.{0,35}$',
+                'err_msg' => localize('Invalid telephone number (too long).'),
+            },
+            {
+                'type'    => 'regexp',
+                'regexp'  => '^(|\+?[0-9\s]+)$',
+                'err_msg' => localize('Invalid telephone number.'),
+            },
+        ],
+    };
+
+    # input field for pa_url
+    my $input_field_pa_url = {
+        'label' => {
+            'text' => localize('Your website URL'),
+            'for'  => 'pa_url'
+        },
+        'input' => {
+            'id'        => 'pa_url',
+            'name'      => 'pa_url',
+            'type'      => 'text',
+            'maxlength' => 100,
+        },
+        'error' => {
+            'id'    => 'errorpa_url',
+            'class' => 'errorfield'
+        },
+        'validation' => [{
+                'type'    => 'regexp',
+                'regexp'  => '^(https?:\/\/[^\s]+)?$',
+                'err_msg' => localize('This URL is invalid.'),
+            },
+        ],
+    };
+
+    # Commision value options
+    my $commision_option = [map { {value => $_} } qw(0 0.1 0.25 0.5 0.75 1 2 2.5 3 3.5 4 4.5 5 6 7 8 9)];
+
+    # input field for pa_comm_depo
+    my $input_field_pa_comm_depo = {
+        'label' => {
+            'text' => localize('Commission (%) you want to take on deposits'),
+            'for'  => 'pa_comm_depo',
+        },
+        'input' => HTML::FormBuilder::Select->new(
+            'id'      => 'pa_comm_depo',
+            'name'    => 'pa_comm_depo',
+            'options' => $commision_option,
+        ),
+        'error' => {
+            'id'    => 'errorpa_comm_depo',
+            'class' => 'errorfield'
+        },
+    };
+
+    # input field for pa_comm_with
+    my $input_field_pa_comm_with = {
+        'label' => {
+            'text' => localize('Commission (%) you want to take on withdrawals'),
+            'for'  => 'pa_comm_with',
+        },
+        'input' => HTML::FormBuilder::Select->new(
+            'id'      => 'pa_comm_with',
+            'name'    => 'pa_comm_with',
+            'options' => $commision_option,
+        ),
+        'error' => {
+            'id'    => 'errorpa_comm_with',
+            'class' => 'errorfield'
+        },
+    };
+
+    # Input field for pa_info
+    my $textarea_pa_info = {
+        'label' => {
+            'text' => localize('Please provide some information about yourself and your proposed services'),
+            'for'  => 'pa_info',
+        },
+        'input' => {
+            'id'      => 'pa_info',
+            'name'    => 'pa_info',
+            'type'    => 'textarea',
+            'row'     => 10,
+            'cols'    => 60,
+            'maxsize' => '2000',
+        },
+        'error' => {
+            'text'  => '',
+            'id'    => 'errorpa_info',
+            'class' => 'errorfield'
+        },
+        'validation' => [
+
+            # max length = 2000
+            {
+                'type'    => 'regexp',
+                'regexp'  => '^(.|\n){0,2000}$',
+                'err_msg' => localize('Comment must not exceed [_1] characters. Please resubmit.', 2000),
+            },
+
+        ],
+    };
+
+    # Input field for pa_supported_banks
+    my $input_field_pa_supported_banks = {
+        'label' => {
+            'text' => localize('Supported banks'),
+            'for'  => 'pa_supported_banks'
+        },
+        'input' => {
+            'id'        => 'pa_supported_banks',
+            'name'      => 'pa_supported_banks',
+            'type'      => 'text',
+            'maxlength' => 500,
+        },
+        'error' => {
+            'id'    => 'errorpa_suported_banks',
+            'class' => 'errorfield'
+        },
+        'validation' => [{
+                'type'    => 'regexp',
+                'regexp'  => '^[0-9a-zA-Z,]*$',
+                'err_msg' => localize('Supported banks list is invalid'),
+            },
+        ],
+        comment => {
+            'text' => '** Comma-separated list (no spaces) of: ' . (join ' ', keys %{BOM::Platform::Locale::get_payment_agent_banks()}),
+        }};
+
+    # Input field for pa_auth
+    my $input_field_pa_auth = {
+        'label' => {
+            'text' => localize('AUTHORISED PAYMENT AGENT?'),
+            'for'  => 'pa_auth'
+        },
+        'input' => HTML::FormBuilder::Select->new(
+            'id'      => 'pa_auth',
+            'name'    => 'pa_auth',
+            'values'  => ['0'],
+            'options' => _select_yes_no(),
+        )};
+
+    my $input_hidden_field_whattodo = {
+        'id'    => 'whattodo',
+        'name'  => 'whattodo',
+        'type'  => 'hidden',
+        'value' => 'apply'
+    };
+    my $input_hidden_currency = {
+        'id'    => 'pa_curr_USD',
+        'name'  => 'pa_curr_USD',
+        'type'  => 'hidden',
+        'value' => 'USD',
+    };
+
+    my $hidden_fields = {'input' => [_input_hidden_field_language(), $input_hidden_field_whattodo, $input_hidden_currency]};
+
+    my $input_submit_button = {
+        'label' => {},
+        'input' => {
+            'id'    => 'submit',
+            'name'  => 'submit',
+            'type'  => 'submit',
+            'value' => localize('Submit')}};
+
+    my $form_action = request()->url_for("/paymentagent/application");
+
+    if ($loginid) {
+        my $input_hidden_field_loginid = {
+            'id'    => 'loginid',
+            'name'  => 'loginid',
+            'type'  => 'hidden',
+            'value' => $loginid
+        };
+        push @{$hidden_fields->{'input'}}, $input_hidden_field_loginid;
+
+        my $input_hidden_field_broker = {
+            'id'    => 'broker',
+            'name'  => 'broker',
+            'type'  => 'hidden',
+            'value' => $brokercode
+        };
+        push @{$hidden_fields->{'input'}}, $input_hidden_field_broker;
+
+        $form_action = request()->url_for("backoffice/f_setting_paymentagent.cgi");
+    }
+
+    #declare the form attributes
+    my $form_attributes = {
+        'name'   => 'paymentAgentRegistrationForm',
+        'id'     => 'paymentAgentRegistrationForm',
+        'class'  => 'formObject',
+        'method' => 'post',
+        'action' => $form_action,
+    };
+
+    #instantiate the form object
+    my $form_object = HTML::FormBuilder::Validation->new(data => $form_attributes);
+
+    my $fieldset = $form_object->add_fieldset({});
+
+    $fieldset->add_field($input_field_pa_name);
+    $fieldset->add_field($input_field_pa_target_country);
+    $fieldset->add_field($input_field_pa_summary);
+    $fieldset->add_field($input_field_pa_email);
+    $fieldset->add_field($input_field_pa_tel);
+    $fieldset->add_field($input_field_pa_url);
+    $fieldset->add_field($input_field_pa_comm_depo);
+    $fieldset->add_field($input_field_pa_comm_with);
+    $fieldset->add_field($textarea_pa_info);
+
+    if ($input_field_pa_supported_banks) {
+        $fieldset->add_field($input_field_pa_supported_banks);
+    }
+    if ($input_field_pa_auth) {
+        $fieldset->add_field($input_field_pa_auth);
+    }
+    $fieldset->add_field($hidden_fields);
+    $fieldset->add_field($input_submit_button);
+
+    return $form_object;
+}
+
+sub _input_hidden_field_language {
+    return {
+        'id'    => 'l',
+        'name'  => 'l',
+        'type'  => 'hidden',
+        'value' => request()->language
+    };
+}
+
+sub _select_yes_no {
+    return [{
+            value => '',
+            text  => localize('Please select')
+        },
+        {
+            value => 'yes',
+            text  => localize('Yes')
+        },
+        {
+            value => 'no',
+            text  => localize('No')}];
+}
+
+sub _email_check_regexp {
+    return '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$';
 }
 
 1;

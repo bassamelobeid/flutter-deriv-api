@@ -2,10 +2,12 @@
 package main;
 use strict 'vars';
 
+use Try::Tiny;
+
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Runtime;
 use BOM::Platform::Client::PaymentAgent;
-use BOM::Web::Form;
+use BOM::Backoffice::Form;
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -21,14 +23,34 @@ my $whattodo = request()->param('whattodo');
 
 Bar('Payment Agent Setting');
 
-my $pa = BOM::Platform::Client::PaymentAgent->new({loginid => $loginid});
-if (not $pa) {
-    print "Error: client [$loginid] is not payment agent";
+if ($whattodo eq 'create') {
+    my $client = BOM::Platform::Client->new({loginid => $loginid});
+
+    if ($client->client_fully_authenticated) {
+        my ($pa, $error);
+        try {
+            $pa = $client->set_payment_agent;
+        }
+        catch {
+            $error = $_;
+        };
+        if ($error =~ /currency can only be in USD/) {
+            print 'Payment Agent currency can only be in USD';
+        } else {
+            my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
+            my $page_content = '<p>' . $payment_agent_registration_form->build();
+            print $page_content;
+        }
+    } else {
+        print "Please note that to become payment agent client has to be fully authenticated.";
+    }
+
     code_exit_BO();
 }
 
 if ($whattodo eq 'show') {
-    my $payment_agent_registration_form = BOM::Web::Form::get_payment_agent_registration_form($loginid, $broker, 1);
+    my $pa = BOM::Platform::Client::PaymentAgent->new({loginid => $loginid});
+    my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
 
     my $input_fields = {
         pa_name            => $pa->payment_agent_name,
@@ -59,7 +81,12 @@ if ($whattodo eq 'show') {
 
     code_exit_BO();
 } elsif ($whattodo eq 'apply') {
-
+    my $pa = BOM::Platform::Client::PaymentAgent->new({loginid => $loginid});
+    unless ($pa) {
+        my $client = BOM::Platform::Client->new({loginid => $loginid});
+        # if its new so we need to set it
+        $pa = $client->set_payment_agent unless $pa;
+    }
     # curr-codes are hidden fields set at form-build time.
     # set 1st curr-code if USD or GBP present.
     # set 2nd curr-code if both are present.
