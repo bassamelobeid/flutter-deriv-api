@@ -137,8 +137,6 @@ sub get_corporate_actions {
     my $params = shift;
     my ($short_code, $contract_id, $currency, $is_sold) = @{$params}{qw/short_code contract_id currency is_sold/};
 
-    print "Params: $short_code $contract_id $currency $is_sold \n";
-
     my $response;
     try {
         my $tv = [Time::HiRes::gettimeofday];
@@ -199,12 +197,6 @@ sub get_corporate_actions {
                         last   => $last,
                         action => $action_desc,
                     };
-                    #if ($is_double_barrier) {
-                    #    $response->{original_low_barrier}  = $contract->barrier->adjustment->{prev_obj}->as_absolute;
-                    #    $response->{original_high_barrier} = $contract->barrier2->adjustment->{prev_obj}->as_absolute;
-                    #} else {
-                    #    $response->{original_barrier} = $contract->barrier->adjustment->{prev_obj}->as_absolute;
-                    #}
 
                     if ($is_double_barrier) {
                         $response->{adjusted_low_barrier}  = $contract->barrier->as_absolute;
