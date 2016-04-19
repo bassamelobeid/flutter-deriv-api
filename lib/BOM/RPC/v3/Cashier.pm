@@ -57,8 +57,8 @@ sub cashier {
     my $app_config = BOM::Platform::Runtime->instance->app_config;
 
     my $action = $params->{cashier} // 'deposit';
-    my $currency = $params->{currency};
 
+    my $currency;
     if (my $account = $client->default_account) {
         $currency ||= $account->currency_code;
     }
@@ -130,8 +130,7 @@ sub cashier {
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
 
     # We ask the client which currency they wish to deposit/withdraw in
-    # if they've either never deposited before or have deposited in
-    # several currencies.
+    # if they've never deposited before
     $currency = $currency || $df_client->doughflow_currency;
     if (not $currency) {
         return BOM::RPC::v3::Utility::create_error({
@@ -146,7 +145,7 @@ sub cashier {
         my $token = $params->{verification_code} // '';
 
         if (not $email or $email =~ /\s+/) {
-            $error_sub->(localize("Sorry, an error occurred. Please contact customer support if this problem persists."));
+            $error_sub->(localize("Client email not set."));
         } elsif ($token) {
             unless (BOM::RPC::v3::Utility::is_verification_token_valid($token, $client->email)) {
                 return BOM::RPC::v3::Utility::create_error({
