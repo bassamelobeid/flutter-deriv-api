@@ -605,6 +605,7 @@ subtest 'invalid start times' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
+    $bet_params->{entry_tick} = $tick;
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/volsurface too old/, qr/forward-starting.*blackout/];
     test_error_list('buy', $bet, $expected_reasons);
@@ -1332,28 +1333,46 @@ subtest 'contract must be held' => sub {
         currency     => 'USD',
         payout       => 100,
         current_tick => $tick,
+        entry_tick   => $tick,
         date_start   => $oft_used_date,
         date_pricing => $oft_used_date->epoch + 1,
     };
     my $c = produce_contract($args);
-    ok !$c->is_valid_to_sell, 'not valid to sell';
-    like(($c->primary_validation_error)[0]->{message}, qr/Contract not held long/, 'contract not held long enough');
-    $args->{date_pricing} = $oft_used_date->epoch + 301;
-    $c = produce_contract($args);
-    ok !$c->is_valid_to_sell, 'valid to sell';
+    ok $c->is_valid_to_sell, 'valid to sell';
 
     $args->{_date_pricing_milliseconds} = $oft_used_date->epoch + 0.1;
     $args->{date_pricing}               = $oft_used_date->epoch;
     $c                                  = produce_contract($args);
     ok !$c->pricing_new,      'not pricing_new if it is 0.1 second from start';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
-    like(($c->primary_validation_error)[0]->{message}, qr/Contract not held long/, 'contract not held long enough');
+    ok $c->is_valid_to_sell, 'valid to sell right after buy';
     delete $args->{$_} for qw(date_pricing _date_pricing_milliseconds);
     # we set pricing_new to true if date_start is not provided.
     delete $args->{date_start};
     $c = produce_contract($args);
     ok $c->pricing_new, 'is pricing_new when date_pricing == date_start';
     ok $c->date_pricing->epoch == $c->date_start->epoch, 'date_pricing == date_start when pricing_new is set';
+};
+
+subtest 'zero payout' => sub {
+    lives_ok {
+        my $fake_tick = BOM::Market::Data::Tick->new({
+            underlying => 'R_100',
+            epoch => time,
+            quote => 100,
+        });
+        my $c = produce_contract({
+            bet_type => 'CALL',
+            underlying => 'R_100',
+            barrier => 'S0P',
+            currency => 'USD',
+            payout => 0,
+            duration => '15m',
+            current_tick => $fake_tick,
+            entry_tick => $fake_tick,
+        });
+        ok !$c->is_valid_to_buy, 'not valid to buy';
+        like ($c->primary_validation_error->{message}, qr/Empty or zero stake/, 'throws error');
+    } 'does not die if payout is zero';
 };
 
 subtest 'sellback tick expiry contracts' => sub {
@@ -1387,28 +1406,6 @@ subtest 'sellback tick expiry contracts' => sub {
     $c = produce_contract($params);
     ok $c->is_expired,       'expired';
     ok $c->is_valid_to_sell, 'valid to sell';
-};
-
-subtest 'zero payout' => sub {
-    lives_ok {
-        my $fake_tick = BOM::Market::Data::Tick->new({
-            underlying => 'R_100',
-            epoch => time,
-            quote => 100,
-        });
-        my $c = produce_contract({
-            bet_type => 'CALL',
-            underlying => 'R_100',
-            barrier => 'S0P',
-            currency => 'USD',
-            payout => 0,
-            duration => '15m',
-            current_tick => $fake_tick,
-            entry_tick => $fake_tick,
-        });
-        ok !$c->is_valid_to_buy, 'not valid to buy';
-        like ($c->primary_validation_error->{message}, qr/Empty or zero stake/, 'throws error');
-    } 'does not die if payout is zero';
 };
 
 # Let's not surprise anyone else

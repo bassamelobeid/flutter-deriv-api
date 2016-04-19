@@ -11,7 +11,7 @@ sub _build_is_expired {
     my ($barrier, $barrier2) =
         $self->two_barriers ? ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute) : ($self->barrier->as_absolute);
     my $spot = $self->entry_spot;
-    if ($spot == $barrier or ($barrier2 and $spot == $barrier2)) {
+    if ($spot and ($spot == $barrier or ($barrier2 and $spot == $barrier2))) {
         $self->add_error({
             alert             => 1,
             severity          => 100,
@@ -63,29 +63,12 @@ sub get_high_low_for_contract_period {
     my $ok_through_expiry = 0;                                     # Must be confirmed.
     my $exit_tick = $self->is_after_expiry && $self->exit_tick;    # Can still be undef if the tick is not yet in the DB.
     if (not $self->pricing_new and $self->entry_tick and $self->entry_tick->epoch < $self->date_pricing->epoch) {
-        my $start;
-        my $end = $self->date_pricing->is_after($self->date_expiry) ? $self->date_settlement : $self->date_pricing;
-        if ($self->entry_tick->epoch > $end->epoch) {
-            $self->missing_market_data(1);
-            $start = $end;
-            $self->add_error({
-                    severity => 100,
-                    message  => format_error_string(
-                        'No tick received throughout the duration of the contract',
-                        start  => $self->date_start->datetime,
-                        expiry => $self->date_expiry->datetime,
-                    ),
-                    message_to_client => localize("Missing market data for contract duration"),
-                });
-        } else {
-            # Contract doesn't reasonably start until the entry tick arrives.
-            # Also, ticks after settlement do not apply
-            $start = $self->entry_tick;
-        }
+        my $start_epoch = $self->date_start->epoch + 1;            # exlusive of tick at contract start.
+        my $end_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_settlement->epoch : $self->date_pricing->epoch;
         ($high, $low, $close) = @{
             $self->underlying->get_high_low_for_period({
-                    start => $start->epoch,
-                    end   => $end->epoch,
+                    start => $start_epoch,
+                    end   => $end_epoch,
                 })}{'high', 'low', 'close'};
         # The two intraday queries run off different tables, so we have to make sure our consistent
         # exit tick was included. expiry_daily may have differences, but should be fine anyway.
