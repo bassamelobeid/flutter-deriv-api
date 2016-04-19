@@ -84,6 +84,36 @@
               "description": "Adjusted low barrier for double barrier option."
             }
           } 
+        },
+        "ohlc": {
+          "type": "object",
+          "description": "Contains date, open, high, low, last and action description information.",
+          "properties":{
+            "date": {
+              "type": "object",
+              "description": "Date of the corporate action."
+            },
+            "open": {
+              "type": "number",
+              "description": "Opening price."
+            },
+            "high": {
+              "type": "number",
+              "description": "High price."
+            },
+            "low": {
+              "type": "number",
+              "description": "Low price."
+            },
+            "last": {
+              "type": "number",
+              "description": "Closing price."
+            },
+            "action": {
+              "type": "object",
+              "description": "Corporate actions. Example: Stock split, cash dividend etc."
+            }
+          }
         }
       }
     },
