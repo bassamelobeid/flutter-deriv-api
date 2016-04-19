@@ -171,9 +171,9 @@ sub process_realtime_events {
                     ($skip_symbol_list{$arguments->{symbol}} and $skip_type_list{$arguments->{contract_type}} and $arguments->{duration_unit} eq 't');
                 my $skip_intraday_atm_non_fixed_expiry = ($skip_duration_list{$arguments->{duration_unit}} and $atm_contract and not $fixed_expiry);
 
-                return if ($skip_tick_expiry or $skip_intraday_atm_non_fixed_expiry);
-
-                send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments) if $c->tx;
+                if (not $skip_tick_expiry and not $skip_intraday_atm_non_fixed_expiry) {
+                    send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments);
+                }
             } else {
                 return;
             }
