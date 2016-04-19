@@ -6,51 +6,11 @@ use warnings;
 use BOM::WebSocketAPI::Websocket_v3;
 
 sub get_limits {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'get_limits',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('get_limits', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type   => 'get_limits',
-                    get_limits => $response,
-                };
-            }
-        },
-        {
-            args  => $args,
-            token => $c->stash('token'),
-        });
-    return;
+    return __call_rpc(shift, 'get_limits', @_);
 }
 
 sub paymentagent_list {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'paymentagent_list',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('paymentagent_list', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type          => 'paymentagent_list',
-                    paymentagent_list => $response,
-                };
-            }
-        },
-        {
-            args     => $args,
-            language => $c->stash('request')->language
-        });
-    return;
+    return __call_rpc(shift, 'paymentagent_list', @_);
 }
 
 sub paymentagent_withdraw {
@@ -133,28 +93,34 @@ sub transfer_between_accounts {
 }
 
 sub topup_virtual {
-    my ($c, $args) = @_;
+    return __call_rpc(shift, 'topup_virtual', @_);
+}
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'topup_virtual',
+sub cforward {
+    return __call_rpc(shift, 'cashier', @_);
+}
+
+sub __call_rpc {
+    my ($c, $method, $args) = @_;
+
+    return BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c, $method,
         sub {
             my $response = shift;
-            if (exists $response->{error}) {
-                $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
-                return $c->new_error('topup_virtual', $response->{error}->{code}, $response->{error}->{message_to_client});
+            if (ref($response) eq 'HASH' and exists $response->{error}) {
+                return $c->new_error($method, $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 return {
-                    msg_type      => 'topup_virtual',
-                    topup_virtual => $response,
+                    msg_type => $method,
+                    $method  => $response,
                 };
             }
         },
         {
-            args  => $args,
-            token => $c->stash('token'),
+            args     => $args,
+            token    => $c->stash('token'),
+            language => $c->stash('request')->language
         });
-    return;
 }
 
 1;
