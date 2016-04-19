@@ -137,6 +137,18 @@ sub verify_email {
                 ],
                 use_email_template => 1
             });
+    } elsif ($params->{type} eq 'payment_withdraw' && BOM::Platform::User->new({email => $params->{email}})) {
+        send_email({
+                from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                to      => $params->{email},
+                subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
+                message => [
+                    BOM::Platform::Context::localize(
+                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span style="background: #f2f2f2; padding: 10px;">[_1]</span></p></p>',
+                        $params->{code})
+                ],
+                use_email_template => 1
+            });
     }
 
     return {status => 1};    # always return 1, so not to leak client's email

@@ -176,7 +176,7 @@ subtest '_validate_start_end' => sub {
     is @{$result->{data}->{candles}}, 3941, 'It should return 3941 candle (due to misisng ticks)';
     is $result->{data}->{candles}->[0]->{epoch}, $now->epoch - (4000 * 5), 'It should start at ' . (4000 * 5) . 's from end';
 
-    $params->{args}->{style} = 'ticks';
+    $params->{args}->{style}         = 'ticks';
     $params->{args}->{ticks_history} = 'HSI';
     $params->{args}->{start}         = $now->minus_time_interval('1h30m')->epoch;
     $params->{args}->{end}           = $now->plus_time_interval('1d')->epoch;
