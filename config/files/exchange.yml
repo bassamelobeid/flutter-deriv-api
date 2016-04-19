@@ -85,8 +85,8 @@ BIS:
       daily_open: 6h35m
       daily_settlement: 17h30m
       trading_breaks:
-      - - 9h30m
-        - 10h30m
+      - - 10h00m
+        - 11h00m
     partial_trading:
       dst_close: 9h30m
       dst_open: 6h35m
@@ -97,8 +97,8 @@ BIS:
       daily_open: 7h35m
       daily_settlement: 18h30m
       trading_breaks:
-      - - 10h30m
-        - 11h30m
+      - - 11h00m
+        - 12h00m
   symbol: BIS
   tenfore_trading_timezone: Europe/Istanbul
   trading_days: weekdays
