@@ -75,7 +75,7 @@ sub cashier {
     if (not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version)) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_TNC_APPROVAL',
-            message_to_client => localize('TNC Approval is required.'),
+            message_to_client => localize('Terms and conditions approval is required.'),
         });
     }
 
@@ -136,7 +136,7 @@ sub cashier {
     if (not $currency) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_CURRENCY',
-            message_to_client => $error,
+            message_to_client => 'Please set the currency.',
         });
     }
 
