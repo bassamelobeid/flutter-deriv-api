@@ -199,7 +199,7 @@ subtest 'get_ask' => sub {
         {
             error => {
                 message_to_client => '无法创建合约',
-                code              => "ContractBuyValidationError",
+                code              => "ContractCreationFailure",
             }});
 
     is_deeply(
