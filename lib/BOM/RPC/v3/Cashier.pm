@@ -91,7 +91,7 @@ sub cashier {
     if ($client->residence eq 'gb' and not $client->get_status('ukgc_funds_protection')) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_UK_FUNDS_PROTECTION',
-            message_to_client => localize('Client is not fully authenticated.'),
+            message_to_client => localize('Please accept Funds Protection.'),
         });
     }
 
