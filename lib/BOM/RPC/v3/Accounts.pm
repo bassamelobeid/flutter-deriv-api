@@ -867,10 +867,6 @@ sub set_self_exclusion {
     if ($args{exclude_until}) {
         my $ret = $client->set_exclusion->exclude_until($args{exclude_until});
         $message .= "- Exclude from website until: $ret\n";
-
-        ## remove all tokens (FIX for SessionCookie which do not have remove by loginid now)
-        ## but it should be OK since we check self_exclusion on every call
-        BOM::Database::Model::AccessToken->new->remove_by_loginid($client->loginid);
     }
 
     if ($message) {
@@ -964,17 +960,22 @@ sub tnc_approval {
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
-    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
-    my $client_tnc_status   = $client->get_status('tnc_approval');
+    if ($params->{ukgc_funds_protection}) {
+        $client->set_status('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds');
+        $client->save;
+    } else {
+        my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+        my $client_tnc_status   = $client->get_status('tnc_approval');
 
-    if (not $client_tnc_status
-        or ($client_tnc_status->reason ne $current_tnc_version))
-    {
-        $client->set_status('tnc_approval', 'system', $current_tnc_version);
-        if (not $client->save()) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InternalServerError',
-                    message_to_client => localize('Sorry, an error occurred while processing your request.')});
+        if (not $client_tnc_status
+            or ($client_tnc_status->reason ne $current_tnc_version))
+        {
+            $client->set_status('tnc_approval', 'system', $current_tnc_version);
+            if (not $client->save()) {
+                return BOM::RPC::v3::Utility::create_error({
+                        code              => 'InternalServerError',
+                        message_to_client => localize('Sorry, an error occurred while processing your request.')});
+            }
         }
     }
 
