@@ -121,6 +121,7 @@ sub startup {
                 '/paymentagent_withdraw'     => register('paymentagent_withdraw',     \&BOM::RPC::v3::Cashier::paymentagent_withdraw),
                 '/paymentagent_transfer'     => register('paymentagent_transfer',     \&BOM::RPC::v3::Cashier::paymentagent_transfer),
                 '/transfer_between_accounts' => register('transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts),
+                '/cashier'                   => register('cashier',                   \&BOM::RPC::v3::Cashier::cashier),
                 '/topup_virtual'             => register('topup_virtual',             \&BOM::RPC::v3::Cashier::topup_virtual),
                 '/payout_currencies'         => register('payout_currencies',         \&BOM::RPC::v3::Accounts::payout_currencies),
                 '/landing_company'           => register('landing_company',           \&BOM::RPC::v3::Accounts::landing_company),
