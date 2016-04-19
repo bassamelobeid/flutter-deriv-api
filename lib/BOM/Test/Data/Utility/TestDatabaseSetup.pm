@@ -94,7 +94,35 @@ sub _migrate_changesets {
     my $pooler = $self->db_handler('pgbouncer');
     $pooler->{RaiseError}        = 1;
     $pooler->{pg_server_prepare} = 0;
-    $pooler->do('PAUSE');
+
+    my $b_db;
+    my @bouncer_dbs;
+
+    my $sth = $pooler->prepare('SHOW DATABASES');
+    $sth->execute;
+
+    while (my $row = $sth->fetchrow_hashref) {
+        if ($row->{database} eq $self->_db_name) {
+            $b_db = $row->{name};
+            push @bouncer_dbs, $b_db;
+
+            try {
+                $pooler->do('DISABLE "' . $b_db . '"');
+                #$pooler->do('PAUSE "'.$b_db.'"');
+            }
+            catch {
+                print "[pgbouncer] DISABLE $b_db error [$_]";
+            };
+
+            try {
+                $pooler->do('KILL "' . $b_db . '"');
+            }
+            catch {
+                print "[pgbouncer] KILL $b_db error [$_]";
+            };
+        }
+    }
+
     #suppress 'WARNING:  PID 31811 is not a PostgreSQL server process'
     {
         local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
@@ -107,7 +135,6 @@ sub _migrate_changesets {
     $dbh->do('drop database if exists ' . $self->_db_name);
     $dbh->do('create database ' . $self->_db_name);
     $dbh->disconnect();
-    $pooler->do('RESUME');
 
     my $m = DBIx::Migration->new({
         'dsn'      => $self->dsn,
@@ -136,6 +163,24 @@ sub _migrate_changesets {
         # apply DB functions
         $m->psql(sort glob $self->collectordb_changesets_location . '/functions/*.sql')
             if -d $self->collectordb_changesets_location . '/functions';
+    }
+
+    foreach (@bouncer_dbs) {
+        $b_db = $_;
+
+        try {
+            $pooler->do('ENABLE "' . $b_db . '"');
+        }
+        catch {
+            print "[pgbouncer] ENABLE $b_db error [$_]";
+        };
+
+        try {
+            $pooler->do('RESUME "' . $b_db . '"');
+        }
+        catch {
+            print "[pgbouncer] RESUME $b_db error [$_]";
+        };
     }
 
     return 1;
