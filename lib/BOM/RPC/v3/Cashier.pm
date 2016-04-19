@@ -783,8 +783,8 @@ sub paymentagent_withdraw {
     });
     my ($amount_transferred, $count) = $data_mapper->get_today_payment_agent_withdrawal_sum_count();
 
-    # max withdrawal daily limit: weekday = $5000, weekend = $500
-    my $daily_limit = (DateTime->now->day_of_week() > 5) ? 500 : 5000;
+    # max withdrawal daily limit: weekday = $5000, weekend = $1500
+    my $daily_limit = (DateTime->now->day_of_week() > 5) ? 1500 : 5000;
 
     if (($amount_transferred + $amount) > $daily_limit) {
         BOM::Platform::Transaction->unfreeze_client($client_loginid);
