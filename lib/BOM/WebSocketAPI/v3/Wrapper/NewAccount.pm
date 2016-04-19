@@ -54,6 +54,12 @@ sub verify_email {
                 expires_in  => 3600,
                 created_for => 'paymentagent_withdraw'
             })->token;
+    } elsif ($type eq 'payment_withdraw') {
+        $code = BOM::Platform::Token::Verification->new({
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'payment_withdraw'
+            })->token;
     }
 
     BOM::WebSocketAPI::Websocket_v3::rpc(

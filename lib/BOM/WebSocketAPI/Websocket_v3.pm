@@ -292,6 +292,10 @@ my @dispatch = (
         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::transfer_between_accounts, 1, 'payments'
     ],
     [
+        'cashier',
+        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::cforward, 1, 'payments'
+    ],
+    [
         'new_account_real',
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real, 1, 'admin'
     ],
