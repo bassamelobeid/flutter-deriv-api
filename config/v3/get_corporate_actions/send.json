@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Corporate actions for an open contract",
+  "description": "Get corporate actions for an open contract in the user's portfolio",
+  "properties": {
+    "get_corporate_actions": {
+      "type": "integer",
+      "description":"Must be 1",
+      "pattern": "^1$",
+      "required": "1"
+    },
+    "contract_id": {
+      "type": "integer",
+      "description":"Open contract id received from a Portfolio request. If not set, you will receive stream of all open contracts."
+    },
+    "shortcode": {
+      "type": "object",
+      "description": "Open contract short code."
+    },
+    "currency": {
+      "type": "object",
+      "description": "Optional."
+    },
+    "is_sold": {
+      "type": "integer",
+      "description": "1 or 0",
+      "pattern": "^1$"
+    }
+  },
+  "additionalProperties": false
+}
