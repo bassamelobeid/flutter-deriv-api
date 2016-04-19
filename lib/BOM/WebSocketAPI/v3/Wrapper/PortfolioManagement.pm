@@ -9,6 +9,30 @@ use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 
+sub get_corporate_actions {
+    my ($c, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'get_corporate_actions',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('get_corporate_actions', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type  => 'get_corporate_actions',
+                    portfolio => $response,
+                };
+            }
+        },
+        {
+            args   => $args,
+            token  => $c->stash('token'),
+            source => $c->stash('source')});
+    return;
+}
+
 sub portfolio {
     my ($c, $args) = @_;
 
