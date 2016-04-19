@@ -153,6 +153,10 @@ subtest 'get_corporate_actions_one_action' => sub {
             ));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
 
+    my $adjusted_barrier = $result->{adjusted_barrier}->{barrier};
+
+    cmp_ok $adjusted_barrier, '==', 88.80, 'original quote adjusted by corporate action';
+
     #one action on single barrier path dependent bet.
     my $date_pricing = $starting->plus_time_interval('1d');
 
@@ -191,6 +195,10 @@ subtest 'get_corporate_actions_one_action' => sub {
     $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
+
+    $adjusted_barrier = $result->{adjusted_barrier}->{barrier};
+
+    cmp_ok $adjusted_barrier, '==', 79.20, 'original quote adjusted by corporate action';
 
 };
 
