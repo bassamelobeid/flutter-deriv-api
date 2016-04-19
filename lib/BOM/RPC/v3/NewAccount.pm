@@ -146,7 +146,6 @@ sub verify_email {
                     BOM::Platform::Context::localize(
                         '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span style="background: #f2f2f2; padding: 10px;">[_1]</span></p></p>',
                         $params->{code})
-                    )
                 ],
                 use_email_template => 1
             });
