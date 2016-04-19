@@ -99,7 +99,7 @@ sub crand {
 
 sub _redis {
     state $redis_read = RedisDB->new(
-        host     => 'localhost',
+        host     => BOM::System::Config::randsrv()->{rand_server}->{fqdn},
         port     => BOM::System::Config::randsrv()->{rand_server}->{port},
         password => BOM::System::Config::randsrv()->{rand_server}->{password},
     );
