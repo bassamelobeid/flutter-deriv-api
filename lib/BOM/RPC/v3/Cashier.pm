@@ -248,20 +248,6 @@ sub cashier {
 
     if ($action eq 'deposit') {
         $action = 'DEPOSIT';
-
-        # FIXME
-        # # first deposit
-        # if (not $df_client->default_account) {
-        #     $r->ui_settings->{'client.currencies'} = [$currency];
-        #     $c->cookie(
-        #         'settings' => $r->ui_settings_value,
-        #         {
-        #             domain  => $r->cookie_domain,
-        #             path    => '/',
-        #             expires => 'Thu, 1 Jan 2037 12:00:00 GMT',
-        #             secure  => 1
-        #         });
-        # }
     } elsif ($action eq 'withdraw') {
         $action = 'PAYOUT';
     }
