@@ -135,7 +135,7 @@ sub get_sold_bets_of_account {
     my $sth = $dbh->prepare("
         SELECT fmb.*, t.id txn_id
         $sql
-        ORDER BY fmb.purchase_time $sort_dir
+        ORDER BY fmb.purchase_time $sort_dir, fmb.id $sort_dir
         LIMIT ? OFFSET ?
     ");
     $sth->execute(@binds, $limit, $offset);
@@ -337,25 +337,40 @@ sub get_contract_details_with_transaction_ids {
     my $contract_id = shift;
 
     my $sql = q{
-        SELECT ff.*, tt.id as sell_transaction_id FROM
-        (
-            SELECT fmb.*, t.id as buy_transaction_id
-            FROM
-                bet.financial_market_bet fmb
-                JOIN transaction.transaction t
-                    on t.financial_market_bet_id=fmb.id AND t.action_type = 'buy'
-            WHERE
-                fmb.id = ?
-        ) ff
-
-        LEFT JOIN transaction.transaction tt
-            ON tt.financial_market_bet_id=ff.id AND tt.action_type = 'sell'
+        SELECT fmb.*, t.id as transaction_id, t.action_type
+        FROM
+            bet.financial_market_bet fmb
+            JOIN transaction.transaction t on t.financial_market_bet_id=fmb.id
+        WHERE
+            fmb.id = ?
     };
 
     my $sth = $self->db->dbh->prepare($sql);
     $sth->execute($contract_id);
 
-    return $sth->fetchall_arrayref({});
+    my $response = [];
+    my @fmbs     = @{$sth->fetchall_arrayref({})};
+
+    if (scalar @fmbs > 0) {
+        # get only first record as all other fields are similar
+        my $record = $fmbs[0];
+
+        foreach my $fmb (@fmbs) {
+            if ($fmb->{action_type} eq 'buy') {
+                $record->{buy_transaction_id} = $fmb->{transaction_id};
+            } elsif ($fmb->{action_type} eq 'sell') {
+                $record->{sell_transaction_id} = $fmb->{transaction_id};
+            }
+        }
+
+        # delete these as we don't want to send it
+        delete $record->{transaction_id};
+        delete $record->{action_type};
+
+        push $response, $record;
+    }
+
+    return $response;
 }
 
 ###
