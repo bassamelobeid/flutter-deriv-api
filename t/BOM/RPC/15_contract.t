@@ -254,15 +254,12 @@ subtest 'send_ask' => sub {
 };
 
 subtest 'get_bid' => sub {
+    # just one tick for missing market data
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch - 899,
         underlying => 'R_50',
     });
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 850,
-        underlying => 'R_50',
-    });
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         underlying => 'R_50',
@@ -276,6 +273,7 @@ subtest 'get_bid' => sub {
         date_expiry   => $now->epoch - 500,
         purchase_date => $now->epoch - 901
     );
+    $DB::single=1;
     my $params = {
         language    => 'ZH_CN',
         short_code  => $contract->shortcode,
