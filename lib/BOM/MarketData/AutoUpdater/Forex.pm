@@ -215,8 +215,8 @@ sub passes_additional_check {
     # but I am sitting here fixing this on Christmas, so I might be missing something.
     my $underlying         = $volsurface->underlying;
     my $recorded_date      = $volsurface->recorded_date;
-    my $friday_after_close = ($recorded_date->day_of_week == 5 and not $underlying->exchange->is_open_at($recorded_date));
-    my $wont_open          = not $underlying->exchange->trades_on($volsurface->effective_date);
+    my $friday_after_close = ($recorded_date->day_of_week == 5 and not $underlying->calendar->is_open_at($recorded_date));
+    my $wont_open          = not $underlying->calendar->trades_on($volsurface->effective_date);
 
     if (   $volsurface->effective_date->is_a_weekend
         or $friday_after_close

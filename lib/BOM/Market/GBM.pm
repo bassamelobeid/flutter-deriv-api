@@ -148,7 +148,7 @@ sub _next_reset {
 
     # Reset at the next open.
     return ($underlying->submarket->resets_at_open)
-        ? $underlying->exchange->opening_on($underlying->trade_date_after($when))->epoch
+        ? $underlying->calendar->opening_on($underlying->trade_date_after($when))->epoch
         : undef;
 }
 

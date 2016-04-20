@@ -23,28 +23,30 @@ use List::Util qw( first max min);
 use Scalar::Util qw( looks_like_number );
 use BOM::Utility::Log4perl qw( get_logger );
 use Memoize;
+use Time::HiRes;
 use Finance::Asset;
 
+use Quant::Framework::Exchange;
+use Quant::Framework::TradingCalendar;
+use Quant::Framework::CorporateAction;
 use Cache::RedisDB;
 use Date::Utility;
+use Format::Util::Numbers qw(roundnear);
+use Time::Duration::Concise;
+use POSIX;
+use YAML::XS qw(LoadFile);
+use Try::Tiny;
+use BOM::Platform::Runtime;
+use BOM::Market::Data::DatabaseAPI;
+use BOM::Platform::Context qw(request localize);
+use BOM::Market::Types;
+use BOM::Platform::Static::Config;
 use BOM::Market::Asset;
 use BOM::Market::Currency;
-use BOM::Market::Exchange;
+use BOM::System::Chronicle;
 use BOM::Market::SubMarket::Registry;
 use BOM::Market;
 use BOM::Market::Registry;
-use Format::Util::Numbers qw(roundnear);
-use Time::Duration::Concise;
-use BOM::Platform::Runtime;
-use BOM::Market::Data::DatabaseAPI;
-use Quant::Framework::CorporateAction;
-use BOM::Platform::Context qw(request localize);
-use POSIX;
-use Try::Tiny;
-use BOM::Market::Types;
-use YAML::XS qw(LoadFile);
-use BOM::Platform::Static::Config;
-use Time::HiRes;
 
 with 'BOM::Market::Role::ExpiryConventions';
 
@@ -655,20 +657,38 @@ apply on that basis.
 
 =cut
 
-has exchange => (
+has calendar => (
     is         => 'ro',
-    isa        => 'BOM::Market::Exchange',
+    isa        => 'Quant::Framework::TradingCalendar',
     lazy_build => 1,
     handles    => [
         'seconds_of_trading_between_epochs', 'trade_date_after', 'trade_date_before', 'trades_on',
-        'has_holiday_on',                    'is_open',          'is_in_dst_at',      'is_OTC',
+        'has_holiday_on',                    'is_open',          'is_in_dst_at',
+    ]);
+
+sub _build_calendar {
+    my $self = shift;
+
+    $self->_exchange_refreshed(time);
+    return Quant::Framework::TradingCalendar->new($self->exchange_name, 
+        BOM::System::Chronicle::get_chronicle_reader(),
+        BOM::Platform::Context::request()->language,
+        $self->for_date);
+}
+
+has exchange => (
+    is         => 'ro',
+    isa        => 'Quant::Framework::Exchange',
+    lazy_build => 1,
+    handles    => [
+        'is_OTC',
     ]);
 
 sub _build_exchange {
     my $self = shift;
 
     $self->_exchange_refreshed(time);
-    return BOM::Market::Exchange->new($self->exchange_name, $self->for_date);
+    return Quant::Framework::Exchange->new($self->exchange_name);
 }
 
 has _exchange_refreshed => (
@@ -679,6 +699,11 @@ has _exchange_refreshed => (
 before 'exchange' => sub {
     my $self = shift;
     $self->clear_exchange if ($self->_exchange_refreshed + 17 < time);
+};
+
+before 'calendar' => sub {
+    my $self = shift;
+    $self->clear_calendar if ($self->_exchange_refreshed + 17 < time);
 };
 
 =head2 market_convention
@@ -815,11 +840,11 @@ sub last_licensed_display_epoch {
         return $time - 60 * $self->delay_amount;
     } elsif ($lic eq 'daily') {
         my $today  = Date::Utility->today;
-        my $closes = $self->exchange->closing_on($today);
+        my $closes = $self->calendar->closing_on($today);
         if ($closes and $time >= $closes->epoch) {
             $time = $closes->epoch;
         } else {
-            my $opens = $self->exchange->opening_on($today);
+            my $opens = $self->calendar->opening_on($today);
             $time =
                 ($opens and $opens->is_before($today))
                 ? $opens->epoch - 1
@@ -1275,7 +1300,10 @@ sub is_in_quiet_period {
 
     # Cache the exchange objects for faster service
     # The times should not reasonably change in a process-lifetime
-    state $exchanges = {map { $_ => BOM::Market::Exchange->new($_) } (qw(NYSE FSE LSE TSE SES ASX))};
+    state $exchanges = {map { $_ => Quant::Framework::TradingCalendar->new($_,
+        BOM::System::Chronicle::get_chronicle_reader(),
+        BOM::Platform::Context::request()->language, 
+        $self->for_date)} (qw(NYSE FSE LSE TSE SES ASX))};
 
     if ($self->market->name eq 'forex') {
         # Pretty much everything trades in these big centers of activity
@@ -1349,7 +1377,7 @@ Returns our closed weight for days when the market is closed.
 sub weight_on {
     my ($self, $date) = @_;
 
-    my $weight = $self->exchange->weight_on($date) || $self->closed_weight;
+    my $weight = $self->calendar->weight_on($date) || $self->closed_weight;
     if ($self->market->name eq 'forex') {
         my $base      = $self->asset;
         my $numeraire = $self->quoted_currency;
@@ -1522,9 +1550,9 @@ sub tick_at {
 
     # get official close for previous trading day
     if ($self->use_official_ohlc
-        and not $self->exchange->trades_on($pricing_date))
+        and not $self->calendar->trades_on($pricing_date))
     {
-        my $last_trading_day = $self->exchange->trade_date_before($pricing_date);
+        my $last_trading_day = $self->calendar->trade_date_before($pricing_date);
         $tick = $self->closing_tick_on($last_trading_day->date_ddmmmyy);
     } else {
         my $request_hash = {};
@@ -1549,7 +1577,7 @@ sub closing_tick_on {
     my ($self, $end) = @_;
     my $date = Date::Utility->new($end);
 
-    my $closing = $self->exchange->closing_on($date);
+    my $closing = $self->calendar->closing_on($date);
     if ($closing and time > $closing->epoch) {
         my $ohlc = $self->ohlc_between_start_end({
             start_time         => $date,
@@ -1729,14 +1757,14 @@ sub ohlc_daily_open {
     my $self = shift;
 
     my $today    = Date::Utility->today;
-    my $exchange = $self->exchange;
+    my $calendar = $self->calendar;
     my $trading_day =
-        ($exchange->trades_on($today))
+        ($calendar->trades_on($today))
         ? $today
-        : $exchange->trade_date_after($today);
+        : $calendar->trade_date_after($today);
 
-    my $open  = $exchange->opening_on($trading_day);
-    my $close = $exchange->closing_on($trading_day);
+    my $open  = $calendar->opening_on($trading_day);
+    my $close = $calendar->closing_on($trading_day);
 
     if ($close->days_between($open) > 0) {
         return $open->seconds_after_midnight;
@@ -1829,7 +1857,7 @@ sub price_at_intervals {
 
     # We don't want to go beyond the end of the day.
     # And if it's not even open, just use the same Date.
-    my $day_close = $self->exchange->closing_on($start_date) // $start_date;
+    my $day_close = $self->calendar->closing_on($start_date) // $start_date;
     $end_date = $day_close if ($end_date->is_after($day_close));
 
     $start_date = Date::Utility->new(POSIX::ceil($start_date->epoch / $interval_seconds) * $interval_seconds);
@@ -1912,8 +1940,8 @@ sub forward_starts_on {
     my $self = shift;
     my $day  = Date::Utility->new(shift)->truncate_to_day;
 
-    my $exchange = $self->exchange;
-    my $opening  = $exchange->opening_on($day);
+    my $calendar = $self->calendar;
+    my $opening  = $calendar->opening_on($day);
     return [] unless ($opening);
 
     my $cache_key = 'FORWARDSTARTS::' . $self->symbol;
@@ -1927,14 +1955,14 @@ sub forward_starts_on {
     # With 0s blackout, skip open if we weren't open at the previous start.
     # Basically, Monday morning/holiday forex.
     my $start_at =
-        (not $sod_bo and not $exchange->is_open_at($opening->minus_time_interval($intraday_interval)))
+        (not $sod_bo and not $calendar->is_open_at($opening->minus_time_interval($intraday_interval)))
         ? $opening->plus_time_interval($intraday_interval)
         : $sod_bo ? $opening->plus_time_interval($sod_bo)
         :           $opening;
 
-    my $end_at = $eod_bo ? $exchange->closing_on($day)->minus_time_interval($eod_bo) : $exchange->closing_on($day);
+    my $end_at = $eod_bo ? $calendar->closing_on($day)->minus_time_interval($eod_bo) : $calendar->closing_on($day);
     my @trading_periods;
-    if (my $breaks = $exchange->trading_breaks($day)) {
+    if (my $breaks = $calendar->trading_breaks($day)) {
         my @breaks = @$breaks;
         if (@breaks == 1) {
             my $first_half_close = $eod_bo ? $breaks[0][0]->minus_time_interval($eod_bo) : $breaks[0][0];

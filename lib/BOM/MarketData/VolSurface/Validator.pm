@@ -146,7 +146,7 @@ sub _admissible_check {
     my $surface = shift;
 
     my $underlying       = $surface->underlying;
-    my $exchange         = $underlying->exchange;
+    my $calendar         = $underlying->calendar;
     my $surface_type     = $surface->type;
     my $S                = ($surface_type eq 'delta') ? $underlying->spot : $surface->spot_reference;
     my $premium_adjusted = $underlying->{market_convention}->{delta_premium_adjusted};
@@ -155,7 +155,7 @@ sub _admissible_check {
     my $utils = BOM::MarketData::VolSurface::Utils->new;
     foreach my $day (@{$surface->_days_with_smiles}) {
         my $date_expiry = Date::Utility->new(time + $day * 86400);
-        $date_expiry = $exchange->trades_on($date_expiry) ? $date_expiry : $exchange->trade_date_after($date_expiry);
+        $date_expiry = $calendar->trades_on($date_expiry) ? $date_expiry : $calendar->trade_date_after($date_expiry);
         my $adjustment;
         if ($underlying->market->prefer_discrete_dividend) {
             $adjustment = $underlying->dividend_adjustments_for_period({

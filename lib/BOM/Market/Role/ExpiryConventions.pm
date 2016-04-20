@@ -31,7 +31,7 @@ sub _build__days_for_settlement {
 sub _is_good_business_day {
     my ($self, $date) = @_;
 
-    my $holiday_haver = (ref $self->asset =~ /Currency$/) ? $self->asset : $self->exchange;
+    my $holiday_haver = (ref $self->asset =~ /Currency$/) ? $self->asset : $self->calendar;
 
     if (   $date->is_a_weekend
         or $holiday_haver->has_holiday_on($date)
@@ -209,7 +209,7 @@ sub _FX_forward_delivery_date {
 # 3.1: First check if the spot date itself is drop on last business day of the spot month, then the delivery date should set as last day of forward month
 # Example: If the spot date is 31Jan2011, the 1M delivery date must set as 28-Feb-11 and not 31-Feb-11
     my $first_day_of_next_mth_after_spot_mth = Date::Utility->new('1-' . $spot_date->months_ahead(1));
-    my $last_trading_day_of_spot_mth = $self->exchange->trade_date_before($first_day_of_next_mth_after_spot_mth, {lookback => 1});
+    my $last_trading_day_of_spot_mth = $self->calendar->trade_date_before($first_day_of_next_mth_after_spot_mth, {lookback => 1});
 
 # This is just to build the BOM date for forward month so that we can obtain the last day of forward month
     my $forward_date = Date::Utility->new(

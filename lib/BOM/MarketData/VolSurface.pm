@@ -393,14 +393,14 @@ sub _build__vol_surface_validator {
 
 # Getting the exchange off the underlying each time is crazy expensive and we
 # need to do it an awful lot. So, we cache here.
-has _exchange => (
+has _calendar => (
     is         => 'ro',
-    isa        => 'BOM::Market::Exchange',
+    isa        => 'Quant::Framework::TradingCalendar',
     lazy_build => 1,
 );
 
-sub _build__exchange {
-    return shift->underlying->exchange;
+sub _build__calendar {
+    return shift->underlying->calendar;
 }
 
 has _ON_day => (
@@ -412,7 +412,7 @@ has _ON_day => (
 sub _build__ON_day {
     my $self = shift;
 
-    return $self->_exchange->calendar_days_to_trade_date_after($self->effective_date);
+    return $self->_calendar->calendar_days_to_trade_date_after($self->effective_date);
 }
 
 around BUILDARGS => sub {
