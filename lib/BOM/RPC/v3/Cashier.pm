@@ -627,7 +627,7 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
 
     return {
         status              => 1,
-        client_to_full_name => $pa_client->full_name,
+        client_to_full_name => $client_to->full_name,
         client_to_loginid   => $loginid_to,
         transaction_id      => $response->{transaction_id}};
 }
