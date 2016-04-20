@@ -696,6 +696,8 @@ sub _build_opposite_contract {
         push @opposite_contract_parameters, qw(empirical_volsurface average_tick_count long_term_prediction news_adjusted_pricing_vol)
             if $self->priced_with_intraday_model;
     } else {
+        # duration could be set for an opposite contract from bad hash reference reused.
+        delete $opp_parameters{duration};
         # not pricing_new will only happen when we are repricing an
         # existing contract in our system.
         if ($self->entry_tick) {
