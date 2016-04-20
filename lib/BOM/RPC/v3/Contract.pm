@@ -88,7 +88,8 @@ sub _get_ask {
             if (my $pve = $contract->primary_validation_error) {
                 $response = BOM::RPC::v3::Utility::create_error({
                     message_to_client => $pve->message_to_client,
-                    code              => "ContractBuyValidationError"
+                    code              => "ContractBuyValidationError",
+                    details           => $contract->longcode
                 });
             } else {
                 $response = BOM::RPC::v3::Utility::create_error({
