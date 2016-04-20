@@ -6,6 +6,7 @@ use strict;
 use warnings;
 use Data::Validate::IP;
 use Sys::Hostname;
+use BOM::Platform::Context qw/ localize /;
 
 sub register {
     my ($self, $app) = @_;
@@ -44,15 +45,7 @@ sub register {
             return $c->stash->{country_code} = $client_country;
         });
 
-    $app->helper(
-        l => sub {
-            my $c = shift;
-
-            my $lh = BOM::Platform::Context::I18N::handle_for($c->stash('language'))
-                || die("could not build locale for language " . $c->stash('language'));
-
-            return $lh->maketext(@_);
-        });
+    $app->helper(l => sub { return localize(@_) });
 
     $app->helper(
         new_error => sub {
