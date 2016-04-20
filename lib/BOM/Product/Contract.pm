@@ -1476,8 +1476,12 @@ sub _build_vol_at_strike {
 }
 
 # pricing_spot - The spot used in pricing.  It may have been adjusted for corporate actions.
+has pricing_spot => (
+    is         => 'ro',
+    lazy_build => 1,
+);
 
-sub pricing_spot {
+sub _build_pricing_spot {
     my $self = shift;
 
     # always use current spot to price for sale or buy.
