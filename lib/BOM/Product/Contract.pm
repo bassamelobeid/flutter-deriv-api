@@ -699,8 +699,7 @@ sub _build_opposite_bet {
     delete $opp_parameters{'shortcode'};
     # Save a round trip.. copy market data
     foreach my $vol_param (@opposite_bet_parameters) {
-        my $predicate = 'has_' . $vol_param;
-        $opp_parameters{$vol_param} = $self->$vol_param if ($self->$predicate);
+        $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
     return $self->_produce_contract_ref->(\%opp_parameters);
