@@ -625,7 +625,7 @@ sub _get_overview {
         },
         {
             label => 'Barrier adjustment',
-            value => roundnear(0.0001, $bet->_barriers_for_pricing->{barrier1} - $barrier_to_compare->as_absolute),
+            value => roundnear(0.0001, $bet->barriers_for_pricing->{barrier1} - $barrier_to_compare->as_absolute),
         },
     );
 
