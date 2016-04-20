@@ -1,5 +1,5 @@
 v3:
-	prove --timer -I./lib -I./t -r t/BOM/WesocketAPI/v3
+	prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3
 
 structure:
 	prove --timer -I./lib  -I./t t/BOM/*.t
