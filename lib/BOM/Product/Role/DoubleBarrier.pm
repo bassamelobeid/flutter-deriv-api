@@ -80,32 +80,28 @@ sub _validate_barrier {
     my $low_barrier  = $self->low_barrier;
     my $current_spot = $self->current_spot;
 
-    my @errors;
-    push @errors, $high_barrier->all_errors if not $high_barrier->confirm_validity;
-    push @errors, $low_barrier->all_errors  if not $low_barrier->confirm_validity;
+    return ($high_barrier->all_errors)[0] if not $high_barrier->confirm_validity;
+    return ($low_barrier->all_errors)[0]  if not $low_barrier->confirm_validity;
     if (not defined $high_barrier or not defined $low_barrier) {
-        push @errors,
-            {
+        return {
             severity          => 100,
             message           => 'At least one barrier is undefined on double barrier contract.',
             message_to_client => localize('The barriers are improperly entered for this contract.'),
-            };
+        };
     }
     if ($high_barrier->supplied_type ne $low_barrier->supplied_type) {
-        push @errors,
-            {
+        return {
             severity          => 5,
             message           => 'Mixed absolute and relative barriers',
             message_to_client => localize('Proper barriers could not be determined.'),
-            };
+        };
     }
     if ($self->is_path_dependent) {
         my $high_pip_move = $self->high_barrier->pip_difference;
         my $low_pip_move  = $self->low_barrier->pip_difference;
         my $min_allowed   = $self->minimum_allowable_move;
         if ($high_barrier->as_absolute <= $current_spot or $low_barrier->as_absolute >= $current_spot) {
-            push @errors,
-                {
+            return {
                 message => format_error_string(
                     'Barriers should straddle the spot',
                     spot => $current_spot,
@@ -114,10 +110,9 @@ sub _validate_barrier {
                 ),
                 severity          => 1,
                 message_to_client => localize('Barriers must be on either side of the spot.'),
-                };
+            };
         } elsif (abs($high_pip_move) < $min_allowed or abs($low_pip_move) < $min_allowed) {
-            push @errors,
-                {
+            return {
                 message => format_error_string(
                     'Relative barrier path dependent move below minimum',
                     'high move' => $high_pip_move,
@@ -126,7 +121,7 @@ sub _validate_barrier {
                 ),
                 severity          => 1,
                 message_to_client => localize('Barrier must be at least ' . $min_allowed . ' pips away from the spot.'),
-                };
+            };
         }
     }
     my ($min_move, $max_move) = (0.25, 2.5);
@@ -135,8 +130,7 @@ sub _validate_barrier {
         next unless $barrier;
         my $abs_barrier = $barrier->as_absolute;
         if ($abs_barrier > $max_move * $current_spot or $abs_barrier < $min_move * $current_spot) {
-            push @errors,
-                {
+            return {
                 message => format_error_string(
                     'Barrier too far from spot',
                     move => $abs_barrier / $current_spot,
@@ -148,11 +142,11 @@ sub _validate_barrier {
                 ? localize('Low barrier is out of acceptable range. Please adjust the low barrier.')
                 : localize('High barrier is out of acceptable range. Please adjust the high barrier.'),
                 ,
-                };
+            };
         }
     }
 
-    return @errors;
+    return;
 }
 
 1;

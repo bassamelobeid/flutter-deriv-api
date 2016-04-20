@@ -299,7 +299,7 @@ subtest 'invalid bet types are dull' => sub {
     };
 
     my $bet              = produce_contract($bet_params);
-    my $expected_reasons = [qr/duration.*not acceptable/];
+    my $expected_reasons = [qr/suspended for contract type/];
     test_error_list('buy', $bet, $expected_reasons);
 };
 
@@ -448,6 +448,12 @@ subtest 'volsurfaces become old and invalid' => sub {
             recorded_date => Date::Utility->new($starting)->minus_time_interval('10d'),
         });
 
+
+    my $tick       = BOM::Market::Data::Tick->new({
+        symbol => 'frxUSDJPY',
+        epoch => $starting,
+        quote => 100
+        });
     my $bet_params = {
         underlying   => $underlying,
         bet_type     => 'DOUBLEDOWN',
@@ -588,7 +594,7 @@ subtest 'invalid start times' => sub {
     $bet_params->{duration} = '-1m';
 
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/Intraday duration.*not acceptable/,];
+    $expected_reasons = [qr/Start must be before expiry/,];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{duration} = '6d';
@@ -607,7 +613,7 @@ subtest 'invalid start times' => sub {
 
     $bet_params->{entry_tick} = $tick;
     $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/volsurface too old/, qr/forward-starting.*blackout/];
+    $expected_reasons = [qr/forward-starting.*blackout/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{date_pricing} = $starting + 45;
@@ -635,7 +641,7 @@ subtest 'invalid start times' => sub {
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/underlying.*in starting blackout/];
+    $expected_reasons = [qr/blackout period \[symbol: GDAXI\] \[from: 1364457600\] \[to: 1364458200\]/];
     test_error_list('buy', $bet, $expected_reasons);
 
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -757,14 +763,12 @@ subtest 'invalid expiry times' => sub {
     $bet_params->{duration} = '59m34s';
 
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/end of day expiration blackout/];
+    $expected_reasons = [qr/blackout period \[symbol: GDAXI\] \[from: 1364488140\] \[to: 1364488200\]/];
     test_error_list('buy', $bet, $expected_reasons);
 
 };
 
 subtest 'invalid lifetimes.. how rude' => sub {
-    plan tests => 10;
-
     my $underlying = BOM::Market::Underlying->new('frxEURUSD');
     my $starting   = $oft_used_date->epoch - 3600;
 
@@ -815,43 +819,9 @@ subtest 'invalid lifetimes.. how rude' => sub {
 
     ok($bet->is_valid_to_buy, '..but when we pick a shorter duration, validates just fine.');
 
-    $bet_params->{date_start}   = Date::Utility->new('2013-03-26 22:01:34')->epoch;
-    $bet_params->{duration}     = '3d';
-    $bet_params->{date_pricing} = $bet_params->{date_start};
-    $bet_params->{barrier}      = 'S10P';
-    $bet                        = produce_contract($bet_params);
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_start})});
-
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => 'frxEURUSD',
-            recorded_date => Date::Utility->new($bet_params->{date_start}),
-        });
-
-    $expected_reasons = [qr/buying suspended between NY1600 and GMT0000/];
-    test_error_list('buy', $bet, $expected_reasons);
-
     $underlying = BOM::Market::Underlying->new('GDAXI');
-
-    $bet_params->{underlying}   = $underlying;
-    $bet_params->{duration}     = '11d';
-    $bet_params->{date_start}   = $underlying->exchange->opening_on(Date::Utility->new('24-Dec-12'))->plus_time_interval('15m');
-    $bet_params->{date_pricing} = $bet_params->{date_start};
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'index',
-        {
-            symbol        => 'GDAXI',
-            date          => Date::Utility->new,
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
-        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
-
-    $bet = produce_contract($bet_params);
-
-    $expected_reasons = [qr/trading days.*calendar days/, qr/holiday blackout period/];
-    test_error_list('buy', $bet, $expected_reasons);
-
+    $bet_params->{underlying} = $underlying;
     $bet_params->{date_start}   = $underlying->exchange->opening_on(Date::Utility->new('6-Dec-12'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -883,6 +853,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
 
     $bet_params->{bet_type} = 'CALL';
     $bet_params->{duration} = '1d';
+    $bet_params->{barrier}  = 'S10P';
     $bet                    = produce_contract($bet_params);
     $expected_reasons       = [qr/Daily duration.*outside acceptable range/];
     test_error_list('buy', $bet, $expected_reasons);
@@ -916,6 +887,7 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $expected_reasons = [qr/enough trading.*calendar days/];
     test_error_list('buy', $bet, $expected_reasons);
 };
+
 subtest 'underlying with critical corporate actions' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
@@ -1076,7 +1048,7 @@ subtest 'intraday indices duration test' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'FTSE',
+            symbol        => 'GDAXI',
             recorded_date => Date::Utility->new($params->{date_pricing}),
         });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -1088,23 +1060,23 @@ subtest 'intraday indices duration test' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'FTSE',
+            symbol         => 'GDAXI',
             recorded_date  => $now,
             spot_reference => $tick->quote,
         });
     $params->{date_start} = Date::Utility->new('2015-04-08 07:15:00');
     my $ftse_tick = BOM::Market::Data::Tick->new({
         epoch      => $params->{date_start}->epoch,
-        underlying => 'FTSE',
+        underlying => 'GDAXI',
         quote      => 100.012,
         bid        => 100.015,
         ask        => 100.021
     });
 
     $params->{date_pricing} = $params->{date_start};
-    $params->{underlying}   = 'FTSE';
+    $params->{underlying}   = 'GDAXI';
     $params->{currency}     = 'GBP';
-    $params->{duration}     = '15m';
+    $params->{duration}     = '14m59s';
     $params->{current_tick} = $ftse_tick;
     $c                      = produce_contract($params);
     $expected_reasons       = [qr/Intraday duration.*not acceptable/];
@@ -1137,15 +1109,15 @@ subtest 'expiry_daily expiration time' => sub {
             recorded_date => Date::Utility->new($params->{date_pricing}),
         });
     my $c = produce_contract($params);
-    ok $c->_validate_expiry_date;
-    my $err = ($c->_validate_expiry_date)[0]->{message_to_client};
+    ok $c->_validate_trading_times;
+    my $err = ($c->_validate_trading_times)[0]->{message_to_client};
     is $err, 'Contracts on Australian Index with durations under 24 hours must expire on the same trading day.', 'correct message';
 
 };
 
 subtest 'spot reference check' => sub {
 
-    my $now        = Date::Utility->new('2015-10-20 10:00');
+    my $now        = Date::Utility->new('2015-10-20 13:41:00');
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
@@ -1245,28 +1217,27 @@ subtest 'tentative events' => sub {
     };
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('2m1s');
     my $c = produce_contract($contract_args);
-    ok !$c->_validate_expiry_date, 'no error if contract expiring 1 second before tentative event\'s blackout period';
+    ok !$c->_validate_start_and_expiry_date, 'no error if contract expiring 1 second before tentative event\'s blackout period';
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('2m');
     $c = produce_contract($contract_args);
-    ok !$c->_validate_expiry_date, 'no error if contract is atm';
+    ok !$c->_validate_start_and_expiry_date, 'no error if contract is atm';
     $contract_args->{barrier} = 'S20P';
     $c = produce_contract($contract_args);
-    ok $c->_validate_expiry_date, 'throws error if contract expiring on the tentative event\'s blackout period';
-    cmp_ok(($c->_validate_expiry_date)[0]->{message}, 'eq', 'tentative economic events blackout period', 'correct error message');
+    ok $c->_validate_start_and_expiry_date, 'throws error if contract expiring on the tentative event\'s blackout period';
+    cmp_ok(($c->_validate_start_and_expiry_date)[0]->{message}, 'eq', 'blackout period [symbol: frxUSDJPY] [from: 1458273600] [to: 1458280800]', 'correct error message');
 
     $c = produce_contract({%$contract_args, underlying => 'frxGBPJPY'});
-    ok !$c->_validate_expiry_date, 'no error if event is not affecting the underlying';
+    ok !$c->_validate_start_and_expiry_date, 'no error if event is not affecting the underlying';
 
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_end;
     $c = produce_contract($contract_args);
-    ok $c->_validate_start_date, 'throws error if contract starts on tentative event\'s blackout end';
-    cmp_ok(($c->_validate_start_date)[0]->{message}, 'eq', 'tentative economic events blackout period', 'correct error message');
+    ok $c->_validate_start_and_expiry_date, 'throws error if contract starts on tentative event\'s blackout end';
+    cmp_ok(($c->_validate_start_and_expiry_date)[0]->{message}, 'eq', 'blackout period [symbol: frxUSDJPY] [from: 1458273600] [to: 1458280800]', 'correct error message');
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('1s');
     delete $contract_args->{duration};
     $contract_args->{date_expiry} = $blackout_end->plus_time_interval('1s');
     $c = produce_contract($contract_args);
-    ok !$c->_validate_start_date,  'no error';
-    ok !$c->_validate_expiry_date, 'no error';
+    ok !$c->_validate_start_and_expiry_date,  'no error';
 };
 
 subtest 'integer barrier' => sub {

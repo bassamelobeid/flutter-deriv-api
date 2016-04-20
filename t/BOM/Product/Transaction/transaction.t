@@ -1350,6 +1350,9 @@ subtest 'max_payout_open_bets validation', sub {
             barrier      => 'S0P',
         });
 
+        # Since we are buying two contracts first before we buy this,
+        # I am passing in purchase_time as contract->date_start.
+        # We are getting false positive failure of 'ContractAlreadyStarted' on this way too often.
         my $txn = BOM::Product::Transaction->new({
             client      => $cl,
             contract    => $contract,
