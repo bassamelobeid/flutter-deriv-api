@@ -20,7 +20,7 @@ use Carp;
 
 use Cache::RedisDB;
 use Date::Utility;
-use List::Util qw( min );
+use List::Util qw( first min );
 use Time::Duration::Concise;
 use Scalar::Util qw( blessed );
 use Sereal::Encoder;
@@ -317,6 +317,24 @@ sub fill_from_historical_feed {
     my $start = $end - min($fill_interval->seconds, $self->agg_retention_interval->seconds);
     $start = $start - $start % $agg_interval->seconds;
     my $first_agg = $start - $agg_interval->seconds;
+
+    # try to speed up a bit, i.e. do not re-insert whole ticks array in the specified timeframe,
+    # but lets try shift the starting border to end as much as possible, i.e. to the
+    # latest already inserted into redis tick
+    my $last_non_zero_aggtick = do {
+        my $timestamp = 0;
+        # Ticks are inserated into _AGG set later than  into _FULL. Hence, to we fetch lastly inserted
+        # in the case of die in in the middle.
+        my $agg_key       = $self->_make_key($underlying, 1);
+        my $redis         = $self->_redis;
+        my @ticks         = map { $decoder->decode($_) } @{$redis->zrevrangebyscore($agg_key, $end, $first_agg, 'LIMIT', 0, 100)};
+        my $non_zero_tick = first { $_->{count} > 0 } @ticks;
+        if ($non_zero_tick) {
+            $timestamp = $non_zero_tick->{agg_epoch};
+        }
+        $timestamp;
+    };
+    $first_agg = max($first_agg, $last_non_zero_aggtick);
 
     my $ticks = $args->{ticks} // $underlying->ticks_in_between_start_end({
         start_time => $first_agg,
