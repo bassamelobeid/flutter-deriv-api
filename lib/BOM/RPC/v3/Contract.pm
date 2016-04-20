@@ -144,14 +144,15 @@ sub get_corporate_actions {
 
         if ($underlying->market->affected_by_corporate_actions) {
             @actions = $underlying->get_applicable_corporate_actions_for_period({
-                start => $start,
-                end   => $end,
+                start => Date::Utility->new($start),
+                end   => Date::Utility->new($end),
             });
         }
 
         if (scalar @actions > 0) {
             foreach my $action (@actions) {
-                my display_date = $action->{effective_date}->date_ddmmyyyy;
+                my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
+
                 $response->{$display_date} = {
                     date  => $display_date,
                     type  => $name_mapper{$action->{type}},

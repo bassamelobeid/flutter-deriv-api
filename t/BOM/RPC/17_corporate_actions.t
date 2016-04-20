@@ -18,8 +18,6 @@ use Data::Dumper;
 use Quant::Framework::CorporateAction;
 use Quant::Framework::Utils::Test;
 
-initialize_realtime_ticks_db();
-
 my $email  = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -72,8 +70,6 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 80
 });
 
-###
-
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
 
@@ -98,96 +94,22 @@ subtest 'get_corporate_actions_one_action' => sub {
             actions          => $one_action,
         });
 
-    #create bet params for the corp act
     my $closing_time = $starting->plus_time_interval('1d')->truncate_to_day->plus_time_interval('23h59m59s');
-    my $bet_params   = {
-        underlying   => $underlying,
-        bet_type     => 'CALL',
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $starting,
-        duration     => '1d',
-        barrier      => 'S0P',
-        entry_tick   => $entry_tick,
-        date_pricing => $closing_time,
-    };
-    my $contract = produce_contract($bet_params);
 
     my $purchase_date = $date->epoch;
-
-    #Create new transactions.
-    my $txn = BOM::Product::Transaction->new({
-        client        => $client,
-        contract      => $contract,
-        price         => 100,
-        payout        => $contract->payout,
-        amount_type   => 'stake',
-        purchase_date => $purchase_date,
-    });
-
-    my $expiry = $contract->date_expiry->truncate_to_day;
 
     my $params = {
         language => 'ZH_CN',
         symbol   => 'FPFP',
-        start    => $opening,
-        end      => $opening->plus_time_interval('3d');
-        ,
+        start    => $opening->date_ddmmmyyyy,
+        end      => $closing_time->date_ddmmmyyyy,
     };
 
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
-    my @expected_keys = (qw(display_date));
+    my @expected_keys = (qw(28-Mar-2013));
 
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
-
-    my $adjusted_barrier = $result->{adjusted_barrier}->{barrier};
-
-    cmp_ok $adjusted_barrier, '==', 88.80, 'original quote adjusted by corporate action';
-
-    #one action on single barrier path dependent bet.
-    my $date_pricing = $starting->plus_time_interval('1d');
-
-    $bet_params = {
-        underlying   => $underlying,
-        bet_type     => 'ONETOUCH',
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $starting,
-        duration     => '7d',
-        barrier      => 99,
-        entry_tick   => $entry_tick,
-        date_pricing => $date_pricing,
-    };
-
-    $contract = produce_contract($bet_params);
-
-    #Create new transactions.
-    $txn = BOM::Product::Transaction->new({
-        client        => $client,
-        contract      => $contract,
-        price         => 100,
-        payout        => $contract->payout,
-        amount_type   => 'stake',
-        purchase_date => $purchase_date,
-    });
-
-    $params = {
-        language    => 'ZH_CN',
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => $client->currency,
-        is_sold     => 0,
-    };
-
-    $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
-
-    is_deeply([sort keys %{$result}], [sort @expected_keys]);
-
-    $adjusted_barrier = $result->{adjusted_barrier}->{barrier};
-
-    cmp_ok $adjusted_barrier, '==', 79.20, 'original quote adjusted by corporate action';
-
 };
 
 done_testing();
