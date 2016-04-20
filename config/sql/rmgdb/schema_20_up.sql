@@ -9,16 +9,19 @@ SET client_min_messages = warning;
 
 SET search_path = bet, pg_catalog;
 
+/* nickname: fmbo */
 CREATE TABLE financial_market_bet_open
 (
 /* we are inheriting all columns and check constraints from fmb */
   CONSTRAINT fmbo_is_not_sold CHECK (is_sold=FALSE)
 )
 inherits (bet.financial_market_bet);
-ALTER TABLE bet.financial_market_bet_open
+ALTER TABLE financial_market_bet_open
   OWNER TO postgres;
-GRANT SELECT, UPDATE, INSERT ON TABLE bet.financial_market_bet_open TO read;
-GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE bet.financial_market_bet_open TO write;
+GRANT SELECT, UPDATE, INSERT ON TABLE financial_market_bet_open TO read;
+GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE financial_market_bet_open TO write;
+/* there is some question about table permission differences between dev and production, so adding this */
+GRANT INSERT ON TABLE financial_market_bet_open TO insert_on_betonmarkets;
 
 ALTER TABLE ONLY financial_market_bet_open
     ADD CONSTRAINT pk_financial_market_bet_open PRIMARY KEY (id);
@@ -28,6 +31,16 @@ ALTER TABLE ONLY financial_market_bet_open
 
 ALTER TABLE ONLY financial_market_bet_open
     ADD CONSTRAINT fk_fmb_open_bet_type FOREIGN KEY (bet_type) REFERENCES bet_dictionary(bet_type) ON UPDATE RESTRICT ON DELETE RESTRICT;
+
+CREATE INDEX fmbo_account_id_bet_class_idx ON financial_market_bet_open USING btree (account_id, bet_class);
+
+CREATE INDEX fmbo_account_id_purchase_time_bet_class_idx ON financial_market_bet_open USING btree (account_id, date(purchase_time), bet_class);
+
+CREATE INDEX fmbo_account_id_purchase_time_idx ON financial_market_bet_open USING btree (account_id, purchase_time DESC);
+
+CREATE INDEX fmbo_ready_to_sell_idx ON financial_market_bet_open USING btree (expiry_time);
+
+CREATE INDEX fmbo_purchase_time_idx ON financial_market_bet_open USING btree (purchase_time);
 
 CREATE OR REPLACE FUNCTION ensure_fmb_id_exists()
   RETURNS trigger AS
@@ -44,19 +57,6 @@ COMMENT ON FUNCTION bet.ensure_fmb_id_exists() IS 'With our open bets going into
 However, since that transitional table is a child of fmb, we can check for the existence of a record in fmb to at least ensure that we have a record in place to which this is related.
 Since fmb is setup to only accept inserts, we don`t need to create something on that end to handle updates/deletes there.
 This trigger function can be used on any table which has a column named financial_market_bet_id referring to bet.financial_market_bet.id'; 
-
-CREATE INDEX fmbo_account_id_bet_class_idx ON financial_market_bet_open USING btree (account_id, bet_class);
-
-CREATE INDEX fmbo_account_id_purchase_time_bet_class_idx ON financial_market_bet_open USING btree (account_id, date(purchase_time), bet_class);
-
-CREATE INDEX fmbo_account_id_purchase_time_idx ON financial_market_bet_open USING btree (account_id, purchase_time DESC);
-
-CREATE INDEX fmbo_ready_to_sell_idx ON financial_market_bet_open USING btree (expiry_time);
-
-CREATE INDEX fmbo_purchase_time_idx ON financial_market_bet_open USING btree (purchase_time);
-
-CREATE TRIGGER prevent_update_action BEFORE UPDATE ON financial_market_bet FOR EACH ROW WHEN (NEW.id <> OLD.id) EXECUTE PROCEDURE public.prevent_action();
-COMMENT ON TRIGGER prevent_update_action ON financial_market_bet IS 'Since we cannot maintain a formal foreign key constraint on this table with our data transitioning through financial_market_bet_open, along with validating all ids inserted on related tables and preventing deletes on this table, we can ensure that no update can occur that would change and id value';
 
 ALTER TABLE ONLY digit_bet DROP CONSTRAINT IF EXISTS fk_digit_bet_financial_market_bet_id;
 

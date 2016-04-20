@@ -50,14 +50,28 @@ BEGIN
     DELETE FROM bet.financial_market_bet_open
      WHERE id=p_id
        AND account_id=p_account_id
-       AND NOT is_sold
     RETURNING * INTO v_fmb;
 
     GET DIAGNOSTICS v_nrows=ROW_COUNT;
     IF v_nrows>1 THEN
         RAISE EXCEPTION 'FMB Update modifies multiple rows for id=%', p_id;
     ELSIF v_nrows=0 THEN
-        RETURN;
+--        RETURN;
+/* This block is necessary until we get all remaining open contracts out of fmb and into fmbo.
+ * Once everything in fmb is_sold, then we can remove this block and uncomment the return above. */
+    	DELETE FROM bet.financial_market_bet
+     	WHERE id=p_id
+       		AND account_id=p_account_id
+       		AND NOT is_sold
+    	RETURNING * INTO v_fmb;
+
+    	GET DIAGNOSTICS v_nrows=ROW_COUNT;
+    	IF v_nrows>1 THEN
+        	RAISE EXCEPTION 'FMB Update modifies multiple rows for id=%', p_id;
+    	ELSIF v_nrows=0 THEN
+        	RETURN;
+    	END IF;
+/* compatibility block */
     END IF;
 
     -- exactly 1 row modified
