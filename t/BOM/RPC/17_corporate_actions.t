@@ -128,29 +128,17 @@ subtest 'get_corporate_actions_one_action' => sub {
     my $expiry = $contract->date_expiry->truncate_to_day;
 
     my $params = {
-        language    => 'ZH_CN',
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => $client->currency,
-        is_sold     => 0,
+        language => 'ZH_CN',
+        symbol   => 'FPFP',
+        start    => $opening,
+        end      => $opening->plus_time_interval('3d');
+        ,
     };
 
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
-    my @expected_keys = (
-        qw(contract_id
-            underlying
-            display_name
-            currency
-            longcode
-            shortcode
-            payout
-            contract_type
-            is_double_barrier
-            ohlc
-            original_barrier
-            adjusted_barrier
-            ));
+    my @expected_keys = (qw(display_date));
+
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
 
     my $adjusted_barrier = $result->{adjusted_barrier}->{barrier};
