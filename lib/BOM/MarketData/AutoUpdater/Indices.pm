@@ -68,16 +68,12 @@ sub _build_symbols_to_update {
 
     my @symbols_to_update;
     if ($market eq 'indices') {
-        @symbols_to_update = grep { not $skip_list{$_} and $_ !~ /^SYN/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        @symbols_to_update = grep { not $skip_list{$_} and $_ !~ /^OTC_/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(
             market            => 'indices',
             contract_category => 'ANY',
-            exclude_disabled  => 1
         );
         # forcing it here since we don't have offerings for the index.
-        push @symbols_to_update, 'FTSE';
-
-        # update vol of those plan to offer underlyings. This will be remove on yngshan/enable_stocks
-        push @symbols_to_update, qw(IXIC NIFTY SHSZ300 BIST100);
+        push @symbols_to_update, qw(FTSE IXIC BIST100);
 
     } else {
         @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
@@ -107,6 +103,12 @@ sub run {
     my $self = shift;
     $self->_logger->debug(ref($self) . ' starting update.');
     my $surfaces_from_file = $self->surfaces_from_file;
+    my %otc_list = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market            => 'indices',
+        submarket         => 'otc_index',
+        contract_category => 'ANY',
+    );
+
     foreach my $symbol (@{$self->symbols_to_update}) {
         if (not $surfaces_from_file->{$symbol}) {
             $self->report->{$symbol} = {
@@ -127,6 +129,14 @@ sub run {
             surface        => $raw_volsurface->{surface},
         });
         if ($volsurface->is_valid) {
+            if (exists $otc_list{'OTC_' . $symbol}) {
+                my $otc         = BOM::Market::Underlying->new('OTC_' . $symbol);
+                my $otc_surface = $volsurface->clone({
+                    underlying => $otc,
+                });
+                $otc_surface->save;
+           }
+
             $volsurface->save;
             $self->report->{$symbol}->{success} = 1;
         } else {
