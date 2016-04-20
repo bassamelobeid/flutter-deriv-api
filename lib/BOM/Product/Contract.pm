@@ -1303,7 +1303,6 @@ sub _build_pricing_args {
         discount_rate   => $self->discount_rate,
         mu              => $self->mu,
         payouttime_code => $self->payouttime_code,
-        starttime       => $start_date->epoch,
     };
 
     if ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex') {
