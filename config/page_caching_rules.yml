@@ -129,10 +129,6 @@
 "/why-us":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/white-labels":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/payment-agent":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
