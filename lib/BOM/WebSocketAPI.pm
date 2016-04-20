@@ -110,7 +110,7 @@ sub startup {
             my $self = shift;
 
             state $lh = BOM::Platform::Context::I18N::handle_for($self->stash('language'))
-                || die("could not build locale for language ". $self->stash('language'));
+                || die("could not build locale for language " . $self->stash('language'));
 
             return $lh->maketext(@_);
         });
