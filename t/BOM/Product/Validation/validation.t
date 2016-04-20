@@ -549,7 +549,7 @@ subtest 'volsurfaces become old and invalid' => sub {
     $bet = produce_contract($bet_params);
     is($bet->pricing_args->{iv}, $forced_vol, 'Pricing args contains proper forced vol.');
     $expected_reasons = [qr/forced \(not calculated\) IV/];
-    test_error_list('buy', $bet, $expected_reasons);
+    ok $bet->is_valid_to_buy, 'valid to buy with forced vol';
 };
 
 subtest 'invalid start times' => sub {

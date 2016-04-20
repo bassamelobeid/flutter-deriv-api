@@ -2348,11 +2348,6 @@ sub _validate_input_parameters {
             message           => format_error_string('already expired contract'),
             message_to_client => localize("Contract has already expired."),
         };
-    } elsif ($self->build_parameters->{pricing_vol}) {
-        return {
-            message           => format_error_string('forced (not calculated) IV'),
-            message_to_client => localize("Prevailing market price cannot be determined."),
-        };
     } elsif ($self->expiry_daily) {
         my $date_expiry = $self->date_expiry;
         my $closing     = $self->exchange->closing_on($date_expiry);
