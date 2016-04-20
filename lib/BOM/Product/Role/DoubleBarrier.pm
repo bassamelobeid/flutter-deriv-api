@@ -74,17 +74,6 @@ sub _build_barriers_for_pricing {
     };
 }
 
-has barriers_for_shortcode => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_barriers_for_shortcode',
-);
-
-sub _barriers_for_shortcode {
-    my $self = shift;
-    return ($self->high_barrier and $self->low_barrier) ? ($self->high_barrier->for_shortcode, $self->low_barrier->for_shortcode) : ();
-}
-
 sub _validate_barrier {
     my $self = shift;
 

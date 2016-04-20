@@ -1271,8 +1271,14 @@ sub _build_shortcode {
         :                         $self->date_expiry->epoch;
 
     my @shortcode_elements = ($self->code, $self->underlying->symbol, $self->payout, $shortcode_date_start, $shortcode_date_expiry);
-    my @barriers = $self->barriers_for_shortcode;
-    push @shortcode_elements, @barriers if @barriers;
+
+    if ($self->two_barriers) {
+        push @shortcode_elements, ($self->high_barrier->for_shortcode, $self->low_barrier->for_shortcode);
+    } elsif ($self->barrier) {
+        # Having a hardcoded 0 for single barrier is dumb.
+        # We should get rid of this legacy
+        push @shortcode_elements, ($self->barrier->for_shortcode, 0);
+    }
 
     return uc join '_', @shortcode_elements;
 }

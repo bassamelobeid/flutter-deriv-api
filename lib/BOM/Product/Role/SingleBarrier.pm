@@ -37,17 +37,6 @@ sub _build_barriers_for_pricing {
     };
 }
 
-has barriers_for_shortcode => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_barriers_for_shortcode',
-);
-
-sub _build_barriers_for_shortcode {
-    my $self = shift;
-    return $self->barrier ? ($self->barrier->for_shortcode, 0) : ();
-}
-
 sub _validate_barrier {
     my $self = shift;
 
