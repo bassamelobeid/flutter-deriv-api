@@ -58,10 +58,10 @@ subtest 'Initialization' => sub {
 subtest 'Account opening request with email does not exist' => sub {
     clear_mailbox();
 
-    $params[1]->{email}        = 'test' . rand(999) . '@binary.com';
-    $params[1]->{type}         = 'account_opening';
-    $params[1]->{website_name} = 'binary.com';
-    $params[1]->{link}         = 'binary.com/some_url';
+    $params[1]->{email}       = 'test' . rand(999) . '@binary.com';
+    $params[1]->{type}        = 'account_opening';
+    $params[1]->{server_name} = 'anynotqaserver';
+    $params[1]->{link}        = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
@@ -77,10 +77,10 @@ subtest 'Account opening request with email does not exist' => sub {
 subtest 'Account opening request with email exists' => sub {
     clear_mailbox();
 
-    $params[1]->{email}        = $email;
-    $params[1]->{type}         = 'account_opening';
-    $params[1]->{website_name} = 'binary.com';
-    $params[1]->{link}         = 'binary.com/some_url';
+    $params[1]->{email}       = $email;
+    $params[1]->{type}        = 'account_opening';
+    $params[1]->{server_name} = 'qa30';
+    $params[1]->{link}        = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
@@ -90,16 +90,17 @@ subtest 'Account opening request with email exists' => sub {
         subject => qr/Предоставлен дублирующий Email/
     );
     ok keys %msg, 'Email sent successfully';
+    ok lc($msg{subject}) =~ /binaryqa30\.com$/, 'Using right website_name';
     clear_mailbox();
 };
 
 subtest 'Reset password for exists user' => sub {
     clear_mailbox();
 
-    $params[1]->{email}        = $email;
-    $params[1]->{type}         = 'reset_password';
-    $params[1]->{website_name} = 'binary.com';
-    $params[1]->{link}         = 'binary.com/some_url';
+    $params[1]->{email}       = $email;
+    $params[1]->{type}        = 'reset_password';
+    $params[1]->{server_name} = 'anynotqaserver';
+    $params[1]->{link}        = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
@@ -109,14 +110,15 @@ subtest 'Reset password for exists user' => sub {
         subject => qr/Запрос нового пароля/
     );
     ok keys %msg, 'Email sent successfully';
+    ok lc($msg{subject}) =~ /binary\.com$/, 'Using right website_name';
     clear_mailbox();
 };
 
 subtest 'Reset password for not exists user' => sub {
-    $params[1]->{email}        = 'not_' . $email;
-    $params[1]->{type}         = 'reset_password';
-    $params[1]->{website_name} = 'binary.com';
-    $params[1]->{link}         = 'binary.com/some_url';
+    $params[1]->{email}       = 'not_' . $email;
+    $params[1]->{type}        = 'reset_password';
+    $params[1]->{server_name} = 'anynotqaserver';
+    $params[1]->{link}        = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
@@ -125,10 +127,10 @@ subtest 'Reset password for not exists user' => sub {
 subtest 'Payment agent withdraw' => sub {
     clear_mailbox();
 
-    $params[1]->{email}        = $email;
-    $params[1]->{type}         = 'paymentagent_withdraw';
-    $params[1]->{website_name} = 'binary.com';
-    $params[1]->{link}         = 'binary.com/some_url';
+    $params[1]->{email}       = $email;
+    $params[1]->{type}        = 'paymentagent_withdraw';
+    $params[1]->{server_name} = 'anynotqaserver';
+    $params[1]->{link}        = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
