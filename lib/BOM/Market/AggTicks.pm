@@ -323,8 +323,8 @@ sub fill_from_historical_feed {
     # latest already inserted into redis tick
     my $last_non_zero_aggtick = do {
         my $timestamp = 0;
-        # Ticks are inserated into _AGG set later than  into _FULL. Hence, to we fetch lastly inserted
-        # in the case of die in in the middle.
+        # Ticks are inserated into _AGG set later than  into _FULL. Hence, we fetch lastly inserted ticks
+        # in the case of previous die in the middle.
         my $agg_key       = $self->_make_key($underlying, 1);
         my $redis         = $self->_redis;
         my @ticks         = map { $decoder->decode($_) } @{$redis->zrevrangebyscore($agg_key, $end, $first_agg, 'LIMIT', 0, 100)};
