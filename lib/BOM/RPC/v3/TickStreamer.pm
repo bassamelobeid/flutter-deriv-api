@@ -221,12 +221,12 @@ sub _validate_start_end {
         }
     }
     if ($args->{adjust_start_time}) {
-        unless ($ul->exchange->is_open_at($end)) {
-            my $shift_back = $ul->exchange->seconds_since_close_at($end);
+        unless ($ul->calendar->is_open_at($end)) {
+            my $shift_back = $ul->calendar->seconds_since_close_at($end);
             unless (defined $shift_back) {
-                my $last_day = $ul->exchange->trade_date_before(Date::Utility->new($end));
+                my $last_day = $ul->calendar->trade_date_before(Date::Utility->new($end));
                 if ($last_day) {
-                    my $closes = $ul->exchange->closing_on($last_day)->epoch;
+                    my $closes = $ul->calendar->closing_on($last_day)->epoch;
                     $shift_back = $end - $closes;
                 }
             }

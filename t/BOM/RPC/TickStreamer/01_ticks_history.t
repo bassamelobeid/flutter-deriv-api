@@ -192,11 +192,11 @@ subtest '_validate_start_end' => sub {
 
     set_fixed_time($now->plus_time_interval('5h')->epoch);
     my $ul = BOM::Market::Underlying->new('HSI');
-    $params->{args}->{end}   = $ul->exchange->closing_on($now)->plus_time_interval('1m')->epoch;
-    $params->{args}->{start} = $ul->exchange->closing_on($now)->minus_time_interval('39m')->epoch;
+    $params->{args}->{end}   = $ul->calendar->closing_on($now)->plus_time_interval('1m')->epoch;
+    $params->{args}->{start} = $ul->calendar->closing_on($now)->minus_time_interval('39m')->epoch;
     delete $params->{args}->{count};
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $result->{data}->{history}->{times}->[0], $ul->exchange->closing_on($now)->minus_time_interval('40m')->epoch,
+    is $result->{data}->{history}->{times}->[0], $ul->calendar->closing_on($now)->minus_time_interval('40m')->epoch,
         'If exchange close at end time and sent adjust_start_time then it should shift back start time';
 };
 
