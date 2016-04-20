@@ -308,10 +308,18 @@ sub payment_account_transfer {
         # here we rely on ->set_default_account above
         # which makes sure the `write` database is used.
         my $dbh = $fmClient->db->dbh;
+        my $response;
         try {
-            my $sth = $dbh->prepare('SELECT 1 FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,NULL)');
+            my $sth = $dbh->prepare('SELECT v_from_trans FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,NULL)');
             $sth->execute($fmClient->loginid, $toClient->loginid, $currency, $amount, $fmStaff, $toStaff, $fmRemark, $toRemark);
-            $sth->fetchall_arrayref();
+            my $records = $sth->fetchall_arrayref();
+            # response format [['(179,59,"2016-04-19 15:50:18.485634",-5.0000,CR90000000,,payment,,199,withdrawal,1,985.0000,)']]
+            if (scalar @{$records}) {
+                my $rec = $records->[0]->[0];
+                $rec =~ s/[()]//g;
+                my @columns = split(',', $rec);
+                $response->{transaction_id} = $columns[0] if scalar @columns;
+            }
         }
         catch {
             if (ref eq 'ARRAY') {
@@ -320,7 +328,7 @@ sub payment_account_transfer {
                 die $_;
             }
         };
-        return;
+        return $response;
     }
 
     my $gateway_code = 'account_transfer';
@@ -364,7 +372,7 @@ sub payment_account_transfer {
     $toAccount->save(cascade => 1);
     $toPayment->save(cascade => 1);
 
-    return;
+    return {transaction_id => $fmTrx->id};
 }
 
 #######################################
