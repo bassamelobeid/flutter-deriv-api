@@ -185,7 +185,7 @@ sub get_bid {
 
             if ($sell_time) {
                 my $sell_tick =
-                    ($contract->is_path_dependent and $contract->hit_tick) ? $self->hit_tick : $$contract->underlying->tick_at($sell_time);
+                    ($contract->is_path_dependent and $contract->hit_tick) ? $contract->hit_tick : $$contract->underlying->tick_at($sell_time);
                 if ($sell_tick) {
                     $response->{sell_spot}      = $contract->underlying->pipsized_value($sell_tick->quote);
                     $response->{sell_spot_time} = $sell_tick->epoch;
