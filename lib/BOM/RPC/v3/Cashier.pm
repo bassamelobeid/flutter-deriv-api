@@ -416,7 +416,7 @@ sub paymentagent_transfer {
     }
 
     my $payment_agent = $client_fm->payment_agent;
-    my ($website_name, $args) = @{$params}{qw/website_name args/};
+    my ($server_name, $args) = @{$params}{qw/server_name args/};
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
     my $loginid_to = uc $args->{transfer_to};
@@ -602,8 +602,7 @@ The funds have been credited into your account.
 
 Kind Regards,
 
-The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $website_name
-    );
+The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, BOM::RPC::v3::Utility::website_name($server_name));
 
     send_email({
         'from'               => BOM::Platform::Static::Config::get_customer_support_email(),
@@ -632,7 +631,8 @@ sub paymentagent_withdraw {
         return $auth_error;
     }
 
-    my ($website_name, $args) = @{$params}{qw/website_name args/};
+    my ($server_name, $args) = @{$params}{qw/server_name args/};
+    my $website_name = BOM::RPC::v3::Utility::website_name($server_name);
 
     # expire token only when its not dry run
     if (exists $args->{dry_run} and not $args->{dry_run}) {

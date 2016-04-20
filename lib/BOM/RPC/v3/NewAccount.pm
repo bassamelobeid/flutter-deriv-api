@@ -89,7 +89,7 @@ sub verify_email {
         send_email({
                 from    => BOM::Platform::Static::Config::get_customer_support_email(),
                 to      => $params->{email},
-                subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
+                subject => BOM::Platform::Context::localize('[_1] New Password Request', BOM::RPC::v3::Utility::website_name($params->{server_name})),
                 message => [
                     BOM::Platform::Context::localize(
                         '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span style="background: #f2f2f2; padding: 10px;">[_1]</span></p></p>',
@@ -102,7 +102,10 @@ sub verify_email {
             send_email({
                     from    => BOM::Platform::Static::Config::get_customer_support_email(),
                     to      => $params->{email},
-                    subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
+                    subject => BOM::Platform::Context::localize(
+                        'Verify your email address - [_1]',
+                        BOM::RPC::v3::Utility::website_name($params->{server_name})
+                    ),
                     message => [
                         BOM::Platform::Context::localize(
                             '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span style="background: #f2f2f2; padding: 10px;">[_1]</span></p></p><p>Enjoy trading with us on Binary.com.</p>',
@@ -114,7 +117,10 @@ sub verify_email {
             send_email({
                     from    => BOM::Platform::Static::Config::get_customer_support_email(),
                     to      => $params->{email},
-                    subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
+                    subject => BOM::Platform::Context::localize(
+                        'A Duplicate Email Address Has Been Submitted - [_1]',
+                        BOM::RPC::v3::Utility::website_name($params->{server_name})
+                    ),
                     message => [
                         '<div style="line-height:200%;color:#333333;font-size:15px;">'
                             . BOM::Platform::Context::localize(
@@ -129,7 +135,10 @@ sub verify_email {
         send_email({
                 from    => BOM::Platform::Static::Config::get_customer_support_email(),
                 to      => $params->{email},
-                subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
+                subject => BOM::Platform::Context::localize(
+                    'Verify your withdrawal request - [_1]',
+                    BOM::RPC::v3::Utility::website_name($params->{server_name})
+                ),
                 message => [
                     BOM::Platform::Context::localize(
                         '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span style="background: #f2f2f2; padding: 10px;">[_1]</span></p></p>',
@@ -141,7 +150,10 @@ sub verify_email {
         send_email({
                 from    => BOM::Platform::Static::Config::get_customer_support_email(),
                 to      => $params->{email},
-                subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
+                subject => BOM::Platform::Context::localize(
+                    'Verify your withdrawal request - [_1]',
+                    BOM::RPC::v3::Utility::website_name($params->{server_name})
+                ),
                 message => [
                     BOM::Platform::Context::localize(
                         '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span style="background: #f2f2f2; padding: 10px;">[_1]</span></p></p>',
