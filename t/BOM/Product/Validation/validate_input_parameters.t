@@ -49,7 +49,7 @@ subtest 'invalid start and expiry time' => sub {
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like ($c->primary_validation_error->{message}, qr/starts in the past/, 'start < now');
-    $bet_params->{built_with_bom_parameters} = 1;
+    $bet_params->{for_sale} = 1;
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy if it is a recreated contract';
     $bet_params->{date_start} = $now->epoch + 1;
@@ -63,7 +63,7 @@ subtest 'invalid start and expiry time' => sub {
     $bet_params->{barrier} = 'S0P';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for CALL at a forward start time';
-    delete $bet_params->{built_with_bom_parameters};
+    delete $bet_params->{for_sale};
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like ($c->primary_validation_error->{message}, qr/forward-starting blackout/, 'forward starting blackout');

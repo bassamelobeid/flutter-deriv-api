@@ -346,7 +346,7 @@ has [qw(
     lazy_build => 1,
     );
 
-=item built_with_bom_parameters
+=item for_sale
 
 Was this bet built using BOM-generated parameters, as opposed to user-supplied parameters?
 
@@ -357,7 +357,7 @@ This will contain the shortcode of the original bet, if we built it from one.
 
 =cut
 
-has built_with_bom_parameters => (
+has for_sale => (
     is      => 'ro',
     isa     => 'Bool',
     default => 0,
@@ -675,12 +675,15 @@ sub _build_opposite_bet {
 
     my @opposite_bet_parameters = qw(volsurface fordom forqqq domqqq);
     if ($self->pricing_new) {
+        # setup the parameters for an opposite contract.
         $opp_parameters{date_start}  = $self->date_start;
         $opp_parameters{pricing_new} = 1;
         push @opposite_bet_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
         push @opposite_bet_parameters, qw(empirical_volsurface average_tick_count long_term_prediction news_adjusted_pricing_vol)
             if $self->priced_with_intraday_model;
     } else {
+        # not pricing_new will only happen when we are repricing an
+        # existing contract in our system.
         if ($self->entry_tick) {
             foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
                 $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
@@ -690,7 +693,7 @@ sub _build_opposite_bet {
         $opp_parameters{date_start}   = $self->date_pricing;
         $opp_parameters{date_pricing} = $self->date_pricing;
         # Note from which extant bet we are building this.
-        $opp_parameters{'built_with_bom_parameters'} = 1;
+        $opp_parameters{for_sale} = 1;
     }
 
     # Always switch out the bet type for the other side.
@@ -1035,7 +1038,7 @@ sub _build_commission_adjustment {
 
     $comm_scale->include_adjustment('reset', $adjustment_used);
 
-    if ($self->built_with_bom_parameters) {
+    if ($self->for_sale) {
         $comm_scale->include_adjustment(
             'multiply',
             Math::Util::CalculatedValue::Validatable->new({
@@ -1056,7 +1059,7 @@ sub is_valid_to_buy {
 
     my $valid = $self->confirm_validity;
 
-    return ($self->built_with_bom_parameters) ? $valid : $self->_report_validation_stats('buy', $valid);
+    return ($self->for_sale) ? $valid : $self->_report_validation_stats('buy', $valid);
 }
 
 sub is_valid_to_sell {
@@ -1229,7 +1232,7 @@ sub _build_model_markup {
             set_by      => $self->pricing_engine_name,
             base_amount => $self->pricing_engine->commission_markup,
         });
-        if ($self->built_with_bom_parameters) {
+        if ($self->for_sale) {
             my $sell_discount = Math::Util::CalculatedValue::Validatable->new({
                 name        => 'sell_discount',
                 description => 'Discount on sell',
@@ -1495,7 +1498,7 @@ sub _build_pricing_spot {
     if ($self->current_tick) {
         $initial_spot = $self->current_tick->quote;
         # take note of this only when we are trying to sell a contract
-        $self->sell_tick($self->current_tick) if $self->built_with_bom_parameters;
+        $self->sell_tick($self->current_tick) if $self->for_sale;
     } else {
         # If we could not get the correct spot to price, we will take the latest available spot at pricing time.
         # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
@@ -1593,14 +1596,14 @@ sub _build_staking_limits {
         ($self->underlying->market->name eq 'random')
         ? $bet_limits->{min_payout}->{random}->{$curr}
         : $bet_limits->{min_payout}->{default}->{$curr};
-    my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
+    my $stake_min = ($self->for_sale) ? $payout_min / 20 : $payout_min / 2;
 
     # err is included here to allow the web front-end access to the same message generated in the back-end.
     return {
         stake => {
             min => $stake_min,
             max => $stake_max,
-            err => ($self->built_with_bom_parameters)
+            err => ($self->for_sale)
             ? localize('Contract market price is too close to final payout.')
             : localize(
                 'Buy price must be between [_1] and [_2].',
@@ -2191,7 +2194,7 @@ sub _validate_payout {
     my $self = shift;
 
     # Extant contracts can have whatever payouts were OK then.
-    return if $self->built_with_bom_parameters;
+    return if $self->for_sale;
 
     my $bet_payout      = $self->payout;
     my $payout_currency = $self->currency;
@@ -2262,7 +2265,7 @@ sub _validate_stake {
 
     # Compared as strings of maximum visible client currency width to avoid floating-point issues.
     if (sprintf("%.2f", $contract_stake) eq sprintf("%.2f", $contract_payout)) {
-        my $message = ($self->built_with_bom_parameters) ? localize('Current market price is 0.') : localize('This contract offers no return.');
+        my $message = ($self->for_sale) ? localize('Current market price is 0.') : localize('This contract offers no return.');
         return {
             message           => format_error_string('stake same as payout'),
             message_to_client => $message,
@@ -2297,7 +2300,7 @@ sub _validate_input_parameters {
             ),
             message_to_client => localize("Expiry time cannot be in the past."),
         };
-    } elsif (not $self->built_with_bom_parameters and $epoch_start < $when_epoch) {
+    } elsif (not $self->for_sale and $epoch_start < $when_epoch) {
         return {
             message => format_error_string(
                 'starts in the past',
@@ -2311,7 +2314,7 @@ sub _validate_input_parameters {
             message           => format_error_string('Forward time for non-forward-starting contract type', code => $self->code),
             message_to_client => localize('Start time is in the future.'),
         };
-    } elsif ($self->is_forward_starting and not $self->built_with_bom_parameters) {
+    } elsif ($self->is_forward_starting and not $self->for_sale) {
         # Intraday cannot be bought in the 5 mins before the bet starts, unless we've built it for that purpose.
         my $fs_blackout_seconds = 300;
         if ($epoch_start < $when_epoch + $fs_blackout_seconds) {
@@ -2413,7 +2416,7 @@ sub _validate_trading_times {
                 $trade_count++;
             }
             my $message =
-                ($self->built_with_bom_parameters)
+                ($self->for_sale)
                 ? localize('Resale of this contract is not offered due to market holidays during contract period.')
                 : localize("Too many market holidays during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
             my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
@@ -2571,7 +2574,7 @@ sub _validate_start_and_expiry_date {
 sub _validate_lifetime {
     my $self = shift;
 
-    if ($self->tick_expiry and $self->built_with_bom_parameters) {
+    if ($self->tick_expiry and $self->for_sale) {
         # we don't offer sellback on tick expiry contracts.
         return {
             message           => format_error_string('resale of tick expiry contract'),
@@ -2583,7 +2586,7 @@ sub _validate_lifetime {
     my ($min_duration, $max_duration) = @{$permitted}{'min', 'max'};
 
     my $message_to_client =
-        $self->built_with_bom_parameters
+        $self->for_sale
         ? localize('Resale of this contract is not offered.')
         : localize('Trading is not offered for this duration.');
 
