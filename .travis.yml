@@ -10,6 +10,7 @@ services:
 cache: apt
 before_install:
     - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - /tmp/travis-scripts/setup_ssh.sh
     - /tmp/travis-scripts/fixHostName.sh
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - /tmp/travis-scripts/postgres.sh
