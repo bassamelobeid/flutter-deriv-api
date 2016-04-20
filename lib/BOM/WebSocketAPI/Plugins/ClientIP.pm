@@ -34,15 +34,15 @@ sub register {
                 if (my $forwarder_for = $ENV{'HTTP_X_FORWARDED_FOR'}) {
                     ($c->stash->{client_ip}) =
                         grep {
-                            Data::Validate::IP::is_ipv4($_)
-                            && ! Data::Validate::IP::is_private_ipv4($_)
-                            && ! Data::Validate::IP::is_loopback_ipv4($_)
+                               Data::Validate::IP::is_ipv4($_)
+                            && !Data::Validate::IP::is_private_ipv4($_)
+                            && !Data::Validate::IP::is_loopback_ipv4($_)
                         }
                         split(/,\s*/, $forwarder_for);
                 }
             }
 
-            return $c->stash->{client_ip};
+            return $c->stash->{client_ip} ||= $ENV{'REMOTE_ADDR'} || '';
         });
     return;
 }
