@@ -47,7 +47,7 @@ test_with_feed(
             is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
             is($bet->value, $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
 
-            my $opposite = $bet->opposite_bet;
+            my $opposite = $bet->opposite_contract;
             $opposite->is_expired;
             is($opposite->value, int(not $barrier_win_map{$barrier}), 'Correct expiration for strike of ' . $barrier . ' on opposite bet.');
         }
@@ -57,7 +57,7 @@ test_with_feed(
         my $bet = produce_contract($bet_params);
         is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
         is($bet->value,      0, 'Expiration for on-the-nail strike.');
-        my $opposite = $bet->opposite_bet;
+        my $opposite = $bet->opposite_contract;
         is($opposite->is_expired, 1, 'Past end of opposite, on-the-nail bet.');
         is($opposite->value,      0, 'Expiration for on-the-nail strike, opposite bet.');
 

@@ -442,7 +442,7 @@ has exchange => (
     default => sub { return shift->underlying->exchange; },
 );
 
-has opposite_bet => (
+has opposite_contract => (
     is         => 'ro',
     isa        => 'BOM::Product::Contract',
     lazy_build => 1
@@ -681,19 +681,19 @@ sub _build_priced_with_intraday_model {
     return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
 }
 
-sub _build_opposite_bet {
+sub _build_opposite_contract {
     my $self = shift;
 
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
 
-    my @opposite_bet_parameters = qw(volsurface fordom forqqq domqqq);
+    my @opposite_contract_parameters = qw(volsurface fordom forqqq domqqq);
     if ($self->pricing_new) {
         # setup the parameters for an opposite contract.
         $opp_parameters{date_start}  = $self->date_start;
         $opp_parameters{pricing_new} = 1;
-        push @opposite_bet_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
-        push @opposite_bet_parameters, qw(empirical_volsurface average_tick_count long_term_prediction news_adjusted_pricing_vol)
+        push @opposite_contract_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
+        push @opposite_contract_parameters, qw(empirical_volsurface average_tick_count long_term_prediction news_adjusted_pricing_vol)
             if $self->priced_with_intraday_model;
     } else {
         # not pricing_new will only happen when we are repricing an
@@ -715,7 +715,7 @@ sub _build_opposite_bet {
     # Don't set the shortcode, as it will change between these.
     delete $opp_parameters{'shortcode'};
     # Save a round trip.. copy market data
-    foreach my $vol_param (@opposite_bet_parameters) {
+    foreach my $vol_param (@opposite_contract_parameters) {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
@@ -912,8 +912,8 @@ sub _build_bid_probability {
     });
 
     $marked_down->include_adjustment('add', $self->discounted_probability);
-    $self->opposite_bet->ask_probability->exclude_adjustment('deep_otm_markup');
-    $marked_down->include_adjustment('subtract', $self->opposite_bet->ask_probability);
+    $self->opposite_contract->ask_probability->exclude_adjustment('deep_otm_markup');
+    $marked_down->include_adjustment('subtract', $self->opposite_contract->ask_probability);
 
     return $marked_down;
 }
@@ -1092,9 +1092,9 @@ sub is_valid_to_sell {
             $self->missing_market_data(1) if not $hold_for_exit_tick;
             $self->add_error($ref);
         }
-    } elsif (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
+    } elsif (not $self->is_expired and not $self->opposite_contract->is_valid_to_buy) {
         # Their errors are our errors, now!
-        $self->add_error($self->opposite_bet->primary_validation_error);
+        $self->add_error($self->opposite_contract->primary_validation_error);
     }
 
     if (scalar @{$self->corporate_actions}) {
