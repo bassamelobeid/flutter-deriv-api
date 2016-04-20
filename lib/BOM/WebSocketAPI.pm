@@ -69,6 +69,7 @@ sub startup {
             }
         });
 
+    $app->plugin('BOM::WebSocketAPI::Plugins::ClientIP');
     $app->plugin('BOM::WebSocketAPI::Plugins::Helpers');
 
     my $r = $app->routes;

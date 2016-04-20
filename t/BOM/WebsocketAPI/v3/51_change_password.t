@@ -107,6 +107,8 @@ ok($change_password->{change_password});
 is($change_password->{change_password}, 1);
 test_schema('change_password', $change_password);
 
+
+
 # refetch user
 $user = BOM::Platform::User->new({
     email => $email,

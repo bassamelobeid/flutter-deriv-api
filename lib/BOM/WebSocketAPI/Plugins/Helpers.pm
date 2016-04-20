@@ -4,25 +4,11 @@ use base 'Mojolicious::Plugin';
 
 use strict;
 use warnings;
-use Data::Validate::IP;
 use Sys::Hostname;
 use BOM::Platform::Context qw/ localize /;
 
 sub register {
     my ($self, $app) = @_;
-
-    $app->helper(
-        client_ip => sub {
-            my $c = shift;
-
-            return $c->stash->{client_ip} if $c->stash->{client_ip};
-            if (my $ip = $c->req->headers->header('x-forwarded-for')) {
-                ($c->stash->{client_ip}) =
-                    grep { Data::Validate::IP::is_ipv4($_) }
-                    split(/,\s*/, $ip);
-            }
-            return $c->stash->{client_ip};
-        });
 
     $app->helper(
         country_code => sub {
