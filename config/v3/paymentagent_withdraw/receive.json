@@ -9,6 +9,18 @@
       "description": "If 1, withdrawal success. If 2, dry-run success.",
       "pattern": "^(2|1)$"
     },
+    "client_to_full_name": {
+      "type": "string",
+      "description": "Payment agent client full name"
+    },
+    "client_to_loginid": {
+      "type": "string",
+      "description": "Payment agent client loginid"
+    },
+    "transaction_id": {
+      "type":"integer",
+      "description": "Reference id of withdrawal performed"
+    },
     "echo_req": {
       "title": "Echo request",
       "description": "Echo of the request made"
