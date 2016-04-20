@@ -93,9 +93,11 @@ sub _get_ask {
         if (!$contract->is_valid_to_buy) {
             if (my $pve = $contract->primary_validation_error) {
                 $response = BOM::RPC::v3::Utility::create_error({
-                    message_to_client => $pve->message_to_client,
-                    code              => "ContractBuyValidationError"
-                });
+                        message_to_client => $pve->message_to_client,
+                        code              => "ContractBuyValidationError",
+                        details           => {
+                            longcode      => $contract->longcode,
+                            display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price))}});
             } else {
                 $response = BOM::RPC::v3::Utility::create_error({
                     message_to_client => localize("Cannot validate contract"),

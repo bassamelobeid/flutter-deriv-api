@@ -550,14 +550,17 @@ subtest $method => sub {
         'check authorization'
     );
 
-    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(active)]}, 'no result, active');
+    is_deeply($c->tcall($method, {token => $token1}), {status => []}, 'status empty');
     $test_client->set_status('tnc_approval', 'test staff', 1);
     $test_client->save();
-    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
+    is_deeply($c->tcall($method, {token => $token1}), {status => []}, 'tnc_approval is excluded, still status is empty');
     $test_client->set_status('ok', 'test staff', 1);
     $test_client->save();
-    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok)]}, 'no tnc_approval');
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok)]}, 'ok status');
 
+    $test_client->set_authentication('ID_DOCUMENT')->status('pass');
+    $test_client->save;
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok authenticated)]}, 'ok, authenticated');
 };
 
 $method = 'change_password';
