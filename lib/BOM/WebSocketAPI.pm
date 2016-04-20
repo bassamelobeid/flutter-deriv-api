@@ -4,9 +4,9 @@ use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
 use Try::Tiny;
+use Data::Validate::IP;
+use Sys::Hostname;
 
-use BOM::Platform::Context ();
-use BOM::Platform::Context::Request;
 # pre-load controlleres to have more shared code among workers (COW)
 use BOM::WebSocketAPI::Websocket_v1();
 use BOM::WebSocketAPI::Websocket_v2();
@@ -63,28 +63,58 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
-            $c->cookie(
-                language => '',
-                {expires => 1});
-
-            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
-            $request = BOM::Platform::Context::request($request);
-            $c->stash(request => $request);
-            if (my $lang = lc $request->language) {
+            if (my $lang = $c->param('l')) {
                 $c->stash(language => uc $lang);
-                $c->res->headers->header('Content-Language' => $lang);
+                $c->res->headers->header('Content-Language' => lc $lang);
             }
 
-            if ($request->param('debug')) {
+            if ($c->req->params->{'debug'}) {
                 $c->stash(debug => 1);
             }
+        });
 
+    $app->helper(
+        client_ip => sub {
+            my $self = shift;
+
+            return $self->stash->{client_ip} if $self->stash->{client_ip};
+            if (my $ip = $self->req->headers->header('x-forwarded-for')) {
+                ($self->stash->{client_ip}) =
+                    grep { Data::Validate::IP::is_ipv4($_) }
+                    split(/,\s*/, $ip);
+            }
+            return $self->stash->{client_ip};
+        });
+
+    $app->helper(
+        server_name => sub {
+            my $self = shift;
+
+            return [split(/\./, Sys::Hostname::hostname)]->[0];
+        });
+
+    $app->helper(
+        country_code => sub {
+            my $self = shift;
+
+            return $self->stash->{country_code} if $self->stash->{country_code};
+            my $client_country = lc($self->req->headers->header('CF-IPCOUNTRY') || 'aq');
+            $client_country = 'aq' if ($client_country eq 'xx');
+            my $ip = $self->client_ip;
+            if (($ip =~ /^99\.99\.99\./) or ($ip =~ /^192\.168\./) or ($ip eq '127.0.0.1')) {
+                $client_country = 'aq';
+            }
+            return $self->stash->{country_code} = $client_country;
         });
 
     $app->helper(
         l => sub {
             my $self = shift;
-            return BOM::Platform::Context::localize(@_);
+
+            state $lh = BOM::Platform::Context::I18N::handle_for($self->stash('language'))
+                || die("could not build locale for language ". $self->stash('language'));
+
+            return $lh->maketext(@_);
         });
 
     $app->helper(

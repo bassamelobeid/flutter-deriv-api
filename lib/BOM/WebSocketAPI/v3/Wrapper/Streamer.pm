@@ -346,7 +346,7 @@ sub process_transaction_updates {
                                     token      => $c->stash('token'),
                                     short_code => $payload->{short_code},
                                     currency   => $payload->{currency_code},
-                                    language   => $c->stash('request')->language
+                                    language   => $c->stash('language'),
                                 });
                         } else {
                             $details->{$type}->{longcode}         = $payload->{payment_remark};

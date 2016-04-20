@@ -66,9 +66,6 @@ sub entry_point {
             message => sub {
                 my ($self, $msg, $channel) = @_;
 
-                # set correct request context for localize
-                BOM::Platform::Context::request($c->stash('request'))
-                    if $channel =~ /^FEED::/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
                     if $channel =~ /^(?:FEED|PricingTable)::/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
@@ -80,8 +77,6 @@ sub entry_point {
     $c->on(
         json => sub {
             my ($c, $p1) = @_;
-
-            BOM::Platform::Context::request($c->stash('request'));
 
             my $tag = 'origin:';
             my $data;
@@ -494,8 +489,7 @@ sub rpc {
     state $cpu = Proc::CPUUsage->new();
 
     $params->{language} = $self->stash('language');
-    my $country_code = $self->stash('country') ? $self->stash('country') : $self->stash('request')->country_code;
-    $params->{country} = $country_code;
+    $params->{country} = $self->stash('country') || $self->stash('country_code');
 
     my $client = MojoX::JSON::RPC::Client->new;
     my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';

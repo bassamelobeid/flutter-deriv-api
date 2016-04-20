@@ -15,7 +15,7 @@ use BOM::Platform::SessionCookie;
 use BOM::System::RedisReplicated;
 
 my $mocked = Test::MockModule->new('BOM::Product::Contract');
-$mocked->mock('is_valid_to_buy', sub {1});
+$mocked->mock('is_valid_to_buy', sub { 1 });
 
 build_test_R_50_data();
 my $t = build_mojo_test();
@@ -56,7 +56,7 @@ warn explain $res;
 
 BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 sleep 1;
-$t = $t->message_ok;
+$t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{proposal};
 note explain $res;
@@ -72,13 +72,13 @@ note explain $res;
 
 BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998049;443.6823;');
 sleep 1;
-$t = $t->message_ok;
+$t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{proposal};
 note explain $res;
 
 $proposal_param->{contract_type} = 'RANGE';
-$proposal_param->{barrier2} = '-13.12';
+$proposal_param->{barrier2}      = '-13.12';
 note("RANGE");
 $t = $t->send_ok({json => $proposal_param});
 # proposal response
@@ -89,13 +89,13 @@ note explain $res;
 
 BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998050;443.6823;');
 sleep 1;
-$t = $t->message_ok;
+$t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{proposal};
 note explain $res;
 
 $proposal_param->{contract_type} = 'EXPIRYMISS';
-$proposal_param->{barrier2} = '-13.12';
+$proposal_param->{barrier2}      = '-13.12';
 note("RANGE");
 $t = $t->send_ok({json => $proposal_param});
 # proposal response
@@ -106,7 +106,7 @@ note explain $res;
 
 BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998051;443.6823;');
 sleep 1;
-$t = $t->message_ok;
+$t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{proposal};
 note explain $res;

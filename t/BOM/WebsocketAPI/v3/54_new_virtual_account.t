@@ -63,7 +63,8 @@ my $create_vr = {
     new_account_virtual => 1,
     client_password     => 'Ac0+-_:@.',
     residence           => 'au',
-    verification_code   => 'laskdjfalsf12081231'};
+    verification_code   => 'laskdjfalsf12081231'
+};
 
 subtest 'create Virtual account' => sub {
     $t = $t->send_ok({json => $create_vr})->message_ok;
