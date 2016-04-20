@@ -135,92 +135,30 @@ sub _get_ask {
 
 sub get_corporate_actions {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold) = @{$params}{qw/short_code contract_id currency is_sold/};
+    my ($symbol, $start, $end) = @{$params}{qw/symbol start end/};
 
     my $response;
     try {
-        my $tv = [Time::HiRes::gettimeofday];
-        my $contract = produce_contract($short_code, $currency, $is_sold);
+        my @actions;
+        my $underlying = BOM::Market::Underlying->new($symbol);
 
-        $response = {
-            contract_id   => $contract_id,
-            underlying    => $contract->underlying->symbol,
-            display_name  => $contract->underlying->display_name,
-            currency      => $contract->currency,
-            longcode      => $contract->longcode,
-            shortcode     => $contract->shortcode,
-            payout        => $contract->payout,
-            contract_type => $contract->code
-        };
-
-        my $underlying = $contract->underlying;
-
-        #Codes to add CA info
         if ($underlying->market->affected_by_corporate_actions) {
-
-            my $end              = $contract->date_expiry > Date::Utility->new->epoch ? Date::Utility->new->epoch : $contract->date_expiry;
-            my $table_info       = {};
-            my $corporate_action = $contract->corporate_actions;
-            my $ohlc             = $underlying->get_daily_ohlc_table({
-                start => $contract->date_start,
-                end   => $end
+            @actions = $underlying->get_applicable_corporate_actions_for_period({
+                start => $start,
+                end   => $end,
             });
-            my $is_double_barrier = $contract->category->two_barriers;
-
-            if ($is_double_barrier) {
-                $response->{original_barrier} = {
-                    low_barrier  => $contract->barrier->adjustment->{prev_obj}->as_absolute,
-                    high_barrier => $contract->barrier2->adjustment->{prev_obj}->as_absolute,
-                };
-            } else {
-                $response->{original_barrier} = {
-                    barrier => $contract->barrier->adjustment->{prev_obj}->as_absolute,
-                };
-            }
-
-            if (scalar @{$corporate_action} > 0) {
-                foreach my $key (keys $ohlc) {
-                    my $action_desc;
-                    my $date = Date::Utility->new($ohlc->[$key]->[0])->epoch;
-                    foreach my $action (@{$corporate_action}) {
-                        if ($date == Date::Utility->new($action->{effective_date})->epoch) {
-                            #the :1 is for displaying stock split ratio. eg: 2:1.
-                            $action_desc = $name_mapper{$action->{type}} . " " . $action->{value} . ":1";
-                        }
-                    }
-
-                    my $open         = $ohlc->[$key]->[1];
-                    my $high         = $ohlc->[$key]->[2];
-                    my $low          = $ohlc->[$key]->[3];
-                    my $last         = $ohlc->[$key]->[4];
-                    my $display_date = Date::Utility->new($ohlc->[$key]->[0])->date_ddmmmyyyy;
-                    $table_info->{$display_date} = {
-                        date   => $display_date,
-                        open   => $open,
-                        high   => $high,
-                        low    => $low,
-                        last   => $last,
-                        action => $action_desc,
-                    };
-
-                    if ($is_double_barrier) {
-                        $response->{adjusted_barrier} = {
-                            low_barrier  => $contract->barrier->as_absolute,
-                            high_barrier => $$contract->barrier2->as_absolute,
-                        };
-                    } else {
-                        $response->{adjusted_barrier} = {
-                            barrier => $contract->barrier->as_absolute,
-                        };
-                    }
-
-                }
-            }
-
-            $response->{is_double_barrier} = $is_double_barrier;
-            $response->{ohlc}              = $table_info;
         }
 
+        if (scalar @actions > 0) {
+            foreach my $action (@actions) {
+                my display_date = $action->{effective_date}->date_ddmmyyyy;
+                $response->{$display_date} = {
+                    date  => $display_date,
+                    type  => $name_mapper{$action->{type}},
+                    value => $action->{value},
+                };
+            }
+        }
     }
     catch {
         $response = {
