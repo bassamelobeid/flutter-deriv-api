@@ -64,7 +64,7 @@ sub startup {
                 $c->res->headers->header('Content-Language' => lc $lang);
             }
 
-            if ($c->req->params->{'debug'}) {
+            if ($c->req->param('debug')) {
                 $c->stash(debug => 1);
             }
         });
