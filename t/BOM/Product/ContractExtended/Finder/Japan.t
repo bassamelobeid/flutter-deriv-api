@@ -101,11 +101,11 @@ subtest "predefined trading_period" => sub {
             expiry_type       => ['intraday','daily'],
             barrier_category  => ['euro_non_atm', 'american']});
     is(scalar(@offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
-    my $exchange = BOM::Market::Underlying->new('frxUSDJPY')->exchange;
+    my $calendar = BOM::Market::Underlying->new('frxUSDJPY')->calendar;
     my $now      = Date::Utility->new('2015-09-04 17:00:00');
     @offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
         offerings => \@offerings,
-        exchange  => $exchange,
+        calendar  => $calendar,
         date      => $now,
         symbol    => 'frxUSDJPY',
     });
@@ -188,12 +188,12 @@ subtest "check_intraday trading_period_JPY" => sub {
             start_type        => 'spot',
             expiry_type       => ['intraday'],
             barrier_category  => ['euro_non_atm']});
-    my $ex = BOM::Market::Underlying->new('frxUSDJPY')->exchange;
+    my $ex = BOM::Market::Underlying->new('frxUSDJPY')->calendar;
     foreach my $date (keys %expected_intraday_trading_period) {
         my $now                = Date::Utility->new($date);
         my @intraday_offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
             offerings => \@i_offerings,
-            exchange  => $ex,
+            calendar  => $ex,
             date      => $now,
             symbol    => 'frxUSDJPY',
         });
@@ -236,12 +236,12 @@ subtest "check_intraday trading_period_non_JPY" => sub {
             start_type        => 'spot',
             expiry_type       => ['intraday'],
             barrier_category  => ['euro_non_atm']});
-    my $ex = BOM::Market::Underlying->new('frxEURUSD')->exchange;
+    my $ex = BOM::Market::Underlying->new('frxEURUSD')->calendar;
     foreach my $date (keys %expected_eur_intraday_trading_period) {
         my $now              = Date::Utility->new($date);
         my @eurusd_offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
             offerings => \@e_offerings,
-            exchange  => $ex,
+            calendar  => $ex,
             date      => $now,
             symbol    => 'frxEURUSD',
         });

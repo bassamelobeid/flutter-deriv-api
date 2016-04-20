@@ -184,7 +184,7 @@ subtest 'Exchange' => sub {
     };
 
     my $bet = produce_contract($bet_params);
-    is($bet->exchange->symbol, $bet->underlying->exchange->symbol, ' Bet exchange matches that of underlying');
+    is($bet->calendar->symbol, $bet->underlying->calendar->symbol, ' Bet exchange matches that of underlying');
 
 };
 
