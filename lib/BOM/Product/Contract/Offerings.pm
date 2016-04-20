@@ -23,6 +23,7 @@ use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Category;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Platform::Context qw(localize);
 use BOM::Market;
 use BOM::Market::SubMarket;
 use BOM::Market::SubMarket::Registry;
@@ -153,13 +154,14 @@ my %known_decorations = (
                 my ($rule, $message);
                 my $change_rules = $calendar->regularly_adjusts_trading_hours_on($when);
                 if ($calendar->closes_early_on($when)) {
-                    $rule = $change_rules->{daily_close}->{rule};
+                    #Q::F::TradingCalendar does not have access to out localization methods, so we localiza its result here
+                    $rule = localize($change_rules->{daily_close}->{rule});
                     $message =
                           $self->c
                         ? $self->c->l('Closes early (at [_1])', $calendar->closing_on($when)->time_hhmm)
                         : 'Closes early (at ' . $calendar->closing_on($when)->time_hhmm . ')';
                 } elsif ($calendar->opens_late_on($when)) {
-                    $rule = $change_rules->{daily_open}->{rule};
+                    $rule = localize($change_rules->{daily_open}->{rule});
                     $message =
                           $self->c
                         ? $self->c->l('Opens late (at [_1])', $calendar->opening_on($when)->time_hhmm)
