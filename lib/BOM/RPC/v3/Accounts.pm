@@ -273,10 +273,6 @@ sub get_account_status {
         push @status, $s if $client->get_status($s);
     }
 
-    if (scalar(@status) == 0) {
-        push @status, 'active';
-    }
-
     push @status, 'authenticated' if ($client->client_fully_authenticated);
 
     return {status => \@status};
