@@ -187,7 +187,7 @@ subtest 'get_ask' => sub {
     my $expected = {
         'display_value' => '51.49',
         'ask_price'     => '51.49',
-        'longcode' => '如果随机 50 指数在合约开始时间之后到1 分钟时严格高于入市现价，将获得USD100.00的赔付额。',
+        'longcode' => '如果随机 50 指数在合约开始时间之后到1 minute时严格高于入市现价，将获得USD100.00的赔付额。',
         'spot'     => '963.3054',
         'payout'   => '100'
     };
@@ -198,8 +198,8 @@ subtest 'get_ask' => sub {
         BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
         {
             error => {
-                message_to_client => '不在此段期间提供交易。',
-                code              => "ContractBuyValidationError",
+                message_to_client => '无法创建合约',
+                code              => "ContractCreationFailure",
             }});
 
     is_deeply(
@@ -232,7 +232,7 @@ subtest 'send_ask' => sub {
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        '如果随机 50 指数在合约开始时间之后到1 分钟时严格高于入市现价，将获得USD100.00的赔付额。',
+        '如果随机 50 指数在合约开始时间之后到1 minute时严格高于入市现价，将获得USD100.00的赔付额。',
         'long code  is correct'
     );
     {
@@ -278,7 +278,7 @@ subtest 'get_bid' => sub {
         date_expiry   => $now->epoch - 500,
         purchase_date => $now->epoch - 901
     );
-    $DB::single=1;
+
     my $params = {
         language    => 'ZH_CN',
         short_code  => $contract->shortcode,
@@ -389,7 +389,7 @@ subtest $method => sub {
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol' => 'R_50',
             'longcode' =>
-                "如果随机 50 指数在合约开始时间之后到50 秒钟时严格高于入市现价，将获得USD194.22的赔付额。",
+                "如果随机 50 指数在合约开始时间之后到50 seconds时严格高于入市现价，将获得USD194.22的赔付额。",
             'display_name' => 'Random 50 Index',
             'date_expiry'  => $now->epoch - 50,
         },
@@ -452,7 +452,7 @@ subtest $method => sub {
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287059,
         'longcode' =>
-            '如果澳元/加元在合约开始时间之后到6 分钟 40 秒钟时严格高于入市现价，将获得USD208.18的赔付额。',
+            '如果澳元/加元在合约开始时间之后到6 minutes 40 seconds时严格高于入市现价，将获得USD208.18的赔付额。',
         'shortcode'  => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
         'underlying' => 'frxAUDCAD',
     };
