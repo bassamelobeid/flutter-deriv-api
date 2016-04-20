@@ -50,13 +50,22 @@ my @test_cases = ({
 
 foreach my $t (@test_cases) {
     my $u        = $t->{underlying};
+    my $type = ($u eq 'RDMARS' or $u eq 'RDVENUS') ? 'afternoon' : 'midnight';
     my @duration = ('24h', '1h1s', '1h', '15s');
     my $count    = 0;
-    my @error    = (
-        qr/expire on the same trading day/,
-        qr/expire on the same trading day/,
-        qr/Trading is available after the first 1 minute of the session/,
-        qr/Contract may not expire within the last 1 minute of trading/
+    my %reset_type = (
+        afternoon => [
+            qr/expire on the same trading day/,
+            qr/expire on the same trading day/,
+            qr/Trading is not available from 12:00:00 to 12:01:00/,
+            qr/Contract may not expire between 11:59:00 and 11:59:59/
+        ],
+        midnight => [
+            qr/expire on the same trading day/,
+            qr/expire on the same trading day/,
+            qr/Trading is not available from 00:00:00 to 00:01:00/,
+            qr/Contract may not expire between 23:59:00 and 23:59:59/
+        ],
     );
     foreach my $ds (@{$t->{date_start}}) {
         my $tick = BOM::Market::Data::Tick->new({
@@ -84,7 +93,7 @@ foreach my $t (@test_cases) {
         };
         my $c = produce_contract($pp);
         ok !$c->is_valid_to_buy, 'not valid to buy';
-        like $c->primary_validation_error->message_to_client, $error[$count], "underlying $u, error is as expected [$error[$count]]";
+        like $c->primary_validation_error->message_to_client, $reset_type{$type}[$count], "underlying $u, error is as expected [$reset_type{$type}[$count]]";
         $count++;
     }
 }

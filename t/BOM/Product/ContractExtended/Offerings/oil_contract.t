@@ -14,7 +14,7 @@ use BOM::Market::Underlying;
 my @date_start = ('2016-02-15 08:15:00', '2016-02-15 08:30:00', '2016-02-16 08:30:00');
 my @duration   = ('20m',                 '24h',                 '2m');
 my @error      = (
-    qr/Trading is available after the first 10 minutes of the session. Try out the Random Indices which are always open./,
+    qr/Trading is not available from 08:15:00 to 08:25:00/,
     qr/Contracts on Oil\/USD with durations under 24 hours must expire on the same trading day./,
     qr/Trading is not offered for this duration./,
 );
@@ -31,7 +31,7 @@ foreach my $ds (@date_start) {
         'currency',
         {
             symbol        => $_,
-            recorded_date => $ds,
+            recorded_date => Date::Utility->new($ds->epoch - 600),
         }) for qw (USD BRO);
 
     my $pp = {
@@ -51,8 +51,8 @@ foreach my $ds (@date_start) {
     $count++;
 }
 
-my @date_start_2 = ('2016-02-15 08:25:00', '2016-02-15 08:30:00');
-my @duration_2   = ('20m',                 '10h59m');
+my @date_start_2 = ('2016-02-15 08:25:01', '2016-02-15 08:30:00');
+my @duration_2   = ('20m',                 '10h58m59s');
 my $count_2      = 0;
 foreach my $ds_2 (@date_start_2) {
     $ds_2 = Date::Utility->new($ds_2);
