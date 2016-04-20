@@ -2672,7 +2672,7 @@ sub _validate_volsurface {
 
     my $exceeded;
     if (    $self->market->name eq 'forex'
-        and $self->priced_with_intraday_model
+        and not $self->priced_with_intraday_model
         and $self->timeindays->amount < 4
         and not $self->is_atm_bet
         and $surface_age > 6)
