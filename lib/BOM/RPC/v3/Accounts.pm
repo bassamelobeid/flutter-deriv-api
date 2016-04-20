@@ -584,8 +584,8 @@ sub set_settings {
         return $auth_error;
     }
 
-    my ($server_name, $client_ip, $user_agent, $language, $args) =
-        @{$params}{qw/server_name client_ip user_agent language args/};
+    my ($website_name, $client_ip, $user_agent, $language, $args) =
+        @{$params}{qw/website_name client_ip user_agent language args/};
 
     my $residence = $args->{residence};
     if ($client->is_virtual) {
@@ -679,7 +679,7 @@ sub set_settings {
             . "</td></tr>";
     }
     $message .= "</table>";
-    $message .= "\n" . localize('The [_1] team.', BOM::RPC::v3::Utility::website_name($server_name));
+    $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
         from               => BOM::Platform::Static::Config::get_customer_support_email(),
