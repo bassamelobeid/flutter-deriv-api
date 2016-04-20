@@ -20,7 +20,7 @@ use Carp;
 
 use Cache::RedisDB;
 use Date::Utility;
-use List::Util qw( first min );
+use List::Util qw( first min max );
 use Time::Duration::Concise;
 use Scalar::Util qw( blessed );
 use Sereal::Encoder;
