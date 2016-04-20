@@ -1,3 +1,4 @@
+
 package BOM::WebSocketAPI::v3::Wrapper::Transaction;
 
 use strict;

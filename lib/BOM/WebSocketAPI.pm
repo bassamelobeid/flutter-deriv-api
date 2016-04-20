@@ -4,8 +4,6 @@ use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
 use Try::Tiny;
-use Data::Validate::IP;
-use Sys::Hostname;
 
 # pre-load controlleres to have more shared code among workers (COW)
 use BOM::WebSocketAPI::Websocket_v3();
@@ -71,66 +69,7 @@ sub startup {
             }
         });
 
-    $app->helper(
-        client_ip => sub {
-            my $self = shift;
-
-            return $self->stash->{client_ip} if $self->stash->{client_ip};
-            if (my $ip = $self->req->headers->header('x-forwarded-for')) {
-                ($self->stash->{client_ip}) =
-                    grep { Data::Validate::IP::is_ipv4($_) }
-                    split(/,\s*/, $ip);
-            }
-            return $self->stash->{client_ip};
-        });
-
-    $app->helper(
-        server_name => sub {
-            my $self = shift;
-
-            return [split(/\./, Sys::Hostname::hostname)]->[0];
-        });
-
-    $app->helper(
-        country_code => sub {
-            my $self = shift;
-
-            return $self->stash->{country_code} if $self->stash->{country_code};
-            my $client_country = lc($self->req->headers->header('CF-IPCOUNTRY') || 'aq');
-            $client_country = 'aq' if ($client_country eq 'xx');
-            my $ip = $self->client_ip;
-            if (($ip =~ /^99\.99\.99\./) or ($ip =~ /^192\.168\./) or ($ip eq '127.0.0.1')) {
-                $client_country = 'aq';
-            }
-            return $self->stash->{country_code} = $client_country;
-        });
-
-    $app->helper(
-        l => sub {
-            my $self = shift;
-
-            state $lh = BOM::Platform::Context::I18N::handle_for($self->stash('language'))
-                || die("could not build locale for language " . $self->stash('language'));
-
-            return $lh->maketext(@_);
-        });
-
-    $app->helper(
-        new_error => sub {
-            my $c = shift;
-            my ($msg_type, $code, $message, $details) = @_;
-
-            my $error = {
-                code    => $code,
-                message => $message
-            };
-            $error->{details} = $details if (keys %$details);
-
-            return {
-                msg_type => $msg_type,
-                error    => $error,
-            };
-        });
+    $app->plugin('BOM::WebSocketAPI::Plugins::Helpers');
 
     my $r = $app->routes;
 
