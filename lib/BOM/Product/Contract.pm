@@ -671,32 +671,39 @@ sub _build_opposite_bet {
     my $self = shift;
 
     # Start by making a copy of the parameters we used to build this bet.
-    my %build_parameters = %{$self->build_parameters};
-    # Note from which extant bet we are building this.
-    $build_parameters{'built_with_bom_parameters'} = 1;
+    my %opp_parameters = %{$self->build_parameters};
 
-    # Always switch out the bet type for the other side.
-    $build_parameters{'bet_type'} = $self->other_side_code;
-    # Don't set the shortcode, as it will change between these.
-    delete $build_parameters{'shortcode'};
-    # Save a round trip.. copy the volsurfaces
-    foreach my $vol_param (qw(volsurface empirical_volsurface fordom forqqq domqqq)) {
-        my $predicate = 'has_' . $vol_param;
-        $build_parameters{$vol_param} = $self->$vol_param if ($self->$predicate);
-    }
-
-    # We should be looking to move forward in time to a bet starting now.
-    if (not $self->pricing_new) {
+    my @opposite_bet_parameters = qw(volsurface fordom forqqq domqqq);
+    if ($self->pricing_new) {
+        $opp_parameters{date_start}  = $self->date_start;
+        $opp_parameters{pricing_new} = 1;
+        push @opposite_bet_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
+        push @opposite_bet_parameters, qw(empirical_volsurface average_tick_count long_term_prediction news_adjusted_pricing_vol)
+            if $self->priced_with_intraday_model;
+    } else {
         if ($self->entry_tick) {
             foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                $build_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
+                $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
             }
         }
-        $build_parameters{date_start}   = $self->date_pricing;
-        $build_parameters{date_pricing} = $self->date_pricing;
+        # We should be looking to move forward in time to a bet starting now.
+        $opp_parameters{date_start}   = $self->date_pricing;
+        $opp_parameters{date_pricing} = $self->date_pricing;
+        # Note from which extant bet we are building this.
+        $opp_parameters{'built_with_bom_parameters'} = 1;
     }
 
-    return $self->_produce_contract_ref->(\%build_parameters);
+    # Always switch out the bet type for the other side.
+    $opp_parameters{'bet_type'} = $self->other_side_code;
+    # Don't set the shortcode, as it will change between these.
+    delete $opp_parameters{'shortcode'};
+    # Save a round trip.. copy market data
+    foreach my $vol_param (@opposite_bet_parameters) {
+        my $predicate = 'has_' . $vol_param;
+        $opp_parameters{$vol_param} = $self->$vol_param if ($self->$predicate);
+    }
+
+    return $self->_produce_contract_ref->(\%opp_parameters);
 }
 
 sub _build_empirical_volsurface {
@@ -1262,7 +1269,7 @@ sub _build_shortcode {
         :                         $self->date_expiry->epoch;
 
     my @shortcode_elements = ($self->code, $self->underlying->symbol, $self->payout, $shortcode_date_start, $shortcode_date_expiry);
-    my @barriers = $self->_barriers_for_shortcode;
+    my @barriers = $self->barriers_for_shortcode;
     push @shortcode_elements, @barriers if @barriers;
 
     return uc join '_', @shortcode_elements;
@@ -1291,7 +1298,7 @@ sub _build_pricing_args {
     my $self = shift;
 
     my $start_date           = $self->date_pricing;
-    my $barriers_for_pricing = $self->_barriers_for_pricing;
+    my $barriers_for_pricing = $self->barriers_for_pricing;
     my $args                 = {
         spot            => $self->pricing_spot,
         r_rate          => $self->r_rate,
@@ -1461,7 +1468,7 @@ sub _build_vol_at_strike {
 
     my $pricing_spot = $self->pricing_spot;
     my $vol_args     = {
-        strike => $self->_barriers_for_pricing->{barrier1},
+        strike => $self->barriers_for_pricing->{barrier1},
         q_rate => $self->q_rate,
         r_rate => $self->r_rate,
         spot   => $pricing_spot,
@@ -1664,7 +1671,7 @@ sub _pricing_parameters {
     return {
         priced_with       => $self->priced_with,
         spot              => $self->pricing_spot,
-        strikes           => [grep { $_ } values %{$self->_barriers_for_pricing}],
+        strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
         date_start        => $self->effective_start,
         date_expiry       => $self->date_expiry,
         date_pricing      => $self->date_pricing,
