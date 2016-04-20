@@ -121,7 +121,9 @@ sub send_ask {
             my $response = shift;
             if ($response and exists $response->{error}) {
                 BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-                return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
+                my $err = $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
+                $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
+                return $err;
             }
             return {
                 msg_type => 'proposal',
