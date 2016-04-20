@@ -15,7 +15,9 @@ addons:
     postgresql: "9.3"
 cache: apt
 before_install:
-    - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/chylli/travis-scripts /tmp/travis-scripts
+    - (cd /tmp/travis-scripts && git checkout chylli/setup-ssh)
+    - export SSH_PORT=2234
     - /tmp/travis-scripts/setup_ssh.sh
     - /tmp/travis-scripts/fixHostName.sh
     - dpkg -l | grep postgres
