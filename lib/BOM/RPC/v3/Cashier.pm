@@ -908,13 +908,27 @@ sub __output_payments_error_message {
 sub __client_withdrawal_notes {
     my $arg_ref  = shift;
     my $client   = $arg_ref->{'client'};
-    my $amount   = $arg_ref->{'amount'};
+    my $amount   = to_monetary_number_format($arg_ref->{'amount'});
     my $error    = $arg_ref->{'error'};
     my $currency = $client->currency;
+    my $balance  = $client->default_account ? to_monetary_number_format($client->default_account->balance) : 0;
 
-    my $balance = $client->default_account ? to_monetary_number_format($client->default_account->balance) : 0;
     if ($error =~ /exceeds client balance/) {
         return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
+    } elsif ($error =~ /exceeds withdrawal limit \[(.+)\]/) {
+        # if limit = 0, we show: Your withdrawal amount USD 100.00 exceeds withdrawal limit.
+        # if limit > 0, we show: Your withdrawal amount USD 100.00 exceeds withdrawal limit USD 20.00.
+        my $limit = " $1";
+        if ($limit =~ /\s+0\.00$/) {
+            $limit = '';
+        }
+
+        return (
+            localize(
+                'Sorry, you cannot withdraw. Your withdrawal amount [_1] exceeds withdrawal limit[_2]. Please contact <a href="[_3]">customer support</a> to authenticate your account.',
+                "$currency $amount",
+                $limit,
+                request()->url_for('contact', {w => $client->broker})));
     }
 
     my $withdrawal_limits = $client->get_withdrawal_limits();
