@@ -19,7 +19,8 @@ use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::Market::Data::Tick;
 use BOM::MarketData::CorrelationMatrix;
-use BOM::Market::Exchange;
+use Quant:Framework::Exchange;
+use Quant::Framework::TradingCalendar;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise::Localize;
 use BOM::Product::Types;
@@ -477,11 +478,11 @@ has underlying => (
     handles => [qw(market pip_size)],
 );
 
-has exchange => (
+has trading_calendar => (
     is      => 'ro',
-    isa     => 'BOM::Market::Exchange',
+    isa     => 'Quant::Framework::TradingCalendar',
     lazy    => 1,
-    default => sub { return shift->underlying->exchange; },
+    default => sub { return shift->underlying->calendar; },
 );
 
 has opposite_bet => (
@@ -497,8 +498,8 @@ sub _build_date_settlement {
 
     my $date_settlement = $end_date;    # Usually we settle when we expire.
     if ($self->expiry_daily) {
-        if ($self->exchange->trades_on($end_date)) {
-            $date_settlement = $self->exchange->settlement_on($end_date);
+        if ($self->trading_calendar->trades_on($end_date)) {
+            $date_settlement = $self->trading_calendar->settlement_on($end_date);
         } else {
             $self->add_error({
                 message           => format_error_string('Exchange is closed on expiry date', expiry => $self->date_expiry->date),
@@ -769,10 +770,10 @@ sub _build_volsurface {
     my $vol_utils = BOM::MarketData::VolSurface::Utils->new;
     my $cutoff_str;
     if ($submarkets{$self->underlying->submarket->name}) {
-        my $exchange       = $self->exchange;
+        my $calendar       = $self->trading_calendar;
         my $effective_date = $vol_utils->effective_date_for($self->date_pricing);
-        $effective_date = $exchange->trades_on($effective_date) ? $effective_date : $exchange->trade_date_after($effective_date);
-        my $cutoff_date = $exchange->closing_on($effective_date);
+        $effective_date = $calendar->trades_on($effective_date) ? $effective_date : $calendar->trade_date_after($effective_date);
+        my $cutoff_date = $calendar->closing_on($effective_date);
 
         $cutoff_str = $cutoff_date->time_cutoff;
     }
@@ -804,7 +805,7 @@ sub _build_longcode {
         $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
         $when_start = $self->is_forward_starting ? $self->date_start->db_timestamp : localize('contract start time');
     } elsif ($expiry_type eq 'daily') {
-        my $close = $self->underlying->exchange->closing_on($self->date_expiry);
+        my $close = $self->underlying->trading_calendar->closing_on($self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
             $when_end = $self->date_expiry->datetime;
         } else {
@@ -868,7 +869,7 @@ sub _build_corporate_actions {
     my $underlying = $self->underlying;
 
     if ($underlying->market->affected_by_corporate_actions) {
-        my $first_day_close = $underlying->exchange->closing_on($self->date_start);
+        my $first_day_close = $underlying->calendar->closing_on($self->date_start);
         if ($first_day_close and not $self->date_expiry->is_before($first_day_close)) {
             @actions = $self->underlying->get_applicable_corporate_actions_for_period({
                 start => $self->date_start,
@@ -2090,7 +2091,7 @@ sub _build_exit_tick {
     my $self = shift;
 
     my $underlying = $self->underlying;
-    my $exchange   = $self->exchange;
+    my $calendar   = $self->trading_calendar;
 
     my $exit_tick;
     if ($self->tick_expiry) {
@@ -2131,7 +2132,7 @@ sub _build_exit_tick {
 
         if ($self->expiry_daily and not $underlying->use_official_ohlc) {
             if (    not $self->is_path_dependent
-                and not $self->_has_ticks_before_close($exchange->closing_on($self->date_expiry)))
+                and not $self->_has_ticks_before_close($calendar->closing_on($self->date_expiry)))
             {
                 $self->missing_market_data(1);
                 $self->add_error({
@@ -2156,7 +2157,7 @@ sub _build_exit_tick {
                     message_to_client => localize("Missing market data for exit spot."),
                 });
         }
-        if (not $self->expiry_daily and $underlying->intradays_must_be_same_day and $exchange->trading_days_between($first_date, $last_date)) {
+        if (not $self->expiry_daily and $underlying->intradays_must_be_same_day and $calendar->trading_days_between($first_date, $last_date)) {
             $self->add_error({
                     message => format_error_string(
                         'Exit tick date differs from entry tick date on intraday',
@@ -2237,7 +2238,7 @@ sub _validate_underlying {
                 message           => format_error_string('No realtime data',                              symbol => $underlying->symbol),
                 message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
                 };
-        } elsif ($self->exchange->is_open_at($self->date_pricing)
+        } elsif ($self->trading_calendar->is_open_at($self->date_pricing)
             and $self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch)
         {
             # only throw errors for quote too old, if the exchange is open at pricing time
@@ -2407,12 +2408,12 @@ sub _validate_start_date {
 
     $underlying->sod_blackout_start;
 
-    my $exchange     = $self->exchange;
+    my $calendar     = $self->trading_calendar;
     my $epoch_start  = $self->date_start->epoch;
     my $epoch_expiry = $self->date_expiry->epoch;
 
-    my $expiry_closing            = $exchange->closing_on($self->date_expiry);
-    my $start_date_closing        = $exchange->closing_on($self->date_start);
+    my $expiry_closing            = $calendar->closing_on($self->date_expiry);
+    my $start_date_closing        = $calendar->closing_on($self->date_start);
     my $sec_to_close              = ($expiry_closing) ? $expiry_closing->epoch - $self->date_pricing->epoch : 0;
     my $start_date_sec_to_close   = ($start_date_closing) ? $start_date_closing->epoch - $self->date_pricing->epoch : 0;
     my $when                      = $self->date_pricing;
@@ -2475,8 +2476,8 @@ sub _validate_start_date {
             message_to_client => localize("Start time is in the past"),
             };
     }
-    # exchange needs to be open when the bet starts.
-    if (not $exchange->is_open_at($self->date_start)) {
+    # calendar needs to be open when the bet starts.
+    if (not $calendar->is_open_at($self->date_start)) {
         my $message =
             ($self->is_forward_starting) ? localize("The market must be open at the start time.") : localize('This market is presently closed.');
         push @errors,
@@ -2487,7 +2488,7 @@ sub _validate_start_date {
                 start  => $self->date_start->datetime
             ),
             message_to_client => $message . " " . localize("Try out the Random Indices which are always open.")};
-    } elsif (my $open_seconds = ($exchange->seconds_since_open_at($self->date_start) // 0) < $underlying->sod_blackout_start->seconds) {
+    } elsif (my $open_seconds = ($calendar->seconds_since_open_at($self->date_start) // 0) < $underlying->sod_blackout_start->seconds) {
         my $blackout_time = $underlying->sod_blackout_start->as_string;
         push @errors,
             {
@@ -2565,7 +2566,7 @@ sub _validate_expiry_date {
     my @errors;
     my $underlying   = $self->underlying;
     my $epoch_expiry = $self->date_expiry->epoch;
-    my $exchange     = $self->exchange;
+    my $calendar     = $self->trading_calendar;
     my $times_text   = localize('Trading Times');
 
     if ($self->is_expired and not $self->is_path_dependent) {
@@ -2575,7 +2576,7 @@ sub _validate_expiry_date {
             message_to_client => localize("Contract has already expired."),
             };
     } elsif ($self->is_intraday) {
-        if (not $exchange->is_open_at($self->date_expiry)) {
+        if (not $calendar->is_open_at($self->date_expiry)) {
             my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             push @errors,
                 {
@@ -2591,10 +2592,10 @@ sub _validate_expiry_date {
         } else {
             my $eod_blackout_expiry = $self->underlying->eod_blackout_expiry;
             my $expiry_before_close = Time::Duration::Concise::Localize->new(
-                interval => $exchange->closing_on($self->date_expiry)->epoch - $epoch_expiry,
+                interval => $calendar->closing_on($self->date_expiry)->epoch - $epoch_expiry,
                 locale   => BOM::Platform::Context::request()->language
             );
-            my $closing = $exchange->closing_on($self->date_start);
+            my $closing = $calendar->closing_on($self->date_start);
             if ($closing and $underlying->intradays_must_be_same_day and $closing->epoch < $self->date_expiry->epoch) {
                 push @errors,
                     {
@@ -2635,7 +2636,7 @@ sub _validate_expiry_date {
             }
         }
     } elsif ($self->expiry_daily) {
-        my $close = $self->underlying->exchange->closing_on($self->date_expiry);
+        my $close = $self->underlying->calendar->closing_on($self->date_expiry);
         # if it is not a trading day at expiry, we will catch that later.
         if ($close and not $close->is_same_as($self->date_expiry)) {
             push @errors,
@@ -2767,7 +2768,7 @@ sub _subvalidate_lifetime_days {
 
     my @errors;
     my $underlying  = $self->underlying;
-    my $exchange    = $underlying->exchange;
+    my $calendar    = $underlying->trading_calendar;
     my $date_expiry = $self->date_expiry;
     my $date_start  = $self->date_start;
 
@@ -2780,11 +2781,11 @@ sub _subvalidate_lifetime_days {
     my $min = $expiries_ref->{min} // $no_time;
     my $max = $expiries_ref->{max} // $no_time;
 
-    my $duration_days = $exchange->trading_date_for($date_expiry)->days_between($exchange->trading_date_for($date_start));
+    my $duration_days = $calendar->trading_date_for($date_expiry)->days_between($calendar->trading_date_for($date_start));
 
     if ($duration_days < $min->days or $duration_days > $max->days) {
         if ($duration_days > $max->days) {
-            $self->date_expiry($exchange->closing_on($self->date_start->plus_time_interval($max->days . 'd')));
+            $self->date_expiry($calendar->closing_on($self->date_start->plus_time_interval($max->days . 'd')));
         }
         my $message =
             ($self->built_with_bom_parameters)
@@ -2808,8 +2809,8 @@ sub _subvalidate_lifetime_days {
     if (not $self->is_atm_bet) {
         # For definite ATM contracts we do not have to check for upcoming holidays.
         my $times_text    = localize('Trading Times');
-        my $trading_days  = $self->exchange->trading_days_between($date_start, $date_expiry);
-        my $holiday_days  = $self->exchange->holiday_days_between($date_start, $date_expiry);
+        my $trading_days  = $self->trading_calendar->trading_days_between($date_start, $date_expiry);
+        my $holiday_days  = $self->trading_calendar->holiday_days_between($date_start, $date_expiry);
         my $calendar_days = $date_expiry->days_between($date_start);
 
         if ($calendar_days <= 7 and $holiday_days > 0) {
@@ -2938,7 +2939,7 @@ sub _validate_volsurface {
             ),
             message_to_client => $standard_message,
             };
-    } elsif ($surface->recorded_date->days_between($self->exchange->trade_date_before($now)) < 0) {
+    } elsif ($surface->recorded_date->days_between($self->trading_calendar->trade_date_before($now)) < 0) {
         push @errors,
             {
             message => format_error_string(
