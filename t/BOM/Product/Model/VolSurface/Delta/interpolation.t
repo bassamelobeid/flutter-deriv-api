@@ -19,9 +19,9 @@ use BloombergSurfaces;
 use ClarkSurfaces;
 
 use BOM::Market::Currency;
-use BOM::Market::Exchange;
 use BOM::MarketData::VolSurface::Delta;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
+use Quant::Framework::Exchange;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -37,7 +37,7 @@ my $tabular = (scalar @ARGV and $ARGV[0] eq 'tabular');
 BOM::Market::Currency->new('EUR');
 BOM::Market::Currency->new('USD');
 BOM::Market::Currency->new('JPY');
-BOM::Market::Exchange->new('FOREX');
+Quant::Framework::Exchange->new('FOREX');
 
 my $bbss     = BloombergSurfaces->new(relative_data_dir => 'interpolation');
 my $clss     = ClarkSurfaces->new;
