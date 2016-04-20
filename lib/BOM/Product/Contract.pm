@@ -645,7 +645,7 @@ sub _build_timeindays {
 
     my $atid;
     # If market is Forex, We go with integer days as per the market convention
-    if ($self->market->integer_number_of_day and $self->pricing_engine_name !~ /Intraday::Forex/) {
+    if ($self->market->integer_number_of_day and $self->priced_with_intraday_model) {
         my $utils        = BOM::MarketData::VolSurface::Utils->new;
         my $days_between = $self->date_expiry->days_between($self->date_start);
         $atid = $utils->is_before_rollover($self->date_start) ? ($days_between + 1) : $days_between;
@@ -665,6 +665,20 @@ sub _build_timeindays {
     });
 
     return $tid;
+}
+
+# we use pricing_engine_name matching all the time.
+has priced_with_intraday_model => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_priced_with_intraday_model',
+);
+
+sub _build_priced_with_intraday_model {
+    my $self = shift;
+
+    # Intraday::Index is just a flat price + commission, so it is not considered as a model.
+    return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
 }
 
 sub _build_opposite_bet {
@@ -914,7 +928,7 @@ sub _build_total_markup {
     my $self = shift;
 
     my %max =
-          ($self->pricing_engine_name =~ /Intraday::Forex/ and not $self->is_atm_bet)
+          ($self->priced_with_intraday_model and not $self->is_atm_bet)
         ? ()
         : (maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100);
 
@@ -1320,7 +1334,7 @@ sub _build_pricing_args {
         payouttime_code => $self->payouttime_code,
     };
 
-    if ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex') {
+    if ($self->priced_with_intraday_model) {
         $args->{average_tick_count}   = $self->average_tick_count;
         $args->{long_term_prediction} = $self->long_term_prediction;
         $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
@@ -1349,7 +1363,7 @@ sub _build_pricing_vol {
             days  => $self->timeindays->amount,
             delta => 50
         });
-    } elsif ($pen =~ /Intraday::Forex/) {
+    } elsif ($self->priced_with_intraday_model) {
         my $volsurface       = $self->empirical_volsurface;
         my $duration_seconds = $self->timeindays->amount * 86400;
         # volatility doesn't matter for less than 10 minutes ATM contracts,
@@ -2658,7 +2672,7 @@ sub _validate_volsurface {
 
     my $exceeded;
     if (    $self->market->name eq 'forex'
-        and $self->pricing_engine_name !~ /Intraday::Forex/
+        and $self->priced_with_intraday_model
         and $self->timeindays->amount < 4
         and not $self->is_atm_bet
         and $surface_age > 6)
