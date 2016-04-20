@@ -137,6 +137,10 @@ sub get_corporate_actions {
     my $params = shift;
     my ($symbol, $start, $end) = @{$params}{qw/symbol start end/};
 
+    if (not $end) {
+        $end = $start->plus_time_interval('365d');
+    }
+
     my $response;
     try {
         my @actions;
@@ -154,7 +158,6 @@ sub get_corporate_actions {
                 my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
 
                 $response->{$display_date} = {
-                    date  => $display_date,
                     type  => $name_mapper{$action->{type}},
                     value => $action->{value},
                 };
