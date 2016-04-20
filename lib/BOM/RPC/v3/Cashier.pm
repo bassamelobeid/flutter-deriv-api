@@ -749,7 +749,11 @@ sub paymentagent_withdraw {
     }
 
     if ($args->{dry_run}) {
-        return {status => 2};
+        return {
+            status              => 2,
+            client_to_full_name => $pa_client->full_name,
+            client_to_loginid   => $paymentagent_loginid
+        };
     }
 
     # freeze loginID to avoid a race condition
@@ -850,7 +854,7 @@ sub paymentagent_withdraw {
         );
     }
     catch {
-        $error = "Paymentagent Withdraw failed to $loginid_to [$_]";
+        $error = "Paymentagent Withdraw failed to $paymentagent_loginid [$_]";
     };
 
     BOM::Platform::Transaction->unfreeze_client($client_loginid);
