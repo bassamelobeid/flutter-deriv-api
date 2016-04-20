@@ -493,7 +493,7 @@ sub _build_commission_markup {
 
     $comm_markup->include_adjustment('add', $stitch);
 
-    my $open_at_start = $bet->underlying->exchange->is_open_at($bet->date_start);
+    my $open_at_start = $bet->underlying->calendar->is_open_at($bet->date_start);
 
     if (    $open_at_start
         and defined $self->average_tick_count

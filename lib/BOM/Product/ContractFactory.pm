@@ -209,12 +209,12 @@ sub produce_contract {
                     # Since we return the day AFTER, we pass one day ahead of expiry.
                     my $expiry_date = Date::Utility->new($start_epoch)->plus_time_interval($duration);
                     # Daily bet expires at the end of day, so here you go
-                    if (my $closing = $underlying->exchange->closing_on($expiry_date)) {
+                    if (my $closing = $underlying->calendar->closing_on($expiry_date)) {
                         $expiry = $closing->epoch;
                     } else {
                         $expiry = $expiry_date->epoch;
-                        my $regular_day   = $underlying->exchange->regular_trading_day_after($expiry_date);
-                        my $regular_close = $underlying->exchange->closing_on($regular_day);
+                        my $regular_day   = $underlying->calendar->regular_trading_day_after($expiry_date);
+                        my $regular_close = $underlying->calendar->closing_on($regular_day);
                         $expiry = Date::Utility->new($expiry_date->date_yyyymmdd . ' ' . $regular_close->time_hhmmss)->epoch;
                     }
                 } else {

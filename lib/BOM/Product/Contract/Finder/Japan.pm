@@ -26,11 +26,11 @@ sub available_contracts_for_symbol {
     my $now          = $args->{date} || Date::Utility->new;
     my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
 
-    my $exchange = $underlying->exchange;
+    my $calendar = $underlying->calendar;
     my ($open, $close, @offerings);
-    if ($exchange->trades_on($now)) {
-        $open  = $exchange->opening_on($now)->epoch;
-        $close = $exchange->closing_on($now)->epoch;
+    if ($calendar->trades_on($now)) {
+        $open  = $calendar->opening_on($now)->epoch;
+        $close = $calendar->closing_on($now)->epoch;
         my $flyby = BOM::Product::Offerings::get_offerings_flyby('japan');
         @offerings = $flyby->query({
                 underlying_symbol => $symbol,
@@ -39,7 +39,7 @@ sub available_contracts_for_symbol {
                 barrier_category  => ['euro_non_atm', 'american']});
         @offerings = _predefined_trading_period({
             offerings => \@offerings,
-            exchange  => $exchange,
+            calendar  => $calendar,
             symbol    => $symbol,
             date      => $now,
         });
@@ -100,14 +100,14 @@ my $cache_sep      = '==';
 sub _predefined_trading_period {
     my $args              = shift;
     my @offerings         = @{$args->{offerings}};
-    my $exchange          = $args->{exchange};
+    my $calendar          = $args->{calendar};
     my $now               = $args->{date};
     my $symbol            = $args->{symbol};
     my $now_hour          = $now->hour;
     my $now_minute        = $now->minute;
     my $now_date          = $now->date;
     my $trading_key       = join($cache_sep, $symbol, $now_date, $now_hour);
-    my $today_close       = $exchange->closing_on($now);
+    my $today_close       = $calendar->closing_on($now);
     my $today_close_epoch = $today_close->epoch;
     my $today             = $now->truncate_to_day;                                # Start of the day object.
     my $trading_periods   = Cache::RedisDB->get($cache_keyspace, $trading_key);
@@ -151,7 +151,7 @@ sub _predefined_trading_period {
             _get_daily_trading_window({
                 now      => $now,
                 duration => $_,
-                exchange => $exchange
+                calendar => $calendar
             });
 
         my $key_expiry = $now_minute < 45 ? $now_date . ' ' . $now_hour . ':45:00' : $now_date . ' ' . $now_hour . ':00:00';
@@ -237,10 +237,10 @@ sub _get_trade_date_of_daily_window {
     my $start_of_current_window = $args->{current_date_start};
     my $start_of_next_window    = $args->{next_date_start};
     my $duration                = $args->{duration};
-    my $exchange                = $args->{exchange};
+    my $calendar                = $args->{calendar};
     my $date_start =
-        $exchange->trades_on($start_of_current_window) ? $start_of_current_window : $exchange->trade_date_after($start_of_current_window);
-    my $date_expiry = $exchange->closing_on($exchange->trade_date_before($start_of_next_window));
+        $calendar->trades_on($start_of_current_window) ? $start_of_current_window : $calendar->trade_date_after($start_of_current_window);
+    my $date_expiry = $calendar->closing_on($calendar->trade_date_before($start_of_next_window));
 
     return {
         date_start => {
@@ -265,7 +265,7 @@ sub _get_daily_trading_window {
     my $args     = shift;
     my $duration = $args->{duration};
     my $now      = $args->{now};
-    my $exchange = $args->{exchange};
+    my $calendar = $args->{calendar};
     my $now_dow  = $now->day_of_week;
     my $now_year = $now->year;
     my @daily_duration;
@@ -278,7 +278,7 @@ sub _get_daily_trading_window {
             current_date_start => $first_day_of_week,
             next_date_start    => $first_day_of_next_week,
             duration           => '1W',
-            exchange           => $exchange
+            calendar           => $calendar
         });
 
     # monthly contract
@@ -289,7 +289,7 @@ sub _get_daily_trading_window {
             current_date_start => $first_day_of_month,
             next_date_start    => $first_day_of_next_month,
             duration           => '1M',
-            exchange           => $exchange
+            calendar           => $calendar
         });
 
     # quarterly contract
@@ -301,7 +301,7 @@ sub _get_daily_trading_window {
             current_date_start => $first_day_of_quarter,
             next_date_start    => $first_day_of_next_quarter,
             duration           => '3M',
-            exchange           => $exchange
+            calendar           => $calendar
         });
 
     # yearly contract
@@ -312,7 +312,7 @@ sub _get_daily_trading_window {
             current_date_start => $first_day_of_year,
             next_date_start    => $first_day_of_next_year,
             duration           => '1Y',
-            exchange           => $exchange
+            calendar           => $calendar
         });
 
     return @daily_duration;

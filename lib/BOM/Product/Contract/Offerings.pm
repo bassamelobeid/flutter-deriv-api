@@ -97,9 +97,9 @@ my %known_decorations = (
 
     times => sub {
         my ($parent_obj, $self) = @_;
-        my $exchange = $_->exchange;
+        my $calendar = $_->calendar;
 
-        if (my $cached = $self->times_cache->{$exchange->symbol}) {
+        if (my $cached = $self->times_cache->{$calendar->symbol}) {
             return $cached;
         }
 
@@ -111,12 +111,12 @@ my %known_decorations = (
             close      => [],
             settlement => $no_data
         };
-        if (my $open = $exchange->opening_on($self->date)) {
+        if (my $open = $calendar->opening_on($self->date)) {
             push @{$times->{open}}, $open->$display_method;
             my @closes;
-            push @closes, $exchange->closing_on($self->date);
-            $times->{settlement} = $exchange->settlement_on($self->date)->$display_method;
-            if (my $breaks = $exchange->trading_breaks($self->date)) {
+            push @closes, $calendar->closing_on($self->date);
+            $times->{settlement} = $calendar->settlement_on($self->date)->$display_method;
+            if (my $breaks = $calendar->trading_breaks($self->date)) {
                 for my $break (@$breaks) {
                     push @{$times->{open}}, $break->[-1]->$display_method;
                     push @closes, $break->[0];
@@ -126,21 +126,21 @@ my %known_decorations = (
         }
         push @{$times->{open}},  $no_data if not @{$times->{open}};
         push @{$times->{close}}, $no_data if not @{$times->{close}};
-        $self->times_cache->{$exchange->symbol} = $times;
+        $self->times_cache->{$calendar->symbol} = $times;
 
         return $times;
     },
 
     events => sub {
         my ($parent_obj, $self) = @_;
-        my $exchange = $_->exchange;
+        my $calendar = $_->calendar;
         my @events;
 
-        if (my $cached = $self->holidays_cache->{$exchange->symbol}) {
+        if (my $cached = $self->holidays_cache->{$calendar->symbol}) {
             @events = @$cached;
         } else {
             my $today               = Date::Utility->today;
-            my $trading_day         = $exchange->trading_date_for($self->date);
+            my $trading_day         = $calendar->trading_date_for($self->date);
             my $how_long            = $today->days_in_month;
             my $date_display_method = 'date';
             my %seen_rules;
@@ -151,21 +151,21 @@ my %known_decorations = (
                 # If you have a holiday you wouldn't open or close at all.
                 # Put a note here when you discover the exception.
                 my ($rule, $message);
-                my $change_rules = $exchange->regularly_adjusts_trading_hours_on($when);
-                if ($exchange->closes_early_on($when)) {
+                my $change_rules = $calendar->regularly_adjusts_trading_hours_on($when);
+                if ($calendar->closes_early_on($when)) {
                     $rule = $change_rules->{daily_close}->{rule};
                     $message =
                           $self->c
-                        ? $self->c->l('Closes early (at [_1])', $exchange->closing_on($when)->time_hhmm)
-                        : 'Closes early (at ' . $exchange->closing_on($when)->time_hhmm . ')';
-                } elsif ($exchange->opens_late_on($when)) {
+                        ? $self->c->l('Closes early (at [_1])', $calendar->closing_on($when)->time_hhmm)
+                        : 'Closes early (at ' . $calendar->closing_on($when)->time_hhmm . ')';
+                } elsif ($calendar->opens_late_on($when)) {
                     $rule = $change_rules->{daily_open}->{rule};
                     $message =
                           $self->c
-                        ? $self->c->l('Opens late (at [_1])', $exchange->opening_on($when)->time_hhmm)
-                        : 'Opens late (at ' . $exchange->opening_on($when)->time_hhmm . ')';
-                } elsif ($exchange->has_holiday_on($when)) {
-                    $message = $exchange->holidays->{$when->days_since_epoch};
+                        ? $self->c->l('Opens late (at [_1])', $calendar->opening_on($when)->time_hhmm)
+                        : 'Opens late (at ' . $calendar->opening_on($when)->time_hhmm . ')';
+                } elsif ($calendar->has_holiday_on($when)) {
+                    $message = $calendar->holidays->{$when->days_since_epoch};
                 }
                 if ($message) {
                     # This would be easier here with a hash, but then they might end up out of order.
@@ -188,7 +188,7 @@ my %known_decorations = (
                     }
                     $seen_rules{$rule} = 1 if ($rule and $explain eq $rule);
                 }
-                $self->holidays_cache->{$exchange->symbol} = \@events;
+                $self->holidays_cache->{$calendar->symbol} = \@events;
             }
         }
         return \@events;
