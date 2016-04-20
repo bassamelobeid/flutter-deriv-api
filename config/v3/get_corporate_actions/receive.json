@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Open contract proposal response",
-  "description": "Corporate actions for an open contract in the user's portfolio",
+  "title": "Get corporate actions response",
+  "description": "Corporate actions for an equity symbol",
   "properties": {
     "echo_req": {
       "title": "Echo request",
@@ -11,107 +11,23 @@
     "get_corporate_actions": {
       "type": "object",
       "title": "Get corporate actions response",
-      "description": "Corporate actions for an open contract",
+      "description": "Corporate actions for an equity symbol",
       "properties": {
-        "contract_id": {
-          "type": "integer",
-          "description": "Binary.com internal contract identifier"
-        },
-        "contract_type": {
-          "type": "string",
-          "description": "Contract type, for example CALL, PUT"
-        },
-        "currency": {
-          "type": "string",
-          "description": "Example: USD"
-        },
-        "longcode": {
-          "type": "string",
-          "description": "Text description of the bet purchased, Example: USD 90.00 payout if Random 100 Index is strictly higher than entry spot at 10 minutes after contract start time."
-        },
-        "payout": {
-          "type": "number",
-          "description": "Example: 10.50"
-        },
-        "shortcode": {
-          "type": "string",
-          "description": "Coded description of the bet purchased, Example: CALL_R_100_90_1446704187_1446704787_S0P_0"
-        },
-        "underlying": {
-          "type": "string",
-          "description": "Example: FPFP"
-        },
-        "display_name": {
-          "type": "string",
-          "description": "Display name of underlying"
-        },
-        "is_double_barrier": {
-          "type": "integer",
-          "description": "Boolean 0 or 1"
-        },
-        "original_barrier": {
+        "display_date": {
           "type": "object",
           "description": "Original barrier of the contract before adjustment due to corporate actions.",
           "properties":{
-            "barrier": {
+            "display_date": {
+              "type": "string",
+              "description": "Corporate actions effective date."
+            },
+            "type": {
               "type": "integer",
-              "description": "Original barrier for single barrier option."
+              "description": "Type of corporate actions."
             },
-            "high_barrier": {
+            "value": {
               "type": "integer",
-              "description": "Original high barrier for double barrier option."
-            },
-            "low_barrier": {
-              "type": "integer",
-              "description": "Original low barrier for double barrier option."
-            }
-          }
-        },
-        "adjusted_barrier": {
-          "type": "object",
-          "description": "Adjusted barrier of the contract after adjustment due to corporate actions.",
-          "properties":{
-            "barrier": {
-              "type": "integer",
-              "description": "Adjusted barrier for single barrier option."
-            },
-            "high_barrier": {
-              "type": "integer",
-              "description": "Adjusted high barrier for double barrier option."
-            },
-            "low_barrier": {
-              "type": "integer",
-              "description": "Adjusted low barrier for double barrier option."
-            }
-          } 
-        },
-        "ohlc": {
-          "type": "object",
-          "description": "Contains date, open, high, low, last and action description information.",
-          "properties":{
-            "date": {
-              "type": "object",
-              "description": "Date of the corporate action."
-            },
-            "open": {
-              "type": "number",
-              "description": "Opening price."
-            },
-            "high": {
-              "type": "number",
-              "description": "High price."
-            },
-            "low": {
-              "type": "number",
-              "description": "Low price."
-            },
-            "last": {
-              "type": "number",
-              "description": "Closing price."
-            },
-            "action": {
-              "type": "object",
-              "description": "Corporate actions. Example: Stock split, cash dividend etc."
+              "description": "Value for the corporate actions. Example: split ratio for stock split."
             }
           }
         }
