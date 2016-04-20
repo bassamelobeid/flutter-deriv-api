@@ -15,12 +15,14 @@ sub register {
             my $c = shift;
 
             return $c->stash->{country_code} if $c->stash->{country_code};
+
             my $client_country = lc($c->req->headers->header('CF-IPCOUNTRY') || 'aq');
             $client_country = 'aq' if ($client_country eq 'xx');
             my $ip = $c->client_ip;
             if (($ip =~ /^99\.99\.99\./) or ($ip =~ /^192\.168\./) or ($ip eq '127.0.0.1')) {
                 $client_country = 'aq';
             }
+
             return $c->stash->{country_code} = $client_country;
         });
 
