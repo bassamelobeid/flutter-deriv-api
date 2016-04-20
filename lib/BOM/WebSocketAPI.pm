@@ -8,8 +8,6 @@ use Try::Tiny;
 use BOM::Platform::Context ();
 use BOM::Platform::Context::Request;
 # pre-load controlleres to have more shared code among workers (COW)
-use BOM::WebSocketAPI::Websocket_v1();
-use BOM::WebSocketAPI::Websocket_v2();
 use BOM::WebSocketAPI::Websocket_v3();
 
 sub apply_usergroup {
@@ -106,24 +104,8 @@ sub startup {
 
     my $r = $app->routes;
 
-    for ($r->under('/websockets/v1')) {
-        $_->to('Websocket_v1#ok');
-        $_->websocket('/')->to('#entry_point');
-    }
-
-    for ($r->under('/websockets/v2')) {
-        $_->to('Websocket_v2#ok');
-        $_->websocket('/')->to('#entry_point');
-    }
-
     for ($r->under('/websockets/v3')) {
         $_->to('Websocket_v3#ok');
-        $_->websocket('/')->to('#entry_point');
-    }
-
-    # Alias, to be deprecated.
-    for ($r->under('/websockets/contracts')) {
-        $_->to('Websocket_v1#ok');
         $_->websocket('/')->to('#entry_point');
     }
 
