@@ -176,7 +176,7 @@ sub _calculate_weights {
             my $time   = $times[$idx];
             my $width  = $time < $news->{release_time} ? 2 * 60 : 2 * 60 + $news->{duration};
             my $weight = 1 / (1 + pdf($time, $news->{release_time}, $width) / pdf(0, 0, $width) * ($news->{magnitude} - 1));
-            $combinded[$idx] = min($combinded[$idx], $weight);
+            $combined[$idx] = min($combined[$idx], $weight);
         }
     }
 
