@@ -12,9 +12,7 @@ services:
 cache: apt
 env:
     - TEST_SUITE=v3
-    - TEST_SUITE=structure
-    - TEST_SUITE=leaktest
-    - secure: "PVLFC2gYVgnJT45GYcg1fvaCuij9P85sr0h+NZ/CCO9eCqpscBx1NQIGnUa5LgeFIKTr2xJGQ8f/Q4ydkrq1bNkGWvvhtNXBZiK15R7qX3XnyCSOrhmpHsNC/zYmRvl/7tpkR0LAscDGCckUjXjVy6rl1ihgI6QvQTMigS+fNWJaW8zkW10ZV7KAYodOLRRlrFYURZ6FNwNzI3kSXacUhNITs/WsYTMYsOVmagXfRExdUaL8PWMfqXssHGEvsT2IHwk2tWhHujDNdqBPIoyUEQZSIRhq39qJKERukpc1UQEmhCx+P1biYl1ShOY5KHWoFluPdwlAfN1WqeeYQF4jxKpVh5d71paE6K5oBKMsjkcLG3gusJs8y827Iyn3XVaG4WF/3yX63HnpwyIqmUeZvtU28n996zkMYMRSMYLqWnO+5LMIBRxLTDZrNwFHoUZnrRY0GOgba4ERLTk8iblcrW3dYqKkPzFAwMFJfrst12+sLSwa3TvO7IFjnqaCoEuP4l21SrWgzUlf55x+lPsT1JsCV1u1ufZu6uuIBahgiBQrk/c1xKlM019Bc3+TBTP90wEafHr6pKNb4rOQpdyTddFubNFnpQV2WhHxoeuG/Hv32Aiwz/PlsOlr2t9B4a3g1a8UexF8gnHGLCSxVJdiFvbR1RdlkJtbdo3Pf/3Ud+8="
+
 before_install:
     - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/websocket_schema_update.sh
