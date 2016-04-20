@@ -110,6 +110,10 @@ subtest 'get_corporate_actions_one_action' => sub {
     my @expected_keys = (qw(28-Mar-2013));
 
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
+
+    my $value = $result->{28 -Mar- 2013}->{value};
+
+    cmp_ok $value, '==', 1.25, 'value for this  corporate action';
 };
 
 done_testing();
