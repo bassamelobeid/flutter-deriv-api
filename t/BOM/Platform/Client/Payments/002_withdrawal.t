@@ -113,8 +113,14 @@ subtest 'CR withdrawal' => sub {
         $client->smart_payment(%deposit, amount => 10500);
         throws_ok { $client->validate_payment(%withdrawal, amount => -10001) } qr/exceeds withdrawal limit/,
             'Non-Authed CR withdrawal greater than USD10K';
-        throws_ok { $client->validate_payment(%withdrawal, amount => -10000) } qr/exceeds withdrawal limit/, 'Non-Authed CR withdrawal USD10K';
+        lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Non-Authed CR withdrawal USD10K';
         lives_ok { $client->validate_payment(%withdrawal, amount => -9999) } 'Non-Authed CR withdrawal USD9999';
+
+        subtest 'perform withdraw' => sub {
+            lives_ok{ $client->smart_payment(%withdrawal, amount => -5000) } 'first 5k withdrawal';
+            throws_ok{ $client->smart_payment(%withdrawal, amount => -5001) } qr/exceeds withdrawal limit \[USD 5000.00\]/,
+                'total withdraw cannot > 10k';
+        };
     };
 
     subtest 'in EUR, unauthenticated' => sub {
@@ -122,8 +128,14 @@ subtest 'CR withdrawal' => sub {
         $client->smart_payment(%deposit_eur, amount => 10500);
         throws_ok { $client->validate_payment(%withdrawal_eur, amount => -10001) } qr/exceeds withdrawal limit/,
             'Non-Authed CR withdrawal greater than EUR 10K';
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -10000) } qr/exceeds withdrawal limit/, 'Non-Authed CR withdrawal EUR 10K';
+        lives_ok { $client->validate_payment(%withdrawal_eur, amount => -10000) } 'Non-Authed CR withdrawal EUR 10K';
         lives_ok { $client->validate_payment(%withdrawal_eur, amount => -9999) } 'Non-Authed CR withdrawal EUR 9999';
+
+        subtest 'perform withdraw' => sub {
+            lives_ok{ $client->smart_payment(%withdrawal_eur, amount => -5000) } 'first 5k withdrawal';
+            throws_ok{ $client->smart_payment(%withdrawal_eur, amount => -5001) } qr/exceeds withdrawal limit \[EUR 5000.00\]/,
+                'total withdraw cannot > 10k';
+        };
     };
 
     subtest 'fully authenticated' => sub {
@@ -131,9 +143,14 @@ subtest 'CR withdrawal' => sub {
         $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
         $client->set_authentication('ID_192')->status('pass');
         $client->save;
-        $client->smart_payment(%deposit, amount => 10500);
+        $client->smart_payment(%deposit, amount => 20000);
         lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Authed CR withdrawal no more than USD10K';
         lives_ok { $client->validate_payment(%withdrawal, amount => -10001) } 'Authed CR withdrawal more than USD10K';
+
+        subtest 'perform withdraw' => sub {
+            lives_ok{ $client->smart_payment(%withdrawal, amount => -5000) }, 'first 5k withdrawal';
+            lives_ok{ $client->smart_payment(%withdrawal, amount => -6000) }, 'subsequent 6k withdrawal';
+        };
     };
 };
 
@@ -148,15 +165,20 @@ subtest 'JP withdrawal' => sub {
             broker_code => 'JP',
             residence   => 'jp'
         );
-        $client->smart_payment(%deposit_jpy, amount => 1100000);
+        $client->smart_payment(%deposit_jpy, amount => 2000000);
         $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
         $client->save;
 
         throws_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000001) } qr/exceeds withdrawal limit/,
             'Non-Authed JP withdrawal greater than JPY 1,000,000';
-        throws_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000000) } qr/exceeds withdrawal limit/,
-            'Non-Authed JP withdrawal JPY 1,000,000';
+        lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000000) } 'Non-Authed JP withdrawal JPY 1,000,000';
         lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -999999) } 'Non-Authed JP withdrawal JPY 999,999';
+
+        subtest 'perform withdraw' => sub {
+            lives_ok{ $client->smart_payment(%withdrawal_jpy, amount => -500000) } 'first 500k withdrawal';
+            throws_ok{ $client->smart_payment(%withdrawal_jpy, amount => -500001) } qr/exceeds withdrawal limit \[JPY 500000.00\]/,
+                'total withdraw cannot > 10M';
+        };
     };
 
     subtest 'fully authenticated' => sub {
@@ -169,9 +191,14 @@ subtest 'JP withdrawal' => sub {
         $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
         $client->set_authentication('ID_192')->status('pass');
         $client->save;
-        $client->smart_payment(%deposit_jpy, amount => 1100000);
+        $client->smart_payment(%deposit_jpy, amount => 2000000);
         lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -999999) } 'Authed JP withdrawal no more than JPY 1,000,000';
         lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000001) } 'Authed JP withdrawal more than JPY 1,000,000';
+
+        subtest 'perform withdraw' => sub {
+            lives_ok{ $client->smart_payment(%withdrawal_jpy, amount => -500000) } 'first 500k withdrawal';
+            lives_ok{ $client->smart_payment(%withdrawal_jpy, amount => -600000) } 'subsequent 600k withdrawal';
+        };
     };
 };
 
