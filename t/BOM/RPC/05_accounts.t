@@ -558,6 +558,9 @@ subtest $method => sub {
     $test_client->save();
     is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok)]}, 'no tnc_approval');
 
+    $test_client->set_authentication('ID_DOCUMENT')->status('pass');
+    $test_client->save;
+    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok authenticated)]}, 'authenticated');
 };
 
 $method = 'change_password';
