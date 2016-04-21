@@ -26,7 +26,7 @@ subtest 'display_markets' => sub {
     my $registry = BOM::Market::Registry->instance;
 
     eq_or_diff [sort map { $_->name } $registry->display_markets],
-        [sort 'forex', 'indices', 'commodities', 'random', 'stocks'], "correct list of financial markets";
+        [sort 'forex', 'indices', 'commodities', 'volidx', 'stocks'], "correct list of financial markets";
 };
 
 subtest 'Market builds or configs test' => sub {
@@ -209,10 +209,10 @@ subtest 'Market builds or configs test' => sub {
     subtest 'random' => sub {
         my $registry = BOM::Market::Registry->instance;
 
-        my $random = $registry->get('random');
+        my $random = $registry->get('volidx');
 
         isa_ok $random, 'BOM::Market';
-        is $random->display_name,  'Randoms';
+        is $random->display_name,  'Volatility Indices';
         is $random->display_order, 5;
         ok !$random->equity;
         ok !$random->disabled;
