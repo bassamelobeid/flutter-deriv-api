@@ -325,8 +325,8 @@ sub payment_account_transfer {
             my $sth = $dbh->prepare('SELECT (v_from_trans).id FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,NULL)');
             $sth->execute($fmClient->loginid, $toClient->loginid, $currency, $amount, $fmStaff, $toStaff, $fmRemark, $toRemark);
             my $records = $sth->fetchall_arrayref({});
-            if (scalar @{$record}) {
-                $response->{transaction_id} = $record->[0]->{id};
+            if (scalar @{$records}) {
+                $response->{transaction_id} = $records->[0]->{id};
             }
         }
         catch {
