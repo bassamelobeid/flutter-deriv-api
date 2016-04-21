@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::NoWarnings;
 
 use Time::HiRes;
@@ -177,6 +177,17 @@ subtest 'intraday duration contract settlement' => sub {
     ok !$c->is_valid_to_sell, 'not valid to sell';
     ok !$c->missing_market_data, 'no missing market data while waiting for exit tick after expiry';
     like($c->primary_validation_error->message, qr/exit tick is undefined/, 'throws error');
+};
+
+subtest 'longcode misbehaving for daily contracts' => sub {
+    $bet_params->{duration} = '2d';
+    my $c = produce_contract($bet_params);
+    ok $c->expiry_daily, 'multiday contract';
+    my $expiry_daily_longcode = $c->longcode;
+    $bet_params->{date_pricing} = $c->date_start->plus_time_interval('2d');
+    $c = produce_contract($bet_params);
+    ok $c->is_intraday, 'date_pricing reaches intraday';
+    is $c->longcode, $expiry_daily_longcode, 'longcode does not change';
 };
 
 sub create_ticks {
