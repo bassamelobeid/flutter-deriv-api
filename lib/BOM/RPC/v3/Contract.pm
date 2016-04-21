@@ -139,8 +139,18 @@ sub get_corporate_actions {
     my $params = shift;
     my ($symbol, $start, $end) = @{$params}{qw/symbol start end/};
 
+    my $start_date, $end_date;
+
     if (not $end) {
-        $end = $start->plus_time_interval('365d');
+        $end_date = Date::Utility->new;
+    } else {
+        $end_date = Date::Utility->new($end);
+    }
+
+    if (not $start) {
+        $start_date = $end_date->minus_time_interval('365d');
+    } else {
+        $start_date = Date::Utility->new($start);
     }
 
     my $response;
@@ -150,8 +160,8 @@ sub get_corporate_actions {
 
         if ($underlying->market->affected_by_corporate_actions) {
             @actions = $underlying->get_applicable_corporate_actions_for_period({
-                start => Date::Utility->new($start),
-                end   => Date::Utility->new($end),
+                start => $start_date,
+                end   => $end_date,
             });
         }
 
