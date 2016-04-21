@@ -11,11 +11,7 @@
     },
     "client_to_full_name": {
       "type": "string",
-      "description": "Payment agent client full name"
-    },
-    "client_to_loginid": {
-      "type": "string",
-      "description": "Payment agent client loginid"
+      "description": "Payment agent name"
     },
     "transaction_id": {
       "type":"integer",
