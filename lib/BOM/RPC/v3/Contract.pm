@@ -177,11 +177,10 @@ sub get_corporate_actions {
         }
     }
     catch {
-        $response = {
-            error => {
-                message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
-                code              => "GetCorporateActionsFailure"
-            }};
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+            code              => "GetCorporateActionsFailure"
+        });
     };
 
     return $response;
