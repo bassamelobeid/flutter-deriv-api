@@ -172,6 +172,10 @@
 "/cashier/limitsws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/cashier/authenticatews":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+  exclude_appcache: true
 "/new_account/realws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
