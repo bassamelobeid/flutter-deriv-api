@@ -686,7 +686,7 @@ subtest 'last_licensed_display_epoch' => sub {
     # daily license
     my $N225  = BOM::Market::Underlying->new('N225');
     my $today = Date::Utility->today;
-    my $close = $N225->exchange->closing_on($today);
+    my $close = $N225->calendar->closing_on($today);
     if (not $close or time < $close->epoch) {
         ok $N225->last_licensed_display_epoch < $today->epoch, "Do not display any ticks for today before opening";
     } else {

@@ -651,7 +651,7 @@ sub _build_exchange_name {
 
 =head2 exchange
 
-Returns a BOM::Market::Exchange object where this underlying is traded.  Useful for
+Returns a Quant::Framework::TradingCalendar object where this underlying is traded.  Useful for
 determining market open and closing times and other restrictions which may
 apply on that basis.
 
