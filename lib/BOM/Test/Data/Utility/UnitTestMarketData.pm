@@ -144,7 +144,7 @@ sub _init {
 sub create_doc {
     my ($yaml_db, $data_mod) = @_;
 
-    if (grep { $_ eq $yaml_db } qw{currency randomindex stock index holiday economic_events}) {
+    if (grep { $_ eq $yaml_db } qw{currency randomindex stock index holiday economic_events partial_trading}) {
         $data_mod->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader();
         $data_mod->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();
 
