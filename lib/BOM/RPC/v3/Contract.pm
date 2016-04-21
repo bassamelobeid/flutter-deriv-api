@@ -139,7 +139,7 @@ sub get_corporate_actions {
     my $params = shift;
     my ($symbol, $start, $end) = @{$params}{qw/symbol start end/};
 
-    my $start_date, $end_date;
+    my ($start_date, $end_date);
 
     if (not $end) {
         $end_date = Date::Utility->new;
