@@ -44,7 +44,6 @@
   },
   "required": [
     "echo_req",
-    "get_corporate_actions",
     "msg_type"
   ]
 }
