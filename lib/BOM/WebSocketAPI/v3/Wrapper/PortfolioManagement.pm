@@ -21,15 +21,14 @@ sub get_corporate_actions {
                 return $c->new_error('get_corporate_actions', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 return {
-                    msg_type  => 'get_corporate_actions',
-                    portfolio => $response,
+                    msg_type              => 'get_corporate_actions',
+                    get_corporate_actions => $response,
                 };
             }
         },
         {
-            args   => $args,
-            token  => $c->stash('token'),
-            source => $c->stash('source')});
+            args  => $args,
+            token => $c->stash('token')});
     return;
 }
 
