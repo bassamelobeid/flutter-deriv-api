@@ -322,15 +322,11 @@ sub payment_account_transfer {
         my $dbh = $fmClient->db->dbh;
         my $response;
         try {
-            my $sth = $dbh->prepare('SELECT v_from_trans FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,NULL)');
+            my $sth = $dbh->prepare('SELECT (v_from_trans).id FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,NULL)');
             $sth->execute($fmClient->loginid, $toClient->loginid, $currency, $amount, $fmStaff, $toStaff, $fmRemark, $toRemark);
-            my $records = $sth->fetchall_arrayref();
-            # response format [['(179,59,"2016-04-19 15:50:18.485634",-5.0000,CR90000000,,payment,,199,withdrawal,1,985.0000,)']]
-            if (scalar @{$records}) {
-                my $rec = $records->[0]->[0];
-                $rec =~ s/[()]//g;
-                my @columns = split(',', $rec);
-                $response->{transaction_id} = $columns[0] if scalar @columns;
+            my $records = $sth->fetchall_arrayref({});
+            if (scalar @{$record}) {
+                $response->{transaction_id} = $record->[0]->{id};
             }
         }
         catch {
