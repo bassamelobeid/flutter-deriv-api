@@ -183,7 +183,9 @@ sub get_bid {
             $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
             $response->{entry_spot} = $contract->underlying->pipsized_value($contract->entry_spot) if $contract->entry_spot;
 
-            if ($sell_time) {
+            # sell_spot and sell_spot_time are updated if the contract is sold
+            # or when the contract is expired.
+            if ($sell_time or $contract->is_expired) {
                 my $sell_tick =
                     ($contract->is_path_dependent and $contract->hit_tick)
                     ? $contract->hit_tick
