@@ -10,6 +10,10 @@ use BOM::Platform::Context qw/ localize /;
 sub register {
     my ($self, $app) = @_;
 
+    $app->helper(server_name => sub { return [split(/\./, Sys::Hostname::hostname)]->[0] });
+
+    $app->helper(l => sub { shift; return localize(@_) });
+
     $app->helper(
         country_code => sub {
             my $c = shift;
@@ -21,9 +25,6 @@ sub register {
 
             return $c->stash->{country_code} = $client_country;
         });
-
-    $app->helper(server_name => sub { return [split(/\./, Sys::Hostname::hostname)]->[0] });
-    $app->helper(l => sub { shift; return localize(@_) });
 
     $app->helper(
         new_error => sub {
