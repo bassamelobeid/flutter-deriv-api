@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Quant::Framework::Holiday;
-use BOM::MarketData::PartialTrading;
+use Quant::Framework::PartialTrading;
 use BOM::Platform::Context;
 use Try::Tiny;
 use Text::CSV::Slurp;
@@ -26,7 +26,9 @@ sub save_calendar {
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         )->save;
     } else {
-        $updated = BOM::MarketData::PartialTrading->new(
+        $updated = Quant::Framework::PartialTrading->new(
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             recorded_date => $recorded_date,
             type          => $calendar_type,
             calendar      => $calendar,
