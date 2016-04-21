@@ -117,6 +117,9 @@ subtest 'asian' => sub {
     lives_ok {
         my $time = Date::Utility->new(1310631887);
         my $c = produce_contract('ASIANU_R_75_5_1310631887_2T', 'USD');
+        my $params = $c->build_parameters;
+        $params->{date_pricing} = $c->date_start->epoch + 299;
+        $c = produce_contract($params);
         is $c->code, 'ASIANU', 'extracted the right bet type from shortcode';
         is $c->underlying->symbol, 'R_75', 'extracted the right symbol from shortcode';
         is $c->payout, 5, 'correct payout from shortcode';

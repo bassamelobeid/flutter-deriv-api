@@ -351,7 +351,6 @@ The second argument should be the contract for which you wish to produce a simil
 The changes should be in a hashref as the second argument.
 
 Set 'as_new' to create a similar contract which starts "now"
-Set 'for_sale' to convert an extant contract for sale at market.
 Set 'priced_at' to move to a particular point in the contract lifetime. 'now' and 'start' are short-cuts.
 Otherwise, the changes should be attribute to fill on the contract as with produce_contract
 =cut
@@ -374,10 +373,6 @@ sub make_similar_contract {
         delete $build_parameters{date_start};
     }
     delete $changes->{as_new};
-    if ($changes->{for_sale}) {
-        $build_parameters{require_entry_tick_for_sale} = 1;
-    }
-    delete $changes->{for_sale};
     if (my $when = $changes->{priced_at}) {
         if ($when eq 'now') {
             delete $build_parameters{date_pricing};

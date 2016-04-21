@@ -83,9 +83,9 @@ subtest 'forward starting on random daily' => sub {
         date_start   => $now
     });
     ok $c->is_forward_starting;
-    ok $c->_validate_start_date;
-    my @err = $c->_validate_start_date;
-    like($err[0]->{message}, qr/in starting blackout/);
+    ok $c->_validate_start_and_expiry_date;
+    my @err = $c->_validate_start_and_expiry_date;
+    like($err[0]->{message_to_client}, qr/from 00:00:00 to 00:01:00/);
     $c = produce_contract({
         bet_type     => 'CALL',
         underlying   => 'RDBULL',
@@ -97,7 +97,7 @@ subtest 'forward starting on random daily' => sub {
         date_pricing => $now->epoch - 300,
         date_start   => $now->epoch + 301
     });
-    ok !$c->_validate_start_date;
+    ok !$c->_validate_start_and_expiry_date;
 };
 
 subtest 'end of day blockout period for random nightly and random daily' => sub {
@@ -113,8 +113,8 @@ subtest 'end of day blockout period for random nightly and random daily' => sub 
         date_pricing => $now->epoch,
         date_start   => $now->epoch,
     });
-    ok $c->_validate_expiry_date, 'throw error if contract ends in 1m before expiry';
-    my $valid_c = make_similar_contract($c, {duration => '8m59s'});
-    ok !$valid_c->_validate_expiry_date;
+    ok $c->_validate_start_and_expiry_date, 'throw error if contract ends in 1m before expiry';
+    like (($c->_validate_start_and_expiry_date)[0]->{message_to_client}, qr/may not expire between 23:59:00 and 23:59:59/, 'throws error');
+    my $valid_c = make_similar_contract($c, {duration => '9m59s'});
+    ok !$valid_c->_validate_start_and_expiry_date;
 };
-
