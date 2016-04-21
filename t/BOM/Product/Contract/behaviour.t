@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::NoWarnings;
 
 use Time::HiRes;
@@ -84,20 +84,20 @@ subtest 'waiting for entry tick' => sub {
     $bet_params->{date_start}          = $now;
     $bet_params->{date_pricing}        = $now->epoch + 1;
     $bet_params->{duration}            = '1h';
-    $bet_params->{is_forward_starting} = 1;
+    delete $bet_params->{is_forward_starting};
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like($c->primary_validation_error->message, qr/Waiting for entry tick/, 'throws error');
-    create_ticks([101, $now->epoch, 'R_100']);
+    create_ticks([101, $now->epoch+1, 'R_100']);
     $c = produce_contract($bet_params);
     ok $c->entry_tick,       'entry tick defined';
     ok $c->is_valid_to_sell, 'valid to sell';
-    $bet_params->{date_pricing} = $now->epoch + 301;    # 1 second too far
+    $bet_params->{date_pricing} = $now->epoch + 302;    # 1 second too far
     $c = produce_contract($bet_params);
     ok !$c->is_expired,       'not expired';
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like($c->primary_validation_error->message, qr/Quote too old/, 'throws error');
-    create_ticks([101, $now->epoch + 1, 'R_100']);
+    $bet_params->{date_pricing} = $now->epoch + 301;
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_sell, 'valid to sell once you have a close enough tick';
 };
@@ -188,6 +188,19 @@ subtest 'longcode misbehaving for daily contracts' => sub {
     $c = produce_contract($bet_params);
     ok $c->is_intraday, 'date_pricing reaches intraday';
     is $c->longcode, $expiry_daily_longcode, 'longcode does not change';
+};
+
+subtest 'ATM and non ATM switches on sellback' => sub {
+    my $now = Date::Utility->new;
+    create_ticks([101, $now->epoch, 'R_100'], [100, $now->epoch + 1, 'R_100'], [100.1, $now->epoch + 2, 'R_100']);
+    $bet_params->{duration} = '15m';
+    $bet_params->{date_start} = $now;
+    $bet_params->{date_pricing} = $now->epoch + 2;
+    $bet_params->{barrier} = 'S10P';
+    my $c = produce_contract($bet_params);
+    is $c->current_spot+0, 100.1, 'current tick is 100.1';
+    is $c->barrier->as_absolute+0, 100.1, 'barrier is 100.1';
+    ok !$c->is_atm_bet, 'not atm bet';
 };
 
 sub create_ticks {
