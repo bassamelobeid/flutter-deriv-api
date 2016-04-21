@@ -740,7 +740,10 @@ sub _build_pricing_mu {
 sub _build_longcode {
     my $self = shift;
 
-    my $expiry_type = $self->expiry_type;
+    # When we are building the longcode, we should always take the date_start to date_expiry as duration.
+    # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
+    my $contract_duration = $self->date_expiry->epoch - $self->date_start->epoch;
+    my $expiry_type = $self->tick_expiry ? 'tick' : $contract_duration > 86400 : 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->is_forward_starting and $self->fixed_expiry;
     my $localizable_description = $self->localizable_description->{$expiry_type};
 
