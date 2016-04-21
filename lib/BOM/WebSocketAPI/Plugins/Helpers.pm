@@ -23,7 +23,7 @@ sub register {
         });
 
     $app->helper(server_name => sub { return [split(/\./, Sys::Hostname::hostname)]->[0] });
-    $app->helper(l => sub { return localize(@_) });
+    $app->helper(l => sub { shift; return localize(@_) });
 
     $app->helper(
         new_error => sub {
