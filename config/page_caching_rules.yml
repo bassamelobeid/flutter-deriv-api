@@ -96,7 +96,7 @@
 "/get-started/how-to-trade-binaries":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/get-started/random-markets":
+"/get-started/volidx-markets":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/get-started/types-of-trades":
@@ -129,10 +129,6 @@
 "/why-us":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/white-labels":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/payment-agent":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -176,6 +172,10 @@
 "/cashier/limitsws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/cashier/authenticatews":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+  exclude_appcache: true
 "/new_account/realws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
