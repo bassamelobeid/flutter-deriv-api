@@ -53,7 +53,7 @@ subtest 'Market builds or configs test' => sub {
         ok !$config->providers->[0];
         is $config->license, 'realtime';
         ok !$config->official_ohlc,         'Official OHLC';
-        ok !$config->integer_barrier, 'non integer barrier';
+        ok !$config->integer_barrier,       'non integer barrier';
         ok !$config->integer_number_of_day, 'integer number of day';
     };
 
@@ -74,22 +74,22 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply(
             $forex->markups->digital_spread,
             {
-                'ASIAND'      => 3.5,
-                'ASIANU'      => 3.5,
-                'CALL'        => 3.5,
-                'DIGITDIFF'   => 3.5,
-                'DIGITMATCH'  => 3.5,
+                'ASIAND'       => 3.5,
+                'ASIANU'       => 3.5,
+                'CALL'         => 3.5,
+                'DIGITDIFF'    => 3.5,
+                'DIGITMATCH'   => 3.5,
                 'EXPIRYMISSE'  => 3.5,
                 'EXPIRYRANGEE' => 3.5,
-                'EXPIRYMISS'  => 3.5,
-                'EXPIRYRANGE' => 3.5,
-                'NOTOUCH'     => 4,
-                'ONETOUCH'    => 4,
-                'PUT'         => 3.5,
-                'PUTE'        => 3.5,
-                'CALLE'       => 3.5,
-                'RANGE'       => 5,
-                'UPORDOWN'    => 5,
+                'EXPIRYMISS'   => 3.5,
+                'EXPIRYRANGE'  => 3.5,
+                'NOTOUCH'      => 4,
+                'ONETOUCH'     => 4,
+                'PUT'          => 3.5,
+                'PUTE'         => 3.5,
+                'CALLE'        => 3.5,
+                'RANGE'        => 5,
+                'UPORDOWN'     => 5,
             },
         );
         ok $forex->markups->apply_butterfly_markup,      'Butterfly Markup';
@@ -123,22 +123,22 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply(
             $commodities->markups->digital_spread,
             {
-                'ASIAND'      => 4,
-                'ASIANU'      => 4,
-                'CALL'        => 4,
-                'CALLE'       => 4,
-                'PUTE'        => 4,
-                'DIGITDIFF'   => 4,
-                'DIGITMATCH'  => 4,
+                'ASIAND'       => 4,
+                'ASIANU'       => 4,
+                'CALL'         => 4,
+                'CALLE'        => 4,
+                'PUTE'         => 4,
+                'DIGITDIFF'    => 4,
+                'DIGITMATCH'   => 4,
                 'EXPIRYMISSE'  => 4,
                 'EXPIRYRANGEE' => 4,
-                'EXPIRYMISS'  => 4,
-                'EXPIRYRANGE' => 4,
-                'NOTOUCH'     => 7,
-                'ONETOUCH'    => 7,
-                'PUT'         => 4,
-                'RANGE'       => 10,
-                'UPORDOWN'    => 10,
+                'EXPIRYMISS'   => 4,
+                'EXPIRYRANGE'  => 4,
+                'NOTOUCH'      => 7,
+                'ONETOUCH'     => 7,
+                'PUT'          => 4,
+                'RANGE'        => 10,
+                'UPORDOWN'     => 10,
             },
         );
 
@@ -173,22 +173,22 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply(
             $indices->markups->digital_spread,
             {
-                'ASIAND'      => 4,
-                'ASIANU'      => 4,
-                'CALL'        => 4,
-                'CALLE'       => 4,
-                'PUTE'        => 4,
-                'DIGITDIFF'   => 4,
-                'DIGITMATCH'  => 4,
+                'ASIAND'       => 4,
+                'ASIANU'       => 4,
+                'CALL'         => 4,
+                'CALLE'        => 4,
+                'PUTE'         => 4,
+                'DIGITDIFF'    => 4,
+                'DIGITMATCH'   => 4,
                 'EXPIRYMISSE'  => 4,
                 'EXPIRYRANGEE' => 4,
-                'EXPIRYMISS'  => 4,
-                'EXPIRYRANGE' => 4,
-                'NOTOUCH'     => 6,
-                'ONETOUCH'    => 6,
-                'PUT'         => 4,
-                'RANGE'       => 8,
-                'UPORDOWN'    => 8,
+                'EXPIRYMISS'   => 4,
+                'EXPIRYRANGE'  => 4,
+                'NOTOUCH'      => 6,
+                'ONETOUCH'     => 6,
+                'PUT'          => 4,
+                'RANGE'        => 8,
+                'UPORDOWN'     => 8,
             },
         );
 
@@ -223,22 +223,22 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply(
             $random->markups->digital_spread,
             {
-                'ASIAND'      => 3,
-                'ASIANU'      => 3,
-                'CALL'        => 3,
-                'CALLE'       => 3,
-                'PUTE'        => 3,
-                'DIGITDIFF'   => 3,
-                'DIGITMATCH'  => 3,
+                'ASIAND'       => 3,
+                'ASIANU'       => 3,
+                'CALL'         => 3,
+                'CALLE'        => 3,
+                'PUTE'         => 3,
+                'DIGITDIFF'    => 3,
+                'DIGITMATCH'   => 3,
                 'EXPIRYMISSE'  => 3,
                 'EXPIRYRANGEE' => 3,
-                'EXPIRYMISS'  => 3,
-                'EXPIRYRANGE' => 3,
-                'NOTOUCH'     => 3,
-                'ONETOUCH'    => 3,
-                'PUT'         => 3,
-                'RANGE'       => 3,
-                'UPORDOWN'    => 3,
+                'EXPIRYMISS'   => 3,
+                'EXPIRYRANGE'  => 3,
+                'NOTOUCH'      => 3,
+                'ONETOUCH'     => 3,
+                'PUT'          => 3,
+                'RANGE'        => 3,
+                'UPORDOWN'     => 3,
             },
         );
         ok !$random->markups->apply_butterfly_markup,      'Butterfly Markup';
@@ -250,7 +250,7 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply($random->providers, ['random',]);
         is $random->license, 'realtime';
         ok !$random->official_ohlc;
-        ok !$random->integer_barrier, 'non integer barrier';
+        ok !$random->integer_barrier,       'non integer barrier';
         ok !$random->integer_number_of_day, 'integer number of day';
     };
 };

@@ -56,14 +56,14 @@ subtest 'holidays' => sub {
     ok(!$FOREX->has_holiday_on(Date::Utility->new('6-May-13')), 'FOREX is open on LSE holiday 6-May-13.');
     ok($FOREX->has_holiday_on(Date::Utility->new('25-Dec-13')), 'FOREX has holiday on 25-Dec-13.');
     ok(!$LSE->has_holiday_on(Date::Utility->new('7-May-13')),   'LSE is open on 7-May-13.');
-    ok(!$LSE->has_holiday_on(Date::Utility->new('26-Dec-13')), '26-Dec-13 is not a real holiday');
+    ok(!$LSE->has_holiday_on(Date::Utility->new('26-Dec-13')),  '26-Dec-13 is not a real holiday');
 };
 
 subtest 'pseudo holidays' => sub {
     my $FOREX = BOM::Market::Exchange->new('FOREX', $date);
     my $start = Date::Utility->new('25-Dec-13')->minus_time_interval('7d');
     note("seven days before and after Chritmas is pseudo-holiday period");
-    for (map {$start->plus_time_interval($_ .'d')} (0 .. 14)) {
+    for (map { $start->plus_time_interval($_ . 'd') } (0 .. 14)) {
         ok $FOREX->pseudo_holidays->{$_->days_since_epoch}, 'pseudo holiday on ' . $_->date;
     }
 

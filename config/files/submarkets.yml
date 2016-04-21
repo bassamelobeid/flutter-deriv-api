@@ -4,6 +4,7 @@ random_index:
     display_order: 1
     market: volidx
     explanation: 'Associated with a number that represents the relative volatility of the market. For example, the Volatility 100 Index is twice as volatile as the Volatility 50 Index.'
+    always_available: 1
 random_daily:
     name: random_daily
     display_name: "Daily Reset Indices"
@@ -13,7 +14,7 @@ random_daily:
     market: volidx
     explanation: 'Represent a single day of trading with different market factors. They are reset at the start of each trading day (00:00GMT).'
     sod_blackout_start: '1m'
-    eod_blackout_expiry: '1m'
+    eod_blackout_expiry: '59s'
 asia_oceania:
     name: asia_oceania
     display_name: "Asia/Oceania"
@@ -74,6 +75,7 @@ energy:
     display_name: "Energy"
     display_order: 2
     market: commodities
+    eod_blackout_expiry: '1m'
 australia:
     name: australia
     offered: 0
