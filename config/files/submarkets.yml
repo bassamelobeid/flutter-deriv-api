@@ -25,7 +25,7 @@ random_nightly:
     explanation: 'Represent a single day of trading with different market factors. They are reset at the start of each trading day (12:00GMT).'
     sod_blackout_start: '1m'
     eod_blackout_expiry: '59s'
-asiaoceania:
+asia_oceania:
     name: asia_oceania
     display_name: "Asia/Oceania"
     display_order: 1
