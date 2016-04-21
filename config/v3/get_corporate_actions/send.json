@@ -17,11 +17,13 @@
     },
     "start": {
       "type": "string",
-      "description": "Start date (epoch or YYYY-MM-DD)."
+      "description": "Start date (epoch or YYYY-MM-DD).",
+      "pattern": "^(\\d{4}-\\d{1,2}-\\d{1,2}|\d{10})$"
     },
     "end": {
       "type": "string",
-      "description": "Optional start date (epoch or YYYY-MM-DD). Will default to 1 year range if not specified."
+      "description": "Optional start date (epoch or YYYY-MM-DD). Will default to 1 year range if not specified.",
+      "pattern": "^(\\d{4}-\\d{1,2}-\\d{1,2}|\d{10})$"
     }
   },
   "additionalProperties": false
