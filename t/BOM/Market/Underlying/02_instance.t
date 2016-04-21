@@ -18,6 +18,7 @@ use DateTime;
 use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
+use BOM::System::Chronicle;
 use BOM::Market::SubMarket;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
@@ -537,7 +538,7 @@ subtest 'all methods on a selection of underlyings' => sub {
         is($EURUSD->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
-    my $eod = BOM::Market::Exchange->new('NYSE')->closing_on(Date::Utility->new('2016-04-05'));
+    my $eod = Quant::Framework::TradingCalendar->new('NYSE', BOM::System::Chronicle::get_chronicle_reader())->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
         my $worm = BOM::Market::Underlying->new($pair, $eod->minus_time_interval('1s'));
         is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');

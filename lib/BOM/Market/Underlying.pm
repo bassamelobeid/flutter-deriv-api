@@ -661,28 +661,26 @@ has calendar => (
     is         => 'ro',
     isa        => 'Quant::Framework::TradingCalendar',
     lazy_build => 1,
-    handles    => [
-        'seconds_of_trading_between_epochs', 'trade_date_after', 'trade_date_before', 'trades_on',
-        'has_holiday_on',                    'is_open',          'is_in_dst_at',
-    ]);
+    handles =>
+        ['seconds_of_trading_between_epochs', 'trade_date_after', 'trade_date_before', 'trades_on', 'has_holiday_on', 'is_open', 'is_in_dst_at',]);
 
 sub _build_calendar {
     my $self = shift;
 
     $self->_exchange_refreshed(time);
-    return Quant::Framework::TradingCalendar->new($self->exchange_name, 
+    return Quant::Framework::TradingCalendar->new(
+        $self->exchange_name,
         BOM::System::Chronicle::get_chronicle_reader(),
         BOM::Platform::Context::request()->language,
-        $self->for_date);
+        $self->for_date
+    );
 }
 
 has exchange => (
     is         => 'ro',
     isa        => 'Quant::Framework::Exchange',
     lazy_build => 1,
-    handles    => [
-        'is_OTC',
-    ]);
+    handles    => ['is_OTC',]);
 
 sub _build_exchange {
     my $self = shift;
@@ -1300,10 +1298,15 @@ sub is_in_quiet_period {
 
     # Cache the exchange objects for faster service
     # The times should not reasonably change in a process-lifetime
-    state $exchanges = {map { $_ => Quant::Framework::TradingCalendar->new($_,
-        BOM::System::Chronicle::get_chronicle_reader(),
-        BOM::Platform::Context::request()->language, 
-        $self->for_date)} (qw(NYSE FSE LSE TSE SES ASX))};
+    state $exchanges = {
+        map {
+            $_ => Quant::Framework::TradingCalendar->new(
+                $_,
+                BOM::System::Chronicle::get_chronicle_reader(),
+                BOM::Platform::Context::request()->language,
+                $self->for_date
+                )
+        } (qw(NYSE FSE LSE TSE SES ASX))};
 
     if ($self->market->name eq 'forex') {
         # Pretty much everything trades in these big centers of activity
