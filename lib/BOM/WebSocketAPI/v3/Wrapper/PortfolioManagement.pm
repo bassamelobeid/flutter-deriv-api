@@ -29,6 +29,7 @@ sub get_corporate_actions {
         {
             args  => $args,
             token => $c->stash('token')});
+
     return;
 }
 
