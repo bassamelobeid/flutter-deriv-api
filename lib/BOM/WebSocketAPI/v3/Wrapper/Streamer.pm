@@ -169,13 +169,14 @@ sub process_realtime_events {
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
             if (exists $arguments->{subscribe} and $arguments->{subscribe} eq '1') {
                 return unless $c->tx;
+                my $skip_symbols = ($skip_symbol_list{$arguments->{symbol}}) ? 1 : 0;
                 my $atm_contract = ($arguments->{contract_type} =~ /^(CALL|PUT)$/ and not $arguments->{barrier}) ? 1 : 0;
                 my $fixed_expiry = $arguments->{date_expiry} ? 1 : 0;
                 my $skip_tick_expiry =
-                    ($skip_symbol_list{$arguments->{symbol}} and $skip_type_list{$arguments->{contract_type}} and $arguments->{duration_unit} eq 't');
+                    ($skip_type_list{$arguments->{contract_type}} and $arguments->{duration_unit} eq 't');
                 my $skip_intraday_atm_non_fixed_expiry = ($skip_duration_list{$arguments->{duration_unit}} and $atm_contract and not $fixed_expiry);
 
-                if (not $skip_tick_expiry and not $skip_intraday_atm_non_fixed_expiry) {
+                if (not $skip_symbols and not $skip_tick_expiry and not $skip_intraday_atm_non_fixed_expiry) {
                     send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments);
                 }
             } else {
