@@ -751,8 +751,7 @@ sub paymentagent_withdraw {
     if ($args->{dry_run}) {
         return {
             status              => 2,
-            client_to_full_name => $pa_client->full_name,
-            client_to_loginid   => $paymentagent_loginid
+            client_to_full_name => $paymentagent->payment_agent_name
         };
     }
 
@@ -890,8 +889,7 @@ sub paymentagent_withdraw {
 
     return {
         status              => 1,
-        client_to_full_name => $pa_client->full_name,
-        client_to_loginid   => $paymentagent_loginid,
+        client_to_full_name => $paymentagent->payment_agent_name,
         transaction_id      => $response->{transaction_id}};
 }
 
