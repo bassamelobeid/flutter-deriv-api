@@ -12,7 +12,8 @@
     },
     "symbol": {
       "type": "string",
-      "description":"Equity's symbol. Example: MSFT,GOOG etc"
+      "description":"Equity's symbol. Example: MSFT,GOOG etc",
+      "pattern":"^\\w{1,10}$"
     },
     "start": {
       "type": "string",
