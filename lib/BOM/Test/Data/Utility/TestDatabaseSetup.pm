@@ -7,6 +7,7 @@ use File::Slurp;
 use Try::Tiny;
 use DBIx::Migration;
 use BOM::Platform::Runtime;
+use File::Temp qw/tempfile/;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
@@ -23,7 +24,6 @@ sub prepare_unit_test_database {
 
     try {
         $self->_migrate_changesets;
-        $self->_import_sample_data;
         $self->_alter_user_mapping if ($self->_db_migrations_dir eq 'rmgdb');
         $self->_post_import_operations;
     }
@@ -164,6 +164,9 @@ sub _migrate_changesets {
         $m->psql(sort glob $self->collectordb_changesets_location . '/functions/*.sql')
             if -d $self->collectordb_changesets_location . '/functions';
     }
+    if (-f $self->changesets_location . '/unit_test_dml.sql') {
+        $m->psql({before => "SET session_replication_role TO 'replica';\n", after => ";\nSET session_replication_role TO 'origin';\n"}, $self->changesets_location . '/unit_test_dml.sql');
+    }
 
     foreach (@bouncer_dbs) {
         $b_db = $_;
@@ -183,16 +186,6 @@ sub _migrate_changesets {
         };
     }
 
-    return 1;
-}
-
-sub _import_sample_data {
-    my $self = shift;
-
-    my $filename = $self->changesets_location . '/unit_test_dml.sql';
-    if (-e $filename) {
-        $self->_migrate_file($filename);
-    }
     return 1;
 }
 
