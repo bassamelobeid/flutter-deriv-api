@@ -332,11 +332,11 @@ sub fill_from_historical_feed {
         # that means we have to do full repopulation, and population speed-up
         # shoul NOT occur to avoid aggticks-gap-in-the-past
         if ($earlier_ticks) {
-          my @ticks         = map { $decoder->decode($_) } @{$redis->zrevrangebyscore($agg_key, $end, $first_agg, 'LIMIT', 0, 100)};
-          my $non_zero_tick = first { $_->{count} > 0 } @ticks;
-          if ($non_zero_tick) {
-              $timestamp = $non_zero_tick->{agg_epoch};
-          }
+            my @ticks = map { $decoder->decode($_) } @{$redis->zrevrangebyscore($agg_key, $end, $first_agg, 'LIMIT', 0, 100)};
+            my $non_zero_tick = first { $_->{count} > 0 } @ticks;
+            if ($non_zero_tick) {
+                $timestamp = $non_zero_tick->{agg_epoch};
+            }
         }
         $timestamp;
     };
