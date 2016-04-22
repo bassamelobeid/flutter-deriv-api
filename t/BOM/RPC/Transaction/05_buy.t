@@ -94,7 +94,7 @@ subtest 'buy' => sub {
     like($result->{shortcode}, qr/CALL_R_50_100_\d{10}_\d{10}_S0P_0/, 'shortcode is correct');
     is(
         $result->{longcode},
-        '如果随机 50 指数在合约开始时间之后到2 minutes时严格高于入市现价，将获得USD100.00的赔付额。',
+        '如果Volatility 50 Index在合约开始时间之后到2 minutes时严格高于入市现价，将获得USD100.00的赔付额。',
         'longcode is correct'
     );
 
