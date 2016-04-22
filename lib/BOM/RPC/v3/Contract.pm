@@ -183,9 +183,17 @@ sub get_bid {
             $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
             $response->{entry_spot} = $contract->underlying->pipsized_value($contract->entry_spot) if $contract->entry_spot;
 
-            if ($sell_time and my $sell_tick = $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1})) {
-                $response->{sell_spot}      = $contract->underlying->pipsized_value($sell_tick->quote);
-                $response->{sell_spot_time} = $sell_tick->epoch;
+            # sell_spot and sell_spot_time are updated if the contract is sold
+            # or when the contract is expired.
+            if ($sell_time or $contract->is_expired) {
+                my $sell_tick =
+                    ($contract->is_path_dependent and $contract->hit_tick)
+                    ? $contract->hit_tick
+                    : $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1});
+                if ($sell_tick) {
+                    $response->{sell_spot}      = $contract->underlying->pipsized_value($sell_tick->quote);
+                    $response->{sell_spot_time} = $sell_tick->epoch;
+                }
             }
 
             if ($contract->expiry_type eq 'tick') {
