@@ -5,7 +5,7 @@ use base 'Mojolicious::Plugin';
 use strict;
 use warnings;
 use Sys::Hostname;
-use BOM::Platform::Context qw/ localize /;
+use BOM::Platform::Context::I18N;
 
 sub register {
     my ($self, $app) = @_;
