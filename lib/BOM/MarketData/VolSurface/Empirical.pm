@@ -19,6 +19,7 @@ use BOM::Market::Types;
 
 my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
 my $coefficients    = LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
+my $returns_sep     = 4;
 
 sub get_volatility {
     my ($self, $args) = @_;
@@ -53,31 +54,20 @@ sub get_volatility {
         fill_cache   => $fill_cache,
     });
 
-    my $returns_sep = 4;
     $self->error('Insufficient tick interval to get_volatility') if @$ticks <= $returns_sep;
-
-    my ($tick_count, $real_periods) = (0, 0);
-    my @tick_epochs = uniq map { $_->{epoch} } @$ticks;
-    my (@time_samples_past, @returns_squared);
-    for (my $i = $returns_sep; $i <= $#tick_epochs; $i++) {
-        push @time_samples_past, ($tick_epochs[$i] + $tick_epochs[$i - $returns_sep]) / 2;
-        my $dt = $tick_epochs[$i] - $tick_epochs[$i - $returns_sep];
-        push @returns_squared, ((log($ticks->[$i]->{quote} / $ticks->[$i - 4]->{quote})**2) * 252 * 86400 / $dt);
-        $real_periods++;
-        $tick_count += $ticks->[$i]->{count};
-    }
 
     # check to make sure that 80% of the interval in the lookback period has ticks.
     my $interval_threshold = int(($lookback_interval->minutes * $returns_sep + 1) * 0.8);
-    $self->error('Insufficient ticks in each interval to get_volatility') if ($real_periods + $returns_sep < $interval_threshold);
+    $self->error('Insufficient ticks in each interval to get_volatility') if (scalar(@$ticks) < $interval_threshold);
 
     # if there's error we just return long term volatility
     return $self->long_term_vol if $self->error;
 
+    my @tick_epochs = map { $_->{epoch} } @$ticks;
+    my @time_samples_past = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
     my $categorized_events = $self->_categorized_economic_events($economic_events);
     my $weights            = _calculate_weights(\@time_samples_past, $categorized_events);
-    my $sum_vol            = sum map { $returns_squared[$_] * $weights->[$_] } (0 .. $#time_samples_past);
-    my $observed_vol       = sqrt($sum_vol / sum(@$weights));
+    my $observed_vol       = _calculate_observed_volatility($ticks, \@time_samples_past, \@tick_epochs, $weights);
 
     my $c_start = $args->{current_epoch};
     my $c_end   = $c_start + $args->{seconds_to_expiration};
@@ -108,21 +98,8 @@ sub get_volatility {
     my $future_sum         = sum(map { ($seasonality_fut->[$_] * $news_fut->[$_])**2 } (0 .. $#time_samples_fut));
     my $future_seasonality = sqrt($future_sum / scalar(@time_samples_fut));
 
-    return $self->_seasonalize({
-        volatility => $observed_vol,
-        past       => $past_seasonality,
-        future     => $future_seasonality,
-        %$args
-    });
-}
-
-sub _seasonalize {
-    my ($self, $args) = @_;
-
-    my ($past, $future) = @{$args}{'past', 'future'};
-
-    my $ltp_volatility_seasonality = $future;
-    my $stp_volatility_seasonality = $future / $past;
+    my $ltp_volatility_seasonality = $future_seasonality;
+    my $stp_volatility_seasonality = $future_seasonality / $past_seasonality;
     $stp_volatility_seasonality = min(2, max($stp_volatility_seasonality, 0.5));
 
     my $duration_coef        = $self->_get_coefficients('duration_coef');
@@ -143,6 +120,21 @@ sub _seasonalize {
     $seasonalized_vol = min($max, max($min, $seasonalized_vol));
 
     return $seasonalized_vol;
+}
+
+sub _calculate_observed_volatility {
+    my ($ticks, $time_samples_past, $tick_epochs, $weights) = @_;
+
+    my @returns_squared;
+    for (my $i = $returns_sep; $i <= $#$tick_epochs; $i++) {
+        my $dt = $tick_epochs->[$i] - $tick_epochs->[$i - $returns_sep];
+        push @returns_squared, ((log($ticks->[$i]->{quote} / $ticks->[$i - 4]->{quote})**2) * 252 * 86400 / $dt);
+    }
+
+    my $sum_vol = sum map { $returns_squared[$_] * $weights->[$_] } (0 .. $#$time_samples_past);
+    my $observed_vol = sqrt($sum_vol / sum(@$weights));
+
+    return $observed_vol;
 }
 
 sub _categorized_economic_events {
