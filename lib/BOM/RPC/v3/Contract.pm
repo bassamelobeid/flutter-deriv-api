@@ -165,16 +165,15 @@ sub get_corporate_actions {
             });
         }
 
-        if (scalar @actions > 0) {
-            foreach my $action (@actions) {
-                my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
+        foreach my $action (@actions) {
+            my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
 
-                $response->{$display_date} = {
-                    type  => $name_mapper{$action->{type}},
-                    value => $action->{value},
-                };
-            }
+            $response->{$display_date} = {
+                type  => $name_mapper{$action->{type}},
+                value => $action->{value},
+            };
         }
+
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
