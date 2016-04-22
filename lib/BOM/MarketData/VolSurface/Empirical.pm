@@ -25,8 +25,8 @@ sub get_volatility {
 
     # naked volatility
     my $underlying = $self->underlying;
-    my ($current_epoch, $seconds_to_expiration, $economic_events) =
-        @{$args}{'current_epoch', 'seconds_to_expiration', 'economic_events'};
+    my ($current_epoch, $seconds_to_expiration, $economic_events, $lookback_seconds) =
+        @{$args}{'current_epoch', 'seconds_to_expiration', 'economic_events', 'lookback_seconds'};
 
     $self->error('current_epoch is not provided to get_volatility') unless $current_epoch;
 
@@ -41,7 +41,8 @@ sub get_volatility {
         return $self->long_term_vol;
     }
 
-    my $lookback_interval = Time::Duration::Concise->new(interval => max(900, $seconds_to_expiration) . 's');
+    $lookback_seconds = $seconds_to_expiration unless $lookback_seconds;
+    my $lookback_interval = Time::Duration::Concise->new(interval => max(900, $lookback_seconds) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
 
     my $at    = BOM::Market::AggTicks->new;
