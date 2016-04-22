@@ -93,7 +93,7 @@ subtest 'ticks_history' => sub {
     $params->{args}->{ticks_history} = 'DFMGI';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('StreamingNotAllowed', 'Streaming not allowed for chartonly contracts.')
-        ->error_message_is('Streaming for this symbol is not available due to license restrictions.',
+        ->error_message_is('Потоковые котировки для данного символа недоступны, в связи с ограничениями лицензии.',
         'It should return error for chartonly contract');
 
     $params->{args}->{ticks_history} = 'TOP40';
