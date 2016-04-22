@@ -173,27 +173,6 @@ subtest 'date start blackouts' => sub {
     $bet_params->{date_start} = $bet_params->{date_pricing} = $hour_before_close->epoch - 1;
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
-
-    note('Testing date_start blackouts for RDMARS that resets at open');
-    my $rdmars_close        = BOM::Market::Underlying->new('RDMARS')->exchange->closing_on($weekday);
-    my $rdmars_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'RDMARS',
-        epoch      => $rdmars_close->epoch - 180,
-    });
-    $bet_params->{underlying}   = 'RDMARS';
-    $bet_params->{current_tick} = $rdmars_weekday_tick;
-    $bet_params->{date_start}   = $bet_params->{date_pricing} = $rdmars_close->epoch - 180;
-    $bet_params->{duration}     = '5t';
-    $bet_params->{barrier}      = 'S0P';
-    $c                          = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 11:54:59 to 11:59:59/, 'throws error');
-    $bet_params->{date_start} = $bet_params->{date_pricing} = $rdmars_close->epoch - 301;
-    $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'valid to buy';
-    $bet_params->{underlying} = 'R_100';
-    $bet_params->{date_start} = $bet_params->{date_pricing} = $rdmars_close->epoch - 180;
-    ok $c->is_valid_to_buy, 'valid to buy, only affects randoms which resets';
 };
 
 subtest 'date_expiry blackouts' => sub {

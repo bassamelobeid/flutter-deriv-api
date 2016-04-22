@@ -112,7 +112,7 @@ sub _apply_barrier_adjustment {
     my ($self, $barrier) = @_;
 
     # We need to shift barriers for path dependent contracts to account for the discrete
-    # nature of the ticks.  For now, only on randoms, because we know the tick frequency and
+    # nature of the ticks.  For now, only on volindices, because we know the tick frequency and
     # have very very short term PD contracts.
     # We introduced a concept of barrier shift in pricing our barrier contracts. So now we shift the barrier away from the current spot by a factor.
     # This factor is an empirical number, that is estimated by reducing the errors between the continuous pricing model and the true discrete price.
@@ -120,7 +120,7 @@ sub _apply_barrier_adjustment {
     #  We don't want to indulge in that as we need fast prices and numerical methods may not converge fast enough for our automated system.
     # So the best solution is to estimate a continuous price such that its error is minimum to the true value. Broadie, Glasserman and Kou estimate this in their paper "http://www.columbia.edu/~sk75/mfBGK.pdf".
     #  This shift comes out to be : exp(0.5826 * vol * sqrt(delT))
-    # Here, delT = barrier monitoring interval (so for example, as we generate a random tick every 2 seconds right now, dltT = 2/60/60/24/365).
+    # Here, delT = barrier monitoring interval (so for example, as we generate a volidx tick every 2 seconds right now, dltT = 2/60/60/24/365).
     # The number 0.5826 is a rough estimation of : 0.5826 ~ eta(0.5) / sqrt(2*pi), where eta = Riemann zeta function (this is available on page 327 of the above mentioned paper).
     # So if the barrier is above the spot, new barrier for pricing = barrier * exp(0.5826 * vol * sqrt(delT))
     # and when it is below the barrier, new barrier = barrier / exp(0.5826 * vol * sqrt(delT))
@@ -131,7 +131,7 @@ sub _apply_barrier_adjustment {
     # So another way of looking at it is as a seller of an option, missing ticks is great if we are just selling OTs but very bad for the NTs.
     # So we need a shift that would adjust for this while monitoring barriers discretely by increasing the price of NT / DNTs and decreasing the price for OT/DOTs.
 
-    if ($self->market->name eq 'random' and $self->is_path_dependent) {
+    if ($self->market->name eq 'volidx' and $self->is_path_dependent) {
         my $used_vol            = $self->pricing_vol;
         my $generation_interval = $self->underlying->market->generation_interval->days / 365;
         my $dir                 = ($barrier > $self->current_spot) ? 1 : -1;                     # Move in same direction from spot.
