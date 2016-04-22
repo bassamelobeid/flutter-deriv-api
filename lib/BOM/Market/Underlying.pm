@@ -1045,7 +1045,7 @@ sub interest_rate_for {
 
     # list of markets that have zero rate
     my %zero_rate = (
-        random => 1,
+        volidx => 1,
     );
 
     my $rate;
@@ -1079,7 +1079,7 @@ sub dividend_rate_for {
 
     my $rate;
 
-    if ($self->market->name eq 'random') {
+    if ($self->market->name eq 'volidx') {
         my $div = Quant::Framework::Dividend->new({
             symbol           => $self->symbol,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
