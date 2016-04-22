@@ -46,7 +46,7 @@ has [qw(id pricing_code display_name sentiment other_side_code payout_type payou
     default => undef,
 );
 
-has [qw(average_tick_count long_term_prediction)] => (
+has [qw(long_term_prediction)] => (
     is      => 'rw',
     default => undef,
 );
@@ -1307,7 +1307,6 @@ sub _build_pricing_args {
     };
 
     if ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex') {
-        $args->{average_tick_count}   = $self->average_tick_count;
         $args->{long_term_prediction} = $self->long_term_prediction;
         $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
     }
@@ -1349,7 +1348,6 @@ sub _build_pricing_vol {
             uses_flat_vol         => $uses_flat_vol,
         });
         $self->long_term_prediction($volsurface->long_term_prediction);
-        $self->average_tick_count($volsurface->average_tick_count);
         if ($volsurface->error) {
             $self->add_error({
                     message => format_error_string(
