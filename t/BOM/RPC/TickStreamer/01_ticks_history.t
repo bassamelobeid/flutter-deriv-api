@@ -231,21 +231,6 @@ subtest 'history data style' => sub {
     is @{$result->{data}->{candles}}, 1, 'It should return only 1 candle if start end diff lower than granularity';
     is_deeply [sort keys %{$result->{data}->{candles}->[0]}], [sort qw/ open high epoch low close /];
 
-    $start                           = $now->minus_time_interval('1d7h')->plus_time_interval('1m');
-    $params->{args}->{start}         = $start->epoch;
-    $params->{args}->{end}           = $start->plus_time_interval('1d1m1s')->epoch;
-    $params->{args}->{granularity}   = 60 * 60 * 24;
-    $params->{args}->{ticks_history} = 'R_100';
-    $result                          = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    my $daily_candles_rdyang_first_open = $result->{data}->{candles}->[0]->{open};
-    $start                   = $now->minus_time_interval('1d7h');
-    $params->{args}->{style} = 'ticks';
-    $params->{args}->{start} = $start->epoch;
-    $params->{args}->{end}   = $start->plus_time_interval('1s')->epoch;
-    $result                  = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $daily_candles_rdyang_first_open, $result->{data}->{history}->{prices}->[0],
-        'For the underlying nocturne, for daily ohlc, it should return ticks started from day started time';
-
     $start                           = $now->minus_time_interval('5h');
     $end                             = $start->plus_time_interval('30m');
     $params->{args}                  = {};
