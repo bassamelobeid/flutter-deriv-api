@@ -261,6 +261,19 @@ NAINGA: *stocks
 NARDSA: *stocks
 NAUNA: *stocks
 OBX: *forward_and_daily
+OTC_IXIC: *limited_callput
+OTC_BSESENSEX30: *limited_callput
+OTC_BIST100: *limited_callput
+OTC_AEX: *limited_callput
+OTC_AS51: *limited_callput
+OTC_FTSE: *limited_callput
+OTC_BFX: *limited_callput
+OTC_DJI: *limited_callput
+OTC_FCHI: *limited_callput
+OTC_GDAXI: *limited_callput
+OTC_HSI: *limited_callput
+OTC_N225: *limited_callput
+OTC_SPC: *limited_callput
 RDBEAR: &random_daily_nightly
   asian:
     tick:
