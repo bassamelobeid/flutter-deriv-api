@@ -102,13 +102,18 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => Date::Utility->new($date_pricing),
     });
 
+my $current_tick = BOM::Market::Data::Tick->new({
+    underlying => 'frxUSDJPY',
+    epoch => 1352344145,
+    quote => 76,
+});
 my %bet_params = (
     bet_type     => 'CALL',
     date_pricing => '1352344145',
     date_start   => '1352344145',
     date_expiry  => '12-Nov-12',
     underlying   => 'frxUSDJPY',
-    current_spot => 76,
+    current_tick => $current_tick,
     payout       => 100,
     currency     => 'GBP',
 );
