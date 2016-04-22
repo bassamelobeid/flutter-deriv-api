@@ -335,54 +335,6 @@ RDBEAR: &random_daily_nightly
       spot:
         american: *two_minutes_to_day
 RDBULL: *random_daily_nightly
-RDMARS: &reset_random
-  asian:
-    tick:
-      spot:
-        asian:
-          max: '10'
-          min: '5'
-          payout_limit:
-            USD: 10000
-            GBP: 10000
-            AUD: 10000
-            EUR: 10000
-            JPY: 1000000
-  callput:
-    intraday:
-      forward:
-        euro_atm:
-          max: 1d
-          min: 5m
-      spot:
-        euro_atm:
-          max: 1d
-          min: 15s
-        euro_non_atm:
-          max: 1d
-          min: 5m
-    tick:
-      spot:
-        euro_atm:
-          max: '10'
-          min: '5'
-  digits:
-    tick:
-      spot:
-        non_financial:
-          max: '10'
-          min: '5'
-  endsinout:
-    intraday:
-      spot:
-        euro_non_atm:
-          max: 1d
-          min: 5m
-RDMOON: *reset_random
-RDSUN: *reset_random
-RDVENUS: *reset_random
-RDYANG: *random_daily_nightly
-RDYIN: *random_daily_nightly
 R_100: &random_index
   asian:
     tick:

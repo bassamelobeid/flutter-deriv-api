@@ -1,28 +1,18 @@
 random_index:
     name: random_index
-    display_name: "Indices"
+    display_name: "Continuous Indices"
     display_order: 1
-    market: random
-    explanation: 'Associated with a number that represents the relative volatility of the market. For example, the Random 100 Index is twice as volatile as the Random 50 Index.'
+    market: volidx
+    explanation: 'Associated with a number that represents the relative volatility of the market. For example, the Volatility 100 Index is twice as volatile as the Volatility 50 Index.'
     always_available: 1
 random_daily:
     name: random_daily
-    display_name: "Quotidians"
+    display_name: "Daily Reset Indices"
     display_order: 2
     intradays_must_be_same_day: 1
     resets_at_open: 1
-    market: random
+    market: volidx
     explanation: 'Represent a single day of trading with different market factors. They are reset at the start of each trading day (00:00GMT).'
-    sod_blackout_start: '1m'
-    eod_blackout_expiry: '59s'
-random_nightly:
-    name: random_nightly
-    display_name: "Nocturnes"
-    display_order: 3
-    intradays_must_be_same_day: 1
-    resets_at_open: 1
-    market: random
-    explanation: 'Represent a single day of trading with different market factors. They are reset at the start of each trading day (12:00GMT).'
     sod_blackout_start: '1m'
     eod_blackout_expiry: '59s'
 asia_oceania:
