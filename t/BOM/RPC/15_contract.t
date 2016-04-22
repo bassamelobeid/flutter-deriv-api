@@ -391,7 +391,7 @@ subtest $method => sub {
             'symbol' => 'R_50',
             'longcode' =>
                 "如果Volatility 50 Index在合约开始时间之后到50 seconds时严格高于入市现价，将获得USD194.22的赔付额。",
-            'display_name' => 'Random 50 Index',
+            'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
         },
         'result is ok'
