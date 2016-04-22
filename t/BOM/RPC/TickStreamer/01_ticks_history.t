@@ -57,10 +57,10 @@ subtest 'Initialization' => sub {
             symbol => 'HSI',
         });
 
-        # Insert RDYANG data ticks
+        # Insert R_100 data ticks
         $fill_start = $now->minus_time_interval('1d7h');
         $populator  = BOM::Feed::Populator::InsertTicks->new({
-            symbols            => [qw/ RDYANG /],
+            symbols            => [qw/ R_100 /],
             last_migrated_time => $fill_start,
             buffer             => $buffer,
         });
@@ -71,7 +71,7 @@ subtest 'Initialization' => sub {
             $populator->insert_to_db({
                 ticks  => \@ticks,
                 date   => $fill_start->plus_time_interval("${i}d"),
-                symbol => 'RDYANG',
+                symbol => 'R_100',
             });
         }
 
@@ -93,7 +93,7 @@ subtest 'ticks_history' => sub {
     $params->{args}->{ticks_history} = 'DFMGI';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('StreamingNotAllowed', 'Streaming not allowed for chartonly contracts.')
-        ->error_message_is('Потоковые котировки для данного символа недоступны, в связи с ограничениями лицензии.',
+        ->error_message_is('Streaming for this symbol is not available due to license restrictions.',
         'It should return error for chartonly contract');
 
     $params->{args}->{ticks_history} = 'TOP40';
@@ -235,7 +235,7 @@ subtest 'history data style' => sub {
     $params->{args}->{start}         = $start->epoch;
     $params->{args}->{end}           = $start->plus_time_interval('1d1m1s')->epoch;
     $params->{args}->{granularity}   = 60 * 60 * 24;
-    $params->{args}->{ticks_history} = 'RDYANG';
+    $params->{args}->{ticks_history} = 'R_100';
     $result                          = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     my $daily_candles_rdyang_first_open = $result->{data}->{candles}->[0]->{open};
     $start                   = $now->minus_time_interval('1d7h');
