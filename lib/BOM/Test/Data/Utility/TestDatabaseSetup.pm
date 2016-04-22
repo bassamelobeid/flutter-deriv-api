@@ -131,16 +131,6 @@ sub _migrate_changesets {
     return 1;
 }
 
-sub _import_sample_data {
-    my $self = shift;
-
-    my $filename = $self->changesets_location . '/unit_test_dml.sql';
-    if (-e $filename) {
-        $self->_migrate_file($filename);
-    }
-    return 1;
-}
-
 sub _alter_user_mapping {
     my $self = shift;
     return if ($self->_db_migrations_dir ne 'rmgdb');
