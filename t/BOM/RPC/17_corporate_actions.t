@@ -116,14 +116,14 @@ subtest 'get_corporate_actions_one_action' => sub {
     cmp_ok $value, '==', 1.25, 'value for this  corporate action';
 
     #Test for error case.
-    $params = {
+    my $params_err = {
         language => 'ZH_CN',
         symbol   => 'FPFP',
         start    => $closing_time->date_ddmmmyyyy,
         end      => $opening->date_ddmmmyyyy,
     };
 
-    $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
+    $result = $c->call_ok('get_corporate_actions', $params_err)->has_no_system_error->has_no_error->result;
 
     @expected_keys = (qw(error));
 
