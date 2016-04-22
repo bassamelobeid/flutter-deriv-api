@@ -32,7 +32,7 @@ has coefficients => (
     default => sub { $coefficient },
 );
 
-has [qw(average_tick_count long_term_prediction)] => (
+has [qw(long_term_prediction)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -44,10 +44,6 @@ has [qw(pricing_vol news_adjusted_pricing_vol)] => (
 
 sub _build_news_adjusted_pricing_vol {
     return shift->bet->pricing_args->{iv_with_news};
-}
-
-sub _build_average_tick_count {
-    return shift->bet->pricing_args->{average_tick_count};
 }
 
 sub _build_long_term_prediction {
@@ -495,20 +491,6 @@ sub _build_commission_markup {
 
     my $open_at_start = $bet->underlying->exchange->is_open_at($bet->date_start);
 
-    if (    $open_at_start
-        and defined $self->average_tick_count
-        and $self->average_tick_count < 4)
-    {
-        my $extra_uncertainty = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_uncertainty_markup',
-            description => 'Factor to apply when backtesting was uncertain',
-            set_by      => __PACKAGE__,
-            base_amount => 2,
-        });
-        $extra_uncertainty->include_adjustment('info', $self->long_term_vol);
-
-        $comm_markup->include_adjustment('multiply', $extra_uncertainty);
-    }
     if ($open_at_start and $bet->underlying->is_in_quiet_period) {
         my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'quiet_period_markup',
