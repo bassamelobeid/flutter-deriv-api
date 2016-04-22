@@ -2087,13 +2087,7 @@ sub _build_exit_tick {
         # Expiration based on daily OHLC
         $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
     } else {
-        # In the case of missing feed at contract expiry, we will not wait for the next tick to settle the contract.
-        # Hence, we will wait for 1 second for the next tick before settling the contract with inconsistent tick.
-        # Only hold 1 second for intraday.
-        my $hold_time = time + 1;
-        do {
-            $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
-        } while (not $exit_tick and sleep(0.5) and time <= $hold_time);
+        $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
     }
 
     if ($self->entry_tick and $exit_tick) {
