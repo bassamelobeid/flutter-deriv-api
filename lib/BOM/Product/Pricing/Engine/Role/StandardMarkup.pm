@@ -428,7 +428,7 @@ sub _build_digital_spread_markup {
             name        => 'dsp_scaling',
             description => 'Scaling factor based on bet duration',
             set_by      => __PACKAGE__,
-            base_amount => ($bet->market->name eq 'random')
+            base_amount => ($bet->market->name eq 'volidx')
             ? 1
             : $dsp_interp->linear($bet->timeindays->amount),
         });

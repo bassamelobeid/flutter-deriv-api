@@ -63,7 +63,7 @@ subtest test_everything => sub {
     is($custom_list->watched($bad_dude),    undef,  '... but other guy is not');
     my $bad_dude_info = {
         loginid       => $bad_dude,
-        market        => 'random',
+        market        => 'volidx',
         contract_kind => 'iv',
         payout_limit  => $testing_amount,
         comment       => 'real meanie',
