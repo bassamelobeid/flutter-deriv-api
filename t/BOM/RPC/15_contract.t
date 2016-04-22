@@ -187,9 +187,10 @@ subtest 'get_ask' => sub {
     my $expected = {
         'display_value' => '51.49',
         'ask_price'     => '51.49',
-        'longcode' => '如果随机 50 指数在合约开始时间之后到1 minute时严格高于入市现价，将获得USD100.00的赔付额。',
-        'spot'     => '963.3054',
-        'payout'   => '100'
+        'longcode' =>
+            '如果Volatility 50 Index在合约开始时间之后到1 minute时严格高于入市现价，将获得USD100.00的赔付额。',
+        'spot'   => '963.3054',
+        'payout' => '100'
     };
     is_deeply($result, $expected, 'the left values are all right');
 
@@ -232,7 +233,7 @@ subtest 'send_ask' => sub {
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        '如果随机 50 指数在合约开始时间之后到1 minute时严格高于入市现价，将获得USD100.00的赔付额。',
+        '如果Volatility 50 Index在合约开始时间之后到1 minute时严格高于入市现价，将获得USD100.00的赔付额。',
         'long code  is correct'
     );
     {
@@ -389,8 +390,8 @@ subtest $method => sub {
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol' => 'R_50',
             'longcode' =>
-                "如果随机 50 指数在合约开始时间之后到50 seconds时严格高于入市现价，将获得USD194.22的赔付额。",
-            'display_name' => 'Random 50 Index',
+                "如果Volatility 50 Index在合约开始时间之后到50 seconds时严格高于入市现价，将获得USD194.22的赔付额。",
+            'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
         },
         'result is ok'
