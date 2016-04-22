@@ -83,7 +83,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 100,
                 verification_code     => $code
             }});
-    is $res->{status}, 1, 'paymentagent_withdraw ok';
+    is $res->{status},            1,     'paymentagent_withdraw ok';
+    is $res->{paymentagent_name}, 'Joe', 'Got correct payment agent name';
 
     ## after withdraw, check both balance
     $client = BOM::Platform::Client->new({loginid => $client->loginid});
@@ -233,6 +234,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
                 amount                => 100
             }});
     is $res->{status}, 1, 'paymentagent_transfer ok';
+    is $res->{client_to_full_name}, $client->full_name, 'Got correct payment agent name';
+    is $res->{client_to_loginid},   $client->loginid,   'Got correct client to loginid';
 
     ## after withdraw, check both balance
     $client = BOM::Platform::Client->new({loginid => $client->loginid});
