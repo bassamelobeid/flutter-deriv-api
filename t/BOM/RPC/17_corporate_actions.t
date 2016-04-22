@@ -116,16 +116,15 @@ subtest 'get_corporate_actions_one_action' => sub {
     cmp_ok $value, '==', 1.25, 'value for this  corporate action';
 
     #Test for error case.
-    my $params = {
+    my $params_err = {
         language => 'ZH_CN',
         symbol   => 'FPFP',
         start    => $closing_time->date_ddmmmyyyy,
         end      => $opening->date_ddmmmyyyy,
     };
 
-    $result = $c->call_ok('get_corporate_actions', $params);
+    $result = $c->call_ok('get_corporate_actions', $params_err)->has_error->error_code_is('GetCorporateActionsFailure')->error_message_is('');
 
-    ok($result->is_error, 'rpc error response');
 };
 
 done_testing();
