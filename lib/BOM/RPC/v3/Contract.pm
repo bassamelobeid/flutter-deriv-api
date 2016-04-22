@@ -141,6 +141,8 @@ sub get_corporate_actions {
 
     my ($start_date, $end_date);
 
+    my $response;
+
     if (not $end) {
         $end_date = Date::Utility->new;
     } else {
@@ -153,7 +155,15 @@ sub get_corporate_actions {
         $start_date = Date::Utility->new($start);
     }
 
-    my $response;
+    if ($start_date->is_after($end_date)) {
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+            code              => "GetCorporateActionsFailure"
+        });
+
+        return $response;
+    }
+
     try {
         my @actions;
         my $underlying = BOM::Market::Underlying->new($symbol);
