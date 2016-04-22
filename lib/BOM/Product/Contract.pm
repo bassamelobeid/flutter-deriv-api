@@ -575,7 +575,7 @@ sub _build_q_rate {
     my $rate;
     if ($underlying->market->prefer_discrete_dividend) {
         $rate = 0;
-    } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Asian' and $underlying->market->name eq 'random') {
+    } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Asian' and $underlying->market->name eq 'volidx') {
         $rate = $q_rate / 2;
     } else {
         $rate = $q_rate;
@@ -1578,10 +1578,10 @@ sub _build_staking_limits {
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $stake_max = $payout_max;
 
-    # Client likes lower stake/payout limit on random market.
+    # Client likes lower stake/payout limit on volidx market.
     my $payout_min =
-        ($self->underlying->market->name eq 'random')
-        ? $bet_limits->{min_payout}->{random}->{$curr}
+        ($self->underlying->market->name eq 'volidx')
+        ? $bet_limits->{min_payout}->{volidx}->{$curr}
         : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
 
@@ -2358,7 +2358,7 @@ sub _validate_trading_times {
                 symbol => $underlying->symbol,
                 start  => $date_start->datetime
             ),
-            message_to_client => $message . " " . localize("Try out the Random Indices which are always open.")};
+            message_to_client => $message . " " . localize("Try out the Volatility Indices which are always open.")};
     } elsif (not $calendar->trades_on($date_expiry)) {
         return ({
             message           => format_error_string('Exchange is closed on expiry date', expiry => $date_expiry->date),
