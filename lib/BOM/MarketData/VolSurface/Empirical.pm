@@ -108,7 +108,7 @@ sub get_volatility {
     my $long_term_prediction = $self->long_term_vol * $ltp_volatility_seasonality * $duration_factor;
     # hate to have to do this!
     $self->long_term_prediction($long_term_prediction);
-    my $short_term_prediction = $args->{volatility} * $stp_volatility_seasonality;
+    my $short_term_prediction = $observed_vol * $stp_volatility_seasonality;
 
     my $volatility_coef  = $self->_get_coefficients('volatility_coef');
     my $adjusted_ltp     = $long_term_prediction * $volatility_coef->{data}->{long_term};
