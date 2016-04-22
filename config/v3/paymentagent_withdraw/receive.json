@@ -9,7 +9,7 @@
       "description": "If 1, withdrawal success. If 2, dry-run success.",
       "pattern": "^(2|1)$"
     },
-    "client_to_full_name": {
+    "paymentagent_name": {
       "type": "string",
       "description": "Payment agent name"
     },
