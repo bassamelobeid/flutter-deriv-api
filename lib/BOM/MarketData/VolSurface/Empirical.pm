@@ -67,8 +67,6 @@ sub get_volatility {
         $tick_count += $ticks->[$i]->{count};
     }
 
-    my $average_tick_count = ($tick_count) ? ($tick_count / $real_periods) : 0;
-    $self->average_tick_count($average_tick_count);
     # check to make sure that 80% of the interval in the lookback period has ticks.
     my $interval_threshold = int(($lookback_interval->minutes * $returns_sep + 1) * 0.8);
     $self->error('Insufficient ticks in each interval to get_volatility') if ($real_periods + $returns_sep < $interval_threshold);
@@ -303,7 +301,7 @@ sub _get_coefficients {
     return $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
 }
 
-has [qw(long_term_prediction average_tick_count error)] => (
+has [qw(long_term_prediction error)] => (
     is      => 'rw',
     default => undef,
 );
