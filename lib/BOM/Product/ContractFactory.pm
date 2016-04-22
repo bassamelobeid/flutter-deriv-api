@@ -214,20 +214,6 @@ sub produce_contract {
 
         $input_params{date_expiry} = Date::Utility->new($input_params{date_expiry});
 
-        # This convenience which may also be a bad idea, but it makes testing easier.
-        # You may also add hit and exit, if you like, but those seem like even worse ideas.
-        foreach my $which (qw(current entry)) {
-            my ($spot, $tick) = ($which . '_spot', $which . '_tick');
-            next unless ($input_params{$spot} and not $input_params{$tick});
-
-            $input_params{$tick} = BOM::Market::Data::Tick->new({
-                quote  => $input_params{$spot},
-                epoch  => 1,                                   # Intentionally very old for recognizability.
-                symbol => $input_params{underlying}->symbol,
-            });
-            delete $input_params{$spot};
-        }
-
         my @barriers = qw(barrier high_barrier low_barrier);
         foreach my $barrier_name (grep { defined $input_params{$_} } @barriers) {
             my $possible = $input_params{$barrier_name};
