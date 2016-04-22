@@ -212,8 +212,6 @@ sub produce_contract {
         $input_params{date_start}  //= 1;    # Error conditions if it's not legacy or run, I guess.
         $input_params{date_expiry} //= 1;
 
-        $input_params{date_expiry} = Date::Utility->new($input_params{date_expiry});
-
         my @barriers = qw(barrier high_barrier low_barrier);
         foreach my $barrier_name (grep { defined $input_params{$_} } @barriers) {
             my $possible = $input_params{$barrier_name};
