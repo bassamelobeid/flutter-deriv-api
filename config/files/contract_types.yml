@@ -30,7 +30,7 @@ CALLE:
   id: 290
   category: callput
   display_name: higher
-  other_side_code: PUTE
+  other_side_code: PUT
   payout_type: binary
   payouttime: end
   pricing_code: CALL
@@ -156,7 +156,7 @@ PUTE:
   id: 300
   category: callput
   display_name: lower
-  other_side_code: CALLE
+  other_side_code: CALL
   payout_type: binary
   payouttime: end
   pricing_code: PUT
