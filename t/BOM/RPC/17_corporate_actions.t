@@ -123,7 +123,8 @@ subtest 'get_corporate_actions_one_action' => sub {
         end      => $opening->date_ddmmmyyyy,
     };
 
-    $result = $c->call_ok('get_corporate_actions', $params_err)->has_error->error_code_is('GetCorporateActionsFailure')->error_message_is('');
+    $result = $c->call_ok('get_corporate_actions', $params_err)->has_error->error_code_is('GetCorporateActionsFailure')
+        ->error_message_is('对不起，在处理您的请求时出错。');
 
 };
 
