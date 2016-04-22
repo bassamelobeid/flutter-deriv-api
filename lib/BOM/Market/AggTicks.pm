@@ -327,10 +327,16 @@ sub fill_from_historical_feed {
         # in the case of previous die in the middle.
         my $agg_key       = $self->_make_key($underlying, 1);
         my $redis         = $self->_redis;
-        my @ticks         = map { $decoder->decode($_) } @{$redis->zrevrangebyscore($agg_key, $end, $first_agg, 'LIMIT', 0, 100)};
-        my $non_zero_tick = first { $_->{count} > 0 } @ticks;
-        if ($non_zero_tick) {
-            $timestamp = $non_zero_tick->{agg_epoch};
+        my $earlier_ticks = $redis->zcount($agg_key, '-inf', $first_agg);
+        # if there are no earlier tick from the requested $start point,
+        # that means we have to do full repopulation, and population speed-up
+        # shoul NOT occur to avoid aggticks-gap-in-the-past
+        if ($earlier_ticks) {
+          my @ticks         = map { $decoder->decode($_) } @{$redis->zrevrangebyscore($agg_key, $end, $first_agg, 'LIMIT', 0, 100)};
+          my $non_zero_tick = first { $_->{count} > 0 } @ticks;
+          if ($non_zero_tick) {
+              $timestamp = $non_zero_tick->{agg_epoch};
+          }
         }
         $timestamp;
     };
