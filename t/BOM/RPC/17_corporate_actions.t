@@ -123,7 +123,7 @@ subtest 'get_corporate_actions_one_action' => sub {
         end      => $opening->date_ddmmmyyyy,
     };
 
-    $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
+    $result = $c->call_ok('get_corporate_actions', $params);
 
     ok($result->is_error, 'rpc error response');
 };
