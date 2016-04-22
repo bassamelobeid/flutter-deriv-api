@@ -72,7 +72,7 @@ subtest $method => sub {
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
     is($indices->{market_display_name},    '指数',        'the market_display_name is translated');
     is($indices->{submarket_display_name}, '欧洲/非洲', 'the submarket_display_name is translated');
-    is(scalar @$result,                    102,             'the default landing company is "costarica", the number of result should be ok');
+    is(scalar @$result,                    96,              'the default landing company is "costarica", the number of result should be ok');
 
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
