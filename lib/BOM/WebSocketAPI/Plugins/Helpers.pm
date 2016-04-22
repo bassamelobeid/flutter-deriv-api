@@ -21,6 +21,7 @@ sub register {
             return $c->stash->{country_code} if $c->stash->{country_code};
 
             my $client_country = lc($c->req->headers->header('CF-IPCOUNTRY') || 'aq');
+            # Note: xx means there is no country data
             $client_country = 'aq' if ($client_country eq 'xx');
 
             return $c->stash->{country_code} = $client_country;
