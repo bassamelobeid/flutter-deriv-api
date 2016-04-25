@@ -6,6 +6,7 @@ use warnings;
 use Test::More tests => 3;
 use Test::Exception;
 use Test::NoWarnings;
+use Test::Warn;
 use Test::MockModule;
 
 use BOM::DailySummaryReport;
@@ -60,9 +61,8 @@ subtest 'skip if it dies' => sub {
             shortcode => 'wrong_shortcode'
         });
     lives_ok {
-        my $total_pl; 
-        do {
-            no Test::NoWarnings;
+        my $total_pl;
+        warning_like {
             $total_pl = BOM::DailySummaryReport->new(
                 for_date    => Date::Utility->new->date_yyyymmdd,
                 currencies  => ['USD'],
@@ -70,7 +70,7 @@ subtest 'skip if it dies' => sub {
                 broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
                 save_file   => 0,
             )->generate_report;
-        };
+        } [qr/^theo price error/], "Expected warning is thrown";
         cmp_ok $total_pl->{CR}->{USD}, '==', 0;
     }
     'skip if it dies';
@@ -117,9 +117,8 @@ subtest 'successful run' => sub {
     }
 
     lives_ok {
-        my $total_pl; 
-	do {
-            no Test::NoWarnings;
+        my $total_pl;
+        warning_like {
             $total_pl = BOM::DailySummaryReport->new(
                 for_date    => $next_day->date_yyyymmdd,
                 currencies  => ['USD'],
@@ -127,7 +126,7 @@ subtest 'successful run' => sub {
                 broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
                 save_file   => 0,
             )->generate_report;
-	};
+        } [qr/^theo price error/], "Expected warning is thrown";
         my @brokers = keys %$total_pl;
         ok @brokers, 'has element';
         cmp_ok scalar @brokers, '==', 1;
