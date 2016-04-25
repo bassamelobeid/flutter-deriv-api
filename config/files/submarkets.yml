@@ -55,6 +55,15 @@ middle_east:
     display_order: 5
     market: indices
     volatility_surface_type: "flat"
+otc_index:
+    name: otc_index
+    display_name: 'OTC Indices'
+    display_order: 4
+    asset_type: 'index'
+    market: indices
+    explanation: 'OTC Indices'
+    volatility_surface_type: "moneyness"
+    official_ohlc: 0
 major_pairs:
     name: major_pairs
     display_name: "Major Pairs"
