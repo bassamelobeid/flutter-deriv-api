@@ -14,7 +14,6 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $method = 'get_limits';
 my $params = {
-    language => 'zh_CN',
     token    => '12345'
 };
 
