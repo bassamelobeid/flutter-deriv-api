@@ -17,10 +17,6 @@
           "type": "object",
           "description": "Original barrier of the contract before adjustment due to corporate actions.",
           "properties":{
-            "display_date": {
-              "type": "string",
-              "description": "Corporate actions effective date."
-            },
             "type": {
               "type": "integer",
               "description": "Type of corporate actions."
