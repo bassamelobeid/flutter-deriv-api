@@ -57,7 +57,7 @@ subtest 'validate_symbol' => sub {
         BOM::RPC::v3::Contract::validate_symbol('invalid_symbol'),
         {
             'error' => {
-                'message_to_client' => 'invalid_symbol 符号无效',
+                'message_to_client' => 'Symbol invalid_symbol invalid',
                 'code'              => 'InvalidSymbol'
             }
         },
@@ -72,7 +72,7 @@ subtest 'validate_license' => sub {
         BOM::RPC::v3::Contract::validate_license('JCI'),
         {
             error => {
-                message_to_client => '实时报价不可用于JCI',
+                message_to_client => 'Realtime quotes not available for JCI',
                 code              => 'NoRealtimeQuotes'
             }
         },
@@ -86,7 +86,7 @@ subtest 'validate_underlying' => sub {
         BOM::RPC::v3::Contract::validate_underlying('invalid_symbol'),
         {
             'error' => {
-                'message_to_client' => 'invalid_symbol 符号无效',
+                'message_to_client' => 'Symbol invalid_symbol invalid',
                 'code'              => 'InvalidSymbol'
             }
         },
@@ -97,7 +97,7 @@ subtest 'validate_underlying' => sub {
         BOM::RPC::v3::Contract::validate_underlying('JCI'),
         {
             error => {
-                message_to_client => '实时报价不可用于JCI',
+                message_to_client => 'Realtime quotes not available for JCI',
                 code              => 'NoRealtimeQuotes'
             }
         },
@@ -188,7 +188,7 @@ subtest 'get_ask' => sub {
         'display_value' => '51.49',
         'ask_price'     => '51.49',
         'longcode' =>
-            '如果Volatility 50 Index在合约开始时间之后到1 minute时严格高于入市现价，将获得USD100.00的赔付额。',
+            'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
         'spot'   => '963.3054',
         'payout' => '100'
     };
@@ -199,7 +199,7 @@ subtest 'get_ask' => sub {
         BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
         {
             error => {
-                message_to_client => '无法创建合约',
+                message_to_client => 'Cannot create contract',
                 code              => "ContractCreationFailure",
             }});
 
@@ -207,7 +207,7 @@ subtest 'get_ask' => sub {
         BOM::RPC::v3::Contract::_get_ask({}),
         {
             error => {
-                message_to_client => '无法创建合约',
+                message_to_client => 'Cannot create contract',
                 code              => "ContractCreationFailure",
             }});
 
@@ -232,7 +232,7 @@ subtest 'send_ask' => sub {
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        '如果Volatility 50 Index在合约开始时间之后到1 minute时严格高于入市现价，将获得USD100.00的赔付额。',
+        'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
         'long code  is correct'
     );
     {
@@ -245,14 +245,14 @@ subtest 'send_ask' => sub {
         $c->call_ok(
             'send_ask',
             {
-                args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
+                args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
         $mock_contract->mock('_get_ask', sub { die });
         $c->call_ok(
             'send_ask',
             {
-                args     => {}})->has_error->error_code_is('pricing error')->error_message_is('无法提供合约售价。');
+                args     => {}})->has_error->error_code_is('pricing error')->error_message_is('Unable to price the contract.');
     }
 };
 
@@ -283,14 +283,11 @@ subtest 'get_bid' => sub {
         currency    => $client->currency,
         is_sold     => 0,
     };
-    my $result =
-        $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
-        ->error_message_is(
-        '在合约期限内出现市场数据中断。对于真实资金账户，我们将尽力修正并恰当地结算合约，不然合约将取消及退款。对于虚拟资金交易，我们将取消交易，并退款。'
-        );
 
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
-        ->error_message_is('对不起，在处理您的请求时出错。');
+        ->error_message_is(
+        'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
+        );
 
     $contract = create_contract(
         client => $client,
