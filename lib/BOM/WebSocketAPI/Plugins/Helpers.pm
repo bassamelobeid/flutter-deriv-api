@@ -12,14 +12,15 @@ sub register {
 
     $app->helper(server_name => sub { return [split(/\./, Sys::Hostname::hostname)]->[0] });
 
-    $app->helper(l => sub {
-        my $c = shift;
+    $app->helper(
+        l => sub {
+            my $c = shift;
 
-        my $lh = BOM::Platform::Context::I18N::handle_for($c->stash->{language})
-            || die("could not build locale for language " . $c->stash->{language});
+            my $lh = BOM::Platform::Context::I18N::handle_for($c->stash->{language})
+                || die("could not build locale for language " . $c->stash->{language});
 
-        return $lh->maketext(@_);
-    });
+            return $lh->maketext(@_);
+        });
 
     $app->helper(
         country_code => sub {
