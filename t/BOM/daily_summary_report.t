@@ -113,9 +113,10 @@ subtest 'successful run' => sub {
     }
 
     lives_ok {
+        my $total_pl; 
 	do {
             no Test::NoWarnings;
-            my $total_pl = BOM::DailySummaryReport->new(
+            $total_pl = BOM::DailySummaryReport->new(
                 for_date    => $next_day->date_yyyymmdd,
                 currencies  => ['USD'],
                 brokercodes => ['CR'],
