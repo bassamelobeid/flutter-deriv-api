@@ -72,7 +72,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
+request(BOM::Platform::Context::Request->new(params => {}));
 
 subtest 'get_corporate_actions_one_action' => sub {
 
@@ -100,7 +100,6 @@ subtest 'get_corporate_actions_one_action' => sub {
     my $purchase_date = $date->epoch;
 
     my $params = {
-        language => 'ZH_CN',
         symbol   => 'FPFP',
         start    => $opening->date_ddmmmyyyy,
         end      => $closing_time->date_ddmmmyyyy,
@@ -118,7 +117,6 @@ subtest 'get_corporate_actions_one_action' => sub {
 
     #Test for error case.
     my $params_err = {
-        language => 'ZH_CN',
         symbol   => 'FPFP',
         start    => $closing_time->date_ddmmmyyyy,
         end      => $opening->date_ddmmmyyyy,
