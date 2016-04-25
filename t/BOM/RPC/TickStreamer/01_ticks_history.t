@@ -83,24 +83,24 @@ subtest 'Initialization' => sub {
 subtest 'ticks_history' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is no symbol param')
-        ->error_message_is('Символ  недействителен', 'It should return error if there is no symbol param');
+        ->error_message_is('Symbol  invalid', 'It should return error if there is no symbol param');
 
     $params->{args}->{ticks_history} = 'wrong';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is wrong symbol param')
-        ->error_message_is('Символ wrong недействителен', 'It should return error if there is wrong symbol param');
+        ->error_message_is('Symbol wrong invalid', 'It should return error if there is wrong symbol param');
 
     $params->{args}->{ticks_history} = 'DFMGI';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('StreamingNotAllowed', 'Streaming not allowed for chartonly contracts.')
-        ->error_message_is('Потоковые котировки для данного символа недоступны, в связи с ограничениями лицензии.',
+        ->error_message_is('Streaming for this symbol is not available due to license restrictions.ии.',
         'It should return error for chartonly contract');
 
     $params->{args}->{ticks_history} = 'TOP40';
     $params->{args}->{subscribe}     = '1';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('NoRealtimeQuotes', 'It should return error if realtime quotes not available for this symbol')
-        ->error_message_is('Котировки в режиме реального времени недоступны для TOP40',
+        ->error_message_is('Realtime quotes not available for TOP40',
         'It should return error if realtime quotes not available for this symbol');
     delete $params->{args}->{subscribe};
 };
@@ -214,7 +214,7 @@ subtest 'history data style' => sub {
 
     $params->{args}->{style} = 'invalid';
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('InvalidStyle', 'It should return error if sent invalid style')
-        ->error_message_is('Стиль invalid недействителен', 'It should return error if sent invalid style');
+        ->error_message_is('Style invalid invalid', 'It should return error if sent invalid style');
 
     delete $params->{args}->{style};
     $params->{args}->{granularity} = 60;
