@@ -135,7 +135,7 @@ sub get_sold_bets_of_account {
     my $sth = $dbh->prepare("
         SELECT fmb.*, t.id txn_id
         $sql
-        ORDER BY fmb.purchase_time $sort_dir, fmb.id $sort_dir
+        ORDER BY fmb.purchase_time $sort_dir
         LIMIT ? OFFSET ?
     ");
     $sth->execute(@binds, $limit, $offset);
