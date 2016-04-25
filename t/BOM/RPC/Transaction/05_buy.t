@@ -28,7 +28,7 @@ $client->deposit_virtual_funds;
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 subtest 'buy' => sub {
     my $params = {
-        language => 'ZH_CN',
+        language => 'EN',
         token    => 'invalid token'
     };
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'invalid token')

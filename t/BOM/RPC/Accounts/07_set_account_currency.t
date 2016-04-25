@@ -28,7 +28,7 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $method = 'set_account_currency';
 my $params = {
-    language => 'zh_CN',
+    language => 'EN',
     token    => 12345
 };
 $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'check invalid token');
