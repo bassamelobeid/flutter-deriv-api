@@ -34,9 +34,10 @@ subtest 'get_offerings_flyby' => sub {
     eq_or_diff([$fb->values_for_key('expiry_type')], [qw( daily intraday tick )], '..with, at least, the expected values for expiry_type');
     subtest 'example queries' => sub {
         is(scalar $fb->query('"start_type" IS "forward" -> "market"'),          5,  'Forward-starting is offered on 6 markets.');
-        is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 30, 'Tick expiries are offered on 30 underlyings.');
-        is(scalar get_offerings_flyby('iom')->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'), 12, '12 callput options on frxUSDJPY');             is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 8,  'Eight underlyings trade on the RANDOM exchange');
-        is(scalar $fb->query('"market" IS "random" -> "underlying_symbol"'),        12, '...out of 12 total random market symbols.');
+        is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 24, 'Tick expiries are offered on 24 underlyings.');
+        is(scalar get_offerings_flyby('iom')->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'), 12, '12 callput options on frxUSDJPY');
+        is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 6,  'Six underlyings trade on the RANDOM exchange');
+        is(scalar $fb->query('"market" IS "volidx" -> "underlying_symbol"'),        6, '...out of 6 total random market symbols.');
     };
 };
 
@@ -76,7 +77,7 @@ subtest 'get_permitted_expiries' => sub {
     my $r100 = get_permitted_expiries({underlying_symbol => 'R_100'});
 
     eq_or_diff(get_permitted_expiries(), {}, 'Get an empty result when no guidance is provided.');
-    eq_or_diff($r100, get_permitted_expiries({market => 'random'}), 'R_100 has the broadest offering, so it matches with the random market');
+    eq_or_diff($r100, get_permitted_expiries({market => 'volidx'}), 'R_100 has the broadest offering, so it matches with the random market');
     is $r100->{tick}->{min}, 5, "R_100 has something with 5 tick expiries";
     is $r100->{daily}->{max}->days, 365, "... all the way out to a year.";
 

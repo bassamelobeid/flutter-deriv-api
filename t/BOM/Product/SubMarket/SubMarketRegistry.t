@@ -15,16 +15,16 @@ subtest 'BOM::Market::SubMarket::Registry' => sub {
 
     my $random_daily = BOM::Market::SubMarket::Registry->instance->get('random_daily');
     is($random_daily->name,                      'random_daily', 'name');
-    is($random_daily->display_name,              'Quotidians',   'display name');
-    is($random_daily->translated_display_name(), 'Quotidians',   'translated display name - by default language = EN');
-    is($random_daily->market->name,              'random',       'market');
+    is($random_daily->display_name,              'Daily Reset Indices',   'display name');
+    is($random_daily->translated_display_name(), 'Daily Reset Indices',   'translated display name - by default language = EN');
+    is($random_daily->market->name,              'volidx',       'market');
 
     my $invalid = BOM::Market::SubMarket::Registry->instance->get('forex_test');
     is($invalid, undef, 'invalid Sub Market');
 
     my %markets = (
         forex       => 3,
-        random      => 3,
+        volidx      => 2,
         indices     => 5,
         stocks      => 3,
         commodities => 2,
