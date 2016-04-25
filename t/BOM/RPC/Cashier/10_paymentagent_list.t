@@ -51,7 +51,7 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 # start test
 my $method = 'paymentagent_list';
 my $params = {
-    language => 'zh_CN',
+    language => 'EN',
     token    => '12345',
     args     => {paymentagent_list => 'id'},
 };
