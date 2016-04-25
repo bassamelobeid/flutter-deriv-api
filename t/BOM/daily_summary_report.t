@@ -113,13 +113,16 @@ subtest 'successful run' => sub {
     }
 
     lives_ok {
-        my $total_pl = BOM::DailySummaryReport->new(
-            for_date    => $next_day->date_yyyymmdd,
-            currencies  => ['USD'],
-            brokercodes => ['CR'],
-            broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
-            save_file   => 0,
-        )->generate_report;
+	do {
+            no Test::NoWarnings;
+            my $total_pl = BOM::DailySummaryReport->new(
+                for_date    => $next_day->date_yyyymmdd,
+                currencies  => ['USD'],
+                brokercodes => ['CR'],
+                broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
+                save_file   => 0,
+            )->generate_report;
+	};
         my @brokers = keys %$total_pl;
         ok @brokers, 'has element';
         cmp_ok scalar @brokers, '==', 1;
