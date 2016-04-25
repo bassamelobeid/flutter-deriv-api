@@ -147,7 +147,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => '12345'
             }
         ),
@@ -158,7 +157,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => undef,
             }
         ),
@@ -200,7 +198,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 args     => {landing_company_details => 'nosuchcountry'}}
         ),
         {
@@ -220,7 +217,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => '12345'
             }
             )->{error}{message_to_client},
@@ -231,7 +227,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => undef,
             }
             )->{error}{message_to_client},
@@ -242,7 +237,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token1,
             }
             )->{error}{message_to_client},
@@ -254,7 +248,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
@@ -320,7 +313,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => '12345'
             }
             )->{error}{message_to_client},
@@ -331,7 +323,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => undef,
             }
             )->{error}{message_to_client},
@@ -342,7 +333,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token1,
             }
             )->{error}{message_to_client},
@@ -354,7 +344,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
@@ -447,7 +436,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => '12345'
             }
             )->{error}{message_to_client},
@@ -458,7 +446,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => undef,
             }
             )->{error}{message_to_client},
@@ -469,7 +456,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token1,
             }
             )->{error}{message_to_client},
@@ -481,7 +467,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
@@ -509,7 +494,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => '12345'
             }
             )->{error}{message_to_client},
@@ -520,7 +504,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => undef,
             }
             )->{error}{message_to_client},
@@ -531,7 +514,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token1,
             }
             )->{error}{message_to_client},
@@ -542,7 +524,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
@@ -640,7 +621,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => '12345'
             }
             )->{error}{message_to_client},
@@ -651,7 +631,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => undef,
             }
             )->{error}{message_to_client},
@@ -662,7 +641,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token1,
             }
             )->{error}{message_to_client},
@@ -673,7 +651,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
@@ -681,12 +658,11 @@ subtest $method => sub {
         'check authorization'
     );
 
-    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, '令牌无效。', 'invalid token error');
+    is($c->tcall($method, {})->{error}{message_to_client}, '令牌无效。', 'invalid token error');
     is(
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
@@ -694,7 +670,6 @@ subtest $method => sub {
         'need a valid client'
     );
     my $params = {
-        language => 'ZH_CN',
         token    => $token1,
     };
     is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'need token_type');
@@ -735,7 +710,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => '12345'
             }
             )->{error}{message_to_client},
@@ -747,7 +721,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => undef,
             }
             )->{error}{message_to_client},
@@ -758,7 +731,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token1,
             }
             )->{error}{message_to_client},
@@ -770,7 +742,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
@@ -781,7 +752,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token_vr
             }
             )->{error}{message_to_client},
@@ -789,7 +759,6 @@ subtest $method => sub {
         'need real money account'
     );
     my $params = {
-        language => 'ZH_CN',
         token    => $token1,
         args     => {}};
     is($c->tcall($method, $params)->{status}, 0, 'no unlock_password && lock_password, and not set password before, status will be 0');
@@ -876,7 +845,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => '12345'
             }
             )->{error}{message_to_client},
@@ -888,7 +856,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => undef,
             }
             )->{error}{message_to_client},
@@ -899,7 +866,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token1,
             }
             )->{error}{message_to_client},
@@ -911,7 +877,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
@@ -921,7 +886,6 @@ subtest $method => sub {
 
     my $params = {
         token    => $token_21,
-        language => 'ZH_CN'
     };
     my $result = $c->tcall($method, $params);
     is_deeply(
@@ -1048,7 +1012,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => '12345'
             }
             )->{error}{message_to_client},
@@ -1060,7 +1023,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => undef,
             }
             )->{error}{message_to_client},
@@ -1072,7 +1034,6 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
@@ -1081,7 +1042,6 @@ subtest $method => sub {
     );
     my $mocked_client = Test::MockModule->new(ref($test_client));
     my $params        = {
-        language   => 'ZH_CN',
         token      => $token_vr,
         client_ip  => '127.0.0.1',
         user_agent => 'agent',
@@ -1154,7 +1114,6 @@ subtest 'get and set self_exclusion' => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => '12345'
             }
             )->{error}{message_to_client},
@@ -1166,7 +1125,6 @@ subtest 'get and set self_exclusion' => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => undef,
             }
             )->{error}{message_to_client},
@@ -1178,7 +1136,6 @@ subtest 'get and set self_exclusion' => sub {
         $c->tcall(
             $method,
             {
-                language => 'ZH_CN',
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
@@ -1187,7 +1144,6 @@ subtest 'get and set self_exclusion' => sub {
     );
 
     my $params = {
-        language => 'ZH_CN',
         token    => $token_vr,
         args     => {}};
     is($c->tcall($method, $params)->{error}{message_to_client}, "权限不足。", 'vr client cannot set exclusion');
