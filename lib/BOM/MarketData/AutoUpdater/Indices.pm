@@ -135,7 +135,7 @@ sub run {
                     underlying => $otc,
                 });
                 $otc_surface->save;
-           }
+            }
 
             $volsurface->save;
             $self->report->{$symbol}->{success} = 1;
