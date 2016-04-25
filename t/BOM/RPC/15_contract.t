@@ -359,16 +359,16 @@ subtest $method => sub {
         token    => '12345'
     };
 
-    $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'invalid token');
+    $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
     $client->set_status('disabled', 1, 'test');
     $client->save;
     $params->{token} = $token;
-    $c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'invalid token');
+    $c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
     $client->clr_status('disabled');
     $client->save;
 
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('对不起，在处理您的请求时出错。', 'will report error if no short_code and currency');
+        ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'will report error if no short_code and currency');
 
     my $contract = create_contract(
         client => $client,
@@ -379,7 +379,7 @@ subtest $method => sub {
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol' => 'R_50',
             'longcode' =>
-                "如果Volatility 50 Index在合约开始时间之后到50 seconds时严格高于入市现价，将获得USD194.22的赔付额。",
+                "USD 194.22 payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
         },
@@ -441,7 +441,7 @@ subtest $method => sub {
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287059,
         'longcode' =>
-            '如果澳元/加元在合约开始时间之后到6 minutes 40 seconds时严格高于入市现价，将获得USD208.18的赔付额。',
+            'USD 208.18 payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
         'shortcode'  => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
         'underlying' => 'frxAUDCAD',
     };
