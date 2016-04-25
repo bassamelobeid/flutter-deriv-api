@@ -32,7 +32,7 @@ subtest 'buy' => sub {
         token    => 'invalid token'
     };
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'invalid token')
-        ->error_message_is('令牌无效。', 'invalid token');
+        ->error_message_is('The token is invalid.', 'invalid token');
 
     $params->{token} = $token;
 
@@ -41,7 +41,7 @@ subtest 'buy' => sub {
     my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
     $mocked_client->mock('new', sub { return undef });
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('AuthorizationRequired', 'AuthorizationRequired')
-        ->error_message_is('请登陆。', 'please login');
+        ->error_message_is('Please log in.', 'please login');
     undef $mocked_client;
 
     $params->{contract_parameters} = {};
@@ -53,7 +53,7 @@ subtest 'buy' => sub {
             }
         };
         $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'ContractCreationFailure')
-            ->error_message_is('无法创建合约', 'cannot create contract');
+            ->error_message_is('Cannot create contract', 'cannot create contract');
 
     }
 
@@ -71,7 +71,7 @@ subtest 'buy' => sub {
         "symbol"        => "R_50",
     };
     my $result = $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('PriceMoved', 'price moved error')->result;
-    like($result->{error}{message_to_client}, qr/自从您为交易定价后，标的市场已发生太大变化/, 'price moved error');
+    like($result->{error}{message_to_client}, qr/The underlying market has moved too much since you priced the contract./, 'price moved error');
 
     $params->{args}{price} = $contract->ask_price;
     my $old_balance = $client->default_account->load->balance;
@@ -94,7 +94,7 @@ subtest 'buy' => sub {
     like($result->{shortcode}, qr/CALL_R_50_100_\d{10}_\d{10}_S0P_0/, 'shortcode is correct');
     is(
         $result->{longcode},
-        '如果Volatility 50 Index在合约开始时间之后到2 minutes时严格高于入市现价，将获得USD100.00的赔付额。',
+        'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 2 minutes after contract start time.',
         'longcode is correct'
     );
 

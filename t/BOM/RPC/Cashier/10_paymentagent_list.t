@@ -57,7 +57,7 @@ my $params = {
 };
 
 my $expected_result = {
-    'available_countries' => [['id', '印度尼西亚',], ['', undef]],
+    'available_countries' => [['id', 'Indonesia',], ['', undef]],
     'list' => [{
             'telephone'             => '+12345678',
             'supported_banks'       => undef,

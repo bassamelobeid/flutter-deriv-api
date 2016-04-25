@@ -15,7 +15,7 @@ subtest 'residence_list' => sub {
         $cn,
         {
             'value'     => 'cn',
-            'text'      => "中国",
+            'text'      => "China",
             'phone_idd' => '86'
         },
         'cn is correct'
