@@ -12,7 +12,7 @@
     },
     "symbol": {
       "type": "string",
-      "description":"Equity's symbol. Example: MSFT,GOOG etc",
+      "description":"Equity's short symbol name. Example: USMSFT, USGOOG.",
       "pattern":"^\\w{1,10}$",
       "required": "1"
     },
