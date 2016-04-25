@@ -123,7 +123,7 @@ subtest 'get_corporate_actions_one_action' => sub {
     };
 
     $result = $c->call_ok('get_corporate_actions', $params_err)->has_error->error_code_is('GetCorporateActionsFailure')
-        ->error_message_is('对不起，在处理您的请求时出错。');
+        ->error_message_is('Sorry, an error occurred while processing your request.');
 
 };
 
