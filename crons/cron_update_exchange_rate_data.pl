@@ -36,9 +36,7 @@ foreach my $currency (@all_currencies) {
     my $underlying = BOM::Market::Underlying->new($symbol);
     my $price      = $underlying->spot;
 
-    if (!$price) {
-        next;
-    }
+    next unless $price;
 
     # Insert exchange rate
     foreach my $broker (keys %{$dbs}) {
