@@ -15,6 +15,16 @@ random_daily:
     explanation: 'Represent a single day of trading with different market factors. They are reset at the start of each trading day (00:00GMT).'
     sod_blackout_start: '1m'
     eod_blackout_expiry: '59s'
+random_nightly:
+    name: random_nightly
+    display_name: "Nocturnes"
+    display_order: 3
+    intradays_must_be_same_day: 1
+    resets_at_open: 1
+    market: volidx
+    explanation: 'Represent a single day of trading with different market factors. They are reset at the start of each trading day (12:00GMT).'
+    sod_blackout_start: '1m'
+    eod_blackout_expiry: '59s'
 asia_oceania:
     name: asia_oceania
     display_name: "Asia/Oceania"
