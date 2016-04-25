@@ -202,7 +202,7 @@ subtest $method => sub {
         ),
         {
             error => {
-                message_to_client => '未知着陆公司。',
+                message_to_client => 'Unknown landing company.',
                 code              => 'UnknownLandingCompany'
             }
         },
@@ -220,7 +220,7 @@ subtest $method => sub {
                 token    => '12345'
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
     is(
@@ -230,7 +230,7 @@ subtest $method => sub {
                 token    => undef,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error if token undef'
     );
     isnt(
@@ -240,7 +240,7 @@ subtest $method => sub {
                 token    => $token1,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'no token error if token is valid'
     );
 
@@ -251,7 +251,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        '此账户不可用。',
+        'The token is invalid.',
         'check authorization'
     );
     is($c->tcall($method, {token => $token_21})->{count}, 100, 'have 100 statements');
@@ -316,7 +316,7 @@ subtest $method => sub {
                 token    => '12345'
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
     is(
@@ -326,7 +326,7 @@ subtest $method => sub {
                 token    => undef,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error if token undef'
     );
     isnt(
@@ -336,7 +336,7 @@ subtest $method => sub {
                 token    => $token1,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'no token error if token is valid'
     );
 
@@ -347,7 +347,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        '此账户不可用。',
+        'The token is invalid.',
         'check authorization'
     );
 
@@ -439,7 +439,7 @@ subtest $method => sub {
                 token    => '12345'
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
     is(
@@ -449,7 +449,7 @@ subtest $method => sub {
                 token    => undef,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
     isnt(
@@ -459,7 +459,7 @@ subtest $method => sub {
                 token    => $token1,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'no token error if token is valid'
     );
 
@@ -470,7 +470,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        '此账户不可用。',
+        'The token is invalid.',
         'check authorization'
     );
 
@@ -497,7 +497,7 @@ subtest $method => sub {
                 token    => '12345'
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
     is(
@@ -507,7 +507,7 @@ subtest $method => sub {
                 token    => undef,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
     isnt(
@@ -517,7 +517,7 @@ subtest $method => sub {
                 token    => $token1,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'no token error if token is valid'
     );
     is(
@@ -527,7 +527,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        '此账户不可用。',
+        'The token is invalid.',
         'check authorization'
     );
 
@@ -624,7 +624,7 @@ subtest $method => sub {
                 token    => '12345'
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
     is(
@@ -634,7 +634,7 @@ subtest $method => sub {
                 token    => undef,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invlaid token error'
     );
     isnt(
@@ -644,7 +644,7 @@ subtest $method => sub {
                 token    => $token1,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'no token error if token is valid'
     );
     is(
@@ -654,11 +654,11 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        '此账户不可用。',
+        'The token is invalid.',
         'check authorization'
     );
 
-    is($c->tcall($method, {})->{error}{message_to_client}, '令牌无效。', 'invalid token error');
+    is($c->tcall($method, {})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
     is(
         $c->tcall(
             $method,
@@ -666,25 +666,25 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        '此账户不可用。',
+        'The token is invalid.',
         'need a valid client'
     );
     my $params = {
         token    => $token1,
     };
-    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'need token_type');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'need token_type');
     $params->{token_type} = 'hello';
-    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'need token_type');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'need token_type');
     $params->{token_type}         = 'session_token';
     $params->{args}{old_password} = 'old_password';
     $params->{cs_email}           = 'cs@binary.com';
     $params->{client_ip}          = '127.0.0.1';
-    is($c->tcall($method, $params)->{error}{message_to_client}, '旧密码不正确。');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Old password is wrong.');
     $params->{args}{old_password} = $password;
     $params->{args}{new_password} = $password;
-    is($c->tcall($method, $params)->{error}{message_to_client}, '新密码与旧密码相同。');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'New password is same as old password.');
     $params->{args}{new_password} = '111111111';
-    is($c->tcall($method, $params)->{error}{message_to_client}, '密码安全度不够。');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.');
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
     clear_mailbox();
@@ -713,7 +713,7 @@ subtest $method => sub {
                 token    => '12345'
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
 
@@ -724,7 +724,7 @@ subtest $method => sub {
                 token    => undef,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
     isnt(
@@ -734,7 +734,7 @@ subtest $method => sub {
                 token    => $token1,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'no token error if token is valid'
     );
 
@@ -745,7 +745,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        '此账户不可用。',
+        'The token is invalid.',
         'check authorization'
     );
     is(
@@ -755,7 +755,7 @@ subtest $method => sub {
                 token    => $token_vr
             }
             )->{error}{message_to_client},
-        '权限不足。',
+        'Permission denied.',
         'need real money account'
     );
     my $params = {
@@ -768,17 +768,17 @@ subtest $method => sub {
     $test_client->save;
     is($c->tcall($method, $params)->{status}, 1, 'no unlock_password && lock_password, and set password before, status will be 1');
     $params->{args}{lock_password} = $tmp_new_password;
-    is($c->tcall($method, $params)->{error}{message_to_client}, '您的收银台已被锁定。', 'return error if already locked');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was locked.', 'return error if already locked');
     $test_client->cashier_setting_password('');
     $test_client->save;
     $params->{args}{lock_password} = $password;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        '请使用与登录密码不同的密码。',
+        'Please use a different password than your login password.',
         'return error if lock password same with user password'
     );
     $params->{args}{lock_password} = '1111111';
-    is($c->tcall($method, $params)->{error}{message_to_client}, '密码安全度不够。', 'check strong');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
     $params->{args}{lock_password} = $tmp_new_password;
 
     clear_mailbox();
@@ -787,7 +787,7 @@ subtest $method => sub {
     $mocked_client->mock('save', sub { return undef });
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        '对不起，在处理您的账户时出错。',
+        'Sorry, an error occurred while processing your account.',
         'return error if cannot save password'
     );
     $mocked_client->unmock_all;
@@ -806,12 +806,12 @@ subtest $method => sub {
     $test_client->save;
     delete $params->{args}{lock_password};
     $params->{args}{unlock_password} = '123456';
-    is($c->tcall($method, $params)->{error}{message_to_client}, '您的收银台没有被锁定。', 'return error if not locked');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
 
     clear_mailbox();
     $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
     $test_client->save;
-    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，您输入的收银台密码不正确', 'return error if not correct');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, you have entered an incorrect cashier password', 'return error if not correct');
     $subject = '无法解锁收银台';
     %msg     = get_email_by_address_subject(
         email   => $email,
@@ -823,7 +823,7 @@ subtest $method => sub {
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{unlock_password} = $tmp_password;
-    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save');
     $mocked_client->unmock_all;
 
     clear_mailbox();
@@ -848,7 +848,7 @@ subtest $method => sub {
                 token    => '12345'
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
 
@@ -859,7 +859,7 @@ subtest $method => sub {
                 token    => undef,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
     isnt(
@@ -869,7 +869,7 @@ subtest $method => sub {
                 token    => $token1,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'no token error if token is valid'
     );
 
@@ -880,7 +880,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        '此账户不可用。',
+        'The token is invalid.',
         'check authorization'
     );
 
@@ -891,7 +891,7 @@ subtest $method => sub {
     is_deeply(
         $result,
         {
-            'country'                        => '澳大利亚',
+            'country'                        => 'Australia',
             'salutation'                     => 'Ms',
             'is_authenticated_payment_agent' => '0',
             'country_code'                   => 'au',
@@ -916,7 +916,7 @@ subtest $method => sub {
         $c->tcall($method, $params),
         {
             'email'        => 'abc@binary.com',
-            'country'      => '印度尼西亚',
+            'country'      => 'Indonesia',
             'country_code' => 'id',
         },
         'vr client return less messages'
@@ -1015,7 +1015,7 @@ subtest $method => sub {
                 token    => '12345'
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
 
@@ -1026,7 +1026,7 @@ subtest $method => sub {
                 token    => undef,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
 
@@ -1037,7 +1037,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        '此账户不可用。',
+        'The token is invalid.',
         'check authorization'
     );
     my $mocked_client = Test::MockModule->new(ref($test_client));
@@ -1049,11 +1049,11 @@ subtest $method => sub {
     # in normal case the vr client's residence should not be null, so I update is as '' to simulate null
     $test_client_vr->residence('');
     $test_client_vr->save();
-    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', "vr client can only update residence");
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', "vr client can only update residence");
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{residence} = 'zh';
-    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save');
     $mocked_client->unmock('save');
     my $result = $c->tcall($method, $params);
     is($result->{status}, 1, 'vr account update residence successfully');
@@ -1062,7 +1062,7 @@ subtest $method => sub {
 
     # test real account
     $params->{token} = $token1;
-    is($c->tcall($method, $params)->{error}{message_to_client}, '权限不足。', 'real account cannot update residence');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
     my %full_args = (
         address_line_1   => 'address line 1',
         address_line_2   => 'address line 2',
@@ -1083,7 +1083,7 @@ subtest $method => sub {
 
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
-    is($c->tcall($method, $params)->{error}{message_to_client}, '对不起，在处理您的账户时出错。', 'return error if cannot save');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save');
     $mocked_client->unmock_all;
     # add_note should send an email to support address,
     # but it is disabled when the test is running on travis-ci
@@ -1096,8 +1096,7 @@ subtest $method => sub {
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
     $test_client->load();
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
-    like($test_client->latest_environment, qr/LANG=ZH_CN/, 'latest environment updated');
-    my $subject = '账户设置更改';
+    my $subject = 'Change in account settings';
     my %msg     = get_email_by_address_subject(
         email   => $test_client->email,
         subject => qr/\Q$subject\E/
@@ -1117,7 +1116,7 @@ subtest 'get and set self_exclusion' => sub {
                 token    => '12345'
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
 
@@ -1128,7 +1127,7 @@ subtest 'get and set self_exclusion' => sub {
                 token    => undef,
             }
             )->{error}{message_to_client},
-        '令牌无效。',
+        'The token is invalid.',
         'invalid token error'
     );
 
@@ -1139,14 +1138,14 @@ subtest 'get and set self_exclusion' => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        '此账户不可用。',
+        'The token is invalid.',
         'check authorization'
     );
 
     my $params = {
         token    => $token_vr,
         args     => {}};
-    is($c->tcall($method, $params)->{error}{message_to_client}, "权限不足。", 'vr client cannot set exclusion');
+    is($c->tcall($method, $params)->{error}{message_to_client}, "Permission denied.", 'vr client cannot set exclusion');
     $params->{token} = $token1;
     is($c->tcall($method, $params)->{error}{message_to_client}, "请提供至少一个自我禁止设置。", "need one exclusion");
     $params->{args} = {
