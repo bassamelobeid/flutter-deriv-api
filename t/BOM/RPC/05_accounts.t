@@ -1042,6 +1042,7 @@ subtest $method => sub {
     );
     my $mocked_client = Test::MockModule->new(ref($test_client));
     my $params        = {
+        language => 'EN',
         token      => $token_vr,
         client_ip  => '127.0.0.1',
         user_agent => 'agent',
