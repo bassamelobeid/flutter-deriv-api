@@ -87,7 +87,7 @@ my $amount = BOM::Platform::Runtime->instance->app_config->payments->virtual->to
 # start test topup_virtual
 my $method = 'topup_virtual';
 my $params = {
-    language => 'zh_CN',
+    language => 'EN',
     token    => '12345'
 };
 
