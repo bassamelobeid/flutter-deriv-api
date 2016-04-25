@@ -49,7 +49,7 @@ subtest $method => sub {
         token    => 12345
     };
 
-    $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'check invalid token');
+    $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
     $params->{token} = $token;
     my $expected_result = {
         fullname             => $test_client->full_name,
@@ -113,7 +113,7 @@ subtest 'logout' => sub {
         {
             language => 'EN',
             token    => $new_token
-        })->has_error->error_message_is('令牌无效。', 'session token is invalid after logout');
+        })->has_error->error_message_is('The token is invalid.', 'session token is invalid after logout');
 
 };
 
