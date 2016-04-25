@@ -251,7 +251,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
+        'This account is unavailable.',
         'check authorization'
     );
     is($c->tcall($method, {token => $token_21})->{count}, 100, 'have 100 statements');
@@ -347,7 +347,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
+        'This account is unavailable.',
         'check authorization'
     );
 
@@ -470,7 +470,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
+        'This account is unavailable.',
         'check authorization'
     );
 
@@ -527,7 +527,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
+        'This account is unavailable.',
         'check authorization'
     );
 
@@ -654,7 +654,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
+        'This account is unavailable.',
         'check authorization'
     );
 
@@ -666,7 +666,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
+        'This account is unavailable.',
         'need a valid client'
     );
     my $params = {
@@ -689,7 +689,7 @@ subtest $method => sub {
     $params->{args}{new_password} = $new_password;
     clear_mailbox();
     is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
-    my $subject = '您的密码已更改。';
+    my $subject = 'Your password has been changed.';
     my %msg     = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
@@ -745,7 +745,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
+        'This account is unavailable.',
         'check authorization'
     );
     is(
@@ -793,7 +793,7 @@ subtest $method => sub {
     $mocked_client->unmock_all;
 
     is($c->tcall($method, $params)->{status}, 1, 'set password success');
-    my $subject = '收银台密码已更新';
+    my $subject = 'cashier password updated';
     my %msg     = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
@@ -812,7 +812,7 @@ subtest $method => sub {
     $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
     $test_client->save;
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, you have entered an incorrect cashier password', 'return error if not correct');
-    $subject = '无法解锁收银台';
+    $subject = 'Failed attempt to unlock cashier section';
     %msg     = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
@@ -830,7 +830,7 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{status}, 0, 'unlock password ok');
     $test_client->load;
     ok(!$test_client->cashier_setting_password, 'cashier password unset');
-    $subject = '收银台密码已更新';
+    $subject = 'cashier password updated';
     %msg     = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
@@ -880,7 +880,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
+       'This account is unavailable.',
         'check authorization'
     );
 
@@ -1037,7 +1037,7 @@ subtest $method => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
+       'This account is unavailable.',
         'check authorization'
     );
     my $mocked_client = Test::MockModule->new(ref($test_client));
@@ -1138,7 +1138,7 @@ subtest 'get and set self_exclusion' => sub {
                 token    => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
+       'This account is unavailable.',
         'check authorization'
     );
 
@@ -1147,7 +1147,7 @@ subtest 'get and set self_exclusion' => sub {
         args     => {}};
     is($c->tcall($method, $params)->{error}{message_to_client}, "Permission denied.", 'vr client cannot set exclusion');
     $params->{token} = $token1;
-    is($c->tcall($method, $params)->{error}{message_to_client}, "请提供至少一个自我禁止设置。", "need one exclusion");
+    is($c->tcall($method, $params)->{error}{message_to_client}, "Please provide at least one self-exclusion setting.", "need one exclusion");
     $params->{args} = {
         set_self_exclusion => 1,
         max_balance        => 10000,
@@ -1181,7 +1181,7 @@ subtest 'get and set self_exclusion' => sub {
     is_deeply(
         $c->tcall($method, $params)->{error},
         {
-            'message_to_client' => "请输入0和10000之间的数字。",
+            'message_to_client' => "Please enter a number between 0 and 10000.",
             'details'           => 'max_balance',
             'code'              => 'SetSelfExclusionError'
         });
@@ -1195,7 +1195,7 @@ subtest 'get and set self_exclusion' => sub {
     is_deeply(
         $c->tcall($method, $params)->{error},
         {
-            'message_to_client' => "交易期持续时间限制不能大于 6周。",
+            'message_to_client' => "Session duration limit cannot be more than 6 weeks.",
             'details'           => 'session_duration_limit',
             'code'              => 'SetSelfExclusionError'
         });
@@ -1210,7 +1210,7 @@ subtest 'get and set self_exclusion' => sub {
     is_deeply(
         $c->tcall($method, $params)->{error},
         {
-            'message_to_client' => "禁止时间必须在今日之后。",
+            'message_to_client' => "Exclude time must be after today.",
             'details'           => 'exclude_until',
             'code'              => 'SetSelfExclusionError'
         });
@@ -1225,7 +1225,7 @@ subtest 'get and set self_exclusion' => sub {
     is_deeply(
         $c->tcall($method, $params)->{error},
         {
-            'message_to_client' => "禁止时间不能少于6个月。",
+            'message_to_client' => "Exclude time cannot be less than 6 months.",
             'details'           => 'exclude_until',
             'code'              => 'SetSelfExclusionError'
         });
@@ -1241,7 +1241,7 @@ subtest 'get and set self_exclusion' => sub {
     is_deeply(
         $c->tcall($method, $params)->{error},
         {
-            'message_to_client' => "禁止时间不能超过五年。",
+            'message_to_client' => "Exclude time cannot be for more than five years.",
             'details'           => 'exclude_until',
             'code'              => 'SetSelfExclusionError'
         });
@@ -1259,7 +1259,7 @@ subtest 'get and set self_exclusion' => sub {
     delete $params->{args};
     like(
         $c->tcall('get_self_exclusion', $params)->{error}{message_to_client},
-        qr/对不起，您已禁止自己，直到/,
+        qr/Sorry, you have excluded yourself until/,
         'this client has self excluded'
     );
 
