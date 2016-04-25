@@ -32,7 +32,6 @@ use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Product::CustomClientLimits;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Utility::Log4perl qw/get_logger/;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
 use BOM::Platform::Static::Config;
 
@@ -1753,7 +1752,7 @@ sub sell_expired_contracts {
         $fmb_helper->batch_sell_bet;
     }
     catch {
-        get_logger->warn(ref eq 'ARRAY' ? "@$_" : "$_");
+        warn(ref eq 'ARRAY' ? "@$_" : "$_");
     };
 
     if (not $sold or @bets_to_sell > @$sold) {
