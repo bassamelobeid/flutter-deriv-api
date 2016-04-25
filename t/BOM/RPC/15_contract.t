@@ -215,7 +215,6 @@ subtest 'get_ask' => sub {
 
 subtest 'send_ask' => sub {
     my $params = {
-        language  => 'ZH_CN',
         client_ip => '127.0.0.1',
         args      => {
             "proposal"      => 1,
@@ -246,7 +245,6 @@ subtest 'send_ask' => sub {
         $c->call_ok(
             'send_ask',
             {
-                language => 'ZH_CN',
                 args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
@@ -254,7 +252,6 @@ subtest 'send_ask' => sub {
         $c->call_ok(
             'send_ask',
             {
-                language => 'ZH_CN',
                 args     => {}})->has_error->error_code_is('pricing error')->error_message_is('无法提供合约售价。');
     }
 };
@@ -281,7 +278,6 @@ subtest 'get_bid' => sub {
     );
 
     my $params = {
-        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
@@ -292,7 +288,6 @@ subtest 'get_bid' => sub {
         ->error_message_is(
         '在合约期限内出现市场数据中断。对于真实资金账户，我们将尽力修正并恰当地结算合约，不然合约将取消及退款。对于虚拟资金交易，我们将取消交易，并退款。'
         );
-    $params = {language => 'ZH_CN'};
 
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
         ->error_message_is('对不起，在处理您的请求时出错。');
@@ -303,7 +298,6 @@ subtest 'get_bid' => sub {
     );
 
     $params = {
-        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
@@ -341,7 +335,6 @@ subtest 'get_bid' => sub {
     );
 
     $params = {
-        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
@@ -366,7 +359,6 @@ subtest 'get_bid' => sub {
 my $method = 'get_contract_details';
 subtest $method => sub {
     my $params = {
-        language => 'zh_CN',
         token    => '12345'
     };
 
@@ -434,7 +426,6 @@ subtest $method => sub {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => 'USD',
-        language    => 'zh_CN',
         is_sold     => 1,
     };
     my $res = $c->call_ok('get_bid', $params)->result;
