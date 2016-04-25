@@ -60,13 +60,17 @@ subtest 'skip if it dies' => sub {
             shortcode => 'wrong_shortcode'
         });
     lives_ok {
-        my $total_pl = BOM::DailySummaryReport->new(
-            for_date    => Date::Utility->new->date_yyyymmdd,
-            currencies  => ['USD'],
-            brokercodes => ['CR'],
-            broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
-            save_file   => 0,
-        )->generate_report;
+        my $total_pl; 
+        do {
+            no Test::NoWarnings;
+            $total_pl = BOM::DailySummaryReport->new(
+                for_date    => Date::Utility->new->date_yyyymmdd,
+                currencies  => ['USD'],
+                brokercodes => ['CR'],
+                broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
+                save_file   => 0,
+            )->generate_report;
+        };
         cmp_ok $total_pl->{CR}->{USD}, '==', 0;
     }
     'skip if it dies';
