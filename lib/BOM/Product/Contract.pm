@@ -694,6 +694,11 @@ sub _build_opposite_bet {
         }
         $build_parameters{date_start}   = $self->date_pricing;
         $build_parameters{date_pricing} = $self->date_pricing;
+
+        # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
+        # Currently, 'sell at market' button will appear when current spot == barrier when the duration
+        # of the contract is less than the minimum duration of non ATM contract.
+        $build_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
     }
 
     return $self->_produce_contract_ref->(\%build_parameters);
@@ -740,7 +745,10 @@ sub _build_pricing_mu {
 sub _build_longcode {
     my $self = shift;
 
-    my $expiry_type = $self->expiry_type;
+    # When we are building the longcode, we should always take the date_start to date_expiry as duration.
+    # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
+    my $contract_duration = $self->date_expiry->epoch - $self->date_start->epoch;
+    my $expiry_type = $self->tick_expiry ? 'tick' : $contract_duration > 86400 ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->is_forward_starting and $self->fixed_expiry;
     my $localizable_description = $self->localizable_description->{$expiry_type};
 
@@ -2079,13 +2087,7 @@ sub _build_exit_tick {
         # Expiration based on daily OHLC
         $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
     } else {
-        # In the case of missing feed at contract expiry, we will not wait for the next tick to settle the contract.
-        # Hence, we will wait for 1 second for the next tick before settling the contract with inconsistent tick.
-        # Only hold 1 second for intraday.
-        my $hold_time = time + 1;
-        do {
-            $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
-        } while (not $exit_tick and sleep(0.5) and time <= $hold_time);
+        $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
     }
 
     if ($self->entry_tick and $exit_tick) {
