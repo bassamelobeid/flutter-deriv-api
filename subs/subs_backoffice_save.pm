@@ -1,6 +1,5 @@
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
-use BOM::Utility::Log4perl qw( get_logger );
 
 #####################################################################
 # Purpose    : Save difference to difflog
@@ -30,7 +29,7 @@ sub save_difflog {
 
         return 1;
     } else {
-        get_logger->error("Cannot open $overridefilename.difflog to append $!");
+        warn("Error: cannot open $overridefilename.difflog to append $!");
         return 0;
     }
 
@@ -71,7 +70,7 @@ sub save_log_staff_difflog {
         print DATA $diff;
         close DATA;
     } else {
-        get_logger->error("Cannot open /var/log/fixedodds/staff/$staff.difflog to append $!");
+        warn("Error: cannot open /var/log/fixedodds/staff/$staff.difflog to append $!");
     }
 
 }
@@ -108,7 +107,7 @@ sub save_log_save_complete_log {
         print DATA $diff;
         close DATA;
     } else {
-        get_logger->error("Cannot open /var/log/fixedodds/fsave.completelog to append $!");
+        warn("Error: cannot open /var/log/fixedodds/fsave.completelog to append $!");
     }
 
 }

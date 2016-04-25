@@ -4,7 +4,6 @@ package BOM::Riskd;
 
 use Moose;
 with 'App::Base::Daemon';
-with 'BOM::Utility::Logging';
 
 use lib qw(/home/git/regentmarkets/bom-backoffice/lib/);
 use Time::Duration::Concise::Localize;
@@ -32,11 +31,11 @@ sub daemon_run {
 
     while (1) {
         $self->info('Starting marked-to-model calculation.');
-        BOM::RiskReporting::MarkedToModel->new(run_by => $self)->generate;
+        BOM::RiskReporting::MarkedToModel->new->generate;
         $self->info('Completed marked-to-model calculation.');
         $self->rest;
         $self->info('Starting risk report generation.');
-        BOM::RiskReporting::Dashboard->new(run_by => $self)->generate;
+        BOM::RiskReporting::Dashboard->new->generate;
         $self->info('Completed risk report generation.');
         $self->rest;
     }

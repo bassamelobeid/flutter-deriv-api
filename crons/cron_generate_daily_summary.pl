@@ -10,13 +10,11 @@ use Getopt::Long;
 
 use Date::Utility;
 use BOM::System::Localhost;
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime;
 use BOM::DailySummaryReport;
 
-BOM::Utility::Log4perl::init_log4perl_console;
 BOM::Platform::Sysinit::init();
 
 my ($jobs, $currencies, $brokercodes, $for_date);
@@ -30,8 +28,6 @@ if (!$optres) {
     print STDERR join(' ', 'Usage:', $0, '[--broker-codes=CR[,MLT[,...]]]', '[--currencies=USD[,GBP[,...]]]', '[--date=2009-12-25]',);
     exit;
 }
-
-my $logger = get_logger;
 
 # By default we run all brokers and currencies for today.
 $for_date ||= Date::Utility->new->date_yyyymmdd;
@@ -63,7 +59,5 @@ send_email({
     'subject' => 'Daily Outstanding Bets Profit / Lost [' . $run_for->date . ']',
     'message' => \@mail_msg,
 });
-
-$logger->debug('Finished.');
 
 1;

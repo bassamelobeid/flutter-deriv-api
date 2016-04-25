@@ -102,10 +102,8 @@ sub _build__report {
         end_date   => $self->end->datetime_yyyymmdd_hhmmss,
     };
 
-    $self->logger->debug('Doing open_bets.');
     $report->{open_bets} = $self->_open_bets_report;
 
-    $self->logger->debug('Doing account_worth.');
     my $pap_report = $self->_payment_and_profit_report;
     $report->{big_deposits}    = $pap_report->{big_deposits};
     $report->{big_withdrawals} = $pap_report->{big_withdrawals};
@@ -113,7 +111,6 @@ sub _build__report {
     $report->{big_losers}      = $pap_report->{big_losers};
     $report->{watched}         = $pap_report->{watched};
 
-    $self->logger->debug('Doing turnover.');
     $report->{top_turnover} = $self->_top_turnover;
 
     return $report;
@@ -313,14 +310,11 @@ sub _open_bets_report {
 sub _open_bets_at_end {
     my $self = shift;
 
-    $self->logger->debug('Start building open bets at end');
     my $open_bets = $self->_report_mapper->get_open_bet_overviews($self->end);
 
-    $self->logger->debug('Add extra info open bets at end');
     foreach my $bet (@{$open_bets}) {
         $self->_do_name_plus($bet);
     }
-    $self->logger->debug('Done building open bets at end');
 
     return $open_bets;
 }
@@ -425,11 +419,7 @@ Generates the report, ignoring any caching. Returns the report, which is a HashR
 sub generate {
     my $self = shift;
 
-    $self->logger->debug('Starting to generate.');
-
     _write_cache($self->_report, 7200);    # Good for 2 hours.
-
-    $self->logger->debug('Finished generating.');
 
     return $self->_report;
 }

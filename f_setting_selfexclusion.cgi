@@ -3,7 +3,6 @@ package main;
 use strict 'vars';
 
 use Scalar::Util qw(looks_like_number);
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Backoffice::Form;
 
@@ -22,7 +21,6 @@ Bar("Setting Client Self Exclusion");
 if ($loginid =~ /^VRT/) {
     print '<h1>' . localize('Self-Exclusion Facilities') . '</h1>';
     print '<p class="aligncenter">' . localize('We\'re sorry but the Self Exclusion facility is not available for Virtual Accounts.') . '</p>';
-    get_logger->info("[$loginid] Virtual Accounts cannot set Self Exclusion limits.");
     code_exit_BO();
 }
 
@@ -135,7 +133,7 @@ if ($client->save) {
         }) . "\">&laquo; return to client details</a>";
 } else {
     print "<p class=\"aligncenter\">Sorry, the client settings have not been updated, please try it again.</p>";
-    get_logger->error("Cannot write to self_exclusion table $!");
+    warn("Error: cannot write to self_exclusion table $!");
 }
 
 code_exit_BO();

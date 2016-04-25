@@ -48,7 +48,6 @@ sub generate {
 
     my $pricing_date = $self->end;
 
-    $self->logger->debug('Finding open positions.');
     my $open_bets_ref = $self->live_open_bets;
     my @keys          = keys %{$open_bets_ref};
 
@@ -63,7 +62,6 @@ sub generate {
         vega  => 0,
         gamma => 0,
     );
-    $self->logger->debug('Found ' . $howmany . ' open positions.');
 
     my $total_expired = 0;
     my $error_count   = 0;
@@ -88,7 +86,6 @@ sub generate {
 
         $dbh->do(qq{DELETE FROM accounting.expired_unsold});
         $dbh->do(qq{DELETE FROM accounting.realtime_book});
-        $self->logger->debug('Starting pricing for ' . $howmany . ' open positions.');
 
         foreach my $open_fmb_id (@keys) {
 
@@ -111,8 +108,6 @@ sub generate {
                 $totals{value} += $value;
 
                 if ($bet->is_expired) {
-                    $self->logger->debug(
-                        'expired_unsold: ' . join('::', $open_fmb_id, $value, $bet->shortcode, $bet->is_expired, $bet->primary_validation_error));
                     $total_expired++;
                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                         undef, $open_fmb_id, $value);
@@ -154,12 +149,6 @@ sub generate {
             . $error_count
             . '] errors).';
 
-        $self->logger->info('Realtime book data calculated. '
-                . $status
-                . ' Historical MtM data = ['
-                . join(', ', map { "$_: " . $totals{$_} } qw(value delta theta vega gamma))
-                . ']');
-
         $dbh->do(
             qq{
         INSERT INTO accounting.historical_marked_to_market(calculation_time, market_value, delta, theta, vega, gamma)
@@ -169,9 +158,7 @@ sub generate {
         );
 
         $dbh->commit;
-        $self->logger->debug('Realtime book updated. ' . $status);
         if ($mail_content and $self->send_alerts) {
-            $self->logger->info('Realtime book was not able to process all bets. An email was sent to quants');
             my $sender = Mail::Sender->new({
                 smtp    => 'localhost',
                 from    => 'Risk reporting <risk-reporting@binary.com>',
@@ -182,18 +169,15 @@ sub generate {
         }
 
         $dbh->disconnect;
-        $self->logger->debug('Finished.');
     }
     catch {
         my $errmsg = ref $_ ? $_->trace : $_;
-        $self->logger->warn('Updating realtime book transaction aborted while processing bet [' . $last_fmb_id . '] because ' . $errmsg);
+        warn('Updating realtime book transaction aborted while processing bet [' . $last_fmb_id . '] because ' . $errmsg);
         try { $dbh->rollback };
     };
 
-    $self->logger->debug('Cache Daily Turnover.');
     $self->cache_daily_turnover($pricing_date);
 
-    $self->logger->debug('Sell Expired Contracts.');
     $self->sell_expired_contracts($open_bets_expired_ref);
 
     return {
@@ -364,8 +348,6 @@ sub cache_daily_turnover {
     my $self         = shift;
     my $pricing_date = shift;
 
-    $self->logger->info('query daily turnover to cache in redis');
-
     my $curr_month    = Date::Utility->new('1-' . $pricing_date->months_ahead(0));
     my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
@@ -388,8 +370,6 @@ sub cache_daily_turnover {
 
     my $cache_prefix = 'DAILY_TURNOVER';
     Cache::RedisDB->set($cache_prefix, $pricing_date->db_timestamp, to_json($cache_query), 3600 * 5);
-
-    $self->logger->info('DONE caching query in redis');
 
     # when month changes
     if ($pricing_date->day_of_month == 1 and $pricing_date->hour < 3) {
@@ -420,7 +400,6 @@ sub cache_daily_turnover {
                     Cache::RedisDB->del($cache_prefix, $time->db_timestamp);
                 }
             }
-            $self->logger->info('Keep long cache for prev month: ' . $latest_prev->db_timestamp);
         }
     }
     return;

@@ -6,14 +6,12 @@ use Path::Tiny;
 use FileHandle;
 
 use Date::Utility;
-use BOM::Utility::Log4perl;
 use BOM::System::Localhost;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::MyAffiliates::ActivityReporter;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;
 
-BOM::Utility::Log4perl::init_log4perl_console;
 BOM::Platform::Sysinit::init();
 
 my ($from_date_str, $to_date_str);
