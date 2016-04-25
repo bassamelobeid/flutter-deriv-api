@@ -50,7 +50,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
+request(BOM::Platform::Context::Request->new(params => {}));
 subtest 'validate_symbol' => sub {
     is(BOM::RPC::v3::Contract::validate_symbol('R_50'), undef, "return undef if symbol is valid");
     is_deeply(
