@@ -258,6 +258,11 @@ my @dispatch = (
         \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
         1, 'read'
     ],
+    [
+        'get_corporate_actions',
+        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::get_corporate_actions,
+        1, 'read'
+    ],
     ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1, 'trade'],
 
     ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register,   1, 'admin'],
