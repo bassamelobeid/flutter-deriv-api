@@ -22,7 +22,7 @@ my ($t, $rpc_ct, $result);
 my $method = 'ticks_history';
 
 my $params = {
-    language => 'RU',
+    language => 'EN',
     source   => 1,
     country  => 'ru',
 };
