@@ -6,6 +6,7 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 use BOM::RPC::v3::Contract;
+use BOM::RPC::v3::MarketDiscovery;
 use BOM::Platform::Context qw (request);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
