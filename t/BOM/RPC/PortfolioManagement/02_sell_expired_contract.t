@@ -26,7 +26,7 @@ my $method = 'sell_expired';
 my @params = (
     $method,
     {
-        language => 'RU',
+        language => 'EN',
         source   => 1,
         country  => 'ru',
         args     => {sell_expired => 1},
