@@ -90,7 +90,6 @@ subtest 'Account opening request with email exists' => sub {
         subject => qr/A Duplicate Email Address Has Been Submitted/
     );
     ok keys %msg, 'Email sent successfully';
-    ok lc($msg{subject}) =~ /binaryqa30\.com$/, 'Using right website_name';
     clear_mailbox();
 };
 
@@ -110,7 +109,6 @@ subtest 'Reset password for exists user' => sub {
         subject => qr/New Password Request/
     );
     ok keys %msg, 'Email sent successfully';
-    ok lc($msg{subject}) =~ /binary\.com$/, 'Using right website_name';
     clear_mailbox();
 };
 
