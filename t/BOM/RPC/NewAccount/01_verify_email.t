@@ -21,7 +21,7 @@ my $method = 'verify_email';
 my @params = (
     $method,
     {
-        language => 'RU',
+        language => 'EN',
         source   => 1,
         country  => 'ru',
     });
