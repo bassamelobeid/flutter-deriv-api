@@ -23,8 +23,8 @@ sub ticks_history {
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                    code              => $response->{error}->{code},
-                    message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
+                code              => $response->{error}->{code},
+                message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
     }
 
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
