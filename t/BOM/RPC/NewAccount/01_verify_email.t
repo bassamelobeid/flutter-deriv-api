@@ -60,7 +60,7 @@ subtest 'Account opening request with email does not exist' => sub {
 
     $params[1]->{email}       = 'test' . rand(999) . '@binary.com';
     $params[1]->{type}        = 'account_opening';
-    $params[1]->{server_name} = 'anynotqaserver';
+    $params[1]->{server_name} = 'qa30';
     $params[1]->{link}        = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
@@ -98,7 +98,7 @@ subtest 'Reset password for exists user' => sub {
 
     $params[1]->{email}       = $email;
     $params[1]->{type}        = 'reset_password';
-    $params[1]->{server_name} = 'anynotqaserver';
+    $params[1]->{server_name} = 'qa30';
     $params[1]->{link}        = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
@@ -115,7 +115,7 @@ subtest 'Reset password for exists user' => sub {
 subtest 'Reset password for not exists user' => sub {
     $params[1]->{email}       = 'not_' . $email;
     $params[1]->{type}        = 'reset_password';
-    $params[1]->{server_name} = 'anynotqaserver';
+    $params[1]->{server_name} = 'qa30';
     $params[1]->{link}        = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
@@ -127,7 +127,7 @@ subtest 'Payment agent withdraw' => sub {
 
     $params[1]->{email}       = $email;
     $params[1]->{type}        = 'paymentagent_withdraw';
-    $params[1]->{server_name} = 'anynotqaserver';
+    $params[1]->{server_name} = 'qa30';
     $params[1]->{link}        = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
