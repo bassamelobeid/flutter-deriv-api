@@ -22,6 +22,7 @@ sub validate_symbol {
             error => {
                 code    => 'InvalidSymbol',
                 message => "Symbol [_1] invalid",
+                params  => [$symbol],
             }};
     }
     return;
@@ -35,7 +36,8 @@ sub validate_license {
         return {
             error => {
                 code    => 'NoRealtimeQuotes',
-                message => "Realtime quotes not available for [_1]"
+                message => "Realtime quotes not available for [_1]",
+                params  => [$symbol],
             }};
     }
     return;

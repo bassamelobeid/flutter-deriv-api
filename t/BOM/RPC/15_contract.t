@@ -58,7 +58,8 @@ subtest 'validate_symbol' => sub {
         {
             'error' => {
                 'message' => 'Symbol [_1] invalid',
-                'code'    => 'InvalidSymbol'
+                'code'    => 'InvalidSymbol',
+                params    => [qw/ invalid_symbol /],
             }
         },
         'return error if symbol is invalid'
@@ -73,7 +74,8 @@ subtest 'validate_license' => sub {
         {
             error => {
                 message => 'Realtime quotes not available for [_1]',
-                code    => 'NoRealtimeQuotes'
+                code    => 'NoRealtimeQuotes',
+                params  => [qw/ JCI /],
             }
         },
         "return error if symbol is not realtime"
@@ -87,7 +89,8 @@ subtest 'validate_underlying' => sub {
         {
             'error' => {
                 'message' => 'Symbol [_1] invalid',
-                'code'    => 'InvalidSymbol'
+                'code'    => 'InvalidSymbol',
+                params    => [qw/ invalid_symbol /],
             }
         },
         'return error if symbol is invalid'
@@ -98,7 +101,8 @@ subtest 'validate_underlying' => sub {
         {
             error => {
                 message => 'Realtime quotes not available for [_1]',
-                code    => 'NoRealtimeQuotes'
+                code    => 'NoRealtimeQuotes',
+                params  => [qw/ JCI /],
             }
         },
         "return error if symbol is not realtime"
