@@ -28,25 +28,25 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $method = 'set_account_currency';
 my $params = {
-    language => 'zh_CN',
+    language => 'EN',
     token    => 12345
 };
-$c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'check invalid token');
+$c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
 $params->{token} = $token;
 $test_client->set_status('disabled', 1, 'test disabled');
 $test_client->save;
-$c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'check invalid token');
+$c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'check invalid token');
 $test_client->clr_status('disabled');
 $test_client->save;
 
 $params->{currency} = 'not_allowed';
 $c->call_ok($method, $params)
-    ->has_error->error_message_is('所提供的货币 not_allowed不可在此账户使用。', 'currency not applicable for this client')
+    ->has_error->error_message_is('The provided currency not_allowed is not applicable for this account.', 'currency not applicable for this client')
     ->error_code_is('InvalidCurrency', 'error code is correct');
 
 $params->{currency} = 'JPY';
 $c->call_ok($method, $params)
-    ->has_error->error_message_is('所提供的货币 JPY不可在此账户使用。', 'currency not applicable for this client')
+    ->has_error->error_message_is('The provided currency JPY is not applicable for this account.', 'currency not applicable for this client')
     ->error_code_is('InvalidCurrency', 'error code is correct');
 
 $params->{currency} = 'EUR';

@@ -50,14 +50,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
+request(BOM::Platform::Context::Request->new(params => {}));
 subtest 'validate_symbol' => sub {
     is(BOM::RPC::v3::Contract::validate_symbol('R_50'), undef, "return undef if symbol is valid");
     is_deeply(
         BOM::RPC::v3::Contract::validate_symbol('invalid_symbol'),
         {
             'error' => {
-                'message_to_client' => 'invalid_symbol 符号无效',
+                'message_to_client' => 'Symbol invalid_symbol invalid',
                 'code'              => 'InvalidSymbol'
             }
         },
@@ -72,7 +72,7 @@ subtest 'validate_license' => sub {
         BOM::RPC::v3::Contract::validate_license('JCI'),
         {
             error => {
-                message_to_client => '实时报价不可用于JCI',
+                message_to_client => 'Realtime quotes not available for JCI',
                 code              => 'NoRealtimeQuotes'
             }
         },
@@ -86,7 +86,7 @@ subtest 'validate_underlying' => sub {
         BOM::RPC::v3::Contract::validate_underlying('invalid_symbol'),
         {
             'error' => {
-                'message_to_client' => 'invalid_symbol 符号无效',
+                'message_to_client' => 'Symbol invalid_symbol invalid',
                 'code'              => 'InvalidSymbol'
             }
         },
@@ -97,7 +97,7 @@ subtest 'validate_underlying' => sub {
         BOM::RPC::v3::Contract::validate_underlying('JCI'),
         {
             error => {
-                message_to_client => '实时报价不可用于JCI',
+                message_to_client => 'Realtime quotes not available for JCI',
                 code              => 'NoRealtimeQuotes'
             }
         },
@@ -188,7 +188,7 @@ subtest 'get_ask' => sub {
         'display_value' => '51.49',
         'ask_price'     => '51.49',
         'longcode' =>
-            '如果Volatility 50 Index在合约开始时间之后到1 minute时严格高于入市现价，将获得USD100.00的赔付额。',
+            'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
         'spot'   => '963.3054',
         'payout' => '100'
     };
@@ -199,7 +199,7 @@ subtest 'get_ask' => sub {
         BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
         {
             error => {
-                message_to_client => '无法创建合约',
+                message_to_client => 'Cannot create contract',
                 code              => "ContractCreationFailure",
             }});
 
@@ -207,7 +207,7 @@ subtest 'get_ask' => sub {
         BOM::RPC::v3::Contract::_get_ask({}),
         {
             error => {
-                message_to_client => '无法创建合约',
+                message_to_client => 'Cannot create contract',
                 code              => "ContractCreationFailure",
             }});
 
@@ -215,7 +215,6 @@ subtest 'get_ask' => sub {
 
 subtest 'send_ask' => sub {
     my $params = {
-        language  => 'ZH_CN',
         client_ip => '127.0.0.1',
         args      => {
             "proposal"      => 1,
@@ -233,7 +232,7 @@ subtest 'send_ask' => sub {
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        '如果Volatility 50 Index在合约开始时间之后到1 minute时严格高于入市现价，将获得USD100.00的赔付额。',
+        'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
         'long code  is correct'
     );
     {
@@ -246,16 +245,14 @@ subtest 'send_ask' => sub {
         $c->call_ok(
             'send_ask',
             {
-                language => 'ZH_CN',
-                args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
+                args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
         $mock_contract->mock('_get_ask', sub { die });
         $c->call_ok(
             'send_ask',
             {
-                language => 'ZH_CN',
-                args     => {}})->has_error->error_code_is('pricing error')->error_message_is('无法提供合约售价。');
+                args     => {}})->has_error->error_code_is('pricing error')->error_message_is('Unable to price the contract.');
     }
 };
 
@@ -281,21 +278,16 @@ subtest 'get_bid' => sub {
     );
 
     my $params = {
-        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
         is_sold     => 0,
     };
-    my $result =
-        $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
-        ->error_message_is(
-        '在合约期限内出现市场数据中断。对于真实资金账户，我们将尽力修正并恰当地结算合约，不然合约将取消及退款。对于虚拟资金交易，我们将取消交易，并退款。'
-        );
-    $params = {language => 'ZH_CN'};
 
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
-        ->error_message_is('对不起，在处理您的请求时出错。');
+        ->error_message_is(
+        'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
+        );
 
     $contract = create_contract(
         client => $client,
@@ -303,14 +295,13 @@ subtest 'get_bid' => sub {
     );
 
     $params = {
-        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
         is_sold     => 0,
     };
 
-    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (
         qw(ask_price
@@ -341,7 +332,6 @@ subtest 'get_bid' => sub {
     );
 
     $params = {
-        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
@@ -366,20 +356,19 @@ subtest 'get_bid' => sub {
 my $method = 'get_contract_details';
 subtest $method => sub {
     my $params = {
-        language => 'zh_CN',
         token    => '12345'
     };
 
-    $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'invalid token');
+    $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
     $client->set_status('disabled', 1, 'test');
     $client->save;
     $params->{token} = $token;
-    $c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'invalid token');
+    $c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
     $client->clr_status('disabled');
     $client->save;
 
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('对不起，在处理您的请求时出错。', 'will report error if no short_code and currency');
+        ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'will report error if no short_code and currency');
 
     my $contract = create_contract(
         client => $client,
@@ -390,7 +379,7 @@ subtest $method => sub {
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol' => 'R_50',
             'longcode' =>
-                "如果Volatility 50 Index在合约开始时间之后到50 seconds时严格高于入市现价，将获得USD194.22的赔付额。",
+                "USD 194.22 payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
         },
@@ -434,7 +423,6 @@ subtest $method => sub {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => 'USD',
-        language    => 'zh_CN',
         is_sold     => 1,
     };
     my $res = $c->call_ok('get_bid', $params)->result;
@@ -453,7 +441,7 @@ subtest $method => sub {
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287059,
         'longcode' =>
-            '如果澳元/加元在合约开始时间之后到6 minutes 40 seconds时严格高于入市现价，将获得USD208.18的赔付额。',
+            'USD 208.18 payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
         'shortcode'  => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
         'underlying' => 'frxAUDCAD',
     };

@@ -87,21 +87,21 @@ my $amount = BOM::Platform::Runtime->instance->app_config->payments->virtual->to
 # start test topup_virtual
 my $method = 'topup_virtual';
 my $params = {
-    language => 'zh_CN',
+    language => 'EN',
     token    => '12345'
 };
 
-$c->call_ok($method, $params)->has_error->error_code_is('InvalidToken')->error_message_is('令牌无效。', 'invalid token');
+$c->call_ok($method, $params)->has_error->error_code_is('InvalidToken')->error_message_is('The token is invalid.', 'invalid token');
 
 $test_client->set_status('disabled', 1, 'test status');
 $test_client->save;
 $params->{token} = $token;
-$c->call_ok($method, $params)->has_error->error_code_is('DisabledClient')->error_message_is('此账户不可用。', 'invalid token');
+$c->call_ok($method, $params)->has_error->error_code_is('DisabledClient')->error_message_is('This account is unavailable.', 'invalid token');
 
 $test_client->clr_status('disabled');
 $test_client->save;
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('对不起，此功能仅适用虚拟账户', 'topup virtual error');
+    ->error_message_is('Sorry, this feature is available to virtual accounts only', 'topup virtual error');
 
 $params->{token} = $token_vr;
 $c->call_ok($method, $params)->has_no_error->result_is_deeply({
@@ -115,7 +115,7 @@ my $balance = $account->balance + 0;
 is($old_balance + $amount, $balance, 'balance is right');
 $old_balance = $balance;
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('您的余款已超出允许金额。', 'blance is higher');
+    ->error_message_is('Your balance is higher than the permitted amount.', 'blance is higher');
 #withdraw some money to test critical limit value
 my $limit            = BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->USD;
 my $withdrawal_money = $balance - $limit - 1;
@@ -129,7 +129,7 @@ $account->load;
 $balance = $account->balance + 0;
 is($balance, $limit + 1, 'balance is a little less than the value of limit');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('您的余款已超出允许金额。', 'blance is higher');
+    ->error_message_is('Your balance is higher than the permitted amount.', 'blance is higher');
 
 $test_client_vr->payment_legacy_payment(
     currency     => 'USD',
@@ -188,6 +188,6 @@ $account->load;
 $balance = $account->balance + 0;
 is($balance, $limit - $price, 'balance is reduced for buying contract');
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('对不起，您还有未平仓的头寸。在请求额外资金前，请了结所有未平仓头寸。', 'have opened bets');
+    ->error_message_is('Sorry, you have open positions. Please close out all open positions before requesting additional funds.', 'have opened bets');
 
 done_testing();

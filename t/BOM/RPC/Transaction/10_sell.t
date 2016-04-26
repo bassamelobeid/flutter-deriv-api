@@ -29,18 +29,18 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 subtest 'sell' => sub {
     my $params = {
-        language => 'ZH_CN',
+        language => 'EN',
         token    => 'invalid token'
     };
     $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'invalid token')
-        ->error_message_is('令牌无效。', 'invalid token');
+        ->error_message_is('The token is invalid.', 'invalid token');
 
     $params->{token} = $token;
 
     $client->set_status('disabled', 1, 'test');
     $client->save;
     $c->call_ok('sell', $params)->has_no_system_error->has_error->error_code_is('DisabledClient', 'disabled client')
-        ->error_message_is('此账户不可用。', 'account disabled');
+        ->error_message_is('This account is unavailable.', 'account disabled');
 
     $client->clr_status('disabled');
     $client->save;
