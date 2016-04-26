@@ -713,7 +713,7 @@ sub _build_opposite_contract {
         # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
         # Currently, 'sell at market' button will appear when current spot == barrier when the duration
         # of the contract is less than the minimum duration of non ATM contract.
-        $build_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
+        $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
     }
 
     # Always switch out the bet type for the other side.
