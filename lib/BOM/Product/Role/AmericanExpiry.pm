@@ -48,7 +48,8 @@ sub _build_hit_tick {
             : ($self->barrier->pip_difference > 0) ? (higher => $self->barrier->as_absolute)
             :                                        (lower => $self->barrier->as_absolute);
 
-        $hit_conditions{start_time} = $self->date_start;
+        # do not include current tick as the contract starts at next tick.
+        $hit_conditions{start_time} = $self->date_start->epoch + 1;
         $hit_conditions{end_time}   = $self->date_expiry;
         $tick                       = $self->underlying->breaching_tick(%hit_conditions);
     }
