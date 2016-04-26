@@ -29,9 +29,10 @@ sub process_dividend {
 sub save_dividends {
     my ($data) = @_;
 
-    my %valid_synthetic = map { $_ => 1 } BOM::Market::UnderlyingDB->get_symbols_for(
+    my %otc_indices = map { $_ => 1 } BOM::Market::UnderlyingDB->get_symbols_for(
         market    => 'indices',
-        submarket => 'smart_index'
+        submarket => 'otc_index',
+        contract_category => 'ANY'
     );
 
     foreach my $symbol (keys %{$data}) {
@@ -56,16 +57,16 @@ sub save_dividends {
                 chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             );
-            if (exists $valid_synthetic{'SYN' . $symbol}) {
-                my $synthetic_dividend = Quant::Framework::Dividend->new(
-                    symbol          => 'SYN' . $symbol,
+            if (exists $otc_indices{'OTC_' . $symbol}) {
+                my $otc_dividend = Quant::Framework::Dividend->new(
+                    symbol          => 'OTC_' . $symbol,
                     rates           => $rates,
                     discrete_points => $discrete_points,
                     recorded_date   => Date::Utility->new,
                     chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
                     chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
                 );
-                $synthetic_dividend->save;
+                $otc_dividend->save;
             }
 
             $dividends->save;
