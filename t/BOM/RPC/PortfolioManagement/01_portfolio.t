@@ -27,7 +27,7 @@ my $method = 'portfolio';
 my @params = (
     $method,
     {
-        language => 'RU',
+        language => 'EN',
         source   => 1,
         country  => 'ru',
     });
