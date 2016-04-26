@@ -95,7 +95,7 @@ BEGIN
     $$ USING v_fmb.id, b_chld;
 
     PERFORM set_config('binary.session_details', (('buy', v_fmb.id, a_currency, b_short_code, b_purchase_time, b_buy_price, NULL, NULL)::bet.session_bet_details)::text, true);
-  
+
     INSERT INTO transaction.transaction (
         account_id,
         transaction_time,
