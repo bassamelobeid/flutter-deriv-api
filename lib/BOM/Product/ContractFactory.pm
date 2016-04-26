@@ -116,24 +116,10 @@ sub produce_contract {
         $input_params{$_} = $override_params->{$_} for keys %$override_params;
     }
 
-    $input_params{bet_type} = 'LEGACY' unless exists $contract_type_config->{$input_params{bet_type}};
+    $input_params{bet_type} = 'INVALID' unless exists $contract_type_config->{$input_params{bet_type}};
     my %type_config = %{$contract_type_config->{$input_params{bet_type}}};
     @input_params{keys %type_config} = values %type_config;
-
-    my $contract_class;
-    my $bet_type = ucfirst lc $input_params{bet_type};
-    if (
-        grep { /^$bet_type$/ }
-        qw/
-        Expiryrangee Expirymisse Calle Pute Asiand Asianu Call Digitdiff Digiteven Digitmatch Digitodd Digitover Digitunder Expirymiss
-        Expiryrange Notouch Onetouch Put Range Spreadd Spreadu Upordown Vanilla_call Vanilla_put
-        /
-        )
-    {
-        $contract_class = 'BOM::Product::Contract::' . $bet_type;
-    } else {
-        $contract_class = 'BOM::Product::Contract::Invalid';
-    }
+    my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $input_params{bet_type};
 
     # We might need this for build so, pre-coerce;
     if ((ref $input_params{underlying}) !~ /BOM::Market::Underlying/) {
@@ -226,50 +212,12 @@ sub produce_contract {
         $input_params{date_start}  //= 1;    # Error conditions if it's not legacy or run, I guess.
         $input_params{date_expiry} //= 1;
 
-        $input_params{date_expiry} = Date::Utility->new($input_params{date_expiry});
-
-        # This convenience which may also be a bad idea, but it makes testing easier.
-        # You may also add hit and exit, if you like, but those seem like even worse ideas.
-        foreach my $which (qw(current entry)) {
-            my ($spot, $tick) = ($which . '_spot', $which . '_tick');
-            next unless ($input_params{$spot} and not $input_params{$tick});
-
-            $input_params{$tick} = BOM::Market::Data::Tick->new({
-                quote  => $input_params{$spot},
-                epoch  => 1,                                   # Intentionally very old for recognizability.
-                symbol => $input_params{underlying}->symbol,
-            });
-            delete $input_params{$spot};
-        }
-
         my @barriers = qw(barrier high_barrier low_barrier);
         foreach my $barrier_name (grep { defined $input_params{$_} } @barriers) {
             my $possible = $input_params{$barrier_name};
             if (ref($possible) !~ /BOM::Product::Contract::Strike/) {
-                my $barrier_string_name = 'supplied_' . $barrier_name;
-                if ($possible && (uc(substr($possible, -1)) eq 'D')) {
-                    $input_params{'supplied_delta_' . $barrier_name} = $possible;
-                    # They gave us a delta instead of a Strike string
-                    substr($possible, -1, 1, '');    # Now just the number.
-                    my $underlying = $input_params{underlying};
-                    # A close enough approximation if they are using deltas.
-                    my $tid  = Time::Duration::Concise->new(interval => $input_params{date_expiry}->epoch - $input_params{date_start}->epoch)->days;
-                    my $tiy  = $tid / 365;
-                    my $tick = $input_params{entry_tick} // $underlying->tick_at($input_params{date_start}, {allow_inconsistent => 1});
-                    $input_params{$barrier_string_name} = get_strike_for_spot_delta({
-                        delta            => $possible,
-                        option_type      => 'VANILLA_CALL',
-                        atm_vol          => 0.10,                                                       # Everything here is an approximation.
-                        t                => $tiy,
-                        r_rate           => ($tid > 1) ? $underlying->interest_rate_for($tiy) : 0,
-                        q_rate           => ($tid > 1) ? $underlying->dividend_rate_for($tiy) : 0,
-                        spot             => $tick->quote,
-                        premium_adjusted => $underlying->market_convention->{delta_premium_adjusted},
-                    });
-                } else {
-                    # Some sort of string which Strike can presumably use.
-                    $input_params{$barrier_string_name} = $possible;
-                }
+                # Some sort of string which Strike can presumably use.
+                $input_params{'supplied_' . $barrier_name} = $possible;
                 delete $input_params{$barrier_name};
             }
         }
