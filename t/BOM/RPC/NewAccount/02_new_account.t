@@ -35,7 +35,7 @@ $client_details = {
 };
 
 $params = {
-    language => 'RU',
+    language => 'EN',
     source   => 1,
     country  => 'ru',
     args     => {},
@@ -100,7 +100,7 @@ subtest $method => sub {
 
 $method = 'new_account_real';
 $params = {
-    language => 'RU',
+    language => 'EN',
     source   => 1,
     country  => 'ru',
     args     => {},
@@ -214,7 +214,7 @@ subtest $method => sub {
 
 $method = 'new_account_maltainvest';
 $params = {
-    language => 'RU',
+    language => 'EN',
     source   => 1,
     country  => 'ru',
     args     => {},
@@ -328,7 +328,7 @@ subtest $method => sub {
 
 $method = 'new_account_japan';
 $params = {
-    language => 'RU',
+    language => 'EN',
     source   => 1,
     country  => 'ru',
     args     => {},
