@@ -3,8 +3,6 @@ package BOM::WebSocketAPI::v3::Wrapper::Static;
 use strict;
 use warnings;
 
-use BOM::RPC::v3::Static;
-
 sub residence_list {
     my ($c, $args) = @_;
 

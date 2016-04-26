@@ -3,7 +3,6 @@ package BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use strict;
 use warnings;
 
-use BOM::RPC::v3::NewAccount;
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::Platform::Token::Verification;
 
