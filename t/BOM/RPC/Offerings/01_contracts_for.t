@@ -21,7 +21,7 @@ my $method = 'contracts_for';
 my @params = (
     $method,
     {
-        language => 'RU',
+        language => 'EN',
         source   => 1,
         country  => 'ru',
         args     => {
