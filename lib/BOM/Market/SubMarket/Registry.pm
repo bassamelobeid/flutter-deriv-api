@@ -11,7 +11,7 @@ BOM::Market::SubMarket::Registry
 =head1 SYNOPSYS
 
     my $registry = BOM::Market::SubMarket::Registry->instance;
-    my $submarket = $registry->get('random'); # By name
+    my $submarket = $registry->get('volidx'); # By name
 
 =head1 DESCRIPTION
 

@@ -22,7 +22,7 @@ eq_or_diff [sort $udb->available_expiry_types], [sort qw(intraday daily tick)], 
 
 eq_or_diff [sort $udb->available_start_types], [sort qw(spot forward)], 'Correct list of available start types.';
 
-eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices random stocks)], "Correct list of markets";
+eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices volidx stocks)], "Correct list of markets";
 
 eq_or_diff [sort $udb->symbols_for_intraday_fx], [
     sort qw(frxAUDCAD frxAUDCHF frxAUDJPY frxAUDNZD frxAUDPLN frxAUDUSD frxEURAUD frxEURCAD frxEURCHF
@@ -125,29 +125,20 @@ throws_ok { $udb->get_symbols_for(contract_category => 'IV', broker => 'VRTC',);
     'Could not get underlyings if market is not specified';
 
 subtest "sub market related" => sub {
-    my @ul_random_daily = qw( RDBEAR RDBULL RDMOON RDSUN );
+    my @ul_random_daily = qw( RDBEAR RDBULL );
     eq_or_diff [
         sort $udb->get_symbols_for(
-            market            => 'random',
+            market            => 'volidx',
             submarket         => 'random_daily',
             contract_category => 'ANY',
         )
         ],
         \@ul_random_daily, "Correct list of active symbols for random_daily sub market";
-    my @ul_random_nightly = qw( RDMARS RDVENUS RDYANG RDYIN );
-    eq_or_diff [
-        sort $udb->get_symbols_for(
-            market            => 'random',
-            submarket         => 'random_nightly',
-            contract_category => 'ANY',
-        )
-        ],
-        \@ul_random_nightly, "Correct list of active symbols for random_nightly sub market";
 
     my @ul_random = qw( R_100 R_25 R_50 R_75 );
     eq_or_diff [
         sort $udb->get_symbols_for(
-            market            => 'random',
+            market            => 'volidx',
             submarket         => 'random_index',
             contract_category => 'ANY',
         )
@@ -165,7 +156,7 @@ subtest "sub market related" => sub {
 
     eq_or_diff [
         sort $udb->get_symbols_for(
-            market    => 'random',
+            market    => 'volidx',
             submarket => 'invalid',
         )
         ],

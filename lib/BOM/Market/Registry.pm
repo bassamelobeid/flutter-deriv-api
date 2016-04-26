@@ -11,7 +11,7 @@ BOM::Market::Registry
 =head1 SYNOPSYS
 
     my $registry = BOM::Market::Registry->instance;
-    my $host = $registry->get('random'); # By name
+    my $host = $registry->get('volidx'); # By name
 
 =head1 DESCRIPTION
 
