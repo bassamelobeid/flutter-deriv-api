@@ -73,7 +73,7 @@ sub store_access_token_only {
     my ($self, $app_id, $loginid) = @_;
 
     my $dbh          = $self->dbh;
-    my $expires_in   = 60 * 86400;                                                # for one day
+    my $expires_in   = 5184000;                                                   # 60 * 86400
     my $access_token = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
@@ -86,8 +86,8 @@ sub store_access_token_only {
 sub get_loginid_by_access_token {
     my ($self, $token) = @_;
 
-    ## extends access token expires
-    my $expires_in = 60 * 86400;
+    ## extends access token expires 60 days
+    my $expires_in = 5184000;
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
 
     return $self->dbh->selectrow_array("
