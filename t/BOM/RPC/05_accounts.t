@@ -143,21 +143,12 @@ my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
 my $method = 'payout_currencies';
 subtest $method => sub {
+    is_deeply($c->tcall($method, {token => '12345'}), [qw(USD EUR GBP AUD)], 'invalid token will get all currencies');
     is_deeply(
         $c->tcall(
             $method,
             {
-                token    => '12345'
-            }
-        ),
-        [qw(USD EUR GBP AUD)],
-        'invalid token will get all currencies'
-    );
-    is_deeply(
-        $c->tcall(
-            $method,
-            {
-                token    => undef,
+                token => undef,
             }
         ),
         [qw(USD EUR GBP AUD)],
@@ -195,11 +186,7 @@ subtest $method => sub {
 $method = 'landing_company_details';
 subtest $method => sub {
     is_deeply(
-        $c->tcall(
-            $method,
-            {
-                args     => {landing_company_details => 'nosuchcountry'}}
-        ),
+        $c->tcall($method, {args => {landing_company_details => 'nosuchcountry'}}),
         {
             error => {
                 message_to_client => 'Unknown landing company.',
@@ -213,21 +200,12 @@ subtest $method => sub {
 
 $method = 'statement';
 subtest $method => sub {
+    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
     is(
         $c->tcall(
             $method,
             {
-                token    => '12345'
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
-    is(
-        $c->tcall(
-            $method,
-            {
-                token    => undef,
+                token => undef,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -237,7 +215,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token1,
+                token => $token1,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -248,7 +226,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token_disabled,
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
         'This account is unavailable.',
@@ -309,21 +287,12 @@ subtest $method => sub {
 # profit_table
 $method = 'profit_table';
 subtest $method => sub {
+    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
     is(
         $c->tcall(
             $method,
             {
-                token    => '12345'
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
-    is(
-        $c->tcall(
-            $method,
-            {
-                token    => undef,
+                token => undef,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -333,7 +302,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token1,
+                token => $token1,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -344,7 +313,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token_disabled,
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
         'This account is unavailable.',
@@ -432,21 +401,12 @@ subtest $method => sub {
 
 $method = 'balance';
 subtest $method => sub {
+    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
     is(
         $c->tcall(
             $method,
             {
-                token    => '12345'
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
-    is(
-        $c->tcall(
-            $method,
-            {
-                token    => undef,
+                token => undef,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -456,7 +416,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token1,
+                token => $token1,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -467,7 +427,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token_disabled,
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
         'This account is unavailable.',
@@ -490,21 +450,12 @@ subtest $method => sub {
 
 $method = 'get_account_status';
 subtest $method => sub {
+    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
     is(
         $c->tcall(
             $method,
             {
-                token    => '12345'
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
-    is(
-        $c->tcall(
-            $method,
-            {
-                token    => undef,
+                token => undef,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -514,7 +465,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token1,
+                token => $token1,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -524,7 +475,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token_disabled,
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
         'This account is unavailable.',
@@ -617,21 +568,12 @@ subtest $method => sub {
         'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'no lower case.',
     );
+    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
     is(
         $c->tcall(
             $method,
             {
-                token    => '12345'
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
-    is(
-        $c->tcall(
-            $method,
-            {
-                token    => undef,
+                token => undef,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -641,7 +583,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token1,
+                token => $token1,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -651,7 +593,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token_disabled,
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
         'This account is unavailable.',
@@ -663,14 +605,14 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token_disabled,
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
         'This account is unavailable.',
         'need a valid client'
     );
     my $params = {
-        token    => $token1,
+        token => $token1,
     };
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'need token_type');
     $params->{token_type} = 'hello';
@@ -706,22 +648,13 @@ subtest $method => sub {
 $method = 'cashier_password';
 subtest $method => sub {
 
-    is(
-        $c->tcall(
-            $method,
-            {
-                token    => '12345'
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
+    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
 
     is(
         $c->tcall(
             $method,
             {
-                token    => undef,
+                token => undef,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -731,7 +664,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token1,
+                token => $token1,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -742,25 +675,16 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token_disabled,
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
         'This account is unavailable.',
         'check authorization'
     );
-    is(
-        $c->tcall(
-            $method,
-            {
-                token    => $token_vr
-            }
-            )->{error}{message_to_client},
-        'Permission denied.',
-        'need real money account'
-    );
+    is($c->tcall($method, {token => $token_vr})->{error}{message_to_client}, 'Permission denied.', 'need real money account');
     my $params = {
-        token    => $token1,
-        args     => {}};
+        token => $token1,
+        args  => {}};
     is($c->tcall($method, $params)->{status}, 0, 'no unlock_password && lock_password, and not set password before, status will be 0');
     my $tmp_password     = 'sfjksfSFjsk78Sjlk';
     my $tmp_new_password = 'bjxljkwFWf278xK';
@@ -811,7 +735,11 @@ subtest $method => sub {
     clear_mailbox();
     $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
     $test_client->save;
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, you have entered an incorrect cashier password', 'return error if not correct');
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Sorry, you have entered an incorrect cashier password',
+        'return error if not correct'
+    );
     $subject = 'Failed attempt to unlock cashier section';
     %msg     = get_email_by_address_subject(
         email   => $email,
@@ -823,7 +751,11 @@ subtest $method => sub {
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{unlock_password} = $tmp_password;
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save');
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Sorry, an error occurred while processing your account.',
+        'return error if cannot save'
+    );
     $mocked_client->unmock_all;
 
     clear_mailbox();
@@ -841,22 +773,13 @@ subtest $method => sub {
 
 $method = 'get_settings';
 subtest $method => sub {
-    is(
-        $c->tcall(
-            $method,
-            {
-                token    => '12345'
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
+    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
 
     is(
         $c->tcall(
             $method,
             {
-                token    => undef,
+                token => undef,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -866,7 +789,7 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token1,
+                token => $token1,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -877,15 +800,15 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => $token_disabled,
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
-       'This account is unavailable.',
+        'This account is unavailable.',
         'check authorization'
     );
 
     my $params = {
-        token    => $token_21,
+        token => $token_21,
     };
     my $result = $c->tcall($method, $params);
     is_deeply(
@@ -1008,11 +931,13 @@ subtest $method => sub {
 
 $method = 'set_settings';
 subtest $method => sub {
+    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
+
     is(
         $c->tcall(
             $method,
             {
-                token    => '12345'
+                token => undef,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -1023,26 +948,15 @@ subtest $method => sub {
         $c->tcall(
             $method,
             {
-                token    => undef,
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
-
-    is(
-        $c->tcall(
-            $method,
-            {
-                token    => $token_disabled,
-            }
-            )->{error}{message_to_client},
-       'This account is unavailable.',
+        'This account is unavailable.',
         'check authorization'
     );
     my $mocked_client = Test::MockModule->new(ref($test_client));
     my $params        = {
-        language => 'EN',
+        language   => 'EN',
         token      => $token_vr,
         client_ip  => '127.0.0.1',
         user_agent => 'agent',
@@ -1054,7 +968,11 @@ subtest $method => sub {
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{residence} = 'zh';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save');
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Sorry, an error occurred while processing your account.',
+        'return error if cannot save'
+    );
     $mocked_client->unmock('save');
     my $result = $c->tcall($method, $params);
     is($result->{status}, 1, 'vr account update residence successfully');
@@ -1084,7 +1002,11 @@ subtest $method => sub {
 
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save');
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Sorry, an error occurred while processing your account.',
+        'return error if cannot save'
+    );
     $mocked_client->unmock_all;
     # add_note should send an email to support address,
     # but it is disabled when the test is running on travis-ci
@@ -1110,11 +1032,13 @@ subtest $method => sub {
 # set_self_exclusion && get_self_exclusion
 $method = 'set_self_exclusion';
 subtest 'get and set self_exclusion' => sub {
+    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
+
     is(
         $c->tcall(
             $method,
             {
-                token    => '12345'
+                token => undef,
             }
             )->{error}{message_to_client},
         'The token is invalid.',
@@ -1125,27 +1049,16 @@ subtest 'get and set self_exclusion' => sub {
         $c->tcall(
             $method,
             {
-                token    => undef,
+                token => $token_disabled,
             }
             )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
-
-    is(
-        $c->tcall(
-            $method,
-            {
-                token    => $token_disabled,
-            }
-            )->{error}{message_to_client},
-       'This account is unavailable.',
+        'This account is unavailable.',
         'check authorization'
     );
 
     my $params = {
-        token    => $token_vr,
-        args     => {}};
+        token => $token_vr,
+        args  => {}};
     is($c->tcall($method, $params)->{error}{message_to_client}, "Permission denied.", 'vr client cannot set exclusion');
     $params->{token} = $token1;
     is($c->tcall($method, $params)->{error}{message_to_client}, "Please provide at least one self-exclusion setting.", "need one exclusion");

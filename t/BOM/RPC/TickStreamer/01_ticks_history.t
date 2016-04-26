@@ -100,8 +100,7 @@ subtest 'ticks_history' => sub {
     $params->{args}->{subscribe}     = '1';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('NoRealtimeQuotes', 'It should return error if realtime quotes not available for this symbol')
-        ->error_message_is('Realtime quotes not available for TOP40',
-        'It should return error if realtime quotes not available for this symbol');
+        ->error_message_is('Realtime quotes not available for TOP40', 'It should return error if realtime quotes not available for this symbol');
     delete $params->{args}->{subscribe};
 };
 
