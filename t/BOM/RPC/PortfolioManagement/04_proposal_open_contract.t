@@ -29,7 +29,7 @@ my $method = 'proposal_open_contract';
 my @params = (
     $method,
     {
-        language => 'RU',
+        language => 'EN',
         source   => 1,
         country  => 'ru',
         args     => {},
