@@ -69,7 +69,7 @@ subtest 'Initialization' => sub {
 subtest 'Auth client' => sub {
     $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
             error => {
-                message_to_client => 'Токен недействителен.',
+                message_to_client => 'The token is invalid.',
                 code              => 'InvalidToken',
             }
         },
@@ -79,7 +79,7 @@ subtest 'Auth client' => sub {
     $params[1]->{token} = 'wrong token';
     $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
             error => {
-                message_to_client => 'Токен недействителен.',
+                message_to_client => 'The token is invalid.',
                 code              => 'InvalidToken',
             }
         },
@@ -89,7 +89,7 @@ subtest 'Auth client' => sub {
     delete $params[1]->{token};
     $rpc_ct->call_ok(@params)->has_no_system_error->result_is_deeply({
             error => {
-                message_to_client => 'Токен недействителен.',
+                message_to_client => 'The token is invalid.',
                 code              => 'InvalidToken',
             }
         },
