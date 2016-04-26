@@ -32,6 +32,7 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Helper::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
+use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
@@ -251,7 +252,7 @@ sub cashier {
         $action = 'PAYOUT';
     }
 
-    path('/tmp/doughflow_tokens.txt')
+    Path::Tiny::path('/tmp/doughflow_tokens.txt')
         ->append(join(":", Date::Utility->new()->datetime_ddmmmyy_hhmmss, $df_client->loginid, $handoff_token->key, $action));
 
     # build DF link
