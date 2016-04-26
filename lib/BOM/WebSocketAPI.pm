@@ -59,7 +59,7 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
-            if (my $lang = $c->param('l')) {
+            if (my $lang = $c->param('l') || 'EN') {
                 $c->stash(language => uc $lang);
                 $c->res->headers->header('Content-Language' => lc $lang);
             }
