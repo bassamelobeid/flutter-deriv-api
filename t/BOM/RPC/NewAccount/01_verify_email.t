@@ -21,7 +21,7 @@ my $method = 'verify_email';
 my @params = (
     $method,
     {
-        language => 'RU',
+        language => 'EN',
         source   => 1,
         country  => 'ru',
     });
@@ -68,7 +68,7 @@ subtest 'Account opening request with email does not exist' => sub {
 
     my %msg = get_email_by_address_subject(
         email   => $params[1]->{email},
-        subject => qr/Подтвердите свой электронный адрес/
+        subject => qr/Verify your email address/
     );
     ok keys %msg, 'Email sent successfully';
     clear_mailbox();
@@ -87,7 +87,7 @@ subtest 'Account opening request with email exists' => sub {
 
     my %msg = get_email_by_address_subject(
         email   => $params[1]->{email},
-        subject => qr/Предоставлен дублирующий Email/
+        subject => qr/A Duplicate Email Address Has Been Submitted/
     );
     ok keys %msg, 'Email sent successfully';
     ok lc($msg{subject}) =~ /binaryqa30\.com$/, 'Using right website_name';
@@ -107,7 +107,7 @@ subtest 'Reset password for exists user' => sub {
 
     my %msg = get_email_by_address_subject(
         email   => $params[1]->{email},
-        subject => qr/Запрос нового пароля/
+        subject => qr/New Password Request/
     );
     ok keys %msg, 'Email sent successfully';
     ok lc($msg{subject}) =~ /binary\.com$/, 'Using right website_name';
@@ -137,7 +137,7 @@ subtest 'Payment agent withdraw' => sub {
 
     my %msg = get_email_by_address_subject(
         email   => $params[1]->{email},
-        subject => qr/Подтвердите свой запрос на вывод/
+        subject => qr/Verify your withdrawal request/
     );
     ok keys %msg, 'Email sent successfully';
     clear_mailbox();
