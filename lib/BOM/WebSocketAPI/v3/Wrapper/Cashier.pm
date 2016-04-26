@@ -27,7 +27,9 @@ sub paymentagent_withdraw {
             } else {
                 return {
                     msg_type              => 'paymentagent_withdraw',
-                    paymentagent_withdraw => $response->{status}};
+                    paymentagent_withdraw => delete $response->{status},
+                    %$response
+                };
             }
         },
         {
@@ -53,8 +55,8 @@ sub paymentagent_transfer {
             } else {
                 return {
                     msg_type              => 'paymentagent_transfer',
-                    paymentagent_transfer => $response->{status},
-                    ($response->{client_to_full_name}) ? (client_to_full_name => $response->{client_to_full_name}) : (),
+                    paymentagent_transfer => delete $response->{status},
+                    %$response
                 };
             }
         },
@@ -80,8 +82,8 @@ sub transfer_between_accounts {
             } else {
                 return {
                     msg_type                  => 'transfer_between_accounts',
-                    transfer_between_accounts => $response->{status},
-                    (exists $response->{accounts}) ? (accounts => $response->{accounts}) : (),
+                    transfer_between_accounts => delete $response->{status},
+                    %$response
                 };
             }
         },

@@ -203,6 +203,8 @@ $email_mocked->mock('send_email', sub { return 1 });
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     ok $res->{transfer_between_accounts}, 'transfer_between_accounts is ok';
+    is $res->{client_to_loginid},         $client_vr->loginid, 'transfer_between_accounts to client is ok';
+    is $res->{client_to_full_name},       $client_vr->full_name, 'transfer_between_accounts to client name is ok';
 
     ## after withdraw, check both balance
     $client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});

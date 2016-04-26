@@ -1,5 +1,5 @@
 v3:
-	bash -e /tmp/travis-scripts/websocket_tests.sh
+	prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3
 
 structure:
 	prove --timer -I./lib  -I./t t/BOM/*.t
