@@ -100,9 +100,9 @@ subtest 'get_corporate_actions_one_action' => sub {
     my $purchase_date = $date->epoch;
 
     my $params = {
-        symbol   => 'FPFP',
-        start    => $opening->date_ddmmmyyyy,
-        end      => $closing_time->date_ddmmmyyyy,
+        symbol => 'FPFP',
+        start  => $opening->date_ddmmmyyyy,
+        end    => $closing_time->date_ddmmmyyyy,
     };
 
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
@@ -117,9 +117,9 @@ subtest 'get_corporate_actions_one_action' => sub {
 
     #Test for error case.
     my $params_err = {
-        symbol   => 'FPFP',
-        start    => $closing_time->date_ddmmmyyyy,
-        end      => $opening->date_ddmmmyyyy,
+        symbol => 'FPFP',
+        start  => $closing_time->date_ddmmmyyyy,
+        end    => $opening->date_ddmmmyyyy,
     };
 
     $result = $c->call_ok('get_corporate_actions', $params_err)->has_error->error_code_is('GetCorporateActionsFailure')
