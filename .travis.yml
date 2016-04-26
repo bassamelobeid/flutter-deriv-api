@@ -43,3 +43,6 @@ install:
 
 script:
     - make $TEST_SUITE
+
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
