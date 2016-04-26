@@ -16,8 +16,9 @@ sub register {
         l => sub {
             my $c = shift;
 
-            my $lh = BOM::Platform::Context::I18N::handle_for($c->stash->{language})
-                || die("could not build locale for language " . $c->stash->{language});
+            my $language = $c->stash->{language} || 'EN';
+            my $lh = BOM::Platform::Context::I18N::handle_for($language)
+                || die("could not build locale for language $language");
 
             return $lh->maketext(@_);
         });
