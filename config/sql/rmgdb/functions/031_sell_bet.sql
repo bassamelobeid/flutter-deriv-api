@@ -72,7 +72,7 @@ BEGIN
     END IF;
 
     PERFORM set_config('binary.session_details', (('sell', v_fmb.id,p_currency, v_fmb.short_code, v_fmb.purchase_time, v_fmb.buy_price, v_fmb.sell_time, NULL)::bet.session_bet_details)::text, true);
-  
+
     INSERT INTO transaction.transaction (
         account_id,
         transaction_time,
