@@ -53,7 +53,7 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
-    - make $TEST_SUITE; RC=$?; sudo service binary_pgbouncer status; exit $RC
+    - make $TEST_SUITE
 
 after_script:
-    - /tmp/travis-scripts/wait_for_ssh.sh\
+    - /tmp/travis-scripts/wait_for_ssh.sh
