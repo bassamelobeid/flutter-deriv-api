@@ -53,7 +53,7 @@ subtest "Request $method" => sub {
 
     $params[1]{args}{contracts_for} = 'invalid symbol';
     $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if symbol does not exist')
-        ->error_message_is('Неверный символ.', 'It should return error if symbol does not exist');
+        ->error_message_is('The symbol is invalid.', 'It should return error if symbol does not exist');
 };
 
 done_testing();
