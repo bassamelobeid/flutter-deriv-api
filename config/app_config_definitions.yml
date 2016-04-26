@@ -275,7 +275,7 @@ quants:
       isa: section
       contains:
         disabled:
-          description: "Switch off a given market (random)"
+          description: "Switch off a given market (volatility index)"
           isa: ArrayRef
           default: []
           global: 1

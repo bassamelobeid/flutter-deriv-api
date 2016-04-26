@@ -150,7 +150,7 @@ sub restricted_country {
     return ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'none');
 }
 
-sub random_restricted_country {
+sub volidx_restricted_country {
     my ($self, $country) = @_;
     my $config = $self->countries_list->{$country};
     return 1 unless ($config);
