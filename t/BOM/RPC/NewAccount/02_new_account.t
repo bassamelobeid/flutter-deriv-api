@@ -55,12 +55,12 @@ subtest $method => sub {
     $params->{args}->{verification_code} = 'wrong token';
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PasswordError', 'If password is weak it should return error')
-        ->error_message_is('Пароль недостаточно надёжный.', 'If password is weak it should return error_message');
+        ->error_message_is('Password is not strong enough.', 'If password is weak it should return error_message');
 
     $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidToken', 'If email verification_code is wrong it should return error')
-        ->error_message_is('Срок действия Вашего токена истёк.',
+        ->error_message_is('Your token has expired.',
         'If email verification_code is wrong it should return error_message');
 
     $params->{args}->{verification_code} = BOM::Platform::Token::Verification->new(
@@ -78,7 +78,7 @@ subtest $method => sub {
         };
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('invalid', 'If could not be created account it should return error')->error_message_is(
-            'Извините, но открытие счёта недоступно.',
+            'Sorry, account opening is unavailable.',
             'If could not be created account it should return error_message'
             );
     }
@@ -162,7 +162,7 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidAccount',
             'It should return error when try to create new client using exists real client')->error_message_is(
-            'Извините, но открытие счёта недоступно.',
+            'Sorry, account opening is unavailable.',
             'It should return error when try to create new client using exists real client'
             );
 
@@ -178,7 +178,7 @@ subtest $method => sub {
             $rpc_ct->call_ok($method, $params)
                 ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails',
                 'It should return error when try to create account without residence')
-                ->error_message_is('Пожалуйста, предоставьте полные данные для открытия счёта.',
+                ->error_message_is('Please provide complete details for account opening.',
                 'It should return error when try to create account without residence');
         }
 
@@ -188,13 +188,13 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Пожалуйста, предоставьте полные данные для открытия счёта.',
+            ->error_message_is('Please provide complete details for account opening.',
             'It should return error if missing any details');
 
         $params->{args}->{first_name} = $client_details->{first_name};
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
-            ->error_message_is('Ваш электронный адрес не подтвержден.', 'It should return error if email unverified');
+            ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
 
         $user->email_verified(1);
         $user->save;
@@ -271,7 +271,7 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidAccount',
             'It should return error if client residense does not fit for maltainvest')->error_message_is(
-            'Извините, но открытие счёта недоступно.',
+            'Sorry, account opening is unavailable.',
             'It should return error if client residense does not fit for maltainvest'
             );
 
@@ -281,7 +281,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if client does not accept risk')
-            ->error_message_is('Пожалуйста, предоставьте полные данные для открытия счёта.',
+            ->error_message_is('Please provide complete details for account opening.',
             'It should return error if client does not accept risk');
 
         $params->{args}->{residence} = 'de';
@@ -290,7 +290,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Пожалуйста, предоставьте полные данные для открытия счёта.',
+            ->error_message_is('Please provide complete details for account opening.',
             'It should return error if missing any details');
 
         $params->{args}->{first_name}  = $client_details->{first_name};
@@ -298,7 +298,7 @@ subtest $method => sub {
         $params->{args}->{accept_risk} = 1;
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
-            ->error_message_is('Ваш электронный адрес не подтвержден.', 'It should return error if email unverified');
+            ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
 
         $user->email_verified(1);
         $user->save;
@@ -308,7 +308,7 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('invalid residence', 'It should return error if residence does not fit with maltainvest')
             ->error_message_is(
-            'Извините, мы не принимаем к регистрации резидентов Вашей страны.',
+            'Sorry, our service is not available for your country of residence.',
             'It should return error if residence does not fit with maltainvest');
 
         $params->{args}->{residence} = 'de';
@@ -384,7 +384,7 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidAccount', 'It should return error if client residense does not fit for japan')
             ->error_message_is(
-            'Извините, но открытие счёта недоступно.',
+            'Sorry, account opening is unavailable.',
             'It should return error if client residense does not fit for japan'
             );
 
@@ -397,13 +397,13 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Пожалуйста, предоставьте полные данные для открытия счёта.',
+            ->error_message_is('Please provide complete details for account opening.',
             'It should return error if missing any details');
 
         $params->{args}->{first_name} = $client_details->{first_name};
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
-            ->error_message_is('Ваш электронный адрес не подтвержден.', 'It should return error if email unverified');
+            ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
 
         $user->email_verified(1);
         $user->save;
@@ -415,7 +415,7 @@ subtest $method => sub {
             $rpc_ct->call_ok($method, $params)
                 ->has_no_system_error->has_error->error_code_is('insufficient score', 'It should return error if client has insufficient score')
                 ->error_message_is(
-                'К сожалению. Ваши ответы на вышеперечисленные вопросы указывают на то, что у Вас недостаточно финансовых средств или торгового опыта, чтобы открыть торговый счёт в данное время.',
+                'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.',
                 'It should return error if client has insufficient score'
                 );
         }
