@@ -8,9 +8,9 @@
         <% if (stash('error')) { %>
             <p class='errorfield'><%= stash('error') %></p>
         <% } %>
-        <div><input type="text" id="txtEmail" name="email" placeholder="<%= $l->('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
+        <div><input type="email" id="txtEmail" name="email" placeholder="<%= $l->('Email') %>" autocomplete="off" autofocus="autofocus" maxlength="254" /></div>
         <div><input type="password" id="txtPass" name="password" placeholder="<%= $l->('Password') %>" /></div>
-        <div><button type="submit" id="btnLogin" class="button" name="login" value='<%= $l->('Login') %>'><span>Login</span></button></div>
+        <div><button type="submit" id="btnLogin" class="button" name="login" value='<%= $l->('Login') %>'><span><%= $l->('Login') %></span></button></div>
         <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
     </form>
 </div>
