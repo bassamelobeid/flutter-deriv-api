@@ -24,10 +24,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                underlying => 'frxUSDJPY',
-                epoch      => $now->epoch,
-                quote      => 100,
-            });
+    underlying => 'frxUSDJPY',
+    epoch      => $now->epoch,
+    quote      => 100,
+});
 
 my $t = build_mojo_test();
 
@@ -56,18 +56,18 @@ ok($contracts_for->{contracts_for});
 ok($contracts_for->{contracts_for}->{available});
 is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
 test_schema('contracts_for', $contracts_for);
-if (not $now->is_a_weekend){
+if (not $now->is_a_weekend) {
 # test contracts_for japan
-$t = $t->send_ok({
-        json => {
-            contracts_for => 'frxUSDJPY',
-            region        => 'japan'
-        }})->message_ok;
-my $contracts_for_japan = decode_json($t->message->[1]);
-ok($contracts_for_japan->{contracts_for});
-ok($contracts_for_japan->{contracts_for}->{available});
-is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
-test_schema('contracts_for', $contracts_for_japan);
+    $t = $t->send_ok({
+            json => {
+                contracts_for => 'frxUSDJPY',
+                region        => 'japan'
+            }})->message_ok;
+    my $contracts_for_japan = decode_json($t->message->[1]);
+    ok($contracts_for_japan->{contracts_for});
+    ok($contracts_for_japan->{contracts_for}->{available});
+    is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
+    test_schema('contracts_for', $contracts_for_japan);
 }
 $t = $t->send_ok({json => {trading_times => Date::Utility->new->date_yyyymmdd}})->message_ok;
 my $trading_times = decode_json($t->message->[1]);
