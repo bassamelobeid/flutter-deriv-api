@@ -32,6 +32,7 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Helper::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
+use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
@@ -251,7 +252,7 @@ sub cashier {
         $action = 'PAYOUT';
     }
 
-    path('/tmp/doughflow_tokens.txt')
+    Path::Tiny::path('/tmp/doughflow_tokens.txt')
         ->append(join(":", Date::Utility->new()->datetime_ddmmmyy_hhmmss, $df_client->loginid, $handoff_token->key, $action));
 
     # build DF link
@@ -507,6 +508,7 @@ sub paymentagent_transfer {
         return {
             status              => 2,
             client_to_full_name => $client_to->full_name,
+            client_to_loginid   => $client_to->loginid
         };
     }
 
@@ -580,17 +582,27 @@ sub paymentagent_transfer {
     my $comment =
         'Transfer from Payment Agent ' . $payment_agent->payment_agent_name . " to $loginid_to. Transaction reference: $reference. Timestamp: $today";
 
-    $client_fm->payment_account_transfer(
-        toClient => $client_to,
-        currency => $currency,
-        amount   => $amount,
-        fmStaff  => $loginid_fm,
-        toStaff  => $loginid_to,
-        remark   => $comment,
-    );
+    my ($error, $response);
+    try {
+        $response = $client_fm->payment_account_transfer(
+            toClient => $client_to,
+            currency => $currency,
+            amount   => $amount,
+            fmStaff  => $loginid_fm,
+            toStaff  => $loginid_to,
+            remark   => $comment,
+        );
+    }
+    catch {
+        $error = "Paymentagent Transfer failed to $loginid_to [$_]";
+    };
 
     BOM::Platform::Transaction->unfreeze_client($loginid_fm);
     BOM::Platform::Transaction->unfreeze_client($loginid_to);
+
+    if ($error) {
+        return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'), $error);
+    }
 
     stats_count('business.usd_deposit.paymentagent', int(in_USD($amount, $currency) * 100));
     stats_inc('business.paymentagent');
@@ -611,13 +623,14 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
         'subject'            => localize('Acknowledgement of Money Transfer'),
         'message'            => [$emailcontent],
         'use_email_template' => 1,
-        'template_loginid'   => $client_to->loginid
+        'template_loginid'   => $loginid_to
     });
 
     return {
         status              => 1,
         client_to_full_name => $client_to->full_name,
-    };
+        client_to_loginid   => $loginid_to,
+        transaction_id      => $response->{transaction_id}};
 }
 
 sub paymentagent_withdraw {
@@ -737,7 +750,10 @@ sub paymentagent_withdraw {
     }
 
     if ($args->{dry_run}) {
-        return {status => 2};
+        return {
+            status            => 2,
+            paymentagent_name => $paymentagent->payment_agent_name
+        };
     }
 
     # freeze loginID to avoid a race condition
@@ -825,18 +841,28 @@ sub paymentagent_withdraw {
 
     $comment .= ". Client note: $further_instruction" if ($further_instruction);
 
-    # execute the transfer.
-    $client->payment_account_transfer(
-        currency => $currency,
-        amount   => $amount,
-        remark   => $comment,
-        fmStaff  => $client_loginid,
-        toStaff  => $paymentagent_loginid,
-        toClient => $pa_client,
-    );
+    my ($error, $response);
+    try {
+        # execute the transfer.
+        $response = $client->payment_account_transfer(
+            currency => $currency,
+            amount   => $amount,
+            remark   => $comment,
+            fmStaff  => $client_loginid,
+            toStaff  => $paymentagent_loginid,
+            toClient => $pa_client,
+        );
+    }
+    catch {
+        $error = "Paymentagent Withdraw failed to $paymentagent_loginid [$_]";
+    };
 
     BOM::Platform::Transaction->unfreeze_client($client_loginid);
     BOM::Platform::Transaction->unfreeze_client($paymentagent_loginid);
+
+    if ($error) {
+        return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'), $error);
+    }
 
     my $client_name = $client->first_name . ' ' . $client->last_name;
     # sent email notification to Payment Agent
@@ -862,7 +888,10 @@ sub paymentagent_withdraw {
         use_email_template => 1,
     });
 
-    return {status => 1};
+    return {
+        status            => 1,
+        paymentagent_name => $paymentagent->payment_agent_name,
+        transaction_id    => $response->{transaction_id}};
 }
 
 sub __output_payments_error_message {
@@ -1138,8 +1167,9 @@ sub transfer_between_accounts {
         return $error_unfreeze_sub->($err, $client_from->loginid, $client_to->loginid);
     }
 
+    my $response;
     try {
-        $client_from->payment_account_transfer(
+        $response = $client_from->payment_account_transfer(
             currency          => $currency,
             amount            => $amount,
             toClient          => $client_to,
@@ -1161,7 +1191,12 @@ sub transfer_between_accounts {
     BOM::Platform::Transaction->unfreeze_client($client_from->loginid);
     BOM::Platform::Transaction->unfreeze_client($client_to->loginid);
 
-    return {status => 1};
+    return {
+        status              => 1,
+        transaction_id      => $response->{transaction_id},
+        client_to_full_name => $client_to->full_name,
+        client_to_loginid   => $client_to->loginid
+    };
 }
 
 sub topup_virtual {

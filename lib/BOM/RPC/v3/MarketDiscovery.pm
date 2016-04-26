@@ -18,6 +18,72 @@ use BOM::System::RedisReplicated;
 use Sereal::Encoder;
 use BOM::Platform::Runtime;
 
+my %name_mapper = (
+    DVD_CASH   => localize('Cash Dividend'),
+    DVD_STOCK  => localize('Stock Dividend'),
+    STOCK_SPLT => localize('Stock Split'),
+);
+
+sub get_corporate_actions {
+    my $params = shift;
+    my ($symbol, $start, $end) = @{$params}{qw/symbol start end/};
+
+    my ($start_date, $end_date);
+
+    my $response;
+
+    if (not $end) {
+        $end_date = Date::Utility->new;
+    } else {
+        $end_date = Date::Utility->new($end);
+    }
+
+    if (not $start) {
+        $start_date = $end_date->minus_time_interval('365d');
+    } else {
+        $start_date = Date::Utility->new($start);
+    }
+
+    if ($start_date->is_after($end_date)) {
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+            code              => "GetCorporateActionsFailure"
+        });
+
+        return $response;
+    }
+
+    try {
+        my @actions;
+        my $underlying = BOM::Market::Underlying->new($symbol);
+
+        if ($underlying->market->affected_by_corporate_actions) {
+            @actions = $underlying->get_applicable_corporate_actions_for_period({
+                start => $start_date,
+                end   => $end_date,
+            });
+        }
+
+        foreach my $action (@actions) {
+            my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
+
+            $response->{$display_date} = {
+                type  => $name_mapper{$action->{type}},
+                value => $action->{value},
+            };
+        }
+
+    }
+    catch {
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+            code              => "GetCorporateActionsFailure"
+        });
+    };
+
+    return $response;
+}
+
 sub trading_times {
     my $params = shift;
 

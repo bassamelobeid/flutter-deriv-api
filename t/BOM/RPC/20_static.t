@@ -9,13 +9,13 @@ use Data::Dumper;
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 subtest 'residence_list' => sub {
-    my $result = $c->call_ok('residence_list', {language => 'ZH_CN'})->has_no_system_error->result;
+    my $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
     my ($cn) = grep { $_->{value} eq 'cn' } @$result;
     is_deeply(
         $cn,
         {
             'value'     => 'cn',
-            'text'      => "中国",
+            'text'      => "China",
             'phone_idd' => '86'
         },
         'cn is correct'
@@ -26,7 +26,7 @@ subtest 'states_list' => sub {
     my $result = $c->call_ok(
         'states_list',
         {
-            language => 'ZH_CN',
+            language => 'EN',
             args     => {states_list => 'cn'}})->has_no_system_error->result;
     my ($sh) = grep { $_->{text} eq 'Shanghai' } @$result;
     is_deeply(
