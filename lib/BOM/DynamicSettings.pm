@@ -7,7 +7,6 @@ use BOM::Platform::Runtime;
 use HTML::Entities;
 use Data::Compare;
 use JSON qw( from_json to_json );
-use BOM::Utility::Log4perl qw( get_logger );
 use Try::Tiny;
 use Text::CSV;
 
@@ -314,7 +313,7 @@ sub parse_and_refine_setting {
             $decoded = from_json($input_value);
         }
         catch {
-            get_logger->error("Decoding of $input_value failed - $_");
+            warn("Error: decoding of $input_value failed - $_");
         };
         if (not defined $input_value or not defined $decoded) {
             $input_value = '{}';
