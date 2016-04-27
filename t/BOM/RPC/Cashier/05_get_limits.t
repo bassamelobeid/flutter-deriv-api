@@ -13,9 +13,7 @@ use utf8;
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $method = 'get_limits';
-my $params = {
-    token    => '12345'
-};
+my $params = {token => '12345'};
 
 my %withdrawal = (
     currency     => 'USD',
