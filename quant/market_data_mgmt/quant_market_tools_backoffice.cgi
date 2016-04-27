@@ -76,7 +76,6 @@ my $impact                 = request()->param('impact');
 my $event_name             = request()->param('event_name');
 my $release_date           = request()->param('release_date');
 my $source                 = request()->param('source');
-my $add_news_event         = request()->param('add_news_event');
 my $save_economic_event    = request()->param('save_economic_event');
 my $is_tentative           = request()->param('is_tentative');
 my $estimated_release_date = request()->param('estimated_release_date');
