@@ -150,7 +150,9 @@ sub graph_plot {
 
         close(DATAF);
     } else {
-        warn("Can't write to $graph_datafile $@ $!");
+        my $msg = "Can't write to $graph_datafile $@ $!";
+        print $msg;
+        warn $msg;
         return;
     }
 

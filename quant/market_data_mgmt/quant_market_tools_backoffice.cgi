@@ -94,7 +94,9 @@ if ($autoupdate) {
         });
         $sender->MailMsg({msg => $msg});
 
-        warn("Error while updating news calendar: $error");
+        my $msg = "Error while updating news calendar: $error";
+        print $msg;
+        warn $msg;
     }
 } elsif ($save_economic_event) {
     try {
