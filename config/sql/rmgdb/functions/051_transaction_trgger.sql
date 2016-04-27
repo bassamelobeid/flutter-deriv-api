@@ -2,7 +2,6 @@ BEGIN;
 
 CREATE OR REPLACE FUNCTION notify_transaction_trigger() RETURNS trigger AS $$
 DECLARE
-
   short_code TEXT :='';
   currency_code TEXT :='';
   payment_remark TEXT :='';
@@ -43,7 +42,7 @@ BEGIN
         payment_id bigint,
         remark TEXT
     ) ON COMMIT DROP;
-    INSERT INTO session_payment_details VALUES (NEW.id,NEW.remark);  RETURN new;
+    INSERT INTO session_payment_details VALUES (NEW.id,NEW.remark);
     RETURN new;
 END;
 $$ LANGUAGE plpgsql;
