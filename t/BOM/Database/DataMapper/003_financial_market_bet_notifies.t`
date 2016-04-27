@@ -40,12 +40,12 @@ $acc1 = create_account 'CR0021';
 $acc2 = create_account 'CR0027';
 $acc3 = create_account 'CR0028';
 
-#my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
-#my $ip     = $config->{costarica}->{write}->{ip};           # create_client creates CR clients
-#my $pw     = $config->{password};
+my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
+my $ip     = $config->{costarica}->{write}->{ip};           # create_client creates CR clients
+my $pw     = $config->{password};
 
-my $ip = '127.0.0.1';
-my $pw = 'mRX1E3Mi00oS8LG';
+#my $ip = '127.0.0.1';
+#my $pw = 'mRX1E3Mi00oS8LG';
 
 my $listener = DBI->connect(
     "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub",
@@ -69,7 +69,6 @@ sub test_notify {
 
     my %notifications;
     while (my $notify = $listener->pg_notifies) {
-        # note "got notification: $notify->[-1]";
         my $n = {};
         @{$n}{
             qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/
@@ -77,13 +76,11 @@ sub test_notify {
             split ',', $notify->[-1];
         $notifications{$n->{id}} = $n;
     }
-    # note explain \%notifications;
-
+ 
     foreach my $test (@tests) {
         my $loginid = $test->{acc}->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $note = $notifications{$test->{txn}->{id}};
-            #note explain [$note];
             isnt $note, undef, 'found notification';
             is $note->{currency_code}, 'USD', "note{currency_code} eq USD";
             for my $name (qw/account_id action_type amount balance_after financial_market_bet_id transaction_time/) {
@@ -165,7 +162,6 @@ sub buy_multiple_bets {
         db           => db,
     });
     my $res = $fmb->batch_buy_bet;
-    # note explain [$res];
     return $res;
 }
 
@@ -181,7 +177,6 @@ sub sell_one_bet {
             db => db,
         });
     my ($bet, $txn) = $fmb->sell_bet;
-    # note explain [$bet, $txn];
     return ($txn, $bet);
 }
 
@@ -194,8 +189,7 @@ lives_ok {
 
 lives_ok {
     my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
-    # note explain $res;
-
+ 
     test_notify (
         {acc => $acc1, fmb => $res->{$acc1->client_loginid}->{fmb}, txn => $res->{$acc1->client_loginid}->{txn}}
         , {acc => $acc3, fmb => $res->{$acc3->client_loginid}->{fmb}, txn => $res->{$acc3->client_loginid}->{txn}}
