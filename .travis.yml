@@ -59,3 +59,6 @@ install:
 script:
     - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
 
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
+
