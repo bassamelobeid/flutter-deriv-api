@@ -4,7 +4,6 @@ package BOM::Product::Expiryd;
 
 use Moose;
 with 'App::Base::Daemon';
-with 'BOM::Utility::Logging';
 
 has pids => (
     is      => 'rw',
