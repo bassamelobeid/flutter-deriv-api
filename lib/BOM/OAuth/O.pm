@@ -198,12 +198,13 @@ sub __login {
 
     if ($err) {
         $c->render(
-            template => 'login',
+            template => $c->session('__is_app_approved') == 1 ? 'loginbinary' : 'login',
             layout   => 'default',
 
             app       => $app,
             error     => $err,
             l         => \&localize,
+            r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
         return;
