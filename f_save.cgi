@@ -305,7 +305,7 @@ unless ($diff eq '0') {
     }
 }
 if ($message and not BOM::Platform::Runtime->instance->app_config->system->on_development) {
-    warn('FILECHANGED', "File $filen edited by $clerk", $message);
+    warn("FILECHANGED : File $filen edited by $clerk : $message");
 }
 
 code_exit_BO();
