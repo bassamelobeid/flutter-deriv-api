@@ -7,7 +7,6 @@ use File::Slurp;
 use Try::Tiny;
 use DBIx::Migration;
 use BOM::Platform::Runtime;
-use File::Temp qw/tempfile/;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
