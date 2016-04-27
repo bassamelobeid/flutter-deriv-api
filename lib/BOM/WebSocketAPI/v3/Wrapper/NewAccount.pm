@@ -3,7 +3,6 @@ package BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use strict;
 use warnings;
 
-use BOM::RPC::v3::NewAccount;
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::Platform::Token::Verification;
 
@@ -31,7 +30,6 @@ sub new_account_virtual {
 sub verify_email {
     my ($c, $args) = @_;
 
-    my $r     = $c->stash('request');
     my $email = $args->{verify_email};
     my $type  = $args->{type};
 
@@ -72,11 +70,11 @@ sub verify_email {
                 verify_email => $response->{status}};
         },
         {
-            args         => $args,
-            email        => $email,
-            website_name => $r->website->display_name,
-            code         => $code,
-            type         => $type
+            args        => $args,
+            email       => $email,
+            server_name => $c->server_name,
+            code        => $code,
+            type        => $type
         });
     return;
 }

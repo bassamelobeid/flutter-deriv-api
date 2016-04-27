@@ -7,7 +7,6 @@ use JSON;
 use Data::UUID;
 use Scalar::Util qw (looks_like_number);
 
-use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Japan::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
@@ -35,7 +34,7 @@ sub ticks {
     foreach my $symbol (@symbols) {
         my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
         if ($response and exists $response->{error}) {
-            $send_error->($response->{error}->{code}, $response->{error}->{message_to_client});
+            $send_error->($response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
         } elsif (not _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
             $send_error->('AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
         }
@@ -82,7 +81,7 @@ sub proposal {
     my $symbol   = $args->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
-        return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
+        return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
     } else {
         my $id;
         if (not $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args)) {
@@ -100,7 +99,8 @@ sub pricing_table {
     my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args);
 
     if ($response and exists $response->{error}) {
-        return $c->new_error('pricing_table', $response->{error}->{code}, $response->{error}->{message_to_client});
+        return $c->new_error('pricing_table', $response->{error}->{code},
+            $c->l($response->{error}->{message}, @{$response->{error}->{params} || []}));
     }
 
     my $symbol = $args->{symbol};
@@ -354,7 +354,7 @@ sub process_transaction_updates {
                                     token      => $c->stash('token'),
                                     short_code => $payload->{short_code},
                                     currency   => $payload->{currency_code},
-                                    language   => $c->stash('request')->language
+                                    language   => $c->stash('language'),
                                 });
                         } else {
                             $details->{$type}->{longcode}         = $payload->{payment_remark};

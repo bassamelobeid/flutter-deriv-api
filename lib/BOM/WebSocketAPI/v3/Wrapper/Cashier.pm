@@ -33,9 +33,9 @@ sub paymentagent_withdraw {
             }
         },
         {
-            args         => $args,
-            token        => $c->stash('token'),
-            website_name => $c->stash('request')->website->display_name
+            args        => $args,
+            token       => $c->stash('token'),
+            server_name => $c->server_name
         });
     return;
 }
@@ -43,7 +43,6 @@ sub paymentagent_withdraw {
 sub paymentagent_transfer {
     my ($c, $args) = @_;
 
-    my $r = $c->stash('request');
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'paymentagent_transfer',
@@ -61,9 +60,9 @@ sub paymentagent_transfer {
             }
         },
         {
-            args         => $args,
-            token        => $c->stash('token'),
-            website_name => $r->website->display_name
+            args        => $args,
+            token       => $c->stash('token'),
+            server_name => $c->server_name,
         });
     return;
 }
@@ -121,8 +120,7 @@ sub __call_rpc {
         {
             args     => $args,
             token    => $c->stash('token'),
-            language => $c->stash('request')->language
-        });
+            language => $c->stash('language')});
 }
 
 1;
