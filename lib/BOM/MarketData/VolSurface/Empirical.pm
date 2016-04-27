@@ -3,7 +3,7 @@ package BOM::MarketData::VolSurface::Empirical;
 use Moose;
 
 use Machine::Epsilon;
-use Math::Gauss qw(pdf);
+use Math::Gauss::XS qw(pdf);
 use Cache::RedisDB;
 use List::Util qw(max min sum);
 use List::MoreUtils qw(uniq);
