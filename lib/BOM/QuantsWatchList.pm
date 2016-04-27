@@ -1,0 +1,31 @@
+package BOM::QuantsWatchList;
+
+use BOM::Platform::Runtime;
+
+sub get_watchlist {
+    return BOM::Platform::Runtime->instance->app_config->quants->internal->watch_list;
+}
+
+sub get_details_for {
+    my $client_loginid = shift;
+
+    return get_watchlist->{$client_loginid} // '';
+}
+
+sub update_details_for {
+    my ($client_loginid, $comment) = @_;
+
+    # two types of update:
+    # 1. delete where $comment is an empty string
+    # 2. add client to watchlist with $comment
+    my $current = get_watchlist();
+
+    if ($comment) {
+        $current->{$client_loginid} = $comment; # override
+    } elsif (exists $current->{$client_loginid}) {
+        delete $current->{$client_loginid};
+    }
+
+    BOM::Platform::Runtime->instance->app_config->quants->internal->watch_list($current);
+    return BOM::Platform::Runtime->instance->app_config->save_dynamic;
+}
