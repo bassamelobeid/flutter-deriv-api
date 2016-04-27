@@ -102,7 +102,7 @@ EXPIRYMISSE:
   id: 310
   category: endsinout
   display_name: ends outside
-  other_side_code: EXPIRYRANGEE
+  other_side_code: EXPIRYRANGE
   payout_type: binary
   payouttime: end
   pricing_code: EXPIRYMISS
@@ -120,7 +120,7 @@ EXPIRYRANGEE:
   id: 320
   category: endsinout
   display_name: ends between
-  other_side_code: EXPIRYMISSE
+  other_side_code: EXPIRYMISS
   payout_type: binary
   payouttime: end
   pricing_code: EXPIRYRANGE
