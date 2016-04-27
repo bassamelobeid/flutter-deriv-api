@@ -169,7 +169,6 @@ subtest 'url_for' => sub {
         is $request->url_for('images/pages/open_account/real-money-account.svg'),
             'https://static.binary.com/images/pages/open_account/real-money-account.svg', "Static indexed image";
         is $request->url_for('errors/500.html'),      "$domain/errors/500.html",      "errors";
-        is $request->url_for('EN_appcache.appcache'), "$domain/EN_appcache.appcache", "appcache";
         is $request->url_for('/'),                    "$domain/?l=EN",                "frontend /";
     };
 
