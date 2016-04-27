@@ -149,10 +149,10 @@ sub cashier {
         if (not $email or $email =~ /\s+/) {
             $error_sub->(localize("Client email not set."));
         } elsif ($token) {
-            unless (BOM::RPC::v3::Utility::is_verification_token_valid($token, $client->email)) {
+            if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($token, $client->email)->{error}) {
                 return BOM::RPC::v3::Utility::create_error({
-                        code              => "InvalidVerificationCode",
-                        message_to_client => localize("Your verification link has expired.")});
+                        code              => $err->{code},
+                        message_to_client => $err->{message_to_client}});
             }
         } else {
             return BOM::RPC::v3::Utility::create_error({
