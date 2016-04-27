@@ -69,27 +69,6 @@ sub client_limit_list {
     return (@limits) ? \@limits : undef;
 }
 
-=head2 client_payout_limit_for_contract
-
-Given a loginid and contract returns the payout limit
-
-=cut
-
-sub client_payout_limit_for_contract {
-    my ($self, $loginid, $contract) = @_;
-
-    my $limited;
-    if ($loginid && $contract) {
-        my @which = ('all');
-        unshift @which, 'iv' unless $contract->is_atm_bet;
-        while (not defined $limited and my $kind = shift @which) {
-            $limited = $self->full_list->{$loginid}->{$contract->underlying->market->name}->{$kind}->{payout_limit};
-        }
-    }
-
-    return $limited;
-}
-
 =head2 remove_loginid
 
 Removes the given loginid from the custom client limits list

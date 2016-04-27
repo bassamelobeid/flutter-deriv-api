@@ -483,7 +483,6 @@ sub buy {    ## no critic (RequireArgUnpacking)
             qw/
             _validate_buy_transaction_rate
             _validate_iom_withdrawal_limit
-            _validate_payout_limit
             _is_valid_to_buy
             _validate_date_pricing
             _validate_trade_pricing_adjustment
@@ -613,7 +612,6 @@ sub sell {    ## no critic (RequireArgUnpacking)
             qw/
             _validate_sell_transaction_rate
             _validate_iom_withdrawal_limit
-            _validate_payout_limit
             _is_valid_to_sell
             _validate_currency
             _validate_sell_pricing_adjustment
@@ -1450,36 +1448,6 @@ sub _validate_stake_limit {
                 to_monetary_number_format($contract->ask_price),
                 $landing_company->name,
                 to_monetary_number_format($stake_limit)
-            ),
-        );
-    }
-    return;
-}
-
-=head2 $self->_validate_payout_limit
-
-Validate if payout is not over the client limits
-
-=cut
-
-# TODO: Checked with Quants, this is unused. Can be removed.
-sub _validate_payout_limit {
-    my $self = shift;
-
-    my $client   = $self->client;
-    my $contract = $self->contract;
-    my $payout   = $self->payout;
-
-    my $custom_limit = BOM::Product::CustomClientLimits->new->client_payout_limit_for_contract($client->loginid, $contract);
-
-    if (defined $custom_limit and $payout > $custom_limit) {
-        return Error::Base->cuss(
-            -type              => 'PayoutLimitExceeded',
-            -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
-            -message_to_client => ($custom_limit == 0)
-            ? BOM::Platform::Context::localize('This contract is unavailable on this account.')
-            : BOM::Platform::Context::localize(
-                'This contract is limited to ' . to_monetary_number_format($custom_limit) . ' payout on this account.'
             ),
         );
     }

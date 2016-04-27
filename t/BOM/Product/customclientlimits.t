@@ -93,13 +93,10 @@ subtest test_everything => sub {
 
     $contract_params->{current_tick} = $r_100;
     my $bad_contract = produce_contract($contract_params);
-    is($custom_list->client_payout_limit_for_contract($bad_dude, $bad_contract),
-        $testing_amount, '.. and he has his limit set for a randoms IV contract.');
 
     $contract_params->{bet_type} = 'DOUBLEUP';
     $contract_params->{barrier}  = 'S0P';
     my $ok_type = produce_contract($contract_params);
-    is($custom_list->client_payout_limit_for_contract($bad_dude, $ok_type), undef, '.. and does not apply to random ATMs.');
 
     my $gdaxi = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'GDAXI',
@@ -110,7 +107,6 @@ subtest test_everything => sub {
     $contract_params->{bet_type}     = 'CALL';
     $contract_params->{underlying}   = 'GDAXI';
     my $ok_ul = produce_contract($contract_params);
-    is($custom_list->client_payout_limit_for_contract($bad_dude, $ok_ul), undef, '.. and does not apply to index IVs.');
 
     is(scalar keys %{$custom_list->full_list}, 2, '... so now we have 2 entries.');
 
