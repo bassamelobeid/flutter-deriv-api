@@ -57,7 +57,8 @@ sub cashier {
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
 
-    my $action = $params->{cashier} // 'deposit';
+    my $args = $params->{args};
+    my $action = $args->{cashier} // 'deposit';
 
     my $currency;
     if (my $account = $client->default_account) {
@@ -143,7 +144,7 @@ sub cashier {
     my $email = $client->email;
     if ($action eq 'withdraw') {
         my $is_not_verified = 1;
-        my $token = $params->{verification_code} // '';
+        my $token = $args->{verification_code} // '';
 
         if (not $email or $email =~ /\s+/) {
             $error_sub->(localize("Client email not set."));
