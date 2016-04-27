@@ -40,3 +40,6 @@ install:
 
 script:
     - make test && cover -test -report coveralls
+
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
