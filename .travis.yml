@@ -16,3 +16,6 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 script:
     - prove -Ilib -r t/
+
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
