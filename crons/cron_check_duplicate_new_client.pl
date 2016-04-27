@@ -4,13 +4,11 @@ use strict;
 
 use Carp qw( croak );
 
-use BOM::Utility::Log4perl;
 use BOM::Platform::Sysinit ();
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Client;
 
 BOM::Platform::Sysinit::init();
-BOM::Utility::Log4perl::init_log4perl_console;
 
 if ($ENV{REQUEST_METHOD}) {
     croak 'REQUEST_METHOD[' . $ENV{REQUEST_METHOD} . '] exists!?';

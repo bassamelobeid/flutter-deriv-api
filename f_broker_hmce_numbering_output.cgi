@@ -5,7 +5,6 @@ use strict 'vars';
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Transaction;
 use Try::Tiny;
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Plack qw( PrintContentType_excel );
 use BOM::Platform::Sysinit ();
 use BOM::Product::ContractFactory qw( simple_contract_info );
@@ -61,7 +60,7 @@ foreach my $transaction_id (sort { $a cmp $b } keys %{$bets}) {
         $long_code =~ s/,/ /g;
     }
     catch {
-        get_logger->warn("shortcode[$short_code]. curr[$currency_code], $_");
+        warn("shortcode[$short_code]. curr[$currency_code], $_");
     };
 
     print "$transaction_time,$id,$bet_id,$client_loginid,$residence,$quantity,$currency_code,$amount,$long_code,$is_random";
