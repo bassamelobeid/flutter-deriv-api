@@ -40,3 +40,6 @@ install:
 
 script:
     - prove -lr t/BOM/
+
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
