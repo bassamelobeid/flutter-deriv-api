@@ -44,9 +44,6 @@ my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
 my $ip     = $config->{costarica}->{write}->{ip};           # create_client creates CR clients
 my $pw     = $config->{password};
 
-#my $ip = '127.0.0.1';
-#my $pw = 'mRX1E3Mi00oS8LG';
-
 my $listener = DBI->connect(
     "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub",
     'write', $pw,
