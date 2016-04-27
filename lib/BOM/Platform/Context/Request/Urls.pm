@@ -118,7 +118,7 @@ sub _get_domain_type {
         if ($path =~ /^(xsl|temp)/) {
             $domain_type->{localhost} = 1;
             $domain_type->{no_lang}   = 1;
-        } elsif ($path =~ /^errors/ or $path =~ /\.appcache/) {
+        } elsif ($path =~ /^errors/) {
             $domain_type->{direct}  = 1;
             $domain_type->{no_lang} = 1;
         } elsif ($path =~ /\.(?!cgi)/) {
