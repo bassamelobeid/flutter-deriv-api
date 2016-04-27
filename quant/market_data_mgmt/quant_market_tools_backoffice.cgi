@@ -78,27 +78,10 @@ my $release_date           = request()->param('release_date');
 my $source                 = request()->param('source');
 my $add_news_event         = request()->param('add_news_event');
 my $save_economic_event    = request()->param('save_economic_event');
-my $autoupdate             = request()->param('autoupdate');
 my $is_tentative           = request()->param('is_tentative');
 my $estimated_release_date = request()->param('estimated_release_date');
 
-if ($autoupdate) {
-    eval { print "Not implemented yet"; };
-    if (my $error = $@) {
-        my $msg    = 'Error while fetching economic events on date [' . Date::Utility->new->datetime . ']';
-        my $sender = Mail::Sender->new({
-            smtp    => 'localhost',
-            from    => 'Market tools <market-tools@binary.com>',
-            to      => 'Quants <x-quants-alert@binary.com>',
-            subject => $msg,
-        });
-        $sender->MailMsg({msg => $msg});
-
-        my $msg = "Error while updating news calendar: $error";
-        print $msg;
-        warn $msg;
-    }
-} elsif ($save_economic_event) {
+if ($save_economic_event) {
     try {
         my $ref         = BOM::System::Chronicle::get_chronicle_reader()->get('economic_events', 'economic_events');
         my @events      = @{$ref->{events}};
