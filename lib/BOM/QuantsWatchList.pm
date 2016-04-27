@@ -13,7 +13,7 @@ sub get_details_for {
 }
 
 sub update_details_for {
-    my ($client_loginid, $comment) = @_;
+    my ($client_loginid, $comment, $commented_by) = @_;
 
     # two types of update:
     # 1. delete where $comment is an empty string
@@ -21,7 +21,7 @@ sub update_details_for {
     my $current = get_watchlist();
 
     if ($comment) {
-        $current->{$client_loginid} = $comment; # override
+        $current->{$client_loginid} = $comment . ', updated by ' . $commented_by; # override
     } elsif (exists $current->{$client_loginid}) {
         delete $current->{$client_loginid};
     }

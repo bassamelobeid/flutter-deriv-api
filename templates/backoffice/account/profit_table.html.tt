@@ -37,34 +37,6 @@
     </div>
 [%- END -%]
 
-[%- MACRO display_limit(limit) BLOCK -%]
-    <form action="[% request.url_for('backoffice/f_profit_table.cgi') %]" method="post">
-        <input type="hidden" name="loginID" value="[% loginid %]"/>
-        <input type="hidden" name="startdate" value="[% startdate %]" />
-        <input type="hidden" name="enddate" value="[% enddate %]" />
-        <td>
-            <select name="market">
-                [% FOREACH market IN markets %]
-                    <option value="[% market.name %]" [% IF market.name.search(limit.market) %]selected=selected[% END %]>[% market.display_name %]</option>
-                [% END %]
-            </select>
-        </td>
-        <td>
-            <select name="contract_kind">
-                <option value="all" [% IF limit.contract_kind == 'all' %]selected=selected[% END %]>All</option>
-                <option value="iv" [% IF limit.contract_kind == 'iv' %]selected=selected[% END %]>IV</option>
-            </select>
-        </td>
-        <td><input type="text" name="payout_limit" value="[% limit.payout_limit %]" size=10 /></td>
-        <td><input type="text" name="limitlist_comment" value="[% limit.comment %]" size=10 /></td>
-        [% IF limit.defined %]
-            <td><input type="submit" name="update_limitlist" value="Update"/></td>
-        [% ELSE %]
-            <td><input type="submit" name="update_limitlist" value="Add"/></td>
-        [% END %]
-    </form>
-[%- END -%]
-
 [%- MACRO startdate IF sold_contracts.size == 0 -%][% posted_startdate %][% ELSE %][% sold_contracts.last.purchase_time %][% END %]
 [%- MACRO enddate IF sold_contracts.size == 0 -%][% posted_enddate %][% ELSE %][% sold_contracts.first.purchase_time %][% END %]
 
@@ -176,15 +148,15 @@ END %]
     </form>
 <div>
 <div class="grd-parent grd-grid-12 table-header grd-row-padding">
-        <b>Client Limits</b>
+        <b>Being watched for: </b>
 </div>
 <div class="grd-parent grd-grid-12 table-header grd-row-padding">
-    <table id="limit_entry">
+    <form action="[% request.url_for('backoffice/f_profit_table.cgi') %]" method="post">
+        <input type="hidden" name="loginID" value="[% loginid %]"/>
+        <input type="hidden" name="startdate" value="[% startdate %]" />
+        <input type="hidden" name="enddate" value="[% enddate %]" />
+        <td><input type="text" name="watchlist_comment" value="[% limit %]" size=10 /></td>
+        <td><input type="submit" name="update_watchlist" value="Update"/></td>
+    </form>
     <caption>Leave <strong>comment</strong> blank to remove a single line. Leave <strong>maxpayout</strong> blank to watch but not impose a limit.</caption>
-    <tr><th>Market</th><th>Contracts</th><th>MaxPayout</th><th>Comment</th><th>Action</th></tr>
-    [% FOREACH limit IN limits %]
-        <tr>[% display_limit(limit) %]</tr>
-    [% END %]
-        <tr>[% display_limit() %]</tr>
-    </table>
 </div>

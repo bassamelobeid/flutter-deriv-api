@@ -11,8 +11,8 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Market::Registry;
-use BOM::Product::CustomClientLimits;
 use BOM::View::Controller::Bet;
+use BOM::QuantsWatchList;
 
 use f_brokerincludeall;
 BOM::Platform::Sysinit::init();
@@ -34,16 +34,9 @@ if (not $client) {
     code_exit_BO();
 }
 
-if (request()->param('update_limitlist')) {
-    my $limitlist = BOM::Product::CustomClientLimits->new;
-    $limitlist->update({
-        loginid       => $loginID,
-        market        => request()->param('market'),
-        contract_kind => request()->param('contract_kind'),
-        payout_limit  => request()->param('payout_limit'),
-        comment       => request()->param('limitlist_comment'),
-        staff         => BOM::Backoffice::Auth0::from_cookie()->{nickname},
-    });
+if (request()->param('update_watchlist')) {
+    my $watchlist_comment = request()->param('watchlist_comment');
+    BOM::QuantsWatchList::update_details_for($loginID, $watchlist_comment, BOM::Backoffice::Auth0::from_cookie()->{nickname});
 }
 
 my $startdate = request()->param('startdate');
@@ -64,7 +57,7 @@ my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     db             => $db,
 });
 
-my $limits         = BOM::Product::CustomClientLimits->new->client_limit_list($client->loginid);
+my $limits         = BOM::QuantsWatchList::get_details_for($loginID);
 my $sold_contracts = $fmb_dm->get_sold({
     after  => $startdate,
     before => $enddate,
