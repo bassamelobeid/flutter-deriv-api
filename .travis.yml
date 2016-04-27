@@ -51,3 +51,6 @@ install:
 
 script:
     - make $TEST_SUITE; RC=$?; sudo service binary_pgbouncer status; exit $RC
+
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
