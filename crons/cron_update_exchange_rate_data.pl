@@ -53,8 +53,8 @@ foreach my $currency (@all_currencies) {
             $exchange_rate->exchange_rate_record->rate($price);
 
             $exchange_rate->save;
-        };
-        if ($@) {
+            1;
+        } or do {
             warn("Unsuccess to update; [$broker] ERROR: [" . $@ . "]");
         }
     }
