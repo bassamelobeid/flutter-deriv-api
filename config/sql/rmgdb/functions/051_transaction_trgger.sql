@@ -44,7 +44,7 @@ BEGIN
         remark TEXT
     ) ON COMMIT DROP;
     INSERT INTO session_payment_details VALUES (NEW.id,NEW.remark);  RETURN new;
-  RETURN new;
+    RETURN new;
 END;
 $$ LANGUAGE plpgsql;
 
