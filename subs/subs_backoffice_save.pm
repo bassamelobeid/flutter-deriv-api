@@ -25,7 +25,10 @@ sub save_difflog {
         print DATA Date::Utility->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
         print DATA "=============================================================";
         print DATA $diff;
-        close DATA;
+        unless (close DATA) {
+            warn("Error: cannot close $overridefilename.difflog after append $!");
+            return 0;
+        }
 
         return 1;
     } else {
@@ -68,7 +71,9 @@ sub save_log_staff_difflog {
         print DATA Date::Utility->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
         print DATA "=============================================================";
         print DATA $diff;
-        close DATA;
+        unless (close DATA) {
+            warn("Error: cannot close /var/log/fixedodds/staff/$staff.difflog after append $!");
+        }
     } else {
         warn("Error: cannot open /var/log/fixedodds/staff/$staff.difflog to append $!");
     }
@@ -105,7 +110,9 @@ sub save_log_save_complete_log {
         print DATA Date::Utility->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
         print DATA "=============================================================";
         print DATA $diff;
-        close DATA;
+        unless (close DATA) {
+            warn("Error: cannot close /var/log/fixedodds/fsave.completelog after append $!");
+        }
     } else {
         warn("Error: cannot open /var/log/fixedodds/fsave.completelog to append $!");
     }

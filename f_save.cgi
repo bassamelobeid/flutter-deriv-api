@@ -246,7 +246,8 @@ local $\ = "\n";
 foreach my $l (@lines) {
     print DATA $l;
 }
-close(DATA);
+close(DATA)
+    || die "[$0] Cannot close $overridefilename $!";
 
 # Log the difference (difflog)
 save_difflog({
