@@ -9,7 +9,6 @@ use Format::Util::Numbers qw(roundnear);
 
 use Try::Tiny;
 use BOM::Database::ClientDB;
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Product::ContractFactory qw(produce_contract);
 
 has save_file => (
@@ -70,7 +69,6 @@ sub generate_report {
 
     my $run_for           = Date::Utility->new($self->for_date);
     my $start_of_next_day = Date::Utility->new($run_for->epoch - $run_for->seconds_after_midnight)->datetime_iso8601;
-    my $logger            = get_logger();
     my $total_pl;
     foreach my $currency (sort @{$self->currencies}) {
         foreach my $broker (sort @{$self->brokercodes}) {
@@ -78,20 +76,15 @@ sub generate_report {
             if ($broker !~ /^\w+$/ or $broker =~ /^VRT/ or $broker eq 'FOG') {
                 next;
             }
-            $logger->debug('Doing ' . $broker . '-' . $currency . '...');
 
             my $now = Date::Utility->new;
             local $\ = "\n";
             my $fileext = ($currency eq 'USD') ? "" : '.' . $currency;
 
-            $logger->debug('get_daily_summary_report');
-
             # Get all of the clients in the DB with this broker code/currency combo, their balance and their agg deposits and withdrawals
             my $client_ref = $self->get_client_details($currency, $broker, $start_of_next_day);
-            $logger->debug('get_accounts_with_open_bets_at_end_of');
             my $accounts_with_open_bet = $self->get_open_contracts($currency, $broker, $start_of_next_day);
             # LOOP THROUGH ALL THE CLIENTS
-            $logger->debug('...' . scalar(keys(%$client_ref)) . ' clients to do.');
             my @sum_lines;
             my $agg_total_open_bets_profit = 0;
             CLIENT:
@@ -119,7 +112,7 @@ sub generate_report {
                             return 0;
                         }
                         catch {
-                            $logger->warn(
+                            warn(
                                 "theo price error[$_], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
                             return 1;
                         } and next;

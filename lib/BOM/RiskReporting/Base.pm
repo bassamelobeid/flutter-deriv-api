@@ -23,10 +23,6 @@ local $\ = undef;    # Sigh.
 
 use Moose;
 
-use BOM::Utility::Log4perl qw( get_logger );
-
-has run_by => (is => 'ro');
-
 has [qw( end )] => (
     is         => 'ro',
     isa        => 'Date::Utility',
@@ -56,12 +52,6 @@ sub amount_in_usd {
     my ($self, $amount, $currency) = @_;
 
     return $amount * $self->_usd_rates->{uc $currency};
-}
-
-sub logger {
-    my $self = shift;
-
-    return ($self->run_by) ? $self->run_by : get_logger();
 }
 
 sub _db {

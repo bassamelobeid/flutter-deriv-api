@@ -50,18 +50,13 @@ sub generate {
     my $pricing_date   = $nowish->minus_time_interval($nowish->epoch % $self->min_contract_length->seconds);
     my $expiry_minimum = $pricing_date->plus_time_interval($self->min_contract_length);
 
-    $self->logger->debug('Finding open positions.');
-
     my $open_bets_ref = $self->live_open_bets;
 
     my @keys = keys %{$open_bets_ref};
 
     my $howmany = scalar @keys;
-    $self->logger->debug('Found ' . $howmany . ' open positions.');
 
     my $dbh = $self->_db->dbh;
-
-    $self->logger->debug('Starting scenario analysis for ' . $howmany . ' open positions.');
 
     my $csv = Text::CSV_XS->new({eol => "\n"});
     my ($printed_header, $scenario_header, $scenario_analysis, $sum_of_buyprice, $sum_of_payout);
@@ -181,9 +176,6 @@ sub generate {
         msg  => $scenario_message,
         file => [$scenario_fh, $raw_fh],
     });
-
-    $self->logger->info('Scenario analysis calculated. ' . $status);
-    $self->logger->debug('Finished.');
 
     return;
 }
