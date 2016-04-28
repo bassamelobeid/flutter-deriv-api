@@ -397,14 +397,15 @@ sub flush {
 sub check_delay {
     my ($self, $underlying) = @_;
 
+    my $symbol = $underlying->symbol;
     my ($unagg_key, $agg_key) = map { $self->_make_key($underlying, $_) } (0 .. 1);
     my $redis        = $self->_redis;
     my $current_time = time;
 
-    for ($unagg_key, $agg_key) {
-        my @tick = map { $decoder->decode($_) } @{$redis->zrange($_, -1, -1)};
+    for (['unaggregated', $unagg_key], ['aggregated', $agg_key]) {
+        my @tick = map { $decoder->decode($_) } @{$redis->zrange($_->[1], -1, -1)};
         my $delay = $current_time - $tick[0]->{epoch};
-        stats_timing("tick_cache_delay.$_", $delay * 1000);
+        stats_timing("$_->[0]", $delay * 1000, {tags => ["underlying_symbol:$symbol"]});
     }
 
     return;
