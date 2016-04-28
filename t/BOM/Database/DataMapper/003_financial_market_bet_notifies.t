@@ -25,14 +25,14 @@ $connection_builder = BOM::Database::ClientDB->new({
 sub create_account {
     my ($accid) = @_;
     my $acc = BOM::Database::Model::Account->new({
-                'data_object_params' => {
+            'data_object_params' => {
                 'client_loginid' => $accid,
                 'currency_code'  => 'USD'
             },
             db => $connection_builder->db
         });
     $acc->load();
-    
+
     return $acc;
 }
 
@@ -93,7 +93,7 @@ sub test_notify {
                 is $note->{$name}, $test->{fmb}->{$name}, "note{$name} eq fmb{$name}";
             }
             }
-    };
+    }
     1;
 }
 
@@ -120,7 +120,7 @@ sub test_payment_notify {
                 is $note->{$name}, $test->{txn}->{$name}, "note{$name} eq txn{$name}";
             }
             }
-    };
+    }
     1;
 }
 
