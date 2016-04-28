@@ -1,3 +1,4 @@
+
 package BOM::WebSocketAPI::v3::Wrapper::Transaction;
 
 use strict;
@@ -9,7 +10,6 @@ use List::Util qw(first);
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
-use BOM::RPC::v3::Contract;
 
 sub buy {
     my ($c, $args) = @_;

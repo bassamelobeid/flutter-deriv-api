@@ -5,8 +5,6 @@ use Mojo::Redis2;
 use Mojo::IOLoop;
 use Try::Tiny;
 
-use BOM::Platform::Context ();
-use BOM::Platform::Context::Request;
 # pre-load controlleres to have more shared code among workers (COW)
 use BOM::WebSocketAPI::Websocket_v3();
 
@@ -61,46 +59,18 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
-            $c->cookie(
-                language => '',
-                {expires => 1});
-
-            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
-            $request = BOM::Platform::Context::request($request);
-            $c->stash(request => $request);
-            if (my $lang = lc $request->language) {
+            if (my $lang = $c->param('l')) {
                 $c->stash(language => uc $lang);
-                $c->res->headers->header('Content-Language' => $lang);
+                $c->res->headers->header('Content-Language' => lc $lang);
             }
 
-            if ($request->param('debug')) {
+            if ($c->req->param('debug')) {
                 $c->stash(debug => 1);
             }
-
         });
 
-    $app->helper(
-        l => sub {
-            my $self = shift;
-            return BOM::Platform::Context::localize(@_);
-        });
-
-    $app->helper(
-        new_error => sub {
-            my $c = shift;
-            my ($msg_type, $code, $message, $details) = @_;
-
-            my $error = {
-                code    => $code,
-                message => $message
-            };
-            $error->{details} = $details if (keys %$details);
-
-            return {
-                msg_type => $msg_type,
-                error    => $error,
-            };
-        });
+    $app->plugin('ClientIP');
+    $app->plugin('BOM::WebSocketAPI::Plugins::Helpers');
 
     my $r = $app->routes;
 

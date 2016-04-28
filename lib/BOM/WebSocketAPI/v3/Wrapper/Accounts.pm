@@ -146,7 +146,6 @@ sub get_account_status {
 sub change_password {
     my ($c, $args) = @_;
 
-    my $r = $c->stash('request');
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'change_password',
@@ -164,7 +163,7 @@ sub change_password {
             args       => $args,
             token      => $c->stash('token'),
             token_type => $c->stash('token_type'),
-            client_ip  => $r->client_ip
+            client_ip  => $c->client_ip
         });
     return;
 }
@@ -172,7 +171,6 @@ sub change_password {
 sub cashier_password {
     my ($c, $args) = @_;
 
-    my $r = $c->stash('request');
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'cashier_password',
@@ -189,7 +187,7 @@ sub cashier_password {
         {
             args      => $args,
             token     => $c->stash('token'),
-            client_ip => $r->client_ip
+            client_ip => $c->client_ip
         });
     return;
 }
@@ -197,7 +195,6 @@ sub cashier_password {
 sub reset_password {
     my ($c, $args) = @_;
 
-    my $r = $c->stash('request');
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'reset_password',
@@ -235,7 +232,7 @@ sub get_settings {
         {
             args     => $args,
             token    => $c->stash('token'),
-            language => $c->stash('request')->language
+            language => $c->stash('language'),
         });
     return;
 }
@@ -243,7 +240,6 @@ sub get_settings {
 sub set_settings {
     my ($c, $args) = @_;
 
-    my $r = $c->stash('request');
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'set_settings',
@@ -258,13 +254,12 @@ sub set_settings {
             }
         },
         {
-            args         => $args,
-            token        => $c->stash('token'),
-            website_name => $r->website->display_name,
-            client_ip    => $r->client_ip,
-            user_agent   => $c->req->headers->header('User-Agent'),
-            language     => $r->language
-        });
+            args        => $args,
+            token       => $c->stash('token'),
+            server_name => $c->server_name,
+            client_ip   => $c->client_ip,
+            user_agent  => $c->req->headers->header('User-Agent'),
+            language    => $c->stash('language')});
     return;
 }
 

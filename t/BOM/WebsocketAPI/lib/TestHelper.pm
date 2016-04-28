@@ -25,9 +25,9 @@ my ($version) = (__FILE__ =~ m{/(v\d+)/});
 die 'unknown version' unless $version;
 
 sub build_mojo_test {
-    my $args = shift || {};
+    my $args    = shift || {};
+    my $headers = shift || {};
 
-    my $headers = {};
     if ($args->{deflate}) {
         $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
     }

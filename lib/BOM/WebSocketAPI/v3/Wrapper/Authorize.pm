@@ -26,6 +26,7 @@ sub authorize {
 
                 $c->stash(
                     loginid              => $response->{loginid},
+                    email                => $response->{email},                  # to logging user logout
                     token                => $token,
                     token_type           => $token_type,
                     token_scopes         => $response->{scopes},
@@ -50,7 +51,6 @@ sub authorize {
 sub logout {
     my ($c, $args) = @_;
 
-    my $r = $c->stash('request');
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c, 'logout',
         sub {
@@ -58,6 +58,7 @@ sub logout {
 
             $c->stash(
                 loginid              => undef,
+                email                => undef,
                 token                => undef,
                 token_type           => undef,
                 account_id           => undef,
@@ -74,10 +75,10 @@ sub logout {
             args         => $args,
             token        => $c->stash('token'),
             token_type   => $c->stash('token_type'),
-            client_email => $r->email,
-            client_ip    => $r->client_ip,
-            country_code => $r->country_code,
-            language     => $r->language,
+            client_email => $c->stash('email'),
+            client_ip    => $c->client_ip,
+            country_code => $c->country_code,
+            language     => $c->stash('language'),
             user_agent   => $c->req->headers->header('User-Agent')});
     return;
 }
