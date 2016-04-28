@@ -299,6 +299,26 @@ lives_ok {
         };
     push @usd_bets, $fmb4->{id};
 
+    #5
+    #my ($txn5, $fmb5) = buy_one_bet $acc1,
+    #    +{
+    #    underlying_symbol => 'frxUSDAUD',
+    #    limits            => {
+    #        max_payout_per_symbol_and_bet_type => 800 - 0.01,
+    #    },
+    #    };
+    #push @usd_bets, $fmb5->{id};
+
+    #6
+    #my ($txn6, $fmb6) = buy_one_bet $acc1,
+    #    +{
+    #    bet_type => 'FLASHD',
+    #    limits   => {
+    #        max_payout_per_symbol_and_bet_type => 1000 - 0.01,
+    #    },
+    #    };
+    #push @usd_bets, $fmb6->{id};
+
     my @bets_to_sell =
         map { {id => $acc1, sell_price => 30, sell_time => Date::Utility->new->plus_time_interval('1s')->db_timestamp,} } @usd_bets;
 
@@ -316,6 +336,13 @@ lives_ok {
             },
             db => db,
         });
+    #my $res = $fmbt->batch_sell_bet;
+
+    #test_notify (
+    #    {acc => $acc1, fmb => $res[0]->{fmb}, txn => $res[0]->{txn}}
+    #    , {acc => $acc1, fmb => $res[1]->{fmb}, txn => $res[1]->{txn}}
+    #);
+    1;
 }
 'survived notify batch_sell_bet';
 
@@ -327,6 +354,10 @@ lives_ok {
         remark       => 'play money'
     );
     test_payment_notify({txn => $txn});
+
+    #payment_bank_wire
+
+    #payment_account_transfer
 
     $txn = $client->payment_affiliate_reward(
         amount   => 149.99,
