@@ -91,6 +91,36 @@ sub test_notify {
     1;
 }
 
+sub test_payment_notify {
+    my @tests = @_;
+
+    my %notifications;
+    while (my $notify = $listener->pg_notifies) {
+        my $n = {};
+        @{$n}{
+            qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/
+            } =
+            split ',', $notify->[-1];
+        $notifications{$n->{id}} = $n;
+    }
+ 
+    foreach my $test (@tests) {
+        my $loginid = $test->{acc}->client_loginid;
+        subtest 'testing result for ' . $loginid, sub {
+            my $note = $notifications{$test->{txn}->{id}};
+            isnt $note, undef, 'found notification';
+            is $note->{currency_code}, 'USD', "note{currency_code} eq USD";
+            for my $name (qw/account_id action_type amount balance_after payment_id transaction_time/) {
+                is $note->{$name}, $test->{txn}->{$name}, "note{$name} eq txn{$name}";
+            }
+            for my $name (qw/remark/) {
+                is $note->{$name}, $test->{txn}->{payment}->{$name}, "note{$name} eq payment{$name}";
+            }
+        }
+    };
+    1;
+}
+
 sub buy_one_bet {
     my ($acc, $args) = @_;
 
@@ -267,6 +297,7 @@ lives_ok {
 
 lives_ok {
     my $txn = insert_payment(Date::Utility->new('2016-01-08'), '1000');
+    test_payment_notify ( {txn => $txn} );
 }
 'survived notify payments';
 
