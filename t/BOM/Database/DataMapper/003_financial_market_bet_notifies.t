@@ -211,32 +211,31 @@ sub sell_one_bet {
     return ($txn, $bet);
 }
 
-sub insert_payment {
-    my ($date, $amount) = @_;
-    $connection_builder->set_default_account('USD');
-    my $trx = $connection_builder->payment_legacy_payment(
-        currency     => 'USD',
-        amount       => $amount,
-        payment_type => 'adjustment',
-        remark       => 'play money'
-    );
-    return $trx;
-}
-
 lives_ok {
     my ($txn, $fmb) = buy_one_bet $acc1;
 
-    test_notify ( {acc => $acc1, fmb => $fmb, txn => $txn} );
+    test_notify({
+        acc => $acc1,
+        fmb => $fmb,
+        txn => $txn
+    });
 }
 'survived notify buy_one_bet';
 
 lives_ok {
     my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
  
-    test_notify (
-        {acc => $acc1, fmb => $res->{$acc1->client_loginid}->{fmb}, txn => $res->{$acc1->client_loginid}->{txn}}
-        , {acc => $acc3, fmb => $res->{$acc3->client_loginid}->{fmb}, txn => $res->{$acc3->client_loginid}->{txn}}
-    );
+    test_notify({
+            acc => $acc1
+            , fmb => $res->{$acc1->client_loginid}->{fmb}
+            , txn => $res->{$acc1->client_loginid}->{txn}
+        },
+        {
+            acc => $acc3,
+            fmb => $res->{$acc3->client_loginid}->{fmb},
+            txn => $res->{$acc3->client_loginid}->{txn}
+        }
+    });
 }
 'survived notify buy_multiple_bets';
 
@@ -254,30 +253,54 @@ lives_ok {
         sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp
         };
 
-    test_notify ( {acc => $acc1, fmb => $fmbs, txn => $txns} );
+    test_notify({
+        acc => $acc1,
+        fmb => $fmbs,
+        txn => $txns
+    });
 }
 'survived notify sell_one_bet';
 
- lives_ok {
+lives_ok {
     my @usd_bets;
 
     # 1
-    my ($txn, $fmb) = buy_one_bet $acc1,
+    my ($txn1, $fmb1) = buy_one_bet $acc1,
         +{
         limits => {
             max_balance => 10000,
         },
         };
-    push @usd_bets, $fmb->{id};
+    push @usd_bets, $fmb1-{id};
+
+    # 2
+    my ($txn2, $fmb2) = buy_one_bet $acc1;
+    push @usd_bets, $fmb2-{id};
+
+    $txnid = sell_one_bet $acc1,
+        +{
+        id         => $fmbid,
+        sell_price => 0,
+        sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
+        };
+
+    # 3
+    my ($txn3, $fmb3) = buy_one_bet $acc1,
+        +{
+        limits => {
+            max_payout_open_bets => 400,
+        },
+        };
+    push @usd_bets, $fmb3->{id};
 
     # 4
-    #my ($txn, $fmb) = buy_one_bet $acc1,
-    #    +{
-    #    limits => {
-    #        max_payout_per_symbol_and_bet_type => 600,
-    #    },
-    #    };
-    #push @usd_bets, $fmb;
+    my ($txn4, $fmb4) = buy_one_bet $acc1,
+        +{
+        limits => {
+            max_payout_per_symbol_and_bet_type => 600,
+        },
+        };
+    push @usd_bets, $fmb4->{id};
 
     my @bets_to_sell =
         map { {id => $acc1, sell_price => 30, sell_time => Date::Utility->new->plus_time_interval('1s')->db_timestamp,} } @usd_bets;
@@ -287,15 +310,15 @@ lives_ok {
                 data_object_params => {theo => 0.02},
             })) x @bets_to_sell;
 
-    #my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
-    #        bet_data             => \@bets_to_sell,
-    #        quants_bet_variables => \@qvs,
-    #        account_data         => {
-    #            client_loginid => $acc1->client_loginid,
-    #            currency_code  => $acc1->currency_code
-    #        },
-    #        db => db,
-    #    });
+    my $fmbt = BOM::Database::Helper::FinancialMarketBet->new({
+            bet_data             => \@bets_to_sell,
+            quants_bet_variables => \@qvs,
+            account_data         => {
+                client_loginid => $acc1->client_loginid,
+                currency_code  => $acc1->currency_code
+            },
+            db => db,
+        });
 }
 'survived notify batch_sell_bet';
 
@@ -306,14 +329,14 @@ lives_ok {
         payment_type => 'adjustment',
         remark       => 'play money'
     );
-    test_payment_notify ( {txn => $txn} );
+    test_payment_notify({txn => $txn});
 
     $txn = $client->payment_affiliate_reward(
         amount   => 149.99,
         currency => 'USD',
         remark   => 'Reward from affiliate program for trades done by CRxxxx'
     );
-    test_payment_notify ( {txn => $txn} );
+    test_payment_notify({txn => $txn});
 
     $txn = $client->payment_doughflow(
         currency     => 'USD',
@@ -321,7 +344,7 @@ lives_ok {
         remark       => 'here is money',
         payment_type => 'external_cashier',
     );
-    test_payment_notify ( {txn => $txn} );
+    test_payment_notify({txn => $txn});
 }
 'survived notify payments';
 
