@@ -753,15 +753,15 @@ sub _build_longcode {
 
     my ($when_end, $when_start);
     if ($expiry_type eq 'intraday_fixed_expiry') {
-        $when_end   = $self->date_expiry->datetime;
+        $when_end   = $self->date_expiry->datetime . ' GMT';
         $when_start = '';
     } elsif ($expiry_type eq 'intraday') {
         $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
-        $when_start = $self->is_forward_starting ? $self->date_start->db_timestamp : localize('contract start time');
+        $when_start = $self->is_forward_starting ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
     } elsif ($expiry_type eq 'daily') {
         my $close = $self->underlying->calendar->closing_on($self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
-            $when_end = $self->date_expiry->datetime;
+            $when_end = $self->date_expiry->datetime . ' GMT';
         } else {
             $when_end = localize('close on [_1]', $self->date_expiry->date);
         }
