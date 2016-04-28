@@ -265,6 +265,12 @@ sub _sample_bet {
         quote => 99.840
     });
 
+    my $current_tick = BOM::Market::Data::Tick->new({
+        underlying => $underlying,
+        epoch => $overrides{date_pricing}->epoch,
+        quote => 100,
+    });
+
     my $start_epoch = Date::Utility->new($overrides{date_start})->epoch;
     my %bet_args    = ((
             underlying   => $underlying,
@@ -272,7 +278,7 @@ sub _sample_bet {
             payout       => 100,
             currency     => 'USD',
             barrier      => 100,
-            current_spot => 100,
+            current_tick => $current_tick,
         ),
         %overrides,
     );

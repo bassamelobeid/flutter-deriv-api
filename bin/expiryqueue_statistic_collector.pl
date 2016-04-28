@@ -16,7 +16,6 @@ use Moose;
 
 use BOM::Platform::Runtime;
 with 'App::Base::Script';
-with 'BOM::Utility::Logging';
 use BOM::System::Config;
 
 use DataDog::DogStatsd::Helper qw(stats_gauge);
