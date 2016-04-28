@@ -146,7 +146,7 @@ sub _build_basis_tick {
 
     my ($basis_tick, $potential_error);
 
-    if (not $self->pricing_new) {
+    if (not $self->pricing_new and not $self->is_forward_starting) {
         $basis_tick      = $self->entry_tick;
         $potential_error = localize('Waiting for entry tick.');
     } else {
@@ -704,24 +704,32 @@ sub _build_opposite_contract {
         push @opposite_contract_parameters, qw(empirical_volsurface average_tick_count long_term_prediction news_adjusted_pricing_vol)
             if $self->priced_with_intraday_model;
     } else {
-        # duration could be set for an opposite contract from bad hash reference reused.
-        delete $opp_parameters{duration};
         # not pricing_new will only happen when we are repricing an
         # existing contract in our system.
-        if ($self->entry_tick) {
-            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
-            }
-        }
-        # We should be looking to move forward in time to a bet starting now.
-        $opp_parameters{date_start}   = $self->date_pricing;
-        $opp_parameters{date_pricing} = $self->date_pricing;
-        # Note from which extant bet we are building this.
+
+        # we still want to set for_sale for a forward_starting contracts
         $opp_parameters{for_sale} = 1;
-        # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
-        # Currently, 'sell at market' button will appear when current spot == barrier when the duration
-        # of the contract is less than the minimum duration of non ATM contract.
-        $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
+        if (not $self->is_forward_starting) {
+            # delete traces of this contract were a forward starting contract before.
+            delete $opp_parameters{starts_as_forward_starting};
+            # duration could be set for an opposite contract from bad hash reference reused.
+            delete $opp_parameters{duration};
+
+            if ($self->entry_tick) {
+                foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                    $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
+                }
+            }
+            # We should be looking to move forward in time to a bet starting now.
+            $opp_parameters{date_start}   = $self->date_pricing;
+            $opp_parameters{date_pricing} = $self->date_pricing;
+            # Note from which extant bet we are building this.
+            $opp_parameters{for_sale} = 1;
+            # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
+            # Currently, 'sell at market' button will appear when current spot == barrier when the duration
+            # of the contract is less than the minimum duration of non ATM contract.
+            $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
+        }
     }
 
     # Always switch out the bet type for the other side.
