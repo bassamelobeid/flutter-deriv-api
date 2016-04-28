@@ -57,7 +57,8 @@ sub cashier {
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
 
-    my $action = $params->{cashier} // 'deposit';
+    my $args = $params->{args};
+    my $action = $args->{cashier} // 'deposit';
 
     my $currency;
     if (my $account = $client->default_account) {
@@ -143,15 +144,15 @@ sub cashier {
     my $email = $client->email;
     if ($action eq 'withdraw') {
         my $is_not_verified = 1;
-        my $token = $params->{verification_code} // '';
+        my $token = $args->{verification_code} // '';
 
         if (not $email or $email =~ /\s+/) {
             $error_sub->(localize("Client email not set."));
         } elsif ($token) {
-            unless (BOM::RPC::v3::Utility::is_verification_token_valid($token, $client->email)) {
+            if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($token, $client->email)->{error}) {
                 return BOM::RPC::v3::Utility::create_error({
-                        code              => "InvalidVerificationCode",
-                        message_to_client => localize("Your verification link has expired.")});
+                        code              => $err->{code},
+                        message_to_client => $err->{message_to_client}});
             }
         } else {
             return BOM::RPC::v3::Utility::create_error({

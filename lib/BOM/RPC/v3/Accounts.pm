@@ -958,9 +958,13 @@ sub tnc_approval {
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
-    if ($params->{ukgc_funds_protection}) {
+    if ($params->{args}->{ukgc_funds_protection}) {
         $client->set_status('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds');
-        $client->save;
+        if (not $client->save()) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'InternalServerError',
+                    message_to_client => localize('Sorry, an error occurred while processing your request.')});
+        }
     } else {
         my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
         my $client_tnc_status   = $client->get_status('tnc_approval');

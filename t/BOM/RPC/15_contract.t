@@ -57,8 +57,9 @@ subtest 'validate_symbol' => sub {
         BOM::RPC::v3::Contract::validate_symbol('invalid_symbol'),
         {
             'error' => {
-                'message_to_client' => 'Symbol invalid_symbol invalid',
-                'code'              => 'InvalidSymbol'
+                'message' => 'Symbol [_1] invalid',
+                'code'    => 'InvalidSymbol',
+                params    => [qw/ invalid_symbol /],
             }
         },
         'return error if symbol is invalid'
@@ -72,8 +73,9 @@ subtest 'validate_license' => sub {
         BOM::RPC::v3::Contract::validate_license('JCI'),
         {
             error => {
-                message_to_client => 'Realtime quotes not available for JCI',
-                code              => 'NoRealtimeQuotes'
+                message => 'Realtime quotes not available for [_1]',
+                code    => 'NoRealtimeQuotes',
+                params  => [qw/ JCI /],
             }
         },
         "return error if symbol is not realtime"
@@ -86,8 +88,9 @@ subtest 'validate_underlying' => sub {
         BOM::RPC::v3::Contract::validate_underlying('invalid_symbol'),
         {
             'error' => {
-                'message_to_client' => 'Symbol invalid_symbol invalid',
-                'code'              => 'InvalidSymbol'
+                'message' => 'Symbol [_1] invalid',
+                'code'    => 'InvalidSymbol',
+                params    => [qw/ invalid_symbol /],
             }
         },
         'return error if symbol is invalid'
@@ -97,8 +100,9 @@ subtest 'validate_underlying' => sub {
         BOM::RPC::v3::Contract::validate_underlying('JCI'),
         {
             error => {
-                message_to_client => 'Realtime quotes not available for JCI',
-                code              => 'NoRealtimeQuotes'
+                message => 'Realtime quotes not available for [_1]',
+                code    => 'NoRealtimeQuotes',
+                params  => [qw/ JCI /],
             }
         },
         "return error if symbol is not realtime"

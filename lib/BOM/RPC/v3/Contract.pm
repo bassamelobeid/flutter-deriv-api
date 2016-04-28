@@ -18,9 +18,12 @@ sub validate_symbol {
     my $symbol    = shift;
     my @offerings = get_offerings_with_filter('underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidSymbol',
-                message_to_client => BOM::Platform::Context::localize("Symbol [_1] invalid", $symbol)});
+        return {
+            error => {
+                code    => 'InvalidSymbol',
+                message => "Symbol [_1] invalid",
+                params  => [$symbol],
+            }};
     }
     return;
 }
@@ -30,9 +33,12 @@ sub validate_license {
     my $u      = BOM::Market::Underlying->new($symbol);
 
     if ($u->feed_license ne 'realtime') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'NoRealtimeQuotes',
-                message_to_client => BOM::Platform::Context::localize("Realtime quotes not available for [_1]", $symbol)});
+        return {
+            error => {
+                code    => 'NoRealtimeQuotes',
+                message => "Realtime quotes not available for [_1]",
+                params  => [$symbol],
+            }};
     }
     return;
 }
