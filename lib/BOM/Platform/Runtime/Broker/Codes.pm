@@ -13,7 +13,6 @@ It primarily builds I<BOM::Platform::Runtime::Broker> objects from broker_codes.
 
 use Moose;
 use namespace::autoclean;
-use BOM::Utility::Log4perl qw( get_logger );
 use Carp;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Runtime::Broker;
@@ -126,7 +125,7 @@ sub _build__brokers {
         $args{landing_company} = $self->_valid_landing_company($args{landing_company}, $ref_broker);
 
         for my $code (@{$broker_definition->{code}}) {
-            get_logger->logdie("Broker code $code specified twice in the configuration") if $brokers->{$code};
+            die("Broker code $code specified twice in the configuration") if $brokers->{$code};
             $brokers->{$code} = BOM::Platform::Runtime::Broker->new(
                 code => $code,
                 %args
@@ -156,7 +155,7 @@ sub _valid_landing_company {
     my $ref_broker = shift;
 
     my $lc = $self->landing_companies->get($lc_short);
-    get_logger->logdie("Unknown landing company $lc_short for broker ", $ref_broker)
+    die("Unknown landing company $lc_short for broker ", $ref_broker)
         unless $lc;
 
     return $lc;

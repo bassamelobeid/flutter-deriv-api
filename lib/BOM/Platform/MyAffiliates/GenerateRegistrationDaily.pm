@@ -8,7 +8,6 @@ use Path::Tiny;
 use FileHandle;
 
 use Date::Utility;
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Runtime;
@@ -130,7 +129,7 @@ sub _date_joined {
     my $date_joined = $client_data->{date_joined};
 
     if (!$date_joined) {
-        get_logger->logcarp("date_joined is empty?! [", $client_data->{'loginid'}, "]: [$date_joined]");
+        carp("date_joined is empty?! [", $client_data->{'loginid'}, "]: [$date_joined]");
         $date_joined = $self->start_time->date_yyyymmdd;
     }
     return Date::Utility->new({datetime => $date_joined})->date_yyyymmdd;
@@ -209,7 +208,7 @@ sub force_backfill {
     foreach (1 .. $retries) {
         BOM::Platform::MyAffiliates::BackfillManager->new->backfill_promo_codes;
         return 1 unless $self->is_pending_backfill;
-        get_logger->logcarp("[Attempt $_ of $retries] Backfill failed.");
+        carp("[Attempt $_ of $retries] Backfill failed.");
         $self->_force_backfill_sleep;
     }
 

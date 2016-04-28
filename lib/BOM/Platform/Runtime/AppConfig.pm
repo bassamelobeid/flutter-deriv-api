@@ -25,7 +25,6 @@ use BOM::Platform::Runtime::AppConfig::Attribute::Global;
 use Data::Hash::DotNotation;
 
 use Carp qw(croak);
-use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::System::Chronicle;
 

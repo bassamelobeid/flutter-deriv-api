@@ -10,7 +10,6 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use Data::Validate::Sanctions qw(is_sanctioned);
 
 use BOM::Utility::Desk;
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::System::Config;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
@@ -29,15 +28,14 @@ sub _validate {
         ($broker, $residence) = @{$details}{'broker_code', 'residence'};
     }
 
-    my $logger = get_logger();
     my $msg    = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], country[$country], residence[$residence], error: ";
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
-        $logger->warn($msg . 'new account opening suspended');
+        warn($msg . 'new account opening suspended');
         return {error => 'invalid'};
     }
     if ($country and BOM::Platform::Client::check_country_restricted($country)) {
-        $logger->warn($msg . "restricted IP country [$country]");
+        warn($msg . "restricted IP country [$country]");
         return {error => 'invalid'};
     }
     unless ($user->email_verified) {
@@ -49,7 +47,7 @@ sub _validate {
 
     if ($details) {
         if (BOM::Platform::Client::check_country_restricted($residence) or $from_client->residence ne $residence) {
-            $logger->warn($msg . "restricted residence [$residence], or mismatch with from_client residence: " . $from_client->residence);
+            warn($msg . "restricted residence [$residence], or mismatch with from_client residence: " . $from_client->residence);
             return {error => 'invalid residence'};
         }
         if ($residence eq 'gb' and not $details->{address_postcode}) {
@@ -114,7 +112,7 @@ sub _register_client {
         $error = $_;
     };
     if ($error) {
-        get_logger()->warn("Real: register_and_return_new_client err [$error]");
+        warn("Real: register_and_return_new_client err [$error]");
         return {error => 'invalid'};
     }
     return {client => $client};
@@ -155,10 +153,9 @@ sub _after_register_client {
             $details->{loginid}  = $client_loginid;
             $details->{language} = request()->language;
             $desk_api->upload($details);
-            get_logger()->info("Created desk.com account for loginid $client_loginid");
         }
         catch {
-            get_logger->warn("Unable to add loginid $client_loginid (" . $client->email . ") to desk.com API: $_");
+            warn("Unable to add loginid $client_loginid (" . $client->email . ") to desk.com API: $_");
         };
     }
     stats_inc("business.new_account.real");

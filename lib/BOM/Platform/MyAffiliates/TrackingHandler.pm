@@ -1,6 +1,6 @@
 package BOM::Platform::MyAffiliates::TrackingHandler;
 use Moose;
-use BOM::Utility::Log4perl qw( get_logger );
+use Carp;
 use CGI qw( cookie );
 use JSON qw( from_json );
 use URL::Encode qw(url_decode);
@@ -63,7 +63,6 @@ sub _build_myaffiliates_token {
 sub _tracking_data_from_cookie {
     my $self          = shift;
     my $tracking_data = {};
-    my $logger        = get_logger;
 
     if (my $cookie_value = request()->cookie($self->_cookie_name)) {
         $cookie_value = url_decode($cookie_value);
@@ -74,8 +73,7 @@ sub _tracking_data_from_cookie {
             }
             catch {
                 $self->_delete_tracking_cookie;
-                $logger->logcarp(
-                    "Failed to parse tracking cookie from JSON [$cookie_value, raw: " . request()->cookie($self->_cookie_name) . "]: $_");
+                carp("Failed to parse tracking cookie from JSON [$cookie_value, raw: " . request()->cookie($self->_cookie_name) . "]: $_");
             };
         }
     }
