@@ -1,5 +1,8 @@
 package BOM::ContractInfo;
 
+use strict;
+use warnings;
+
 use Date::Utility;
 use BOM::Product::ContractFactory qw( simple_contract_info produce_contract);
 use BOM::Platform::Context;
@@ -82,3 +85,4 @@ sub get_analyse_link {
     return $analyse_link;
 }
 
+1;
