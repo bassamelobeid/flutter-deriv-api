@@ -18,6 +18,7 @@ use 5.010;
 use Moose;
 use Carp;
 
+use DataDog::DogStatsd::Helper qw(stats_timing);
 use Cache::RedisDB;
 use Date::Utility;
 use List::Util qw( min );
@@ -367,6 +368,22 @@ sub flush {
     my @keys = (map { @{$redis->keys($self->_make_key($underlying, $_))} } (0 .. 1));
 
     return @keys ? $redis->del(@keys) : 0;
+}
+
+sub check_delay {
+    my ($self, $underlying) = @_;
+
+    my ($unagg_key, $agg_key) = map { $self->_make_key($ul, $_) } (0 .. 1);
+    my $redis = $self->_redis;
+    my $current_time = time;
+
+    for ($unagg_key, $agg_key) {
+        my @tick = map { $decoder->decode($_) } @{$redis->zrange($_, -1, -1)};
+        my $delay = $current_time - $tick[0]->{epoch};
+        stats_timing("tick_cache_delay.$_", $delay * 1000);
+    }
+
+    return;
 }
 
 no Moose;
