@@ -45,6 +45,10 @@ sub new_account_virtual {
         return $err_code;
     }
 
+    if (exists $args->{affiliate_token}) {
+        $args->{myaffiliates_token} = delete $args->{affiliate_token};
+    }
+
     my $email = BOM::Platform::Token::Verification->new({token => $args->{verification_code}})->email;
 
     if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
@@ -58,7 +62,6 @@ sub new_account_virtual {
                 email           => $email,
                 client_password => $args->{client_password},
                 residence       => $args->{residence},
-                $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : ()
             },
             email_verified => 1
         });
