@@ -240,12 +240,8 @@ lives_ok {
 'survived notify buy_multiple_bets';
 
 lives_ok {
-    my ($txnb, $fmbb) = buy_one_bet $acc1,
-        +{
-        limits => {
-            max_turnover => 100,
-        },
-        };
+    my ($txnb, $fmbb) = buy_one_bet $acc1;
+
     my ($txns, $fmbs) = sell_one_bet $acc1,
         {
         id         => $fmbb->{id},
