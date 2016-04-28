@@ -349,14 +349,6 @@ sub payment_account_transfer {
         staff_loginid        => $fmStaff,
         remark               => $fmRemark,
     });
-    my ($toPayment) = $toAccount->add_payment({
-        amount               => $amount,
-        payment_gateway_code => $gateway_code,
-        payment_type_code    => 'internal_transfer',
-        status               => 'OK',
-        staff_loginid        => $toStaff,
-        remark               => $toRemark,
-    });
     my ($fmTrx) = $fmPayment->add_transaction({
         account_id    => $fmAccount->id,
         amount        => -$amount,
@@ -364,6 +356,14 @@ sub payment_account_transfer {
         referrer_type => 'payment',
         action_type   => 'withdrawal',
         quantity      => 1,
+    });
+    my ($toPayment) = $toAccount->add_payment({
+        amount               => $amount,
+        payment_gateway_code => $gateway_code,
+        payment_type_code    => 'internal_transfer',
+        status               => 'OK',
+        staff_loginid        => $toStaff,
+        remark               => $toRemark,
     });
     my ($toTrx) = $toPayment->add_transaction({
         account_id    => $toAccount->id,
