@@ -146,7 +146,7 @@ sub _build_basis_tick {
 
     my ($basis_tick, $potential_error);
 
-    if (not $self->pricing_new and not $self->is_forward_starting) {
+    if (not $self->pricing_new) {
         $basis_tick      = $self->entry_tick;
         $potential_error = localize('Waiting for entry tick.');
     } else {
@@ -1328,7 +1328,7 @@ sub _build_entry_tick {
     # entry tick if never defined if it is a newly priced contract.
     return if $self->pricing_new;
     my $entry_epoch = $self->date_start->epoch;
-    return $self->underlying->tick_at($entry_epoch) if $self->is_forward_starting;
+    return $self->underlying->tick_at($entry_epoch) if $self->starts_as_forward_starting;
     return $self->underlying->next_tick_after($entry_epoch);
 }
 
