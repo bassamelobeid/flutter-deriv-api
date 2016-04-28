@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More (tests => 16);
+use Test::More (tests => 17);
 use Test::NoWarnings;
 
 use Test::Exception;
@@ -380,6 +380,25 @@ lives_ok {
         });
     $txn->load();
     test_payment_notify({txn => $txn->{transaction_record}, remark => 'from reference: #USD20.02#F72117379D1DD7B5#'});
+
+    $txnid = $client->payment_account_transfer(
+        amount   => 20.02,
+        currency => 'USD',
+        toClient => $pa_client,
+        remark   => 'reference: #USD20.02#F72117379D1DD7B5#',
+        fmRemark => 'from reference: #USD20.02#F72117379D1DD7B5#',
+        toRemark => 'to reference: #USD20.02#F72117379D1DD7B5#',
+        inter_db_transfer=>1,
+    );
+    $txn = BOM::Database::Model::Transaction->new({
+                'data_object_params' => {
+                'id' => $txnid->{transaction_id}
+            },
+            db => $connection_builder->db
+        });
+    $txn->load();
+    test_payment_notify({txn => $txn->{transaction_record}, remark => 'from reference: #USD20.02#F72117379D1DD7B5#'});
+
 
     $txn = $client->payment_affiliate_reward(
         amount   => 149.99,
