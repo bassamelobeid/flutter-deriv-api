@@ -31,13 +31,17 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => Date::Utility->new,
     }) for (qw/AUD EUR GBP HKD IDR JPY NZD SGD USD XAU ZAR/);
 
-Quant::Framework::Utils::Test::create_doc('randomindex', {
+Quant::Framework::Utils::Test::create_doc(
+    'randomindex',
+    {
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-        rates => { 7 => 3.5 },
+        rates            => {7 => 3.5},
     });
 
-Quant::Framework::Utils::Test::create_doc('stock', {
+Quant::Framework::Utils::Test::create_doc(
+    'stock',
+    {
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
@@ -107,7 +111,7 @@ subtest 'display_decimals' => sub {
             my $decimals = $symbols_decimals->{$symbol};
             is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
         }
-        
+
         my $r100 = BOM::Market::Underlying->new({symbol => 'R_100'});
         is $r100->dividend_rate_for(0.5), 3.5, 'correct dividend rate';
         is $r100->dividend_rate_for(1.0), 3.5, 'correct dividend rate';
@@ -153,13 +157,13 @@ subtest 'all attributes on a variety of underlyings' => sub {
 
         my $underlying = BOM::Market::Underlying->new($symbol);
         my $market     = $underlying->market->name;
-        my $markets    = scalar grep { $market eq $_ } qw(indices random commodities forex config futures);
+        my $markets    = scalar grep { $market eq $_ } qw(indices volidx commodities forex config futures);
         is($markets, 1, $symbol . ' has exactly one of our expected markets');
 
         my $special_market;
         if ($market eq 'config') { $special_market = 1 }
 
-        if ($market eq 'random') {
+        if ($market eq 'volidx') {
             is($underlying->quoted_currency_symbol, '', 'Randoms are not quoted in a currency');
             is($underlying->spot_spread_size,       0,  "Randoms have no spot spread size");
         } elsif ($special_market) {
@@ -533,7 +537,7 @@ subtest 'all methods on a selection of underlyings' => sub {
         is($EURUSD->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
-    my $eod = BOM::Market::Exchange->new('NYSE')->closing_on(Date::Utility->new);
+    my $eod = BOM::Market::Exchange->new('NYSE')->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
         my $worm = BOM::Market::Underlying->new($pair, $eod->minus_time_interval('1s'));
         is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');

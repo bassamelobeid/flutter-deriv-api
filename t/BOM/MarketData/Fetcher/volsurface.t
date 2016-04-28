@@ -133,11 +133,11 @@ subtest 'recorded_date on Randoms.' => sub {
 
     my $now = Date::Utility->new('2012-08-01 10:00:00');
     set_absolute_time($now->epoch);
-    my $surface  = $dm->fetch_surface({
+    my $surface = $dm->fetch_surface({
         underlying => BOM::Market::Underlying->new('R_100'),
         for_date   => $now->minus_time_interval('1d'),
     });
-    note ('Recorded date should be at most 2 seconds from ' . $now->datetime);
+    note('Recorded date should be at most 2 seconds from ' . $now->datetime);
     cmp_ok($surface->recorded_date->epoch - $now->epoch, '<=', 2, 'fetch_surface on a Random Index surface with given for_date.');
 
     $surface = $dm->fetch_surface({underlying => BOM::Market::Underlying->new('R_100')});
@@ -161,7 +161,7 @@ subtest 'Consecutive saves.' => sub {
     is(scalar keys %{$surface->document->{surfaces}}, 3, 'saves the cut surface');
 
     for (0 .. 2) {
-        my $recorded_date = $now->minus_time_interval(2-$_ . 'h');
+        my $recorded_date = $now->minus_time_interval(2 - $_ . 'h');
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {

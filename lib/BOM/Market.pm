@@ -248,27 +248,9 @@ has 'equity' => (
 
 How close is too close to close for bet expiry?
 
-=cut
-
-has 'eod_blackout_expiry' => (
-    is      => 'ro',
-    isa     => 'bom_time_interval',
-    default => '1m',
-    coerce  => 1,
-);
-
 =head2 eod_blackout_start
 
 How close is too close to close for bet start?
-
-=cut
-
-has 'eod_blackout_start' => (
-    is      => 'ro',
-    isa     => 'bom_time_interval',
-    default => '0m',
-    coerce  => 1,
-);
 
 =head2 sod_blackout_start
 
@@ -276,11 +258,9 @@ How close is too close to open for bet start?
 
 =cut
 
-has sod_blackout_start => (
+has [qw(eod_blackout_expiry eod_blackout_start sod_blackout_start)] => (
     is      => 'ro',
-    isa     => 'bom_time_interval',
-    default => '10m',
-    coerce  => 1,
+    default => undef,
 );
 
 =head2 intradays_must_be_same_day
