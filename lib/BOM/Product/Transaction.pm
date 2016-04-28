@@ -30,7 +30,6 @@ use BOM::Database::ClientDB;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
-use BOM::Product::CustomClientLimits;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Utility::Log4perl qw/get_logger/;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
