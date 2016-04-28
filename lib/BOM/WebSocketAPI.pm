@@ -5,8 +5,7 @@ use Mojo::Redis2;
 use Mojo::IOLoop;
 use Try::Tiny;
 
-use BOM::Platform::Context ();
-use BOM::Platform::Context::Request;
+use BOM::Platform::Runtime;
 # pre-load controlleres to have more shared code among workers (COW)
 use BOM::WebSocketAPI::Websocket_v3();
 
@@ -61,8 +60,7 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
-            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
-            $request = BOM::Platform::Context::request($request);
+            $c->app->log->info('tcv:'. BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
 
             if (my $lang = $c->param('l')) {
                 $c->stash(language => uc $lang);
