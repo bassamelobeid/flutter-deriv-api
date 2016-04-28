@@ -274,12 +274,12 @@ lives_ok {
     my ($txn2, $fmb2) = buy_one_bet $acc1;
     push @usd_bets, $fmb2->{id};
 
-    $txnid = sell_one_bet $acc1,
-        +{
-        id         => $fmbid,
-        sell_price => 0,
-        sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
-        };
+    #my $txnid = sell_one_bet $acc1,
+    #    +{
+    #    id         => $fmb->{id},
+    #    sell_price => 0,
+    #    sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
+    #    };
 
     # 3
     my ($txn3, $fmb3) = buy_one_bet $acc1,
