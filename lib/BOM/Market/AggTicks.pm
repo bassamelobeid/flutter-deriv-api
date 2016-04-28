@@ -373,7 +373,7 @@ sub flush {
 sub check_delay {
     my ($self, $underlying) = @_;
 
-    my ($unagg_key, $agg_key) = map { $self->_make_key($ul, $_) } (0 .. 1);
+    my ($unagg_key, $agg_key) = map { $self->_make_key($underlying, $_) } (0 .. 1);
     my $redis = $self->_redis;
     my $current_time = time;
 
