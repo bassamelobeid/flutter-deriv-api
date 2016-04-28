@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More (tests => 11);
+use Test::More (tests => 14);
 use Test::NoWarnings;
 
 use Test::Exception;
@@ -312,6 +312,14 @@ lives_ok {
         amount   => 149.99,
         currency => 'USD',
         remark   => 'Reward from affiliate program for trades done by CRxxxx'
+    );
+    test_payment_notify ( {txn => $txn} );
+
+    $txn = $client->payment_doughflow(
+        currency     => 'USD',
+        amount       => 1,
+        remark       => 'here is money',
+        payment_type => 'external_cashier',
     );
     test_payment_notify ( {txn => $txn} );
 }
