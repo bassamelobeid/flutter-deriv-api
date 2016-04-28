@@ -10,7 +10,6 @@ ADS:
       daily_open: 6h
       daily_settlement: 13h
   symbol: ADS
-  tenfore_trading_timezone: UTC
   trading_days: sun_thru_thu
   trading_timezone: Asia/Dubai
 ASX:
@@ -32,7 +31,6 @@ ASX:
       daily_open: 0s
       daily_settlement: 9h
   symbol: ASX
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Australia/Sydney
 ASX_S:
@@ -54,7 +52,6 @@ ASX_S:
       daily_open: 0s
       daily_settlement: 9h
   symbol: ASX_S
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Australia/Sydney
 BI:
@@ -72,7 +69,6 @@ BI:
       daily_open: 8h
       daily_settlement: 19h25m
   symbol: BI
-  tenfore_trading_timezone: Europe/Rome
   trading_days: weekdays
   trading_timezone: Europe/Rome
 BIS:
@@ -100,7 +96,6 @@ BIS:
       - - 10h30m
         - 11h30m
   symbol: BIS
-  tenfore_trading_timezone: Europe/Istanbul
   trading_days: weekdays
   trading_timezone: Europe/Istanbul
 BM:
@@ -122,7 +117,6 @@ BM:
       daily_open: 8h
       daily_settlement: 19h30m
   symbol: BM
-  tenfore_trading_timezone: Europe/Madrid
   trading_days: weekdays
   trading_timezone: Europe/Madrid
 BMF:
@@ -140,7 +134,6 @@ BMF:
       daily_open: 11h
       daily_settlement: 23h59m59s
   symbol: BMF
-  tenfore_trading_timezone: America/Sao_Paulo
   trading_days: weekdays
   trading_timezone: EST
 BOVESPA:
@@ -158,7 +151,6 @@ BOVESPA:
       daily_open: 13h00m
       daily_settlement: 22h55m
   symbol: BOVESPA
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: America/Sao_Paulo
 BSE:
@@ -172,7 +164,6 @@ BSE:
       daily_open: 03h45m
       daily_settlement: 13h
   symbol: BSE
-  tenfore_trading_timezone: Asia/Kolkata
   trading_days: weekdays
   trading_timezone: Asia/Kolkata
 CME:
@@ -194,7 +185,6 @@ CME:
       daily_open: -1h
       daily_settlement: 23h59m59s
   symbol: CME
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: America/New_York
 DFM:
@@ -208,7 +198,6 @@ DFM:
       daily_open: 6h
       daily_settlement: 12h45m
   symbol: DFM
-  tenfore_trading_timezone: UTC
   trading_days: sun_thru_thu
   trading_timezone: Asia/Dubai
 EEI_AM:
@@ -230,7 +219,6 @@ EEI_AM:
       daily_open: 7h
       daily_settlement: 23h59m59s
   symbol: EEI_AM
-  tenfore_trading_timezone: Europe/Berlin
   trading_days: weekdays
   trading_timezone: Europe/Berlin
 EEI_BU:
@@ -252,7 +240,6 @@ EEI_BU:
       daily_open: 8h
       daily_settlement: 23h59m59s
   symbol: EEI_BU
-  tenfore_trading_timezone: Europe/Berlin
   trading_days: weekdays
   trading_timezone: Europe/Berlin
 EEI_LI:
@@ -274,7 +261,6 @@ EEI_LI:
       daily_open: 8h
       daily_settlement: 23h59m59s
   symbol: EEI_LI
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Europe/Berlin
 EEI_PA:
@@ -296,7 +282,6 @@ EEI_PA:
       daily_open: 7h
       daily_settlement: 23h59m59s
   symbol: EEI_PA
-  tenfore_trading_timezone: Europe/Berlin
   trading_days: weekdays
   trading_timezone: Europe/Berlin
 EGX:
@@ -310,7 +295,6 @@ EGX:
       daily_open: 8h
       daily_settlement: 15h30m
   symbol: EGX
-  tenfore_trading_timezone: UTC
   trading_days: sun_thru_thu
   trading_timezone: Asia/Dubai
 EUREX:
@@ -328,7 +312,6 @@ EUREX:
       daily_open: 6h50m
       daily_settlement: 23h59m59s
   symbol: EUREX
-  tenfore_trading_timezone: Europe/Berlin
   trading_days: weekdays
   trading_timezone: Europe/Berlin
 EUREX_SWISS:
@@ -346,7 +329,6 @@ EUREX_SWISS:
       daily_open: 6h50m
       daily_settlement: 23h59m59s
   symbol: EUREX_SWISS
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Europe/Zurich
 EURONEXT:
@@ -368,7 +350,6 @@ EURONEXT:
       daily_open: 8h
       daily_settlement: 19h30m
   symbol: EURONEXT
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Europe/Paris
 FOREX:
@@ -382,7 +363,6 @@ FOREX:
       daily_open: 0s
       daily_settlement: 23h59m59s
   symbol: FOREX
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: UTC
 FS:
@@ -400,7 +380,6 @@ FS:
       daily_open: 14h30m
       daily_settlement: 23h59m59s
   symbol: FS
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Europe/London
 FSE:
@@ -422,7 +401,6 @@ FSE:
       daily_open: 8h
       daily_settlement: 19h30m
   symbol: FSE
-  tenfore_trading_timezone: Europe/Berlin
   trading_days: weekdays
   trading_timezone: Europe/Berlin
 HKF:
@@ -440,7 +418,6 @@ HKF:
       daily_settlement: 23h59m59s
       morning_close: 4h
   symbol: HKF
-  tenfore_trading_timezone: Asia/Hong_Kong
   trading_days: weekdays
   trading_timezone: Asia/Hong_Kong
 HKSE:
@@ -459,7 +436,6 @@ HKSE:
       - - 3h59m
         - 5h00m
   symbol: HKSE
-  tenfore_trading_timezone: Asia/Hong_Kong
   trading_days: weekdays
   trading_timezone: Asia/Hong_Kong
 ICE_LIFFE:
@@ -481,7 +457,6 @@ ICE_LIFFE:
       daily_open: 1h
       daily_settlement: 23h59m59s
   symbol: ICE_LIFFE
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: UTC
 IDM:
@@ -503,7 +478,6 @@ IDM:
       daily_open: 8h
       daily_settlement: 23h59m59s
   symbol: IDM
-  tenfore_trading_timezone: Europe/Rome
   trading_days: weekdays
   trading_timezone: Europe/Rome
 ISE:
@@ -525,7 +499,6 @@ ISE:
       daily_open: 8h
       daily_settlement: 22h30m
   symbol: ISE
-  tenfore_trading_timezone: CET
   trading_days: weekdays
   trading_timezone: Europe/Dublin
 JSC:
@@ -545,7 +518,6 @@ JSC:
       - - 4h30m
         - 7h00m
   symbol: JSC
-  tenfore_trading_timezone: Asia/Jakarta
   trading_days: weekdays
   trading_timezone: Asia/Jakarta
 JSE:
@@ -561,7 +533,6 @@ JSE:
       daily_open: 7h
       daily_settlement: 17h50m
   symbol: JSE
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Africa/Johannesburg
 KRX:
@@ -577,7 +548,6 @@ KRX:
       daily_open: 0s
       daily_settlement: 9h
   symbol: KRX
-  tenfore_trading_timezone: Asia/Seoul
   trading_days: weekdays
   trading_timezone: Asia/Seoul
 KSE:
@@ -591,7 +561,6 @@ KSE:
       daily_open: 6h
       daily_settlement: 12h30m
   symbol: KRX
-  tenfore_trading_timezone: Asia/Kuwait
   trading_days: sun_thru_thu
   trading_timezone: Asia/Kuwait
 LSE:
@@ -613,7 +582,6 @@ LSE:
       daily_open: 8h
       daily_settlement: 19h30m
   symbol: LSE
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Europe/London
 MICEX:
@@ -627,7 +595,6 @@ MICEX:
       daily_open: 7h
       daily_settlement: 18h30m
   symbol: MICEX
-  tenfore_trading_timezone: Europe/Moscow
   trading_days: weekdays
   trading_timezone: Europe/Moscow
 MEFF:
@@ -645,7 +612,6 @@ MEFF:
       daily_open: 8h
       daily_settlement: 23h59m59s
   symbol: MEFF
-  tenfore_trading_timezone: Europe/Madrid
   trading_days: weekdays
   trading_timezone: Europe/Madrid
 MOF:
@@ -661,7 +627,6 @@ MOF:
       daily_settlement: 23h59m59s
       morning_close: 15h45m
   symbol: MOF
-  tenfore_trading_timezone: Europe/Moscow
   trading_days: weekdays
   trading_timezone: UTC
 NASDAQ:
@@ -683,7 +648,6 @@ NASDAQ:
       daily_open: 14h30m
       daily_settlement: 23h59m59s
   symbol: NASDAQ
-  tenfore_trading_timezone: America/New_York
   trading_days: weekdays
   trading_timezone: America/New_York
 NASDAQ_INDEX:
@@ -705,7 +669,6 @@ NASDAQ_INDEX:
       daily_open: 14h30m
       daily_settlement: 23h59m59s
   symbol: NASDAQ_INDEX
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: America/New_York
 NSE:
@@ -719,7 +682,6 @@ NSE:
       daily_open: 03h45m
       daily_settlement: 13h
   symbol: NSE
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Asia/Calcutta
 NYSE:
@@ -741,7 +703,6 @@ NYSE:
       daily_open: 14h30m
       daily_settlement: 23h59m59s
   symbol: NYSE
-  tenfore_trading_timezone: America/New_York
   trading_days: weekdays
   trading_timezone: America/New_York
 NYSE_SPC:
@@ -763,7 +724,6 @@ NYSE_SPC:
       daily_open: 14h30m
       daily_settlement: 23h59m59s
   symbol: NYSE_SPC
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: America/New_York
 NZSE:
@@ -785,7 +745,6 @@ NZSE:
       daily_open: -2h
       daily_settlement: 8h
   symbol: NZSE
-  tenfore_trading_timezone: Pacific/Auckland
   trading_days: weekdays
   trading_timezone: Pacific/Auckland
 ODLS:
@@ -807,7 +766,6 @@ ODLS:
       daily_open: 8h15m
       daily_settlement: 23h59m59s
   symbol: ODLS
-  tenfore_trading_timezone: Europe/London
   trading_days: weekdays
   trading_timezone: Europe/London
 OMX:
@@ -829,7 +787,6 @@ OMX:
       daily_open: 8h
       daily_settlement: 19h25m
   symbol: OMX
-  tenfore_trading_timezone: Europe/Stockholm
   trading_days: weekdays
   trading_timezone: Europe/Stockholm
 OSE:
@@ -845,7 +802,6 @@ OSE:
       daily_settlement: 23h59m59s
       morning_close: 6h15m
   symbol: OSE
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Asia/Tokyo
 OSLO:
@@ -867,7 +823,6 @@ OSLO:
       daily_open: 08h00m
       daily_settlement: 18h30m
   symbol: OSLO
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Europe/Oslo
 RANDOM:
@@ -881,7 +836,6 @@ RANDOM:
       daily_open: 0s
       daily_settlement: 23h59m59s
   symbol: RANDOM
-  tenfore_trading_timezone: NA
   trading_days: everyday
   trading_timezone: UTC
 RANDOM_NOCTURNE:
@@ -895,7 +849,6 @@ RANDOM_NOCTURNE:
       daily_open: -12h
       daily_settlement: 11h59m59s
   symbol: RANDOM_NOCTURNE
-  tenfore_trading_timezone: NA
   trading_days: everyday
   trading_timezone: UTC
 RTS:
@@ -909,7 +862,6 @@ RTS:
       daily_open: 07h00m
       daily_settlement: 18h45m
   symbol: RTS
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Europe/Moscow
 SAS:
@@ -923,7 +875,6 @@ SAS:
       daily_open: 8h
       daily_settlement: 15h30m
   symbol: SAS
-  tenfore_trading_timezone: UTC
   trading_days: sun_thru_thu
   trading_timezone: Asia/Dubai
 SES:
@@ -939,7 +890,6 @@ SES:
       daily_open: 1h
       daily_settlement: 12h
   symbol: SES
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Asia/Singapore
 SFE:
@@ -965,7 +915,6 @@ SFE:
       daily_settlement: 23h59m59s
       morning_close: 7h00m
   symbol: SFE
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Australia/Sydney
 SGX:
@@ -981,7 +930,6 @@ SGX:
       daily_open: 1h
       daily_settlement: 23h59m59s
   symbol: SGX
-  tenfore_trading_timezone: Asia/Singapore
   trading_days: weekdays
   trading_timezone: Asia/Singapore
 SP_GLOBAL:
@@ -999,7 +947,6 @@ SP_GLOBAL:
       daily_open: 14h30m
       daily_settlement: 23h59m59s
   symbol: SP_GLOBAL
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: America/Chicago
 SP_GSCI:
@@ -1021,7 +968,6 @@ SP_GSCI:
       daily_open: 08h00m
       daily_settlement: 23h59m59s
   symbol: SP_GSCI
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: America/Chicago
 SSE:
@@ -1038,7 +984,6 @@ SSE:
       - - 3h30m
         - 5h00m
   symbol: SSE
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Asia/Shanghai
 STOXX:
@@ -1060,7 +1005,6 @@ STOXX:
       daily_open: 8h
       daily_settlement: 19h30m
   symbol: STOXX
-  tenfore_trading_timezone: Europe/Berlin
   trading_days: weekdays
   trading_timezone: Europe/Berlin
 SWX:
@@ -1078,7 +1022,6 @@ SWX:
       daily_open: 8h
       daily_settlement: 19h20m
   symbol: SWX
-  tenfore_trading_timezone: Europe/Zurich
   trading_days: weekdays
   trading_timezone: Europe/Zurich
 SYNEURONEXT:
@@ -1095,7 +1038,6 @@ SYNEURONEXT:
       daily_open: 8h15m
       daily_settlement: 21h00m
   symbol: SYNEURONEXT
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Europe/Paris
 SYNFSE:
@@ -1117,7 +1059,6 @@ SYNFSE:
       daily_open: 8h15m
       daily_settlement: 21h00m
   symbol: SYNFSE
-  tenfore_trading_timezone: Europe/Berling
   trading_days: weekdays
   trading_timezone: Europe/Berlin
 SYNLSE:
@@ -1134,7 +1075,6 @@ SYNLSE:
       daily_open: 8h15m
       daily_settlement: 21h00m
   symbol: SYNLSE
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Europe/London
 SYNNYSE_DJI:
@@ -1162,7 +1102,6 @@ SYNNYSE_DJI:
       - - 14h20m
         - 14h40m
   symbol: SYNNYSE_DJI
-  tenfore_trading_timezone: America/New_York
   trading_days: weekdays
   trading_timezone: America/New_York
 SYNNYSE_SPC:
@@ -1190,7 +1129,6 @@ SYNNYSE_SPC:
       - - 14h20m
         - 14h40m
   symbol: SYNNYSE_SPC
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: America/New_York
 SYNSTOXX:
@@ -1207,7 +1145,6 @@ SYNSTOXX:
       daily_open: 8h15m
       daily_settlement: 21h
   symbol: SYNSTOXX
-  tenfore_trading_timezone: Europe/Berlin
   trading_days: weekdays
   trading_timezone: Europe/Berlin
 SYNSWX:
@@ -1225,7 +1162,6 @@ SYNSWX:
       daily_open: 8h
       daily_settlement: 21h
   symbol: SYNSWX
-  tenfore_trading_timezone: Europe/Zurich
   trading_days: weekdays
   trading_timezone: Europe/Zurich
 SYNTSE:
@@ -1239,7 +1175,6 @@ SYNTSE:
       daily_open: 00h15m
       daily_settlement: 20h00m
   symbol: SYNTSE
-  tenfore_trading_timezone: Asia/Tokyo
   trading_days: weekdays
   trading_timezone: Asia/Tokyo
 SZSE:
@@ -1256,7 +1191,6 @@ SZSE:
       - - 3h30m
         - 5h00m
   symbol: SZSE
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Asia/Shanghai
 TRSE:
@@ -1278,7 +1212,6 @@ TRSE:
       daily_open: 14h30m
       daily_settlement: 23h59m59s
   symbol: TRSE
-  tenfore_trading_timezone: America/Toronto
   trading_days: weekdays
   trading_timezone: America/Toronto
 TSE:
@@ -1295,7 +1228,6 @@ TSE:
       - - 2h30m
         - 3h30m
   symbol: TSE
-  tenfore_trading_timezone: Asia/Tokyo
   trading_days: weekdays
   trading_timezone: Asia/Tokyo
 TSE_S:
@@ -1311,6 +1243,5 @@ TSE_S:
       daily_settlement: 9h
       morning_close: 2h30m
   symbol: TSE_S
-  tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Asia/Tokyo
