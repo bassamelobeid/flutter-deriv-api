@@ -296,8 +296,19 @@ lives_ok {
 'survived notify batch_sell_bet';
 
 lives_ok {
-    my $txn = insert_payment(Date::Utility->new('2016-01-08'), '1000');
+    #my $txn = insert_payment(Date::Utility->new('2016-01-08'), '1000');
+    #my ($date, $amount) = @_;
+    $connection_builder->set_default_account('USD');
+
+    my $txn = $connection_builder->payment_legacy_payment(
+        currency     => 'USD',
+        amount       => '1000',
+        payment_type => 'adjustment',
+        remark       => 'play money'
+    );
     test_payment_notify ( {txn => $txn} );
+
+
 }
 'survived notify payments';
 
