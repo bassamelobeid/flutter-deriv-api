@@ -12,7 +12,7 @@ use base qw( Exporter );
 use BOM::Product::ContractFactory qw(produce_contract);
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 use Math::CDF qw(qnorm);
-
+use Time::HiRes qw( gettimeofday tv_interval);
 =head1 available_contracts_for_symbol
 
 Returns a set of available contracts for a particular contract which included predefined trading period and 20 predefined barriers associated with the trading period
@@ -90,7 +90,6 @@ Daily contract:
 2) Weekly contract: Start at 00:00GMT first trading day of the week and end at the close of last trading day of the week
 3) Monthly contract: Start at 00:00GMT of the first trading day of the calendar month and end at the close of the last trading day of the month
 4) Quarterly contract: Start at 00:00GMT of the first trading day of the quarter and end at the close of the last trading day of the quarter.
-6) Yearly contract: Start at 00:00GMT of the first trading day of the year and end at the close the last trading day of the year.
 
 =cut
 
@@ -301,17 +300,6 @@ sub _get_daily_trading_window {
             current_date_start => $first_day_of_quarter,
             next_date_start    => $first_day_of_next_quarter,
             duration           => '3M',
-            exchange           => $exchange
-        });
-
-    # yearly contract
-    my $first_day_of_year = Date::Utility->new('01-Jan-' . $now_year);
-    my $first_day_of_next_year = Date::Utility->new('01-Jan-' . ($now_year + 1));
-    push @daily_duration,
-        _get_trade_date_of_daily_window({
-            current_date_start => $first_day_of_year,
-            next_date_start    => $first_day_of_next_year,
-            duration           => '1Y',
             exchange           => $exchange
         });
 
