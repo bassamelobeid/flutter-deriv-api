@@ -4,7 +4,6 @@ use Carp;
 use Moose;
 use DateTime;
 use DateTime::TimeZone;
-use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::Market::Types;
 use Date::Utility;
@@ -207,7 +206,7 @@ sub cutoff_date_for_effective_day {
     # a loop that could theoretically never break.
     my $attempts;
     while (not _valid_cutoff_date($self->_vol_utils->effective_date_for($cutoff_date), $underlying)) {
-        get_logger('QUANT')->logdie('Could not find valid cutoff date after 10 attempts, so bailing out!') if ++$attempts > 10;
+        die('Could not find valid cutoff date after 10 attempts, so bailing out!') if ++$attempts > 10;
         $cutoff_date = Date::Utility->new($cutoff_date->epoch + 86400);
     }
 

@@ -3,6 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::FailWarnings;
+use Test::Warn;
 use File::Slurp;
 use List::Util qw(max min);
 use Scalar::Util qw(looks_like_number);
@@ -53,23 +54,25 @@ my $looks_like_currency = qr/^[A-Z]{3}/;
 # reason: if we only test existing symbols, attributes are set by config file,
 # and _build methods are not called.
 subtest 'what happens to an undefined symbol name' => sub {
-    my $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol');
-    is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
-    is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
+    warning_like {
+        my $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol');
+        is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
+        is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
 
-    is($symbol_undefined->market->name,     'config',   'an undefined symbol has correct market');
-    is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
-    is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
-    is($symbol_undefined->display_decimals, 4,          'an undefined symbol has correct display_decimals');
+        is($symbol_undefined->market->name,     'config',   'an undefined symbol has correct market');
+        is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
+        is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
+        is($symbol_undefined->display_decimals, 4,          'an undefined symbol has correct display_decimals');
 
-    is($symbol_undefined->pipsized_value(100.1234567), 100.1235, 'an undefined symbol has correct pipsized_value');
+        is($symbol_undefined->pipsized_value(100.1234567), 100.1235, 'an undefined symbol has correct pipsized_value');
 
-    is($symbol_undefined->commission_level, 3,     'an undefined symbol has correct commission_level');
-    is($symbol_undefined->spot_spread_size, 50,    'an undefined symbol has correct spot_spread_size');
-    is($symbol_undefined->spot_spread,      0.005, 'an undefined symbol has correct spot_spread');
-    is($symbol_undefined->delay_amount,     0,     'an undefined symbol has correct delay_amount');
-    cmp_ok($symbol_undefined->outlier_tick,         '==', 0.10, 'an undefined symbol has correct outlier tick level');
-    cmp_ok($symbol_undefined->weekend_outlier_tick, '==', 0.10, 'an undefined symbol has correct outlier tick level');
+        is($symbol_undefined->commission_level, 3,     'an undefined symbol has correct commission_level');
+        is($symbol_undefined->spot_spread_size, 50,    'an undefined symbol has correct spot_spread_size');
+        is($symbol_undefined->spot_spread,      0.005, 'an undefined symbol has correct spot_spread');
+        is($symbol_undefined->delay_amount,     0,     'an undefined symbol has correct delay_amount');
+        cmp_ok($symbol_undefined->outlier_tick,         '==', 0.10, 'an undefined symbol has correct outlier tick level');
+        cmp_ok($symbol_undefined->weekend_outlier_tick, '==', 0.10, 'an undefined symbol has correct outlier tick level');
+    } [qr/^Unknown symbol/], "Expected warning is thrown";
 };
 
 subtest 'display_decimals' => sub {

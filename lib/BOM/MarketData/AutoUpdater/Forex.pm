@@ -24,6 +24,8 @@ use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::VolSurface::Delta;
 use List::Util qw( first );
+use Carp;
+
 has file => (
     is         => 'ro',
     lazy_build => 1,
@@ -39,7 +41,7 @@ sub _build_file {
     while (not -d $loc . '/' . $on->date_yyyymmdd) {
         $on = Date::Utility->new($on->epoch - 86400);
         if ($on->year <= 2011) {
-            $self->_logger->logcroak('Requested date pre-dates vol surface history.');
+            croak('Requested date pre-dates vol surface history.');
         }
     }
     my $day                 = $on->date_yyyymmdd;
@@ -141,7 +143,6 @@ sub run {
         quanto_only => 1,
     );
 
-    $self->_logger->debug(ref($self) . ' starting update.');
     my $surfaces_from_file = $self->surfaces_from_file;
     foreach my $symbol (@{$self->symbols_to_update}) {
         my $quanto_only = 'NO';
@@ -176,7 +177,6 @@ sub run {
             }
         }
     }
-    $self->_logger->debug(ref($self) . ' update complete.');
     $self->SUPER::run();
     return 1;
 }

@@ -1,6 +1,5 @@
 package BOM::MarketData::Rates;
 
-use BOM::Utility::Log4perl qw( get_logger );
 use Moose;
 extends 'BOM::MarketData';
 
@@ -14,7 +13,7 @@ has rates => (
 sub _build_rates {
     my $self = shift;
 
-    get_logger->warn('No rates found for ' . $self->symbol) if not defined $self->document;
+    warn('No rates found for ' . $self->symbol) if not defined $self->document;
 
     my $result = $self->document->{rates};
 

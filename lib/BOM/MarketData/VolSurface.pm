@@ -22,7 +22,6 @@ use Scalar::Util::Numeric qw( isnum );
 use List::Util qw( min max first );
 use Number::Closest::XS qw(find_closest_numbers_around);
 use Math::Function::Interpolator;
-use BOM::Utility::Log4perl qw( get_logger );
 
 use Format::Util::Numbers qw( roundnear );
 use BOM::Platform::Runtime;
@@ -434,7 +433,7 @@ around BUILDARGS => sub {
     if ($args{surface} or $args{recorded_date}) {
 
         if (not $args{surface} or not $args{recorded_date}) {
-            get_logger('QUANT')->logcroak('Must pass both "surface" and "recorded_date" if passing either.');
+            croak('Must pass both "surface" and "recorded_date" if passing either.');
         }
 
         $args{_new_surface} = 1;
@@ -470,7 +469,7 @@ around BUILDARGS => sub {
                     or exists $args{original_term}->{atm_spread})))
         {
 
-            get_logger('QUANT')->logcroak('Given original_term attr must have both smile and vol_spread keys present.');
+            croak('Given original_term attr must have both smile and vol_spread keys present.');
         }
         foreach my $which (qw( smile vol_spread )) {
             if (exists $args{original_term}->{$which}) {
@@ -639,8 +638,7 @@ sub set_smile_spread {
     my $day              = $args->{days};
     my $smile_spread     = $args->{smile_spread};
     my $atm_spread_point = $self->atm_spread_point;
-    get_logger('QUANT')->logcroak("day[$day] must be a number.")
-        unless looks_like_number($day);
+    croak("day[$day] must be a number.") unless looks_like_number($day);
 
     my $surface = $self->surface;
 
@@ -926,7 +924,7 @@ sub get_day_for_tenor {
 
 sub _get_points_to_interpolate {
     my ($self, $seek, $available_points) = @_;
-    get_logger('QUANT')->logcroak('Need 2 or more term structures to interpolate.')
+    croak('Need 2 or more term structures to interpolate.')
         if scalar @$available_points <= 1;
 
     return @{find_closest_numbers_around($seek, $available_points, 2)};
@@ -937,9 +935,9 @@ sub _is_between {
 
     my @points = @$points;
 
-    get_logger('QUANT')->logcroak('some of the points are not defined')
+    croak('some of the points are not defined')
         if (notall { defined $_ } @points);
-    get_logger('QUANT')->logcroak('less than two available points')
+    croak('less than two available points')
         if (scalar @points < 2);
 
     return if (all { $_ < $seek } @points);
@@ -964,7 +962,7 @@ sub _market_maturities_interpolation_function {
     my $tau1       = $underlying->weighted_days_in_period($dates{T1}, $dates{T}) / 365;
     my $tau2       = $underlying->weighted_days_in_period($dates{T1}, $dates{T2}) / 365;
 
-    get_logger->warn('Error in volsurface['
+    warn(     'Error in volsurface['
             . $self->recorded_date->datetime
             . '] for symbol['
             . $underlying->symbol
@@ -1064,15 +1062,15 @@ sub _validate_sought_values {
     if (notall { defined $_ } ($sought_point, $day)) {
         $sought_point ||= '';
         $day          ||= '';
-        get_logger('QUANT')->logcroak("Days[$day] or sought_point[$sought_point] is undefined for underlying[" . $self->symbol . "]");
+        croak("Days[$day] or sought_point[$sought_point] is undefined for underlying[" . $self->symbol . "]");
     }
 
     if (!isnum($sought_point)) {
-        get_logger('QUANT')->logcroak("Point[$sought_point] must be a number");
+        croak("Point[$sought_point] must be a number");
     }
 
     if ($day <= 0 or $sought_point < 0) {
-        get_logger('QUANT')->logcroak("get_volatility requires positive numeric days[$day] and sought_point[$sought_point]");
+        croak("get_volatility requires positive numeric days[$day] and sought_point[$sought_point]");
     }
 
     return 1;
@@ -1111,7 +1109,7 @@ Usage:
 sub get_smile {
     my ($self, $day) = @_;
 
-    get_logger('QUANT')->logcroak("day[$day] must be a number.")
+    croak("day[$day] must be a number.")
         unless looks_like_number($day);
 
     my $surface = $self->surface;
@@ -1255,7 +1253,7 @@ sub set_smile {
     my ($self, $args) = @_;
 
     my $day = $args->{days};
-    get_logger('QUANT')->logcroak("day[$day] must be a number.")
+    croak("day[$day] must be a number.")
         unless looks_like_number($day);
 
     my $surface          = $self->surface;

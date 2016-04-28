@@ -24,7 +24,7 @@ use List::MoreUtils qw(indexes);
 use List::Util qw(min first);
 use Storable qw( dclone );
 use JSON qw(from_json);
-use BOM::Utility::Log4perl qw( get_logger );
+use Carp;
 
 =head2 for_date
 
@@ -181,7 +181,7 @@ sub get_volatility {
     my ($self, $args) = @_;
 
     if (scalar(grep { defined $args->{$_} } qw(delta moneyness strike)) != 1) {
-        get_logger('QUANT')->logdie("Must pass exactly one of [delta, moneyness, strike] to get_volatility.");
+        die("Must pass exactly one of [delta, moneyness, strike] to get_volatility.");
     }
 
     $args->{days} =
@@ -287,7 +287,7 @@ sub _interpolate_delta {
 
     my %smile = %{$args->{smile}};
 
-    get_logger('QUANT')->logcroak('minimum of three points on a smile')
+    croak('minimum of three points on a smile')
         if keys %smile < 3;
 
     my @sorted = sort { $a <=> $b } keys %smile;

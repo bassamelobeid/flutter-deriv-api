@@ -11,7 +11,7 @@ use Format::Util::Numbers qw( roundnear );
 use BOM::Platform::Runtime;
 use VolSurface::Utils qw( get_delta_for_strike get_strike_for_moneyness );
 use List::MoreUtils qw(none);
-use BOM::Utility::Log4perl qw( get_logger );
+use Carp;
 use Math::Function::Interpolator;
 use Storable qw( dclone );
 use Try::Tiny;
@@ -159,9 +159,9 @@ sub get_volatility {
     my ($self, $args) = @_;
 
     # args validity checks
-    get_logger('QUANT')->logcroak("Must pass exactly one of delta, strike or moneyness to get_volatility.")
+    croak("Must pass exactly one of delta, strike or moneyness to get_volatility.")
         if (scalar(grep { defined $args->{$_} } qw(delta strike moneyness)) != 1);
-    get_logger('QUANT')->logcroak("Must pass exactly one of days, tenor or expirty_date to get_volatility.")
+    croak("Must pass exactly one of days, tenor or expirty_date to get_volatility.")
         if (scalar(grep { defined $args->{$_} } qw(days tenor expiry_date)) != 1);
 
     if (not $args->{days}) {
@@ -328,7 +328,7 @@ sub _build_surface {
 
     my $master_cutoff = $doc->{master_cutoff};
     if (not $doc->{surfaces}->{$master_cutoff}) {
-        get_logger('QUANT')->logcroak('master surface is missing for ' . $self->symbol . ' on ' . $self->recorded_date->datetime_iso8601);
+        croak('master surface is missing for ' . $self->symbol . ' on ' . $self->recorded_date->datetime_iso8601);
     }
 
     my $master_surface = __PACKAGE__->new(
@@ -352,7 +352,7 @@ sub _stores_surface {
             $doc->{surfaces}->{$cutoff} = $surface_hashref;
         }
         catch {
-            get_logger('QUANT')->info('Could not save ' . $cutoff . ' cutoff for ' . $self->symbol);
+            warn('Could not save ' . $cutoff . ' cutoff for ' . $self->symbol);
         };
     }
 

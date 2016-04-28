@@ -104,8 +104,7 @@ sub _build_surfaces_from_file {
 }
 
 sub run {
-    my $self = shift;
-    $self->_logger->debug(ref($self) . ' starting update.');
+    my $self               = shift;
     my $surfaces_from_file = $self->surfaces_from_file;
     foreach my $symbol (@{$self->symbols_to_update}) {
         if (not $surfaces_from_file->{$symbol}) {
@@ -137,7 +136,6 @@ sub run {
         }
     }
 
-    $self->_logger->debug(ref($self) . ' update complete.');
     $self->SUPER::run();
     return 1;
 }
