@@ -5,6 +5,8 @@ use Mojo::Redis2;
 use Mojo::IOLoop;
 use Try::Tiny;
 
+use BOM::Platform::Context;
+use BOM::Platform::Context::Request;
 # pre-load controlleres to have more shared code among workers (COW)
 use BOM::WebSocketAPI::Websocket_v3();
 
