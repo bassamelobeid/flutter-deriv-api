@@ -758,7 +758,7 @@ sub _build_longcode {
         $when_start = '';
     } elsif ($expiry_type eq 'intraday') {
         $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
-        $when_start = $self->is_forward_starting ? $self->date_start->db_timestamp : localize('contract start time');
+        $when_start = $self->is_forward_starting ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
     } elsif ($expiry_type eq 'daily') {
         my $close = $self->underlying->exchange->closing_on($self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
