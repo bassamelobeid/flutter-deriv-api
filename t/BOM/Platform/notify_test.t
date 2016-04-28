@@ -95,7 +95,7 @@ sub test_notify {
             for my $name (qw/buy_price purchase_time sell_time short_code/) {
                 is $note->{$name}, $test->{fmb}->{$name}, "note{$name} eq fmb{$name}";
             }
-            }
+        }
     }
     1;
 }
@@ -106,6 +106,7 @@ sub test_payment_notify {
     my %notifications;
     while (my $notify = $listener->pg_notifies) {
         my $n = {};
+        # note $notify->[-1];
         @{$n}{
             qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/
             } =
@@ -122,7 +123,8 @@ sub test_payment_notify {
             for my $name (qw/account_id action_type amount balance_after payment_id/) {
                 is $note->{$name}, $test->{txn}->{$name}, "note{$name} eq txn{$name}";
             }
-            }
+            is $note->{payment_remark}, $test->{remark}, 'payment_remark';
+        }
     }
     1;
 }
@@ -352,20 +354,23 @@ lives_ok {
         payment_type => 'adjustment',
         remark       => 'play money'
     );
-    test_payment_notify({txn => $txn});
+    test_payment_notify({txn => $txn, remark => 'play money'});
 
     $txn = $client->payment_bank_wire(
         amount   => 10.01,
         currency => 'USD',
         remark   => 'Reward from payment_bank_wire'
     );
-    test_payment_notify({txn => $txn});
+    test_payment_notify({txn => $txn, remark => 'Reward from payment_bank_wire'});
 
     my $txnid = $client->payment_account_transfer(
         amount   => 20.02,
         currency => 'USD',
         toClient => $pa_client,
-        remark   => 'Transfer from CR0010 to Payment Agent Paypal Transaction reference: #USD20.02#F72117379D1DD7B5# Timestamp: ??-???-?? 08:36:49GMT',
+        remark   => 'reference: #USD20.02#F72117379D1DD7B5#',
+        fmRemark => 'from reference: #USD20.02#F72117379D1DD7B5#',
+        toRemark => 'to reference: #USD20.02#F72117379D1DD7B5#',
+        #inter_db_transfer=>1,
     );
     $txn = BOM::Database::Model::Transaction->new({
                 'data_object_params' => {
@@ -374,14 +379,14 @@ lives_ok {
             db => $connection_builder->db
         });
     $txn->load();
-    test_payment_notify({txn => $txn->{transaction_record}});
+    test_payment_notify({txn => $txn->{transaction_record}, remark => 'from reference: #USD20.02#F72117379D1DD7B5#'});
 
     $txn = $client->payment_affiliate_reward(
         amount   => 149.99,
         currency => 'USD',
         remark   => 'Reward from affiliate program for trades done by CRxxxx'
     );
-    test_payment_notify({txn => $txn});
+    test_payment_notify({txn => $txn, remark => 'Reward from affiliate program for trades done by CRxxxx'});
 
     $txn = $client->payment_doughflow(
         currency     => 'USD',
@@ -389,7 +394,7 @@ lives_ok {
         remark       => 'here is money',
         payment_type => 'external_cashier',
     );
-    test_payment_notify({txn => $txn});
+    test_payment_notify({txn => $txn, remark => 'here is money'});
 }
 'survived notify payments';
 
