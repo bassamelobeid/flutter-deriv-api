@@ -391,17 +391,17 @@ sub _get_expired_barriers {
     my $expired_barriers     = Cache::RedisDB->get($cache_keyspace, $expired_barriers_key);
     my $high_low_key         = join($cache_sep, $underlying->symbol, 'high_low', $date_start, $now);
     my $high_low             = Cache::RedisDB->get($cache_keyspace, $high_low_key);
-    if (not $high_low){
-       push @$high_low,  @{
-        $underlying->get_high_low_for_period({
-                start => $date_start,
-                end   => $now,
-            })}{'high', 'low'};
+    if (not $high_low) {
+        $high_low = $underlying->get_high_low_for_period({
+            start => $date_start,
+            end   => $now,
+        });
 
-        Cache::RedisDB->set($cache_keyspace, $high_low_key, $high_low,  10);
+        Cache::RedisDB->set($cache_keyspace, $high_low_key, $high_low, 10);
     }
-    my $high = $high_low->[0];
-    my $low = $high_low->[1];
+
+    my $high                      = $high_low->{high};
+    my $low                       = $high_low->{low};
     my @barriers                  = sort values %$available_barriers;
     my %skip_list                 = map { $_ => 1 } (@$expired_barriers);
     my @unexpired_barriers        = grep { !$skip_list{$_} } @barriers;
