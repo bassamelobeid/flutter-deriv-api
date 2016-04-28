@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More (tests => 10);
+use Test::More (tests => 11);
 use Test::NoWarnings;
 
 use Test::Exception;
@@ -177,6 +177,18 @@ sub sell_one_bet {
     return ($txn, $bet);
 }
 
+sub insert_payment {
+    my ($date, $amount) = @_;
+    $connection_builder->set_default_account('USD');
+    my $trx = $connection_builder->payment_legacy_payment(
+        currency     => 'USD',
+        amount       => $amount,
+        payment_type => 'adjustment',
+        remark       => 'play money'
+    );
+    return $trx;
+}
+
 lives_ok {
     my ($txn, $fmb) = buy_one_bet $acc1;
 
@@ -252,6 +264,11 @@ lives_ok {
     #    });
 }
 'survived notify batch_sell_bet';
+
+lives_ok {
+    my $txn = insert_payment(Date::Utility->new('2016-01-08'), '1000');
+}
+'survived notify payments';
 
 Test::NoWarnings::had_no_warnings;
 
