@@ -1,6 +1,5 @@
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
-use BOM::Utility::Log4perl qw( get_logger );
 
 #####################################################################
 # Purpose    : Save difference to difflog
@@ -26,11 +25,14 @@ sub save_difflog {
         print DATA Date::Utility->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
         print DATA "=============================================================";
         print DATA $diff;
-        close DATA;
+        unless (close DATA) {
+            warn("Error: cannot close $overridefilename.difflog after append $!");
+            return 0;
+        }
 
         return 1;
     } else {
-        get_logger->error("Cannot open $overridefilename.difflog to append $!");
+        warn("Error: cannot open $overridefilename.difflog to append $!");
         return 0;
     }
 
@@ -69,9 +71,11 @@ sub save_log_staff_difflog {
         print DATA Date::Utility->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
         print DATA "=============================================================";
         print DATA $diff;
-        close DATA;
+        unless (close DATA) {
+            warn("Error: cannot close /var/log/fixedodds/staff/$staff.difflog after append $!");
+        }
     } else {
-        get_logger->error("Cannot open /var/log/fixedodds/staff/$staff.difflog to append $!");
+        warn("Error: cannot open /var/log/fixedodds/staff/$staff.difflog to append $!");
     }
 
 }
@@ -106,9 +110,11 @@ sub save_log_save_complete_log {
         print DATA Date::Utility->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
         print DATA "=============================================================";
         print DATA $diff;
-        close DATA;
+        unless (close DATA) {
+            warn("Error: cannot close /var/log/fixedodds/fsave.completelog after append $!");
+        }
     } else {
-        get_logger->error("Cannot open /var/log/fixedodds/fsave.completelog to append $!");
+        warn("Error: cannot open /var/log/fixedodds/fsave.completelog to append $!");
     }
 
 }
