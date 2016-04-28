@@ -337,7 +337,7 @@ test_with_feed([
     'Intraday up.' => sub {
 
         my $bet_params = {
-            bet_type     => 'INTRADU',
+            bet_type     => 'CALL',
             date_start   => 1205856000,                                   # 16:00:01 16:00 098.23 098.23 98.2328 TDF
             date_expiry  => 1205859600,                                   # 17:00:00 17:00 098.33 098.36 98.3491 GFT
             date_pricing => Date::Utility->new('2008-03-19T15:30:00Z'),
@@ -345,6 +345,7 @@ test_with_feed([
             payout       => 1000,
             currency     => 'USD',
             barrier      => 'S0P',
+            starts_as_forward_starting => 1,
         };
 
         my $bet = produce_contract($bet_params);
@@ -370,7 +371,7 @@ test_with_feed([
         is($bet->value, $bet->payout,
             'Bet outcome: win (for Client). Only wins if both entry and exit are the current market value, i.e. "previous tick"');
 
-        lives_ok { $bet = produce_contract('INTRADU_FRXUSDJPY_300_1205859000_1205859600_S0P_0', 'USD'); } 'Create INTRADU from shortcode';
+        lives_ok { $bet = produce_contract('CALL_FRXUSDJPY_300_1205859000F_1205859600_S0P_0', 'USD'); } 'Create INTRADU from shortcode';
         lives_ok { $bet->is_expired } 'Expiry Check (from shortcode)';
         is($bet->is_expired,           1,      'Bet expired');
         is($bet->barrier->as_absolute, 98.353, 'Barrier is properly set based on current market value when creating Intraday Up from shortcode.');
