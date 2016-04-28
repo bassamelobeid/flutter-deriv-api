@@ -235,7 +235,7 @@ lives_ok {
             fmb => $res->{$acc3->client_loginid}->{fmb},
             txn => $res->{$acc3->client_loginid}->{txn}
         }
-    });
+    );
 }
 'survived notify buy_multiple_bets';
 
