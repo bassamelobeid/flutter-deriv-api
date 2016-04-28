@@ -12,6 +12,9 @@ use BOM::Database::Model::FinancialMarketBet;
 use BOM::Database::Model::FinancialMarketBet::Factory;
 use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Helper::FinancialMarketBet;
+use BOM::Platform::Client;
+use BOM::Platform::Client::PaymentAgent;
+use BOM::Platform::Client::Payments;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use YAML::XS;
 
