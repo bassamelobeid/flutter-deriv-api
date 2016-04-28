@@ -99,7 +99,7 @@ sub crand {
 
 sub _redis {
     state $redis_read = RedisDB->new(
-        host     => 'localhost',
+        host     => BOM::System::Config::randsrv()->{rand_server}->{fqdn},
         port     => BOM::System::Config::randsrv()->{rand_server}->{port},
         password => BOM::System::Config::randsrv()->{rand_server}->{password},
     );
@@ -116,8 +116,7 @@ suitable for use in random_index_gbm
 sub get_randoms_ref {
     my %GBM_vars;
     my @available_random_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-        market            => 'random',
-        contract_category => 'ANY'
+        market => 'volidx',
     );
 
     foreach my $ticker (@available_random_symbols) {

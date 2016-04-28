@@ -3,7 +3,7 @@ package BOM::MarketData::VolSurface::Empirical;
 use Moose;
 
 use Machine::Epsilon;
-use Math::Gauss qw(pdf);
+use Math::Gauss::XS qw(pdf);
 use Cache::RedisDB;
 use List::Util qw(max min sum);
 use List::MoreUtils qw(uniq);
@@ -11,7 +11,7 @@ use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 
-use BOM::MarketData::Fetcher::EconomicEvent;
+use Quant::Framework::EconomicEventCalendar;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
 use BOM::Market::Underlying;
@@ -172,12 +172,12 @@ sub _calculate_weights {
     my @times    = @$times;
     my @combined = (1) x scalar(@times);
     foreach my $news (@$news_array) {
-        my @weights;
-        foreach my $time (@$times) {
-            my $width = $time < $news->{release_time} ? 2 * 60 : 2 * 60 + $news->{duration};
-            push @weights, 1 / (1 + pdf($time, $news->{release_time}, $width) / pdf(0, 0, $width) * ($news->{magnitude} - 1));
+        foreach my $idx (0 .. $#times) {
+            my $time   = $times[$idx];
+            my $width  = $time < $news->{release_time} ? 2 * 60 : 2 * 60 + $news->{duration};
+            my $weight = 1 / (1 + pdf($time, $news->{release_time}, $width) / pdf(0, 0, $width) * ($news->{magnitude} - 1));
+            $combined[$idx] = min($combined[$idx], $weight);
         }
-        @combined = map { min($weights[$_], $combined[$_]) } (0 .. $#times);
     }
 
     return \@combined;
@@ -188,10 +188,10 @@ sub _calculate_news_triangle {
 
     my @times    = @$times;
     my @combined = (1) x scalar(@times);
+    my $eps      = machine_epsilon();
     foreach my $news (@$news_array) {
         my $effective_news_time = _get_effective_news_time($news->{release_time}, $contract->{start}, $contract->{duration});
         # +1e-9 is added to prevent a division by zero error if news magnitude is 1
-        my $eps = machine_epsilon();
         my $decay_coef = -log(2 / ($news->{magnitude} - 1 + $eps)) / $news->{duration};
         my @triangle;
         foreach my $time (@$times) {
