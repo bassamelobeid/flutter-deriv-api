@@ -15,6 +15,7 @@ addons:
 cache: apt
 before_install:
     - git clone https://8d1fe00a1db5e23412e4e316bfc1324d7f662aac@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - /tmp/travis-scripts/setup_ssh.sh
     - /tmp/travis-scripts/fixHostName.sh
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
@@ -50,3 +51,6 @@ install:
 
 script:
     - make $TEST_SUITE; RC=$?; sudo service binary_pgbouncer status; exit $RC
+
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
