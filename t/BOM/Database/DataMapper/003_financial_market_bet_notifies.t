@@ -282,22 +282,22 @@ lives_ok {
     #    };
 
     # 3
-    my ($txn3, $fmb3) = buy_one_bet $acc1,
-        +{
-        limits => {
-            max_payout_open_bets => 400,
-        },
-        };
-    push @usd_bets, $fmb3->{id};
+    #my ($txn3, $fmb3) = buy_one_bet $acc1,
+    #    +{
+    #    limits => {
+    #        max_payout_open_bets => 400,
+    #    },
+    #    };
+    #push @usd_bets, $fmb3->{id};
 
     # 4
-    my ($txn4, $fmb4) = buy_one_bet $acc1,
-        +{
-        limits => {
-            max_payout_per_symbol_and_bet_type => 600,
-        },
-        };
-    push @usd_bets, $fmb4->{id};
+    #my ($txn4, $fmb4) = buy_one_bet $acc1,
+    #    +{
+    #    limits => {
+    #        max_payout_per_symbol_and_bet_type => 600,
+    #    },
+    #    };
+    #push @usd_bets, $fmb4->{id};
 
     #5
     #my ($txn5, $fmb5) = buy_one_bet $acc1,
