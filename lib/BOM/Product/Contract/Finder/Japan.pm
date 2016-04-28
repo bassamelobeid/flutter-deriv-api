@@ -12,7 +12,7 @@ use base qw( Exporter );
 use BOM::Product::ContractFactory qw(produce_contract);
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 use Math::CDF qw(qnorm);
-use Time::HiRes qw( gettimeofday tv_interval);
+
 =head1 available_contracts_for_symbol
 
 Returns a set of available contracts for a particular contract which included predefined trading period and 20 predefined barriers associated with the trading period
@@ -37,13 +37,13 @@ sub available_contracts_for_symbol {
                 start_type        => 'spot',
                 expiry_type       => ['daily', 'intraday'],
                 barrier_category  => ['euro_non_atm', 'american']});
+
         @offerings = _predefined_trading_period({
             offerings => \@offerings,
             exchange  => $exchange,
             symbol    => $symbol,
             date      => $now,
         });
-
         for my $o (@offerings) {
             my $cc = $o->{contract_category};
 
@@ -389,11 +389,19 @@ sub _get_expired_barriers {
     my $underlying           = $args->{underlying};
     my $expired_barriers_key = join($cache_sep, $underlying->symbol, 'expired_barrier', $date_start, $date_expiry);
     my $expired_barriers     = Cache::RedisDB->get($cache_keyspace, $expired_barriers_key);
-    my ($high, $low) = @{
+    my $high_low_key         = join($cache_sep, $underlying->symbol, 'high_low', $date_start, $now);
+    my $high_low             = Cache::RedisDB->get($cache_keyspace, $high_low_key);
+    if (not $high_low){
+       push @$high_low,  @{
         $underlying->get_high_low_for_period({
                 start => $date_start,
                 end   => $now,
             })}{'high', 'low'};
+
+        Cache::RedisDB->set($cache_keyspace, $high_low_key, $high_low,  10);
+    }
+    my $high = $high_low->[0];
+    my $low = $high_low->[1];
     my @barriers                  = sort values %$available_barriers;
     my %skip_list                 = map { $_ => 1 } (@$expired_barriers);
     my @unexpired_barriers        = grep { !$skip_list{$_} } @barriers;
