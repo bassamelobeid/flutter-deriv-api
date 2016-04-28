@@ -24,7 +24,7 @@ BEGIN
       PERFORM 1 FROM pg_class
           WHERE relname='session_payment_details' AND relnamespace = pg_my_temp_schema();
       IF FOUND THEN
-          IF NEW.action_type = 'withdraw'::VARCHAR OR NEW.action_type = 'deposit'::VARCHAR THEN
+          IF NEW.action_type = 'withdrawal'::VARCHAR OR NEW.action_type = 'deposit'::VARCHAR THEN
               SELECT s.remark INTO payment_remark FROM session_payment_details s WHERE payment_id=NEW.payment_id;
           END IF;
           PERFORM pg_notify('transaction_watchers', NEW.id || ',' || NEW.account_id || ',' || NEW.action_type || ',' || NEW.referrer_type || ',' || COALESCE(NEW.financial_market_bet_id,0) || ',' || COALESCE(NEW.payment_id,0) || ',' || NEW.amount || ',' || NEW.balance_after || ',' || NEW.transaction_time  || ',' || short_code ||  ',' || currency_code || ',' || purchase_time || ',' || purchase_price || ',' || sell_time || ',' || payment_remark);
