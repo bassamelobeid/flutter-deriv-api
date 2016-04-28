@@ -1,3 +1,4 @@
+#!perl
 
 use strict;
 use warnings;
@@ -53,7 +54,7 @@ my $ip     = $config->{costarica}->{write}->{ip};           # create_client crea
 my $pw     = $config->{password};
 
 my $listener = DBI->connect(
-    "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub",
+    "dbi:Pg:dbname=regentmarkets@{[$ENV{DB_POSTFIX}//'']};host=$ip;port=5432;application_name=notify_pub",
     'write', $pw,
     {
         AutoCommit => 1,
