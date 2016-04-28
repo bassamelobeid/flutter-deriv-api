@@ -16,13 +16,12 @@ use BOM::Platform::Runtime;
 use lib qw(/home/git/regentmarkets/bom-backoffice/lib/ /home/git/regentmarkets/bom-market/lib/);
 use BOM::RiskReporting::ScenarioAnalysis;
 with 'App::Base::Script';
-with 'BOM::Utility::Logging';
 
 sub script_run {
     my $self = shift;
 
     $self->info('Starting scenario analysis generation.');
-    BOM::RiskReporting::ScenarioAnalysis->new(run_by => $self)->generate;
+    BOM::RiskReporting::ScenarioAnalysis->new->generate;
     $self->info('Completed scenario analysis generation.');
 
     return 0;

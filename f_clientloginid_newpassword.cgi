@@ -48,11 +48,11 @@ my $token = BOM::Platform::Token::Verification->new({
 
 # don't want to touch url_for for this only, need this change else reset password url will have backoffice.binary.com if send from production
 if (BOM::System::Config::node->{node}->{www2}) {
-    $link = 'https://www2.binary.com/user/validate_link?verify_token=' . $token . '&l=' . uc $lang;
+    $link = 'https://www2.binary.com/user/reset_passwordws&l=' . uc $lang;
 } elsif (BOM::System::Config::env =~ /^production$/) {
-    $link = 'https://www.binary.com/user/validate_link?verify_token=' . $token . '&l=' . uc $lang;
+    $link = 'https://www.binary.com/user/reset_passwordws&l=' . uc $lang;
 } else {
-    $link = request()->url_for('/user/validate_link', {verify_token => $token});
+    $link = request()->url_for('/user/reset_passwordws');
 }
 
 my $lost_pass_email;
@@ -60,6 +60,7 @@ BOM::Platform::Context::template->process(
     "email/lost_password.html.tt",
     {
         'link'     => $link,
+        'token'    => $token,
         'helpdesk' => BOM::Platform::Static::Config::get_customer_support_email(),
     },
     \$lost_pass_email
