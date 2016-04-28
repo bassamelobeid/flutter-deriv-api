@@ -79,7 +79,7 @@ sub test_notify {
             split ',', $notify->[-1];
         $notifications{$n->{id}} = $n;
     }
- 
+
     foreach my $test (@tests) {
         my $loginid = $test->{acc}->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
@@ -92,7 +92,7 @@ sub test_notify {
             for my $name (qw/buy_price purchase_time sell_time short_code/) {
                 is $note->{$name}, $test->{fmb}->{$name}, "note{$name} eq fmb{$name}";
             }
-        }
+            }
     };
     1;
 }
@@ -109,7 +109,7 @@ sub test_payment_notify {
             split ',', $notify->[-1];
         $notifications{$n->{id}} = $n;
     }
- 
+
     foreach my $test (@tests) {
         subtest 'testing result for ' . $test->{txn}->{id}, sub {
             my $note = $notifications{$test->{txn}->{id}};
@@ -119,8 +119,7 @@ sub test_payment_notify {
             for my $name (qw/account_id action_type amount balance_after payment_id/) {
                 is $note->{$name}, $test->{txn}->{$name}, "note{$name} eq txn{$name}";
             }
-            #is $note->{payment_remark}, $test->{txn}->{payment}->{remark}, "note{payment_remark} eq payment{remark}";
-        }
+            }
     };
     1;
 }
@@ -224,18 +223,16 @@ lives_ok {
 
 lives_ok {
     my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
- 
+
     test_notify({
-            acc => $acc1
-            , fmb => $res->{$acc1->client_loginid}->{fmb}
-            , txn => $res->{$acc1->client_loginid}->{txn}
+            acc => $acc1,
+            fmb => $res->{$acc1->client_loginid}->{fmb},
+            txn => $res->{$acc1->client_loginid}->{txn}
         },
         {
             acc => $acc3,
             fmb => $res->{$acc3->client_loginid}->{fmb},
-            txn => $res->{$acc3->client_loginid}->{txn}
-        }
-    );
+            txn => $res->{$acc3->client_loginid}->{txn}});
 }
 'survived notify buy_multiple_bets';
 
@@ -271,11 +268,11 @@ lives_ok {
             max_balance => 10000,
         },
         };
-    push @usd_bets, $fmb1-{id};
+    push @usd_bets, $fmb1->{id};
 
     # 2
     my ($txn2, $fmb2) = buy_one_bet $acc1;
-    push @usd_bets, $fmb2-{id};
+    push @usd_bets, $fmb2->{id};
 
     $txnid = sell_one_bet $acc1,
         +{
