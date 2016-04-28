@@ -357,9 +357,27 @@ lives_ok {
     );
     test_payment_notify({txn => $txn});
 
-    #payment_bank_wire
+    $txn = $client->payment_bank_wire(
+        amount   => 10.01,
+        currency => 'USD',
+        remark   => 'Reward from payment_bank_wire'
+    );
+    test_payment_notify({txn => $txn});
 
-    #payment_account_transfer
+    my $txnid = $client->payment_account_transfer(
+        amount   => 20.02,
+        currency => 'USD',
+        toClient => $pa_client,
+        remark   => 'Transfer from CR0010 to Payment Agent Paypal Transaction reference: #USD20.02#F72117379D1DD7B5# Timestamp: ??-???-?? 08:36:49GMT',
+    );
+    $txn = BOM::Database::Model::Transaction->new({
+                'data_object_params' => {
+                'id' => $txnid->{transaction_id}
+            },
+            db => $connection_builder->db
+        });
+    $txn->load();
+    test_payment_notify({txn => $txn->{transaction_record}});
 
     $txn = $client->payment_affiliate_reward(
         amount   => 149.99,
