@@ -40,6 +40,12 @@ $acc1 = create_account 'CR0021';
 $acc2 = create_account 'CR0027';
 $acc3 = create_account 'CR0028';
 
+# for payments tests
+my $pa        = BOM::Platform::Client::PaymentAgent->new({loginid => 'CR0020'});
+my $pa_client = $pa->client;
+my $client    = BOM::Platform::Client->new({loginid => 'CR0021'});
+
+# for notify listening
 my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
 my $ip     = $config->{costarica}->{write}->{ip};           # create_client creates CR clients
 my $pw     = $config->{password};
@@ -294,11 +300,7 @@ lives_ok {
 'survived notify batch_sell_bet';
 
 lives_ok {
-    #my $txn = insert_payment(Date::Utility->new('2016-01-08'), '1000');
-    #my ($date, $amount) = @_;
-    $connection_builder->set_default_account('USD');
-
-    my $txn = $connection_builder->payment_legacy_payment(
+    my $txn = $client->payment_legacy_payment(
         currency     => 'USD',
         amount       => '1000',
         payment_type => 'adjustment',
@@ -306,7 +308,12 @@ lives_ok {
     );
     test_payment_notify ( {txn => $txn} );
 
-
+    $txn = $client->payment_affiliate_reward(
+        amount   => 149.99,
+        currency => 'USD',
+        remark   => 'Reward from affiliate program for trades done by CRxxxx'
+    );
+    test_payment_notify ( {txn => $txn} );
 }
 'survived notify payments';
 
