@@ -171,8 +171,8 @@ sub _build_basis_tick {
     return $basis_tick;
 }
 
-has starts_as_forwarding_starting => (
-    is => 'ro',
+has starts_as_forward_starting => (
+    is      => 'ro',
     default => 0,
 );
 
