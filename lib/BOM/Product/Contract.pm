@@ -171,6 +171,11 @@ sub _build_basis_tick {
     return $basis_tick;
 }
 
+has starts_as_forwarding_starting => (
+    is => 'ro',
+    default => 0,
+);
+
 #expiry_daily - Does this bet expire at close of the exchange?
 has [qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries)]
     => (
@@ -608,10 +613,13 @@ sub _build_current_tick {
 sub _build_pricing_new {
     my $self = shift;
 
+    # Forward starting contract bought. Not a new contract.
+    return 0 if $self->starts_as_forward_starting;
     # do not use $self->date_pricing here because milliseconds matters!
     # _date_pricing_milliseconds will not be set if date_pricing is not built.
     my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
-    return ($time > $self->date_start->epoch) ? 0 : 1;
+    return 0 if $time > $self->date_start->epoch;
+    return 1;
 }
 
 sub _build_timeinyears {
@@ -773,7 +781,7 @@ sub _build_longcode {
     # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
     my $contract_duration = $self->date_expiry->epoch - $self->date_start->epoch;
     my $expiry_type = $self->tick_expiry ? 'tick' : $contract_duration > 86400 ? 'daily' : 'intraday';
-    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->is_forward_starting and $self->fixed_expiry;
+    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->starts_as_forward_starting and $self->fixed_expiry;
     my $localizable_description = $self->localizable_description->{$expiry_type};
 
     my ($when_end, $when_start);
@@ -782,7 +790,7 @@ sub _build_longcode {
         $when_start = '';
     } elsif ($expiry_type eq 'intraday') {
         $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
-        $when_start = $self->is_forward_starting ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
+        $when_start = $self->starts_as_forward_starting ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
     } elsif ($expiry_type eq 'daily') {
         my $close = $self->underlying->exchange->closing_on($self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
