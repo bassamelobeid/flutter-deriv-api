@@ -22,13 +22,17 @@ sub ticks_history {
 
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
-        return $response;
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $response->{error}->{code},
+                message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
     }
 
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
         my $license = BOM::RPC::v3::Contract::validate_license($symbol);
         if ($license and exists $license->{error}) {
-            return $license;
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => $license->{error}->{code},
+                    message_to_client => BOM::Platform::Context::localize($license->{error}->{message}, $symbol)});
         }
     }
 

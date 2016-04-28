@@ -13,9 +13,11 @@ sub validate_table_props {
     my $args = shift;
 
     if (ref $args ne 'HASH') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'WrongPricingTableargs',
-                message_to_client => BOM::Platform::Context::localize("Wrong pricing table arguments")});
+        return {
+            error => {
+                code    => 'WrongPricingTableargs',
+                message => "Wrong pricing table arguments",
+            }};
     }
 
     my %symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
@@ -25,21 +27,30 @@ sub validate_table_props {
 
     # Japan has only Forex/Major-pairs contracts
     if (not defined $args->{symbol} or not $symbols{$args->{symbol}}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidSymbol',
-                message_to_client => BOM::Platform::Context::localize("Symbol [_1] invalid", $args->{symbol})});
+        return {
+            error => {
+                code    => 'InvalidSymbol',
+                message => "Symbol [_1] invalid",
+                params  => [$args->{symbol}],
+            }};
     }
 
     if (not defined $args->{date_expiry} or $args->{date_expiry} !~ /^\d+$/) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidDateExpiry',
-                message_to_client => BOM::Platform::Context::localize("Date expiry [_1] invalid", $args->{date_expiry})});
+        return {
+            error => {
+                code    => 'InvalidDateExpiry',
+                message => "Date expiry [_1] invalid",
+                params  => [$args->{date_expiry}],
+            }};
     }
 
     if (not defined $args->{contract_category} or $args->{contract_category} !~ /^[a-z]+$/i) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidContractCategory',
-                message_to_client => BOM::Platform::Context::localize("Contract category [_1] invalid", $args->{contract_category})});
+        return {
+            error => {
+                code    => 'InvalidContractCategory',
+                message => "Contract category [_1] invalid",
+                params  => [$args->{contract_category}],
+            }};
     }
 
     return;

@@ -20,6 +20,40 @@ subtest validate_table_props => sub {
         undef,
         'validate_table_props'
     );
+
+    is_deeply(
+        BOM::RPC::v3::Japan::Contract::validate_table_props({
+                symbol            => 'invalid',
+                date_expiry       => 1459406383,
+                contract_category => 'callput',
+            }
+        ),
+        {
+            error => {
+                code    => 'InvalidSymbol',
+                message => "Symbol [_1] invalid",
+                params  => [qw/ invalid /],
+            }
+        },
+        'validate_table_props'
+    );
+
+    is_deeply(
+        BOM::RPC::v3::Japan::Contract::validate_table_props({
+                symbol            => 'frxEURUSD',
+                date_expiry       => 'test',
+                contract_category => 'callput',
+            }
+        ),
+        {
+            error => {
+                code    => 'InvalidDateExpiry',
+                message => "Date expiry [_1] invalid",
+                params  => [qw/ test /],
+            }
+        },
+        'validate_table_props'
+    );
 };
 
 subtest get_channel_name => sub {

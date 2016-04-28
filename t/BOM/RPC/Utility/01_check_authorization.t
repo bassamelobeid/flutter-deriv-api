@@ -27,16 +27,11 @@ subtest 'Initialization' => sub {
 };
 
 my $module = Test::MockModule->new('BOM::Platform::Context::Request');
-$module->mock('_build_language', sub { 'RU' });
+$module->mock('_build_language', sub { 'EN' });
 
 lives_ok { $auth_result = BOM::RPC::v3::Utility::check_authorization() } 'Should return result of check';
 
-is_deeply $auth_result->{error},
-    {
-    message_to_client => 'Пожалуйста, войдите в систему.',
-    code              => 'AuthorizationRequired',
-    },
-    'It should return error: AuthorizationRequired';
+is_deeply $auth_result->{error}->{code}, 'AuthorizationRequired', 'It should return error: AuthorizationRequired';
 
 lives_ok {
     $client->set_status('disabled', 'test', 'test');
@@ -46,12 +41,7 @@ lives_ok {
 
 lives_ok { $auth_result = BOM::RPC::v3::Utility::check_authorization($client) } 'Should return result of check';
 
-is_deeply $auth_result->{error},
-    {
-    code              => 'DisabledClient',
-    message_to_client => 'Данный счёт недоступен.',
-    },
-    'It should return error: DisabledClient';
+is $auth_result->{error}->{code}, 'DisabledClient', 'It should return error: DisabledClient';
 
 my $date_until = Date::Utility->new->plus_time_interval('1d')->date_yyyymmdd;
 lives_ok {

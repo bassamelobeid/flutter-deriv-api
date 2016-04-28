@@ -57,8 +57,9 @@ subtest 'validate_symbol' => sub {
         BOM::RPC::v3::Contract::validate_symbol('invalid_symbol'),
         {
             'error' => {
-                'message_to_client' => 'Symbol invalid_symbol invalid',
-                'code'              => 'InvalidSymbol'
+                'message' => 'Symbol [_1] invalid',
+                'code'    => 'InvalidSymbol',
+                params    => [qw/ invalid_symbol /],
             }
         },
         'return error if symbol is invalid'
@@ -72,8 +73,9 @@ subtest 'validate_license' => sub {
         BOM::RPC::v3::Contract::validate_license('JCI'),
         {
             error => {
-                message_to_client => 'Realtime quotes not available for JCI',
-                code              => 'NoRealtimeQuotes'
+                message => 'Realtime quotes not available for [_1]',
+                code    => 'NoRealtimeQuotes',
+                params  => [qw/ JCI /],
             }
         },
         "return error if symbol is not realtime"
@@ -86,8 +88,9 @@ subtest 'validate_underlying' => sub {
         BOM::RPC::v3::Contract::validate_underlying('invalid_symbol'),
         {
             'error' => {
-                'message_to_client' => 'Symbol invalid_symbol invalid',
-                'code'              => 'InvalidSymbol'
+                'message' => 'Symbol [_1] invalid',
+                'code'    => 'InvalidSymbol',
+                params    => [qw/ invalid_symbol /],
             }
         },
         'return error if symbol is invalid'
@@ -97,8 +100,9 @@ subtest 'validate_underlying' => sub {
         BOM::RPC::v3::Contract::validate_underlying('JCI'),
         {
             error => {
-                message_to_client => 'Realtime quotes not available for JCI',
-                code              => 'NoRealtimeQuotes'
+                message => 'Realtime quotes not available for [_1]',
+                code    => 'NoRealtimeQuotes',
+                params  => [qw/ JCI /],
             }
         },
         "return error if symbol is not realtime"
@@ -187,10 +191,9 @@ subtest 'get_ask' => sub {
     my $expected = {
         'display_value' => '51.49',
         'ask_price'     => '51.49',
-        'longcode' =>
-            'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
-        'spot'   => '963.3054',
-        'payout' => '100'
+        'longcode'      => 'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'spot'          => '963.3054',
+        'payout'        => '100'
     };
     is_deeply($result, $expected, 'the left values are all right');
 
@@ -242,17 +245,11 @@ subtest 'send_ask' => sub {
                 print STDERR $msg;
             }
         };
-        $c->call_ok(
-            'send_ask',
-            {
-                args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
+        $c->call_ok('send_ask', {args => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
         $mock_contract->mock('_get_ask', sub { die });
-        $c->call_ok(
-            'send_ask',
-            {
-                args     => {}})->has_error->error_code_is('pricing error')->error_message_is('Unable to price the contract.');
+        $c->call_ok('send_ask', {args => {}})->has_error->error_code_is('pricing error')->error_message_is('Unable to price the contract.');
     }
 };
 
@@ -355,9 +352,7 @@ subtest 'get_bid' => sub {
 
 my $method = 'get_contract_details';
 subtest $method => sub {
-    my $params = {
-        token    => '12345'
-    };
+    my $params = {token => '12345'};
 
     $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
     $client->set_status('disabled', 1, 'test');
@@ -377,9 +372,8 @@ subtest $method => sub {
     $params->{short_code} = $contract->shortcode;
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
-            'symbol' => 'R_50',
-            'longcode' =>
-                "USD 194.22 payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
+            'symbol'       => 'R_50',
+            'longcode'     => "USD 194.22 payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
         },
@@ -440,10 +434,9 @@ subtest $method => sub {
         'entry_tick_time' => 1127286661,
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287059,
-        'longcode' =>
-            'USD 208.18 payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
-        'shortcode'  => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
-        'underlying' => 'frxAUDCAD',
+        'longcode'        => 'USD 208.18 payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
+        'shortcode'       => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
+        'underlying'      => 'frxAUDCAD',
     };
 
     foreach my $key (keys %$expected_result) {
