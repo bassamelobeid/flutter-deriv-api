@@ -67,7 +67,7 @@ CREATE CONSTRAINT TRIGGER ensure_fmb_id_before_delete
   ON financial_market_bet_open
   DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW
-  EXECUTE PROCEDURE ensure_fmb_id_exists();
+  EXECUTE PROCEDURE ensure_only_fmb_id_exists();
 
 CREATE INDEX fmbo_account_id_bet_class_idx ON financial_market_bet_open USING btree (account_id, bet_class);
 
