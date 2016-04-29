@@ -120,4 +120,55 @@ client_limits:
       AUD: 100000
       GBP: 100000
       JPY: 10000000
-
+  extreme_risk:
+      turnover:
+          USD: 10000
+          EUR: 10000
+          AUD: 10000
+          GBP: 10000
+          JPY: 1000000
+      payout:
+          USD: 1000
+          EUR: 1000
+          AUD: 1000
+          GBP: 1000
+          JPY: 100000
+  high_risk:
+      turnover:
+          USD: 50000
+          EUR: 50000
+          AUD: 50000
+          GBP: 50000
+          JPY: 5000000
+      payout:
+          USD: 5000
+          EUR: 5000
+          AUD: 5000
+          GBP: 5000
+          JPY: 500000
+  medium_risk:
+      turnover:
+          USD: 100000
+          EUR: 100000
+          AUD: 100000
+          GBP: 100000
+          JPY: 10000000
+      payout:
+          USD: 20000
+          EUR: 20000
+          AUD: 20000
+          GBP: 20000
+          JPY: 2000000
+  low_risk:
+      turnover:
+          USD: 500000
+          EUR: 500000
+          AUD: 500000
+          GBP: 500000
+          JPY: 50000000
+      payout:
+          USD: 50000
+          EUR: 50000
+          AUD: 50000
+          GBP: 50000
+          JPY: 5000000
