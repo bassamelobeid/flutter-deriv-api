@@ -94,7 +94,6 @@ sub test_notify {
             }
         }
     }
-    1;
 }
 
 sub test_payment_notify {
@@ -122,7 +121,6 @@ sub test_payment_notify {
             is $note->{payment_remark}, $test->{remark}, 'payment_remark';
         }
     }
-    1;
 }
 
 sub buy_one_bet {
@@ -330,7 +328,6 @@ subtest 'survived notify batch_sell_bet', sub {
 
         my $res = $fmb->batch_sell_bet;
 
-        # note explain $res;
         is 0 + @$res, 5, 'sold 5 out of 6 bets (1 was already sold)';
 
         test_notify (
@@ -368,7 +365,6 @@ subtest 'survived notify payments', sub {
         remark   => 'reference: #USD20.02#F72117379D1DD7B5#',
         fmRemark => 'from reference: #USD20.02#F72117379D1DD7B5#',
         toRemark => 'to reference: #USD20.02#F72117379D1DD7B5#',
-        #inter_db_transfer=>1,
     );
     $txn = BOM::Database::Model::Transaction->new({
                 'data_object_params' => {
