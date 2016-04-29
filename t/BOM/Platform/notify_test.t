@@ -232,18 +232,17 @@ subtest 'survived notify buy_one_bet', sub {
 };
 
 subtest 'survived notify buy_multiple_bets', sub {
-#    my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
-#
-#    test_notify({
-#            acc => $acc1,
-#            fmb => $res->{$acc1->client_loginid}->{fmb},
-#            txn => $res->{$acc1->client_loginid}->{txn}
-#        },
-#        {
-#            acc => $acc3,
-#            fmb => $res->{$acc3->client_loginid}->{fmb},
-#            txn => $res->{$acc3->client_loginid}->{txn}});
-    is 1, 1, 'payment_remark';
+    my $res = buy_multiple_bets [$acc1, $acc3, $acc4];
+
+    test_notify({
+            acc => $acc1,
+            fmb => $res->{$acc1->client_loginid}->{fmb},
+            txn => $res->{$acc1->client_loginid}->{txn}
+        },
+        {
+            acc => $acc3,
+            fmb => $res->{$acc3->client_loginid}->{fmb},
+            txn => $res->{$acc3->client_loginid}->{txn}});
 };
 
 subtest 'survived notify sell_one_bet', sub {
