@@ -71,6 +71,7 @@ subtest 'entry tick before contract start (only forward starting contracts)' => 
     $bet_params->{date_start}          = $now;
     $bet_params->{duration}            = $contract_duration . 's';
     $bet_params->{is_forward_starting} = 1;
+    $bet_params->{starts_as_forward_starting} = 1;
     $bet_params->{date_pricing}        = $now->epoch + $contract_duration + 1;
     my $c = produce_contract($bet_params);
     ok $c->is_expired, 'contract expired';
@@ -85,6 +86,7 @@ subtest 'waiting for entry tick' => sub {
     $bet_params->{date_pricing}        = $now->epoch + 1;
     $bet_params->{duration}            = '1h';
     delete $bet_params->{is_forward_starting};
+    delete $bet_params->{starts_as_forward_starting};
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like($c->primary_validation_error->message, qr/Waiting for entry tick/, 'throws error');

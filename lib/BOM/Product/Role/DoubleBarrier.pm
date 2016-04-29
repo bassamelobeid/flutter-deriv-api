@@ -60,17 +60,18 @@ sub _build_low_barrier {
     return $self->make_barrier($self->supplied_low_barrier);
 }
 
-sub _barriers_for_pricing {
+has barriers_for_pricing => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_barriers_for_pricing',
+);
+
+sub _build_barriers_for_pricing {
     my $self = shift;
     return {
         barrier1 => $self->_apply_barrier_adjustment($self->high_barrier->as_absolute),
         barrier2 => $self->_apply_barrier_adjustment($self->low_barrier->as_absolute),
     };
-}
-
-sub _barriers_for_shortcode {
-    my $self = shift;
-    return ($self->high_barrier and $self->low_barrier) ? ($self->high_barrier->for_shortcode, $self->low_barrier->for_shortcode) : ();
 }
 
 sub _validate_barrier {

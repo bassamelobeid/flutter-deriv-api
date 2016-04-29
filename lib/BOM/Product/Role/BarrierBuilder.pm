@@ -24,7 +24,7 @@ sub make_barrier {
     }
 
     if (    $self->underlying->market->integer_barrier
-        and not $self->built_with_bom_parameters
+        and not $self->for_sale
         and $string_version !~ /^S-?\d+P$/i
         and not isint($string_version))
     {
