@@ -9,6 +9,7 @@ use Test::NoWarnings;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Market::AggTicks;
 
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -59,6 +60,8 @@ my $args = {
     payout       => 10,
     barrier      => 'S0P',
 };
+
+BOM::Market::AggTicks->new->flush;
 
 subtest 'PUT variations' => sub {
     lives_ok {
@@ -151,7 +154,7 @@ subtest 'shortcodes' => sub {
             produce_contract('PUT_FRXUSDJPY_10_' . $now->plus_time_interval('10m')->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0',
             'USD');
         isa_ok $c, 'BOM::Product::Contract::Put';
-        ok $c->is_forward_starting;
+        ok $c->starts_as_forward_starting;
     }
     'builds forward starting put from shortcode';
     lives_ok {

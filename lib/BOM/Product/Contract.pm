@@ -146,7 +146,7 @@ sub _build_basis_tick {
 
     my ($basis_tick, $potential_error);
 
-    if (not $self->pricing_new) {
+    if (not $self->pricing_new and not $self->is_forward_starting) {
         $basis_tick      = $self->entry_tick;
         $potential_error = localize('Waiting for entry tick.');
     } else {
@@ -170,6 +170,11 @@ sub _build_basis_tick {
 
     return $basis_tick;
 }
+
+has starts_as_forward_starting => (
+    is      => 'ro',
+    default => 0,
+);
 
 #expiry_daily - Does this bet expire at close of the exchange?
 has [qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries)]
@@ -346,7 +351,7 @@ has [qw(
     lazy_build => 1,
     );
 
-=item built_with_bom_parameters
+=item for_sale
 
 Was this bet built using BOM-generated parameters, as opposed to user-supplied parameters?
 
@@ -357,7 +362,7 @@ This will contain the shortcode of the original bet, if we built it from one.
 
 =cut
 
-has built_with_bom_parameters => (
+has for_sale => (
     is      => 'ro',
     isa     => 'Bool',
     default => 0,
@@ -442,7 +447,7 @@ has exchange => (
     default => sub { return shift->underlying->exchange; },
 );
 
-has opposite_bet => (
+has opposite_contract => (
     is         => 'ro',
     isa        => 'BOM::Product::Contract',
     lazy_build => 1
@@ -608,10 +613,13 @@ sub _build_current_tick {
 sub _build_pricing_new {
     my $self = shift;
 
+    # Forward starting contract bought. Not a new contract.
+    return 0 if $self->starts_as_forward_starting;
     # do not use $self->date_pricing here because milliseconds matters!
     # _date_pricing_milliseconds will not be set if date_pricing is not built.
     my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
-    return ($time > $self->date_start->epoch) ? 0 : 1;
+    return 0 if $time > $self->date_start->epoch;
+    return 1;
 }
 
 sub _build_timeinyears {
@@ -645,7 +653,7 @@ sub _build_timeindays {
 
     my $atid;
     # If market is Forex, We go with integer days as per the market convention
-    if ($self->market->integer_number_of_day and $self->pricing_engine_name !~ /Intraday::Forex/) {
+    if ($self->market->integer_number_of_day and not $self->priced_with_intraday_model) {
         my $utils        = BOM::MarketData::VolSurface::Utils->new;
         my $days_between = $self->date_expiry->days_between($self->date_start);
         $atid = $utils->is_before_rollover($self->date_start) ? ($days_between + 1) : $days_between;
@@ -667,41 +675,71 @@ sub _build_timeindays {
     return $tid;
 }
 
-sub _build_opposite_bet {
+# we use pricing_engine_name matching all the time.
+has priced_with_intraday_model => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_priced_with_intraday_model',
+);
+
+sub _build_priced_with_intraday_model {
+    my $self = shift;
+
+    # Intraday::Index is just a flat price + commission, so it is not considered as a model.
+    return ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex');
+}
+
+sub _build_opposite_contract {
     my $self = shift;
 
     # Start by making a copy of the parameters we used to build this bet.
-    my %build_parameters = %{$self->build_parameters};
-    # Note from which extant bet we are building this.
-    $build_parameters{'built_with_bom_parameters'} = 1;
+    my %opp_parameters = %{$self->build_parameters};
+
+    my @opposite_contract_parameters = qw(volsurface fordom forqqq domqqq);
+    if ($self->pricing_new) {
+        # setup the parameters for an opposite contract.
+        $opp_parameters{date_start}  = $self->date_start;
+        $opp_parameters{pricing_new} = 1;
+        push @opposite_contract_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
+        push @opposite_contract_parameters, qw(empirical_volsurface average_tick_count long_term_prediction news_adjusted_pricing_vol)
+            if $self->priced_with_intraday_model;
+    } else {
+        # not pricing_new will only happen when we are repricing an
+        # existing contract in our system.
+
+        # we still want to set for_sale for a forward_starting contracts
+        $opp_parameters{for_sale} = 1;
+        # delete traces of this contract were a forward starting contract before.
+        delete $opp_parameters{starts_as_forward_starting};
+        # duration could be set for an opposite contract from bad hash reference reused.
+        delete $opp_parameters{duration};
+
+        if (not $self->is_forward_starting) {
+            if ($self->entry_tick) {
+                foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
+                    $opp_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
+                }
+            }
+            # We should be looking to move forward in time to a bet starting now.
+            $opp_parameters{date_start}   = $self->date_pricing;
+            $opp_parameters{date_pricing} = $self->date_pricing;
+            # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
+            # Currently, 'sell at market' button will appear when current spot == barrier when the duration
+            # of the contract is less than the minimum duration of non ATM contract.
+            $opp_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
+        }
+    }
 
     # Always switch out the bet type for the other side.
-    $build_parameters{'bet_type'} = $self->other_side_code;
+    $opp_parameters{'bet_type'} = $self->other_side_code;
     # Don't set the shortcode, as it will change between these.
-    delete $build_parameters{'shortcode'};
-    # Save a round trip.. copy the volsurfaces
-    foreach my $vol_param (qw(volsurface empirical_volsurface fordom forqqq domqqq)) {
-        my $predicate = 'has_' . $vol_param;
-        $build_parameters{$vol_param} = $self->$vol_param if ($self->$predicate);
+    delete $opp_parameters{'shortcode'};
+    # Save a round trip.. copy market data
+    foreach my $vol_param (@opposite_contract_parameters) {
+        $opp_parameters{$vol_param} = $self->$vol_param;
     }
 
-    # We should be looking to move forward in time to a bet starting now.
-    if (not $self->pricing_new) {
-        if ($self->entry_tick) {
-            foreach my $barrier ($self->two_barriers ? ('high_barrier', 'low_barrier') : ('barrier')) {
-                $build_parameters{$barrier} = $self->$barrier->as_absolute if defined $self->$barrier;
-            }
-        }
-        $build_parameters{date_start}   = $self->date_pricing;
-        $build_parameters{date_pricing} = $self->date_pricing;
-
-        # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
-        # Currently, 'sell at market' button will appear when current spot == barrier when the duration
-        # of the contract is less than the minimum duration of non ATM contract.
-        $build_parameters{is_atm_bet} = 0 if ($self->category_code eq 'callput');
-    }
-
-    return $self->_produce_contract_ref->(\%build_parameters);
+    return $self->_produce_contract_ref->(\%opp_parameters);
 }
 
 sub _build_empirical_volsurface {
@@ -749,7 +787,7 @@ sub _build_longcode {
     # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
     my $contract_duration = $self->date_expiry->epoch - $self->date_start->epoch;
     my $expiry_type = $self->tick_expiry ? 'tick' : $contract_duration > 86400 ? 'daily' : 'intraday';
-    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->is_forward_starting and $self->fixed_expiry;
+    $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->starts_as_forward_starting and $self->fixed_expiry;
     my $localizable_description = $self->localizable_description->{$expiry_type};
 
     my ($when_end, $when_start);
@@ -758,7 +796,7 @@ sub _build_longcode {
         $when_start = '';
     } elsif ($expiry_type eq 'intraday') {
         $when_end = $self->get_time_to_expiry({from => $self->date_start})->as_string;
-        $when_start = $self->is_forward_starting ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
+        $when_start = $self->starts_as_forward_starting ? $self->date_start->db_timestamp . ' GMT' : localize('contract start time');
     } elsif ($expiry_type eq 'daily') {
         my $close = $self->underlying->exchange->closing_on($self->date_expiry);
         if ($close and $close->epoch != $self->date_expiry->epoch) {
@@ -897,8 +935,8 @@ sub _build_bid_probability {
     });
 
     $marked_down->include_adjustment('add', $self->discounted_probability);
-    $self->opposite_bet->ask_probability->exclude_adjustment('deep_otm_markup');
-    $marked_down->include_adjustment('subtract', $self->opposite_bet->ask_probability);
+    $self->opposite_contract->ask_probability->exclude_adjustment('deep_otm_markup');
+    $marked_down->include_adjustment('subtract', $self->opposite_contract->ask_probability);
 
     return $marked_down;
 }
@@ -913,7 +951,7 @@ sub _build_total_markup {
     my $self = shift;
 
     my %max =
-          ($self->pricing_engine_name =~ /Intraday::Forex/ and not $self->is_atm_bet)
+          ($self->priced_with_intraday_model and not $self->is_atm_bet)
         ? ()
         : (maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100);
 
@@ -1037,7 +1075,7 @@ sub _build_commission_adjustment {
 
     $comm_scale->include_adjustment('reset', $adjustment_used);
 
-    if ($self->built_with_bom_parameters) {
+    if ($self->for_sale) {
         $comm_scale->include_adjustment(
             'multiply',
             Math::Util::CalculatedValue::Validatable->new({
@@ -1058,7 +1096,7 @@ sub is_valid_to_buy {
 
     my $valid = $self->confirm_validity;
 
-    return ($self->built_with_bom_parameters) ? $valid : $self->_report_validation_stats('buy', $valid);
+    return ($self->for_sale) ? $valid : $self->_report_validation_stats('buy', $valid);
 }
 
 sub is_valid_to_sell {
@@ -1077,9 +1115,9 @@ sub is_valid_to_sell {
             $self->missing_market_data(1) if not $hold_for_exit_tick;
             $self->add_error($ref);
         }
-    } elsif (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
+    } elsif (not $self->is_expired and not $self->opposite_contract->is_valid_to_buy) {
         # Their errors are our errors, now!
-        $self->add_error($self->opposite_bet->primary_validation_error);
+        $self->add_error($self->opposite_contract->primary_validation_error);
     }
 
     if (scalar @{$self->corporate_actions}) {
@@ -1231,7 +1269,7 @@ sub _build_model_markup {
             set_by      => $self->pricing_engine_name,
             base_amount => $self->pricing_engine->commission_markup,
         });
-        if ($self->built_with_bom_parameters) {
+        if ($self->for_sale) {
             my $sell_discount = Math::Util::CalculatedValue::Validatable->new({
                 name        => 'sell_discount',
                 description => 'Discount on sell',
@@ -1270,8 +1308,14 @@ sub _build_shortcode {
         :                         $self->date_expiry->epoch;
 
     my @shortcode_elements = ($self->code, $self->underlying->symbol, $self->payout, $shortcode_date_start, $shortcode_date_expiry);
-    my @barriers = $self->_barriers_for_shortcode;
-    push @shortcode_elements, @barriers if @barriers;
+
+    if ($self->two_barriers) {
+        push @shortcode_elements, ($self->high_barrier->for_shortcode, $self->low_barrier->for_shortcode);
+    } elsif ($self->barrier) {
+        # Having a hardcoded 0 for single barrier is dumb.
+        # We should get rid of this legacy
+        push @shortcode_elements, ($self->barrier->for_shortcode, 0);
+    }
 
     return uc join '_', @shortcode_elements;
 }
@@ -1282,7 +1326,7 @@ sub _build_entry_tick {
     # entry tick if never defined if it is a newly priced contract.
     return if $self->pricing_new;
     my $entry_epoch = $self->date_start->epoch;
-    return $self->underlying->tick_at($entry_epoch) if $self->is_forward_starting;
+    return $self->underlying->tick_at($entry_epoch) if $self->starts_as_forward_starting;
     return $self->underlying->next_tick_after($entry_epoch);
 }
 
@@ -1299,7 +1343,7 @@ sub _build_pricing_args {
     my $self = shift;
 
     my $start_date           = $self->date_pricing;
-    my $barriers_for_pricing = $self->_barriers_for_pricing;
+    my $barriers_for_pricing = $self->barriers_for_pricing;
     my $args                 = {
         spot            => $self->pricing_spot,
         r_rate          => $self->r_rate,
@@ -1311,10 +1355,9 @@ sub _build_pricing_args {
         discount_rate   => $self->discount_rate,
         mu              => $self->mu,
         payouttime_code => $self->payouttime_code,
-        starttime       => $start_date->epoch,
     };
 
-    if ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex') {
+    if ($self->priced_with_intraday_model) {
         $args->{average_tick_count}   = $self->average_tick_count;
         $args->{long_term_prediction} = $self->long_term_prediction;
         $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
@@ -1343,7 +1386,7 @@ sub _build_pricing_vol {
             days  => $self->timeindays->amount,
             delta => 50
         });
-    } elsif ($pen =~ /Intraday::Forex/) {
+    } elsif ($self->priced_with_intraday_model) {
         my $volsurface       = $self->empirical_volsurface;
         my $duration_seconds = $self->timeindays->amount * 86400;
         # volatility doesn't matter for less than 10 minutes ATM contracts,
@@ -1470,7 +1513,7 @@ sub _build_vol_at_strike {
 
     my $pricing_spot = $self->pricing_spot;
     my $vol_args     = {
-        strike => $self->_barriers_for_pricing->{barrier1},
+        strike => $self->barriers_for_pricing->{barrier1},
         q_rate => $self->q_rate,
         r_rate => $self->r_rate,
         spot   => $pricing_spot,
@@ -1485,8 +1528,12 @@ sub _build_vol_at_strike {
 }
 
 # pricing_spot - The spot used in pricing.  It may have been adjusted for corporate actions.
+has pricing_spot => (
+    is         => 'ro',
+    lazy_build => 1,
+);
 
-sub pricing_spot {
+sub _build_pricing_spot {
     my $self = shift;
 
     # always use current spot to price for sale or buy.
@@ -1494,7 +1541,7 @@ sub pricing_spot {
     if ($self->current_tick) {
         $initial_spot = $self->current_tick->quote;
         # take note of this only when we are trying to sell a contract
-        $self->sell_tick($self->current_tick) if $self->built_with_bom_parameters;
+        $self->sell_tick($self->current_tick) if $self->for_sale;
     } else {
         # If we could not get the correct spot to price, we will take the latest available spot at pricing time.
         # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
@@ -1592,14 +1639,14 @@ sub _build_staking_limits {
         ($self->underlying->market->name eq 'volidx')
         ? $bet_limits->{min_payout}->{volidx}->{$curr}
         : $bet_limits->{min_payout}->{default}->{$curr};
-    my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
+    my $stake_min = ($self->for_sale) ? $payout_min / 20 : $payout_min / 2;
 
     # err is included here to allow the web front-end access to the same message generated in the back-end.
     return {
         stake => {
             min => $stake_min,
             max => $stake_max,
-            err => ($self->built_with_bom_parameters)
+            err => ($self->for_sale)
             ? localize('Contract market price is too close to final payout.')
             : localize(
                 'Buy price must be between [_1] and [_2].',
@@ -1669,7 +1716,7 @@ sub _pricing_parameters {
     return {
         priced_with       => $self->priced_with,
         spot              => $self->pricing_spot,
-        strikes           => [grep { $_ } values %{$self->_barriers_for_pricing}],
+        strikes           => [grep { $_ } values %{$self->barriers_for_pricing}],
         date_start        => $self->effective_start,
         date_expiry       => $self->date_expiry,
         date_pricing      => $self->date_pricing,
@@ -2184,7 +2231,7 @@ sub _validate_payout {
     my $self = shift;
 
     # Extant contracts can have whatever payouts were OK then.
-    return if $self->built_with_bom_parameters;
+    return if $self->for_sale;
 
     my $bet_payout      = $self->payout;
     my $payout_currency = $self->currency;
@@ -2255,7 +2302,7 @@ sub _validate_stake {
 
     # Compared as strings of maximum visible client currency width to avoid floating-point issues.
     if (sprintf("%.2f", $contract_stake) eq sprintf("%.2f", $contract_payout)) {
-        my $message = ($self->built_with_bom_parameters) ? localize('Current market price is 0.') : localize('This contract offers no return.');
+        my $message = ($self->for_sale) ? localize('Current market price is 0.') : localize('This contract offers no return.');
         return {
             message           => format_error_string('stake same as payout'),
             message_to_client => $message,
@@ -2290,7 +2337,7 @@ sub _validate_input_parameters {
             ),
             message_to_client => localize("Expiry time cannot be in the past."),
         };
-    } elsif (not $self->built_with_bom_parameters and $epoch_start < $when_epoch) {
+    } elsif (not $self->for_sale and $epoch_start < $when_epoch) {
         return {
             message => format_error_string(
                 'starts in the past',
@@ -2304,7 +2351,7 @@ sub _validate_input_parameters {
             message           => format_error_string('Forward time for non-forward-starting contract type', code => $self->code),
             message_to_client => localize('Start time is in the future.'),
         };
-    } elsif ($self->is_forward_starting and not $self->built_with_bom_parameters) {
+    } elsif ($self->is_forward_starting and not $self->for_sale) {
         # Intraday cannot be bought in the 5 mins before the bet starts, unless we've built it for that purpose.
         my $fs_blackout_seconds = 300;
         if ($epoch_start < $when_epoch + $fs_blackout_seconds) {
@@ -2317,11 +2364,6 @@ sub _validate_input_parameters {
         return {
             message           => format_error_string('already expired contract'),
             message_to_client => localize("Contract has already expired."),
-        };
-    } elsif ($self->build_parameters->{pricing_vol}) {
-        return {
-            message           => format_error_string('forced (not calculated) IV'),
-            message_to_client => localize("Prevailing market price cannot be determined."),
         };
     } elsif ($self->expiry_daily) {
         my $date_expiry = $self->date_expiry;
@@ -2406,7 +2448,7 @@ sub _validate_trading_times {
                 $trade_count++;
             }
             my $message =
-                ($self->built_with_bom_parameters)
+                ($self->for_sale)
                 ? localize('Resale of this contract is not offered due to market holidays during contract period.')
                 : localize("Too many market holidays during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
             my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
@@ -2564,7 +2606,7 @@ sub _validate_start_and_expiry_date {
 sub _validate_lifetime {
     my $self = shift;
 
-    if ($self->tick_expiry and $self->built_with_bom_parameters) {
+    if ($self->tick_expiry and $self->for_sale) {
         # we don't offer sellback on tick expiry contracts.
         return {
             message           => format_error_string('resale of tick expiry contract'),
@@ -2576,7 +2618,7 @@ sub _validate_lifetime {
     my ($min_duration, $max_duration) = @{$permitted}{'min', 'max'};
 
     my $message_to_client =
-        $self->built_with_bom_parameters
+        $self->for_sale
         ? localize('Resale of this contract is not offered.')
         : localize('Trading is not offered for this duration.');
 
@@ -2642,7 +2684,7 @@ sub _validate_volsurface {
 
     my $exceeded;
     if (    $self->market->name eq 'forex'
-        and $self->pricing_engine_name !~ /Intraday::Forex/
+        and not $self->priced_with_intraday_model
         and $self->timeindays->amount < 4
         and not $self->is_atm_bet
         and $surface_age > 6)
