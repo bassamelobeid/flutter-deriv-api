@@ -1,5 +1,7 @@
 BEGIN;
 
+--this is a revision (a minor tweak really) to 030_buy_bet to implement our transition to financial_market_bet_open fmbo for open bets and fmb for closed bets
+
 CREATE OR REPLACE FUNCTION session_bet_details (
     action_type VARCHAR(10),
     fmb_id bigint,
@@ -76,7 +78,7 @@ BEGIN
 
     RESET log_min_messages;
 
-    INSERT INTO bet.financial_market_bet (
+    INSERT INTO bet.financial_market_bet_open (
         purchase_time,
         account_id,
         underlying_symbol,
