@@ -289,7 +289,25 @@ quants:
           isa: ArrayRef
           default: []
           global: 1
-
+    apply_extreme_risk_limits:
+      description: "Products(contract type or underlyings) that we want to apply extreme_risk payout and turnover limits to."
+      isa: section
+      contains:
+        contract_types:
+          description: "An array reference of contract types"
+          isa: ArrayRef
+          default: []
+          global: 1
+        markets:
+          description: "An array reference of markets"
+          isa: ArrayRef
+          default: []
+          global: 1
+        underlying_symbols:
+          description: "An array reference of underlying_symbols"
+          isa: ArrayRef
+          default: []
+          global: 1
     underlyings:
       description: "Underlying-specific variables"
       isa: section
