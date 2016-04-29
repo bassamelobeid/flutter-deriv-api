@@ -3,7 +3,6 @@ package BOM::Platform::ProveID;
 use strict;
 use warnings;
 
-use BOM::Utility::Log4perl;
 use BOM::Platform::Runtime;
 use BOM::System::Config;
 use BOM::System::RedisReplicated;
@@ -22,7 +21,7 @@ In other countries, it checks the drivers license, ID card number, passport MRZ.
 But since we don't capture this data it won't work for us.
 =cut
 
-# override some of the defaults with our credentials, our logger, and our folder.
+# override some of the defaults with our credentials, and our folder.
 sub new {
     my ($class, %args) = @_;
     my $client = $args{client} || die 'needs a client';
@@ -62,7 +61,6 @@ sub defaults {
 
     return (
         $self->SUPER::defaults,
-        logger        => BOM::Utility::Log4perl::get_logger,
         username      => BOM::System::Config::third_party->{proveid}->{username},
         password      => BOM::System::Config::third_party->{proveid}->{password},
         folder        => $folder,
