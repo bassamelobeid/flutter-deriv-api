@@ -574,7 +574,7 @@ sub get_limit_for_payout {
 # Due to not wanting to have to mess with client database, we will add this to config.
 # I don't think we will have a big list of custom open positions payout limit.
 sub get_open_positions_payout_limit {
-    my ($self, $market_type) = @_;
+    my $self = shift;
 
     my $client_specific = BOM::Platform::Runtime->instance->app_config->quants->internal->custom_clients_open_positions_payout_limit;
 
@@ -583,7 +583,7 @@ sub get_open_positions_payout_limit {
     my $universal_limit = BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions};
     my $currency = $self->currency;
 
-    return $universal_limit->{$market_type}{$currency};
+    return $universal_limit->{$currency};
 }
 
 sub get_limit {

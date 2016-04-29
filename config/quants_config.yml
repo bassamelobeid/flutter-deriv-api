@@ -115,13 +115,6 @@ client_limits:
       GBP: 200000
       JPY: 20000000
   max_payout_open_positions:
-    random:
-      USD: 500000
-      EUR: 500000
-      AUD: 500000
-      GBP: 500000
-      JPY: 50000000
-    financial:
       USD: 100000
       EUR: 100000
       AUD: 100000
