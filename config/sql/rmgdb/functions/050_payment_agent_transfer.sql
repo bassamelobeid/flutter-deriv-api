@@ -82,11 +82,12 @@ BEGIN
         v_to_account = v_r;
     END IF;
 
+    -- is it a payment_agent_transfer?
     IF payment.is_payment_agent(p_from_loginid) OR payment.is_payment_agent(p_to_loginid) THEN
         v_gateway_code := 'payment_agent_transfer';
     END IF;
 
-  -- withdrawal
+    -- withdrawal
     INSERT INTO payment.payment (account_id, amount, payment_gateway_code,
                                  payment_type_code, status, staff_loginid, remark)
     VALUES (v_from_account.id, -p_amount, v_gateway_code,
@@ -112,6 +113,7 @@ BEGIN
             'payment', 'deposit', 1)
     RETURNING * INTO v_to_trans;
 
+    -- link them together
     CASE v_gateway_code
         WHEN 'payment_agent_transfer' THEN
             INSERT INTO payment.payment_agent_transfer (payment_id, corresponding_payment_id)
