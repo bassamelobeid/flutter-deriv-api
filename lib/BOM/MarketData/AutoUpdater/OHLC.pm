@@ -255,7 +255,7 @@ sub _check_file {
             my $close = $5;
 
             my $when = Date::Utility->new($date);
-            next if (not $underlying->trades_on($when));
+            next if (not $underlying->calendar->trades_on($when));
 
             if ($now->days_between($when) <= 10)    #don't bug cron with old suspicions
             {
@@ -320,7 +320,7 @@ sub _check_file {
     #Sunday or Monday, or Saturday (db won't update until Monday's first tick)
     if ($now->is_a_weekend or $now->day_of_week == 1 and $date ne $now->date_ddmmmyy and $date ne $yesterday->date_ddmmmyy) {
         # Make sure we traded yesterday
-        if ($underlying->trades_on($yesterday)) {
+        if ($underlying->calendar->trades_on($yesterday)) {
             $logger->warn("--$underlying_symbol ERROR can't find yesterday's data (" . $yesterday->date_ddmmmyy . ")");
         }
     }
