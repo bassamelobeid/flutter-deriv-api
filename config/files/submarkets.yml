@@ -140,6 +140,15 @@ us:
     display_name: "United States Stocks"
     display_order: 8
     market: stocks
+otc_stock:
+    name: otc_stock
+    display_name: 'OTC Stocks'
+    display_order: 9
+    asset_type: 'stock'
+    market: stocks
+    explanation: 'OTC Stocks'
+    volatility_surface_type: "moneyness"
+    official_ohlc: 0
 
 asia_oceania_future:
     name: asia_oceania_future
