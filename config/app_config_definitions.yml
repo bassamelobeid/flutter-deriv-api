@@ -270,6 +270,11 @@ quants:
           isa: HashRef
           default: {}
           global: 1
+        watchlist:
+          description: "A list of clients under quants radar."
+          isa: HashRef
+          default: {}
+          global: 1
     markets:
       description: "Market-specific variables"
       isa: section
