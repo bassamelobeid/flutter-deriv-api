@@ -61,12 +61,14 @@ major_pairs:
     display_order: 1
     market: forex
     explanation: 'The most widely traded and liquid forex pairs.'
+    risk_type: 'medium_risk'
 minor_pairs:
     name: minor_pairs
     display_name: "Minor Pairs"
     display_order: 2
     market: forex
     explanation: 'Forex pairs of interest, but with less liquid international markets.'
+    risk_type: 'high_risk'
 smart_fx:
     name: smart_fx
     display_name: 'Smart FX'
@@ -75,6 +77,7 @@ smart_fx:
     market: forex
     asset_type: 'currency'
     explanation: 'Smart FX indices'
+    risk_type: 'high_risk'
 metals:
     name: metals
     display_name: "Metals"

@@ -2127,6 +2127,21 @@ sub _build_always_available {
     return $self->submarket->always_available;
 }
 
+has risk_type => (
+    is => 'ro',
+    lazy => 1,
+    builder => '_build_risk_type',
+);
+
+sub _build_risk_type {
+    my $self = shift;
+
+    my @list = @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->high_risk};
+
+    return BOM::Platform::Static::Config::quants->{client_limits}->{extreme_risk} if (first {$_ eq $self->symbol} @list);
+    return $self->submarket->risk_type;
+}
+
 no Moose;
 
 __PACKAGE__->meta->make_immutable(

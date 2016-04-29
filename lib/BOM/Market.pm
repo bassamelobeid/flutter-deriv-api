@@ -423,6 +423,10 @@ has spread_divisor => (
     default => 1,
 );
 
+has risk_type => (
+    is => 'ro',
+);
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 

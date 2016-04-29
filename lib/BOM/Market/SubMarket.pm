@@ -213,6 +213,18 @@ has always_available => (
     default => 0,
 );
 
+has risk_type => (
+    is => 'ro',
+    lazy => 1,
+    builder => '_build_risk_type',
+);
+
+sub _build_risk_type {
+    my $self = shift;
+
+    return $self->market->risk_type;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
