@@ -92,7 +92,7 @@ BEGIN
     v_fmb.is_sold := true;
     v_fmb.is_expired := true;
 /* the 'IF' block is more compatibility mode in case we updated the record above */
-    IF fmb_updated THEN
+    IF NOT fmb_updated THEN
     	INSERT INTO bet.financial_market_bet VALUES(v_fmb.*); -- When removing compatibility mode, this statement remains after the surrounding IF block is removed.
     END IF;
     
