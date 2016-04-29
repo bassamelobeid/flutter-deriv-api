@@ -265,8 +265,8 @@ quants:
       description: "Internal configuration, probably not exposed to dynamic setitngs directly."
       isa: section
       contains:
-        custom_client_limits:
-          description: "Custom per-market/per-category client turnover limits"
+        custom_clients_open_positions_payout_limit:
+          description: "Controls open positions payout limit per client."
           isa: HashRef
           default: {}
           global: 1

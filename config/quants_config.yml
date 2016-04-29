@@ -115,27 +115,16 @@ client_limits:
       GBP: 200000
       JPY: 20000000
   max_payout_open_positions:
-    virtual:
-      USD: 1000000
-      EUR: 1000000
-      AUD: 1000000
-      GBP: 1000000
-      JPY: 100000000
-    real_authenticated:
+    random:
       USD: 500000
       EUR: 500000
       AUD: 500000
       GBP: 500000
       JPY: 50000000
-    real_unauthenticated:
-      USD: 200000
-      EUR: 200000
-      AUD: 200000
-      GBP: 200000
-      JPY: 20000000
-    maltainvest:
+    financial:
       USD: 100000
       EUR: 100000
       AUD: 100000
       GBP: 100000
+      JPY: 10000000
 

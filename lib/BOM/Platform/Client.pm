@@ -9,6 +9,7 @@ use Mail::Sender;
 use DateTime;
 use Date::Utility;
 use Cache::RedisDB;
+use List::Util qw(min);
 use Format::Util::Numbers qw(roundnear);
 use BOM::Utility::Log4perl qw( get_logger );
 
@@ -561,16 +562,28 @@ sub get_limit_for_payout {
     my $val = $self->custom_max_payout;
     return $val if defined $val;
 
+    # since this is maximum withdrawal limit, we limit this to the min(random|financial) limit
     my $max_payout = BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions};
-    my $curr       = $self->currency;
+    my $currency = $self->currency;
 
-    $val =
-          $self->is_virtual                                ? $max_payout->{virtual}->{$curr}
-        : ($self->landing_company->short eq 'maltainvest') ? $max_payout->{maltainvest}->{$curr}
-        : $self->client_fully_authenticated                ? $max_payout->{real_authenticated}->{$curr}
-        :                                                    $max_payout->{real_unauthenticated}->{$curr};
+    return min($max_payout->{random}{$currency}, $max_payout->{financial}{$currency});
+}
 
-    return $val;
+# Per client control of open postions payout amount.
+# 'custom_max_payout is being used in withdrawal limits, don't want to mess with that.
+# Due to not wanting to have to mess with client database, we will add this to config.
+# I don't think we will have a big list of custom open positions payout limit.
+sub get_open_positions_payout_limit {
+    my ($self, $market_type) = @_;
+
+    my $client_specific = BOM::Platform::Runtime->instance->app_config->quants->internal->custom_clients_open_positions_payout_limit;
+
+    return $client_specific->{$self->loginid} if exists $client_specific->{$self->loginid};
+
+    my $universal_limit = BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions};
+    my $currency = $self->currency;
+
+    return $universal_limit->{$market_type}{$currency};
 }
 
 sub get_limit {
