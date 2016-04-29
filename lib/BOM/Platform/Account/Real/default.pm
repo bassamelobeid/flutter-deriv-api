@@ -28,7 +28,7 @@ sub _validate {
         ($broker, $residence) = @{$details}{'broker_code', 'residence'};
     }
 
-    my $msg    = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], country[$country], residence[$residence], error: ";
+    my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], country[$country], residence[$residence], error: ";
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         warn($msg . 'new account opening suspended');
