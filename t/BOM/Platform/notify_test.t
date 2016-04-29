@@ -410,5 +410,3 @@ subtest 'survived notify payments', sub {
 };
 
 Test::NoWarnings::had_no_warnings;
-
-1;
