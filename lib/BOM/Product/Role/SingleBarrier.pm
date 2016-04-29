@@ -20,7 +20,13 @@ sub _build_barrier {
     return $self->make_barrier($self->supplied_barrier);
 }
 
-sub _barriers_for_pricing {
+has barriers_for_pricing => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_barriers_for_pricing',
+);
+
+sub _build_barriers_for_pricing {
     my $self = shift;
 
     my $barrier = $self->barrier ? $self->barrier->as_absolute : $self->current_tick->quote;
@@ -29,11 +35,6 @@ sub _barriers_for_pricing {
         barrier1 => $self->_apply_barrier_adjustment($barrier),
         barrier2 => undef,
     };
-}
-
-sub _barriers_for_shortcode {
-    my $self = shift;
-    return $self->barrier ? ($self->barrier->for_shortcode, 0) : ();
 }
 
 sub _validate_barrier {

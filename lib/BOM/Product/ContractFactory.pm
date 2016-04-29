@@ -65,12 +65,14 @@ Produce a Contract Object from a set of parameters
 
 my %OVERRIDE_LIST = (
     INTRADU => {
-        bet_type            => 'CALL',
-        is_forward_starting => 1
+        bet_type                   => 'CALL',
+        is_forward_starting        => 1,
+        starts_as_forward_starting => 1
     },
     INTRADD => {
-        bet_type            => 'PUT',
-        is_forward_starting => 1
+        bet_type                   => 'PUT',
+        is_forward_starting        => 1,
+        starts_as_forward_starting => 1
     },
     FLASHU => {
         bet_type     => 'CALL',
