@@ -253,13 +253,7 @@ subtest 'survived notify sell_one_bet', sub {
 subtest 'survived notify batch_sell_bet', sub {
     my @usd_bets;
 
-    my ($txn1, $fmb1) = buy_one_bet $acc2,
-        +{
-        limits => {
-            max_balance => 10000,
-        },
-        };
-
+    my ($txn1, $fmb1) = buy_one_bet $acc2;
     push @usd_bets, $fmb1->{id};
 
     my ($txn2, $fmb2) = buy_one_bet $acc2;
@@ -272,38 +266,16 @@ subtest 'survived notify batch_sell_bet', sub {
         sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
         };
 
-    my ($txn3, $fmb3) = buy_one_bet $acc2,
-        +{
-        limits => {
-            max_payout_open_bets => 400,
-        },
-        };
+    my ($txn3, $fmb3) = buy_one_bet $acc2;
     push @usd_bets, $fmb3->{id};
 
-    my ($txn4, $fmb4) = buy_one_bet $acc2,
-        +{
-        limits => {
-            max_payout_per_symbol_and_bet_type => 600,
-        },
-        };
+    my ($txn4, $fmb4) = buy_one_bet $acc2;
     push @usd_bets, $fmb4->{id};
 
-    my ($txn5, $fmb5) = buy_one_bet $acc2,
-        +{
-        underlying_symbol => 'frxUSDAUD',
-        limits            => {
-            max_payout_per_symbol_and_bet_type => 800 - 0.01,
-        },
-        };
+    my ($txn5, $fmb5) = buy_one_bet $acc2;
     push @usd_bets, $fmb5->{id};
 
-    my ($txn6, $fmb6) = buy_one_bet $acc2,
-        +{
-        bet_type => 'FLASHD',
-        limits   => {
-            max_payout_per_symbol_and_bet_type => 1000 - 0.01,
-        },
-        };
+    my ($txn6, $fmb6) = buy_one_bet $acc2;
     push @usd_bets, $fmb6->{id};
 
     # the USD account has 6 bets here, 5 of which are unsold. Let's sell them all.
@@ -331,7 +303,7 @@ subtest 'survived notify batch_sell_bet', sub {
         is 0 + @$res, 5, 'sold 5 out of 6 bets (1 was already sold)';
 
         test_notify (
-            {acc => $acc2, fmb => @$res[0]->{fmb}, txn => @$res[0]->{txn}}
+              {acc => $acc2, fmb => @$res[0]->{fmb}, txn => @$res[0]->{txn}}
             , {acc => $acc2, fmb => @$res[1]->{fmb}, txn => @$res[1]->{txn}}
             , {acc => $acc2, fmb => @$res[2]->{fmb}, txn => @$res[2]->{txn}}
             , {acc => $acc2, fmb => @$res[3]->{fmb}, txn => @$res[3]->{txn}}
