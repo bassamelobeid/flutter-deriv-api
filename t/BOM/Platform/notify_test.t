@@ -4,25 +4,24 @@ use strict;
 use warnings;
 use Test::More tests => 7;
 use Test::NoWarnings;
-
 use Test::Exception;
-use BOM::Database::DataMapper::FinancialMarketBet;
+#use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Model::Account;
-use BOM::Database::Model::FinancialMarketBet;
-use BOM::Database::Model::FinancialMarketBet::Factory;
+#use BOM::Database::Model::FinancialMarketBet;
+#use BOM::Database::Model::FinancialMarketBet::Factory;
 use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Client;
 use BOM::Platform::Client::PaymentAgent;
-use BOM::Platform::Client::Payments;
+#use BOM::Platform::Client::Payments;
 use BOM::Database::ClientDB;
-use BOM::System::Password;
-use BOM::Platform::Client::Utility;
-use BOM::Database::Model::FinancialMarketBet::Factory;
+#use BOM::System::Password;
+#use BOM::Platform::Client::Utility;
+#use BOM::Database::Model::FinancialMarketBet::Factory;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use YAML::XS;
 
-Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
+#Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
 
 my $connection_builder;
 my ($acc1, $acc2, $acc3, $acc4);
