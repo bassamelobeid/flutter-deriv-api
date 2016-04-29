@@ -1,3 +1,6 @@
+/* Note this file was created more or less as a package to split out the current implementation of bet.financial_market_bet (fmb)
+ * into an open bets table fmbo and the existing fmb. The corresponding function changes for implementation went into 030_buy_bet and 031_sell_bet.
+ */
 BEGIN;
 
 SET statement_timeout = 0;
@@ -13,7 +16,7 @@ CREATE OR REPLACE FUNCTION ensure_fmb_id_exists()
   RETURNS trigger AS
 $BODY$BEGIN
 PERFORM id FROM bet.financial_market_bet WHERE id= NEW.financial_market_bet_id;
-IF NOT FOUND THEN RAISE EXCEPTION 'Apparently a matching bet.financial_market_bet.id cannot be found'; END IF;
+IF NOT FOUND THEN RAISE EXCEPTION 'Insert failed: Apparently a matching bet.financial_market_bet.id cannot be found'; END IF;
 RETURN NEW;
 End;$BODY$
   LANGUAGE plpgsql STABLE
@@ -29,7 +32,7 @@ CREATE OR REPLACE FUNCTION ensure_only_fmb_id_exists()
   RETURNS trigger AS
 $BODY$BEGIN
 PERFORM id FROM ONLY bet.financial_market_bet WHERE id= NEW.financial_market_bet_id;
-IF NOT FOUND THEN RAISE EXCEPTION 'Apparently a matching bet.financial_market_bet.id cannot be found'; END IF;
+IF NOT FOUND THEN RAISE EXCEPTION 'Deletion failied: Apparently a matching bet.financial_market_bet.id cannot be found'; END IF;
 RETURN NEW;
 End;$BODY$
   LANGUAGE plpgsql STABLE
