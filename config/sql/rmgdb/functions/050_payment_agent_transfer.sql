@@ -106,6 +106,12 @@ BEGIN
             'internal_transfer', 'OK', p_to_staff_loginid, p_to_remark)
     RETURNING * INTO v_to_payment;
 
+    INSERT INTO transaction.transaction (payment_id, account_id, amount, staff_loginid,
+                                         referrer_type, action_type, quantity)
+    VALUES (v_to_payment.id, v_to_account.id, p_amount, p_to_staff_loginid,
+            'payment', 'deposit', 1)
+    RETURNING * INTO v_to_trans;
+
     CASE v_gateway_code
         WHEN 'payment_agent_transfer' THEN
             INSERT INTO payment.payment_agent_transfer (payment_id, corresponding_payment_id)
@@ -116,12 +122,6 @@ BEGIN
         ELSE
             RAISE EXCEPTION 'Invalid payment gateway code %', v_gateway_code;
     END CASE;
-
-    INSERT INTO transaction.transaction (payment_id, account_id, amount, staff_loginid,
-                                         referrer_type, action_type, quantity)
-    VALUES (v_to_payment.id, v_to_account.id, p_amount, p_to_staff_loginid,
-            'payment', 'deposit', 1)
-    RETURNING * INTO v_to_trans;
 
     RETURN NEXT;
 END
