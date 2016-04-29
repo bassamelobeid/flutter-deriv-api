@@ -155,13 +155,13 @@ my %known_decorations = (
                 my $change_rules = $calendar->regularly_adjusts_trading_hours_on($when);
                 if ($calendar->closes_early_on($when)) {
                     #Q::F::TradingCalendar does not have access to out localization methods, so we localiza its result here
-                    $rule = localize($change_rules->{daily_close}->{rule});
+                    $rule = localize($change_rules->{daily_close}->{rule}) if defined $change_rules->{daily_close}->{rule};
                     $message =
                           $self->c
                         ? $self->c->l('Closes early (at [_1])', $calendar->closing_on($when)->time_hhmm)
                         : 'Closes early (at ' . $calendar->closing_on($when)->time_hhmm . ')';
                 } elsif ($calendar->opens_late_on($when)) {
-                    $rule = localize($change_rules->{daily_open}->{rule});
+                    $rule = localize($change_rules->{daily_open}->{rule}) if defined $change_rules->{daily_open}->{rule};
                     $message =
                           $self->c
                         ? $self->c->l('Opens late (at [_1])', $calendar->opening_on($when)->time_hhmm)
