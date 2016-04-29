@@ -46,7 +46,7 @@ RETURNS SETOF RECORD AS $def$
 DECLARE
     v_nrows      INTEGER;
     v_r          RECORD;
-    fmb_updated  BOOLEAN;	-- this is only used for compatibility mode and can be removed once we strip out compatibility mode
+    fmb_updated  BOOLEAN := FALSE;	-- this is only used for compatibility mode and can be removed once we strip out compatibility mode
 BEGIN
 
     -- It is important that this function is used only in circumstances when the
