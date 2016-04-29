@@ -946,10 +946,10 @@ sub __client_withdrawal_notes {
     if ($error =~ /exceeds client balance/) {
         return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
     } elsif ($error =~ /exceeds withdrawal limit \[(.+)\]/) {
-        # if limit = 0, we show: Your withdrawal amount USD 100.00 exceeds withdrawal limit.
+        # if limit <= 0, we show: Your withdrawal amount USD 100.00 exceeds withdrawal limit.
         # if limit > 0, we show: Your withdrawal amount USD 100.00 exceeds withdrawal limit USD 20.00.
         my $limit = " $1";
-        if ($limit =~ /\s+0\.00$/) {
+        if ($limit =~ /\s+0\.00$/ or $limit =~ /\s+-\d+\.\d+$/) {
             $limit = '';
         }
 
