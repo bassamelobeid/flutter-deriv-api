@@ -59,11 +59,11 @@ bet_limits:
 
 client_limits:
   payout_per_symbol_and_bet_type_limit:
-    USD: 200000
-    EUR: 200000
-    AUD: 200000
-    GBP: 200000
-    JPY: 20000000
+    USD: 10000
+    EUR: 10000
+    AUD: 10000
+    GBP: 10000
+    JPY: 1000000
   intraday_spot_index_turnover_limit:
     USD: 30000
     EUR: 30000
