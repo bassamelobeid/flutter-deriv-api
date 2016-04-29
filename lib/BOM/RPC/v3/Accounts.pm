@@ -318,6 +318,7 @@ sub change_password {
         $obj->save;
     }
 
+    # TODO: should also invalidate OAuth token & API token, beside current session
     # end all other sessions for Session Cookies
     if ($token_type eq 'session_token') {
         BOM::Platform::SessionCookie->new({token => $params->{token}})->end_other_sessions();
