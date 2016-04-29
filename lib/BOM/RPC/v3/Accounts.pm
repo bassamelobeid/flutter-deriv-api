@@ -291,7 +291,9 @@ sub change_password {
         return $auth_error;
     }
 
-    if (not(($token_type // '') eq 'session_token')) {
+    # allow session token & OAuth token
+    $token_type //= '';
+    unless (grep { $token_type eq $_ } ('session_token', 'oauth_token')) {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
@@ -316,8 +318,10 @@ sub change_password {
         $obj->save;
     }
 
-    # end all other sessions
-    BOM::Platform::SessionCookie->new({token => $params->{token}})->end_other_sessions();
+    # end all other sessions for Session Cookies
+    if ($token_type eq 'session_token') {
+        BOM::Platform::SessionCookie->new({token => $params->{token}})->end_other_sessions();
+    }
 
     BOM::System::AuditLog::log('password has been changed', $client->email);
     send_email({
