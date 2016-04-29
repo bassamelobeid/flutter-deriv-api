@@ -481,6 +481,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
             qw/
             _validate_buy_transaction_rate
             _validate_iom_withdrawal_limit
+            _validate_per_contract_payout_limit
             _is_valid_to_buy
             _validate_date_pricing
             _validate_trade_pricing_adjustment
@@ -1449,6 +1450,26 @@ sub _validate_stake_limit {
             ),
         );
     }
+    return;
+}
+
+sub _validate_per_contract_payout_limit {
+    my $self = shift;
+
+    my $limit = BOM::Platform::Static::Config::quants->{client_limits}{$self->contract->market->risk_type}{payout};
+
+    if ($limit and $self->payout > $limit) {
+        return Error::Base->cuss(
+            -type              => 'PayoutLimitExceeded',
+            -mesg              => $self->client->loginid . ' payout [' . $self->payout . '] over custom limit[' . $limit . ']',
+            -message_to_client => ($limit == 0)
+            ? BOM::Platform::Context::localize('This contract is unavailable on this account.')
+            : BOM::Platform::Context::localize(
+                'This contract is limited to ' . to_monetary_number_format($limit) . ' payout on this account.'
+            ),
+        );
+    }
+
     return;
 }
 
