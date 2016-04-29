@@ -31,7 +31,7 @@ This trigger function can be used on any table which has a column named financia
 CREATE OR REPLACE FUNCTION ensure_only_fmb_id_exists()
   RETURNS trigger AS
 $BODY$BEGIN
-PERFORM id FROM ONLY bet.financial_market_bet WHERE id= NEW.financial_market_bet_id;
+PERFORM id FROM ONLY bet.financial_market_bet WHERE id= OLD.id;
 IF NOT FOUND THEN RAISE EXCEPTION 'Deletion failied: Apparently a matching bet.financial_market_bet.id cannot be found'; END IF;
 RETURN NEW;
 End;$BODY$
