@@ -35,6 +35,15 @@ sub validate_table_props {
             }};
     }
 
+    if (not defined $args->{date_start} or $args->{date_start} !~ /^\d+$/) {
+        return {
+            error => {
+                code    => 'InvalidDateStart',
+                message => "Date expiry [_1] invalid",
+                params  => [$args->{date_start}],
+            }};
+    }
+
     if (not defined $args->{date_expiry} or $args->{date_expiry} !~ /^\d+$/) {
         return {
             error => {
@@ -60,7 +69,7 @@ sub validate_table_props {
 sub get_channel_name {
 
     my $args = shift;
-    my $id = join "::", 'PricingTable', $args->{symbol}, $args->{contract_category}, $args->{date_expiry};
+    my $id = join "::", 'PricingTable', $args->{symbol}, $args->{contract_category}, $args->{date_start}, $args->{date_expiry};
 
     return $id;
 }
