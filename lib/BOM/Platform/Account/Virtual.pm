@@ -81,18 +81,13 @@ sub create_account {
     $client->deposit_virtual_funds;
 
     unless ($email_verified) {
-        my $link = request()->url_for(
-            '/user/validate_link',
-            {
-                verify_token => BOM::Platform::Token::Verification->new({
+        my $token = verify_token => BOM::Platform::Token::Verification->new({
                         email       => $email,
                         expires_in  => 3600,
                         created_for => 'verify_email'
-                    }
-                )->token,
-            });
+                    })->token;
         my $email_content;
-        BOM::Platform::Context::template->process('email/resend_verification.html.tt', {link => $link}, \$email_content)
+        BOM::Platform::Context::template->process('email/resend_verification.html.tt', {token => $token}, \$email_content)
             || die BOM::Platform::Context::template->error();
 
         send_email({
