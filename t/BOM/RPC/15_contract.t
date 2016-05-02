@@ -29,24 +29,37 @@ my $token = BOM::Platform::SessionCookie->new(
     email   => $email
 )->token;
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw(USD AUD CAD-AUD);
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_50',
         date   => Date::Utility->new
     });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
-request(BOM::Platform::Context::Request->new(params => {l => 'ZH_CN'}));
+request(BOM::Platform::Context::Request->new(params => {}));
 subtest 'validate_symbol' => sub {
     is(BOM::RPC::v3::Contract::validate_symbol('R_50'), undef, "return undef if symbol is valid");
     is_deeply(
         BOM::RPC::v3::Contract::validate_symbol('invalid_symbol'),
         {
             'error' => {
-                'message_to_client' => 'invalid_symbol 符号无效',
-                'code'              => 'InvalidSymbol'
+                'message' => 'Symbol [_1] invalid',
+                'code'    => 'InvalidSymbol',
+                params    => [qw/ invalid_symbol /],
             }
         },
         'return error if symbol is invalid'
@@ -60,8 +73,9 @@ subtest 'validate_license' => sub {
         BOM::RPC::v3::Contract::validate_license('JCI'),
         {
             error => {
-                message_to_client => '实时报价不可用于JCI',
-                code              => 'NoRealtimeQuotes'
+                message => 'Realtime quotes not available for [_1]',
+                code    => 'NoRealtimeQuotes',
+                params  => [qw/ JCI /],
             }
         },
         "return error if symbol is not realtime"
@@ -74,8 +88,9 @@ subtest 'validate_underlying' => sub {
         BOM::RPC::v3::Contract::validate_underlying('invalid_symbol'),
         {
             'error' => {
-                'message_to_client' => 'invalid_symbol 符号无效',
-                'code'              => 'InvalidSymbol'
+                'message' => 'Symbol [_1] invalid',
+                'code'    => 'InvalidSymbol',
+                params    => [qw/ invalid_symbol /],
             }
         },
         'return error if symbol is invalid'
@@ -85,8 +100,9 @@ subtest 'validate_underlying' => sub {
         BOM::RPC::v3::Contract::validate_underlying('JCI'),
         {
             error => {
-                message_to_client => '实时报价不可用于JCI',
-                code              => 'NoRealtimeQuotes'
+                message => 'Realtime quotes not available for [_1]',
+                code    => 'NoRealtimeQuotes',
+                params  => [qw/ JCI /],
             }
         },
         "return error if symbol is not realtime"
@@ -169,40 +185,39 @@ subtest 'get_ask' => sub {
         "duration_unit" => "s",
         "symbol"        => "R_50",
     };
-    my $result = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
         'display_value' => '51.49',
         'ask_price'     => '51.49',
-        'longcode' => '如果随机 50 指数在合约开始时间之后到1 分钟时严格高于入市现价，将获得USD100.00的赔付额。',
-        'spot'     => '963.3054',
-        'payout'   => '100'
+        'longcode'      => 'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'spot'          => '963.3054',
+        'payout'        => '100'
     };
     is_deeply($result, $expected, 'the left values are all right');
 
     $params->{symbol} = "invalid symbol";
     is_deeply(
-        BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
+        BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
         {
             error => {
-                message => '不在此段期间提供交易。',
-                code    => "ContractBuyValidationError",
+                message_to_client => 'Cannot create contract',
+                code              => "ContractCreationFailure",
             }});
 
     is_deeply(
-        BOM::RPC::v3::Contract::get_ask({}),
+        BOM::RPC::v3::Contract::_get_ask({}),
         {
             error => {
-                message => '无法创建合约',
-                code    => "ContractCreationFailure",
+                message_to_client => 'Cannot create contract',
+                code              => "ContractCreationFailure",
             }});
 
 };
 
 subtest 'send_ask' => sub {
     my $params = {
-        language  => 'ZH_CN',
         client_ip => '127.0.0.1',
         args      => {
             "proposal"      => 1,
@@ -220,7 +235,7 @@ subtest 'send_ask' => sub {
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        '如果随机 50 指数在合约开始时间之后到1 分钟时严格高于入市现价，将获得USD100.00的赔付额。',
+        'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
         'long code  is correct'
     );
     {
@@ -230,32 +245,21 @@ subtest 'send_ask' => sub {
                 print STDERR $msg;
             }
         };
-        $c->call_ok(
-            'send_ask',
-            {
-                language => 'ZH_CN',
-                args     => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('无法创建合约');
+        $c->call_ok('send_ask', {args => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
-        $mock_contract->mock('get_ask', sub { die });
-        $c->call_ok(
-            'send_ask',
-            {
-                language => 'ZH_CN',
-                args     => {}})->has_error->error_code_is('pricing error')->error_message_is('无法提供合约售价。');
+        $mock_contract->mock('_get_ask', sub { die });
+        $c->call_ok('send_ask', {args => {}})->has_error->error_code_is('pricing error')->error_message_is('Unable to price the contract.');
     }
 };
 
 subtest 'get_bid' => sub {
+    # just one tick for missing market data
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch - 899,
         underlying => 'R_50',
     });
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 850,
-        underlying => 'R_50',
-    });
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch,
         underlying => 'R_50',
@@ -269,22 +273,18 @@ subtest 'get_bid' => sub {
         date_expiry   => $now->epoch - 500,
         purchase_date => $now->epoch - 901
     );
+
     my $params = {
-        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
         is_sold     => 0,
     };
-    my $result =
-        $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
-        ->error_message_is(
-        '在合约期限内出现市场数据中断。对于真实资金账户，我们将尽力修正并恰当地结算合约，不然合约将取消及退款。对于虚拟资金交易，我们将取消交易，并退款。'
-        );
-    $params = {language => 'ZH_CN'};
 
     $c->call_ok('get_bid', $params)->has_error->error_code_is('GetProposalFailure')
-        ->error_message_is('对不起，在处理您的请求时出错。');
+        ->error_message_is(
+        'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
+        );
 
     $contract = create_contract(
         client => $client,
@@ -292,14 +292,13 @@ subtest 'get_bid' => sub {
     );
 
     $params = {
-        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
         is_sold     => 0,
     };
 
-    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (
         qw(ask_price
@@ -319,6 +318,8 @@ subtest 'get_bid' => sub {
             longcode
             shortcode
             payout
+            contract_type
+            display_name
             ));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
 
@@ -328,7 +329,6 @@ subtest 'get_bid' => sub {
     );
 
     $params = {
-        language    => 'ZH_CN',
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
         currency    => $client->currency,
@@ -352,21 +352,18 @@ subtest 'get_bid' => sub {
 
 my $method = 'get_contract_details';
 subtest $method => sub {
-    my $params = {
-        language => 'zh_CN',
-        token    => '12345'
-    };
+    my $params = {token => '12345'};
 
-    $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'invalid token');
+    $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
     $client->set_status('disabled', 1, 'test');
     $client->save;
     $params->{token} = $token;
-    $c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'invalid token');
+    $c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
     $client->clr_status('disabled');
     $client->save;
 
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('对不起，在处理您的请求时出错。', 'will report error if no short_code and currency');
+        ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'will report error if no short_code and currency');
 
     my $contract = create_contract(
         client => $client,
@@ -375,14 +372,76 @@ subtest $method => sub {
     $params->{short_code} = $contract->shortcode;
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
-            'symbol' => 'R_50',
-            'longcode' =>
-                "如果随机 50 指数在合约开始时间之后到50 秒钟时严格高于入市现价，将获得USD194.22的赔付额。",
-            'display_name' => 'Random 50 Index',
+            'symbol'       => 'R_50',
+            'longcode'     => "USD 194.22 payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
+            'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
         },
         'result is ok'
     );
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 899,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9936
+    });
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 501,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9938
+    });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 499,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9939
+    });
+
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9935
+    });
+
+    $contract = create_contract(
+        client        => $client,
+        spread        => 0,
+        current_tick  => $tick,
+        underlying    => 'frxAUDCAD',
+        date_start    => $now->epoch - 900,
+        date_expiry   => $now->epoch - 500,
+        purchase_date => $now->epoch - 901,
+        date_pricing  => $now->epoch,
+    );
+    $params = {
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => 'USD',
+        is_sold     => 1,
+    };
+    my $res = $c->call_ok('get_bid', $params)->result;
+    my $expected_result = {
+        'ask_price'       => '208.18',
+        'barrier'         => '0.99360',
+        'bid_price'       => '208.18',
+        'contract_id'     => 10,
+        'currency'        => 'USD',
+        'date_expiry'     => 1127287060,
+        'date_settlement' => 1127287060,
+        'date_start'      => 1127286660,
+        'entry_spot'      => '0.99360',
+        'entry_tick'      => '0.99360',
+        'entry_tick_time' => 1127286661,
+        'exit_tick'       => '0.99380',
+        'exit_tick_time'  => 1127287059,
+        'longcode'        => 'USD 208.18 payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
+        'shortcode'       => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
+        'underlying'      => 'frxAUDCAD',
+    };
+
+    foreach my $key (keys %$expected_result) {
+        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
+    }
 
 };
 
@@ -409,9 +468,10 @@ sub create_contract {
         epoch      => $now->epoch,
         underlying => 'R_50',
     });
+    my $symbol        = $args{underlying} ? $args{underlying} : 'R_50';
     my $date_start    = $now->epoch - 100;
     my $date_expiry   = $now->epoch - 50;
-    my $underlying    = BOM::Market::Underlying->new('R_50');
+    my $underlying    = BOM::Market::Underlying->new($symbol);
     my $purchase_date = $now->epoch - 101;
     my $contract_data = {
         underlying   => $underlying,
@@ -423,6 +483,7 @@ sub create_contract {
         date_expiry  => $args{date_expiry} ? $args{date_expiry} : $date_expiry,
         barrier      => 'S0P',
     };
+    if ($args{date_pricing}) { $contract_data->{date_pricing} = $args{date_pricing}; }
 
     if ($args{spread}) {
         delete $contract_data->{date_expiry};

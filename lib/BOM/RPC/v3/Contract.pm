@@ -18,9 +18,12 @@ sub validate_symbol {
     my $symbol    = shift;
     my @offerings = get_offerings_with_filter('underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidSymbol',
-                message_to_client => BOM::Platform::Context::localize("Symbol [_1] invalid", $symbol)});
+        return {
+            error => {
+                code    => 'InvalidSymbol',
+                message => "Symbol [_1] invalid",
+                params  => [$symbol],
+            }};
     }
     return;
 }
@@ -30,9 +33,12 @@ sub validate_license {
     my $u      = BOM::Market::Underlying->new($symbol);
 
     if ($u->feed_license ne 'realtime') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'NoRealtimeQuotes',
-                message_to_client => BOM::Platform::Context::localize("Realtime quotes not available for [_1]", $symbol)});
+        return {
+            error => {
+                code    => 'NoRealtimeQuotes',
+                message => "Realtime quotes not available for [_1]",
+                params  => [$symbol],
+            }};
     }
     return;
 }
@@ -76,7 +82,7 @@ sub prepare_ask {
     return \%p2;
 }
 
-sub get_ask {
+sub _get_ask {
     my $p2 = shift;
 
     my $response;
@@ -86,17 +92,17 @@ sub get_ask {
 
         if (!$contract->is_valid_to_buy) {
             if (my $pve = $contract->primary_validation_error) {
-                $response = {
-                    error => {
-                        message => $pve->message_to_client,
-                        code    => "ContractBuyValidationError"
-                    }};
+                $response = BOM::RPC::v3::Utility::create_error({
+                        message_to_client => $pve->message_to_client,
+                        code              => "ContractBuyValidationError",
+                        details           => {
+                            longcode      => $contract->longcode,
+                            display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price))}});
             } else {
-                $response = {
-                    error => {
-                        message => BOM::Platform::Context::localize("Cannot validate contract"),
-                        code    => "ContractValidationError"
-                    }};
+                $response = BOM::RPC::v3::Utility::create_error({
+                    message_to_client => localize("Cannot validate contract"),
+                    code              => "ContractValidationError"
+                });
             }
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
@@ -120,11 +126,10 @@ sub get_ask {
         stats_timing('compute_price.buy.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
     catch {
-        $response = {
-            error => {
-                message => BOM::Platform::Context::localize("Cannot create contract"),
-                code    => "ContractCreationFailure"
-            }};
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => BOM::Platform::Context::localize("Cannot create contract"),
+            code              => "ContractCreationFailure"
+        });
     };
 
     return $response;
@@ -144,6 +149,7 @@ sub get_bid {
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
             underlying          => $contract->underlying->symbol,
+            display_name        => $contract->underlying->display_name,
             is_expired          => $contract->is_expired,
             is_valid_to_sell    => $contract->is_valid_to_sell,
             is_forward_starting => $contract->is_forward_starting,
@@ -156,18 +162,17 @@ sub get_bid {
             longcode            => $contract->longcode,
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
+            contract_type       => $contract->code
         };
         if (not $contract->is_spread) {
             my $contract_affected_by_missing_market_data =
                 (not $contract->may_settle_automatically and not @{$contract->corporate_actions} and $contract->missing_market_data) ? 1 : 0;
             if ($contract_affected_by_missing_market_data) {
-                $response = {
-                    error => {
-                        message_to_client => BOM::Platform::Context::localize(
+                $response = BOM::RPC::v3::Utility::create_error({
+                        code              => "GetProposalFailure",
+                        message_to_client => localize(
                             'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
-                        ),
-                        code => "GetProposalFailure"
-                    }};
+                        )});
                 return;
             }
         }
@@ -184,9 +189,17 @@ sub get_bid {
             $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
             $response->{entry_spot} = $contract->underlying->pipsized_value($contract->entry_spot) if $contract->entry_spot;
 
-            if ($sell_time and my $sell_tick = $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1})) {
-                $response->{sell_spot}      = $contract->underlying->pipsized_value($sell_tick->quote);
-                $response->{sell_spot_time} = $sell_tick->epoch;
+            # sell_spot and sell_spot_time are updated if the contract is sold
+            # or when the contract is expired.
+            if ($sell_time or $contract->is_expired) {
+                my $sell_tick =
+                    ($contract->is_path_dependent and $contract->hit_tick)
+                    ? $contract->hit_tick
+                    : $contract->underlying->tick_at($sell_time, {allow_inconsistent => 1});
+                if ($sell_tick) {
+                    $response->{sell_spot}      = $contract->underlying->pipsized_value($sell_tick->quote);
+                    $response->{sell_spot_time} = $sell_tick->epoch;
+                }
             }
 
             if ($contract->expiry_type eq 'tick') {
@@ -206,11 +219,10 @@ sub get_bid {
         stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
     catch {
-        $response = {
-            error => {
-                message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
-                code              => "GetProposalFailure"
-            }};
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+            code              => "GetProposalFailure"
+        });
     };
 
     return $response;
@@ -225,13 +237,7 @@ sub send_ask {
     my %details = %{$args};
     my $response;
     try {
-        $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
-        if (exists $response->{error}) {
-            $response = BOM::RPC::v3::Utility::create_error({
-                code              => $response->{error}->{code},
-                message_to_client => $response->{error}->{message},
-            });
-        }
+        $response = _get_ask(prepare_ask(\%details));
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
@@ -266,11 +272,10 @@ sub get_contract_details {
         };
     }
     catch {
-        $response = {
-            error => {
-                message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
-                code              => "GetContractDetails"
-            }};
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => localize('Sorry, an error occurred while processing your request.'),
+            code              => "GetContractDetails"
+        });
     };
     return $response;
 }

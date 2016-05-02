@@ -65,6 +65,10 @@ sub register {
             }
             $args->{language} = $params->{language} if ($params->{language});
 
+            if (exists $params->{server_name}) {
+                $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
+            }
+
             my $r = BOM::Platform::Context::Request->new($args);
             BOM::Platform::Context::request($r);
 
@@ -121,6 +125,7 @@ sub startup {
                 '/paymentagent_withdraw'     => register('paymentagent_withdraw',     \&BOM::RPC::v3::Cashier::paymentagent_withdraw),
                 '/paymentagent_transfer'     => register('paymentagent_transfer',     \&BOM::RPC::v3::Cashier::paymentagent_transfer),
                 '/transfer_between_accounts' => register('transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts),
+                '/cashier'                   => register('cashier',                   \&BOM::RPC::v3::Cashier::cashier),
                 '/topup_virtual'             => register('topup_virtual',             \&BOM::RPC::v3::Cashier::topup_virtual),
                 '/payout_currencies'         => register('payout_currencies',         \&BOM::RPC::v3::Accounts::payout_currencies),
                 '/landing_company'           => register('landing_company',           \&BOM::RPC::v3::Accounts::landing_company),
@@ -145,6 +150,7 @@ sub startup {
                 '/verify_email'              => register('verify_email',              \&BOM::RPC::v3::NewAccount::verify_email),
                 '/send_ask'                  => register('send_ask',                  \&BOM::RPC::v3::Contract::send_ask),
                 '/get_bid'                   => register('get_bid',                   \&BOM::RPC::v3::Contract::get_bid),
+                '/get_corporate_actions'     => register('get_corporate_actions',     \&BOM::RPC::v3::MarketDiscovery::get_corporate_actions),
                 '/get_contract_details'      => register('get_contract_details',      \&BOM::RPC::v3::Contract::get_contract_details),
                 '/new_account_real'          => register('new_account_real',          \&BOM::RPC::v3::NewAccount::new_account_real),
                 '/new_account_maltainvest'   => register('new_account_maltainvest',   \&BOM::RPC::v3::NewAccount::new_account_maltainvest),

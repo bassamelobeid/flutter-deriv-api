@@ -34,7 +34,7 @@ sub portfolio {
     foreach my $row (@{__get_open_contracts($client)}) {
         my %trx = (
             contract_id    => $row->{id},
-            transaction_id => $row->{buy_id},
+            transaction_id => $row->{buy_transaction_id},
             purchase_time  => Date::Utility->new($row->{purchase_time})->epoch,
             symbol         => $row->{underlying_symbol},
             payout         => $row->{payout_price},
@@ -115,8 +115,9 @@ sub proposal_open_contract {
     }
 
     my @fmbs = ();
+
     if ($params->{contract_id}) {
-        @fmbs = @{__get_contract_by_id($client, $params->{contract_id})};
+        @fmbs = @{__get_contract_details_by_id($client, $params->{contract_id})};
         if (scalar @fmbs and $fmbs[0]->{account_id} ne $client->default_account->id) {
             @fmbs = ();
         }
@@ -140,11 +141,15 @@ sub proposal_open_contract {
             if (exists $bid->{error}) {
                 $response->{$id} = $bid;
             } else {
+                my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
+                $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
+
                 $response->{$id} = {
-                    buy_price     => $fmb->{buy_price},
-                    purchase_time => Date::Utility->new($fmb->{purchase_time})->epoch,
-                    account_id    => $fmb->{account_id},
-                    is_sold       => $fmb->{is_sold},
+                    transaction_ids => $transaction_ids,
+                    buy_price       => $fmb->{buy_price},
+                    purchase_time   => Date::Utility->new($fmb->{purchase_time})->epoch,
+                    account_id      => $fmb->{account_id},
+                    is_sold         => $fmb->{is_sold},
                     $sell_time ? (sell_time => $sell_time) : (),
                     defined $fmb->{sell_price}
                     ? (sell_price => sprintf('%.2f', $fmb->{sell_price}))
@@ -157,7 +162,7 @@ sub proposal_open_contract {
     return $response;
 }
 
-sub __get_contract_by_id {
+sub __get_contract_details_by_id {
     my $client      = shift;
     my $contract_id = shift;
 
@@ -165,7 +170,7 @@ sub __get_contract_by_id {
         broker_code => $client->broker_code,
         operation   => 'replica'
     });
-    return $mapper->get_contract_by_id($contract_id);
+    return $mapper->get_contract_details_with_transaction_ids($contract_id);
 }
 
 1;

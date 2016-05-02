@@ -12,14 +12,16 @@ use Date::Utility;
 use Test::BOM::RPC::Client;
 
 use utf8;
+
 set_absolute_time(Date::Utility->new('2016-03-18 00:00:00')->epoch);
+
 my ($t, $rpc_ct);
 my $method = 'contracts_for';
 
 my @params = (
     $method,
     {
-        language => 'RU',
+        language => 'EN',
         source   => 1,
         country  => 'ru',
         args     => {
@@ -51,7 +53,7 @@ subtest "Request $method" => sub {
 
     $params[1]{args}{contracts_for} = 'invalid symbol';
     $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if symbol does not exist')
-        ->error_message_is('Неверный символ.', 'It should return error if symbol does not exist');
+        ->error_message_is('The symbol is invalid.', 'It should return error if symbol does not exist');
 };
 
 done_testing();

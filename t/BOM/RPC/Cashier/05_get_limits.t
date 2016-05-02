@@ -13,10 +13,7 @@ use utf8;
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 
 my $method = 'get_limits';
-my $params = {
-    language => 'zh_CN',
-    token    => '12345'
-};
+my $params = {token => '12345'};
 
 my %withdrawal = (
     currency     => 'USD',
@@ -51,15 +48,15 @@ subtest 'CR' => sub {
     my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->costarica;
 
     subtest 'expected errors' => sub {
-        $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'invalid token');
+        $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
         $client->set_status('disabled', 1, 'test');
         $client->save;
         $params->{token} = $token;
-        $c->call_ok($method, $params)->has_error->error_message_is('此账户不可用。', 'invalid token');
+        $c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
         $client->clr_status('disabled');
         $client->set_status('cashier_locked', 1, 'test');
         $client->save;
-        $c->call_ok($method, $params)->has_error->error_message_is('对不起，此功能不可用。', 'invalid token');
+        $c->call_ok($method, $params)->has_error->error_message_is('Sorry, this feature is not available.', 'invalid token');
 
         $client->clr_status('cashier_locked');
         $client->save;
@@ -118,7 +115,7 @@ subtest 'CR' => sub {
             authentication_method_code => 'ID_DOCUMENT'
         });
         $client->save;
-        $c->call_ok($method, $params)->has_error->error_message_is('对不起，此功能不可用。', 'invalid token');
+        $c->call_ok($method, $params)->has_error->error_message_is('Sorry, this feature is not available.', 'invalid token');
     };
 };
 
@@ -336,7 +333,7 @@ subtest "VR no get_limits" => sub {
     )->token;
 
     $params->{token} = $token_vr;
-    $c->call_ok($method, $params)->has_error->error_message_is('对不起，此功能不可用。', 'invalid token');
+    $c->call_ok($method, $params)->has_error->error_message_is('Sorry, this feature is not available.', 'invalid token');
 };
 
 done_testing();

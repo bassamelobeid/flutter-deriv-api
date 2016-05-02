@@ -45,11 +45,11 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $method = 'authorize';
 subtest $method => sub {
     my $params = {
-        language => 'zh_CN',
+        language => 'EN',
         token    => 12345
     };
 
-    $c->call_ok($method, $params)->has_error->error_message_is('令牌无效。', 'check invalid token');
+    $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
     $params->{token} = $token;
     my $expected_result = {
         fullname             => $test_client->full_name,
@@ -92,7 +92,7 @@ subtest 'logout' => sub {
         client_email => $email,
         client_ip    => '1.1.1.1',
         country_code => 'id',
-        language     => 'ZH_CN',
+        language     => 'EN',
         ua           => 'firefox',
         token_type   => 'session_token',
         token        => $new_token
@@ -106,14 +106,14 @@ subtest 'logout' => sub {
             token => $token,
             args  => {limit => 1}})->has_no_error->result->{records};
     is($history_records->[0]{action}, 'logout', 'the last history is logout');
-    like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=ZH_CN/, 'environment is correct');
+    like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=EN/, 'environment is correct');
 
     $c->call_ok(
         'authorize',
         {
-            language => 'ZH_CN',
+            language => 'EN',
             token    => $new_token
-        })->has_error->error_message_is('令牌无效。', 'session token is invalid after logout');
+        })->has_error->error_message_is('The token is invalid.', 'session token is invalid after logout');
 
 };
 

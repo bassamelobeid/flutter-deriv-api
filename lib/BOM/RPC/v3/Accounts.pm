@@ -273,9 +273,7 @@ sub get_account_status {
         push @status, $s if $client->get_status($s);
     }
 
-    if (scalar(@status) == 0) {
-        push @status, 'active';
-    }
+    push @status, 'authenticated' if ($client->client_fully_authenticated);
 
     return {status => \@status};
 }
@@ -393,9 +391,8 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from' => BOM::Platform::Static::Config::get_customer_support_email(),
-                    'to'   => $client->email,
-                    # TODO: this 'localize' is not tested because there is no translation yet
+                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'to'      => $client->email,
                     'subject' => localize("[_1] cashier password updated", $client->loginid),
                     'message' => [
                         localize(
@@ -419,9 +416,8 @@ sub cashier_password {
         if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
             BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
-                    'from' => BOM::Platform::Static::Config::get_customer_support_email(),
-                    'to'   => $client->email,
-                    # TODO: this 'localize' is not tested because there is no translation yet
+                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'to'      => $client->email,
                     'subject' => localize("[_1]-Failed attempt to unlock cashier section", $client->loginid),
                     'message' => [
                         localize(
@@ -441,9 +437,8 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from' => BOM::Platform::Static::Config::get_customer_support_email(),
-                    'to'   => $client->email,
-                    # TODO: this 'localize' is not tested because there is no translation yet
+                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'to'      => $client->email,
                     'subject' => localize("[_1] cashier password updated", $client->loginid),
                     'message' => [
                         localize(
@@ -548,8 +543,8 @@ sub get_settings {
     $jp_account_status = BOM::RPC::v3::NewAccount::Japan::get_jp_account_status($client) if ($client->landing_company->short eq 'japan-virtual');
 
     # get Japan specific a/c details (eg: daily loss, occupation, trading experience), for Japan real a/c client
-    my %jp_real_settings;
-    %jp_real_settings = BOM::RPC::v3::NewAccount::Japan::get_jp_settings($client) if ($client->landing_company->short eq 'japan');
+    my $jp_real_settings;
+    $jp_real_settings = BOM::RPC::v3::NewAccount::Japan::get_jp_settings($client) if ($client->landing_company->short eq 'japan');
 
     return {
         email        => $client->email,
@@ -574,7 +569,7 @@ sub get_settings {
             )
         ),
         $jp_account_status ? (jp_account_status => $jp_account_status) : (),
-        %jp_real_settings ? (%jp_real_settings) : (),
+        $jp_real_settings  ? (jp_settings       => $jp_real_settings)  : (),
     };
 }
 
@@ -870,10 +865,6 @@ sub set_self_exclusion {
     if ($args{exclude_until}) {
         my $ret = $client->set_exclusion->exclude_until($args{exclude_until});
         $message .= "- Exclude from website until: $ret\n";
-
-        ## remove all tokens (FIX for SessionCookie which do not have remove by loginid now)
-        ## but it should be OK since we check self_exclusion on every call
-        BOM::Database::Model::AccessToken->new->remove_by_loginid($client->loginid);
     }
 
     if ($message) {
@@ -967,17 +958,26 @@ sub tnc_approval {
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
-    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
-    my $client_tnc_status   = $client->get_status('tnc_approval');
-
-    if (not $client_tnc_status
-        or ($client_tnc_status->reason ne $current_tnc_version))
-    {
-        $client->set_status('tnc_approval', 'system', $current_tnc_version);
+    if ($params->{args}->{ukgc_funds_protection}) {
+        $client->set_status('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds');
         if (not $client->save()) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InternalServerError',
                     message_to_client => localize('Sorry, an error occurred while processing your request.')});
+        }
+    } else {
+        my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+        my $client_tnc_status   = $client->get_status('tnc_approval');
+
+        if (not $client_tnc_status
+            or ($client_tnc_status->reason ne $current_tnc_version))
+        {
+            $client->set_status('tnc_approval', 'system', $current_tnc_version);
+            if (not $client->save()) {
+                return BOM::RPC::v3::Utility::create_error({
+                        code              => 'InternalServerError',
+                        message_to_client => localize('Sorry, an error occurred while processing your request.')});
+            }
         }
     }
 

@@ -12,21 +12,21 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $method = 'trading_times';
 subtest $method => sub {
     my $params = {
-        language => 'ZH_CN',
+        language => 'EN',
         'args'   => {'trading_times' => '2016-03-16'}};
     my $result = $c->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     ok($result->{markets}[0]{submarkets}, 'have sub markets key');
-    is($result->{markets}[0]{submarkets}[0]{name}, '主要货币对', 'name  is translated');
+    is($result->{markets}[0]{submarkets}[0]{name}, 'Major Pairs', 'name  is translated');
     is_deeply(
         $result->{markets}[0]{submarkets}[0]{symbols}[0],
         {
-            'symbol' => 'frxEURCAD',
+            'symbol' => 'frxAUDJPY',
             'events' => [{
                     'descrip' => 'Closes early (at 21:00)',
                     'dates'   => 'Fridays'
                 }
             ],
-            'name'       => "欧元/加元",
+            'name'       => "AUD/JPY",
             'settlement' => '',
             'times'      => {
                 'open'       => ['00:00:00'],
@@ -55,7 +55,7 @@ subtest $method => sub {
 $method = 'active_symbols';
 subtest $method => sub {
     my $params = {
-        language => 'ZH_CN',
+        language => 'EN',
         args     => {active_symbols => 'brief'}};
 
     my $result = $c->call_ok($method, $params)->has_no_system_error->result;
@@ -70,9 +70,9 @@ subtest $method => sub {
     $result = $c->call_ok($method, $params)->has_no_system_error->result;
     ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
-    is($indices->{market_display_name},    '指数',        'the market_display_name is translated');
-    is($indices->{submarket_display_name}, '欧洲/非洲', 'the submarket_display_name is translated');
-    is(scalar @$result,                    102,             'the default landing company is "costarica", the number of result should be ok');
+    is($indices->{market_display_name},    'Indices',       'the market_display_name is translated');
+    is($indices->{submarket_display_name}, 'Europe/Africa', 'the submarket_display_name is translated');
+    is(scalar @$result,                    96,              'the default landing company is "costarica", the number of result should be ok');
 
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',

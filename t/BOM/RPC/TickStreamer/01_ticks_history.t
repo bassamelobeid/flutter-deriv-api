@@ -22,7 +22,7 @@ my ($t, $rpc_ct, $result);
 my $method = 'ticks_history';
 
 my $params = {
-    language => 'RU',
+    language => 'EN',
     source   => 1,
     country  => 'ru',
 };
@@ -57,10 +57,10 @@ subtest 'Initialization' => sub {
             symbol => 'HSI',
         });
 
-        # Insert RDYANG data ticks
+        # Insert R_100 data ticks
         $fill_start = $now->minus_time_interval('1d7h');
         $populator  = BOM::Feed::Populator::InsertTicks->new({
-            symbols            => [qw/ RDYANG /],
+            symbols            => [qw/ R_100 /],
             last_migrated_time => $fill_start,
             buffer             => $buffer,
         });
@@ -71,7 +71,7 @@ subtest 'Initialization' => sub {
             $populator->insert_to_db({
                 ticks  => \@ticks,
                 date   => $fill_start->plus_time_interval("${i}d"),
-                symbol => 'RDYANG',
+                symbol => 'R_100',
             });
         }
 
@@ -80,23 +80,27 @@ subtest 'Initialization' => sub {
     }
     'Setup ticks';
 };
-
 subtest 'ticks_history' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is no symbol param')
-        ->error_message_is('Символ  недействителен', 'It should return error if there is no symbol param');
+        ->error_message_is('Symbol  invalid', 'It should return error if there is no symbol param');
 
     $params->{args}->{ticks_history} = 'wrong';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is wrong symbol param')
-        ->error_message_is('Символ wrong недействителен', 'It should return error if there is wrong symbol param');
+        ->error_message_is('Symbol wrong invalid', 'It should return error if there is wrong symbol param');
+
+    $params->{args}->{ticks_history} = 'DFMGI';
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('StreamingNotAllowed', 'Streaming not allowed for chartonly contracts.')
+        ->error_message_is('Streaming for this symbol is not available due to license restrictions.',
+        'It should return error for chartonly contract');
 
     $params->{args}->{ticks_history} = 'TOP40';
     $params->{args}->{subscribe}     = '1';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('NoRealtimeQuotes', 'It should return error if realtime quotes not available for this symbol')
-        ->error_message_is('Котировки в режиме реального времени недоступны для TOP40',
-        'It should return error if realtime quotes not available for this symbol');
+        ->error_message_is('Realtime quotes not available for TOP40', 'It should return error if realtime quotes not available for this symbol');
     delete $params->{args}->{subscribe};
 };
 
@@ -142,8 +146,7 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{end}   = $now->minus_time_interval('6h30m')->epoch;
     $params->{args}->{count} = 2000;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $rpc_ct->result->{data}->{history}->{times}->[0], $now->minus_time_interval('7h')->epoch,
-        'It should return latest existed tick for last day if client sent invalid start time';
+    is $rpc_ct->result->{data}->{history}->{times}->[0], 1331683200, 'It should return ticks which is 2000 seconds from the end time';
 
     $params->{args}->{start} = $now->minus_time_interval('1d')->epoch;
     $params->{args}->{end}   = $now->epoch;
@@ -159,6 +162,20 @@ subtest '_validate_start_end' => sub {
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is @{$rpc_ct->result->{data}->{history}->{times}}, 500, 'It should return 500 ticks if sent very big count';
 
+    delete $params->{args}->{start};
+    $params->{args}->{count} = 10;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is $rpc_ct->result->{data}->{history}->{times}->[0], 1331708391, 'It should start at 10s from now';
+    is @{$rpc_ct->result->{data}->{history}->{times}}, 10, 'It should return 10 ticks';
+
+    $params->{args}->{style}       = "candles";
+    $params->{args}->{count}       = 4000;
+    $params->{args}->{granularity} = 5;
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    is @{$result->{data}->{candles}}, 3941, 'It should return 3941 candle (due to misisng ticks)';
+    is $result->{data}->{candles}->[0]->{epoch}, $now->epoch - (4000 * 5), 'It should start at ' . (4000 * 5) . 's from end';
+
+    $params->{args}->{style}         = 'ticks';
     $params->{args}->{ticks_history} = 'HSI';
     $params->{args}->{start}         = $now->minus_time_interval('1h30m')->epoch;
     $params->{args}->{end}           = $now->plus_time_interval('1d')->epoch;
@@ -196,7 +213,7 @@ subtest 'history data style' => sub {
 
     $params->{args}->{style} = 'invalid';
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('InvalidStyle', 'It should return error if sent invalid style')
-        ->error_message_is('Стиль invalid недействителен', 'It should return error if sent invalid style');
+        ->error_message_is('Style invalid invalid', 'It should return error if sent invalid style');
 
     delete $params->{args}->{style};
     $params->{args}->{granularity} = 60;
@@ -212,21 +229,6 @@ subtest 'history data style' => sub {
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is @{$result->{data}->{candles}}, 1, 'It should return only 1 candle if start end diff lower than granularity';
     is_deeply [sort keys %{$result->{data}->{candles}->[0]}], [sort qw/ open high epoch low close /];
-
-    $start                           = $now->minus_time_interval('1d7h')->plus_time_interval('1m');
-    $params->{args}->{start}         = $start->epoch;
-    $params->{args}->{end}           = $start->plus_time_interval('1d1m1s')->epoch;
-    $params->{args}->{granularity}   = 60 * 60 * 24;
-    $params->{args}->{ticks_history} = 'RDYANG';
-    $result                          = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    my $daily_candles_rdyang_first_open = $result->{data}->{candles}->[0]->{open};
-    $start                   = $now->minus_time_interval('1d7h');
-    $params->{args}->{style} = 'ticks';
-    $params->{args}->{start} = $start->epoch;
-    $params->{args}->{end}   = $start->plus_time_interval('1s')->epoch;
-    $result                  = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $daily_candles_rdyang_first_open, $result->{data}->{history}->{prices}->[0],
-        'For the underlying nocturne, for daily ohlc, it should return ticks started from day started time';
 
     $start                           = $now->minus_time_interval('5h');
     $end                             = $start->plus_time_interval('30m');
