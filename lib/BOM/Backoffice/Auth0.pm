@@ -6,7 +6,6 @@ use JSON;
 use BOM::Platform::Context;
 use BOM::Platform::Runtime;
 use BOM::System::Config;
-use Carp;
 use BOM::System::AuditLog;
 use BOM::System::RedisReplicated;
 
