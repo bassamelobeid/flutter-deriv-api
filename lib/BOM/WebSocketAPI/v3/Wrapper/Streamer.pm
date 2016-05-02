@@ -96,7 +96,7 @@ sub proposal {
 sub _unique_json_hash {
     my $h = shift;
     my @a = ();
-    foreach $k(sort keys %h) {
+    foreach my $k (sort keys %h) {
         push @a, ($k, $h{$k});
     }
     return encode_json(\@a);
@@ -106,7 +106,7 @@ sub _pricing_channel {
     my ($c, $subs, $args) = @_;
 
     my %args_hash = %{$args};
-    $args_hash{amount}  = 1000;
+    $args_hash{amount} = 1000;
     my $serialized_args = _serialized_args(\%args_hash);
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
@@ -116,12 +116,12 @@ sub _pricing_channel {
     }
 
     my $uuid = Data::UUID->new->create_str();
-    $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid}=$uuid;
-    $pricing_channel->{$serialized_args}->{$args->{amount}}->{args}=$args;
+    $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
+    $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
 
     my $rp = Mojo::Redis::Processor->new({
-        data       =>  $serialized_args,
-        trigger    =>  $args->{symbol},
+        data    => $serialized_args,
+        trigger => $args->{symbol},
     });
     $rp->send();
 
@@ -130,7 +130,6 @@ sub _pricing_channel {
 
     return $uuid;
 }
-
 
 sub pricing_table {
     my ($c, $args) = @_;
