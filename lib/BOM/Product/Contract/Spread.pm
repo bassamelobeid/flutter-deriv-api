@@ -176,7 +176,7 @@ sub _build_spread {
     my $self = shift;
 
     my $vs = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $self->underlying});
-    # since it is only random indices
+    # since it is only vol indices
     my $vol     = $vs->get_volatility();
     my $spread  = $self->current_spot * sqrt($vol**2 * 2 / (365 * 86400)) * $self->spread_multiplier;
     my $y       = floor(log($spread) / log(10));
@@ -468,7 +468,7 @@ sub _validate_underlying {
     my $self = shift;
 
     my @err;
-    # we only allow random index for now.
+    # we only allow vol index for now.
     if ($self->underlying->submarket->name ne 'random_index') {
         push @err,
             {
@@ -483,7 +483,7 @@ sub _validate_underlying {
             {
             message           => 'Market is closed',
             severity          => 98,
-            message_to_client => localize("This market is presently closed. Try out the Random Indices which are always open.")};
+            message_to_client => localize("This market is presently closed. Try out the Volatility Indices which are always open.")};
     }
     return @err;
 }

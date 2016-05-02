@@ -66,7 +66,7 @@ sub financial_market_bet_to_parameters {
     # since a forward starting contract needs to start 5 minutes in the future,
     # 5 seconds is a safe mark.
     if ($contract_start_time->epoch - $purchase_time->epoch > 5) {
-        $bet_parameters->{is_forward_starting} = 1;
+        $bet_parameters->{starts_as_forward_starting} = 1;
     }
     $bet_parameters->{date_start} = $contract_start_time;
     $bet_parameters->{date_expiry} = Date::Utility->new($fmb->expiry_time->epoch) if $fmb->expiry_time;
@@ -259,7 +259,7 @@ sub shortcode_to_parameters {
         tick_expiry  => $tick_expiry,
         tick_count   => $how_many_ticks,
         is_sold      => $is_sold,
-        ($forward_start) ? (is_forward_starting => $forward_start) : (),
+        ($forward_start) ? (starts_as_forward_starting => $forward_start) : (),
         %barriers,
     };
 

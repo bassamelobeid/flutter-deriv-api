@@ -29,7 +29,7 @@ my @codes = qw(
     T_DIGITMATCH_R-50_7t_5_c_USD_EN
 );
 
-my @expected = (0.5, 0.876, 0.498, 0.475089218874021, 0.669, 0.321054315020547, 0.5, 0.1);
+my @expected = (0.5, 0.943, 0.498, 0.475089218874021, 0.669, 0.321054315020547, 0.5, 0.1);
 
 my $count = 0;
 foreach my $code (@codes) {
@@ -74,7 +74,7 @@ foreach my $code (@codes) {
     }
     $bet_args{payout}       = 250;
     $bet_args{currency}     = $currency;
-    $bet_args{current_tick} = BOM::Market::Data::Tick->new({
+    $bet_args{entry_tick} = $bet_args{current_tick} = BOM::Market::Data::Tick->new({
         symbol => $underlying->symbol,
         epoch  => $start_time->epoch + 300,
         quote  => 1.6084

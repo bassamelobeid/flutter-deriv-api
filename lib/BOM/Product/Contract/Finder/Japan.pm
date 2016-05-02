@@ -125,7 +125,7 @@ sub _predefined_trading_period {
                         date_start => $today->plus_time_interval($even_hour . 'h'),
                         duration   => '2h'
                     })];
-            if ($now_hour > 0) {
+            if ($now_hour > 0 and $now_hour < 18) {
                 my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
                 $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
                 push @$trading_periods, map { _get_intraday_trading_window({now => $now, date_start => $_, duration => '5h'}) }

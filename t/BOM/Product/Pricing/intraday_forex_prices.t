@@ -89,7 +89,8 @@ subtest 'prices without economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct theo probability [' . $c->shortcode . ']';
+                is $c->ask_probability->amount, $expected->{$c->shortcode}, 'correct ask probability [' . $c->shortcode . ']';
+
             }
             'survived';
         }
@@ -111,7 +112,7 @@ subtest 'atm prices without economic events' => sub {
                     barrier      => 'S0P',
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct theo probability [event_' . $c->shortcode . ']';
+                is $c->ask_probability->amount, $expected->{$c->shortcode}, 'correct ask probability [event_' . $c->shortcode . ']';
             }
             'survived';
         }
@@ -156,7 +157,7 @@ subtest 'prices with economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->theo_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct theo probability [event_' . $c->shortcode . ']';
+                is $c->ask_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct ask probability [event_' . $c->shortcode . ']';
             }
             'survived';
         }
@@ -178,9 +179,10 @@ subtest 'atm prices with economic events' => sub {
                     barrier      => 'S0P',
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is $c->theo_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct theo probability [event_' . $c->shortcode . ']';
+                is $c->ask_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct ask probability [event_' . $c->shortcode . ']';
             }
             'survived';
         }
     }
 };
+

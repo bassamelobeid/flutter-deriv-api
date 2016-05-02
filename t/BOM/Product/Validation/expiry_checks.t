@@ -47,7 +47,7 @@ test_with_feed(
             is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
             is($bet->value, $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
 
-            my $opposite = $bet->opposite_bet;
+            my $opposite = $bet->opposite_contract;
             $opposite->is_expired;
             is($opposite->value, int(not $barrier_win_map{$barrier}), 'Correct expiration for strike of ' . $barrier . ' on opposite bet.');
         }
@@ -57,7 +57,7 @@ test_with_feed(
         my $bet = produce_contract($bet_params);
         is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
         is($bet->value,      0, 'Expiration for on-the-nail strike.');
-        my $opposite = $bet->opposite_bet;
+        my $opposite = $bet->opposite_contract;
         is($opposite->is_expired, 1, 'Past end of opposite, on-the-nail bet.');
         is($opposite->value,      0, 'Expiration for on-the-nail strike, opposite bet.');
 
@@ -317,7 +317,7 @@ test_with_feed(
         is($bet->value,      0, 'Bet outcome lost');
 
         # WIN TEST
-        $bet_params->{date_start}  = 1205852400;    # 18-Mar-08 15h00 15:00:01 15:00 098.34 098.38 98.3597 FXN
+        $bet_params->{date_start}  = 1205852401;    # 18-Mar-08 15h00 15:00:01 15:00 098.34 098.38 98.3597 FXN
         $bet_params->{date_expiry} = 1205856000;    # 18-Mar-08 16h00 16:00:01 16:00 098.23 098.23 98.2328 TDF
 
         $bet = produce_contract($bet_params);
@@ -337,7 +337,7 @@ test_with_feed([
     'Intraday up.' => sub {
 
         my $bet_params = {
-            bet_type     => 'INTRADU',
+            bet_type     => 'CALL',
             date_start   => 1205856000,                                   # 16:00:01 16:00 098.23 098.23 98.2328 TDF
             date_expiry  => 1205859600,                                   # 17:00:00 17:00 098.33 098.36 98.3491 GFT
             date_pricing => Date::Utility->new('2008-03-19T15:30:00Z'),
@@ -345,6 +345,7 @@ test_with_feed([
             payout       => 1000,
             currency     => 'USD',
             barrier      => 'S0P',
+            starts_as_forward_starting => 1,
         };
 
         my $bet = produce_contract($bet_params);
@@ -370,7 +371,7 @@ test_with_feed([
         is($bet->value, $bet->payout,
             'Bet outcome: win (for Client). Only wins if both entry and exit are the current market value, i.e. "previous tick"');
 
-        lives_ok { $bet = produce_contract('INTRADU_FRXUSDJPY_300_1205859000_1205859600_S0P_0', 'USD'); } 'Create INTRADU from shortcode';
+        lives_ok { $bet = produce_contract('CALL_FRXUSDJPY_300_1205859000F_1205859600_S0P_0', 'USD'); } 'Create INTRADU from shortcode';
         lives_ok { $bet->is_expired } 'Expiry Check (from shortcode)';
         is($bet->is_expired,           1,      'Bet expired');
         is($bet->barrier->as_absolute, 98.353, 'Barrier is properly set based on current market value when creating Intraday Up from shortcode.');
@@ -1491,7 +1492,7 @@ my $oft_used_date = Date::Utility->new('2013-03-29 15:00:34');
 
 test_with_feed(
     [[$oft_used_date->epoch + 700, 100.11, 'frxUSDJPY'], [$oft_used_date->epoch + 1800, 100.12, 'frxUSDJPY'],],
-    'entry_tick is too late to allow sale' => sub {
+    'sell if entry tick is within start and expiry' => sub {
         my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
         my $starting   = $oft_used_date->epoch;
 
@@ -1507,8 +1508,7 @@ test_with_feed(
 
         my $bet = produce_contract($bet_params);
         ok($bet->is_expired,        'The bet is expired');
-        ok(!$bet->is_valid_to_sell, 'but we still cannot sell it');
-        like($bet->primary_validation_error->message, qr/^Entry tick too far away/, 'because the entry tick came too late.');
+        ok($bet->is_valid_to_sell, 'valid to sell');
 
     });
 test_with_feed(
@@ -1530,7 +1530,7 @@ test_with_feed(
         my $bet = produce_contract($bet_params);
         ok($bet->is_expired,        'The bet is expired');
         ok(!$bet->is_valid_to_sell, 'but we still cannot sell it');
-        like($bet->primary_validation_error->message, qr/^Entry tick too far away/, 'because the entry tick came too early on the forward starter.');
+        like($bet->primary_validation_error->message, qr/entry tick is too old/, 'because the entry tick came too early on the forward starter.');
 
     });
 
@@ -1556,7 +1556,7 @@ test_with_feed([
         my $bet = produce_contract($bet_params);
         ok($bet->is_expired,        'The bet is expired');
         ok(!$bet->is_valid_to_sell, 'but we still cannot sell it');
-        like($bet->primary_validation_error->message, qr/^Start.*is not before.*expiry tick/, 'because entry and exit are the same tick.');
+        like($bet->primary_validation_error->message, qr/only one tick throughout contract period/, 'because entry and exit are the same tick.');
 
     });
 
@@ -1592,7 +1592,7 @@ test_with_feed([
         [$oft_used_date->epoch + 1000, 100.12, 'frxUSDJPY'],
         [$oft_used_date->epoch + 1801, 101.00, 'frxUSDJPY'],
     ],
-    'cannot sell on too old expiry' => sub {
+    'can sell if exit tick is within start and expiry' => sub {
         my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
         my $starting   = $oft_used_date->epoch;
 
@@ -1608,9 +1608,7 @@ test_with_feed([
 
         my $bet = produce_contract($bet_params);
         ok($bet->is_expired,        'The bet is expired');
-        ok(!$bet->is_valid_to_sell, 'but we still cannot sell it');
-        like($bet->primary_validation_error->message, qr/^Exit tick.*too far/, 'exit tick is too far away.');
-
+        ok($bet->is_valid_to_sell, 'valid to sell');
     });
 
 test_with_feed([

@@ -40,11 +40,11 @@ my %expected_type = (
 my %expected_market = (
     'japan-virtual' => ['forex'],
     japan           => ['forex'],
-    fog             => ['commodities', 'forex', 'indices', 'random', 'stocks'],
-    costarica       => ['commodities', 'forex', 'indices', 'random', 'stocks'],
+    fog             => ['commodities', 'forex', 'indices', 'volidx', 'stocks'],
+    costarica       => ['commodities', 'forex', 'indices', 'volidx', 'stocks'],
     maltainvest => ['commodities', 'forex', 'indices', 'stocks'],
-    malta       => ['random'],
-    iom => ['commodities', 'forex', 'indices', 'random', 'stocks'],
+    malta       => ['volidx'],
+    iom => ['commodities', 'forex', 'indices', 'volidx', 'stocks'],
 );
 subtest 'landing_company specifics' => sub {
     lives_ok {
@@ -71,42 +71,42 @@ subtest 'offerings check' => sub {
             'commodities' => 0,
             'forex'       => 1,
             'indices'     => 0,
-            'random',     => 0,
+            'volidx',     => 0,
             'stocks'      => 0
         },
         'japan-virtual' => {
             'commodities' => 0,
             'forex'       => 1,
             'indices'     => 0,
-            'random',     => 0,
+            'volidx',     => 0,
             'stocks'      => 0
         },
         malta => {
             'commodities' => 0,
             'forex'       => 0,
             'indices'     => 0,
-            'random',     => 1,
+            'volidx',     => 1,
             'stocks'      => 0
         },
         maltainvest => {
             'commodities' => 1,
             'forex'       => 1,
             'indices'     => 1,
-            'random',     => 0,
+            'volidx',     => 0,
             'stocks'      => 1
         },
         fog => {
             'commodities' => 1,
             'forex'       => 1,
             'indices'     => 1,
-            'random',     => 1,
+            'volidx',     => 1,
             'stocks'      => 1
         },
         iom => {
             'commodities' => 1,
             'forex'       => 1,
             'indices'     => 1,
-            'random',     => 1,
+            'volidx',     => 1,
             'stocks'      => 1
         },
     );
@@ -128,7 +128,7 @@ subtest 'offerings check' => sub {
 };
 
 subtest 'legal allowed underlyings' => sub {
-    my @random     = qw(R_75 RDBEAR RDVENUS RDBULL R_25 RDMARS R_100 RDYIN RDMOON RDYANG R_50 RDSUN);
+    my @random     = qw(R_75 RDBEAR RDBULL R_25 R_100 R_50);
     my @non_random = qw(
         FCHI
         frxAUDJPY

@@ -30,7 +30,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw(AEX FPCS);
 subtest "available contracts for symbol" => sub {
     my %input = (
-        random  => ['R_100',     'RDMARS',    'RDBEAR'],
+        random  => ['R_100',     'RDBEAR'],
         forex   => ['frxUSDJPY', 'frxAUDCAD', 'WLDUSD'],
         indices => ['AEX',       'SYNAEX'],
         stocks  => ['FPCS'],
@@ -46,12 +46,6 @@ subtest "available contracts for symbol" => sub {
             asian        => 2,
             spreads      => 2
         },
-        RDMARS => {
-            callput   => 8,
-            endsinout => 2,
-            digits    => 6,
-            asian     => 2,
-        },
         RDBEAR => {
             callput      => 8,
             touchnotouch => 2,    # intraday and daily separated
@@ -61,8 +55,8 @@ subtest "available contracts for symbol" => sub {
             asian        => 2,
         },
         frxUSDJPY => {
-            callput      => 10,
-            touchnotouch => 4,    # intraday and daily separated
+            callput      => 12,
+            touchnotouch => 2,    # only daily
             staysinout   => 2,
             endsinout    => 2,
         },
@@ -70,11 +64,11 @@ subtest "available contracts for symbol" => sub {
             callput => 6,
         },
         WLDUSD => {
-            callput => 2,
+            callput => 4,
         },
         AEX => {
             callput      => 8,
-            touchnotouch => 2,    # intraday and daily separated
+            touchnotouch => 2,    # only daily
             staysinout   => 2,
             endsinout    => 2,
         },
@@ -83,7 +77,7 @@ subtest "available contracts for symbol" => sub {
         },
         frxXAUUSD => {
             callput      => 8,
-            touchnotouch => 2,    # intraday and daily separated
+            touchnotouch => 2,    # only daily
             staysinout   => 2,
             endsinout    => 2,
         },
@@ -100,7 +94,7 @@ subtest "available contracts for symbol" => sub {
             });
             my $f = available_contracts_for_symbol({symbol => $u});
             ok $f->{feed_license}, 'has feed license key available';
-            is($f->{feed_license}, 'realtime', 'correct feed license key available') if ($market eq 'random');
+            is($f->{feed_license}, 'realtime', 'correct feed license key available') if ($market eq 'volidx');
             my %got;
             $got{$_->{contract_category}}++ for (@{$f->{available}});
             cmp_ok $got{$_}, '==', $expected{$u}{$_}, "expected outcome for $u-$_" for (keys %{$expected{$u}});

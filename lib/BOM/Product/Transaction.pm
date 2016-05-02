@@ -32,7 +32,6 @@ use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Product::CustomClientLimits;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Utility::Log4perl qw/get_logger/;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
 use BOM::Platform::Static::Config;
 
@@ -1211,7 +1210,7 @@ sub _build_pricing_comment {
         if ($action eq 'sell') {
             # Can't use $contract->current_tick because it is not 100% true.
             # It depends on when the contract is priced at that second.
-            $tick = $contract->underlying->tick_at($contract->date_pricing->epoch);
+            $tick = $contract->sell_tick;
         } elsif ($action eq 'autosell_expired_contract') {
             $tick = ($contract->is_path_dependent and $contract->hit_tick) ? $contract->hit_tick : $contract->exit_tick;
         }
@@ -1418,13 +1417,6 @@ sub _is_valid_to_buy {
 sub _is_valid_to_sell {
     my $self     = shift;
     my $contract = $self->contract;
-
-    # we shouldn't we recreating contract for spreads.
-    if ($contract->date_pricing->is_after($contract->date_start) and not $contract->is_spread) {
-        # It's started, get one prepared for sale.
-        $contract = make_similar_contract($contract, {for_sale => 1});
-        $self->contract($contract);
-    }
 
     if (not $contract->is_valid_to_sell) {
         return Error::Base->cuss(
@@ -1717,12 +1709,12 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
-    if ($residence && $market_name eq 'random' && BOM::Platform::Runtime->instance->random_restricted_country($residence)) {
+    if ($residence && $market_name eq 'volidx' && BOM::Platform::Runtime->instance->volidx_restricted_country($residence)) {
         return Error::Base->cuss(
             -type => 'RandomRestrictedCountry',
-            -mesg => 'Clients are not allowed to place Random contracts as their country is restricted.',
+            -mesg => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
             -message_to_client =>
-                BOM::Platform::Context::localize('Sorry, contracts on Random Indices are not available in your country of residence'),
+                BOM::Platform::Context::localize('Sorry, contracts on Volatility Indices are not available in your country of residence'),
         );
     }
 
@@ -1996,7 +1988,7 @@ sub sell_expired_contracts {
         $fmb_helper->batch_sell_bet;
     }
     catch {
-        get_logger->warn(ref eq 'ARRAY' ? "@$_" : "$_");
+        warn(ref eq 'ARRAY' ? "@$_" : "$_");
     };
 
     if (not $sold or @bets_to_sell > @$sold) {

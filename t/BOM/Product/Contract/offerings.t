@@ -17,7 +17,7 @@ use BOM::System::Chronicle;
 note('Underlying-Contract offerings on 22-Feb-2016');
 
 subtest 'markets' => sub {
-    my @expected = (qw(forex commodities stocks indices random));
+    my @expected = (qw(forex commodities stocks indices volidx));
     lives_ok {
         my @markets = get_offerings_with_filter('market');
         cmp_bag(\@markets, \@expected, 'correct market list');
@@ -27,7 +27,7 @@ subtest 'markets' => sub {
 
 subtest 'submarkets' => sub {
     my @expected = (
-        qw(americas amsterdam asia_oceania belgium energy europe_africa france major_pairs metals middle_east minor_pairs random_daily random_index random_nightly smart_fx)
+        qw(americas amsterdam asia_oceania belgium energy europe_africa france major_pairs metals middle_east minor_pairs random_daily random_index smart_fx)
     );
     lives_ok {
         my @submarkets = get_offerings_with_filter('submarket');
@@ -46,7 +46,7 @@ subtest 'underlying symbols' => sub {
             qw( BBABI BBBELG BBGBLB BBKBC BBUCB FPACA FPAI FPAIR FPBN FPBNP FPCA FPCS FPDG FPEDF FPEI FPFP FPGLE FPGSZ FPKER FPMC FPOR FPORA FPRI FPRNO FPSAF FPSAN FPSGO FPSU FPVIV NAASML NAHEIA NAINGA NARDSA NAUNA)
         ],
         indices => [qw( AEX AS51 BFX BSESENSEX30 DFMGI DJI FCHI GDAXI HSI JCI N225 OBX SPC SSMI STI TOP40 ISEQ)],
-        random  => [qw( RDBEAR RDBULL RDMARS RDMOON RDSUN RDVENUS RDYANG RDYIN R_100 R_25 R_50 R_75)],
+        volidx  => [qw( RDBEAR RDBULL R_100 R_25 R_50 R_75)],
     );
 
     lives_ok {

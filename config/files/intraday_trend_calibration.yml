@@ -2,165 +2,165 @@
 # These will then be used by the Intraday trend adjustment in the corresponding pricing engine
 
 WLDAUD:
-  #calib date: 03-Mar-2016
+  #calib date: 30-Mar-2016
   #calib start: 20-Jan-2016 00:00:01
-  #calib end: 02-Mar-2016 04:00:30
-  trend_min: -3.67245e-05
-  trend_max: 3.6905e-05
-  #adj r square lt: 0.949247
-  A_lt: 0.0379505
-  B_lt: -2.32812e-14
-  C_lt: 4.64026
-  D_lt: 27096.6
-  #adj r square st: 0.959745
-  A_st: 0.0482516
-  B_st: -2.50024e-14
-  C_st: 1.96976
-  D_st: 27096.6
+  #calib end: 29-Mar-2016 23:59:58
+  trend_min: -3.38018e-05
+  trend_max: 3.40127e-05
+  #adj r square lt: 0.946353
+  A_lt: 0.0540322
+  B_lt: -2.22045e-14
+  C_lt: 4.25056
+  D_lt: 29400.8
+  #adj r square st: 0.963026
+  A_st: 0.0460195
+  B_st: -2.31423e-14
+  C_st: 3.1978
+  D_st: 29400.8
 WLDEUR:
-  #calib date: 03-Mar-2016
+  #calib date: 30-Mar-2016
   #calib start: 20-Jan-2016 00:00:01
-  #calib end: 02-Mar-2016 04:00:32
-  trend_min: -2.7804e-05
-  trend_max: 2.73584e-05
-  #adj r square lt: 0.930867
-  A_lt: 1.65476
-  B_lt: -3.03825e-09
-  C_lt: 0.0733612
-  D_lt: 36551.9
-  #adj r square st: 0.952739
-  A_st: 0.0402128
-  B_st: -2.92912e-14
-  C_st: 2.38137
-  D_st: 36551.9
+  #calib end: 29-Mar-2016 23:59:58
+  trend_min: -2.53821e-05
+  trend_max: 2.54132e-05
+  #adj r square lt: 0.973669
+  A_lt: 0.0640906
+  B_lt: -2.80186e-14
+  C_lt: 3.53824
+  D_lt: 39349.6
+  #adj r square st: 0.960446
+  A_st: 0.0498281
+  B_st: -2.26508e-14
+  C_st: 4.11822
+  D_st: 39349.6
 WLDGBP:
-  #calib date: 03-Mar-2016
+  #calib date: 30-Mar-2016
   #calib start: 20-Jan-2016 00:00:01
-  #calib end: 02-Mar-2016 04:00:32
-  trend_min: -2.86745e-05
-  trend_max: 2.71312e-05
-  #adj r square lt: 0.917036
-  A_lt: 0.0552414
-  B_lt: -3.66225e-14
-  C_lt: 7.55629
-  D_lt: 36857.9
-  #adj r square st: 0.954102
-  A_st: 0.03717
-  B_st: -2.28498e-14
-  C_st: 9.83896
-  D_st: 36857.9
+  #calib end: 29-Mar-2016 23:59:58
+  trend_min: -2.63925e-05
+  trend_max: 2.56012e-05
+  #adj r square lt: 0.969987
+  A_lt: 0.119726
+  B_lt: -3.31592e-14
+  C_lt: 4.14234
+  D_lt: 39060.7
+  #adj r square st: 0.953047
+  A_st: 0.0591522
+  B_st: -2.24989e-14
+  C_st: 5.56577
+  D_st: 39060.7
 WLDUSD:
-  #calib date: 03-Mar-2016
+  #calib date: 30-Mar-2016
   #calib start: 20-Jan-2016 00:00:01
-  #calib end: 02-Mar-2016 04:00:32
-  trend_min: -2.71706e-05
-  trend_max: 1.74528e-05
-  #adj r square lt: 0.838052
-  A_lt: 404.874
-  B_lt: -2.62298
-  C_lt: 17.1915
-  D_lt: 57297.3
-  #adj r square st: 0.919323
-  A_st: 0.0084818
-  B_st: -2.29677e-14
-  C_st: 18.0376
-  D_st: 57297.3
+  #calib end: 29-Mar-2016 23:59:58
+  trend_min: -3.014e-05
+  trend_max: 1.76568e-05
+  #adj r square lt: 0.8351
+  A_lt: 1.12171
+  B_lt: -3.24453
+  C_lt: 1.16302
+  D_lt: 56635.5
+  #adj r square st: 0.873113
+  A_st: 0.90091
+  B_st: -7.34777
+  C_st: 0.8837
+  D_st: 56635.5
 frxAUDCAD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 29-Feb-2016 23:59:56
-  trend_min: -3.30306e-05
-  trend_max: 3.27046e-05
-  #adj r square lt: 0.979164
-  A_lt: 0.107862
-  B_lt: -1.46823e-07
-  C_lt: 3.3037
-  D_lt: 30576.7
-  #adj r square st: 0.993298
-  A_st: 0.0650571
-  B_st: -2.74239e-14
-  C_st: 3.68597
-  D_st: 30576.7
-frxAUDCHF:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:12:58
-  trend_min: -4.85001e-05
-  trend_max: 4.89412e-05
-  #adj r square lt: 0.936912
-  A_lt: 2.78077
-  B_lt: -0.118096
-  C_lt: 0.0530673
-  D_lt: 20432.7
-  #adj r square st: 0.954759
-  A_st: 0.159228
-  B_st: -4.24518e-14
-  C_st: 0.39669
-  D_st: 20432.7
-frxAUDJPY:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:03
-  trend_min: -5.91027e-05
-  trend_max: 5.9633e-05
-  #adj r square lt: 0.900733
-  A_lt: 8.66838
-  B_lt: -4.5798e-05
-  C_lt: 0.00257673
-  D_lt: 16769.3
-  #adj r square st: 0.942668
-  A_st: 1.20285
-  B_st: -4.131e-14
-  C_st: 0.048423
-  D_st: 16769.3
-frxAUDNZD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 24-Feb-2016 03:59:37
-  trend_min: -3.0248e-05
-  trend_max: 3.01631e-05
-  #adj r square lt: 0.991653
-  A_lt: 0.120161
-  B_lt: -0.00138497
-  C_lt: 3.95439
-  D_lt: 33153.1
-  #adj r square st: 0.984171
-  A_st: 0.0587947
-  B_st: -2.39868e-14
-  C_st: 6.18823
-  D_st: 33153.1
-frxAUDPLN:
-  #calib date: 03-Mar-2016
+  #calib date: 31-Mar-2016
   #calib start: 20-Jan-2016 00:00:01
-  #calib end: 02-Mar-2016 04:07:35
-  trend_min: -5.21479e-05
-  trend_max: 5.22426e-05
-  #adj r square lt: 0.983643
-  A_lt: 5.00795
-  B_lt: -3.3411e-14
-  C_lt: 0.0543369
-  D_lt: 19141.5
-  #adj r square st: 0.979334
-  A_st: 0.160617
-  B_st: -3.28574e-14
-  C_st: 0.967328
-  D_st: 19141.5
+  #calib end: 30-Mar-2016 02:19:37
+  trend_min: -3.46315e-05
+  trend_max: 3.44871e-05
+  #adj r square lt: 0.997759
+  A_lt: 0.582253
+  B_lt: -0.208578
+  C_lt: 2.88273
+  D_lt: 28996.4
+  #adj r square st: 0.998003
+  A_st: 0.240509
+  B_st: -0.147593
+  C_st: 4.0593
+  D_st: 28996.4
+frxAUDCHF:
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:38
+  trend_min: -4.92286e-05
+  trend_max: 4.95017e-05
+  #adj r square lt: 0.971167
+  A_lt: 0.471116
+  B_lt: -0.349534
+  C_lt: 3.4948
+  D_lt: 20201.3
+  #adj r square st: 0.992934
+  A_st: 0.16753
+  B_st: -0.181806
+  C_st: 5.97537
+  D_st: 20201.3
+frxAUDJPY:
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:39
+  trend_min: -5.16574e-05
+  trend_max: 5.19401e-05
+  #adj r square lt: 0.939503
+  A_lt: 1.6756
+  B_lt: -8.001e-14
+  C_lt: 0.0407547
+  D_lt: 19253
+  #adj r square st: 0.974013
+  A_st: 0.0450131
+  B_st: -2.22077e-14
+  C_st: 3.64403
+  D_st: 19253
+frxAUDNZD:
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:39
+  trend_min: -3.25877e-05
+  trend_max: 3.26128e-05
+  #adj r square lt: 0.99686
+  A_lt: 0.474953
+  B_lt: -0.147998
+  C_lt: 3.0667
+  D_lt: 30662.8
+  #adj r square st: 0.99705
+  A_st: 0.242766
+  B_st: -0.155659
+  C_st: 5.73528
+  D_st: 30662.8
+frxAUDPLN:
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:11
+  trend_min: -4.88672e-05
+  trend_max: 4.8836e-05
+  #adj r square lt: 0.988272
+  A_lt: 6.5122
+  B_lt: -0.0298338
+  C_lt: 0.0518077
+  D_lt: 20476.7
+  #adj r square st: 0.987562
+  A_st: 0.0904399
+  B_st: -2.2207e-14
+  C_st: 1.93741
+  D_st: 20476.7
 frxAUDUSD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:05
-  trend_min: -3.72948e-05
-  trend_max: 4.30433e-05
-  #adj r square lt: 0.819152
-  A_lt: 0.0950933
-  B_lt: -0.184787
-  C_lt: 0.129475
-  D_lt: 23232.4
-  #adj r square st: 0.917078
-  A_st: 0.0711332
-  B_st: -3.97466e-14
-  C_st: 0.36573
-  D_st: 23232.4
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:40
+  trend_min: -3.60941e-05
+  trend_max: 4.35212e-05
+  #adj r square lt: 0.828403
+  A_lt: 0.0548358
+  B_lt: -5.27083e-05
+  C_lt: 1.32471
+  D_lt: 22977.3
+  #adj r square st: 0.962008
+  A_st: 0.0369435
+  B_st: -0.0287974
+  C_st: 31.483
+  D_st: 22977.3
 frxBROUSD:
   #calib date: 07-May-2015
   #calib start: 02-Jan-2014 08:15:01
@@ -178,418 +178,418 @@ frxBROUSD:
   C_st: 5.0511
   D_st: 8190.54
 frxEURAUD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:10
-  trend_min: -4.81525e-05
-  trend_max: 4.77023e-05
-  #adj r square lt: 0.918482
-  A_lt: 0.0278576
-  B_lt: -2.22045e-14
-  C_lt: 3.4615
-  D_lt: 20963.4
-  #adj r square st: 0.935347
-  A_st: 1.01465
-  B_st: -2.91828e-14
-  C_st: 0.0550105
-  D_st: 20963.4
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:41
+  trend_min: -4.37263e-05
+  trend_max: 4.35816e-05
+  #adj r square lt: 0.94871
+  A_lt: 0.056345
+  B_lt: -2.22051e-14
+  C_lt: 5.15702
+  D_lt: 22945.5
+  #adj r square st: 0.978691
+  A_st: 0.0442099
+  B_st: -2.22114e-14
+  C_st: 5.6711
+  D_st: 22945.5
 frxEURCAD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:11
-  trend_min: -5.03264e-05
-  trend_max: 4.44957e-05
-  #adj r square lt: 0.879949
-  A_lt: 2.6541
-  B_lt: -0.112018
-  C_lt: 0.0239601
-  D_lt: 22474.1
-  #adj r square st: 0.927632
-  A_st: 0.0321841
-  B_st: -2.22047e-14
-  C_st: 1.61618
-  D_st: 22474.1
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:42
+  trend_min: -4.2961e-05
+  trend_max: 4.06248e-05
+  #adj r square lt: 0.941538
+  A_lt: 0.68756
+  B_lt: -0.00110571
+  C_lt: 0.213164
+  D_lt: 24615.5
+  #adj r square st: 0.97627
+  A_st: 0.039609
+  B_st: -2.22155e-14
+  C_st: 9.3588
+  D_st: 24615.5
 frxEURCHF:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:12
-  trend_min: -1.89161e-05
-  trend_max: 1.89578e-05
-  #adj r square lt: 0.97524
-  A_lt: 0.328764
-  B_lt: -0.0930897
-  C_lt: 2.13809
-  D_lt: 52748.7
-  #adj r square st: 0.991945
-  A_st: 0.078132
-  B_st: -2.6899e-14
-  C_st: 8.3525
-  D_st: 52748.7
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:41
+  trend_min: -1.89066e-05
+  trend_max: 1.90732e-05
+  #adj r square lt: 0.990729
+  A_lt: 0.272285
+  B_lt: -0.100113
+  C_lt: 3.83965
+  D_lt: 52429.6
+  #adj r square st: 0.996073
+  A_st: 0.13196
+  B_st: -0.071335
+  C_st: 15.2601
+  D_st: 52429.6
 frxEURGBP:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:11
-  trend_min: -3.56801e-05
-  trend_max: 3.5501e-05
-  #adj r square lt: 0.937582
-  A_lt: 6.55487
-  B_lt: -0.223206
-  C_lt: 0.0441902
-  D_lt: 28168.2
-  #adj r square st: 0.958866
-  A_st: 0.0385085
-  B_st: -2.33567e-14
-  C_st: 3.72719
-  D_st: 28168.2
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:42
+  trend_min: -3.24679e-05
+  trend_max: 3.2581e-05
+  #adj r square lt: 0.968279
+  A_lt: 0.167921
+  B_lt: -0.131415
+  C_lt: 3.80809
+  D_lt: 30692.8
+  #adj r square st: 0.883548
+  A_st: 0.0599047
+  B_st: -2.55288e-14
+  C_st: 9.80245
+  D_st: 30692.8
 frxEURJPY:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:17
-  trend_min: -3.57219e-05
-  trend_max: 3.02833e-05
-  #adj r square lt: 0.886285
-  A_lt: 0.579658
-  B_lt: -0.476853
-  C_lt: 2.47472
-  D_lt: 33021.5
-  #adj r square st: 0.973479
-  A_st: 0.0563961
-  B_st: -2.68931e-14
-  C_st: 2.63319
-  D_st: 33021.5
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:43
+  trend_min: -3.10548e-05
+  trend_max: 3.07444e-05
+  #adj r square lt: 0.929895
+  A_lt: 3.59628
+  B_lt: -0.771396
+  C_lt: 1.1422
+  D_lt: 32526.3
+  #adj r square st: 0.992331
+  A_st: 0.0519754
+  B_st: -2.22048e-14
+  C_st: 4.3442
+  D_st: 32526.3
 frxEURNZD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:20
-  trend_min: -4.80164e-05
-  trend_max: 4.75051e-05
-  #adj r square lt: 0.934331
-  A_lt: 0.0574855
-  B_lt: -2.22045e-14
-  C_lt: 3.59871
-  D_lt: 21050.4
-  #adj r square st: 0.945102
-  A_st: 0.0259841
-  B_st: -2.22052e-14
-  C_st: 4.01515
-  D_st: 21050.4
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:44
+  trend_min: -4.58614e-05
+  trend_max: 4.5768e-05
+  #adj r square lt: 0.975256
+  A_lt: 0.0899088
+  B_lt: -2.22193e-14
+  C_lt: 3.3028
+  D_lt: 21849.3
+  #adj r square st: 0.984775
+  A_st: 0.0567423
+  B_st: -2.79236e-14
+  C_st: 8.06298
+  D_st: 21849.3
 frxEURUSD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:19
-  trend_min: -2.70665e-05
-  trend_max: 3.2033e-05
-  #adj r square lt: 0.924903
-  A_lt: 2.2373
-  B_lt: -0.12828
-  C_lt: 0.119494
-  D_lt: 31217.9
-  #adj r square st: 0.960845
-  A_st: 0.0331808
-  B_st: -2.22058e-14
-  C_st: 4.46307
-  D_st: 31217.9
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:45
+  trend_min: -2.6045e-05
+  trend_max: 3.54872e-05
+  #adj r square lt: 0.910951
+  A_lt: 0.274142
+  B_lt: -0.410354
+  C_lt: 4.20429
+  D_lt: 28179.2
+  #adj r square st: 0.982675
+  A_st: 0.0376183
+  B_st: -2.22051e-14
+  C_st: 32.4339
+  D_st: 28179.2
 frxGBPAUD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:24
-  trend_min: -3.98051e-05
-  trend_max: 3.94269e-05
-  #adj r square lt: 0.964135
-  A_lt: 0.0909741
-  B_lt: -2.22045e-14
-  C_lt: 2.35824
-  D_lt: 25363.4
-  #adj r square st: 0.971474
-  A_st: 0.0430708
-  B_st: -2.2474e-14
-  C_st: 2.88759
-  D_st: 25363.4
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:45
+  trend_min: -3.82399e-05
+  trend_max: 3.81702e-05
+  #adj r square lt: 0.975739
+  A_lt: 0.123257
+  B_lt: -0.000776668
+  C_lt: 2.97
+  D_lt: 26198.5
+  #adj r square st: 0.985609
+  A_st: 0.0536611
+  B_st: -2.36954e-14
+  C_st: 5.9618
+  D_st: 26198.5
 frxGBPCAD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:27
-  trend_min: -4.13617e-05
-  trend_max: 3.65887e-05
-  #adj r square lt: 0.922467
-  A_lt: 0.0610046
-  B_lt: -2.22048e-14
-  C_lt: 5.58503
-  D_lt: 27330.8
-  #adj r square st: 0.949955
-  A_st: 0.0278656
-  B_st: -2.27649e-14
-  C_st: 15.5089
-  D_st: 27330.8
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:45
+  trend_min: -3.80662e-05
+  trend_max: 3.50892e-05
+  #adj r square lt: 0.975425
+  A_lt: 0.109633
+  B_lt: -4.44058e-14
+  C_lt: 4.01113
+  D_lt: 28498.8
+  #adj r square st: 0.980868
+  A_st: 0.0509559
+  B_st: -2.22072e-14
+  C_st: 10.3442
+  D_st: 28498.8
 frxGBPCHF:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:24
-  trend_min: -3.85808e-05
-  trend_max: 3.71673e-05
-  #adj r square lt: 0.922187
-  A_lt: 1.91861
-  B_lt: -0.349756
-  C_lt: 0.290937
-  D_lt: 26905.4
-  #adj r square st: 0.970583
-  A_st: 0.0340914
-  B_st: -2.46284e-14
-  C_st: 7.29181
-  D_st: 26905.4
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:45
+  trend_min: -3.47579e-05
+  trend_max: 3.47179e-05
+  #adj r square lt: 0.972981
+  A_lt: 0.211289
+  B_lt: -0.0843831
+  C_lt: 1.62354
+  D_lt: 28803.6
+  #adj r square st: 0.990624
+  A_st: 0.057665
+  B_st: -2.22051e-14
+  C_st: 11.1328
+  D_st: 28803.6
 frxGBPJPY:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:31
-  trend_min: -5.06049e-05
-  trend_max: 4.64135e-05
-  #adj r square lt: 0.862853
-  A_lt: 0.519073
-  B_lt: -0.0863665
-  C_lt: 0.0457462
-  D_lt: 21545.5
-  #adj r square st: 0.949865
-  A_st: 1.47884
-  B_st: -3.90756e-11
-  C_st: 0.0514798
-  D_st: 21545.5
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:46
+  trend_min: -4.54354e-05
+  trend_max: 4.18878e-05
+  #adj r square lt: 0.92183
+  A_lt: 1.71857
+  B_lt: -0.315239
+  C_lt: 0.236636
+  D_lt: 23873.3
+  #adj r square st: 0.973885
+  A_st: 0.0552762
+  B_st: -2.72008e-14
+  C_st: 3.75968
+  D_st: 23873.3
 frxGBPNOK:
-  #calib date: 03-Mar-2016
-  #calib start: 28-Jan-2016 09:47:43
-  #calib end: 02-Mar-2016 04:13:34
-  trend_min: -4.368e-05
-  trend_max: 4.37499e-05
-  #adj r square lt: 0.991413
-  A_lt: 1.01609
-  B_lt: -0.0992982
-  C_lt: 0.81191
-  D_lt: 22857.2
-  #adj r square st: 0.987736
-  A_st: 0.110359
-  B_st: -2.54562e-14
-  C_st: 5.45882
-  D_st: 22857.2
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:43
+  trend_min: -5.36576e-05
+  trend_max: 5.30217e-05
+  #adj r square lt: 0.993275
+  A_lt: 0.635693
+  B_lt: -0.161313
+  C_lt: 2.39011
+  D_lt: 18860.2
+  #adj r square st: 0.996969
+  A_st: 0.126121
+  B_st: -2.22225e-14
+  C_st: 6.95142
+  D_st: 18860.2
 frxGBPNZD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:36
-  trend_min: -4.27409e-05
-  trend_max: 4.24546e-05
-  #adj r square lt: 0.957207
-  A_lt: 3.11884
-  B_lt: -2.19729e-10
-  C_lt: 0.074732
-  D_lt: 23554.6
-  #adj r square st: 0.95175
-  A_st: 0.0294019
-  B_st: -2.43779e-14
-  C_st: 7.65215
-  D_st: 23554.6
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:47
+  trend_min: -4.23107e-05
+  trend_max: 4.22832e-05
+  #adj r square lt: 0.986039
+  A_lt: 0.236262
+  B_lt: -3.33698e-14
+  C_lt: 1.37275
+  D_lt: 23650.1
+  #adj r square st: 0.98676
+  A_st: 0.0763818
+  B_st: -3.14882e-14
+  C_st: 4.59031
+  D_st: 23650.1
 frxGBPPLN:
-  #calib date: 03-Mar-2016
+  #calib date: 31-Mar-2016
   #calib start: 20-Jan-2016 00:00:02
-  #calib end: 02-Mar-2016 04:10:27
-  trend_min: -4.75483e-05
-  trend_max: 4.75099e-05
-  #adj r square lt: 0.977409
-  A_lt: 3.35985
-  B_lt: -0.00703213
-  C_lt: 0.0825287
-  D_lt: 21048.3
-  #adj r square st: 0.96531
-  A_st: 0.0721273
-  B_st: -2.22057e-14
-  C_st: 2.34025
-  D_st: 21048.3
+  #calib end: 30-Mar-2016 02:19:41
+  trend_min: -4.47761e-05
+  trend_max: 4.47176e-05
+  #adj r square lt: 0.98203
+  A_lt: 0.267751
+  B_lt: -2.3192e-14
+  C_lt: 1.23674
+  D_lt: 22362.6
+  #adj r square st: 0.960887
+  A_st: 0.0744626
+  B_st: -2.22075e-14
+  C_st: 2.68759
+  D_st: 22362.6
 frxGBPUSD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:38
-  trend_min: -3.22274e-05
-  trend_max: 3.12895e-05
-  #adj r square lt: 0.88559
-  A_lt: 0.0133483
-  B_lt: -9.3531e-07
-  C_lt: 164.331
-  D_lt: 31959.6
-  #adj r square st: 0.881302
-  A_st: 0.136575
-  B_st: -3.37723
-  C_st: 0.139421
-  D_st: 31959.6
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:47
+  trend_min: -3.02738e-05
+  trend_max: 3.42992e-05
+  #adj r square lt: 0.948645
+  A_lt: 0.21023
+  B_lt: -0.258404
+  C_lt: 15.9462
+  D_lt: 29155.2
+  #adj r square st: 0.995709
+  A_st: 0.186213
+  B_st: -0.194381
+  C_st: 24.4225
+  D_st: 29155.2
 frxNZDJPY:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:37
-  trend_min: -5.70052e-05
-  trend_max: 5.92997e-05
-  #adj r square lt: 0.91518
-  A_lt: 10.8758
-  B_lt: -4.43847e-14
-  C_lt: 0.00452275
-  D_lt: 16863.5
-  #adj r square st: 0.933754
-  A_st: 1.39367
-  B_st: -4.43723e-14
-  C_st: 0.03044
-  D_st: 16863.5
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:47
+  trend_min: -5.22968e-05
+  trend_max: 5.30266e-05
+  #adj r square lt: 0.967999
+  A_lt: 0.917947
+  B_lt: -3.45732e-11
+  C_lt: 0.12321
+  D_lt: 18858.5
+  #adj r square st: 0.972095
+  A_st: 0.0433672
+  B_st: -2.22061e-14
+  C_st: 3.47481
+  D_st: 18858.5
 frxNZDUSD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016 00:00:03
-  #calib end: 02-Mar-2016 04:13:41
-  trend_min: -3.98301e-05
-  trend_max: 4.68955e-05
-  #adj r square lt: 0.849204
-  A_lt: 0.293334
-  B_lt: -0.0826764
-  C_lt: 0.067852
-  D_lt: 21324
-  #adj r square st: 0.930632
-  A_st: 0.0163669
-  B_st: -2.2206e-14
-  C_st: 19.4445
-  D_st: 21324
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:48
+  trend_min: -4.30424e-05
+  trend_max: 4.89009e-05
+  #adj r square lt: 0.95205
+  A_lt: 0.663486
+  B_lt: -0.396832
+  C_lt: 2.78155
+  D_lt: 20449.5
+  #adj r square st: 0.989263
+  A_st: 0.386079
+  B_st: -0.342152
+  C_st: 5.86985
+  D_st: 20449.5
 frxUSDCAD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:34
-  trend_min: -4.90252e-05
-  trend_max: 3.20706e-05
-  #adj r square lt: 0.787307
-  A_lt: 0.138419
-  B_lt: -12.0524
-  C_lt: 0.175146
-  D_lt: 31181.2
-  #adj r square st: 0.91331
-  A_st: 0.00718165
-  B_st: -2.28129e-14
-  C_st: 152.737
-  D_st: 31181.2
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:46
+  trend_min: -4.77113e-05
+  trend_max: 3.04619e-05
+  #adj r square lt: 0.786673
+  A_lt: 0.105929
+  B_lt: -0.373786
+  C_lt: 3.66795
+  D_lt: 32827.9
+  #adj r square st: 0.961589
+  A_st: 0.045551
+  B_st: -0.125824
+  C_st: 47.713
+  D_st: 32827.9
 frxUSDCHF:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:17
-  trend_min: -3.51172e-05
-  trend_max: 2.87685e-05
-  #adj r square lt: 0.96408
-  A_lt: 2.09664
-  B_lt: -4.91619e-13
-  C_lt: 0.0750195
-  D_lt: 34760.2
-  #adj r square st: 0.963029
-  A_st: 0.0494088
-  B_st: -2.32151e-14
-  C_st: 2.5299
-  D_st: 34760.2
+  #calib date: 01-Apr-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 23:59:59
+  trend_min: -3.47874e-05
+  trend_max: 2.77165e-05
+  #adj r square lt: 0.928498
+  A_lt: 0.107137
+  B_lt: -2.22096e-14
+  C_lt: 1.70221
+  D_lt: 36079.6
+  #adj r square st: 0.986111
+  A_st: 0.0588149
+  B_st: -0.0296138
+  C_st: 42.2277
+  D_st: 36079.6
 frxUSDJPY:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:39
-  trend_min: -4.65158e-05
-  trend_max: 3.44669e-05
-  #adj r square lt: 0.853573
-  A_lt: 2.00865
-  B_lt: -1.86776e-08
-  C_lt: 0.0175698
-  D_lt: 29013.3
-  #adj r square st: 0.964335
-  A_st: 1.56677
-  B_st: -4.43178e-14
-  C_st: 0.0467127
-  D_st: 29013.3
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:50
+  trend_min: -3.93919e-05
+  trend_max: 3.10361e-05
+  #adj r square lt: 0.879197
+  A_lt: 0.753991
+  B_lt: -2.3052e-14
+  C_lt: 0.0629879
+  D_lt: 32220.5
+  #adj r square st: 0.976204
+  A_st: 0.0851924
+  B_st: -3.69247e-14
+  C_st: 1.24976
+  D_st: 32220.5
 frxUSDMXN:
-  #calib date: 03-Mar-2016
-  #calib start: 28-Jan-2016 09:47:43
-  #calib end: 02-Mar-2016 04:12:43
-  trend_min: -5.75961e-05
-  trend_max: 5.05718e-05
-  #adj r square lt: 0.874612
-  A_lt: 0.978319
-  B_lt: -4.62082
-  C_lt: 0.956366
-  D_lt: 19773.9
-  #adj r square st: 0.865126
-  A_st: 1.10131
-  B_st: -6.07911
-  C_st: 1.15555
-  D_st: 19773.9
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:51
+  trend_min: -4.79443e-05
+  trend_max: 4.38839e-05
+  #adj r square lt: 0.862855
+  A_lt: 0.269323
+  B_lt: -12.3013
+  C_lt: 0.336567
+  D_lt: 22787.4
+  #adj r square st: 0.966657
+  A_st: 0.621675
+  B_st: -0.735669
+  C_st: 59.8039
+  D_st: 22787.4
 frxUSDNOK:
-  #calib date: 03-Mar-2016
-  #calib start: 28-Jan-2016 09:47:43
-  #calib end: 02-Mar-2016 04:13:41
-  trend_min: -3.78023e-05
-  trend_max: 3.79075e-05
-  #adj r square lt: 0.983782
-  A_lt: 6.64355
-  B_lt: -0.130929
-  C_lt: 0.104088
-  D_lt: 26380
-  #adj r square st: 0.980525
-  A_st: 0.0683186
-  B_st: -2.2219e-14
-  C_st: 5.54048
-  D_st: 26380
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:50
+  trend_min: -4.07628e-05
+  trend_max: 4.04139e-05
+  #adj r square lt: 0.987012
+  A_lt: 0.760668
+  B_lt: -0.129362
+  C_lt: 1.07213
+  D_lt: 24743.9
+  #adj r square st: 0.997515
+  A_st: 0.159378
+  B_st: -0.10053
+  C_st: 9.8697
+  D_st: 24743.9
 frxUSDPLN:
-  #calib date: 03-Mar-2016
-  #calib start: 28-Jan-2016 09:47:43
-  #calib end: 02-Mar-2016 04:13:43
-  trend_min: -3.48226e-05
-  trend_max: 3.19502e-05
-  #adj r square lt: 0.970032
-  A_lt: 0.874091
-  B_lt: -0.198532
-  C_lt: 1.03751
-  D_lt: 31298.7
-  #adj r square st: 0.973127
-  A_st: 0.0713371
-  B_st: -2.222e-14
-  C_st: 3.75978
-  D_st: 31298.7
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:51
+  trend_min: -4.27861e-05
+  trend_max: 4.23947e-05
+  #adj r square lt: 0.972399
+  A_lt: 0.907204
+  B_lt: -0.253498
+  C_lt: 2.34207
+  D_lt: 23587.8
+  #adj r square st: 0.994605
+  A_st: 0.280438
+  B_st: -0.140879
+  C_st: 4.60495
+  D_st: 23587.8
 frxUSDSEK:
-  #calib date: 03-Mar-2016
-  #calib start: 28-Jan-2016 09:47:43
-  #calib end: 02-Mar-2016 04:13:50
-  trend_min: -3.14174e-05
-  trend_max: 3.14805e-05
-  #adj r square lt: 0.954873
-  A_lt: 0.224464
-  B_lt: -0.00315324
-  C_lt: 1.44478
-  D_lt: 31765.7
-  #adj r square st: 0.959228
-  A_st: 0.0434483
-  B_st: -2.76473e-14
-  C_st: 8.15104
-  D_st: 31765.7
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:03
+  #calib end: 30-Mar-2016 02:19:49
+  trend_min: -3.33971e-05
+  trend_max: 3.32426e-05
+  #adj r square lt: 0.987738
+  A_lt: 0.348466
+  B_lt: -0.107965
+  C_lt: 2.03823
+  D_lt: 30081.8
+  #adj r square st: 0.994397
+  A_st: 0.0949354
+  B_st: -0.0250135
+  C_st: 9.93007
+  D_st: 30081.8
 frxXAGUSD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016 00:00:02
-  #calib end: 02-Mar-2016 04:13:27
-  trend_min: -6.82179e-05
-  trend_max: 6.91524e-05
-  #adj r square lt: 0.931379
-  A_lt: 11.0486
-  B_lt: -0.746899
-  C_lt: 0.295055
-  D_lt: 14460.8
-  #adj r square st: 0.981042
-  A_st: 0.0688313
-  B_st: -2.42346e-14
-  C_st: 3.98366
-  D_st: 14460.8
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:44
+  #calib end: 10-Apr-2015 20:59:03
+  trend_min: -6.81814e-05
+  trend_max: 6.79413e-05
+  #adj r square lt: 0.978131
+  A_lt: 5.14625
+  B_lt: -0.100136
+  C_lt: 0.0342187
+  D_lt: 14718.6
+  #adj r square st: 0.992722
+  A_st: 0.0801781
+  B_st: -2.3946e-14
+  C_st: 5.52465
+  D_st: 14718.6
 frxXAUUSD:
-  #calib date: 03-Mar-2016
-  #calib start: 20-Jan-2016
-  #calib end: 02-Mar-2016 04:13:41
-  trend_min: -4.81911e-05
-  trend_max: 6.69818e-05
-  #adj r square lt: 0.821665
-  A_lt: 1.12953
-  B_lt: -3.23372
-  C_lt: 1.11217
-  D_lt: 14929.4
-  #adj r square st: 0.899194
-  A_st: 0.489239
-  B_st: -3.2487e-14
-  C_st: 0.0896725
-  D_st: 14929.4
+  #calib date: 31-Mar-2016
+  #calib start: 20-Jan-2016 00:00:01
+  #calib end: 30-Mar-2016 02:19:54
+  trend_min: -4.84763e-05
+  trend_max: 6.48726e-05
+  #adj r square lt: 0.80986
+  A_lt: 1.12179
+  B_lt: -2.59216
+  C_lt: 1.09829
+  D_lt: 15414.8
+  #adj r square st: 0.934906
+  A_st: 0.0553583
+  B_st: -2.4503e-14
+  C_st: 3.14317
+  D_st: 15414.8
