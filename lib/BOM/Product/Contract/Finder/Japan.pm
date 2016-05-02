@@ -37,13 +37,13 @@ sub available_contracts_for_symbol {
                 start_type        => 'spot',
                 expiry_type       => ['daily', 'intraday'],
                 barrier_category  => ['euro_non_atm', 'american']});
+
         @offerings = _predefined_trading_period({
             offerings => \@offerings,
             exchange  => $exchange,
             symbol    => $symbol,
             date      => $now,
         });
-
         for my $o (@offerings) {
             my $cc = $o->{contract_category};
 
@@ -90,7 +90,6 @@ Daily contract:
 2) Weekly contract: Start at 00:00GMT first trading day of the week and end at the close of last trading day of the week
 3) Monthly contract: Start at 00:00GMT of the first trading day of the calendar month and end at the close of the last trading day of the month
 4) Quarterly contract: Start at 00:00GMT of the first trading day of the quarter and end at the close of the last trading day of the quarter.
-6) Yearly contract: Start at 00:00GMT of the first trading day of the year and end at the close the last trading day of the year.
 
 =cut
 
@@ -304,17 +303,6 @@ sub _get_daily_trading_window {
             exchange           => $exchange
         });
 
-    # yearly contract
-    my $first_day_of_year = Date::Utility->new('01-Jan-' . $now_year);
-    my $first_day_of_next_year = Date::Utility->new('01-Jan-' . ($now_year + 1));
-    push @daily_duration,
-        _get_trade_date_of_daily_window({
-            current_date_start => $first_day_of_year,
-            next_date_start    => $first_day_of_next_year,
-            duration           => '1Y',
-            exchange           => $exchange
-        });
-
     return @daily_duration;
 
 }
@@ -401,11 +389,19 @@ sub _get_expired_barriers {
     my $underlying           = $args->{underlying};
     my $expired_barriers_key = join($cache_sep, $underlying->symbol, 'expired_barrier', $date_start, $date_expiry);
     my $expired_barriers     = Cache::RedisDB->get($cache_keyspace, $expired_barriers_key);
-    my ($high, $low) = @{
-        $underlying->get_high_low_for_period({
-                start => $date_start,
-                end   => $now,
-            })}{'high', 'low'};
+    my $high_low_key         = join($cache_sep, $underlying->symbol, 'high_low', $date_start, $now);
+    my $high_low             = Cache::RedisDB->get($cache_keyspace, $high_low_key);
+    if (not $high_low) {
+        $high_low = $underlying->get_high_low_for_period({
+            start => $date_start,
+            end   => $now,
+        });
+
+        Cache::RedisDB->set($cache_keyspace, $high_low_key, $high_low, 10);
+    }
+
+    my $high                      = $high_low->{high};
+    my $low                       = $high_low->{low};
     my @barriers                  = sort values %$available_barriers;
     my %skip_list                 = map { $_ => 1 } (@$expired_barriers);
     my @unexpired_barriers        = grep { !$skip_list{$_} } @barriers;
