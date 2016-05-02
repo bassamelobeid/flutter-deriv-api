@@ -1,5 +1,6 @@
 use Test::Most 'no_plan';
 use Test::FailWarnings;
+use Test::Warn;
 use Test::MockObject::Extends;
 use Carp;
 use File::Spec;
@@ -112,7 +113,15 @@ subtest 'When auth not required' => sub {
 
             my $v = IDAuthentication->new(client => $c);
             Test::MockObject::Extends->new($v);
-            $v->run_authentication;
+            do {
+                my @warnings;
+                local $SIG{__WARN__} = sub { push @warnings, shift };
+                $v->run_authentication;
+                if (@warnings) {
+                    is @warnings, 1, 'expected 1 warning';
+                    like $warnings[0], qr/^Error sending mail/, 'expected mail sending error';
+                }
+            };
             my @notif = @{$v->notified};
             is @notif, 1, 'sent one notification';
             like $notif[0][0], qr/SET TO CASHIER_LOCKED PENDING EMAIL REQUEST FOR ID/, 'notification is correct';
@@ -128,7 +137,15 @@ subtest 'When auth not required' => sub {
 
             my $v = IDAuthentication->new(client => $c);
             Test::MockObject::Extends->new($v);
-            $v->run_authentication;
+            do {
+                my @warnings;
+                local $SIG{__WARN__} = sub { push @warnings, shift };
+                $v->run_authentication;
+                if (@warnings) {
+                    is @warnings, 1, 'expected 1 warning';
+                    like $warnings[0], qr/^Error sending mail/, 'expected mail sending error';
+                }
+            };
             my @notif = @{$v->notified};
             is @notif, 2, 'sent 2 notifications';
             like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'notification is correct';
@@ -210,7 +227,15 @@ subtest 'proveid' => sub {
         Test::MockObject::Extends->new($v);
 
         $v->mock(-_fetch_proveid, sub { return {deny => 1} });
-        $v->run_authentication;
+        do {
+            my @warnings;
+            local $SIG{__WARN__} = sub { push @warnings, shift };
+            $v->run_authentication;
+            if (@warnings) {
+                is @warnings, 1, 'expected 1 warning';
+                like $warnings[0], qr/^Error sending mail/, 'expected mail sending error';
+            }
+        };
         my @notif = @{$v->notified};
         is @notif, 2, 'sent one notification';
         like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'notification is correct';
@@ -251,7 +276,15 @@ subtest 'proveid' => sub {
 
         $v->mock(-_fetch_proveid, sub { return {} });
         $v->mock(-_fetch_checkid, sub { return });
-        $v->run_authentication;
+        do {
+            my @warnings;
+            local $SIG{__WARN__} = sub { push @warnings, shift };
+            $v->run_authentication;
+            if (@warnings) {
+                is @warnings, 1, 'expected 1 warning';
+                like $warnings[0], qr/^Error sending mail/, 'expected mail sending error';
+            }
+        };
         my @notif = @{$v->notified};
         is @notif, 2, 'sent two notification';
         like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'first notification is correct';
