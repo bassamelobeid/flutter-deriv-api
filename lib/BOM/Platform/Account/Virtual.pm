@@ -82,10 +82,10 @@ sub create_account {
 
     unless ($email_verified) {
         my $token = verify_token => BOM::Platform::Token::Verification->new({
-                        email       => $email,
-                        expires_in  => 3600,
-                        created_for => 'verify_email'
-                    })->token;
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'verify_email'
+            })->token;
         my $email_content;
         BOM::Platform::Context::template->process('email/resend_verification.html.tt', {token => $token}, \$email_content)
             || die BOM::Platform::Context::template->error();
