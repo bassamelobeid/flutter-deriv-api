@@ -96,8 +96,8 @@ sub proposal {
 sub _unique_json_hash {
     my $h = shift;
     my @a = ();
-    foreach my $k (sort keys %h) {
-        push @a, ($k, $h{$k});
+    foreach my $k (sort keys %$h) {
+        push @a, ($k, $h->{$k});
     }
     return encode_json(\@a);
 }
