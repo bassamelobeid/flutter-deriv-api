@@ -13,7 +13,6 @@ use f_brokerincludeall;
 use BOM::Platform::Context;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
-use BOM::View::Controller::Bet;
 use BOM::Platform::Runtime;
 use BOM::Platform::Client;
 use feature "state";
@@ -46,8 +45,7 @@ my @audit_entries;
 foreach my $transaction (@{$statement->{transactions}}) {
     if (defined $transaction->{financial_market_bet_id}) {
         my $key       = $transaction->{date}->datetime;
-        my $info      = BOM::View::Controller::Bet::get_info($transaction, $currency);
-        my $key_value = $key . " staff: " . $transaction->{staff_loginid} . " ref: " . $transaction->{id} . " description: " . $info->{longcode};
+        my $key_value = $key . " staff: " . $transaction->{staff_loginid} . " ref: " . $transaction->{id};
         $key_value .= " buy_price: " . $transaction->{buy_price}   if $transaction->{buy_price};
         $key_value .= " sell_price: " . $transaction->{sell_price} if $transaction->{sell_price};
         push @audit_entries,
