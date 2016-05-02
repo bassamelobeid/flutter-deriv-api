@@ -99,7 +99,7 @@ sub _unique_json_hash {
     foreach $k(sort keys %h) {
         push @a, ($k, $h{$k});
     }
-    return \@a;
+    return encode_json(\@a);
 }
 
 sub _pricing_channel {
@@ -111,16 +111,16 @@ sub _pricing_channel {
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
-    if (exists $pricing_channel->{$serialized_args} and $pricing_channel->{$serialized_args}->{amount}==$args->{amount}) {
+    if (exists $pricing_channel->{$serialized_args} and exists $pricing_channel->{$serialized_args}->{$args->{amount}}) {
         return;
     }
 
     my $uuid = Data::UUID->new->create_str();
-    $pricing_channel->{$serialized_args}->{amount}=$args->{amount};
-    $pricing_channel->{$serialized_args}->{uuid}=$uuid;
+    $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid}=$uuid;
+    $pricing_channel->{$serialized_args}->{$args->{amount}}->{args}=$args;
 
     my $rp = Mojo::Redis::Processor->new({
-        data       =>  _serialized_args,
+        data       =>  $serialized_args,
         trigger    =>  $args->{symbol},
     });
     $rp->send();
