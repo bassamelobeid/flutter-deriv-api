@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION notify_transaction_trigger() RETURNS trigger AS $$
 DECLARE
   details bet.session_bet_details;
 BEGIN
-  details := current_setting('binary.session_details')::bet.session_bet_details;
+  details := nullif(current_setting('binary.session_details'), '')::bet.session_bet_details;
 
   IF details.fmb_id = NEW.financial_market_bet_id THEN
     PERFORM pg_notify('transaction_watchers'
