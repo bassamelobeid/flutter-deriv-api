@@ -314,7 +314,7 @@ sub get_items_on_level {
     my ($self, $level) = @_;
     my @levels = @{$self->levels};
     my $chosen_level = first_index { $_ eq $level } @levels;
-    confess "Level $level must match one of those defined: " . join(', ', @levels)
+    die "Level $level must match one of those defined: " . join(', ', @levels)
         if ($chosen_level == -1);
 
     my $list = $self->tree;    # Start at the top of the list;
