@@ -887,7 +887,9 @@ subtest 'Purchase Sell Contract' => sub {
         payout       => 100,
         date_start   => $now,
         date_expiry  => $expiry,
-        date_pricing => $now,
+        # Opposite contract can now be used to purchase. To simulate sellback behaviour,
+        # set date_pricing to date_start + 1
+        date_pricing => $now->epoch + 1,
         entry_tick   => $current_tick,
         current_tick => $current_tick,
         exit_tick    => $current_tick,

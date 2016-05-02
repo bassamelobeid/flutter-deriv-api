@@ -156,7 +156,7 @@ subtest 'shortcodes' => sub {
             produce_contract('CALL_FRXUSDJPY_10_' . $now->plus_time_interval('10m')->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0',
             'USD');
         isa_ok $c, 'BOM::Product::Contract::Call';
-        ok $c->is_forward_starting;
+        ok $c->starts_as_forward_starting;
     }
     'builds forward starting call from shortcode';
     lives_ok {
