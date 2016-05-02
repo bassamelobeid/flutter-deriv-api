@@ -1,6 +1,5 @@
 use Test::Most 'no_plan';
 use Test::FailWarnings;
-use Test::Warn;
 use Test::MockObject::Extends;
 use Carp;
 use File::Spec;
