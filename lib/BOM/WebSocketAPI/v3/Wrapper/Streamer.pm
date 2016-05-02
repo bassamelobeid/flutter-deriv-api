@@ -84,7 +84,7 @@ sub proposal {
         return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
     } else {
         my $id;
-        if (not $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args)) {
+        if ($args->{subscribe} == 1 and not $id = _pricing_channel($c, 'subscribe', $args)) {
             return $c->new_error('proposal',
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
@@ -92,6 +92,45 @@ sub proposal {
     }
     return;
 }
+
+sub _unique_json_hash {
+    my $h = shift;
+    my @a = ();
+    foreach $k(sort keys %h) {
+        push @a, ($k, $h{$k});
+    }
+    return \@a;
+}
+
+sub _pricing_channel {
+    my ($c, $subs, $args) = @_;
+
+    my %args_hash = %{$args};
+    $args_hash{amount}  = 1000;
+    my $serialized_args = _serialized_args(\%args_hash);
+
+    my $pricing_channel = $c->stash('pricing_channel') || {};
+
+    if (exists $pricing_channel->{$serialized_args} and $pricing_channel->{$serialized_args}->{amount}==$args->{amount}) {
+        return;
+    }
+
+    my $uuid = Data::UUID->new->create_str();
+    $pricing_channel->{$serialized_args}->{amount}=$args->{amount};
+    $pricing_channel->{$serialized_args}->{uuid}=$uuid;
+
+    my $rp = Mojo::Redis::Processor->new({
+        data       =>  _serialized_args,
+        trigger    =>  $args->{symbol},
+    });
+    $rp->send();
+
+    $c->stash('redis')->subscribe([$rp->_processed_channel], sub { });
+    $c->stash('pricing_channel' => $feed_channel);
+
+    return $uuid;
+}
+
 
 sub pricing_table {
     my ($c, $args) = @_;
