@@ -129,7 +129,7 @@ sub _date_joined {
     my $date_joined = $client_data->{date_joined};
 
     if (!$date_joined) {
-        carp("date_joined is empty?! [", $client_data->{'loginid'}, "]: [$date_joined]");
+        warn("date_joined is empty?! [", $client_data->{'loginid'}, "]: [$date_joined]");
         $date_joined = $self->start_time->date_yyyymmdd;
     }
     return Date::Utility->new({datetime => $date_joined})->date_yyyymmdd;
@@ -208,7 +208,7 @@ sub force_backfill {
     foreach (1 .. $retries) {
         BOM::Platform::MyAffiliates::BackfillManager->new->backfill_promo_codes;
         return 1 unless $self->is_pending_backfill;
-        carp("[Attempt $_ of $retries] Backfill failed.");
+        warn("[Attempt $_ of $retries] Backfill failed.");
         $self->_force_backfill_sleep;
     }
 

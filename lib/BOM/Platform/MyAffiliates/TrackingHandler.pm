@@ -1,6 +1,5 @@
 package BOM::Platform::MyAffiliates::TrackingHandler;
 use Moose;
-use Carp;
 use CGI qw( cookie );
 use JSON qw( from_json );
 use URL::Encode qw(url_decode);
@@ -73,7 +72,7 @@ sub _tracking_data_from_cookie {
             }
             catch {
                 $self->_delete_tracking_cookie;
-                carp("Failed to parse tracking cookie from JSON [$cookie_value, raw: " . request()->cookie($self->_cookie_name) . "]: $_");
+                warn("Failed to parse tracking cookie from JSON [$cookie_value, raw: " . request()->cookie($self->_cookie_name) . "]: $_");
             };
         }
     }
