@@ -1,15 +1,9 @@
 "/contact":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/trade.cgi":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/trading":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"trade_get.cgi":
-  header:
-    Cache-Control: "private, max-age=240"
 "/cashier":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -31,9 +25,6 @@
 "/cashier/payment_agent_list":
   header:
     Cache-Control: "public, max-age=1000"
-"trade_livechart.cgi":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/legal/us_patents":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
