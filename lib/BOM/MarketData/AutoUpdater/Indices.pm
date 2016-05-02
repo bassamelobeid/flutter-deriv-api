@@ -102,7 +102,7 @@ sub _build_surfaces_from_file {
 sub run {
     my $self               = shift;
     my $surfaces_from_file = $self->surfaces_from_file;
-    my %otc_list = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my %otc_list           = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market            => 'indices',
         submarket         => 'otc_index',
         contract_category => 'ANY',
