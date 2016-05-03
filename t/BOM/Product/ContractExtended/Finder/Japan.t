@@ -39,12 +39,12 @@ subtest "predefined contracts for symbol" => sub {
     my %expected = (
         frxUSDJPY => {
             contract_count => {
-                callput      => 16,
-                touchnotouch => 8,
-                staysinout   => 8,
-                endsinout    => 10,
+                callput      => 14,
+                touchnotouch => 6,
+                staysinout   => 6,
+                endsinout    => 8,
             },
-            hit_count => 42,
+            hit_count => 34,
         },
         frxAUDCAD => {hit_count => 0},
     );
@@ -73,11 +73,11 @@ subtest "predefined contracts for symbol" => sub {
 subtest "predefined trading_period" => sub {
     my %expected_count = (
         offering                                => 10,
-        offering_with_predefined_trading_period => 40,
+        offering_with_predefined_trading_period => 32,
         trading_period                          => {
             call_intraday => 2,
-            call_daily    => 5,
-            range_daily   => 4,
+            call_daily    => 4,
+            range_daily   => 3,
         });
 
     my %expected_trading_period = (
@@ -87,11 +87,11 @@ subtest "predefined trading_period" => sub {
             date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 15:45:00', '2015-09-04 12:45:00',)],
         },
         range_daily => {
-            duration => ['1W', '1M', '3M', '1Y'],
+            duration => ['1W', '1M', '3M'],
             date_expiry =>
-                [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59', '2015-12-31 23:59:59',)],
+                [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59',)],
             date_start =>
-                [map { Date::Utility->new($_)->epoch } ('2015-08-31 00:00:00', '2015-09-01 00:00:00', '2015-07-01 00:00:00', '2015-01-02 00:00:00',)],
+                [map { Date::Utility->new($_)->epoch } ('2015-08-31 00:00:00', '2015-09-01 00:00:00', '2015-07-01 00:00:00',)],
         },
     );
 
@@ -101,11 +101,11 @@ subtest "predefined trading_period" => sub {
             expiry_type       => ['intraday', 'daily'],
             barrier_category  => ['euro_non_atm', 'american']});
     is(scalar(@offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
-    my $exchange = BOM::Market::Underlying->new('frxUSDJPY')->exchange;
+    my $calendar = BOM::Market::Underlying->new('frxUSDJPY')->calendar;
     my $now      = Date::Utility->new('2015-09-04 17:00:00');
     @offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
         offerings => \@offerings,
-        exchange  => $exchange,
+        calendar  => $calendar,
         date      => $now,
         symbol    => 'frxUSDJPY',
     });
@@ -200,12 +200,12 @@ subtest "check_intraday trading_period_JPY" => sub {
             start_type        => 'spot',
             expiry_type       => ['intraday'],
             barrier_category  => ['euro_non_atm']});
-    my $ex = BOM::Market::Underlying->new('frxUSDJPY')->exchange;
+    my $ex = BOM::Market::Underlying->new('frxUSDJPY')->calendar;
     foreach my $date (keys %expected_intraday_trading_period) {
         my $now                = Date::Utility->new($date);
         my @intraday_offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
             offerings => \@i_offerings,
-            exchange  => $ex,
+            calendar  => $ex,
             date      => $now,
             symbol    => 'frxUSDJPY',
         });
@@ -256,12 +256,12 @@ subtest "check_intraday trading_period_non_JPY" => sub {
             start_type        => 'spot',
             expiry_type       => ['intraday'],
             barrier_category  => ['euro_non_atm']});
-    my $ex = BOM::Market::Underlying->new('frxEURUSD')->exchange;
+    my $ex = BOM::Market::Underlying->new('frxEURUSD')->calendar;
     foreach my $date (keys %expected_eur_intraday_trading_period) {
         my $now              = Date::Utility->new($date);
         my @eurusd_offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
             offerings => \@e_offerings,
-            exchange  => $ex,
+            calendar  => $ex,
             date      => $now,
             symbol    => 'frxEURUSD',
         });
