@@ -114,7 +114,7 @@ BBABI: &1
             AUD: 1000
             JPY: 100000
 
-USAAPL *1
+USAAPL: *1
 USAMZN: *1
 USCT: *1
 USFB: *1
