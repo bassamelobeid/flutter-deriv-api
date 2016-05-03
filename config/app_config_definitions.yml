@@ -265,11 +265,6 @@ quants:
       description: "Internal configuration, probably not exposed to dynamic setitngs directly."
       isa: section
       contains:
-        custom_clients_open_positions_payout_limit:
-          description: "Controls open positions payout limit per client."
-          isa: HashRef
-          default: {}
-          global: 1
         watchlist:
           description: "A list of clients under quants radar."
           isa: HashRef
