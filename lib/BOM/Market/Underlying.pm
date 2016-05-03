@@ -670,7 +670,7 @@ sub _build_calendar {
     $self->_exchange_refreshed(time);
     return Quant::Framework::TradingCalendar->new(
         $self->exchange_name,
-        BOM::System::Chronicle::get_chronicle_reader(),
+        BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         BOM::Platform::Context::request()->language,
         $self->for_date
     );
@@ -1302,7 +1302,7 @@ sub is_in_quiet_period {
         map {
             $_ => Quant::Framework::TradingCalendar->new(
                 $_,
-                BOM::System::Chronicle::get_chronicle_reader(),
+                BOM::System::Chronicle::get_chronicle_reader($self->for_date),
                 BOM::Platform::Context::request()->language,
                 $self->for_date
                 )

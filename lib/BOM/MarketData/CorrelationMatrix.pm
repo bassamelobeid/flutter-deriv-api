@@ -48,7 +48,6 @@ has chronicle_writer => (
     is      => 'ro',
     isa     => 'Data::Chronicle::Writer',
     lazy_build => 1,
-    default => sub { BOM::System::Chronicle::get_chronicle_writer() },
 );
 
 sub _build_chronicle_writer {
