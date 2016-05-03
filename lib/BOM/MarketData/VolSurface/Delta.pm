@@ -454,7 +454,7 @@ sub _build_cutoff {
     my $self = shift;
 
     my $date          = $self->for_date     ? $self->for_date  : Date::Utility->new;
-    my $cutoff_string = $self->_new_surface ? 'New York 10:00' : 'UTC ' . $self->underlying->exchange->standard_closing_on($date)->time_hhmm;
+    my $cutoff_string = $self->_new_surface ? 'New York 10:00' : 'UTC ' . $self->underlying->calendar->standard_closing_on($date)->time_hhmm;
 
     return BOM::MarketData::VolSurface::Cutoff->new($cutoff_string);
 }
