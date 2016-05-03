@@ -1463,7 +1463,7 @@ sub _build_applicable_economic_events {
     my $end   = $current_epoch + $seconds_to_expiry + 3600;
 
     return Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
         }
         )->get_latest_events_for_period({
             from => Date::Utility->new($start),
@@ -1820,7 +1820,7 @@ sub _market_data {
             );
 
             my $ee = Quant::Framework::EconomicEventCalendar->new({
-                    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
                 }
                 )->get_latest_events_for_period({
                     from => $from,

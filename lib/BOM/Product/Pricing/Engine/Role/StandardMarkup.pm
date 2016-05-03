@@ -516,7 +516,7 @@ sub _get_economic_events {
     my $underlying = $self->bet->underlying;
 
     my $raw_events = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($underlying->for_date),
         }
         )->get_latest_events_for_period({
             from => Date::Utility->new($start),
