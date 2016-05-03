@@ -118,16 +118,10 @@ subtest 'revoke apps by loginid' => sub {
         my @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
         is $cnt[0], 2, "access tokens [$loginid]";
 
-        @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.user_scope_confirm WHERE loginid = ?", undef, $loginid);
-        is $cnt[0], 2, "confirm scopes [$loginid]";
-
-        is $m->revoke_apps_by_loginid($loginid), 1, 'revoke_apps_by_loginid';
+        is $m->revoke_tokens_by_loginid($loginid), 1, 'revoke_tokens_by_loginid';
 
         @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
         is $cnt[0], 0, "revoked access tokens [$loginid]";
-
-        @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.user_scope_confirm WHERE loginid = ?", undef, $loginid);
-        is $cnt[0], 0, "revoked confirm scopes [$loginid]";
     }
 };
 
