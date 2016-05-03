@@ -141,7 +141,7 @@ BFX:
             GBP: 5000
             AUD: 5000
             JPY: 500000
-BSESENSEX30:
+BSESENSEX30: &forward_and_daily
   callput:
     daily:
       spot:
@@ -413,6 +413,19 @@ OBX:
         euro_atm:
           max: 1d
           min: 5m
+OTC_IXIC: *forward_and_daily
+OTC_BSESENSEX30: *forward_and_daily
+OTC_BIST100: *forward_and_daily
+OTC_AEX: *forward_and_daily
+OTC_AS51: *forward_and_daily
+OTC_FTSE: *forward_and_daily
+OTC_BFX: *forward_and_daily
+OTC_DJI: *forward_and_daily
+OTC_FCHI: *forward_and_daily
+OTC_GDAXI: *forward_and_daily
+OTC_HSI: *forward_and_daily
+OTC_N225: *forward_and_daily
+OTC_SPC: *forward_and_daily
 RDBEAR: &4
   asian:
     tick:
