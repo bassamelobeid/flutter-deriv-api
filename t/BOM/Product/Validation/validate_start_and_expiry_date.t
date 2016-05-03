@@ -173,6 +173,41 @@ subtest 'date start blackouts' => sub {
     $bet_params->{date_start} = $bet_params->{date_pricing} = $hour_before_close->epoch - 1;
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
+
+    Cache::RedisDB->flushall;
+    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+    my $rollover = BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on(Date::Utility->new($weekday));
+    my $date_start = $rollover->minus_time_interval('59m59s');
+    my $valid_start = $rollover->minus_time_interval('1h1s');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $_,
+            recorded_date => $valid_start,
+        }) for qw(frxUSDJPY frxUSDHKD);
+    $bet_params->{underlying} = 'frxUSDJPY';
+    $bet_params->{duration} = '1d';
+    $bet_params->{barrier} = 'S10P';
+    $bet_params->{bet_type} = 'CALL';
+    $bet_params->{date_start} = $bet_params->{date_pricing} = $date_start;
+    $bet_params->{current_tick} = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $valid_start->epoch
+    });
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like ($c->primary_validation_error->message, qr/blackout period.*\[from: 1459281600\] \[to: 1459288800\]/,'throws error');
+    $bet_params->{duration} = '3d';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+    $bet_params->{duration} = '1d';
+    $bet_params->{date_start} = $bet_params->{date_pricing} = $valid_start;
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+    $bet_params->{date_start} = $bet_params->{date_pricing} = $date_start;
+    $bet_params->{barrier} = 'S0P';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
 };
 
 subtest 'date_expiry blackouts' => sub {

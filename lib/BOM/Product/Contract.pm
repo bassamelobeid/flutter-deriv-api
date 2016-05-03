@@ -2498,6 +2498,11 @@ sub _build_date_start_blackouts {
         }
     }
 
+    if (not $self->is_atm_bet and $self->timeindays->amount < 3) {
+        my $rollover_date = BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start);
+        push @periods, [$rollover_date->minus_time_interval('1h')->epoch, $rollover_date->plus_time_interval('1h')->epoch];
+    }
+
     return \@periods;
 }
 
