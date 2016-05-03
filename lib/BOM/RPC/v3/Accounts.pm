@@ -313,13 +313,16 @@ sub change_password {
     $user->password($new_password);
     $user->save;
 
-    foreach my $obj ($user->clients) {
-        $obj->password($new_password);
-        $obj->save;
+    my $oauth = BOM::Database::Model::OAuth->new;
+    foreach my $c1 ($user->clients) {
+        $c1->password($new_password);
+        $c1->save;
+
+        if ($token_type eq 'oauth_token') {
+            $oauth->revoke_apps_by_loginid($c1->loginid);
+        }
     }
 
-    # TODO: should also invalidate OAuth token & API token, beside current session
-    # end all other sessions for Session Cookies
     if ($token_type eq 'session_token') {
         BOM::Platform::SessionCookie->new({token => $params->{token}})->end_other_sessions();
     }
