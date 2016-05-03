@@ -74,7 +74,7 @@ sub logout {
                 my $app_id = $oauth->get_app_id_by_token($params->{token});
 
                 foreach my $c1 ($user->clients) {
-                    $oauth->revoke_app($app_id, $c1->loginid);
+                    $oauth->revoke_tokens_by_loginid_app($c1->loginid, $app_id);
                 }
             }
         }
