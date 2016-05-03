@@ -4,7 +4,7 @@
         <img id="type-logo" src="/oauth2/images/binary-type-logo.svg" alt="Binary.com" />
     </a>
 </div>
-<div id="container">
+<div id="container-binary">
     <h1><%= $l->('Login') %></h1>
     <fieldset>
         <legend><%= $l->('Your Details') %></legend>
