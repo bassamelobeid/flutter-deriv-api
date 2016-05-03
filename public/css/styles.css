@@ -10,14 +10,19 @@ p {line-height: 1.4em;}
 .errorfield {font-family: Arial; font-style: italic; color: #c03; margin-top: 8px; text-align: center; font-size: 93%;}
 
 #wrapper {max-width: 300px; width: 100%; margin: 0 auto; font-family: roboto, sans-serif;}
-#header {text-align: center; margin: 10px 0;}
+#wrapper.login {margin-top: 150px; max-width: 360px;}
+@media screen and (max-width: 767px) {
+    #wrapper.login {margin-top: 50px;}
+    #frmLogin {margin: 0 15px;}
+}
+#header {text-align: center; margin: 20px 0;}
 #header #logo {width:100%; max-width: 250px;}
 .login #header #logo {margin: 0 auto;}
 
 form input, form button {
     box-sizing: border-box;
     width: 100%;
-    height: 2.5rem;
+    height: 44px;
     margin-bottom: 2%;
     background-color: white;
     text-align: center;
@@ -31,6 +36,7 @@ form input {background: white; border: 1px solid #dedede; padding: 2px 3px;}
 :-ms-input-placeholder {font-style: italic; color: #888;}
 
 button, .button {cursor: pointer; display: block; margin: 0 auto; background: #2e8836;}
+#wrapper.login #btnLogin {margin-top: 15px;}
 .button span {
     color: #fff;
     text-decoration: none;
