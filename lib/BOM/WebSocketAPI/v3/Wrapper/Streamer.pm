@@ -105,15 +105,15 @@ sub _serialized_args {
     return encode_json(\@a);
 }
 
-sub process_pricng_events {
+sub process_pricing_events {
     my ($c, $message, $chan) = @_;
 
     my $response = decode_json($message);
     my $serialized_args = $response->{data};
 
     my $pricing_channel = $c->stash('pricing_channel');
-
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
+    BOM::System::RedisReplicated::redis_write->expire($response->{key}, 60);
 
     foreach my $amount (keys $pricing_channel->{$serialized_args}) {
         my $results;
@@ -129,7 +129,6 @@ sub process_pricng_events {
             $results->{ask_price} *= $amount / 1000;
             $results->{id} *= $pricing_channel->{$serialized_args}->{$amount}->{uuid};
         }
-
         BOM::WebSocketAPI::Websocket_v3::_process_result($c, $results, 'proposal', $pricing_channel->{$serialized_args}->{$amount}->{args}, undef, undef);
     }
 }
@@ -147,10 +146,6 @@ sub _pricing_channel {
         return;
     }
 
-    my $uuid = Data::UUID->new->create_str();
-    $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
-    $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
-
     if (not $pricing_channel->{$serialized_args}) {
         my $rp = Mojo::Redis::Processor->new({
             'write_conn' => BOM::System::RedisReplicated::redis_write,
@@ -159,9 +154,12 @@ sub _pricing_channel {
             trigger      => $args->{symbol},
         });
         $rp->send();
-
         $c->stash('redis')->subscribe([$rp->_processed_channel], sub { });
     }
+
+    my $uuid = Data::UUID->new->create_str();
+    $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
+    $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
 
     $c->stash('pricing_channel' => $pricing_channel);
 

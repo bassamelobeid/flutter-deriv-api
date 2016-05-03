@@ -66,7 +66,7 @@ sub entry_point {
             message => sub {
                 my ($self, $msg, $channel) = @_;
 
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_pricng_events($c, $msg, $channel)
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_pricing_events($c, $msg, $channel)
                     if $channel =~ /^Redis::Processor::/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
                     if $channel =~ /^(?:FEED|PricingTable)::/;
