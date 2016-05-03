@@ -357,7 +357,7 @@ subtest vol_expiry_date => sub {
 };
 subtest 'all methods on a selection of underlyings' => sub {
     my $simulated_time = 1326957372;
-    my $NZ50           = BOM::Market::Underlying->new('NZ50');
+    my $AS51           = BOM::Market::Underlying->new('AS51');
     my $FTSE           = BOM::Market::Underlying->new('FTSE');
     my $EURUSD         = BOM::Market::Underlying->new('frxEURUSD');
     my $USDEUR         = BOM::Market::Underlying->new('frxUSDEUR');
@@ -450,9 +450,9 @@ subtest 'all methods on a selection of underlyings' => sub {
     isnt($USDEUR->system_symbol, $USDEUR->symbol, ' and different for inverted');
 
     # We don't have translations in the sandbox.. we should probably fix that.
-    is($NZ50->display_name, $NZ50->translated_display_name, 'Translated to undefined is English');
+    is($AS51->display_name, $AS51->translated_display_name, 'Translated to undefined is English');
 
-    is($NZ50->exchange->symbol, $NZ50->exchange_name, 'Got our exchange from the provided name');
+    is($AS51->exchange->symbol, $AS51->exchange_name, 'Got our exchange from the provided name');
 
     # Assumption: EUR/USD still has the 1030 to 1330 restriction.
 
@@ -554,7 +554,7 @@ subtest 'all methods on a selection of underlyings' => sub {
         });
 
     my $today = Date::Utility->today;
-    foreach my $ul ($NZ50, $EURUSD) {
+    foreach my $ul ($AS51, $EURUSD) {
         my $prev_weight = 0;
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
@@ -573,13 +573,13 @@ subtest 'all methods on a selection of underlyings' => sub {
         }
     }
 
-    is($NZ50->pipsized_value(100.234567), 100.23,   'Index values are set by pipsized_value');
+    is($AS51->pipsized_value(100.234567), 100.23,   'Index values are set by pipsized_value');
     is($EURUSD->pipsized_value(1.234567), 1.23457,  'Forex values are chopped to pip size');
     is($EURUSD->pipsized_value(1.23657),  1.23657,  "Value doesn't change if it is already pipsized");
     is($USDJPY->pipsized_value(-0.0079),  -0.008,   'Negative values also can be pipsized (-0.)');
     is($USDJPY->pipsized_value(-1.0079),  -1.008,   'Negative values also can be pipsized (-1.)');
     is($EURUSD->pipsized_value(-1.23651), -1.23651, 'Any negative values also can be pipsized (-1.)');
-    is($NZ50->pipsized_value(-1.61),      -1.61,    'negative values for indices can be pipsized');
+    is($AS51->pipsized_value(-1.61),      -1.61,    'negative values for indices can be pipsized');
     cmp_ok($EURUSD->pipsized_value(1.230061), '==', 1.23006,   'pipsized_value is numerically as expected');
     cmp_ok($EURUSD->pipsized_value(1.230061), 'eq', '1.23006', ' and string-wise, too.');
 };
