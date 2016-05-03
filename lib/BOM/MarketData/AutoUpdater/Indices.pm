@@ -80,7 +80,7 @@ sub _build_symbols_to_update {
             market            => 'stocks',
             contract_category => 'ANY',
             exclude_disabled  => 1,
-            submarket         => ['france', 'belgium', 'amsterdam', 'us', 'uk', 'germany', 'australia']);
+            submarket         => ['france', 'belgium', 'amsterdam', 'otc_stock']);
     }
 
     return \@symbols_to_update;
