@@ -230,6 +230,25 @@ sub revoke_app {
     return 1;
 }
 
+sub revoke_apps_by_loginid {
+    my ($self, $loginid) = @_;
+
+    my $dbh = $self->dbh;
+    foreach my $table ('user_scope_confirm', 'access_token') {
+        $dbh->do("DELETE FROM oauth.$table WHERE loginid = ?", undef, $loginid);
+    }
+
+    return 1;
+}
+
+sub get_app_id_by_token {
+    my ($self, $token) = @_;
+
+    my $dbh = $self->dbh;
+    my @result = $self->dbh->selectrow_array("SELECT app_id FROM oauth.access_token WHERE token = ?", undef, $token);
+    return $result[0];
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
