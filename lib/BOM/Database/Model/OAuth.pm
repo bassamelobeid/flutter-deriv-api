@@ -245,7 +245,7 @@ sub get_app_id_by_token {
     my ($self, $token) = @_;
 
     my $dbh = $self->dbh;
-    my @result = $self->dbh->selectrow_array("SELECT app_id FROM oauth.access_token WHERE token = ?", undef, $token);
+    my @result = $self->dbh->selectrow_array("SELECT app_id FROM oauth.access_token WHERE access_token = ?", undef, $token);
     return $result[0];
 }
 
