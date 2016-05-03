@@ -574,7 +574,7 @@ sub rpc {
     return;
 }
 
-sub  _process_result {
+sub _process_result {
     my ($self, $data, $method, $args, $req_id, $tv) = @_;
 
     my $send = 1;
@@ -609,7 +609,6 @@ sub  _process_result {
 
     }
 }
-
 
 sub _sanity_failed {
     my ($c, $arg) = @_;

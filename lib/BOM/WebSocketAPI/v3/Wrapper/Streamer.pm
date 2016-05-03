@@ -108,7 +108,7 @@ sub _serialized_args {
 sub process_pricing_events {
     my ($c, $message, $chan) = @_;
 
-    my $response = decode_json($message);
+    my $response        = decode_json($message);
     my $serialized_args = $response->{data};
 
     my $pricing_channel = $c->stash('pricing_channel');
@@ -120,7 +120,7 @@ sub process_pricing_events {
         if ($response and exists $response->{error}) {
             my $err = $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
-            $results=$err;
+            $results = $err;
         } else {
             $results = {
                 msg_type => 'proposal',
@@ -129,7 +129,8 @@ sub process_pricing_events {
             $results->{ask_price} *= $amount / 1000;
             $results->{id} *= $pricing_channel->{$serialized_args}->{$amount}->{uuid};
         }
-        BOM::WebSocketAPI::Websocket_v3::_process_result($c, $results, 'proposal', $pricing_channel->{$serialized_args}->{$amount}->{args}, undef, undef);
+        BOM::WebSocketAPI::Websocket_v3::_process_result($c, $results, 'proposal', $pricing_channel->{$serialized_args}->{$amount}->{args},
+            undef, undef);
     }
 }
 
@@ -151,7 +152,7 @@ sub _pricing_channel {
             'write_conn' => BOM::System::RedisReplicated::redis_write,
             'read_conn'  => BOM::System::RedisReplicated::redis_read,
             data         => $serialized_args,
-            trigger      => $args->{symbol},
+            trigger      => 'FEED::' . $args->{symbol},
         });
         $rp->send();
         $c->stash('redis')->subscribe([$rp->_processed_channel], sub { });
