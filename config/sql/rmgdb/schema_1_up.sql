@@ -1456,7 +1456,9 @@ CREATE INDEX financial_market_bet_account_id_is_sold_bet_class_idx ON financial_
 
 CREATE INDEX financial_market_bet_account_id_purchase_time_bet_class_idx ON financial_market_bet USING btree (account_id, date(purchase_time), bet_class);
 
-CREATE INDEX financial_market_bet_account_id_purchase_time_idx ON financial_market_bet USING btree (account_id, purchase_time DESC);
+CREATE INDEX financial_market_bet_account_id_purchase_time_id_idx ON bet.financial_market_bet USING btree (account_id, purchase_time DESC, id DESC);
+--CREATE INDEX financial_market_bet_account_id_purchase_time_idx ON financial_market_bet USING btree (account_id, purchase_time DESC);
+DROP INDEX IF EXISTS financial_market_bet_account_id_purchase_time_idx;
 
 CREATE INDEX financial_market_ready_to_sell_idx ON financial_market_bet USING btree (expiry_time) WHERE (is_sold IS FALSE);
 
