@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Quant::Framework::Holiday;
-use BOM::MarketData::PartialTrading;
+use Quant::Framework::PartialTrading;
 use BOM::Platform::Context;
 use Try::Tiny;
 use Text::CSV::Slurp;
@@ -26,7 +26,9 @@ sub save_calendar {
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         )->save;
     } else {
-        $updated = BOM::MarketData::PartialTrading->new(
+        $updated = Quant::Framework::PartialTrading->new(
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             recorded_date => $recorded_date,
             type          => $calendar_type,
             calendar      => $calendar,
@@ -61,11 +63,11 @@ sub parse_calendar {
         foreach my $date (keys %{$data->{$exchange_name}}) {
             my $description;
             if ($calendar_type eq 'early_closes') {
-                my $exchange = BOM::Market::Exchange->new($exchange_name);
+                my $calendar = Quant::Framework::TradingCalendar->new($exchange_name, BOM::System::Chronicle::get_chronicle_reader());
                 $description =
-                      $exchange->is_in_dst_at($date)
-                    ? $exchange->market_times->{partial_trading}{dst_close}
-                    : $exchange->market_times->{partial_trading}{standard_close};
+                      $calendar->is_in_dst_at($date)
+                    ? $calendar->market_times->{partial_trading}{dst_close}
+                    : $calendar->market_times->{partial_trading}{standard_close};
             } else {
                 $description = $data->{$exchange_name}{$date};
             }
