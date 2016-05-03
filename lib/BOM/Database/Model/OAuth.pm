@@ -230,6 +230,26 @@ sub revoke_app {
     return 1;
 }
 
+sub revoke_tokens_by_loginid {
+    my ($self, $loginid) = @_;
+    $self->dbh->do("DELETE FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
+    return 1;
+}
+
+sub revoke_tokens_by_loginid_app {
+    my ($self, $loginid, $app_id) = @_;
+    $self->dbh->do("DELETE FROM oauth.access_token WHERE loginid = ? AND app_id = ?", undef, $loginid, $app_id);
+    return 1;
+}
+
+sub get_app_id_by_token {
+    my ($self, $token) = @_;
+
+    my $dbh = $self->dbh;
+    my @result = $self->dbh->selectrow_array("SELECT app_id FROM oauth.access_token WHERE access_token = ?", undef, $token);
+    return $result[0];
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
