@@ -236,6 +236,12 @@ sub revoke_tokens_by_loginid {
     return 1;
 }
 
+sub revoke_tokens_by_loginid_app {
+    my ($self, $loginid, $app_id) = @_;
+    $self->dbh->do("DELETE FROM oauth.access_token WHERE loginid = ? AND app_id = ?", undef, $loginid, $app_id);
+    return 1;
+}
+
 sub get_app_id_by_token {
     my ($self, $token) = @_;
 
