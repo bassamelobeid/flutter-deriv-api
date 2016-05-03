@@ -235,7 +235,7 @@ sub get_settings_by_group {
                 payments.email
                 )
         ],
-        invisible => [qw(quants.internal.custom_client_limits)],    #Global settings not to be saved from UI.
+        invisible => [qw(quants.internal.watchlist)],    #Global settings not to be saved from UI.
         marketing => [qw(
                 marketing.email
                 marketing.myaffiliates_email
