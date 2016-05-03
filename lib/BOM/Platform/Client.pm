@@ -479,22 +479,17 @@ sub get_limit_for_account_balance {
 sub get_limit_for_daily_turnover {
     my $self = shift;
 
-    my $excl;
+    my @limits;
     if ($self->get_self_exclusion && $self->get_self_exclusion->max_turnover) {
-        $excl = $self->get_self_exclusion->max_turnover;
+        push @limits, $self->get_self_exclusion->max_turnover;
     }
 
-    my $val = $self->custom_max_daily_turnover;
-    return $excl && $excl < $val ? $excl : $val if defined $val;
+    if (my $val = $self->custom_max_daily_turnover) {
+        push @limits, $val;
+    }
 
-    my $curr         = $self->currency;
-    my $max_turnover = BOM::Platform::Static::Config::quants->{client_limits}->{max_daily_turnover};
-    $val =
-          $self->is_virtual                 ? $max_turnover->{virtual}->{$curr}
-        : $self->client_fully_authenticated ? $max_turnover->{real_authenticated}->{$curr}
-        :                                     $max_turnover->{real_unauthenticated}->{$curr};
-
-    return $excl && $excl < $val ? $excl : $val;
+    return min(@limits) if @limits;
+    return;
 }
 
 sub get_limit_for_daily_losses {
@@ -564,7 +559,7 @@ sub get_limit_for_payout {
 
     my $max_payout = BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions};
 
-    return return $max_payout->{$self->currency};
+    return $max_payout->{$self->currency};
 }
 
 sub get_limit {
