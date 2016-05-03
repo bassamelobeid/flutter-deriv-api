@@ -130,6 +130,31 @@ subtest 'offerings check' => sub {
 subtest 'legal allowed underlyings' => sub {
     my @random     = qw(R_75 RDBEAR RDBULL R_25 R_100 R_50);
     my @non_random = qw(
+        USAAPL
+        USAMZN
+        USCT
+        USFB
+        USGE
+        USGOOG
+        USKO
+        USMSFT
+        USPFE
+        USXOM
+        UKBARC
+        UKBATS
+        UKGSK
+        UKHSBA
+        UKVOD
+        DEALV
+        DEBAYER
+        DEDAI
+        DESIE
+        DEVOWGEN
+        AUANZ
+        AUBHP
+        AUCBA
+        AUMQG
+        AUQAN
         OTC_IXIC
         OTC_BSESENSEX30
         OTC_BIST100
