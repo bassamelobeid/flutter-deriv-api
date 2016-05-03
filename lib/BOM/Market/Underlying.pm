@@ -2159,8 +2159,8 @@ sub _build_always_available {
 }
 
 has risk_type => (
-    is => 'ro',
-    lazy => 1,
+    is      => 'ro',
+    lazy    => 1,
     builder => '_build_risk_type',
 );
 
