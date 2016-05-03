@@ -13,6 +13,7 @@ use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
+use BOM::System::RedisReplicated;
 
 sub ticks {
     my ($c, $args) = @_;
