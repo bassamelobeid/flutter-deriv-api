@@ -6,7 +6,6 @@ use warnings;
 
 use DateTime;
 use Date::Utility;
-use BOM::Market::Currency;
 use BOM::System::Chronicle;
 use Quant::Framework::Currency;
 use List::Util qw(min);
