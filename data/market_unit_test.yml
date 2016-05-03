@@ -560,10 +560,6 @@ asset:
   data:
     symbol: UKTSCO
 
-partial_trading:
-  class_name: 'BOM::MarketData::PartialTrading'
-  data:
-    calendar: {}
 tick:
   class_name: 'BOM::Market::Data::Tick'
   data:
