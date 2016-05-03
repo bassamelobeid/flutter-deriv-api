@@ -556,7 +556,7 @@ realtime_book:
     gamma: 1
 
 asset:
-  class_name: 'BOM::Market::Asset'
+  class_name: 'Quant::Framework::Asset'
   data:
     symbol: UKTSCO
 
