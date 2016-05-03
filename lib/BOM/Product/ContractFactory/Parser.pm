@@ -223,12 +223,12 @@ sub shortcode_to_parameters {
 
     my $underlying = BOM::Market::Underlying->new($underlying_symbol);
     if (Date::Utility::is_ddmmmyy($date_expiry)) {
-        my $exchange = $underlying->exchange;
+        my $calendar = $underlying->calendar;
         $date_expiry = Date::Utility->new($date_expiry);
-        if (my $closing = $exchange->closing_on($date_expiry)) {
+        if (my $closing = $calendar->closing_on($date_expiry)) {
             $date_expiry = $closing->epoch;
         } else {
-            my $regular_close = $exchange->closing_on($exchange->regular_trading_day_after($date_expiry));
+            my $regular_close = $calendar->closing_on($calendar->regular_trading_day_after($date_expiry));
             $date_expiry = Date::Utility->new($date_expiry->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
         }
     }

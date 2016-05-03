@@ -48,43 +48,43 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => 'frxUSDJPY',
         recorded_date => $now,
     });
-my $exchange = BOM::Market::Underlying->new('frxUSDJPY')->exchange;
+my $calendar = BOM::Market::Underlying->new('frxUSDJPY')->calendar;
 subtest 'vol_cutoff_from_thurs_to_sat_on_non_dst' => sub {
     my $date_start = Date::Utility->new('2016-01-07 00:00:00');
     my $c = produce_contract('CALL_FRXUSDJPY_10_' . $date_start->epoch . '_' . $date_start->plus_time_interval('7d')->epoch . 'F_120050000_0', 'USD');
     my $p = $c->build_parameters;
-    compare_cut_off($date_start, 5, $p, $exchange);
+    compare_cut_off($date_start, 5, $p, $calendar);
 };
 subtest 'vol_cutoff_from_thurs_to_sat_on_dst' => sub {
     my $date_start = Date::Utility->new('2015-10-29 00:00:00');
     my $c = produce_contract('CALL_FRXUSDJPY_10_' . $date_start->epoch . '_' . $date_start->plus_time_interval('7d')->epoch . 'F_120050000_0', 'USD');
     my $p = $c->build_parameters;
-    compare_cut_off($date_start, 5, $p, $exchange);
+    compare_cut_off($date_start, 5, $p, $calendar);
 };
 
 subtest 'vol_cutoff_during_christmas' => sub {
     my $date_start = Date::Utility->new('2015-12-23 00:00:00');
     my $c = produce_contract('CALL_FRXUSDJPY_10_' . $date_start->epoch . '_' . $date_start->plus_time_interval('7d')->epoch . 'F_120050000_0', 'USD');
     my $p = $c->build_parameters;
-    compare_cut_off($date_start, 5, $p, $exchange);
+    compare_cut_off($date_start, 5, $p, $calendar);
 };
 
 subtest 'vol_cutoff_during_new_year' => sub {
     my $date_start = Date::Utility->new('2015-12-30 00:00:00');
     my $c = produce_contract('CALL_FRXUSDJPY_10_' . $date_start->epoch . '_' . $date_start->plus_time_interval('7d')->epoch . 'F_120050000_0', 'USD');
     my $p = $c->build_parameters;
-    compare_cut_off($date_start, 5, $p, $exchange);
+    compare_cut_off($date_start, 5, $p, $calendar);
 };
 
 subtest 'vol_cutoff_during_early_close' => sub {
     my $date_start = Date::Utility->new('2016-01-15 00:00:00');
     my $c = produce_contract('CALL_FRXUSDJPY_10_' . $date_start->epoch . '_' . $date_start->plus_time_interval('7d')->epoch . 'F_120050000_0', 'USD');
     my $p = $c->build_parameters;
-    compare_cut_off($date_start, 5, $p, $exchange);
+    compare_cut_off($date_start, 5, $p, $calendar);
 };
 
 sub compare_cut_off {
-    my ($date_start, $no_of_day, $pricing_param, $exchange) = @_;
+    my ($date_start, $no_of_day, $pricing_param, $calendar) = @_;
     my $vol_utils = BOM::MarketData::VolSurface::Utils->new;
 
     for (my $i = -1; $i < $no_of_day * 24; $i++) {
@@ -93,9 +93,9 @@ sub compare_cut_off {
         $pricing_param->{date_pricing} = $date_pricing;
         my $new_contract = produce_contract($pricing_param);
         my $expected_cutoff =
-            ($exchange->trades_on($date_pricing) and $date_pricing->epoch < $rollover_date->epoch)
-            ? $exchange->closing_on($date_pricing)->time_cutoff
-            : $exchange->closing_on($exchange->trade_date_after($date_pricing))->time_cutoff;
+            ($calendar->trades_on($date_pricing) and $date_pricing->epoch < $rollover_date->epoch)
+            ? $calendar->closing_on($date_pricing)->time_cutoff
+            : $calendar->closing_on($calendar->trade_date_after($date_pricing))->time_cutoff;
 
         is($new_contract->volsurface->cutoff->code, $expected_cutoff,
                   'For '
