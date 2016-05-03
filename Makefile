@@ -11,7 +11,7 @@ PROVE=p () { $M; echo '$P' "$$@"; BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom
 test: $(TESTS)
 
 unit_test_product_contract:
-	@$(PROVE) -r t/BOM/Product/Contract/
+	@$(PROVE) -r -v t/BOM/Product/Contract/
 
 unit_test_product_contract_extended:
 	@$(PROVE) -r t/BOM/Product/ContractFactory/ -r t/BOM/Product/ContractExtended/
