@@ -80,7 +80,7 @@ ok !$delete_st, 'was deleted';
 
 $delete_st = $m->delete_app($test_user_id, $app1->{app_id});
 
-subtest 'revoke apps by loginid' => sub {
+subtest 'revoke tokens by loginid and app_id' => sub {
     my $app1 = $m->create_app({
         name         => 'App 1',
         scopes       => ['read', 'admin'],
