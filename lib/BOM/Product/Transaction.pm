@@ -276,10 +276,20 @@ sub calculate_limits {
     if (not $contract->tick_expiry) {
         $self->limits->{max_open_bets}                      = $client->get_limit_for_open_positions;
         $self->limits->{max_payout_open_bets}               = $client->get_limit_for_payout;
-        $self->limits->{max_payout_per_symbol_and_bet_type} = $static_config->{payout_per_symbol_and_bet_type_limit}->{$currency};
+        $self->limits->{max_payout_per_symbol_and_bet_type} = $static_config->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
     }
 
-    $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
+    my $turnover_limit;
+    if ($client->get_limit_for_daily_turnover) {
+        # if there's a client specific turnover limit set, we should respect that.
+        $turnover_limit = $client->get_limit_for_daily_turnover;
+    } elsif ($self->_is_highly_limited) {
+        $turnover_limit = $static_config->{extreme_risk}{turnover};
+    } else {
+        $turnover_limit = $static_config->{$contract->underlying->risk_type}{turnover};
+    }
+
+    $self->limits->{max_turnover} = $turnover_limit;
 
     my $lim;
     defined($lim = $client->get_limit_for_daily_losses)
@@ -1456,17 +1466,18 @@ sub _validate_stake_limit {
 sub _validate_per_contract_payout_limit {
     my $self = shift;
 
-    my $limit = BOM::Platform::Static::Config::quants->{client_limits}{$self->contract->market->risk_type}{payout};
+    my $contract_payout = $self->payout;
+    my $config          = BOM::Platform::Static::Config::quants->{client_limits};
 
-    if ($limit and $self->payout > $limit) {
+    my $limit = $self->_is_highly_limited ? $config->{extreme_risk}{payout} : $config->{$self->contract->underlying->risk_type}{payout};
+
+    if ($contract_payout > $limit) {
         return Error::Base->cuss(
             -type              => 'PayoutLimitExceeded',
-            -mesg              => $self->client->loginid . ' payout [' . $self->payout . '] over custom limit[' . $limit . ']',
+            -mesg              => $self->client->loginid . ' payout [' . $contract_payout . '] over custom limit[' . $limit . ']',
             -message_to_client => ($limit == 0)
             ? BOM::Platform::Context::localize('This contract is unavailable on this account.')
-            : BOM::Platform::Context::localize(
-                'This contract is limited to ' . to_monetary_number_format($limit) . ' payout on this account.'
-            ),
+            : BOM::Platform::Context::localize('This contract is limited to ' . to_monetary_number_format($limit) . ' payout on this account.'),
         );
     }
 
@@ -1815,6 +1826,27 @@ sub report {
         . sprintf("%30s: %s",   'Transaction Parameters', Dumper($self->transaction_parameters))
         . sprintf("%30s: %s\n", 'Transaction ID',         $self->transaction_id || -1)
         . sprintf("%30s: %s\n", 'Purchase Date',          $self->purchase_date->datetime_yyyymmdd_hhmmss);
+}
+
+# limited by extreme_risk limits
+sub _is_highly_limited {
+    my $self = shift;
+
+    my $contract = $self->contract;
+    my $ul       = $contract->underlying;
+    my $ct       = $contract->code;
+
+    my $extreme_list = BOM::Platform::Runtime->instance->app_config->quants->apply_extreme_risk_limits;
+    my ($markets, $symbols, $ctypes) = map { $extreme_list->$_ } qw(markets underlying_symbols contract_types);
+
+    if (   (@$markets and first { $_ eq $ul->market->name } @$markets)
+        or (@$symbols and first { $_ eq $ul->symbol } @$symbols)
+        or (@$ctypes  and first { $_ eq $ct } @$ctypes))
+    {
+        return 1;
+    }
+
+    return;
 }
 
 no Moose;
