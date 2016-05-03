@@ -47,8 +47,14 @@ sub _build_chronicle_reader {
 has chronicle_writer => (
     is      => 'ro',
     isa     => 'Data::Chronicle::Writer',
+    lazy_build => 1,
     default => sub { BOM::System::Chronicle::get_chronicle_writer() },
 );
+
+sub _build_chronicle_writer {
+    my $self = shift;
+    return BOM::System::Chronicle::get_chronicle_writer($self->for_date);
+}
 
 has for_date => (
     is      => 'ro',

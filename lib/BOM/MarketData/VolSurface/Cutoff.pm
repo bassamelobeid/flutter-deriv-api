@@ -162,7 +162,7 @@ sub seconds_to_cutoff_time {
 
     my $cutoff_date = $self->cutoff_date_for_effective_day($effective_day, $underlying);
 
-    my $seconds = $underlying->exchange->seconds_of_trading_between_epochs($from->epoch, $cutoff_date->epoch);
+    my $seconds = $underlying->calendar->seconds_of_trading_between_epochs($from->epoch, $cutoff_date->epoch);
 
     return $seconds;
 }
@@ -217,9 +217,9 @@ sub cutoff_date_for_effective_day {
 sub _valid_cutoff_date {
     my ($cutoff_date, $underlying) = @_;
 
-    my $exchange = $underlying->exchange;
+    my $calendar = $underlying->calendar;
 
-    return $exchange->trades_on($cutoff_date);
+    return $calendar->trades_on($cutoff_date);
 }
 
 no Moose;
