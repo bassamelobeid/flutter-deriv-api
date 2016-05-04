@@ -64,7 +64,7 @@ sub ticks_history {
                 candles => \@candles,
             };
             $type    = "candles";
-            $publish = $args->{granularity};
+            $publish = $args->{granularity} || 60;
         } else {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InvalidCandlesRequest',
@@ -77,10 +77,10 @@ sub ticks_history {
     }
 
     return {
-        type    => $type,
-        data    => $result,
-        publish => $publish
-    };
+        type        => $type,
+        data        => $result,
+        publish     => $publish,
+        ($args->{granularity}) ? (granularity => $args->{granularity}) : ()};
 }
 
 sub _ticks {
@@ -106,7 +106,7 @@ sub _candles {
     my $ul          = $args->{ul};
     my $start_time  = $args->{start};
     my $end_time    = $args->{end};
-    my $granularity = $args->{granularity} // 60;
+    my $granularity = $args->{granularity} || 60;
     my $count       = $args->{count};
 
     my @all_ohlc;
