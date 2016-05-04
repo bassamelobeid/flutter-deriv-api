@@ -284,12 +284,12 @@ sub calculate_limits {
         # if there's a client specific turnover limit set, we should respect that.
         $turnover_limit = $client->get_limit_for_daily_turnover;
     } elsif ($self->_is_highly_limited) {
-        $turnover_limit = $static_config->{extreme_risk}{turnover};
+        $turnover_limit = $static_config->{extreme_risk}{turnover}{$currency};
     } else {
-        $turnover_limit = $static_config->{$contract->underlying->risk_type}{turnover};
+        $turnover_limit = $static_config->{$contract->underlying->risk_type}{turnover}{currency};
     }
 
-    $self->limits->{max_turnover} = $turnover_limit->{$currency};
+    $self->limits->{max_turnover} = $turnover_limit;
 
     my $lim;
     defined($lim = $client->get_limit_for_daily_losses)
