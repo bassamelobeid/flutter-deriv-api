@@ -289,7 +289,7 @@ sub calculate_limits {
         $turnover_limit = $static_config->{$contract->underlying->risk_type}{turnover};
     }
 
-    $self->limits->{max_turnover} = $turnover_limit;
+    $self->limits->{max_turnover} = $turnover_limit->{$currency};
 
     my $lim;
     defined($lim = $client->get_limit_for_daily_losses)
