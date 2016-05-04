@@ -40,6 +40,9 @@ sub ticks_history {
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
 
+    # default to 60 if not defined or send as 0 for candles
+    $args->{granularity} = $args->{granularity} || 60 if $style eq 'candles';
+
     $response = _validate_start_end({%$args, ul => $ul});    ## no critic
     if ($response and exists $response->{error}) {
         return $response;
@@ -63,8 +66,8 @@ sub ticks_history {
             $result = {
                 candles => \@candles,
             };
-            $type = "candles";
-            $publish = $args->{granularity} || 60;
+            $type    = "candles";
+            $publish = $args->{granularity};
         } else {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'InvalidCandlesRequest',
@@ -106,7 +109,7 @@ sub _candles {
     my $ul          = $args->{ul};
     my $start_time  = $args->{start};
     my $end_time    = $args->{end};
-    my $granularity = $args->{granularity} || 60;
+    my $granularity = $args->{granularity};
     my $count       = $args->{count};
 
     my @all_ohlc;
