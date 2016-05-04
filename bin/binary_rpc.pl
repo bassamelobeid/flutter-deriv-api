@@ -9,7 +9,9 @@ BEGIN {
   my $orig=\&YAML::XS::LoadFile;
   *YAML::XS::LoadFile=sub {
     my ($package, $file, $line) = caller;
-    warn "$$: loading @_ at $file $line";
+    open(my $fh,">>", "/tmp/log.log");
+    print $fh "$$: loading @_ at $file $line";
+    close($fh);
     return $orig->(@_);
   }
 }
