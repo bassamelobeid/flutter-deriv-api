@@ -1,4 +1,5 @@
 package BOM::RPC::PricerDaemon;
+
 use strict;
 use warnings;
 
@@ -7,8 +8,14 @@ use JSON::XS qw(encode_json decode_json);
 use BOM::RPC::v3::Contract;
 
 sub new {
-    my $class = shift;
-    my $self = ref $_[0] ? $_[0] : {@_};
+    my ($class, @args) = @_;
+
+    my $self;
+    if (ref $args[0]) {
+        $self = $args[0];
+    } else {
+        $self = {@args};
+    }
 
     my @REQUIRED = qw(data);
 
