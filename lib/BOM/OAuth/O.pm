@@ -10,7 +10,6 @@ use List::MoreUtils qw(any firstval);
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
-use BOM::Platform::Context::Request::Urls qw(url_for);
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Static::Config;
