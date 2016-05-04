@@ -217,7 +217,7 @@ sub __login {
         domain  => $r->cookie_domain,
         secure  => ($r->cookie_domain eq '127.0.0.1') ? 0 : 1,
         path    => '/',
-        expires => time + 86400 * 2,
+        expires => time + 86400 * 60,
     };
 
     $c->cookie(
