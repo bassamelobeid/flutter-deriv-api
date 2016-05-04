@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use BOM::RPC::v3::Utility;
+use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub forget {
@@ -64,10 +65,24 @@ sub server_time {
 sub website_status {
     my ($c, $args) = @_;
 
-    return {
-        msg_type       => 'website_status',
-        website_status => BOM::RPC::v3::Utility::website_status($c->country_code),
-    };
+    my $method = 'website_status';
+    return BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c, $method,
+        sub {
+            my $response = shift;
+            if (ref($response) eq 'HASH' and exists $response->{error}) {
+                return $c->new_error($method, $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type => $method,
+                    $method  => $response,
+                };
+            }
+        },
+        {
+            args         => $args,
+            country_code => $c->country_code,
+        });
 }
 
 sub _forget_transaction_subscription {
