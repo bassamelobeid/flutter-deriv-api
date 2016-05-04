@@ -555,11 +555,6 @@ realtime_book:
     vega: 1
     gamma: 1
 
-#asset:
-#  class_name: 'Quant::Framework::Asset'
-#  data:
-#    symbol: UKTSCO
-
 tick:
   class_name: 'BOM::Market::Data::Tick'
   data:
