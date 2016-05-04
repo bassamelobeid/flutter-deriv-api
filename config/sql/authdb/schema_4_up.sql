@@ -28,7 +28,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON oauth.app_redirect_uri TO write;
 GRANT SELECT ON oauth.app_redirect_uri TO read;
 
 INSERT INTO oauth.app_redirect_uri (app_id, redirect_uri) values ('binarycom', 'http://localhost/');
-INSERT INTO oauth.app_redirect_uri (app_id, redirect_uri) values ('binarycom', '/logged_inws');
+INSERT INTO oauth.app_redirect_uri (app_id, redirect_uri) values ('binarycom', 'https://www.binary.com/');
 
 CREATE TABLE oauth.scopes (
     id SERIAL PRIMARY KEY,
