@@ -52,7 +52,7 @@ has chronicle_writer => (
 
 sub _build_chronicle_writer {
     my $self = shift;
-    return BOM::System::Chronicle::get_chronicle_writer($self->for_date);
+    return BOM::System::Chronicle::get_chronicle_writer();
 }
 
 has for_date => (
