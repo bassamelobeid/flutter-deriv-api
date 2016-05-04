@@ -272,7 +272,9 @@ sub _check_file {
                     warn("--ERROR : $underlying_symbol $date appears twice");
                 } elsif ($prevdate) {
                     if (my $trading_days_between = $underlying->calendar->trading_days_between($prevwhen, $when)) {
-                        warn("--Warning: $underlying_symbol MISSING DATES between $prevdate and $date (trading days between is: $trading_days_between).");
+                        warn(
+                            "--Warning: $underlying_symbol MISSING DATES between $prevdate and $date (trading days between is: $trading_days_between)."
+                        );
                     } else {
                         my $days_between = $when->days_between($prevwhen);
 
