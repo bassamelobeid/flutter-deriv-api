@@ -48,16 +48,14 @@ BEGIN
     -- transaction.account row is already locked FOR UPDATE by the current transaction.
     -- Otherwise, it is prone to deadlock.
 
-    UPDATE bet.financial_market_bet_open
-       SET sell_price=p_sell_price, sell_time=p_sell_time, is_sold=true, is_expired=true
+    DELETE FROM bet.financial_market_bet_open
      WHERE id=p_id
        AND account_id=p_account_id
-       AND NOT is_sold
     RETURNING * INTO v_fmb;
 
     GET DIAGNOSTICS v_nrows=ROW_COUNT;
     IF v_nrows>1 THEN
-        RAISE EXCEPTION 'FMB Update modifies multiple rows for id=%', p_id;
+        RAISE EXCEPTION 'FMBo delete modifies multiple rows for id=%', p_id;
     ELSIF v_nrows=0 THEN
 --        RETURN;
 /* This block is necessary until we get all remaining open contracts out of fmb and into fmbo.
