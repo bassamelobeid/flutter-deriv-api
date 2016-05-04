@@ -1,4 +1,4 @@
-package BOM::PricerDaemon;
+package BOM::RPC::PricerDaemon;
 use strict;
 use warnings;
 

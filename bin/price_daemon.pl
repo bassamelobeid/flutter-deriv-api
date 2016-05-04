@@ -5,6 +5,7 @@ use Parallel::ForkManager;
 use JSON;
 use BOM::System::RedisReplicated;
 use URI::redis;
+use BOM::RPC::PricerDaemon;
 
 use constant MAX_WORKERS => 2;
 
@@ -34,12 +35,9 @@ while (1) {
         $rp->on_trigger(
             sub {
                 my $payload = shift;
+                my $p = BOM::RPC::PricerDaemon->new(data=>$rp->{data})
 
-                my $results = {
-                    key      => $rp->_unique,
-                    data     => $rp->{data},
-                    proposal => {ask_price => rand(100)}};
-                return JSON::to_json($results);
+                return $p->price;
             });
     } else {
         print "no job found\n";
