@@ -241,7 +241,7 @@ sub _check_file {
             my $close = $5;
 
             my $when = Date::Utility->new($date);
-            next if (not $underlying->trades_on($when));
+            next if (not $underlying->calendar->trades_on($when));
 
             if ($now->days_between($when) <= 10)    #don't bug cron with old suspicions
             {
@@ -271,10 +271,8 @@ sub _check_file {
                 if ($prevwhen and $when->is_same_as($prevwhen)) {
                     warn("--ERROR : $underlying_symbol $date appears twice");
                 } elsif ($prevdate) {
-                    if (my $trading_days_between = $underlying->exchange->trading_days_between($prevwhen, $when)) {
-                        warn(
-                            "--Warning: $underlying_symbol MISSING DATES between $prevdate and $date (trading days between is: $trading_days_between)."
-                        );
+                    if (my $trading_days_between = $underlying->calendar->trading_days_between($prevwhen, $when)) {
+                        warn("--Warning: $underlying_symbol MISSING DATES between $prevdate and $date (trading days between is: $trading_days_between).");
                     } else {
                         my $days_between = $when->days_between($prevwhen);
 
@@ -303,7 +301,7 @@ sub _check_file {
     #Sunday or Monday, or Saturday (db won't update until Monday's first tick)
     if ($now->is_a_weekend or $now->day_of_week == 1 and $date ne $now->date_ddmmmyy and $date ne $yesterday->date_ddmmmyy) {
         # Make sure we traded yesterday
-        if ($underlying->trades_on($yesterday)) {
+        if ($underlying->calendar->trades_on($yesterday)) {
             warn("--$underlying_symbol ERROR can't find yesterday's data (" . $yesterday->date_ddmmmyy . ")");
         }
     }
