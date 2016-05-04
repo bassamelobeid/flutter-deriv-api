@@ -11,7 +11,7 @@ BEGIN {
   *YAML::XS::LoadFile=sub {
     my ($package, $file, $line) = caller;
     open(my $fh,">>", "/tmp/log.log");
-    print $fh "$$: loading @_ at $file $line";
+    print $fh "$$: loading @_ at $file $line\n";
     close($fh);
     return $orig->(@_);
   }
