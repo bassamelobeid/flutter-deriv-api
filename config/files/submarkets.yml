@@ -1,6 +1,6 @@
 ---
 # Our daily ohlc is populated by bom_trigger_ohlc_aggregation.pl at 00GMT of next day.
-# To allow OTC index and stocks to settle early , db team had come out with a script (bin/bom_ohlc_daily_agg.pl) that will populate them at one hour after market close. However, in this cron, they will only be able to insert those ohlc to db with official=true flag.
+# To allow OTC index and stocks to settle early , db team had come out with a script (bin/bom_ohlc_daily_agg.pl) that will populate them at as as market closed.(cron is cron running on minute 10, 40 of every hour). However, in this cron, they will only be able to insert those ohlc to db with official=true flag.
 # So for those OTC index and stocks , they are mark as use_official_ohlc although they are not really use official ohlc from bloomberg or exchange.
 random_index:
     name: random_index
