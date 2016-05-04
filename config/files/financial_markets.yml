@@ -1,6 +1,5 @@
 ---
 commodities:
-    risk_type: 'high_risk'
     display_current_spot: 1
     volatility_surface_type: "delta"
     suspicious_move: 0.05
@@ -114,7 +113,6 @@ futures:
             ONETOUCH: 40
             NOTOUCH: 40
 indices:
-    risk_type: 'medium_risk'
     volatility_surface_type: "moneyness"
     suspicious_move: 0.07
     outlier_tick: 0.10
@@ -154,7 +152,6 @@ indices:
             ONETOUCH: 6
             NOTOUCH: 6
 stocks:
-    risk_type: 'high_risk'
     suspicious_move: 0.25
     outlier_tick: 0.10
     display_name: "Stocks"
@@ -197,7 +194,6 @@ stocks:
             ONETOUCH: 40
             NOTOUCH: 40
 volidx:
-    risk_type: 'low_risk'
     display_current_spot: 1
     suspicious_move: 0.5
     outlier_tick: 0.10

@@ -17,6 +17,7 @@ my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 use open qw[ :encoding(UTF-8) ];
 use BOM::Market::Types;
 
+use JSON qw(from_json);
 use Carp;
 use List::MoreUtils qw( any );
 use List::Util qw( first max min);
@@ -2158,6 +2159,8 @@ sub _build_always_available {
     return $self->submarket->always_available;
 }
 
+# Since we want the flexibility to change risk type of
+# a particular underlying, we will not have this in the yaml file!
 has risk_type => (
     is      => 'ro',
     lazy    => 1,
@@ -2167,6 +2170,9 @@ has risk_type => (
 sub _build_risk_type {
     my $self = shift;
 
+    my $limits = from_json(BOM::Platform::Runtime->instance->app_config->quants->client_limits->underlying_limits);
+
+    return $limits->{$self->symbol} if exists $limits->{$self->symbol};
     return $self->submarket->risk_type;
 }
 

@@ -17,6 +17,7 @@ use Moose;
 use BOM::Market::Registry;
 use BOM::Market::Types;
 use BOM::Platform::Context qw(request localize);
+use JSON qw(from_json);
 
 =head1 ATTRIBUTES
 
@@ -213,6 +214,8 @@ has always_available => (
     default => 0,
 );
 
+# Since we want the flexibility to change risk type of
+# a particular submarket, we will not have this in the yaml file!
 has risk_type => (
     is      => 'ro',
     lazy    => 1,
@@ -222,6 +225,9 @@ has risk_type => (
 sub _build_risk_type {
     my $self = shift;
 
+    my $limits = from_json(BOM::Platform::Runtime->instance->app_config->quants->client_limits->submarket_limits);
+
+    return $limits->{$self->name} if exists $limits->{$self->name};
     return $self->market->risk_type;
 }
 
