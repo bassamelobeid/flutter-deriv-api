@@ -63,7 +63,7 @@ sub ticks_history {
             $result = {
                 candles => \@candles,
             };
-            $type    = "candles";
+            $type = "candles";
             $publish = $args->{granularity} || 60;
         } else {
             return BOM::RPC::v3::Utility::create_error({
@@ -77,9 +77,9 @@ sub ticks_history {
     }
 
     return {
-        type        => $type,
-        data        => $result,
-        publish     => $publish,
+        type    => $type,
+        data    => $result,
+        publish => $publish,
         ($args->{granularity}) ? (granularity => $args->{granularity}) : ()};
 }
 
