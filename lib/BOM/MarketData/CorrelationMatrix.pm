@@ -45,8 +45,8 @@ sub _build_chronicle_reader {
 }
 
 has chronicle_writer => (
-    is      => 'ro',
-    isa     => 'Data::Chronicle::Writer',
+    is         => 'ro',
+    isa        => 'Data::Chronicle::Writer',
     lazy_build => 1,
 );
 
