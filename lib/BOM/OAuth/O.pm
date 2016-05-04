@@ -76,11 +76,12 @@ sub authorize {
     unless ($client) {
         ## show login form
         return $c->render(
-            template => 'login',
+            template => $c->session('__is_app_approved') == 1 ? 'loginbinary' : 'login',
             layout   => 'default',
 
             app       => $app,
             l         => \&localize,
+            r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
     }
@@ -196,12 +197,13 @@ sub __login {
 
     if ($err) {
         $c->render(
-            template => 'login',
+            template => $c->session('__is_app_approved') == 1 ? 'loginbinary' : 'login',
             layout   => 'default',
 
             app       => $app,
             error     => $err,
             l         => \&localize,
+            r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
         return;
@@ -214,7 +216,7 @@ sub __login {
         domain  => $r->cookie_domain,
         secure  => ($r->cookie_domain eq '127.0.0.1') ? 0 : 1,
         path    => '/',
-        expires => time + 86400 * 2,
+        expires => time + 86400 * 60,
     };
 
     $c->cookie(
