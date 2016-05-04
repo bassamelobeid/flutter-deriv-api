@@ -4,7 +4,8 @@ use strict;
 use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-
+use Test::MockModule;
+use YAML::XS;
 BEGIN {
   my $orig=\&YAML::XS::LoadFile;
   *YAML::XS::LoadFile=sub {
