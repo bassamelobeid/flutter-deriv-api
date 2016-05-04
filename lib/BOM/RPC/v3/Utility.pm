@@ -110,16 +110,6 @@ sub website_name {
     return BOM::Platform::Runtime->instance->website_list->choose_website({domain_name => $domain_name})->display_name;
 }
 
-sub website_status {
-    my $country_code = shift;
-
-    return {
-        terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
-        api_call_limits          => site_limits,
-        clients_country          => $country_code,
-    };
-}
-
 sub check_authorization {
     my $client = shift;
 
