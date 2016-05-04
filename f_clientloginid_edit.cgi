@@ -24,7 +24,7 @@ use BOM::Platform::Helper::Doughflow qw( get_sportsbook );
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::System::Config;
-use BOM::Web::Form;
+use BOM::Backoffice::FormAccounts;
 
 BOM::Platform::Sysinit::init();
 
@@ -154,22 +154,22 @@ if ($input{whattodo} eq 'uploadID') {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />";
         code_exit_BO();
     }
-    
+
     if ($doctype eq 'passport' && $expiration_date !~/\d{4}-\d{2}-\d{2}/ && ($broker_code eq 'MF'|| $broker_code eq 'MX')) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered - </p><br />";
         code_exit_BO();
     }
-    
+
    if ($expiration_date ne '') {
         my ($current_date, $submitted_date);
         $current_date=Date::Utility->new();
         $submitted_date = Date::Utility->new($expiration_date);
-        
+
         if($submitted_date->is_before($current_date)||$submitted_date->is_same_as($current_date)){
             print "<br /><p style=\"color:red; font-weight:bold;\">Error: Expiration date should be greater than current date </p><br />";
             code_exit_BO();
         }
-            
+
     }
 
     my $newfilename = "$dbloc/clientIDscans/$broker/$loginid.$doctype." . (time()) . ".$docformat";
@@ -180,7 +180,7 @@ if ($input{whattodo} eq 'uploadID') {
 
     copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
     my $filesize = (stat $newfilename)[7];
-    
+
     my $upload_submission={
         document_type              => $doctype,
         document_format            => $docformat,
@@ -188,16 +188,16 @@ if ($input{whattodo} eq 'uploadID') {
         authentication_method_code => 'ID_DOCUMENT',
         expiration_date            => $expiration_date
     };
-    
+
     #needed because CR based submissions don't return a result when an empty string is submitted in expiration_date;
     if ($expiration_date eq ''){
         delete $upload_submission->{'expiration_date'};
     }
-    
+
     $client->add_client_authentication_document($upload_submission);
-    
+
     $client->save;
-    
+
     print "<br /><p style=\"color:green; font-weight:bold;\">Ok! File $newfilename is uploaded (filesize $filesize).</p><br />";
 
     code_exit_BO();
@@ -237,7 +237,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field appears to be empty.</p></p>";
             code_exit_BO();
         }
-        if (!grep(/^$input{'mrms'}$/, BOM::Web::Form::GetSalutations())) {
+        if (!grep(/^$input{'mrms'}$/, BOM::Backoffice::FormAccounts::GetSalutations())) {
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field is invalid.</p></p>";
             code_exit_BO();
         }
@@ -614,34 +614,34 @@ if (not $client->is_virtual) {
 Bar("Upload new ID document");
 print qq{
 <br /><form enctype="multipart/form-data" ACTION="$self_post" method="POST">
-	<select name="doctype">
-		<option value="passport">Proof of Identity</option>
-		<option value="proofaddress">Proof of Address</option>
-		<option value="notarised">Notarised Docs</option>
-		<option value="driverslicense">Drivers License</option>
+  <select name="doctype">
+    <option value="passport">Proof of Identity</option>
+    <option value="proofaddress">Proof of Address</option>
+    <option value="notarised">Notarised Docs</option>
+    <option value="driverslicense">Drivers License</option>
                 <option value="experianproveid">192 check</option>
-		<option value="other">Other</option>
-	</select>
-	<select name=docformat>
-		<option>JPG</option>
-		<option>JPEG</option>
-		<option>GIF</option>
-		<option>PNG</option>
-		<option>TIF</option>
-		<option>PDF</option>
-		<option>PCX</option>
-		<option>EFX</option>
-		<option>JFX</option>
-		<option>DOC</option>
-		<option>TXT</option>
-	</select>
-	<input type="FILE" name="FILE">
-	<input type=hidden name=whattodo value=uploadID>
-	<input type=hidden name=broker value=$broker>
-	<input type=hidden name=loginID value=$loginid>
-	<input type=hidden name=l value=$language>
-	Expiration date:<input type="text" size=10 name="expiration_date"><i> format YYYY-MM-DD </i>
-	<input type=submit value="Upload new ID doc.">
+    <option value="other">Other</option>
+  </select>
+  <select name=docformat>
+    <option>JPG</option>
+    <option>JPEG</option>
+    <option>GIF</option>
+    <option>PNG</option>
+    <option>TIF</option>
+    <option>PDF</option>
+    <option>PCX</option>
+    <option>EFX</option>
+    <option>JFX</option>
+    <option>DOC</option>
+    <option>TXT</option>
+  </select>
+  <input type="FILE" name="FILE">
+  <input type=hidden name=whattodo value=uploadID>
+  <input type=hidden name=broker value=$broker>
+  <input type=hidden name=loginID value=$loginid>
+  <input type=hidden name=l value=$language>
+  Expiration date:<input type="text" size=10 name="expiration_date"><i> format YYYY-MM-DD </i>
+  <input type=submit value="Upload new ID doc.">
 </form>
 };
 
