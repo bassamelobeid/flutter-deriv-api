@@ -284,25 +284,6 @@ quants:
           isa: ArrayRef
           default: []
           global: 1
-    apply_extreme_risk_limits:
-      description: "Products(contract type or underlyings) that we want to apply extreme_risk payout and turnover limits to."
-      isa: section
-      contains:
-        contract_types:
-          description: "An array reference of contract types"
-          isa: ArrayRef
-          default: []
-          global: 1
-        markets:
-          description: "An array reference of markets"
-          isa: ArrayRef
-          default: []
-          global: 1
-        underlying_symbols:
-          description: "An array reference of underlying_symbols"
-          isa: ArrayRef
-          default: []
-          global: 1
     underlyings:
       description: "Underlying-specific variables"
       isa: section
@@ -336,186 +317,31 @@ quants:
       description: "Per client limits on turnover and payout"
       isa: section
       contains:
-        asian_daily_turnover:
-          description: "Daily turnover limit for asian per client"
-          isa: section
-          contains:
-            USD:
-              description: 'in USD'
-              isa: Num
-              default: 50000
-              global: 1
-            EUR:
-              description: 'in EUR'
-              isa: Num
-              default: 50000
-              global: 1
-            AUD:
-              description: 'in AUD'
-              isa: Num
-              default: 50000
-              global: 1
-            GBP:
-              description: 'in GBP'
-              isa: Num
-              default: 50000
-              global: 1
-            JPY:
-              description: 'in JPY'
-              isa: Num
-              default: 5000000
-              global: 1
-
-        intraday_forex_iv_turnover:
-          description: "Limits on client activity for intraday turnover on forex iv. Set any sub-value to 0 to disable limit"
-          isa: section
-          contains:
-            USD:
-              description: 'in USD'
-              isa: Num
-              default: 30000
-              global: 1
-            EUR:
-              description: 'in EUR'
-              isa: Num
-              default: 30000
-              global: 1
-            AUD:
-              description: 'in AUD'
-              isa: Num
-              default: 30000
-              global: 1
-            GBP:
-              description: 'in GBP'
-              isa: Num
-              default: 30000
-              global: 1
-            JPY:
-              description: 'in JPY'
-              isa: Num
-              default: 3000000
-              global: 1
-
-        intraday_forex_iv_realized_profit:
-          description: "Limits on client activity for intraday realized profit on forex iv. Set any sub-value to 0 to disable limit"
-          isa: section
-          contains:
-            USD:
-              description: 'in USD'
-              isa: Num
-              default: 30000
-              global: 1
-            EUR:
-              description: 'in EUR'
-              isa: Num
-              default: 30000
-              global: 1
-            AUD:
-              description: 'in AUD'
-              isa: Num
-              default: 30000
-              global: 1
-            GBP:
-              description: 'in GBP'
-              isa: Num
-              default: 30000
-              global: 1
-            JPY:
-              description: 'in JPY'
-              isa: Num
-              default: 3000000
-              global: 1
-
-        intraday_forex_iv_potential_profit:
-          description: "Limits on client activity for intraday potential profit on forex iv. Set any sub-value to 0 to disable limit"
-          isa: section
-          contains:
-            USD:
-              description: 'in USD'
-              isa: Num
-              default: 30000
-              global: 1
-            EUR:
-              description: 'in EUR'
-              isa: Int
-              default: 30000
-              global: 1
-            AUD:
-              description: 'in AUD'
-              isa: Int
-              default: 30000
-              global: 1
-            GBP:
-              description: 'in GBP'
-              isa: Int
-              default: 30000
-              global: 1
-            JPY:
-              description: 'in JPY'
-              isa: Int
-              default: 3000000
-              global: 1
-
-        spreads_daily_profit:
-          description: "Daily profit limit for spreads per client"
-          isa: section
-          contains:
-            USD:
-              description: 'in USD'
-              isa: Num
-              default: 10000
-              global: 1
-            EUR:
-              description: 'in EUR'
-              isa: Num
-              default: 10000
-              global: 1
-            AUD:
-              description: 'in AUD'
-              isa: Num
-              default: 10000
-              global: 1
-            GBP:
-              description: 'in GBP'
-              isa: Num
-              default: 10000
-              global: 1
-            JPY:
-              description: 'in JPY'
-              isa: Num
-              default: 1000000
-              global: 1
-
-        tick_expiry_engine_daily_turnover:
-          description: "Daily turnover limit for tick expiry engine per client"
-          isa: section
-          contains:
-            USD:
-              description: 'in USD'
-              isa: Num
-              default: 0.5
-              global: 1
-            EUR:
-              description: 'in EUR'
-              isa: Num
-              default: 0.5
-              global: 1
-            AUD:
-              description: 'in AUD'
-              isa: Num
-              default: 0.5
-              global: 1
-            GBP:
-              description: 'in GBP'
-              isa: Num
-              default: 0.5
-              global: 1
-            JPY:
-              description: 'in JPY'
-              isa: Num
-              default: 0.5
-              global: 1
-
+        pricing_engine_limits:
+          description: "Pricing engine risk type definition. Defaults to low_risk if undefined"
+          isa: json_string
+          global: 1
+          default: '{"intraday_index": "high_risk", "tick_expiry": "extreme_risk", "asian": "high_risk"}'
+        financial_market_limits:
+          description: "Financial market risk type definition"
+          isa: json_string
+          global: 1
+          default: '{"forex": "medium_risk", "indices": "medium_risk", "commodities": "high_risk", "stocks": "extreme_risk", "volidx": "low_risk"}'
+        submarket_limits:
+          description: "Submarket risk type definition. If not defined it is take financial market limits"
+          isa: json_string
+          global: 1
+          default: '{"minor_pairs": "high_risk", "smart_fx": "high_risk"}'
+        underlying_limits:
+          description: "Underlying risk type definition. If not defined it is take submarket limits"
+          isa: json_string
+          global: 1
+          default: '{"minor_pairs": "high_risk", "smart_fx": "high_risk"}'
+        contract_category_limits:
+          description: "Contract category risk type definition. If not defined it is take submarket limits"
+          isa: json_string
+          global: 1
+          default: '{"spreads": "extreme_risk", "asian": "high_risk"}'
 system:
   description: "Various parameters determining core application functionality"
   isa: section
