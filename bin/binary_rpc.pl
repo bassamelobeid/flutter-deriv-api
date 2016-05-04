@@ -12,6 +12,7 @@ BEGIN {
     warn "$$: loading @_ at $file $line";
     return $orig->(@_);
   }
+}
 
 # Start command line interface for application
 require Mojolicious::Commands;
