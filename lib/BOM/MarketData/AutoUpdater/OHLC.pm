@@ -222,7 +222,7 @@ sub verify_ohlc_update {
             $logger->info('Skipping OHLC verification for ' . $underlying->symbol . 'on a holiday');
             next;
         }
-        next if (not $underlying->use_official_ohlc or $underlying->submarket->name eq 'otc_index' or $underlying->submarket->name eq 'otc_stock') ;
+        next if (not $underlying->use_official_ohlc or $underlying->submarket->name eq 'otc_index' or $underlying->submarket->name eq 'otc_stock');
 
         if (my @filelines = read_file($db_file)) {
             $self->_check_file($underlying, @filelines);
