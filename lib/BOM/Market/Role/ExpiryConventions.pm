@@ -6,7 +6,8 @@ use warnings;
 
 use DateTime;
 use Date::Utility;
-use BOM::Market::Currency;
+use BOM::System::Chronicle;
+use Quant::Framework::Currency;
 use List::Util qw(min);
 
 # This returns number of days after the trade date which determine the delivery
@@ -60,7 +61,14 @@ sub _is_good_settlement_day {
         return;
     }
 
-    if (BOM::Market::Currency->new('USD')->has_holiday_on($date)) {
+    if (
+        Quant::Framework::Currency->new({
+                symbol           => 'USD',
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            }
+        )->has_holiday_on($date))
+    {
         return;
     }
 
