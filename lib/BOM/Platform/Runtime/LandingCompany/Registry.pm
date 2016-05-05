@@ -11,18 +11,6 @@ with 'MooseX::Role::Registry';
 
 =head1 METHODS
 
-=head2 instance
-
-Make it as a singleton
-
-=cut
-
-my $instance = __PACKAGE__->new();
-
-sub instance {
-    return $instance;
-}
-
 =head2 config_filename
 
 The default location of the YML file describing known server roles.
@@ -127,6 +115,18 @@ sub registry_fixup {
     $self->_registry_by_short($registry_by_short);
 
     return $registry;
+}
+
+=head2 instance
+
+Make it as a singleton
+
+=cut
+
+my $instance = __PACKAGE__->new();
+
+sub instance {
+  return $instance;
 }
 
 __PACKAGE__->meta->make_immutable;
