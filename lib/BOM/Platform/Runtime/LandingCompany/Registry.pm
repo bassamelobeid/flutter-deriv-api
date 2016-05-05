@@ -22,6 +22,7 @@ state $instance = __PACKAGE__->new();
 sub instance {
     return $intance;
 }
+
 =head2 config_filename
 
 The default location of the YML file describing known server roles.
