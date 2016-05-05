@@ -63,11 +63,11 @@ sub update_crossing_underlyings {
     my $update = '';
     foreach my $s (@all_symbols) {
         my $u = BOM::Market::Underlying->new($s);
-        if ($u->exchange->market_times()->{standard}->{daily_open}->seconds < 0) {
+        if ($u->calendar->market_times()->{standard}->{daily_open}->seconds < 0) {
             $update .=
                   "INSERT INTO feed.underlying_open_close VALUES ('$s', "
-                . $u->exchange->market_times()->{standard}->{daily_open}->seconds . ", "
-                . $u->exchange->market_times()->{standard}->{daily_close}->seconds . ");";
+                . $u->calendar->market_times()->{standard}->{daily_open}->seconds . ", "
+                . $u->calendar->market_times()->{standard}->{daily_close}->seconds . ");";
         }
     }
     BOM::Database::FeedDB::write_dbh()->do("
