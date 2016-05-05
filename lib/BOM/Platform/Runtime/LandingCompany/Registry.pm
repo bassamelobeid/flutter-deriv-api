@@ -20,7 +20,7 @@ Make it as a singleton
 my $instance = __PACKAGE__->new();
 
 sub instance {
-    return $intance;
+    return $instance;
 }
 
 =head2 config_filename
