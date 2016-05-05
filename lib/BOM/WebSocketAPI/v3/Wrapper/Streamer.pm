@@ -150,6 +150,7 @@ sub process_pricing_events {
         BOM::WebSocketAPI::Websocket_v3::_process_result($c, $results, 'proposal', $pricing_channel->{$serialized_args}->{$amount}->{args},
             undef, undef);
     }
+    return;
 }
 
 sub _pricing_channel {

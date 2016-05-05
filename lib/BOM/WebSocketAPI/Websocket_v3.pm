@@ -609,6 +609,7 @@ sub _process_result {
             {tags => ["rpc:$method"]});
 
     }
+    return;
 }
 
 sub _sanity_failed {
