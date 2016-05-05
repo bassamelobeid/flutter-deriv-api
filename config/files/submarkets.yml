@@ -148,7 +148,6 @@ otc_stock:
     market: stocks
     explanation: 'OTC Stocks'
     volatility_surface_type: "moneyness"
-    official_ohlc: 0
 
 asia_oceania_future:
     name: asia_oceania_future
