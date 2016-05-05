@@ -49,7 +49,7 @@ sub ticks_history {
         return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'));
     }
 
-    my $publish;
+    my ($uuid, $publish);
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
     if ($style eq 'ticks') {
         $publish = 'tick';
@@ -61,7 +61,7 @@ sub ticks_history {
     }
 
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $publish, $args)) {
+        if (not $uuid = _feed_channel($c, 'subscribe', $args->{ticks_history}, $publish, $args, 1)) {
             return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
         }
     }
@@ -72,6 +72,7 @@ sub ticks_history {
         sub {
             my $response = shift;
             if ($response and exists $response->{error}) {
+                _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args) if $uuid;
                 return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
             }
 
@@ -156,7 +157,7 @@ sub process_realtime_events {
     my %skip_duration_list = map { $_ => 1 } qw(s m h);
     my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
     my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
-    my $feed_channel_cache = $c->stash('feed_channle_cache');
+    my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
     foreach my $channel (keys %{$feed_channels_type}) {
         $channel =~ /(.*);(.*)/;
@@ -248,8 +249,9 @@ sub _feed_channel {
     my ($c, $subs, $symbol, $type, $args, $cache) = @_;
 
     my $uuid;
-    my $feed_channel      = $c->stash('feed_channel')      || {};
-    my $feed_channel_type = $c->stash('feed_channel_type') || {};
+    my $feed_channel       = $c->stash('feed_channel')       || {};
+    my $feed_channel_type  = $c->stash('feed_channel_type')  || {};
+    my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
     my $redis = $c->stash('redis');
     if ($subs eq 'subscribe') {
@@ -274,6 +276,8 @@ sub _feed_channel {
         $feed_channel->{$symbol} -= 1;
         my $args = $feed_channel_type->{"$symbol;$type"}->{args};
         delete $feed_channel_type->{"$symbol;$type"};
+        # delete cache on unsubscribe
+        delete $feed_channel_cache->{"$symbol;$type"};
         if ($feed_channel->{$symbol} <= 0) {
             my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
             $redis->unsubscribe([$channel_name], sub { });
