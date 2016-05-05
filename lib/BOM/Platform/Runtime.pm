@@ -179,7 +179,7 @@ sub _build_broker_codes {
 }
 
 sub _build_landing_companies {
-    return BOM::Platform::Runtime::LandingCompany::Registry->new();
+    return BOM::Platform::Runtime::LandingCompany::Registry->instance();
 }
 
 __PACKAGE__->meta->make_immutable;
