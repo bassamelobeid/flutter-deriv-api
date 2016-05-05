@@ -178,8 +178,9 @@ sub _build_broker_codes {
         broker_definitions => YAML::XS::LoadFile('/etc/rmg/broker_codes.yml'));
 }
 
+state $registry = BOM::Platform::Runtime::LandingCompany::Registry->new();
 sub _build_landing_companies {
-    return BOM::Platform::Runtime::LandingCompany::Registry->instance;
+    return $registry;
 }
 
 __PACKAGE__->meta->make_immutable;
