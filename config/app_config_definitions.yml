@@ -342,6 +342,11 @@ quants:
           isa: json_string
           global: 1
           default: '{"spreads": "extreme_risk", "asian": "high_risk"}'
+    custom_suspend_trading_conditions:
+      description: "Disable trading on the specified contract conditions. Available conditions[expiry_type|start_type|market_name|underlying_symbol|category_code]"
+      isa: json_string
+      global: 1
+      default: '[{"category_code":"callput"}]'
 system:
   description: "Various parameters determining core application functionality"
   isa: section
