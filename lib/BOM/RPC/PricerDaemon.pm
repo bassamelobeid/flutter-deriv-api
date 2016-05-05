@@ -32,7 +32,7 @@ sub _initialize {
 
     my $args = {};
 
-    $self->{params} = JSON::XS::decode_json($self->{data});
+    $self->{params} = {@{JSON::XS::decode_json($self->{data})}};
     my $r = BOM::Platform::Context::Request->new({language => $self->{params}->{language}});
     BOM::Platform::Context::request($r);
     return;
