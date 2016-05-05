@@ -8,7 +8,6 @@ use Scalar::Util qw(looks_like_number);
 use Text::CSV::Slurp;
 
 use Bloomberg::FileDownloader;
-use Quant::Framework::Currency;
 use BOM::Market::UnderlyingDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
