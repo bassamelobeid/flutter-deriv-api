@@ -4,7 +4,6 @@ use Mojo::Redis::Processor;
 use Parallel::ForkManager;
 use JSON;
 use BOM::System::RedisReplicated;
-use URI::redis;
 use BOM::RPC::PricerDaemon;
 
 use constant MAX_WORKERS => 2;
@@ -32,11 +31,13 @@ while (1) {
 
     my $next = $rp->next;
     if ($next) {
+        print "next [$next]\n";
+        my $p = BOM::RPC::PricerDaemon->new(data=>$rp->{data});
         $rp->on_trigger(
             sub {
                 my $payload = shift;
-                my $p = BOM::RPC::PricerDaemon->new(data=>$rp->{data})
-
+                my $result = $p->price;
+                print "res [$result]\n";
                 return $p->price;
             });
     } else {

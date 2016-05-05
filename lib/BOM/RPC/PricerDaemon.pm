@@ -41,7 +41,7 @@ sub _initialize {
 sub price {
     my $self = shift;
 
-    my $response = BOM::RPC::v3::Contract::send_ask($self->{params}->{pricing_args});
+    my $response = BOM::RPC::v3::Contract::send_ask($self->{params});
 
     return encode_json($response);
 }
