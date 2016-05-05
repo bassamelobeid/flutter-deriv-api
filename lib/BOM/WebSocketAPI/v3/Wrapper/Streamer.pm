@@ -78,7 +78,7 @@ sub ticks_history {
     return;
 }
 
-sub proposal {
+sub price_stream {
     my ($c, $args) = @_;
 
     my $symbol   = $args->{symbol};
@@ -88,6 +88,24 @@ sub proposal {
     } else {
         my $id;
         if ($args->{subscribe} == 1 and not $id = _pricing_channel($c, 'subscribe', $args)) {
+            return $c->new_error('proposal',
+                'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+        }
+        send_ask($c, $id, $args);
+    }
+    return;
+}
+
+sub proposal {
+    my ($c, $args) = @_;
+
+    my $symbol   = $args->{symbol};
+    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
+    if ($response and exists $response->{error}) {
+        return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
+    } else {
+        my $id;
+        if (not $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args)) {
             return $c->new_error('proposal',
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
