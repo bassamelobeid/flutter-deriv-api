@@ -154,7 +154,11 @@ print "<p>Inter-bank interest rates (from BBDL=Bloomberg Data License):</p>";
 print "<table><tr><th>Currency</th><th>1 week</th><th>1 month</th></tr>";
 
 foreach my $currency_symbol (qw(AUD GBP EUR USD HKD)) {
-    my $currency = BOM::Market::Currency->new($currency_symbol);
+    my $currency = Quant::Framework::Currency->new({
+        symbol           => $currency_symbol,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    });
     print '<tr><td>'
         . $currency_symbol
         . '</td><td>'
