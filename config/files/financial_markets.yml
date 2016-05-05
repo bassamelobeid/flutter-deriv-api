@@ -44,7 +44,7 @@ forex:
     volatility_surface_type: "delta"
     display_current_spot: 1
     suspicious_move: 0.05
-    outlier_tick: 0.1
+    outlier_tick: 0.05
     weekend_outlier_tick: 0.05
     deep_otm_threshold: 0.05
     display_name: "Forex"
