@@ -157,7 +157,8 @@ sub _pricing_channel {
     my ($c, $subs, $args) = @_;
 
     my %args_hash = %{$args};
-    $args_hash{amount} = 1000;
+    $args_hash{amount}   = 1000;
+    $args_hash{language} = $c->stash('language');
     my $serialized_args = _serialized_args(\%args_hash);
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
