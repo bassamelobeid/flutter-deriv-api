@@ -76,7 +76,7 @@ CREATE INDEX fmbo_account_id_bet_class_idx ON financial_market_bet_open USING bt
 
 CREATE INDEX fmbo_account_id_purchase_time_bet_class_idx ON financial_market_bet_open USING btree (account_id, date(purchase_time), bet_class);
 
-CREATE INDEX fmbo_account_id_purchase_time_idx ON financial_market_bet_open USING btree (account_id, purchase_time DESC);
+CREATE INDEX fmbo_account_id_purchase_time_id_idx ON financial_market_bet_open USING btree (account_id, purchase_time DESC, id DESC);
 
 CREATE INDEX fmbo_ready_to_sell_idx ON financial_market_bet_open USING btree (expiry_time);
 
