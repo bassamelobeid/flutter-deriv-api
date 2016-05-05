@@ -162,4 +162,12 @@ CREATE TRIGGER trig_ensure_fmb_id_exists
   EXECUTE PROCEDURE bet.ensure_fmb_id_exists();
 COMMENT ON TRIGGER trig_ensure_fmb_id_exists ON transaction IS 'Just a rudimentary check for a related financial_market_bet.id since we cannot use a conventional fkey';
 
+/* Dev boxes do not have these constraints, but they still exist in production and since we will be using this script to deploy, these "drops" are included here.
+Since the tables are empty and unused in production, we will not bother to setup the triggers at this time. */
+SET search_path = accounting, pg_catalog;
+
+ALTER TABLE ONLY end_of_day_open_positions DROP CONSTRAINT IF EXISTS eod_fmb_fk;
+ALTER TABLE ONLY expired_unsold DROP CONSTRAINT IF EXISTS fk_financial_market_bet_id;
+ALTER TABLE ONLY realtime_book DROP CONSTRAINT IF EXISTS fk_financial_market_bet_id;
+
 COMMIT;
