@@ -44,7 +44,7 @@ sub payout_currencies {
     if ($client) {
         $currencies = [$client->currency];
     } else {
-        my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica');
+        my $lc = BOM::Platform::Runtime::LandingCompany::Registry->instance->get('costarica');
         $currencies = $lc->legal_allowed_currencies;
     }
 
@@ -69,7 +69,7 @@ sub landing_company {
     my %landing_company = %{$c_config};
 
     $landing_company{id} = $country;
-    my $registry = BOM::Platform::Runtime::LandingCompany::Registry->new;
+    my $registry = BOM::Platform::Runtime::LandingCompany::Registry->instance;
     if (($landing_company{gaming_company} // '') ne 'none') {
         $landing_company{gaming_company} = __build_landing_company($registry->get($landing_company{gaming_company}));
     } else {
@@ -87,7 +87,7 @@ sub landing_company {
 sub landing_company_details {
     my $params = shift;
 
-    my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($params->{args}->{landing_company_details});
+    my $lc = BOM::Platform::Runtime::LandingCompany::Registry->instance->get($params->{args}->{landing_company_details});
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UnknownLandingCompany',
             message_to_client => localize('Unknown landing company.')}) unless $lc;
