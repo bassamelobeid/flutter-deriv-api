@@ -7,12 +7,15 @@ use lib "$FindBin::Bin/../lib";
 use Test::MockModule;
 use YAML::XS;
 use YAML;
+use Carp qw(confess);
 BEGIN {
   my $orig=\&YAML::XS::LoadFile;
   *YAML::XS::LoadFile=sub {
     my ($package, $file, $line) = caller;
     open(my $fh,">>", "/tmp/log.log");
     print $fh "$$: loading @_ at $file $line\n";
+    eval {confess()};
+    print $fh $@;
     close($fh);
     return $orig->(@_);
   };
@@ -22,6 +25,8 @@ BEGIN {
     my ($package, $file, $line) = caller;
     open(my $fh,">>", "/tmp/log.log");
     print $fh "$$: loading @_ at $file $line\n";
+    eval {confess()};
+    print $fh $@;
     close($fh);
     return $orig2->(@_);
   }
