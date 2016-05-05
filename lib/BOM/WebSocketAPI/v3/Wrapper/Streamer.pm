@@ -43,6 +43,9 @@ sub ticks {
     return;
 }
 
+# this sub is different from others as we subscribe to feed channel first
+# then call rpc, we cache the ticks from feed channel and when rpc response
+# comes then we merge cache data with rpc response
 sub ticks_history {
     my ($c, $args) = @_;
 
@@ -61,6 +64,7 @@ sub ticks_history {
         return $c->new_error('ticks_history', "InvalidStyle", $c->l('Style [_1] invalid', $style));
     }
 
+    # subscribe first with flag of cache passed as 1 to indicate to cache the feed data
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
         if (not $uuid = _feed_channel($c, 'subscribe', $args->{ticks_history}, $publish, $args, 1)) {
             return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
@@ -73,30 +77,35 @@ sub ticks_history {
         sub {
 
             my $channel = $args->{ticks_history} . ';' . $publish;
-            # if rpc response received remove the cache flag so that
             my $feed_channel_type = $c->stash('feed_channel_type') || {};
+
+            # if rpc response received remove the cache flag which was set during subscription
             delete $feed_channel_type->{$channel}->{cache} if exists $feed_channel_type->{$channel};
 
             my $response = shift;
             if ($response and exists $response->{error}) {
+                # cancel subscription if response has error
                 _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args) if $uuid;
                 return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
             }
 
             my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
+            # check for cached data
             if (exists $feed_channel_cache->{$channel} and scalar(keys %{$feed_channel_cache->{$channel}})) {
                 my $index;
+                # both history and candles have different structure, check rpc ticks_history sub
                 if ($response->{type} eq 'history') {
                     my @times  = @{$response->{data}->{history}->{times}};
                     my @prices = @{$response->{data}->{history}->{prices}};
 
                     foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
+                        # check if epoch is present in rpc response
                         $index = last_index { $times[$_] eq $epoch } @times;
                         # if no index means subscription response came before rpc response
                         # so update response with cached value
                         unless ($index) {
-                            push @{$response->{data}->{history}->{times}}, $epoch;
+                            push @times, $epoch;
                             # sort times so to find index where to push price
                             @times = sort @{$response->{data}->{history}->{times}};
                             # find last index again of pushed epoch
@@ -111,7 +120,9 @@ sub ticks_history {
                 } elsif ($response->{type} eq 'candles') {
                     my @candles = @{$response->{data}->{candles}};
                     foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
+                        # check if epoch exists in candles response
                         $index = last_index { $candles[$_]->{epoch} eq $epoch } @candles;
+                        # if not update the candles with cached data
                         unless ($index) {
                             splice @candles, $index, 0,
                                 {
