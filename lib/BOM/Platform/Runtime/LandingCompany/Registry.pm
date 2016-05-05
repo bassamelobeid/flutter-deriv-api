@@ -11,6 +11,17 @@ with 'MooseX::Role::Registry';
 
 =head1 METHODS
 
+=head2 instance
+
+Make it as a singleton
+
+=cut
+
+state $instance = __PACKAGE__->new();
+
+sub instance {
+    return $intance;
+}
 =head2 config_filename
 
 The default location of the YML file describing known server roles.
