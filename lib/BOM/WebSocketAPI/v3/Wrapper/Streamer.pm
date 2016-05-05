@@ -63,6 +63,7 @@ sub ticks_history {
 
             if (exists $args->{subscribe}) {
                 if ($args->{subscribe} eq '1') {
+                    $args->{granularity} = $response->{granularity} if $response->{granularity};
                     if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $response->{publish}, $args)) {
                         return $c->new_error('ticks_history',
                             'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
