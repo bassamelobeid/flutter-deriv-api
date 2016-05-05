@@ -17,7 +17,7 @@ Make it as a singleton
 
 =cut
 
-state $instance = __PACKAGE__->new();
+my $instance = __PACKAGE__->new();
 
 sub instance {
     return $intance;
