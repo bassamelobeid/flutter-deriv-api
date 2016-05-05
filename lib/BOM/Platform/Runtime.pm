@@ -114,11 +114,7 @@ sub _build_countries {
 }
 
 sub _build_countries_list {
-  open(my $fh,">>", "/tmp/log.log");
-  print $fh "$$: loading /home/git/regentmarkets/bom-platform/config/countries.yml at platform runtime \n";
-  close($fh);
- 
-  return YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+    return YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
 }
 
 sub financial_company_for_country {
@@ -169,10 +165,6 @@ sub _build_app_config {
 
 sub _build_website_list {
     my $self = shift;
-    open(my $fh,">>", "/tmp/log.log");
-    print $fh "$$: loading /home/git/regentmarkets/bom-platform/config/websites.yml at platform runtime \n";
-    close($fh);
-
     return BOM::Platform::Runtime::Website::List->new(
         broker_codes => $self->broker_codes,
         definitions  => YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml'),
@@ -180,11 +172,7 @@ sub _build_website_list {
 }
 
 sub _build_broker_codes {
-  my $self = shift;
-      open(my $fh,">>", "/tmp/log.log");
-  print $fh "$$: loading /etc/rmg/broker_codes.yml at platform runtime \n";
-  close($fh);
-
+    my $self = shift;
     return BOM::Platform::Runtime::Broker::Codes->new(
         landing_companies  => $self->landing_companies,
         broker_definitions => YAML::XS::LoadFile('/etc/rmg/broker_codes.yml'));
