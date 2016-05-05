@@ -99,11 +99,11 @@ copy across the system's execution environment.
 
 =cut
 
+state $instance = __PACKAGE__->new;
+
 sub instance {
     my ($class, $new) = @_;
-    state $instance;
     $instance = $new if (defined $new);
-    $instance ||= $class->new;
 
     return $instance;
 }
