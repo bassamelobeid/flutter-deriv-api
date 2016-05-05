@@ -317,11 +317,6 @@ quants:
       description: "Per client limits on turnover and payout"
       isa: section
       contains:
-        pricing_engine_limits:
-          description: "Pricing engine risk type definition. Defaults to low_risk if undefined"
-          isa: json_string
-          global: 1
-          default: '{"intraday_index": "high_risk", "tick_expiry": "extreme_risk", "asian": "high_risk"}'
         financial_market_limits:
           description: "Financial market risk type definition"
           isa: json_string
@@ -337,11 +332,26 @@ quants:
           isa: json_string
           global: 1
           default: '{"minor_pairs": "high_risk", "smart_fx": "high_risk"}'
-        contract_category_limits:
-          description: "Contract category risk type definition. If not defined it is take submarket limits"
-          isa: json_string
+        spreads_daily_profit:
+          description: "spreads daily profit limit"
+          isa: Str
           global: 1
-          default: '{"spreads": "extreme_risk", "asian": "high_risk"}'
+          default: 'extreme_risk'
+        tick_expiry_engine_daily_turnover:
+          description: "TickExpiry engine turnover limit."
+          isa: Str
+          global: 1
+          default: 'high_risk'
+        intraday_spot_index_turnover_limit:
+          description: "Intraday Index engine turnover limit."
+          isa: Str
+          global: 1
+          default: 'high_risk'
+        asian_daily_turnover:
+          description: "Asian engine turnover limit."
+          isa: Str
+          global: 1
+          default: 'high_risk'
     custom_suspend_trading_conditions:
       description: "Disable trading on the specified contract conditions. Available conditions[expiry_type|start_type|market_name|underlying_symbol|category_code]"
       isa: json_string
