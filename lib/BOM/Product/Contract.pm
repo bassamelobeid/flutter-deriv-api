@@ -9,8 +9,9 @@ use BOM::Market::Currency;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time);
 use List::Util qw(min max first);
-use List::MoreUtils qw(none);
+use List::MoreUtils qw(none all);
 use Scalar::Util qw(looks_like_number);
+use JSON qw(from_json);
 
 use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
@@ -2197,6 +2198,17 @@ sub _validate_offerings {
         };
     }
 
+    if (my @conditions = @{from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_suspend_trading_conditions)}) {
+        foreach my $condition (@conditions) {
+            if (all {$condition->{$_} eq $self->$_} keys %$condition) {
+                return {
+                    message           => format_error_string('manually disabled by quants'),
+                    message_to_client => localize('Trading is suspended at the moment.'),
+                };
+            }
+        }
+    }
+
     return;
 }
 
@@ -2797,6 +2809,19 @@ has is_sold => (
     isa     => 'Bool',
     default => 0
 );
+
+has [qw(underlying_symbol market_name)] => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_underlying_symbol {
+    return shift->underlying->symbol;
+}
+
+sub _build_market_name {
+    return shfit->market->name;
+}
 
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
