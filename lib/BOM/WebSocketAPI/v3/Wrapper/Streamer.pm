@@ -49,6 +49,23 @@ sub ticks_history {
         return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'));
     }
 
+    my $publish;
+    my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
+    if ($style eq 'ticks') {
+        $publish = 'tick';
+    } elsif ($style eq 'candles') {
+        $args->{granularity} = $args->{granularity} || 60;
+        $publish = $args->{granularity};
+    } else {
+        return $c->new_error('ticks_history', "InvalidStyle", $c->l('Style [_1] invalid', $style));
+    }
+
+    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
+        if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $publish, $args)) {
+            return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
+        }
+    }
+
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'ticks_history',
@@ -58,14 +75,6 @@ sub ticks_history {
                 return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
             }
 
-            if (exists $args->{subscribe}) {
-                if ($args->{subscribe} eq '1') {
-                    if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $response->{publish}, $args)) {
-                        return $c->new_error('ticks_history',
-                            'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
-                    }
-                }
-            }
             return {
                 msg_type => $response->{type},
                 %{$response->{data}}};
@@ -147,25 +156,35 @@ sub process_realtime_events {
     my %skip_duration_list = map { $_ => 1 } qw(s m h);
     my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
     my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
+    my $feed_channel_cache = $c->stash('feed_channle_cache');
+
     foreach my $channel (keys %{$feed_channels_type}) {
         $channel =~ /(.*);(.*)/;
         my $symbol    = $1;
         my $type      = $2;
         my $arguments = $feed_channels_type->{$channel}->{args};
+        my $cache     = $feed_channels_type->{$channel}->{cache};
 
         if ($type eq 'tick' and $m[0] eq $symbol) {
-            $c->send({
-                    json => {
-                        msg_type => 'tick',
-                        echo_req => $arguments,
-                        (exists $arguments->{req_id})
-                        ? (req_id => $arguments->{req_id})
-                        : (),
-                        tick => {
-                            id     => $feed_channels_type->{$channel}->{uuid},
-                            symbol => $symbol,
-                            epoch  => $m[1],
-                            quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
+            my $tick = {
+                id     => $feed_channels_type->{$channel}->{uuid},
+                symbol => $symbol,
+                epoch  => $m[1],
+                quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])};
+
+            if ($cache) {
+                $feed_channel_cache->{$channel}->{$m[1]} = $tick;
+            } else {
+                $c->send({
+                        json => {
+                            msg_type => 'tick',
+                            echo_req => $arguments,
+                            (exists $arguments->{req_id})
+                            ? (req_id => $arguments->{req_id})
+                            : (),
+                            tick => $tick
+                        }}) if $c->tx;
+            }
         } elsif ($type =~ /^pricing_table:/) {
             if ($chan eq BOM::RPC::v3::Japan::Contract::get_channel_name($arguments)) {
                 send_pricing_table($c, $feed_channels_type->{$channel}->{uuid}, $arguments, $message);
@@ -193,23 +212,32 @@ sub process_realtime_events {
         } elsif ($m[0] eq $symbol) {
             my $u = BOM::Market::Underlying->new($symbol);
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
-            $c->send({
-                    json => {
-                        msg_type => 'ohlc',
-                        echo_req => $arguments,
-                        (exists $arguments->{req_id}) ? (req_id => $arguments->{req_id})
-                        : (),
-                        ohlc => {
-                            id        => $feed_channels_type->{$channel}->{uuid},
-                            epoch     => $m[1],
-                            open_time => ($type and looks_like_number($type)) ? $m[1] - $m[1] % $type
-                            : $m[1] - $m[1] % 60,    #defining default granularity
-                            symbol      => $symbol,
-                            granularity => $type,
-                            open        => $u->pipsized_value($1),
-                            high        => $u->pipsized_value($2),
-                            low         => $u->pipsized_value($3),
-                            close       => $u->pipsized_value($4)}}}) if $c->tx;
+            my $ohlc = {
+                id        => $feed_channels_type->{$channel}->{uuid},
+                epoch     => $m[1],
+                open_time => ($type and looks_like_number($type))
+                ? $m[1] - $m[1] % $type
+                : $m[1] - $m[1] % 60,    #defining default granularity
+                symbol      => $symbol,
+                granularity => $type,
+                open        => $u->pipsized_value($1),
+                high        => $u->pipsized_value($2),
+                low         => $u->pipsized_value($3),
+                close       => $u->pipsized_value($4)};
+
+            if ($cache) {
+                $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
+            } else {
+                $c->send({
+                        json => {
+                            msg_type => 'ohlc',
+                            echo_req => $arguments,
+                            (exists $arguments->{req_id})
+                            ? (req_id => $arguments->{req_id})
+                            : (),
+                            ohlc => $ohlc
+                        }}) if $c->tx;
+            }
         }
     }
 
@@ -217,11 +245,9 @@ sub process_realtime_events {
 }
 
 sub _feed_channel {
-
-    my ($c, $subs, $symbol, $type, $args) = @_;
+    my ($c, $subs, $symbol, $type, $args, $cache) = @_;
 
     my $uuid;
-
     my $feed_channel      = $c->stash('feed_channel')      || {};
     my $feed_channel_type = $c->stash('feed_channel_type') || {};
 
@@ -236,8 +262,9 @@ sub _feed_channel {
         }
         $uuid = Data::UUID->new->create_str();
         $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{"$symbol;$type"}->{args} = $args if $args;
-        $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
+        $feed_channel_type->{"$symbol;$type"}->{args}  = $args if $args;
+        $feed_channel_type->{"$symbol;$type"}->{uuid}  = $uuid;
+        $feed_channel_type->{"$symbol;$type"}->{cache} = $cache || 0;
 
         my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
         $redis->subscribe([$channel_name], sub { });
