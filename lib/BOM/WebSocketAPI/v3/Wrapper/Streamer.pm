@@ -6,6 +6,7 @@ use warnings;
 use JSON;
 use Data::UUID;
 use Scalar::Util qw (looks_like_number);
+use List::MoreUtils qw(any last_index);
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Japan::Contract;
@@ -70,10 +71,61 @@ sub ticks_history {
         $c,
         'ticks_history',
         sub {
+
+            my $channel = $args->{ticks_history} . ';' . $publish;
+            # if rpc response received remove the cache flag so that
+            my $feed_channel_type = $c->stash('feed_channel_type') || {};
+            delete $feed_channel_type->{$channel}->{cache} if exists $feed_channel_type->{$channel};
+
             my $response = shift;
             if ($response and exists $response->{error}) {
                 _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args) if $uuid;
                 return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
+            }
+
+            my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
+
+            if (exists $feed_channel_cache->{$channel} and scalar(keys %{$feed_channel_cache->{$channel}})) {
+                my $index;
+                if ($response->{type} eq 'history') {
+                    my @times  = @{$response->{data}->{history}->{times}};
+                    my @prices = @{$response->{data}->{history}->{prices}};
+
+                    foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
+                        $index = last_index { $times[$_] eq $epoch } @times;
+                        # if no index means subscription response came before rpc response
+                        # so update response with cached value
+                        unless ($index) {
+                            push @{$response->{data}->{history}->{times}}, $epoch;
+                            # sort times so to find index where to push price
+                            @times = sort @{$response->{data}->{history}->{times}};
+                            # find last index again of pushed epoch
+                            $index = last_index { $times[$_] eq $epoch } @times;
+                            # add the quote to same index as epoch
+                            splice @prices, $index, 0, $feed_channel_cache->{$channel}->{$epoch}->{quote};
+
+                            $response->{data}->{history}->{times}  = \@times;
+                            $response->{data}->{history}->{prices} = \@prices;
+                        }
+                    }
+                } elsif ($response->{type} eq 'candles') {
+                    my @candles = @{$response->{data}->{candles}};
+                    foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
+                        $index = last_index { $candles[$_]->{epoch} eq $epoch } @candles;
+                        unless ($index) {
+                            splice @candles, $index, 0,
+                                {
+                                open  => $feed_channel_cache->{$channel}->{$epoch}->{open},
+                                close => $feed_channel_cache->{$channel}->{$epoch}->{close},
+                                epoch => $epoch,
+                                high  => $feed_channel_cache->{$channel}->{$epoch}->{high},
+                                low   => $feed_channel_cache->{$channel}->{$epoch}->{low}};
+                            $response->{data}->{candles} = \@candles;
+                        }
+                    }
+                }
+
+                delete $feed_channel_cache->{$channel};
             }
 
             return {
@@ -109,8 +161,8 @@ sub pricing_table {
     my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args);
 
     if ($response and exists $response->{error}) {
-        return $c->new_error('pricing_table', $response->{error}->{code},
-            $c->l($response->{error}->{message}, @{$response->{error}->{params} || []}));
+        return $c->new_error('pricing_table',
+            $response->{error}->{code}, $c->l($response->{error}->{message}, @{$response->{error}->{params} || []}));
     }
 
     my $symbol = $args->{symbol};
