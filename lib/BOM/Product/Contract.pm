@@ -5,7 +5,7 @@ use Moose;
 # very bad name, not sure why it needs to be
 # attached to Validatable.
 use MooseX::Role::Validatable::Error;
-use BOM::Market::Currency;
+use Quant::Framework::Currency;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time);
 use List::Util qw(min max first);
@@ -29,6 +29,7 @@ use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Utility::ErrorStrings qw( format_error_string );
 use BOM::Platform::Static::Config;
+use BOM::System::Chronicle;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -2020,8 +2021,10 @@ sub _build_discount_rate {
     my %args = (
         symbol => $self->currency,
         $self->underlying->for_date ? (for_date => $self->underlying->for_date) : (),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );
-    my $curr_obj = BOM::Market::Currency->new(%args);
+    my $curr_obj = Quant::Framework::Currency->new(%args);
 
     return $curr_obj->rate_for($self->timeinyears->amount);
 }
