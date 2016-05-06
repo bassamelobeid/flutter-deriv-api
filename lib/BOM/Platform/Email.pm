@@ -99,7 +99,7 @@ sub send_email {
                 });
         }
         catch {
-            warn("Error sending mail: ", $Mail::Sender::Error // $_);
+            warn("Error sending mail: ", $Mail::Sender::Error // $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
             0;
         } or return;
     } else {
@@ -144,7 +144,7 @@ sub send_email {
                 })->SendEnc($mail_message)->Close();
         }
         catch {
-            warn("Error sending mail [$subject]: ", $Mail::Sender::Error // $_);
+            warn("Error sending mail [$subject]: ", $Mail::Sender::Error // $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
             0;
         } or return;
     }
