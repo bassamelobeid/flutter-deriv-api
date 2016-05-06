@@ -105,6 +105,51 @@ subtest 'date start blackouts' => sub {
     ok !$c->underlying->eod_blackout_start, 'no end of day blackout';
     ok $c->is_valid_to_buy, 'valid to buy';
 
+    note('Testing date_start blackouts for frxUSDJPY tick expiry contract');
+    $bet_params            = {
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        currency     => 'USD',
+        payout       => 10,
+        barrier      => 'S0P',
+        date_pricing => $one_second_before_close,
+        date_start   => $one_second_before_close,
+        duration     => '5t',
+        current_tick => $usdjpy_weekday_tick,
+    };
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+    
+    my $friday_close = Date::Utility->('2016-04-01 21:00:00');
+    my $ten_minute_before_friday_close = $friday_close->minus_time_interval('10m');
+    my $three_minute_before_friday_close = $friday_close->minus_time_interval('3m');
+
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxUSDJPY',
+            recorded_date => $_,
+        })for ($ten_minute_before_friday_close  ,$three_minute_before_friday_close );
+    my $usdjpy_friday_ten_minute_before_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $ten_minute_before_friday_close->epoch
+    });
+
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $ten_minute_before_friday_close;
+    $bet_params->{current_tick} = $usdjpy_friday_ten_minute_before_tick;
+    ok $c->is_valid_to_buy, 'valid to buy';
+
+     my $usdjpy_friday_three_minute_before_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $three_minute_before_friday_close->epoch
+        });
+$DB::single=1;
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $three_minute_before_friday_close;
+    $bet_params->{current_tick} = $usdjpy_friday_three_minute_before_tick;
+    ok ! $c->is_valid_to_buy, 'not valid to buy';
+
+
     note('Testing date_start blackouts for HSI');
     my $hsi_open         = BOM::Market::Underlying->new('HSI')->calendar->opening_on($weekday);
     my $hsi_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
