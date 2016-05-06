@@ -126,11 +126,10 @@ sub ticks_history {
                         # if no epoch of cache is in response then update the candles with cached data
                         if ($index < 0) {
                             $need_sorting = 1;
-                            push @candles,
-                                {
+                            push @candles, {
                                 open  => $feed_channel_cache->{$channel}->{$epoch}->{open},
                                 close => $feed_channel_cache->{$channel}->{$epoch}->{close},
-                                epoch => $epoch,
+                                epoch => $epoch + 0,                                           # need to send as integer
                                 high  => $feed_channel_cache->{$channel}->{$epoch}->{high},
                                 low   => $feed_channel_cache->{$channel}->{$epoch}->{low}};
                         }
