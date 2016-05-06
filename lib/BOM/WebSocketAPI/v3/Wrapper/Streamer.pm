@@ -6,7 +6,7 @@ use warnings;
 use JSON;
 use Data::UUID;
 use Scalar::Util qw (looks_like_number);
-use List::MoreUtils qw(any last_index);
+use List::MoreUtils qw(last_index);
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Japan::Contract;
@@ -101,16 +101,16 @@ sub ticks_history {
 
                     foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
                         # check if epoch is present in rpc response
-                        $index = last_index { $times[$_] eq $epoch } @times;
+                        $index = last_index { $_ eq $epoch } @times;
                         # if no index means subscription response came before rpc response
                         # so update response with cached value
-                        unless ($index) {
+                        if ($index < 0) {
                             push @times, $epoch;
                             # sort times so to find index where to push price
                             @times = sort @times;
                             # find last index again of pushed epoch
-                            $index = last_index { $times[$_] eq $epoch } @times;
-                            # add the quote to same index as epoch
+                            $index = last_index { $_ eq $epoch } @times;
+                            # add the quote to prices array i.e at same index as epoch in times
                             splice @prices, $index, 0, $feed_channel_cache->{$channel}->{$epoch}->{quote};
 
                             $response->{data}->{history}->{times}  = \@times;
@@ -118,22 +118,25 @@ sub ticks_history {
                         }
                     }
                 } elsif ($response->{type} eq 'candles') {
+                    my $need_sorting;
                     my @candles = @{$response->{data}->{candles}};
                     foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
                         # check if epoch exists in candles response
-                        $index = last_index { $candles[$_]->{epoch} eq $epoch } @candles;
-                        # if not update the candles with cached data
-                        unless ($index) {
-                            splice @candles, $index, 0,
+                        $index = last_index { $_->{epoch} eq $epoch } @candles;
+                        # if no epoch of cache is in response then update the candles with cached data
+                        if ($index < 0) {
+                            $need_sorting = 1;
+                            push @candles,
                                 {
                                 open  => $feed_channel_cache->{$channel}->{$epoch}->{open},
                                 close => $feed_channel_cache->{$channel}->{$epoch}->{close},
                                 epoch => $epoch,
                                 high  => $feed_channel_cache->{$channel}->{$epoch}->{high},
                                 low   => $feed_channel_cache->{$channel}->{$epoch}->{low}};
-                            $response->{data}->{candles} = \@candles;
                         }
                     }
+                    @candles = sort { $a->{epoch} cmp $b->{epoch} } @candles if $need_sorting;
+                    $response->{data}->{candles} = \@candles;
                 }
 
                 delete $feed_channel_cache->{$channel};
@@ -304,6 +307,7 @@ sub process_realtime_events {
             }
         }
     }
+    $c->stash('feed_channel_cache', $feed_channel_cache);
 
     return;
 }
