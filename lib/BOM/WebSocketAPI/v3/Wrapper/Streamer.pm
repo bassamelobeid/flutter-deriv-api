@@ -182,6 +182,7 @@ sub _pricing_channel {
     my $uuid = Data::UUID->new->create_str();
     $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
     $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
+    $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
 
     $c->stash('pricing_channel' => $pricing_channel);
 
