@@ -81,6 +81,9 @@ sub _build_symbols_to_update {
             contract_category => 'ANY',
             exclude_disabled  => 1,
             submarket         => ['france', 'belgium', 'amsterdam', 'us_otc_stock', 'uk_otc_stock', 'ge_otc_stock', 'au_otc_stock']);
+        # Update vol of those plan to offer underlyings. This will be remove on yngshan/enable_stocks
+        push @symbols_to_update,
+            qw(USAAPL USAMZN USCT USFB USGE USGOOG USKO USMSFT USPFE USXOM UKBARC UKBATS UKGSK UKHSBA UKVOD DEALV DEBAYER DEDAI DESIE DEVOWGEN AUANZ AUBHP AUCBA AUMQG AUQAN);
     }
 
     return \@symbols_to_update;
