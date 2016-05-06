@@ -5,10 +5,12 @@ use Parallel::ForkManager;
 use JSON;
 use BOM::System::RedisReplicated;
 use BOM::RPC::PricerDaemon;
+use Getopt::Long;
 
-use constant MAX_WORKERS => 2;
+my $workers = 4;
+GetOptions ("workers=i" => \$workers,) ;
 
-my $pm = new Parallel::ForkManager(MAX_WORKERS);
+my $pm = new Parallel::ForkManager($workers);
 
 sub _dameon_redis {
     my $action = shift;
