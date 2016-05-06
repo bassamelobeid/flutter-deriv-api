@@ -76,7 +76,7 @@ sub authorize {
     unless ($client) {
         ## show login form
         return $c->render(
-            template => $c->session('__is_app_approved') == 1 ? 'loginbinary' : 'login',
+            template => $app_id eq 'binarycom' ? 'loginbinary' : 'login',
             layout   => 'default',
 
             app       => $app,
@@ -197,7 +197,7 @@ sub __login {
 
     if ($err) {
         $c->render(
-            template => $c->session('__is_app_approved') == 1 ? 'loginbinary' : 'login',
+            template => $app->{id} eq 'binarycom' ? 'loginbinary' : 'login',
             layout   => 'default',
 
             app       => $app,
