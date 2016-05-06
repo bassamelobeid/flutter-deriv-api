@@ -346,7 +346,7 @@ quants:
       description: "Disable trading on the specified contract conditions. Available conditions[expiry_type|start_type|market_name|underlying_symbol|category_code|barrier_category]"
       isa: json_string
       global: 1
-      default: '[{"category_code":"callput"}]'
+      default: '[]'
 system:
   description: "Various parameters determining core application functionality"
   isa: section
