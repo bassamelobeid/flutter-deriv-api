@@ -107,15 +107,18 @@ australia:
 belgium:
     name: belgium
     display_name: "Belgian Stocks"
+    offered: 0
     display_order: 1
     market: stocks
 amsterdam:
     name: amsterdam
+    offered: 0
     display_name: "Dutch Stocks"
     display_order: 2
     market: stocks
 france:
     name: france
+    offered: 0
     display_name: "French Stocks"
     display_order: 3
     market: stocks
