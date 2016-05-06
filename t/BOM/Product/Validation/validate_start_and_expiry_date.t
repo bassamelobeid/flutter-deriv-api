@@ -209,9 +209,11 @@ subtest 'date start blackouts' => sub {
     $c                          = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 01:30:00 to 01:40:00/, 'throws error');
-    $bet_params->{date_start} = $bet_params->{date_pricing} = $hsi_open->epoch + 601;
-    $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'valid to buy';
+    $bet_params->{date_pricing} = $hsi_open->plus_time_interval('1m');
+    $bet_params->{date_start}   = $hsi_open->epoch + 900;
+    $bet_params->{duration}     = '1h';
+    $c                          = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy forward starting contract on first 1 minute of opening';
     my $hsi_close = BOM::Market::Underlying->new('HSI')->calendar->closing_on($weekday);
     $hsi_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'HSI',
