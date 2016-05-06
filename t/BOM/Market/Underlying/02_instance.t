@@ -176,7 +176,7 @@ subtest 'all attributes on a variety of underlyings' => sub {
             is($underlying->spot_spread_size,       50, "special markets have default spot spread size");
         } else {
             like($underlying->quoted_currency_symbol, $looks_like_currency, 'Quoted currency symbol looks like a currency');
-            isa_ok($underlying->quoted_currency, 'BOM::Market::Currency', 'Quoted currency');
+            isa_ok($underlying->quoted_currency, 'Quant::Framework::Currency', 'Quoted currency');
             is($underlying->quoted_currency_symbol, $underlying->quoted_currency->symbol, 'Which has the same symbol');
             cmp_ok($underlying->spot_spread_size, '>',  0,   'Publically traded items have a spot spread size greater than 0');
             cmp_ok($underlying->spot_spread_size, '<=', 100, ' and less than 100');

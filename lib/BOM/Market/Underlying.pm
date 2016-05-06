@@ -40,8 +40,8 @@ use BOM::Market::Data::DatabaseAPI;
 use BOM::Platform::Context qw(request localize);
 use BOM::Market::Types;
 use BOM::Platform::Static::Config;
-use BOM::Market::Asset;
-use BOM::Market::Currency;
+use Quant::Framework::Asset;
+use Quant::Framework::Currency;
 use BOM::System::Chronicle;
 use BOM::Market::SubMarket::Registry;
 use BOM::Market;
@@ -218,7 +218,7 @@ has asset => (
 
 has quoted_currency => (
     is         => 'ro',
-    isa        => 'Maybe[BOM::Market::Currency]',
+    isa        => 'Maybe[Quant::Framework::Currency]',
     lazy_build => 1,
 );
 
@@ -868,9 +868,11 @@ sub _build_quoted_currency {
     my $self = shift;
 
     if ($self->quoted_currency_symbol) {
-        return BOM::Market::Currency->new({
-            symbol   => $self->quoted_currency_symbol,
-            for_date => $self->for_date,
+        return Quant::Framework::Currency->new({
+            symbol           => $self->quoted_currency_symbol,
+            for_date         => $self->for_date,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         });
     }
     return;
@@ -890,11 +892,13 @@ sub _build_asset {
           $self->submarket->asset_type eq 'currency'
         ? $self->submarket->asset_type
         : $self->market->asset_type;
-    my $which = $type eq 'currency' ? 'BOM::Market::Currency' : 'BOM::Market::Asset';
+    my $which = $type eq 'currency' ? 'Quant::Framework::Currency' : 'Quant::Framework::Asset';
 
     return $which->new({
-        symbol   => $self->asset_symbol,
-        for_date => $self->for_date,
+        symbol           => $self->asset_symbol,
+        for_date         => $self->for_date,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
 }
 
