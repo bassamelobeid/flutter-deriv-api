@@ -107,7 +107,7 @@ sub ticks_history {
                         unless ($index) {
                             push @times, $epoch;
                             # sort times so to find index where to push price
-                            @times = sort @{$response->{data}->{history}->{times}};
+                            @times = sort @times;
                             # find last index again of pushed epoch
                             $index = last_index { $times[$_] eq $epoch } @times;
                             # add the quote to same index as epoch
