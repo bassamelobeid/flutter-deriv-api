@@ -86,6 +86,7 @@ subtest 'date start blackouts' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->underlying->sod_blackout_start, 'no start of day blackout';
     ok $c->is_valid_to_buy, 'valid to buy';
+
     my $one_second_before_close = $weekday->plus_time_interval('1d')->minus_time_interval('1s');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
@@ -170,6 +171,29 @@ subtest 'date start blackouts' => sub {
     $c                          = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy at 3 mins before friday close';
     like(($c->primary_validation_error)[0]->{message_to_client}, qr/Trading is not available from 20:55:00 to 21:00:00/, 'throws error');
+
+    note('Testing date_start blackouts for frxUSDJPY on Monday ');
+
+    $bet_params->{date_start} = Date::Utility->new('2016-04-04');
+    $bet_params->{duration}   = '10m';
+    $c                        = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy at 10 mins forward starting on Monday morning';
+    like(($c->primary_validation_error)[0]->{message_to_client}, qr/Trading is not available from 00:00:00 to 00:10:00/, 'throws error');
+
+    $bet_params->{date_start} = Date::Utility->new('2016-04-05 00:00:00');
+    $bet_params->{duration}   = '10m';
+    $c                        = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy at 10 mins forward starting on Tuesday morning';
+
+    my $one_second_after_monday             = Date::Utility->new('2016-04-04 00:00:00');
+    my $usdjpy_one_second_after_monday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $one_second_after_monday->epoch
+    });
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $one_second_after_monday;
+    $bet_params->{current_tick} = $usdjpy_one_second_after_monday_tick;
+    $c                          = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy a start now contract on Monday morning';
 
     note('Testing date_start blackouts for HSI');
     my $hsi_open         = BOM::Market::Underlying->new('HSI')->calendar->opening_on($weekday);

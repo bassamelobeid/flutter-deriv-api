@@ -2489,7 +2489,7 @@ sub _build_date_start_blackouts {
             : ($self->is_forward_starting and $start->day_of_week == 1) ? '10m'
             :                                                             '';
         if ($sod_blackout) {
-            push @periods, [$sod->epoch, $sod->plus_time_interval($underlying->sod_blackout_start)->epoch];
+            push @periods, [$sod->epoch, $sod->plus_time_interval($sod_blackout)->epoch];
         }
     }
 
