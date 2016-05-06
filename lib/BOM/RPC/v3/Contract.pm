@@ -206,11 +206,13 @@ sub get_bid {
                 $response->{tick_count} = $contract->tick_count;
             }
 
-            if ($contract->two_barriers) {
-                $response->{high_barrier} = $contract->high_barrier->as_absolute;
-                $response->{low_barrier}  = $contract->low_barrier->as_absolute;
-            } elsif ($contract->barrier) {
-                $response->{barrier} = $contract->barrier->as_absolute;
+            if ($contract->entry_tick) {
+                if ($contract->two_barriers) {
+                    $response->{high_barrier} = $contract->high_barrier->as_absolute;
+                    $response->{low_barrier}  = $contract->low_barrier->as_absolute;
+                } elsif ($contract->barrier) {
+                    $response->{barrier} = $contract->barrier->as_absolute;
+                }
             }
         }
 
