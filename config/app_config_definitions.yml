@@ -331,29 +331,19 @@ quants:
           description: "Underlying risk type definition. If not defined it is take submarket limits"
           isa: json_string
           global: 1
-          default: '{"minor_pairs": "high_risk", "smart_fx": "high_risk"}'
+          default: '{}'
+        custom_limits:
+          description: "Custom limits specification. Available conditions[expiry_type|start_type|market_name|underlying_symbol|category_code|barrier_category]"
+          isa: json_string
+          global: 1
+          default: '[{"expiry_type": "tick","start_type": "spot","category_code": "callput","market_name":"forex","risk_type": "high_risk","name": "tick_expiry_engine_turnover_limit"},{"expiry_type": "intraday","start_type": "spot","market_name": "indices","category_code": "callput","risk_type": "high_risk","name": "intraday_spot_index_turnover_limit"},{"expiry_type": "tick", "category_code": "asian","risk_type": "high_risk","name": "asian_daily_turnover"}]'
         spreads_daily_profit:
           description: "spreads daily profit limit"
           isa: Str
           global: 1
           default: 'extreme_risk'
-        tick_expiry_engine_daily_turnover:
-          description: "TickExpiry engine turnover limit."
-          isa: Str
-          global: 1
-          default: 'high_risk'
-        intraday_spot_index_turnover_limit:
-          description: "Intraday Index engine turnover limit."
-          isa: Str
-          global: 1
-          default: 'high_risk'
-        asian_daily_turnover:
-          description: "Asian engine turnover limit."
-          isa: Str
-          global: 1
-          default: 'high_risk'
     custom_suspend_trading_conditions:
-      description: "Disable trading on the specified contract conditions. Available conditions[expiry_type|start_type|market_name|underlying_symbol|category_code]"
+      description: "Disable trading on the specified contract conditions. Available conditions[expiry_type|start_type|market_name|underlying_symbol|category_code|barrier_category]"
       isa: json_string
       global: 1
       default: '[{"category_code":"callput"}]'
