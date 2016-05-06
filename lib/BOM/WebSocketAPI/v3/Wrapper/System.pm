@@ -110,15 +110,18 @@ sub _forget_pricing_subscription {
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
         foreach my $channel (keys %{$pricing_channel}) {
-            foreach my $amount (keys %{$pricing_channel->{$channel}})
+            foreach my $amount (keys %{$pricing_channel->{$channel}}) {
+                next if $amount eq 'channel_name';
                 if ($pricing_channel->{$channel}->{$amount}->{uuid} eq $uuid) {
-                push @$removed_ids, $pricing_channel->{$channel}->{$amount}->{uuid};
-                delete $pricing_channel->{$channel}->{$amount};
+                    push @$removed_ids, $pricing_channel->{$channel}->{$amount}->{uuid};
+                    delete $pricing_channel->{$channel}->{$amount};
+                }
             }
-        }
-        if (scalar keys %{$pricing_channel->{$channel}} == 1) {
-            $c->stash('redis')->unsubscribe([$pricing_channel->{$channel}->{channel_name}]);
-            delete $pricing_channel->{$channel};
+
+            if (scalar keys %{$pricing_channel->{$channel}} == 1) {
+                $c->stash('redis')->unsubscribe([$pricing_channel->{$channel}->{channel_name}]);
+                delete $pricing_channel->{$channel};
+            }
         }
         $c->stash('pricing_channel' => $pricing_channel);
     }

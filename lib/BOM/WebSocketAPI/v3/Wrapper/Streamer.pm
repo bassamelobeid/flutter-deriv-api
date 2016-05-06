@@ -137,7 +137,7 @@ sub process_pricing_events {
     delete $response->{data};
     delete $response->{key};
 
-    foreach my $amount (keys $pricing_channel->{$serialized_args}) {
+    foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
         next if  $amount eq 'channel_name';
         my $results;
         if ($response and exists $response->{error}) {
@@ -147,10 +147,10 @@ sub process_pricing_events {
         } else {
             $results = {
                 msg_type => 'proposal',
-                proposal => $response->{proposal},
+                proposal => $response,
             };
-            $results->{ask_price} *= $amount / 1000;
-            $results->{id} *= $pricing_channel->{$serialized_args}->{$amount}->{uuid};
+            $results->{proposal}->{ask_price} *= $amount / 1000;
+            $results->{proposal}->{id} = $pricing_channel->{$serialized_args}->{$amount}->{uuid};
         }
         BOM::WebSocketAPI::Websocket_v3::_process_result($c, $results, 'proposal', $pricing_channel->{$serialized_args}->{$amount}->{args},
             undef, undef);
