@@ -213,12 +213,10 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->tick_expiry_engine_daily_turnover;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(
-                USD => sub { note "mocked app_config->quants->client_limits->tick_expiry_engine_daily_turnover->USD returning 149.99"; 149.99 });
+            note ("tick_expiry_engine_daily_turnover's risk type is high_risk");
+            note ("mocked high_risk USD limit to 149.99");
+            BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
+
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
 
@@ -257,12 +255,8 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->tick_expiry_engine_daily_turnover;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(
-                USD => sub { note "mocked app_config->quants->client_limits->tick_expiry_engine_daily_turnover->USD returning 150"; 150 });
+            note ("mocked high_risk USD limit to 150");
+            BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
@@ -294,7 +288,7 @@ subtest 'asian_daily_turnover_limit', sub {
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
-            underlying   => $underlying,
+            underlying   => 'R_100',
             bet_type     => 'ASIANU',
             currency     => 'USD',
             payout       => 100,
@@ -323,11 +317,9 @@ subtest 'asian_daily_turnover_limit', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->asian_daily_turnover;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(USD => sub { note "mocked app_config->quants->client_limits->asian_daily_turnover->USD returning 149.99"; 149.99 });
+            note ("asian_turnover_limit's risk type is high_risk");
+            note ("mocked high_risk USD limit to 149.99");
+            BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -368,11 +360,8 @@ subtest 'asian_daily_turnover_limit', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->asian_daily_turnover;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(USD => sub { note "mocked app_config->quants->client_limits->asian_daily_turnover->USD returning 150"; 150 });
+            note ("mocked high_risk USD limit to 150.00");
+            BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
@@ -408,8 +397,8 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             bet_type     => 'CALL',
             currency     => 'USD',
             payout       => 100,
-            date_start   => $now->epoch + 10,
-            date_expiry  => $now->epoch + 15,
+            date_start   => $now->epoch,
+            date_expiry  => $now->epoch + 15*60,
             current_tick => $tick,
             barrier      => 'S0P',
         });
@@ -420,6 +409,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             price       => 50.00,
             payout      => $contract->payout,
             amount_type => 'payout',
+            purchase_date => $contract->date_start,
         });
 
         my $error = do {
@@ -439,8 +429,9 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            note "mocked quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} returning 149.99";
-            BOM::Platform::Static::Config::quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} = 149.99;
+            note ("intraday_spot_index_turnover_limit's risk type is high_risk");
+            note ("mocked high_risk USD limit to 149.99");
+            BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -452,6 +443,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
                 price       => 50.00,
                 payout      => $contract->payout,
                 amount_type => 'payout',
+                purchase_date => $contract->date_start,
             });
 
             $txn->buy;
@@ -488,8 +480,8 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            note "mocked quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} returning 150";
-            BOM::Platform::Static::Config::quants->{client_limits}->{intraday_spot_index_turnover_limit}->{USD} = 150;
+            note ("mocked high_risk USD limit to 150.00");
+            BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
@@ -498,6 +490,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
                 price       => 50.00,
                 payout      => $contract->payout,
                 amount_type => 'payout',
+                purchase_date => $contract->date_start,
             });
 
             $txn->buy;
@@ -526,8 +519,6 @@ subtest 'smartfx_turnover_limit', sub {
             currency     => 'USD',
             payout       => 100,
             duration     => '5m',
-            tick_expiry  => 1,
-            tick_count   => 5,
             current_tick => $tick,
             barrier      => 'S0P',
         });
@@ -538,6 +529,7 @@ subtest 'smartfx_turnover_limit', sub {
             price       => 50.00,
             payout      => $contract->payout,
             amount_type => 'payout',
+            purchase_date => $contract->date_start,
         });
         my $error = do {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
@@ -549,14 +541,10 @@ subtest 'smartfx_turnover_limit', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->tick_expiry_engine_daily_turnover;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(
-                USD => sub { note "mocked app_config->quants->client_limits->tick_expiry_engine_daily_turnover->USD returning 299.99"; 299.99 });
-            note "mocked BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit}->{USD} returning 149.99";
-            BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit}->{USD} = 149.99;
+
+            note ("smart_fx_turnover_limit's risk type is high_risk");
+            note ("mocked high_risk USD limit to 149.99");
+            BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
 
@@ -567,6 +555,7 @@ subtest 'smartfx_turnover_limit', sub {
                 price       => 50.00,
                 payout      => $contract->payout,
                 amount_type => 'payout',
+                purchase_date => $contract->date_start,
             });
 
             $txn->buy;
@@ -575,10 +564,10 @@ subtest 'smartfx_turnover_limit', sub {
             skip 'no error', 6
                 unless isa_ok $error, 'Error::Base';
 
-            is $error->get_type, 'smartfx_turnover_limitExceeded', 'error is smartfx_turnover_limit';
+            is $error->get_type, 'smart_fx_turnover_limitExceeded', 'error is smart_fx_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg}, 'Exceeds turnover limit on smartfx_turnover_limit', 'mesg';
+            is $error->{-mesg}, 'Exceeds turnover limit on smart_fx_turnover_limit', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -596,15 +585,9 @@ subtest 'smartfx_turnover_limit', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->tick_expiry_engine_daily_turnover;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(
-                USD => sub { note "mocked app_config->quants->client_limits->tick_expiry_engine_daily_turnover->USD returning 300"; 300 });
 
-            note "mocked BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit}->{USD} returning 150";
-            BOM::Platform::Static::Config::quants->{client_limits}->{smartfx_turnover_limit}->{USD} = 150;
+            note ("mocked high_risk USD limit to 150.00");
+            BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
@@ -613,6 +596,7 @@ subtest 'smartfx_turnover_limit', sub {
                 price       => 50.00,
                 payout      => $contract->payout,
                 amount_type => 'payout',
+                purchase_date => $contract->date_start,
             });
 
             $txn->buy;
@@ -635,6 +619,12 @@ subtest 'spreads', sub {
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        my $now = time;
+        my $current_tick = BOM::Market::Data::Tick->new({
+            underlying => 'R_100',
+            epoch => $now,
+            quote => 100,
+            });
         my $contract = produce_contract({
             underlying       => 'R_100',
             bet_type         => 'SPREADU',
@@ -644,12 +634,16 @@ subtest 'spreads', sub {
             stop_profit      => 10,
             stop_type        => 'point',
             spread           => 2,
+            date_start => $now,
+            date_pricing => $now,
+            current_tick => $current_tick,
         });
 
         my $txn = BOM::Product::Transaction->new({
             client   => $cl,
             contract => $contract,
             price    => 20.00,
+            purchase_date => $contract->date_start,
         });
 
         my $error = do {
@@ -662,11 +656,9 @@ subtest 'spreads', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->spreads_daily_profit;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(USD => sub { note "mocked app_config->quants->client_limits->spreads_daily_profit->USD returning 59.00"; 59.00 });
+            note ("spread_daily_profit's risk type is high_risk");
+            note ("mocked high_risk USD limit to 59.00");
+            BOM::Platform::Static::Config::quants->{risk_profile}{extreme_risk}{turnover}{USD} = 59.00;
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -681,15 +673,23 @@ subtest 'spreads', sub {
                 stop_profit      => 10,
                 stop_type        => 'point',
                 spread           => 2,
+                date_start => $now,
+                date_pricing => $now,
+                current_tick => $current_tick,
             });
             $txn = BOM::Product::Transaction->new({
                 client   => $cl,
                 contract => $contract,
+                price => 20.00,
+                purchase_date => $contract->date_start,
             });
 
+        $DB::single=1;
+        1;
             $txn->buy;
         };
-
+        $DB::single=1;
+        1;
         SKIP: {
             skip 'no error', 6
                 unless isa_ok $error, 'Error::Base';
@@ -714,17 +714,16 @@ subtest 'spreads', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->spreads_daily_profit;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(USD => sub { note "mocked app_config->quants->client_limits->spreads_daily_profit->USD returning 60.00"; 60.00 });
+            note ("spread_daily_profit's risk type is high_risk");
+            note ("mocked high_risk USD limit to 60.00");
+            BOM::Platform::Static::Config::quants->{risk_profile}{extreme_risk}{turnover}{USD} = 60.00;
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
                 client   => $cl,
                 contract => $contract,
                 price    => 20,
+                purchase_date => $contract->date_start,
             });
 
             $txn->buy;

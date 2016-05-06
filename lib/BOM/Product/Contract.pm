@@ -2887,7 +2887,7 @@ sub turnover_limit_parameters {
             my @bet_types =
                 $custom->{contract_type} ? @{$custom->{contract_type}} : $custom->{contract_category} ? $fb->query($custom, ['contract_type']) : ();
             $args->{bet_type} = [map { {n => $_} } @bet_types] if @bet_types;
-            $args->{tick_expiry} = $self->tick_expiry;
+            $args->{tick_expiry} = $self->tick_expiry if $self->tick_expiry;
             push @limit_params,              $args;
             push @per_contract_payout_limit, $risk_profile->{$risk_type}{payout}{$curr};
         }
