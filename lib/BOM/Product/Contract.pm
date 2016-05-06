@@ -2483,8 +2483,10 @@ sub _build_date_start_blackouts {
     my $calendar   = $underlying->calendar;
     my $start      = $self->date_start;
 
-    if (my $sod = $calendar->opening_on($start) and my $sod_blackout = $underlying->sod_blackout_start) {
+    if (my $sod = $calendar->opening_on($start) ){
+        my $sod_blackout = ($self->is_forward_starting and $start->day_of_week ==1) ? '10m' : $underlying->sod_blackout_start;
         push @periods, [$sod->epoch, $sod->plus_time_interval($sod_blackout)->epoch];
+
     }
 
     my $end_of_trading = $calendar->closing_on($start);
