@@ -123,6 +123,7 @@ sub authorize {
             client    => $client,
             scopes    => \@scopes,
             l         => \&localize,
+            r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
     }
