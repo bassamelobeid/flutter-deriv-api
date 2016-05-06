@@ -109,12 +109,14 @@ sub instance {
 }
 
 my $countries = Locale::Country::Extra->new();
+
 sub _build_countries {
     my $self = shift;
-    return $countries
+    return $countries;
 }
 
 my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+
 sub _build_countries_list {
     return $countries_list;
 }
@@ -166,6 +168,7 @@ sub _build_app_config {
 }
 
 my $websites = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml');
+
 sub _build_website_list {
     my $self = shift;
     return BOM::Platform::Runtime::Website::List->new(
@@ -175,11 +178,13 @@ sub _build_website_list {
 }
 
 my $broker_codes = YAML::XS::LoadFile('/etc/rmg/broker_codes.yml');
+
 sub _build_broker_codes {
     my $self = shift;
     return BOM::Platform::Runtime::Broker::Codes->new(
         landing_companies  => $self->landing_companies,
-        broker_definitions => $broker_codes);
+        broker_definitions => $broker_codes
+    );
 }
 
 sub _build_landing_companies {

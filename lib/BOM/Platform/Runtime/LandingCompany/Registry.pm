@@ -126,7 +126,7 @@ Make it as a singleton
 my $instance = __PACKAGE__->new();
 
 sub instance {
-  return $instance;
+    return $instance;
 }
 
 __PACKAGE__->meta->make_immutable;
