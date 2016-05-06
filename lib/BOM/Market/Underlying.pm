@@ -2165,19 +2165,21 @@ sub _build_always_available {
 
 # Since we want the flexibility to change risk type of
 # a particular underlying, we will not have this in the yaml file!
-has risk_type => (
+has risk_profile => (
     is      => 'ro',
     lazy    => 1,
-    builder => '_build_risk_type',
+    builder => '_build_risk_profile',
 );
 
-sub _build_risk_type {
+sub _build_risk_profile {
     my $self = shift;
 
     my $limits = from_json(BOM::Platform::Runtime->instance->app_config->quants->client_limits->underlying_limits);
 
-    return $limits->{$self->symbol} if exists $limits->{$self->symbol};
-    return $self->submarket->risk_type;
+    return {
+        risk_type => $limits->{$self->symbol},
+        args      => {name => 'underlying_turnover_limit'}} if exists $limits->{$self->symbol};
+    return $self->submarket->risk_profile;
 }
 
 no Moose;
