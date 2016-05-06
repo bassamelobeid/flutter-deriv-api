@@ -2483,16 +2483,23 @@ sub _build_date_start_blackouts {
     my $calendar   = $underlying->calendar;
     my $start      = $self->date_start;
 
-    if (my $sod = $calendar->opening_on($start) ){
-        my $sod_blackout = ($self->is_forward_starting and $start->day_of_week ==1) ? '10m' : $underlying->sod_blackout_start;
-        push @periods, [$sod->epoch, $sod->plus_time_interval($sod_blackout)->epoch];
-
+    if (my $sod = $calendar->opening_on($start)) {
+        my $sod_blackout =
+              ($underlying->sod_blackout_start) ? $underlying->sod_blackout_start
+            : ($self->is_forward_starting and $start->day_of_week == 1) ? '10m'
+            :                                                             '';
+        if ($sod_blackout) {
+            push @periods, [$sod->epoch, $sod->plus_time_interval($underlying->sod_blackout_start)->epoch];
+        }
     }
 
     my $end_of_trading = $calendar->closing_on($start);
     if ($end_of_trading) {
         if ($self->is_intraday) {
-            my $eod_blackout = ($self->tick_expiry and ($underlying->resets_at_open or ($underlying->market->name eq 'forex' and $start->day_of_week ==5))) ? $self->max_tick_expiry_duration : $underlying->eod_blackout_start;
+            my $eod_blackout =
+                ($self->tick_expiry and ($underlying->resets_at_open or ($underlying->market->name eq 'forex' and $start->day_of_week == 5)))
+                ? $self->max_tick_expiry_duration
+                : $underlying->eod_blackout_start;
             push @periods, [$end_of_trading->minus_time_interval($eod_blackout)->epoch, $end_of_trading->epoch] if $eod_blackout;
         }
 
