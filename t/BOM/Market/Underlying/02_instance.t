@@ -172,7 +172,7 @@ subtest 'all attributes on a variety of underlyings' => sub {
             is($underlying->spot_spread_size,       50, "special markets have default spot spread size");
         } else {
             like($underlying->quoted_currency_symbol, $looks_like_currency, 'Quoted currency symbol looks like a currency');
-            isa_ok($underlying->quoted_currency, 'BOM::Market::Currency', 'Quoted currency');
+            isa_ok($underlying->quoted_currency, 'Quant::Framework::Currency', 'Quoted currency');
             is($underlying->quoted_currency_symbol, $underlying->quoted_currency->symbol, 'Which has the same symbol');
             cmp_ok($underlying->spot_spread_size, '>',  0,   'Publically traded items have a spot spread size greater than 0');
             cmp_ok($underlying->spot_spread_size, '<=', 100, ' and less than 100');
@@ -538,7 +538,8 @@ subtest 'all methods on a selection of underlyings' => sub {
         is($EURUSD->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
-    my $eod = Quant::Framework::TradingCalendar->new('NYSE', BOM::System::Chronicle::get_chronicle_reader())->closing_on(Date::Utility->new('2016-04-05'));
+    my $eod =
+        Quant::Framework::TradingCalendar->new('NYSE', BOM::System::Chronicle::get_chronicle_reader())->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
         my $worm = BOM::Market::Underlying->new($pair, $eod->minus_time_interval('1s'));
         is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');
