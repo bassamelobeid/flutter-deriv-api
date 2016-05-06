@@ -2595,7 +2595,7 @@ sub _validate_start_and_expiry_date {
     foreach my $blackout (@blackout_checks) {
         my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];
         foreach my $period (@$periods) {
-            if (first { $_ >= $period->[0] and $_ <= $period->[1] } @$epochs) {
+            if (first { $_ >= $period->[0] and $_ < $period->[1] } @$epochs) {
                 my $start = Date::Utility->new($period->[0]);
                 my $end   = Date::Utility->new($period->[1]);
                 if ($start->day_of_year == $end->day_of_year) {

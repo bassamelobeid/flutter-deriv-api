@@ -204,13 +204,13 @@ subtest 'date start blackouts' => sub {
     });
     $bet_params->{underlying}   = 'HSI';
     $bet_params->{current_tick} = $hsi_weekday_tick;
-    $bet_params->{date_start}   = $bet_params->{date_pricing} = $hsi_open->epoch + 600;
+    $bet_params->{date_start}   = $bet_params->{date_pricing} = $hsi_open->epoch + 599;
     $bet_params->{duration}     = '1h';
     $c                          = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 01:30:00 to 01:40:00/, 'throws error');
     $bet_params->{date_pricing} = $hsi_open->plus_time_interval('1m');
-    $bet_params->{date_start}   = $hsi_open->epoch + 900;
+    $bet_params->{date_start}   = $hsi_open->epoch + 600;
     $bet_params->{duration}     = '1h';
     $c                          = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy forward starting contract on first 1 minute of opening';
