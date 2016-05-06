@@ -27,7 +27,7 @@ subtest 'markets' => sub {
 
 subtest 'submarkets' => sub {
     my @expected = (
-        qw(americas amsterdam asia_oceania belgium energy europe_africa otc_index otc_stock france major_pairs metals middle_east minor_pairs random_daily random_index smart_fx)
+        qw(americas amsterdam asia_oceania belgium energy europe_africa otc_index us_otc_stock uk_otc_stock ge_otc_stock au_otc_stock france major_pairs metals middle_east minor_pairs random_daily random_index smart_fx)
     );
     lives_ok {
         my @submarkets = get_offerings_with_filter('submarket');
