@@ -252,8 +252,8 @@ sub _dbh {
     return $dbh;
 }
 
+state $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
 sub _config {
-    state $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
     return $config;
 }
 
