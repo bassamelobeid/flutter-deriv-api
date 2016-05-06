@@ -32,7 +32,7 @@ while (1) {
     my $next = $rp->next;
     if ($next) {
         print "next [$next]\n";
-        my $p = BOM::RPC::PricerDaemon->new(data=>$rp->{data});
+        my $p = BOM::RPC::PricerDaemon->new(data=>$rp->{data}, key=>$rp->_processed_channel);
         $rp->on_trigger(
             sub {
                 my $payload = shift;

@@ -17,7 +17,7 @@ sub new {
         $self = {@args};
     }
 
-    my @REQUIRED = qw(data);
+    my @REQUIRED = qw(data key);
 
     my @missing = grep { !$self->{$_} } @REQUIRED;
     croak "Error, missing parameters: " . join(',', @missing) if @missing;
@@ -44,7 +44,7 @@ sub price {
 
     my $response = BOM::RPC::v3::Contract::send_ask({args => $self->{params}});
     $response->{data} = $self->{data};
-
+    $response->{key}  = $self->{key};
     return encode_json($response);
 }
 
