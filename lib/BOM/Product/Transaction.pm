@@ -279,18 +279,6 @@ sub calculate_limits {
         $self->limits->{max_payout_per_symbol_and_bet_type} = $static_config->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
     }
 
-    my $turnover_limit;
-    if ($client->get_limit_for_daily_turnover) {
-        # if there's a client specific turnover limit set, we should respect that.
-        $turnover_limit = $client->get_limit_for_daily_turnover;
-    } elsif ($self->_is_highly_limited) {
-        $turnover_limit = $static_config->{extreme_risk}{turnover}{$currency};
-    } else {
-        $turnover_limit = $static_config->{$contract->underlying->risk_type}{turnover}{currency};
-    }
-
-    $self->limits->{max_turnover} = $turnover_limit;
-
     my $lim;
     defined($lim = $client->get_limit_for_daily_losses)
         and $self->limits->{max_losses} = $lim;
@@ -303,74 +291,15 @@ sub calculate_limits {
     defined($lim = $client->get_limit_for_30day_losses)
         and $self->limits->{max_30day_losses} = $lim;
 
-    if ($client->loginid !~ /^VRT/ and $contract->market->name eq 'forex' and $contract->is_intraday and not $contract->is_atm_bet) {
-        $lim = $self->limits->{intraday_forex_iv_action} = {
-            turnover         => $app_config->intraday_forex_iv_turnover->$currency,
-            realized_profit  => $app_config->intraday_forex_iv_realized_profit->$currency,
-            potential_profit => $app_config->intraday_forex_iv_potential_profit->$currency,
-        };
-        for (keys %$lim) {
-            delete $lim->{$_} if $lim->{$_} == 0;
-        }
+    my $turnover_limit;
+    if ($client->get_limit_for_daily_turnover) {
+        $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
     }
+
+    push @{$self->limits->{specific_turnover_limits}}, @{$contract->turnover_limit_parameters};
 
     if ($contract->is_spread) {
-        $self->limits->{spread_bet_profit_limit} = $app_config->spreads_daily_profit->$currency;
-    }
-
-    if ($contract->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            bet_type => [map { {n => $_} } 'CALL', 'PUT'],
-            name     => 'tick_expiry_engine_turnover_limit',
-            limit    => $app_config->tick_expiry_engine_daily_turnover->$currency,
-            symbols  => [
-                map { {n => $_} } get_offerings_with_filter(
-                    'underlying_symbol',
-                    {
-                        market      => 'forex',
-                        expiry_type => 'tick'
-                    })
-            ],
-            };
-    }
-
-    if ($contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            bet_type => [map { {n => $_} } 'CALL', 'PUT'],
-            name     => 'intraday_spot_index_turnover_limit',
-            limit    => $static_config->{intraday_spot_index_turnover_limit}->{$currency},
-            symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => 'indices'})],
-            };
-    }
-
-    if ($contract->underlying->submarket->name eq 'smart_fx') {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            name    => 'smartfx_turnover_limit',
-            limit   => $static_config->{smartfx_turnover_limit}->{$currency},
-            symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => 'smart_fx'})],
-            };
-    }
-
-    if ($contract->market->name eq 'stocks') {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            name    => 'stocks_turnover_limit',
-            limit   => $static_config->{stocks_turnover_limit}->{$currency},
-            symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => 'stocks'})],
-            };
-    }
-
-    if ($contract->category_code eq 'asian') {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            bet_type    => [map { {n => $_} } 'ASIANU', 'ASIAND'],
-            name        => 'asian_turnover_limit',
-            limit       => $app_config->asian_daily_turnover->$currency,
-            tick_expiry => 1,
-            };
+        $self->limits->{spread_bet_profit_limit} = BOM::Platform::Static::Config::quants->{risk_profile}{$app_config->spreads_daily_profit}{$currency};
     }
 
     return;
@@ -491,7 +420,6 @@ sub buy {    ## no critic (RequireArgUnpacking)
             qw/
             _validate_buy_transaction_rate
             _validate_iom_withdrawal_limit
-            _validate_per_contract_payout_limit
             _is_valid_to_buy
             _validate_date_pricing
             _validate_trade_pricing_adjustment
@@ -1463,27 +1391,6 @@ sub _validate_stake_limit {
     return;
 }
 
-sub _validate_per_contract_payout_limit {
-    my $self = shift;
-
-    my $contract_payout = $self->payout;
-    my $config          = BOM::Platform::Static::Config::quants->{client_limits};
-
-    my $limit = $self->_is_highly_limited ? $config->{extreme_risk}{payout} : $config->{$self->contract->underlying->risk_type}{payout};
-
-    if ($contract_payout > $limit) {
-        return Error::Base->cuss(
-            -type              => 'PayoutLimitExceeded',
-            -mesg              => $self->client->loginid . ' payout [' . $contract_payout . '] over custom limit[' . $limit . ']',
-            -message_to_client => ($limit == 0)
-            ? BOM::Platform::Context::localize('This contract is unavailable on this account.')
-            : BOM::Platform::Context::localize('This contract is limited to ' . to_monetary_number_format($limit) . ' payout on this account.'),
-        );
-    }
-
-    return;
-}
-
 =head2 $self->_validate_jurisdictional_restrictions
 
 Validates whether the client has provided his residence country
@@ -1826,27 +1733,6 @@ sub report {
         . sprintf("%30s: %s",   'Transaction Parameters', Dumper($self->transaction_parameters))
         . sprintf("%30s: %s\n", 'Transaction ID',         $self->transaction_id || -1)
         . sprintf("%30s: %s\n", 'Purchase Date',          $self->purchase_date->datetime_yyyymmdd_hhmmss);
-}
-
-# limited by extreme_risk limits
-sub _is_highly_limited {
-    my $self = shift;
-
-    my $contract = $self->contract;
-    my $ul       = $contract->underlying;
-    my $ct       = $contract->code;
-
-    my $extreme_list = BOM::Platform::Runtime->instance->app_config->quants->apply_extreme_risk_limits;
-    my ($markets, $symbols, $ctypes) = map { $extreme_list->$_ } qw(markets underlying_symbols contract_types);
-
-    if (   (@$markets and first { $_ eq $ul->market->name } @$markets)
-        or (@$symbols and first { $_ eq $ul->symbol } @$symbols)
-        or (@$ctypes  and first { $_ eq $ct } @$ctypes))
-    {
-        return 1;
-    }
-
-    return;
 }
 
 no Moose;

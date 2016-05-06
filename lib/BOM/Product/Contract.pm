@@ -27,7 +27,7 @@ use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
-use BOM::Product::Offerings qw( get_contract_specifics );
+use BOM::Product::Offerings qw( get_contract_specifics get_offerings_flyby);
 use BOM::Utility::ErrorStrings qw( format_error_string );
 use BOM::Platform::Static::Config;
 
@@ -1575,7 +1575,7 @@ has sell_tick => (
     default => undef,
 );
 
-has offering_specifics => (
+has [qw(offering_specifics barrier_category)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -1588,14 +1588,23 @@ sub _build_offering_specifics {
         contract_category => $self->category->code,
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
+        barrier_category  => $self->barrier_category,
     };
 
-    if ($self->category->code eq 'callput') {
-        $filter->{barrier_category} = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
-    } else {
-        $filter->{barrier_category} = $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
-    }
     return get_contract_specifics($filter);
+}
+
+sub _build_barrier_category {
+    my $self = shift;
+
+    my $barrier_category;
+    if ($self->category->code eq 'callput') {
+        $barrier_category = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
+    } else {
+        $barrier_category = $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
+    }
+
+    return $barrier_category;
 }
 
 =head2 _payout_limit
@@ -2198,9 +2207,14 @@ sub _validate_offerings {
         };
     }
 
-    if (my @conditions = @{from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_suspend_trading_conditions)}) {
+    my $condition_string = BOM::Platform::Runtime->instance->app_config->quants->custom_suspend_trading_conditions;
+    if ($condition_string) {
+        my @conditions = @{from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_suspend_trading_conditions)};
         foreach my $condition (@conditions) {
-            if (all {$condition->{$_} eq $self->$_} keys %$condition) {
+            # This might not be bullet proof.
+            # But nothing can be done if you messed up the conditions
+            my %reversed = reverse %$condition;
+            if (all { $reversed{$self->$_} } values %reversed) {
                 return {
                     message           => format_error_string('manually disabled by quants'),
                     message_to_client => localize('Trading is suspended at the moment.'),
@@ -2811,7 +2825,7 @@ has is_sold => (
 );
 
 has [qw(underlying_symbol market_name)] => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
@@ -2820,7 +2834,75 @@ sub _build_underlying_symbol {
 }
 
 sub _build_market_name {
-    return shfit->market->name;
+    return shift->market->name;
+}
+
+# will be set later.
+has maximum_payout_limit => (
+    is      => 'rw',
+    default => 0,
+);
+
+# This belongs here because different contracts can potentially
+# have different turnover limits now. This also makes this customizable.
+sub turnover_limit_parameters {
+    my $self = shift;
+
+    my $curr         = $self->currency;
+    my $fb           = get_offerings_flyby;
+    my $risk_profile = BOM::Platform::Static::Config::quants->{risk_profile};
+
+    my $base_profile = $self->underlying->risk_profile;
+    my $name         = delete $base_profile->{args}{name};
+    my @symbols      = (keys %{$base_profile->{args}}) ? $fb->query($base_profile->{args}, ['underlying_symbol']) : ($self->underlying->symbol);
+    my $limit        = $risk_profile->{$base_profile->{risk_type}}{turnover}{$curr};
+    my @per_contract_payout_limit = $risk_profile->{$base_profile->{risk_type}}{payout}{$curr};
+
+    my @limit_params = ({
+        symbols => [map { {n => $_} } @symbols],
+        name    => $name,
+        limit   => $limit,
+    });
+
+    my $custom_string = BOM::Platform::Runtime->instance->app_config->quants->client_limits->custom_limits;
+    my $custom_limits = $custom_string ? from_json($custom_string) : [];
+
+    foreach my $custom (@$custom_limits) {
+        my $risk_type = delete $custom->{risk_type} || 'extreme_risk';
+        my $args = {
+            name => (delete $custom->{name} || 'annonymous'),
+            limit => $risk_profile->{$risk_type}{turnover}{$curr},
+        };
+        if ($self->_match_conditions($custom)) {
+            $args->{symbols} = [map { {n => $_} } $fb->query($custom, ['underlying_symbol'])];
+            my @bet_types =
+                $custom->{contract_type} ? @{$custom->{contract_type}} : $custom->{contract_category} ? $fb->query($custom, ['contract_type']) : ();
+            $args->{bet_type} = [map { {n => $_} } @bet_types] if @bet_types;
+            $args->{tick_expiry} = $self->tick_expiry;
+            push @limit_params,              $args;
+            push @per_contract_payout_limit, $risk_profile->{$risk_type}{payout}{$curr};
+        }
+
+    }
+
+    $self->maximum_payout_limit(min(@per_contract_payout_limit));
+
+    return \@limit_params;
+}
+
+sub _match_conditions {
+    my ($self, $custom) = @_;
+
+    my %reversed = reverse %$custom;
+    if (all { $reversed{$self->$_} } values %reversed) {
+        # cleanup
+        $custom->{market}            = delete $custom->{market_name}   if $custom->{market_name};
+        $custom->{contract_category} = delete $custom->{category_code} if $custom->{category_code};
+        $custom->{contract_type}     = delete $custom->{code}          if $custom->{code};
+        return $custom;
+    }
+
+    return;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
