@@ -43,6 +43,7 @@ sub price {
     my $self = shift;
 
     my $response = BOM::RPC::v3::Contract::send_ask({args => $self->{params}});
+    $response->{data} = $self->{data};
 
     return encode_json($response);
 }
