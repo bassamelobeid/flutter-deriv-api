@@ -55,25 +55,26 @@ my $looks_like_currency = qr/^[A-Z]{3}/;
 # reason: if we only test existing symbols, attributes are set by config file,
 # and _build methods are not called.
 subtest 'what happens to an undefined symbol name' => sub {
-        my $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol');
-        is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
-        is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
+    my $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol');
+    is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
+    is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
 
-        warning_like {
-            is($symbol_undefined->market->name,     'config',   'an undefined symbol has correct market');
-        } [qr/^Unknown symbol/], "Expected warning is thrown";
-        is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
-        is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
-        is($symbol_undefined->display_decimals, 4,          'an undefined symbol has correct display_decimals');
+    warning_like {
+        is($symbol_undefined->market->name, 'config', 'an undefined symbol has correct market');
+    }
+    [qr/^Unknown symbol/], "Expected warning is thrown";
+    is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
+    is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
+    is($symbol_undefined->display_decimals, 4,          'an undefined symbol has correct display_decimals');
 
-        is($symbol_undefined->pipsized_value(100.1234567), 100.1235, 'an undefined symbol has correct pipsized_value');
+    is($symbol_undefined->pipsized_value(100.1234567), 100.1235, 'an undefined symbol has correct pipsized_value');
 
-        is($symbol_undefined->commission_level, 3,     'an undefined symbol has correct commission_level');
-        is($symbol_undefined->spot_spread_size, 50,    'an undefined symbol has correct spot_spread_size');
-        is($symbol_undefined->spot_spread,      0.005, 'an undefined symbol has correct spot_spread');
-        is($symbol_undefined->delay_amount,     0,     'an undefined symbol has correct delay_amount');
-        cmp_ok($symbol_undefined->outlier_tick,         '==', 0.10, 'an undefined symbol has correct outlier tick level');
-        cmp_ok($symbol_undefined->weekend_outlier_tick, '==', 0.10, 'an undefined symbol has correct outlier tick level');
+    is($symbol_undefined->commission_level, 3,     'an undefined symbol has correct commission_level');
+    is($symbol_undefined->spot_spread_size, 50,    'an undefined symbol has correct spot_spread_size');
+    is($symbol_undefined->spot_spread,      0.005, 'an undefined symbol has correct spot_spread');
+    is($symbol_undefined->delay_amount,     0,     'an undefined symbol has correct delay_amount');
+    cmp_ok($symbol_undefined->outlier_tick,         '==', 0.10, 'an undefined symbol has correct outlier tick level');
+    cmp_ok($symbol_undefined->weekend_outlier_tick, '==', 0.10, 'an undefined symbol has correct outlier tick level');
 };
 
 subtest 'display_decimals' => sub {
@@ -541,7 +542,8 @@ subtest 'all methods on a selection of underlyings' => sub {
         is($EURUSD->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
-    my $eod = Quant::Framework::TradingCalendar->new('NYSE', BOM::System::Chronicle::get_chronicle_reader())->closing_on(Date::Utility->new('2016-04-05'));
+    my $eod =
+        Quant::Framework::TradingCalendar->new('NYSE', BOM::System::Chronicle::get_chronicle_reader())->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
         my $worm = BOM::Market::Underlying->new($pair, $eod->minus_time_interval('1s'));
         is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');
@@ -772,7 +774,7 @@ subtest 'forward_starts_on' => sub {
 };
 
 subtest 'weekend outlier tick' => sub {
-    cmp_ok(BOM::Market::Underlying->new('frxUSDJPY')->weekend_outlier_tick, '==', 0.1, 'non quanto fx weekend outlier move is 0.05');
+    cmp_ok(BOM::Market::Underlying->new('frxUSDJPY')->weekend_outlier_tick, '==', 0.1,  'non quanto fx weekend outlier move is 0.05');
     cmp_ok(BOM::Market::Underlying->new('frxUSDSGD')->weekend_outlier_tick, '==', 0.1,  'quanto fx weekend outlier move is 0.1');
     cmp_ok(BOM::Market::Underlying->new('frxXAUUSD')->weekend_outlier_tick, '==', 0.05, 'commodities weekend outlier move is 0.05');
     cmp_ok(
