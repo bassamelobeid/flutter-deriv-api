@@ -18,10 +18,11 @@ use lib abs_path(dirname(__FILE__));
 use BloombergSurfaces;
 use ClarkSurfaces;
 
-use BOM::Market::Currency;
-use BOM::Market::Exchange;
+use Quant::Framework::Currency;
 use BOM::MarketData::VolSurface::Delta;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
+use Quant::Framework::Exchange;
+use BOM::System::Chronicle;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -34,10 +35,22 @@ my $tabular = (scalar @ARGV and $ARGV[0] eq 'tabular');
 
 # Clear all holidays and weights before preceding, as the
 # surfaces tested against did not take any into account.
-BOM::Market::Currency->new('EUR');
-BOM::Market::Currency->new('USD');
-BOM::Market::Currency->new('JPY');
-BOM::Market::Exchange->new('FOREX');
+Quant::Framework::Currency->new({
+    symbol           => 'EUR',
+    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+});
+Quant::Framework::Currency->new({
+    symbol           => 'USD',
+    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+});
+Quant::Framework::Currency->new({
+    symbol           => 'JPY',
+    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+});
+Quant::Framework::Exchange->new('FOREX');
 
 my $bbss     = BloombergSurfaces->new(relative_data_dir => 'interpolation');
 my $clss     = ClarkSurfaces->new;
