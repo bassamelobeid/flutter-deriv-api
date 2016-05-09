@@ -110,6 +110,8 @@ sub _serialized_args {
 sub process_pricing_events {
     my ($c, $message, $chan) = @_;
 
+    return if not $message;
+
     my $response        = decode_json($message);
     my $serialized_args = $response->{data};
 
