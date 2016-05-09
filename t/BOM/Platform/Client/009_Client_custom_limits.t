@@ -16,7 +16,7 @@ my $account_balance_limit = $client->get_limit({'for' => 'account_balance'});
 is($account_balance_limit, 300000, 'balance limit = 300000');
 
 my $daily_turnover_limit = $client->get_limit({'for' => 'daily_turnover'});
-ok !$daily_turnover_limit, 'turnover limit is undefined in client level if not set';
+is($daily_turnover_limit, 500000, '50000 by default');
 
 my $payout_limit = $client->get_limit({'for' => 'payout'});
 is($payout_limit, 100000, 'open positions payout limit = 100000');
