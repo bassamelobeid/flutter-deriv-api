@@ -53,7 +53,7 @@ sub ticks_history {
         return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'));
     }
 
-    my ($uuid, $publish);
+    my $publish;
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
     if ($style eq 'ticks') {
         $publish = 'tick';
@@ -64,14 +64,7 @@ sub ticks_history {
         return $c->new_error('ticks_history', "InvalidStyle", $c->l('Style [_1] invalid', $style));
     }
 
-    # subscribe first with flag of cache passed as 1 to indicate to cache the feed data
-    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        if (not $uuid = _feed_channel($c, 'subscribe', $args->{ticks_history}, $publish, $args, $callback, 1)) {
-            return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
-        }
-    }
-
-    my $callback = {
+    my $callback = sub {
         BOM::WebSocketAPI::Websocket_v3::rpc(
             $c,
             'ticks_history',
@@ -85,7 +78,7 @@ sub ticks_history {
                 my $response = shift;
                 if ($response and exists $response->{error}) {
                     # cancel subscription if response has error
-                    _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args) if $uuid;
+                    _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args);
                     return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
                 }
 
@@ -147,6 +140,15 @@ sub ticks_history {
             },
             {args => $args});
     };
+
+    # subscribe first with flag of cache passed as 1 to indicate to cache the feed data
+    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
+        if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $publish, $args, $callback, 1)) {
+            return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
+        }
+    } else {
+        &$callback;
+    }
 
     return;
 }
