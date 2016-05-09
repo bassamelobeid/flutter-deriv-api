@@ -158,7 +158,7 @@ sub buy_multiple_bets {
         db           => db,
     });
     my $res = $fmb->batch_buy_bet;
-    note explain [$res];
+    # note explain [$res];
     return $res;
 }
 
@@ -1520,7 +1520,7 @@ subtest 'batch_buy', sub {
 
     lives_ok {
         my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
-        note explain $res;
+        # note explain $res;
 
         my %notifications;
         while (my $notify = $listener->pg_notifies) {
