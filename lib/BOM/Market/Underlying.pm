@@ -665,7 +665,7 @@ sub _build_calendar {
     $self->_exchange_refreshed(time);
     return Quant::Framework::TradingCalendar->new(
         $self->exchange_name,
-        BOM::System::Chronicle::get_chronicle_reader(),
+        BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         BOM::Platform::Context::request()->language,
         $self->for_date
     );
@@ -871,7 +871,7 @@ sub _build_quoted_currency {
         return Quant::Framework::Currency->new({
             symbol           => $self->quoted_currency_symbol,
             for_date         => $self->for_date,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         });
     }
@@ -897,7 +897,7 @@ sub _build_asset {
     return $which->new({
         symbol           => $self->asset_symbol,
         for_date         => $self->for_date,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
 }
@@ -1081,7 +1081,7 @@ sub dividend_rate_for {
     if ($self->market->name eq 'volidx') {
         my $div = Quant::Framework::Dividend->new({
             symbol           => $self->symbol,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         });
         my @rates = values %{$div->rates};
@@ -1119,7 +1119,7 @@ sub get_discrete_dividend_for_period {
     my %valid_dividends;
     my $discrete_points = Quant::Framework::Dividend->new(
         symbol           => $self->asset->symbol,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     )->discrete_points;
 
@@ -1301,7 +1301,7 @@ sub is_in_quiet_period {
         map {
             $_ => Quant::Framework::TradingCalendar->new(
                 $_,
-                BOM::System::Chronicle::get_chronicle_reader(),
+                BOM::System::Chronicle::get_chronicle_reader($self->for_date),
                 BOM::Platform::Context::request()->language,
                 $self->for_date
                 )
@@ -2027,7 +2027,7 @@ sub _build_corporate_actions {
 
     my $corp = Quant::Framework::CorporateAction->new(
         symbol           => $self->symbol,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
 
     my $available_actions = $corp->actions;
