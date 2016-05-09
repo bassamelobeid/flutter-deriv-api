@@ -93,28 +93,41 @@ use Data::Chronicle::Writer;
 
 sub get_chronicle_writer {
     state $redis = BOM::System::RedisReplicated::redis_write();
-    my $dbh = _dbh();
 
     state $instance;
     $instance //= Data::Chronicle::Writer->new(
         cache_writer => $redis,
-        db_handle    => $dbh
+        db_handle    => _dbh(),
     );
 
     return $instance;
 }
 
 sub get_chronicle_reader {
+    #if for_date is specified, then this chronicle_reader will be used for historical data fetching, so it needs a database connection
+    my $for_date = shift;
     state $redis = BOM::System::RedisReplicated::redis_read();
-    my $dbh = _dbh();
 
-    state $instance;
-    $instance //= Data::Chronicle::Reader->new(
+    #historical instance will be used for fetching historical chronicle data (e.g. back-testing)
+    state $historical_instance;
+    #live_instance will be used for live pricing (normal website operations)
+    state $live_instance;
+
+    if ($for_date) {
+        $historical_instance //= Data::Chronicle::Reader->new(
+            cache_reader => $redis,
+            db_handle    => _dbh(),
+        );
+
+        return $historical_instance;
+    }
+
+    #if for_date is not specified, we are doing live_pricing, so no need to send database handler
+    $live_instance //= Data::Chronicle::Reader->new(
         cache_reader => $redis,
-        db_handle    => $dbh
     );
 
-    return $instance;
+    return $live_instance;
 }
 
 =head3 C<< set("category1", "name1", $value1)  >>
