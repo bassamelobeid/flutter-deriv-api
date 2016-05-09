@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-package BOM::Feed::TickAgg;
+package BOM::Market::Script::TickAgg;
 
 use Moose;
 with 'App::Base::Daemon';
@@ -10,7 +10,6 @@ use List::Util qw(max);
 use Parallel::ForkManager;
 use Time::HiRes qw(time sleep);
 
-use BOM::Feed::Client;
 use BOM::Market::AggTicks;
 use BOM::Market::Underlying;
 use BOM::Market::UnderlyingDB;
@@ -91,7 +90,7 @@ __PACKAGE__->meta->make_immutable;
 package main;
 use strict;
 
-exit BOM::Feed::TickAgg->new({
+exit BOM::Market::Script::TickAgg->new({
         user  => 'nobody',
         group => 'nogroup',
     })->run;
