@@ -152,7 +152,7 @@ sub process_pricing_events {
             };
             $results->{proposal}->{ask_price} *= $amount / 1000;
             $results->{proposal}->{ask_price} = roundnear(0.01, $results->{proposal}->{ask_price});
-            if (not exist $results->{proposal}->{spread}) {
+            if (not exists $results->{proposal}->{spread}) {
                 $results->{proposal}->{display_value} *= $amount / 1000;
                 $results->{proposal}->{display_value} = roundnear(0.01, $results->{proposal}->{display_value});
 
