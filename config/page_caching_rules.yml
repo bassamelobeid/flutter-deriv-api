@@ -22,6 +22,9 @@
 "/user/logintrouble":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/cashier/payment_agent_list":
+  header:
+    Cache-Control: "public, max-age=1000"
 "/legal/us_patents":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
