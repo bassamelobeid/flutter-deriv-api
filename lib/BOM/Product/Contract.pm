@@ -2483,15 +2483,24 @@ sub _build_date_start_blackouts {
     my $calendar   = $underlying->calendar;
     my $start      = $self->date_start;
 
-    if (my $sod = $calendar->opening_on($start) and my $sod_blackout = $underlying->sod_blackout_start) {
-        push @periods, [$sod->epoch, $sod->plus_time_interval($sod_blackout)->epoch];
+    # We need to set sod_blackout_start for forex on Monday morning because otherwise, if there is no tick ,it will always take Friday's last tick and trigger the missing feed check
+    if (my $sod = $calendar->opening_on($start)) {
+        my $sod_blackout =
+              ($underlying->sod_blackout_start) ? $underlying->sod_blackout_start
+            : ($underlying->market->name eq 'forex' and $self->is_forward_starting and $start->day_of_week == 1) ? '10m'
+            :                                                                                                      '';
+        if ($sod_blackout) {
+            push @periods, [$sod->epoch, $sod->plus_time_interval($sod_blackout)->epoch];
+        }
     }
 
     my $end_of_trading = $calendar->closing_on($start);
     if ($end_of_trading) {
         if ($self->is_intraday) {
             my $eod_blackout =
-                ($self->tick_expiry and $underlying->resets_at_open) ? $self->max_tick_expiry_duration : $underlying->eod_blackout_start;
+                ($self->tick_expiry and ($underlying->resets_at_open or ($underlying->market->name eq 'forex' and $start->day_of_week == 5)))
+                ? $self->max_tick_expiry_duration
+                : $underlying->eod_blackout_start;
             push @periods, [$end_of_trading->minus_time_interval($eod_blackout)->epoch, $end_of_trading->epoch] if $eod_blackout;
         }
 
@@ -2587,7 +2596,7 @@ sub _validate_start_and_expiry_date {
     foreach my $blackout (@blackout_checks) {
         my ($epochs, $periods, $message_to_client) = @{$blackout}[0 .. 2];
         foreach my $period (@$periods) {
-            if (first { $_ >= $period->[0] and $_ <= $period->[1] } @$epochs) {
+            if (first { $_ >= $period->[0] and $_ < $period->[1] } @$epochs) {
                 my $start = Date::Utility->new($period->[0]);
                 my $end   = Date::Utility->new($period->[1]);
                 if ($start->day_of_year == $end->day_of_year) {
