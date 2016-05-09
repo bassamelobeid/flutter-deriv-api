@@ -113,12 +113,6 @@ sub _init {
     initialize_symbol_dividend "R_100",   0;
     initialize_symbol_dividend "RDBULL",  -35;
     initialize_symbol_dividend "RDBEAR",  20;
-    initialize_symbol_dividend "RDSUN",   0;
-    initialize_symbol_dividend "RDMOON",  0;
-    initialize_symbol_dividend "RDMARS",  0;
-    initialize_symbol_dividend "RDVENUS", 0;
-    initialize_symbol_dividend "RDYANG",  -35;
-    initialize_symbol_dividend "RDYIN",   20;
 
     BOM::System::Chronicle::set(
         'interest_rates',
