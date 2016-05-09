@@ -2835,7 +2835,7 @@ has turnover_limit_parameters => (
     is => 'rw',
 );
 
-has [q(maximum_payout_limit risk_type)] => (
+has [qw(maximum_payout_limit risk_type)] => (
     is         => 'ro',
     lazy_build => 1,
 );
