@@ -21,6 +21,15 @@ BEGIN {
 
 =head1 METHODS
 
+=head2 new
+
+=cut
+
+sub new {
+  my $class = shift;
+  return bless {}, $class;
+}
+
 =head2 get
 
 =cut
