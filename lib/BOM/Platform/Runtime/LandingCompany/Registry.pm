@@ -62,7 +62,7 @@ sub get {
 #}
 #
 #
-sub all_currencies{
+sub all_currencies {
     return @all_currencies;
 }
 #sub all_currencies {
