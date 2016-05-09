@@ -98,24 +98,6 @@ sub price_stream {
     return;
 }
 
-sub proposal {
-    my ($c, $args) = @_;
-
-    my $symbol   = $args->{symbol};
-    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
-    if ($response and exists $response->{error}) {
-        return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
-    } else {
-        my $id;
-        if (not $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args)) {
-            return $c->new_error('proposal',
-                'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
-        }
-        send_ask($c, $id, $args);
-    }
-    return;
-}
-
 sub _serialized_args {
     my $h = shift;
     my @a = ();
@@ -183,7 +165,23 @@ sub _pricing_channel {
         return;
     }
 
-    my $uuid;
+    my %skip_duration_list = map { $_ => 1 } qw(s m h);
+    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
+    my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
+
+    my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
+    my $atm_contract = ($args->{contract_type} =~ /^(CALL|PUT)$/ and not $args->{barrier}) ? 1 : 0;
+    my $fixed_expiry = $args->{date_expiry} ? 1 : 0;
+    my $skip_tick_expiry =
+        ($skip_symbols and $skip_type_list{$args->{contract_type}} and $args->{duration_unit} eq 't');
+    my $skip_intraday_atm_non_fixed_expiry =
+        ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_contract and not $fixed_expiry);
+
+    my $uuid = Data::UUID->new->create_str();
+    if ($skip_tick_expiry or $skip_intraday_atm_non_fixed_expiry) {
+        return $uuid;
+    }
+
     if (not $pricing_channel->{$serialized_args}) {
         my $rp = Mojo::Redis::Processor->new({
             'write_conn' => BOM::System::RedisReplicated::redis_write,
@@ -194,7 +192,6 @@ sub _pricing_channel {
         $rp->send();
         $c->stash('redis')->subscribe([$rp->_processed_channel], sub { });
 
-        $uuid                                                           = Data::UUID->new->create_str();
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
         $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
@@ -202,6 +199,24 @@ sub _pricing_channel {
         $c->stash('pricing_channel' => $pricing_channel);
     }
     return $uuid;
+}
+
+sub proposal {
+    my ($c, $args) = @_;
+
+    my $symbol   = $args->{symbol};
+    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
+    if ($response and exists $response->{error}) {
+        return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
+    } else {
+        my $id;
+        if (not $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args)) {
+            return $c->new_error('proposal',
+                'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+        }
+        send_ask($c, $id, $args);
+    }
+    return;
 }
 
 sub pricing_table {
