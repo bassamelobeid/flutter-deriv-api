@@ -2021,7 +2021,7 @@ sub _build_discount_rate {
     my %args = (
         symbol => $self->currency,
         $self->underlying->for_date ? (for_date => $self->underlying->for_date) : (),
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );
     my $curr_obj = Quant::Framework::Currency->new(%args);
