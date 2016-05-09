@@ -15,7 +15,6 @@ use Moose;
 use namespace::autoclean;
 use BOM::Utility::Log4perl qw( get_logger );
 use Carp;
-use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Runtime::Broker;
 
 =head1 METHODS
