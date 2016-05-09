@@ -68,6 +68,16 @@ sub logout {
                 action      => 'logout',
             });
             $user->save;
+
+            if ($params->{token_type} eq 'oauth_token') {
+                # revoke tokens for user per app_id
+                my $oauth  = BOM::Database::Model::OAuth->new;
+                my $app_id = $oauth->get_app_id_by_token($params->{token});
+
+                foreach my $c1 ($user->clients) {
+                    $oauth->revoke_tokens_by_loginid_app($c1->loginid, $app_id);
+                }
+            }
         }
         BOM::System::AuditLog::log("user logout", "$email,$loginid");
     }
@@ -77,7 +87,6 @@ sub logout {
         my $session = BOM::Platform::SessionCookie->new({token => $params->{token}});
         $session->end_session if $session;
     }
-
     return {status => 1};
 }
 

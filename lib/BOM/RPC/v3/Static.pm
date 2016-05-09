@@ -6,6 +6,7 @@ use warnings;
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
 use BOM::Platform::Context qw (request);
+use BOM::RPC::v3::Utility;
 
 sub residence_list {
     my $params = shift;
@@ -29,6 +30,16 @@ sub states_list {
     my $states = BOM::Platform::Locale::get_state_option($params->{args}->{states_list});
     $states = [grep { $_->{value} ne '' } @$states];
     return $states;
+}
+
+sub website_status {
+    my $params = shift;
+
+    return {
+        terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
+        api_call_limits          => BOM::RPC::v3::Utility::site_limits,
+        clients_country          => $params->{country_code},
+    };
 }
 
 1;

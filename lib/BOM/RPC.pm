@@ -110,6 +110,7 @@ sub startup {
             services => {
                 '/residence_list'            => register('residence_list',            \&BOM::RPC::v3::Static::residence_list),
                 '/states_list'               => register('states_list',               \&BOM::RPC::v3::Static::states_list),
+                '/website_status'            => register('website_status',            \&BOM::RPC::v3::Static::website_status),
                 '/ticks_history'             => register('ticks_history',             \&BOM::RPC::v3::TickStreamer::ticks_history),
                 '/buy'                       => register('buy',                       \&BOM::RPC::v3::Transaction::buy),
                 '/sell'                      => register('sell',                      \&BOM::RPC::v3::Transaction::sell),
