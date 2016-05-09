@@ -84,8 +84,8 @@ sub buy_contract_for_multiple_accounts {
     # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization.
     #       All checks are done again in BOM::Product::Transaction
     return BOM::RPC::v3::Utility::create_error({
-        code              => 'AuthorizationRequired',
-        message_to_client => localize('Please log in.')}) unless $client;
+            code              => 'AuthorizationRequired',
+            message_to_client => localize('Please log in.')}) unless $client;
 
     my @result;
     my $found_at_least_one;
@@ -94,18 +94,20 @@ sub buy_contract_for_multiple_accounts {
     for my $t (@{$params->{tokens} || []}) {
         my $loginid = BOM::RPC::v3::Utility::token_to_loginid($_);
         unless ($loginid) {
-            push @result, +{
+            push @result,
+                +{
                 token => $t,
                 code  => 'InvalidToken',
                 error => $msg,
-            };
+                };
             next;
         }
 
-        push @result, +{
+        push @result,
+            +{
             token   => $t,
             loginid => $loginid,
-        };
+            };
         $found_at_least_one = 1;
     }
 
@@ -121,8 +123,8 @@ sub buy_contract_for_multiple_accounts {
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
 
-    my $contract = try { produce_contract({%$contract_parameters}) } ||
-        return BOM::RPC::v3::Utility::create_error({
+    my $contract = try { produce_contract({%$contract_parameters}) }
+        || return BOM::RPC::v3::Utility::create_error({
             code              => 'ContractCreationFailure',
             message_to_client => localize('Cannot create contract')});
 
@@ -142,8 +144,7 @@ sub buy_contract_for_multiple_accounts {
         });
     }
 
-
-...;
+    ...;
 
     my $response = {
         transaction_id => $trx->transaction_id,
