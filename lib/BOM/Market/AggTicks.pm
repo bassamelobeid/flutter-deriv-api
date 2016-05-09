@@ -97,7 +97,7 @@ sub BUILD {
 
     my ($min, $max) = (1, 20);
 
-    croak 'Unrecoverable error: the ratio ['
+    die 'Unrecoverable error: the ratio ['
         . $self->returns_to_agg_ratio
         . '] between the supplied returns_interval ['
         . $self->returns_interval->as_string

@@ -67,7 +67,7 @@ sub new {
     $args = {symbol => $args} if (not ref $args);
     my $symbol = $args->{symbol};
 
-    croak 'No symbol provided to constructor.' if (not $symbol);
+    die 'No symbol provided to constructor.' if (not $symbol);
 
     delete $args->{for_date}
         if (exists $args->{for_date} and not defined $args->{for_date});
@@ -1269,7 +1269,7 @@ sub fullfeed_file {
         $date = $1 . '-' . ucfirst(lc($2)) . '-' . $3;
     }    #convert 10-JAN-05 to 10-Jan-05
     else {
-        croak 'Bad date for fullfeed_file';
+        die 'Bad date for fullfeed_file';
     }
 
     my $folder = $override_folder || $self->combined_folder;
@@ -2082,7 +2082,7 @@ sub _build_corporate_actions {
         }
 
         if (scalar @{$order->{first}} > 1 or scalar @{$order->{last}} > 1) {
-            croak 'Could not determine order of corporate actions on '
+            die 'Could not determine order of corporate actions on '
                 . $self->system_symbol
                 . '.  Have ['
                 . scalar @{$order->{first}}

@@ -287,7 +287,7 @@ sub _interpolate_delta {
 
     my %smile = %{$args->{smile}};
 
-    croak('minimum of three points on a smile')
+    die('minimum of three points on a smile')
         if keys %smile < 3;
 
     my @sorted = sort { $a <=> $b } keys %smile;

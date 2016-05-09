@@ -159,9 +159,9 @@ sub get_volatility {
     my ($self, $args) = @_;
 
     # args validity checks
-    croak("Must pass exactly one of delta, strike or moneyness to get_volatility.")
+    die("Must pass exactly one of delta, strike or moneyness to get_volatility.")
         if (scalar(grep { defined $args->{$_} } qw(delta strike moneyness)) != 1);
-    croak("Must pass exactly one of days, tenor or expirty_date to get_volatility.")
+    die("Must pass exactly one of days, tenor or expirty_date to get_volatility.")
         if (scalar(grep { defined $args->{$_} } qw(days tenor expiry_date)) != 1);
 
     if (not $args->{days}) {
@@ -328,7 +328,7 @@ sub _build_surface {
 
     my $master_cutoff = $doc->{master_cutoff};
     if (not $doc->{surfaces}->{$master_cutoff}) {
-        croak('master surface is missing for ' . $self->symbol . ' on ' . $self->recorded_date->datetime_iso8601);
+        die('master surface is missing for ' . $self->symbol . ' on ' . $self->recorded_date->datetime_iso8601);
     }
 
     my $master_surface = __PACKAGE__->new(

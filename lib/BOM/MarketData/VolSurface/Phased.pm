@@ -4,7 +4,6 @@ use Moose;
 extends 'BOM::MarketData::VolSurface';
 
 use List::Util qw(first);
-use Carp qw(croak);
 
 =head1 NAME
 
@@ -45,7 +44,7 @@ sub BUILD {
 
     my %supported_symbols = map { $_ => 1 } qw(RDMARS RDVENUS RDMOON RDSUN);
     unless ($supported_symbols{$self->underlying->symbol}) {
-        croak "Invalid usage of phased volatility for underlying [" . $self->underlying->symbol . "]";
+        die "Invalid usage of phased volatility for underlying [" . $self->underlying->symbol . "]";
     }
 
     return;
@@ -128,7 +127,7 @@ sub get_volatility {
     return $self->_phase_for_x($self->_x_for_epoch($for_epoch)) if ($for_epoch);
 
     unless ($start_epoch and $end_epoch) {
-        croak "Invalid usage of phased volatility. start_epoch and end_epoch are required.";
+        die "Invalid usage of phased volatility. start_epoch and end_epoch are required.";
     }
     # We ask for 0 time volatility sometimes, for both good and bad reasons.
     # Rather than blowing up, turn it into a 1 second request.

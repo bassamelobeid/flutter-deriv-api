@@ -60,7 +60,7 @@ sub build_registry_object {
 
 sub find_by_market {
     my ($self, $market) = @_;
-    Carp::croak("Usage: find_by_market(market_name)") if not $market;
+    die("Usage: find_by_market(market_name)") if not $market;
     my @result = (
         sort { $a->{display_order} <=> $b->{display_order} }
         grep { $_->{market}->name eq $market and $_->{offered} == 1 } ($self->all));

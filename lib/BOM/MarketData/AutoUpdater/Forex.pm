@@ -41,7 +41,7 @@ sub _build_file {
     while (not -d $loc . '/' . $on->date_yyyymmdd) {
         $on = Date::Utility->new($on->epoch - 86400);
         if ($on->year <= 2011) {
-            croak('Requested date pre-dates vol surface history.');
+            die('Requested date pre-dates vol surface history.');
         }
     }
     my $day                 = $on->date_yyyymmdd;

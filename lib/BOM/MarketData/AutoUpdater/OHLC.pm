@@ -214,7 +214,7 @@ sub verify_ohlc_update {
         if (my @filelines = read_file($db_file)) {
             $self->_check_file($underlying, @filelines);
         } else {
-            croak('Could not open file: ' . $db_file);
+            die('Could not open file: ' . $db_file);
         }
 
     }

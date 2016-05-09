@@ -145,9 +145,9 @@ to the next cutoff, given a maturity and an underlying.
 sub seconds_to_cutoff_time {
     my ($self, $args) = @_;
 
-    my $from       = $args->{from}       || croak 'No "from" date given to seconds_to_cutoff_time.';
-    my $underlying = $args->{underlying} || croak 'No underlying given to seconds_to_cutoff_time.';
-    my $maturity   = $args->{maturity}   || croak 'No maturity given to seconds_to_cutoff_time.';
+    my $from       = $args->{from}       || die 'No "from" date given to seconds_to_cutoff_time.';
+    my $underlying = $args->{underlying} || die 'No underlying given to seconds_to_cutoff_time.';
+    my $maturity   = $args->{maturity}   || die 'No maturity given to seconds_to_cutoff_time.';
 
     # From the given $from date and $maturity, we get the "effective day"
     # on which the cutoff we are looking for falls on.
