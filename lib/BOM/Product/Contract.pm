@@ -2833,7 +2833,7 @@ sub _build_market_name {
 # have different turnover limits now. This also makes this customizable.
 has turnover_limit_parameters => (
     is      => 'rw',
-    default => sub {[]},
+    default => sub { [] },
 );
 
 has [qw(maximum_payout_limit risk_type)] => (
