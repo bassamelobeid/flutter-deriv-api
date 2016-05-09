@@ -101,7 +101,7 @@ sub registry_fixup {
         my $lc_obj = $registry->{$lc};
         my $short  = $lc_obj->short;
         if ($registry_by_short->{$lc_obj}) {
-            die("More than one BOM::Platform::Runtime::LandingCompany registered with short code"
+            die(      "More than one BOM::Platform::Runtime::LandingCompany registered with short code"
                     . $short . ": "
                     . $lc_obj->name
                     . " conflicts with "
