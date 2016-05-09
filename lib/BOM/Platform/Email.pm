@@ -9,7 +9,6 @@ use URL::Encode;
 use Mail::Sender;
 use HTML::FromText;
 use Try::Tiny;
-use Carp;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
@@ -30,7 +29,7 @@ sub send_email {
     my $attachment         = $args_ref->{'attachment'};
     my $ctype              = $args_ref->{'att_type'} // 'text/plain';
     my $skip_text2html     = $args_ref->{'skip_text2html'};
-    croak 'No email provided' unless $email;
+    die 'No email provided' unless $email;
 
     my $template_loginid = $args_ref->{template_loginid} || (request && request->loginid);
 

@@ -2,7 +2,6 @@ package BOM::Platform::Runtime::LandingCompany::Registry;
 
 use namespace::autoclean;
 use Moose;
-use Carp;
 use Try::Tiny;
 
 use BOM::Platform::Runtime::LandingCompany;
@@ -77,7 +76,7 @@ sub get_landing_company {
         for my $lc (values %{$self->_registry}) {
             my $search;
             try { $search = $lc->$key; }
-                or croak "Unable to search landing company by $key";
+                or die "Unable to search landing company by $key";
             if ($search eq $arg{$key}) {
                 push @{$result}, $lc;
                 last LANDING_COMPANIES;
@@ -102,7 +101,7 @@ sub registry_fixup {
         my $lc_obj = $registry->{$lc};
         my $short  = $lc_obj->short;
         if ($registry_by_short->{$lc_obj}) {
-            Carp::croak("More than one BOM::Platform::Runtime::LandingCompany registered with short code"
+            die("More than one BOM::Platform::Runtime::LandingCompany registered with short code"
                     . $short . ": "
                     . $lc_obj->name
                     . " conflicts with "

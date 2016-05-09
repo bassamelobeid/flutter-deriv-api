@@ -13,7 +13,6 @@ It primarily builds I<BOM::Platform::Runtime::Broker> objects from broker_codes.
 
 use Moose;
 use namespace::autoclean;
-use Carp;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Runtime::Broker;
 
@@ -29,7 +28,7 @@ sub get {
     my ($self, $code) = @_;
 
     $code = $self->_loginid_or_broker_code_to_broker_code($code);
-    croak "Unknown broker code or loginid [$code]" unless $self->_brokers->{$code};
+    die "Unknown broker code or loginid [$code]" unless $self->_brokers->{$code};
     return $self->_brokers->{$code};
 }
 

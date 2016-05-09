@@ -1,7 +1,6 @@
 package BOM::Platform::MyAffiliates::GenerateRegistrationDaily;
 
 use Moose;
-use Carp;
 use Text::CSV;
 use Text::Trim;
 use Path::Tiny;
@@ -106,7 +105,7 @@ sub any_new_clients {
 sub create_report {
     my $self = shift;
 
-    croak("Report already exists? ", $self->filename) if (-e $self->filename);
+    die("Report already exists? ", $self->filename) if (-e $self->filename);
 
     print {$self->_fh} $self->report;
     return;
@@ -222,7 +221,7 @@ sub _force_backfill_sleep {
 
 sub run {
     my $self = shift;
-    croak('Backfill is pending and attempting to run it failed.') unless $self->force_backfill;
+    die('Backfill is pending and attempting to run it failed.') unless $self->force_backfill;
     $self->create_report;
     $self->register_tokens;
 

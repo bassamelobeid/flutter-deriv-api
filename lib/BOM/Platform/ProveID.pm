@@ -6,7 +6,6 @@ use warnings;
 use BOM::Platform::Runtime;
 use BOM::System::Config;
 use BOM::System::RedisReplicated;
-use Carp;
 use base 'Experian::IDAuth';
 
 =head1 NOTES
@@ -36,7 +35,7 @@ sub _throttle {
     my $key     = 'PROVEID::THROTTLE::' . $loginid;
 
     if (BOM::System::RedisReplicated::redis_read()->get($key)) {
-        Carp::confess 'Too many ProveID requests for ' . $loginid;
+        die 'Too many ProveID requests for ' . $loginid;
     }
 
     BOM::System::RedisReplicated::redis_write()->set($key, 1);

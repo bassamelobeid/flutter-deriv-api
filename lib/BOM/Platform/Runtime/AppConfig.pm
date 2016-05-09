@@ -24,8 +24,6 @@ use BOM::Platform::Runtime::AppConfig::Attribute::Section;
 use BOM::Platform::Runtime::AppConfig::Attribute::Global;
 use Data::Hash::DotNotation;
 
-use Carp qw(croak);
-
 use BOM::System::Chronicle;
 
 my $app_config_definitions = LoadFile('/home/git/regentmarkets/bom-platform/config/app_config_definitions.yml');

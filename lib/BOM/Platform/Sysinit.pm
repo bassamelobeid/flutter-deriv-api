@@ -3,7 +3,6 @@ package BOM::Platform::Sysinit;
 use warnings;
 use strict;
 
-use Carp qw(croak);
 use Time::HiRes ();
 use Guard;
 use File::Copy;
