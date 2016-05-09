@@ -177,13 +177,17 @@ subtest 'date start blackouts' => sub {
     $bet_params->{date_start} = Date::Utility->new('2016-04-04');
     $bet_params->{duration}   = '10m';
     $c                        = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy at 10 mins forward starting on Monday morning';
+    ok !$c->is_valid_to_buy, 'not valid to buy at 10 mins forward starting of forex on Monday morning';
     like(($c->primary_validation_error)[0]->{message_to_client}, qr/Trading is not available from 00:00:00 to 00:10:00/, 'throws error');
+
+    $bet_params->{underlying} = 'R_100';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'is valid to buy at 10 mins forward starting of random on Monday morning';
 
     $bet_params->{date_start} = Date::Utility->new('2016-04-05 00:00:00');
     $bet_params->{duration}   = '10m';
     $c                        = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'valid to buy at 10 mins forward starting on Tuesday morning';
+    ok $c->is_valid_to_buy, 'valid to buy at 10 mins forward starting of forex on Tuesday morning';
 
     my $one_second_after_monday             = Date::Utility->new('2016-04-04 00:00:00');
     my $usdjpy_one_second_after_monday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
