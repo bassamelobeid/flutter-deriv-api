@@ -192,7 +192,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
                                 $10::VARCHAR(30), $11::VARCHAR(30), $12::VARCHAR(800), $13::VARCHAR(255),
                                 $14::BOOLEAN, $15::INT, $16::JSON, $17::TIMESTAMP, $18::VARCHAR(24),
                                 $19::VARCHAR(800), $20::BIGINT, $21::JSON, acc.limits) b
- ORDER BY a.seq');
+ ORDER BY acc.seq');
 
     my %bet = (
         expiry_daily => 0,
