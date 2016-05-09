@@ -74,7 +74,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(AUD GBP EUR USD HKD);
 
-my $chronicle_r = BOM::System::Chronicle::get_chronicle_reader();
+my $chronicle_r = BOM::System::Chronicle::get_chronicle_reader($date);
 
 my $LSE             = Quant::Framework::TradingCalendar->new('LSE', $chronicle_r, 'EN', $date);
 my $ul_LSE = BOM::Market::Underlying->new('FTSE');
