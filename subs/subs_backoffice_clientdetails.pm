@@ -10,7 +10,7 @@ use BOM::Platform::Client::Utility ();
 use BOM::Database::DAO::Client;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Locale;
-use BOM::Web::Form;
+use BOM::Backoffice::FormAccounts;
 
 sub get_currency_options {
     my $currency_options;
@@ -25,7 +25,7 @@ sub print_client_details {
     my ($client, $staff) = @_;
 
     # IDENTITY sECTION
-    my @mrms_options = BOM::Web::Form::GetSalutations();
+    my @mrms_options = BOM::Backoffice::FormAccounts::GetSalutations();
 
     my ($dob_day, $dob_month, $dob_year);
     if ($client->date_of_birth =~ /^(\d\d\d\d)-(\d\d)-(\d\d)$/) {
@@ -36,7 +36,7 @@ sub print_client_details {
         $dob_day =~ s/^0//;
     }
 
-    my $dob_day_optionlist = BOM::Web::Form::DOB_DayList($dob_day);
+    my $dob_day_optionlist = BOM::Backoffice::FormAccounts::DOB_DayList($dob_day);
     my $dob_day_options;
     $dob_day_options .= qq|<option value="$_->{value}">$_->{value}</option>| for @$dob_day_optionlist;
     $dob_day_options = set_selected_item($dob_day, $dob_day_options);
@@ -45,7 +45,7 @@ sub print_client_details {
         localize(
             '<option value=""></option><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>'
         ));
-    my $dob_year_optionlist = BOM::Web::Form::DOB_YearList($dob_year);
+    my $dob_year_optionlist = BOM::Backoffice::FormAccounts::DOB_YearList($dob_year);
     my $dob_year_options    = '<option value=""></option>';
     $dob_year_options .= qq|<option value="$_->{value}">$_->{value}</option>| for @$dob_year_optionlist;
     $dob_year_options = set_selected_item($dob_year, $dob_year_options);
