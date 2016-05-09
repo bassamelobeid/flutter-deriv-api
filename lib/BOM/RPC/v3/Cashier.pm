@@ -300,7 +300,7 @@ sub get_limits {
         open_positions  => $client->get_limit_for_open_positions,
     };
 
-    $limit->{market_specific} = $self->_get_market_limit_profile($client->currency);
+    $limit->{market_specific} = _get_market_limit_profile($client->currency);
 
     my $numdays       = $wl_config->for_days;
     my $numdayslimit  = $wl_config->limit_for_days;
