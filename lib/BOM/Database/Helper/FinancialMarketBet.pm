@@ -182,8 +182,8 @@ sub batch_buy_bet {
     #       are necessary.
     my $stmt = $self->db->dbh->prepare('
 WITH
-acc(loginid, limits) AS (VALUES
-    ' . join(",\n    ", map { '($' . ($_ * 2 + 22) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 23) . '::JSON)'; } 0 .. @acclim / 2 - 1) . ')
+acc(seq, loginid, limits) AS (VALUES
+    ' . join(",\n    ", map { '(' . $_ . '::INT, $' . ($_ * 2 + 22) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 23) . '::JSON)'; } 0 .. @acclim / 2 - 1) . ')
 SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
   FROM acc
  CROSS JOIN LATERAL
@@ -191,7 +191,9 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
                                 $5::NUMERIC, $6::TIMESTAMP, $7::TIMESTAMP, $8::TIMESTAMP, $9::BOOLEAN,
                                 $10::VARCHAR(30), $11::VARCHAR(30), $12::VARCHAR(800), $13::VARCHAR(255),
                                 $14::BOOLEAN, $15::INT, $16::JSON, $17::TIMESTAMP, $18::VARCHAR(24),
-                                $19::VARCHAR(800), $20::BIGINT, $21::JSON, acc.limits) b');
+                                $19::VARCHAR(800), $20::BIGINT, $21::JSON, acc.limits) b
+ ORDER BY a.seq');
+
     my %bet = (
         expiry_daily => 0,
         is_expired   => 0,
@@ -225,7 +227,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
 
     $stmt->execute(@param, @acclim);
 
-    my %result;
+    my @result;
     while (my $row = $stmt->fetchrow_arrayref) {
         my ($loginid, $ecode, $edescr) = @{$row}[0, 1, 2];
 
@@ -242,7 +244,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
             @{$txn}{@txn_col} = @{$row}[@fmb_col + 3 .. @fmb_col + 3 + $#txn_col];
         }
 
-        $result{$loginid} = {
+        push @result, {
             fmb           => $fmb,
             txn           => $txn,
             e_code        => $ecode,
@@ -251,7 +253,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
         };
     }
 
-    return \%result;
+    return \@result;
 }
 
 sub sell_bet {
