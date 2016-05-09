@@ -215,6 +215,11 @@ sub proposal {
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
         send_ask($c, $id, $args);
+
+        if ($c->stash->{redis}->get('BOM::RPC::PricerDaemon::doprice')) {
+            price_stream($c, $args);
+        }
+)
     }
     return;
 }
