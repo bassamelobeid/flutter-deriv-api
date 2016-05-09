@@ -2828,7 +2828,9 @@ sub _build_market_name {
     return shift->market->name;
 }
 
-# will be set when we build risk_type
+# Will be set when we build risk_type
+# This belongs here because different contracts can potentially
+# have different turnover limits now. This also makes this customizable.
 has turnover_limit_parameters => (
     is => 'rw',
 );
@@ -2889,53 +2891,6 @@ sub _build_risk_type {
     my $risk = first { exists $risk_types{$_} } @risk_order;
 
     return $risk || 'extreme_risk';
-}
-
-# This belongs here because different contracts can potentially
-# have different turnover limits now. This also makes this customizable.
-sub turnover_limit_parameters {
-    my $self = shift;
-
-    my $curr         = $self->currency;
-    my $fb           = get_offerings_flyby;
-    my $risk_profile = BOM::Platform::Static::Config::quants->{risk_profile};
-
-    my $base_profile = $self->underlying->risk_profile;
-    my $name         = delete $base_profile->{args}{name};
-    my @symbols      = (keys %{$base_profile->{args}}) ? $fb->query($base_profile->{args}, ['underlying_symbol']) : ($self->underlying->symbol);
-    my $limit        = $risk_profile->{$base_profile->{risk_type}}{turnover}{$curr};
-    my @per_contract_payout_limit = $risk_profile->{$base_profile->{risk_type}}{payout}{$curr};
-
-    my @limit_params = ({
-        symbols => [map { {n => $_} } @symbols],
-        name    => $name,
-        limit   => $limit,
-    });
-
-    my $custom_string = BOM::Platform::Runtime->instance->app_config->quants->client_limits->custom_limits;
-    my $custom_limits = $custom_string ? from_json($custom_string) : [];
-
-    foreach my $custom (@$custom_limits) {
-        my $risk_type = delete $custom->{risk_type} || 'extreme_risk';
-        my $args = {
-            name => (delete $custom->{name} || 'annonymous'),
-            limit => $risk_profile->{$risk_type}{turnover}{$curr},
-        };
-        if ($self->_match_conditions($custom)) {
-            $args->{symbols} = [map { {n => $_} } $fb->query($custom, ['underlying_symbol'])];
-            my @bet_types =
-                $custom->{contract_type} ? @{$custom->{contract_type}} : $custom->{contract_category} ? $fb->query($custom, ['contract_type']) : ();
-            $args->{bet_type} = [map { {n => $_} } @bet_types] if @bet_types;
-            $args->{tick_expiry} = $self->tick_expiry if $self->tick_expiry;
-            push @limit_params,              $args;
-            push @per_contract_payout_limit, $risk_profile->{$risk_type}{payout}{$curr};
-        }
-
-    }
-
-    $self->maximum_payout_limit(min(@per_contract_payout_limit));
-
-    return \@limit_params;
 }
 
 sub _match_conditions {
