@@ -22,13 +22,17 @@ sub ticks_history {
 
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
-        return $response;
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $response->{error}->{code},
+                message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
     }
 
-    if ($args->{subscribe} eq '1') {
+    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
         my $license = BOM::RPC::v3::Contract::validate_license($symbol);
         if ($license and exists $license->{error}) {
-            return $license;
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => $license->{error}->{code},
+                    message_to_client => BOM::Platform::Context::localize($license->{error}->{message}, $symbol)});
         }
     }
 
@@ -36,18 +40,28 @@ sub ticks_history {
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
 
+    # default to 60 if not defined or send as 0 for candles
+    $args->{granularity} = $args->{granularity} || 60 if $style eq 'candles';
+
+    $response = _validate_start_end({%$args, ul => $ul});    ## no critic
+    if ($response and exists $response->{error}) {
+        return $response;
+    } else {
+        $args = $response;
+    }
+
     my ($publish, $result, $type);
     if ($style eq 'ticks') {
-        my $ticks = ticks({%$args, ul => $ul});    ## no critic
+        my $ticks   = _ticks($args);
         my $history = {
-            prices => [map { $_->{price} } @$ticks],
+            prices => [map { $ul->pipsized_value($_->{price}) } @$ticks],
             times  => [map { $_->{time} } @$ticks],
         };
         $result  = {history => $history};
         $type    = "history";
         $publish = 'tick';
     } elsif ($style eq 'candles') {
-        my @candles = @{candles({%$args, ul => $ul})};    ## no critic
+        my @candles = @{_candles($args)};
         if (@candles) {
             $result = {
                 candles => \@candles,
@@ -68,16 +82,14 @@ sub ticks_history {
     return {
         type    => $type,
         data    => $result,
-        publish => $publish
-    };
+        publish => $publish,
+        ($args->{granularity}) ? (granularity => $args->{granularity}) : ()};
 }
 
-sub ticks {
+sub _ticks {
     my $args = shift;
 
-    $args = _validate_start_end($args);
-
-    my $ul    = $args->{ul} || die 'no underlying';
+    my $ul    = $args->{ul};
     my $start = $args->{start};
     my $end   = $args->{end};
     my $count = $args->{count};
@@ -91,19 +103,16 @@ sub ticks {
     return [map { {time => $_->epoch, price => $_->quote} } reverse @$ticks];
 }
 
-sub candles {
+sub _candles {
     my $args = shift;
 
-    $args = _validate_start_end($args);
-
-    my $ul          = $args->{ul} || die 'no underlying';
+    my $ul          = $args->{ul};
     my $start_time  = $args->{start};
     my $end_time    = $args->{end};
-    my $granularity = $args->{granularity} // 60;
+    my $granularity = $args->{granularity};
     my $count       = $args->{count};
 
     my @all_ohlc;
-
     # This ohlc_daily_list is the only one will get ohlc from feed.tick for a period
     if ($end_time - $start_time <= $granularity) {
         my $ohlc = $ul->feed_api->ohlc_daily_list({
@@ -166,11 +175,22 @@ sub candles {
 sub _validate_start_end {
     my $args = shift;
 
-    my $ul    = $args->{ul} || die 'no underlying';
-    my $start = $args->{start};
-    my $end   = $args->{end};
-    my $count = $args->{count};
+    my $ul = $args->{ul} || return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoSymbolProvided',
+            message_to_client => BOM::Platform::Context::localize("Please provide an underlying symbol.")});
 
+    unless ($ul->feed_license =~ /^(realtime|delayed|daily)$/) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'StreamingNotAllowed',
+                message_to_client => BOM::Platform::Context::localize("Streaming for this symbol is not available due to license restrictions.")});
+    }
+
+    my $start       = $args->{start};
+    my $end         = $args->{end} !~ /^[0-9]+$/ ? time() : $args->{end};
+    my $count       = $args->{count};
+    my $granularity = $args->{granularity};
+    # if no start but there is count and granularity, use count and granularity to calculate the start time to look back
+    $start = (not $start and $count and $granularity) ? $end - ($count * $granularity) : $start;
     # we must not return to the client any ticks/candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
     # max allow 3 years
@@ -208,12 +228,12 @@ sub _validate_start_end {
         }
     }
     if ($args->{adjust_start_time}) {
-        unless ($ul->exchange->is_open_at($end)) {
-            my $shift_back = $ul->exchange->seconds_since_close_at($end);
+        unless ($ul->calendar->is_open_at($end)) {
+            my $shift_back = $ul->calendar->seconds_since_close_at($end);
             unless (defined $shift_back) {
-                my $last_day = $ul->exchange->trade_date_before(Date::Utility->new($end));
+                my $last_day = $ul->calendar->trade_date_before(Date::Utility->new($end));
                 if ($last_day) {
-                    my $closes = $ul->exchange->closing_on($last_day)->epoch;
+                    my $closes = $ul->calendar->closing_on($last_day)->epoch;
                     $shift_back = $end - $closes;
                 }
             }

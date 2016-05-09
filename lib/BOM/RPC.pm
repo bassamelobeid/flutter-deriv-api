@@ -10,6 +10,8 @@ use Time::HiRes;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 use BOM::Database::Rose::DB;
+use BOM::Database::Model::OAuth;
+use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
@@ -23,6 +25,7 @@ use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::App;
+use BOM::RPC::v3::NewAccount::Japan;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -54,11 +57,17 @@ sub register {
         sub {
             my ($params) = @_;
 
-            my $args = {country_code => $params->{country}};
-            if ($params->{client_loginid} and $params->{client_loginid} =~ /^(\D+)\d+$/) {
+            my $args = {};
+            $args->{country_code} = $params->{country} if exists $params->{country};
+            my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+            if ($token_details and exists $token_details->{loginid} and $token_details->{loginid} =~ /^(\D+)\d+$/) {
                 $args->{broker_code} = $1;
             }
             $args->{language} = $params->{language} if ($params->{language});
+
+            if (exists $params->{server_name}) {
+                $params->{website_name} = BOM::RPC::v3::Utility::website_name(delete $params->{server_name});
+            }
 
             my $r = BOM::Platform::Context::Request->new($args);
             BOM::Platform::Context::request($r);
@@ -101,6 +110,7 @@ sub startup {
             services => {
                 '/residence_list'            => register('residence_list',            \&BOM::RPC::v3::Static::residence_list),
                 '/states_list'               => register('states_list',               \&BOM::RPC::v3::Static::states_list),
+                '/website_status'            => register('website_status',            \&BOM::RPC::v3::Static::website_status),
                 '/ticks_history'             => register('ticks_history',             \&BOM::RPC::v3::TickStreamer::ticks_history),
                 '/buy'                       => register('buy',                       \&BOM::RPC::v3::Transaction::buy),
                 '/sell'                      => register('sell',                      \&BOM::RPC::v3::Transaction::sell),
@@ -116,6 +126,7 @@ sub startup {
                 '/paymentagent_withdraw'     => register('paymentagent_withdraw',     \&BOM::RPC::v3::Cashier::paymentagent_withdraw),
                 '/paymentagent_transfer'     => register('paymentagent_transfer',     \&BOM::RPC::v3::Cashier::paymentagent_transfer),
                 '/transfer_between_accounts' => register('transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts),
+                '/cashier'                   => register('cashier',                   \&BOM::RPC::v3::Cashier::cashier),
                 '/topup_virtual'             => register('topup_virtual',             \&BOM::RPC::v3::Cashier::topup_virtual),
                 '/payout_currencies'         => register('payout_currencies',         \&BOM::RPC::v3::Accounts::payout_currencies),
                 '/landing_company'           => register('landing_company',           \&BOM::RPC::v3::Accounts::landing_company),
@@ -125,28 +136,36 @@ sub startup {
                 '/get_account_status'        => register('get_account_status',        \&BOM::RPC::v3::Accounts::get_account_status),
                 '/change_password'           => register('change_password',           \&BOM::RPC::v3::Accounts::change_password),
                 '/cashier_password'          => register('cashier_password',          \&BOM::RPC::v3::Accounts::cashier_password),
+                '/reset_password'            => register('reset_password',            \&BOM::RPC::v3::Accounts::reset_password),
                 '/get_settings'              => register('get_settings',              \&BOM::RPC::v3::Accounts::get_settings),
                 '/set_settings'              => register('set_settings',              \&BOM::RPC::v3::Accounts::set_settings),
                 '/get_self_exclusion'        => register('get_self_exclusion',        \&BOM::RPC::v3::Accounts::get_self_exclusion),
                 '/set_self_exclusion'        => register('set_self_exclusion',        \&BOM::RPC::v3::Accounts::set_self_exclusion),
                 '/balance'                   => register('balance',                   \&BOM::RPC::v3::Accounts::balance),
                 '/api_token'                 => register('api_token',                 \&BOM::RPC::v3::Accounts::api_token),
+                '/login_history'             => register('login_history',             \&BOM::RPC::v3::Accounts::login_history),
+                '/set_account_currency'      => register('set_account_currency',      \&BOM::RPC::v3::Accounts::set_account_currency),
+                '/set_financial_assessment'  => register('set_financial_assessment',  \&BOM::RPC::v3::Accounts::set_financial_assessment),
+                '/get_financial_assessment'  => register('get_financial_assessment',  \&BOM::RPC::v3::Accounts::get_financial_assessment),
+                '/reality_check'             => register('reality_check',             \&BOM::RPC::v3::Accounts::reality_check),
                 '/verify_email'              => register('verify_email',              \&BOM::RPC::v3::NewAccount::verify_email),
                 '/send_ask'                  => register('send_ask',                  \&BOM::RPC::v3::Contract::send_ask),
                 '/get_bid'                   => register('get_bid',                   \&BOM::RPC::v3::Contract::get_bid),
+                '/get_corporate_actions'     => register('get_corporate_actions',     \&BOM::RPC::v3::MarketDiscovery::get_corporate_actions),
                 '/get_contract_details'      => register('get_contract_details',      \&BOM::RPC::v3::Contract::get_contract_details),
                 '/new_account_real'          => register('new_account_real',          \&BOM::RPC::v3::NewAccount::new_account_real),
                 '/new_account_maltainvest'   => register('new_account_maltainvest',   \&BOM::RPC::v3::NewAccount::new_account_maltainvest),
                 '/new_account_japan'         => register('new_account_japan',         \&BOM::RPC::v3::NewAccount::new_account_japan),
                 '/new_account_virtual'       => register('new_account_virtual',       \&BOM::RPC::v3::NewAccount::new_account_virtual),
+                '/jp_knowledge_test'         => register('jp_knowledge_test',         \&BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test),
                 '/portfolio'                 => register('portfolio',                 \&BOM::RPC::v3::PortfolioManagement::portfolio),
                 '/sell_expired'              => register('sell_expired',              \&BOM::RPC::v3::PortfolioManagement::sell_expired),
                 '/proposal_open_contract'    => register('proposal_open_contract',    \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract),
-
-                '/app_register' => register('app_register', \&BOM::RPC::v3::App::register),
-                '/app_list'     => register('app_list',     \&BOM::RPC::v3::App::list),
-                '/app_get'      => register('app_get',      \&BOM::RPC::v3::App::get),
-                '/app_delete'   => register('app_delete',   \&BOM::RPC::v3::App::delete),
+                '/app_register'              => register('app_register',              \&BOM::RPC::v3::App::register),
+                '/app_list'                  => register('app_list',                  \&BOM::RPC::v3::App::list),
+                '/app_get'                   => register('app_get',                   \&BOM::RPC::v3::App::get),
+                '/app_delete'                => register('app_delete',                \&BOM::RPC::v3::App::delete),
+                '/oauth_apps'                => register('oauth_apps',                \&BOM::RPC::v3::App::oauth_apps),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;

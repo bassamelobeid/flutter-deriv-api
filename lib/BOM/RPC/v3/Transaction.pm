@@ -7,23 +7,26 @@ use Try::Tiny;
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::PortfolioManagement;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
-use BOM::Database::DataMapper::FinancialMarketBet;
-use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
+use BOM::Database::DataMapper::FinancialMarketBet;
 
 sub buy {
     my $params = shift;
 
-    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization.
-    #       All checks are done again in BOM::Product::Transaction
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
+
+    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
+    #       are done again in BOM::Product::Transaction
     return BOM::RPC::v3::Utility::create_error({
-        code              => 'AuthorizationRequired',
-        message_to_client => localize('Please log in.')}) unless $client;
+            code              => 'AuthorizationRequired',
+            message_to_client => localize('Please log in.')}) unless $client;
 
     my $source              = $params->{source};
     my $contract_parameters = $params->{contract_parameters};
@@ -32,10 +35,10 @@ sub buy {
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
 
-    my $contract = try { produce_contract({%$contract_parameters}) } ||
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
+    my $contract = try { produce_contract($contract_parameters) }
+        || return BOM::RPC::v3::Utility::create_error({
+            code              => 'ContractCreationFailure',
+            message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
 
     my $trx = BOM::Product::Transaction->new({
         client        => $client,
@@ -166,32 +169,23 @@ sub buy_contract_for_multiple_accounts {
 sub sell {
     my $params = shift;
 
-    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
 
-    my $source = $params->{source};
-    my $args   = $params->{args};
-    my $id     = $args->{sell};
+    my ($source, $args) = ($params->{source}, $params->{args});
+    my $id = $args->{sell};
 
-    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
-            client_loginid => $client->loginid,
-            currency_code  => $client->currency,
-            db             => BOM::Database::ClientDB->new({
-                    client_loginid => $client->loginid,
-                    operation      => 'replica',
-                }
-            )->db,
-        });
-
-    my $fmb = $fmb_dm->get_fmb_by_id([$id]);
+    my @fmbs = @{__get_contract_by_id($client, $id)};
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidSellContractProposal',
-            message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless $fmb;
+            message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless @fmbs;
 
-    my $contract = produce_contract(${$fmb}[0]->short_code, $client->currency);
+    my $contract = produce_contract($fmbs[0]->{short_code}, $client->currency);
     my $trx = BOM::Product::Transaction->new({
         client      => $client,
         contract    => $contract,
@@ -216,6 +210,17 @@ sub sell {
         balance_after  => $trx->balance_after,
         sold_for       => abs($trx->amount),
     };
+}
+
+sub __get_contract_by_id {
+    my $client      = shift;
+    my $contract_id = shift;
+
+    my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
+        broker_code => $client->broker_code,
+        operation   => 'replica'
+    });
+    return $mapper->get_contract_by_id($contract_id);
 }
 
 1;

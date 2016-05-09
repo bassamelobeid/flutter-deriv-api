@@ -18,11 +18,10 @@ use BOM::Product::Transaction;
 sub portfolio {
     my $params = shift;
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $token_details->{loginid};
 
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -35,7 +34,7 @@ sub portfolio {
     foreach my $row (@{__get_open_contracts($client)}) {
         my %trx = (
             contract_id    => $row->{id},
-            transaction_id => $row->{buy_id},
+            transaction_id => $row->{buy_transaction_id},
             purchase_time  => Date::Utility->new($row->{purchase_time})->epoch,
             symbol         => $row->{underlying_symbol},
             payout         => $row->{payout_price},
@@ -72,11 +71,10 @@ sub __get_open_contracts {
 sub sell_expired {
     my $params = shift;
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -108,18 +106,18 @@ sub _sell_expired_contracts {
 sub proposal_open_contract {
     my $params = shift;
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
+    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
 
     my @fmbs = ();
+
     if ($params->{contract_id}) {
-        @fmbs = @{__get_contract_by_id($client, $params->{contract_id})};
+        @fmbs = @{__get_contract_details_by_id($client, $params->{contract_id})};
         if (scalar @fmbs and $fmbs[0]->{account_id} ne $client->default_account->id) {
             @fmbs = ();
         }
@@ -130,17 +128,29 @@ sub proposal_open_contract {
     my $response = {};
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
-            my $id  = $fmb->{id};
+            my $id = $fmb->{id};
+            my $sell_time;
+            $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
             my $bid = BOM::RPC::v3::Contract::get_bid({
                 short_code  => $fmb->{short_code},
                 contract_id => $id,
-                currency    => $client->currency
+                currency    => $client->currency,
+                is_sold     => $fmb->{is_sold},
+                sell_time   => $sell_time
             });
             if (exists $bid->{error}) {
                 $response->{$id} = $bid;
             } else {
+                my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
+                $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
+
                 $response->{$id} = {
-                    buy_price => $fmb->{buy_price},
+                    transaction_ids => $transaction_ids,
+                    buy_price       => $fmb->{buy_price},
+                    purchase_time   => Date::Utility->new($fmb->{purchase_time})->epoch,
+                    account_id      => $fmb->{account_id},
+                    is_sold         => $fmb->{is_sold},
+                    $sell_time ? (sell_time => $sell_time) : (),
                     defined $fmb->{sell_price}
                     ? (sell_price => sprintf('%.2f', $fmb->{sell_price}))
                     : (),
@@ -152,7 +162,7 @@ sub proposal_open_contract {
     return $response;
 }
 
-sub __get_contract_by_id {
+sub __get_contract_details_by_id {
     my $client      = shift;
     my $contract_id = shift;
 
@@ -160,7 +170,7 @@ sub __get_contract_by_id {
         broker_code => $client->broker_code,
         operation   => 'replica'
     });
-    return $mapper->get_contract_by_id($contract_id);
+    return $mapper->get_contract_details_with_transaction_ids($contract_id);
 }
 
 1;

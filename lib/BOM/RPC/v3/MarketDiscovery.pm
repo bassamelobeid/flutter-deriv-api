@@ -16,6 +16,73 @@ use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::System::RedisReplicated;
 use Sereal::Encoder;
+use BOM::Platform::Runtime;
+
+my %name_mapper = (
+    DVD_CASH   => localize('Cash Dividend'),
+    DVD_STOCK  => localize('Stock Dividend'),
+    STOCK_SPLT => localize('Stock Split'),
+);
+
+sub get_corporate_actions {
+    my $params = shift;
+    my ($symbol, $start, $end) = @{$params}{qw/symbol start end/};
+
+    my ($start_date, $end_date);
+
+    my $response;
+
+    if (not $end) {
+        $end_date = Date::Utility->new;
+    } else {
+        $end_date = Date::Utility->new($end);
+    }
+
+    if (not $start) {
+        $start_date = $end_date->minus_time_interval('365d');
+    } else {
+        $start_date = Date::Utility->new($start);
+    }
+
+    if ($start_date->is_after($end_date)) {
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+            code              => "GetCorporateActionsFailure"
+        });
+
+        return $response;
+    }
+
+    try {
+        my @actions;
+        my $underlying = BOM::Market::Underlying->new($symbol);
+
+        if ($underlying->market->affected_by_corporate_actions) {
+            @actions = $underlying->get_applicable_corporate_actions_for_period({
+                start => $start_date,
+                end   => $end_date,
+            });
+        }
+
+        foreach my $action (@actions) {
+            my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
+
+            $response->{$display_date} = {
+                type  => $name_mapper{$action->{type}},
+                value => $action->{value},
+            };
+        }
+
+    }
+    catch {
+        $response = BOM::RPC::v3::Utility::create_error({
+            message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+            code              => "GetCorporateActionsFailure"
+        });
+    };
+
+    return $response;
+}
 
 sub trading_times {
     my $params = shift;
@@ -61,7 +128,9 @@ sub trading_times {
 sub asset_index {
     my $params = shift;
 
-    my $asset_index = BOM::Product::Contract::Offerings->new->decorate_tree(
+    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
+
+    my $asset_index = BOM::Product::Contract::Offerings->new(landing_company => $landing_company_name)->decorate_tree(
         markets => {
             code => sub { $_->name },
             name => sub { $_->translated_display_name }
@@ -147,17 +216,16 @@ sub asset_index {
 sub active_symbols {
     my $params = shift;
 
-    my $client;
-    my $landing_company_name = 'costarica';
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
+
+    if ($params->{token} and my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token})) {
+        my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
         $landing_company_name = $client->landing_company->short if $client;
     }
 
-    my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
-
+    my $appconfig_revision = BOM::Platform::Runtime->instance->app_config->current_revision;
     my $key =
-        'legal_allowed_markets::' . $params->{args}->{active_symbols} . '::' . $params->{language} . '::' . join(",", sort @$legal_allowed_markets);
+        join('::', ('legal_allowed_markets', $params->{args}->{active_symbols}, $params->{language}, $landing_company_name, $appconfig_revision));
 
     my $active_symbols;
     if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($key)
@@ -165,13 +233,8 @@ sub active_symbols {
     {
         $active_symbols = Sereal::Decoder->new->decode($active_symbols);
     } else {
-        my %allowed_market;
-        undef @allowed_market{@$legal_allowed_markets};
-        $active_symbols = [
-            map {
-                my $descr = _description($_, $params->{args}->{active_symbols});
-                exists $allowed_market{$descr->{market}} ? $descr : ();
-            } get_offerings_with_filter('underlying_symbol')];
+        $active_symbols = [map { my $descr = _description($_, $params->{args}->{active_symbols}); }
+                get_offerings_with_filter('underlying_symbol', {landing_company => $landing_company_name})];
 
         BOM::System::RedisReplicated::redis_write()->set($key, Sereal::Encoder->new->encode($active_symbols));
         #expire in nearest 5 minute interval
@@ -187,7 +250,7 @@ sub _description {
     my $ul     = BOM::Market::Underlying->new($symbol) || return;
     my $iim    = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
     # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
-    my $exchange_is_open = eval { $ul->exchange } ? $ul->exchange->is_open_at(time) : '';
+    my $exchange_is_open = eval { $ul->calendar } ? $ul->calendar->is_open_at(time) : '';
     my ($spot, $spot_time, $spot_age) = ('', '', '');
     if ($spot = eval { $ul->spot }) {
         $spot_time = $ul->spot_time;
