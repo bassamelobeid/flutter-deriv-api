@@ -296,11 +296,11 @@ sub get_limits {
     my $wl_config       = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company;
 
     my $limit = +{
-        map ({
-                $_ => $client->get_limit({'for' => $_});
-            } (qw/account_balance daily_turnover payout/)),
-        open_positions => $client->get_limit_for_open_positions,
+        account_balance => $client->get_limit_for_account_balance,
+        open_positions  => $client->get_limit_for_open_positions,
     };
+
+    $limit->{market_specific} = $self->_get_market_limit_profile($client->currency);
 
     my $numdays       = $wl_config->for_days;
     my $numdayslimit  = $wl_config->limit_for_days;
@@ -1241,6 +1241,43 @@ sub topup_virtual {
         amount   => $amount,
         currency => $curr
     };
+}
+
+sub _get_market_limit_profile {
+    my $currency = shift;
+
+    my @markets = get_offerings_with_filter('market');
+
+    my $risk_profile = BOM::Platform::Static::Config::quants->{risk_profile};
+    # If we have submarket limit set, we should mention here.
+    # Note that we are not showing underlying limit even if they are set.
+    my $submarket_str = BOM::Platform::Runtime->instance->app_config->client_limits->submarket_limits;
+    my $submarket_limit = $submarket_str ? from_json($submarket_str) : {};
+
+    my %limits;
+    foreach my $market (@markets) {
+        my @submarket_list = get_offerings_with_filter('submarket', {market => $_});
+        if (my @limited_submarkets = grep { $submarket_limit->{$_} } @submarket_list) {
+            foreach my $submarket (@limited_submarkets) {
+                my $display_name = BOM::Market::SubMarket::Registry->get($submarket)->display_name;
+                my $limit        = $risk_profile->{$submarket_limit->{$submarket}};
+                push @{$limits{$market}},
+                    +{
+                    name           => $display_name,
+                    turnover_limit => $limit->{turnover}{$currency},
+                    payout_limit   => $limit->{payout}{$currency}};
+            }
+        } else {
+            my $market_obj = BOM::Market::Registry->get($market);
+            my $limit      = $risk_profile->{$market};
+            $limits{$market} = {
+                name           => $market_obj->display_name,
+                turnover_limit => $limit->{turnover}{$currency},
+                payout_limit   => $limit->{payout}{$currency}};
+        }
+    }
+
+    return \%limits;
 }
 
 1;
