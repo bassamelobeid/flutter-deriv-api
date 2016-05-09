@@ -1,8 +1,11 @@
 package BOM::Platform::Runtime::LandingCompany::Registry;
+use strict;
+use warnings;
+use YAML::XS qw(LoadFile);
 
-use namespace::autoclean;
-use Carp;
-use Try::Tiny;
+#use namespace::autoclean;
+#use Carp;
+#use Try::Tiny;
 
 use BOM::Platform::Runtime::LandingCompany;
 
