@@ -150,9 +150,12 @@ sub process_pricing_events {
                 msg_type => 'proposal',
                 proposal => $response,
             };
-            $results->{proposal}->{ask_price} *= roundnear(0.01, $amount / 1000);
+            $results->{proposal}->{ask_price} *= $amount / 1000;
+            $results->{proposal}->{ask_price} = roundnear(0.01, $results->{proposal}->{ask_price});
             if (not exist $results->{proposal}->{spread}) {
-                $results->{proposal}->{display_value} *= roundnear(0.01, $amount / 1000);
+                $results->{proposal}->{display_value} *= $amount / 1000;
+                $results->{proposal}->{display_value} = roundnear(0.01, $results->{proposal}->{display_value});
+
             }
             $results->{proposal}->{id} = $pricing_channel->{$serialized_args}->{$amount}->{uuid};
         }
