@@ -66,86 +66,87 @@ sub ticks_history {
 
     # subscribe first with flag of cache passed as 1 to indicate to cache the feed data
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        if (not $uuid = _feed_channel($c, 'subscribe', $args->{ticks_history}, $publish, $args, 1)) {
+        if (not $uuid = _feed_channel($c, 'subscribe', $args->{ticks_history}, $publish, $args, $callback, 1)) {
             return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
         }
     }
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'ticks_history',
-        sub {
+    my $callback = {
+        BOM::WebSocketAPI::Websocket_v3::rpc(
+            $c,
+            'ticks_history',
+            sub {
+                my $channel = $args->{ticks_history} . ';' . $publish;
+                my $feed_channel_type = $c->stash('feed_channel_type') || {};
 
-            my $channel = $args->{ticks_history} . ';' . $publish;
-            my $feed_channel_type = $c->stash('feed_channel_type') || {};
+                # if rpc response received remove the cache flag which was set during subscription
+                delete $feed_channel_type->{$channel}->{cache} if exists $feed_channel_type->{$channel};
 
-            # if rpc response received remove the cache flag which was set during subscription
-            delete $feed_channel_type->{$channel}->{cache} if exists $feed_channel_type->{$channel};
-
-            my $response = shift;
-            if ($response and exists $response->{error}) {
-                # cancel subscription if response has error
-                _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args) if $uuid;
-                return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
-            }
-
-            my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
-
-            # check for cached data
-            if (exists $feed_channel_cache->{$channel} and scalar(keys %{$feed_channel_cache->{$channel}})) {
-                my $index;
-                # both history and candles have different structure, check rpc ticks_history sub
-                if ($response->{type} eq 'history') {
-                    my @times  = @{$response->{data}->{history}->{times}};
-                    my @prices = @{$response->{data}->{history}->{prices}};
-
-                    foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
-                        # check if epoch is present in rpc response
-                        $index = last_index { $_ eq $epoch } @times;
-                        # if no index means subscription response came before rpc response
-                        # so update response with cached value
-                        if ($index < 0) {
-                            push @times, $epoch;
-                            # sort times so to find index where to push price
-                            @times = sort @times;
-                            # find last index again of pushed epoch
-                            $index = last_index { $_ eq $epoch } @times;
-                            # add the quote to prices array i.e at same index as epoch in times
-                            splice @prices, $index, 0, $feed_channel_cache->{$channel}->{$epoch}->{quote};
-
-                            $response->{data}->{history}->{times}  = \@times;
-                            $response->{data}->{history}->{prices} = \@prices;
-                        }
-                    }
-                } elsif ($response->{type} eq 'candles') {
-                    my $need_sorting;
-                    my @candles = @{$response->{data}->{candles}};
-                    foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
-                        # check if epoch exists in candles response
-                        $index = last_index { $_->{epoch} eq $epoch } @candles;
-                        # if no epoch of cache is in response then update the candles with cached data
-                        if ($index < 0) {
-                            $need_sorting = 1;
-                            push @candles, {
-                                open  => $feed_channel_cache->{$channel}->{$epoch}->{open},
-                                close => $feed_channel_cache->{$channel}->{$epoch}->{close},
-                                epoch => $epoch + 0,                                           # need to send as integer
-                                high  => $feed_channel_cache->{$channel}->{$epoch}->{high},
-                                low   => $feed_channel_cache->{$channel}->{$epoch}->{low}};
-                        }
-                    }
-                    @candles = sort { $a->{epoch} cmp $b->{epoch} } @candles if $need_sorting;
-                    $response->{data}->{candles} = \@candles;
+                my $response = shift;
+                if ($response and exists $response->{error}) {
+                    # cancel subscription if response has error
+                    _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args) if $uuid;
+                    return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
                 }
 
-                delete $feed_channel_cache->{$channel};
-            }
+                my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
-            return {
-                msg_type => $response->{type},
-                %{$response->{data}}};
-        },
-        {args => $args});
+                # check for cached data
+                if (exists $feed_channel_cache->{$channel} and scalar(keys %{$feed_channel_cache->{$channel}})) {
+                    my $index;
+                    # both history and candles have different structure, check rpc ticks_history sub
+                    if ($response->{type} eq 'history') {
+                        my @times  = @{$response->{data}->{history}->{times}};
+                        my @prices = @{$response->{data}->{history}->{prices}};
+
+                        foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
+                            # check if epoch is present in rpc response
+                            $index = last_index { $_ eq $epoch } @times;
+                            # if no index means subscription response came before rpc response
+                            # so update response with cached value
+                            if ($index < 0) {
+                                push @times, $epoch;
+                                # sort times so to find index where to push price
+                                @times = sort @times;
+                                # find last index again of pushed epoch
+                                $index = last_index { $_ eq $epoch } @times;
+                                # add the quote to prices array i.e at same index as epoch in times
+                                splice @prices, $index, 0, $feed_channel_cache->{$channel}->{$epoch}->{quote};
+
+                                $response->{data}->{history}->{times}  = \@times;
+                                $response->{data}->{history}->{prices} = \@prices;
+                            }
+                        }
+                    } elsif ($response->{type} eq 'candles') {
+                        my $need_sorting;
+                        my @candles = @{$response->{data}->{candles}};
+                        foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
+                            # check if epoch exists in candles response
+                            $index = last_index { $_->{epoch} eq $epoch } @candles;
+                            # if no epoch of cache is in response then update the candles with cached data
+                            if ($index < 0) {
+                                $need_sorting = 1;
+                                push @candles, {
+                                    open  => $feed_channel_cache->{$channel}->{$epoch}->{open},
+                                    close => $feed_channel_cache->{$channel}->{$epoch}->{close},
+                                    epoch => $epoch + 0,                                           # need to send as integer
+                                    high  => $feed_channel_cache->{$channel}->{$epoch}->{high},
+                                    low   => $feed_channel_cache->{$channel}->{$epoch}->{low}};
+                            }
+                        }
+                        @candles = sort { $a->{epoch} cmp $b->{epoch} } @candles if $need_sorting;
+                        $response->{data}->{candles} = \@candles;
+                    }
+
+                    delete $feed_channel_cache->{$channel};
+                }
+
+                return {
+                    msg_type => $response->{type},
+                    %{$response->{data}}};
+            },
+            {args => $args});
+    };
 
     return;
 }
@@ -312,7 +313,7 @@ sub process_realtime_events {
 }
 
 sub _feed_channel {
-    my ($c, $subs, $symbol, $type, $args, $cache) = @_;
+    my ($c, $subs, $symbol, $type, $args, $callback, $cache) = @_;
 
     my $uuid;
     my $feed_channel       = $c->stash('feed_channel')       || {};
@@ -335,7 +336,7 @@ sub _feed_channel {
         $feed_channel_type->{"$symbol;$type"}->{cache} = $cache || 0;
 
         my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
-        $redis->subscribe([$channel_name], sub { });
+        $redis->subscribe([$channel_name], $callback // sub { });
     }
 
     if ($subs eq 'unsubscribe') {
