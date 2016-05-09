@@ -46,6 +46,12 @@ bet_limits:
       GBP: 5
 
 client_limits:
+  maximum_daily_turnover:
+    USD: 500000
+    EUR: 500000
+    AUD: 500000
+    GBP: 500000
+    JPY: 50000000
   open_positions_payout_per_symbol_and_bet_type_limit:
     USD: 10000
     EUR: 10000

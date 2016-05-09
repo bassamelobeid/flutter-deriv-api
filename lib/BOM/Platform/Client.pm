@@ -479,7 +479,8 @@ sub get_limit_for_account_balance {
 sub get_limit_for_daily_turnover {
     my $self = shift;
 
-    my @limits;
+    # turnover maxed at 500K of any currency.
+    my @limits = (BOM::Platform::Static::Config::quants->{client_limits}->{maximum_daily_turnover}{$self->currency});
     if ($self->get_self_exclusion && $self->get_self_exclusion->max_turnover) {
         push @limits, $self->get_self_exclusion->max_turnover;
     }
@@ -488,8 +489,7 @@ sub get_limit_for_daily_turnover {
         push @limits, $val;
     }
 
-    return min(@limits) if @limits;
-    return;
+    return min(@limits);
 }
 
 sub get_limit_for_daily_losses {
