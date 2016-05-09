@@ -454,13 +454,13 @@ sub prepare_bet_data_for_buy {
                 staff_loginid => $self->staff,
                 source        => $self->source,
             },
-            bet_data     => $bet_params,
+            bet_data             => $bet_params,
             quants_bet_variables => $quants_bet_variables,
         });
 }
 
-sub prepare_buy { ## no critic (RequireArgUnpacking)
-    my $self = shift;
+sub prepare_buy {    ## no critic (RequireArgUnpacking)
+    my $self    = shift;
     my %options = @_;
 
     my $error_status;
@@ -471,7 +471,8 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
         # ask your friendly DBA team if in doubt
         #
         # Keep the transaction rate test first to limit the impact of abusive buyers
-        $error_status = $self->$_ and return $error_status for (
+        $error_status = $self->$_ and return $error_status
+            for (
             qw/
             _validate_buy_transaction_rate
             _validate_iom_withdrawal_limit
@@ -505,7 +506,7 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
     return $error_status, $bet_data;
 }
 
-sub buy { ## no critic (RequireArgUnpacking)
+sub buy {    ## no critic (RequireArgUnpacking)
     my $self    = shift;
     my @options = @_;
 
@@ -523,7 +524,7 @@ sub buy { ## no critic (RequireArgUnpacking)
             currency_code  => $self->contract->currency,
         },
         limits => $self->limits,
-        db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
+        db     => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
     );
 
     my $try   = 0;
@@ -563,7 +564,7 @@ sub buy { ## no critic (RequireArgUnpacking)
     return;
 }
 
-sub batch_buy { ## no critic (RequireArgUnpacking)
+sub batch_buy {                        ## no critic (RequireArgUnpacking)
     my $self    = shift;
     my @options = @_;
 
@@ -607,17 +608,12 @@ sub batch_buy { ## no critic (RequireArgUnpacking)
         my $list = $per_broker{$broker};
         # with hash key caching introduced in recent perl versions
         # the "map sort map" pattern does not make sense anymore.
-        @$list = sort {$a->{loginid} cmp $b->{loginid}} @$list;
+        @$list = sort { $a->{loginid} cmp $b->{loginid} } @$list;
 
-        
     }
 
     for my $broker (keys %per_broker) {
         my $list = $per_broker{$broker};
-
-        
-
-
 
         my ($error_status, $stats_data, $bet_data) = $self->prepare_buy(@options, clients => $list);
         #return $error_status if $error_status;
@@ -629,10 +625,9 @@ sub batch_buy { ## no critic (RequireArgUnpacking)
                 currency_code  => $self->contract->currency,
             },
             limits => $self->limits,
-            db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
+            db     => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
         );
     }
-
 
     ...;
 
@@ -1548,7 +1543,7 @@ sub __validate_iom_withdrawal_limit {
 }
 
 sub _validate_iom_withdrawal_limit {
-    my $self   = shift;
+    my $self = shift;
 
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
@@ -1673,8 +1668,8 @@ Validates whether the client has provided his residence country
 =cut
 
 sub __validate_jurisdictional_restrictions {
-    my $self        = shift;
-    my $client      = shift;
+    my $self   = shift;
+    my $client = shift;
 
     my $contract    = $self->contract;
     my $residence   = $client->residence;
@@ -1816,7 +1811,7 @@ sub __validate_client_self_exclusion {
 }
 
 sub _validate_client_self_exclusion {
-    my $self   = shift;
+    my $self = shift;
 
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
