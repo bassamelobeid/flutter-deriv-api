@@ -23,7 +23,7 @@ sub forget_all {
     if (my $type = $args->{forget_all}) {
         if ($type eq 'balance' or $type eq 'transaction') {
             $removed_ids = _forget_transaction_subscription($c, $type);
-        } elsif ($type eq 'proposal') {
+        } elsif ($type eq 'price_stream') {
             $removed_ids = _forget_all_pricing_subscriptions($c);
         } else {
             $removed_ids = _forget_feed_subscription($c, $type);
