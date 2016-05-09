@@ -139,7 +139,7 @@ sub process_pricing_events {
     delete $response->{key};
 
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
-        next if  $amount eq 'channel_name';
+        next if $amount eq 'channel_name';
         my $results;
         if ($response and exists $response->{error}) {
             my $err = $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
@@ -187,7 +187,7 @@ sub _pricing_channel {
         $rp->send();
         $c->stash('redis')->subscribe([$rp->_processed_channel], sub { });
 
-        $uuid = Data::UUID->new->create_str();
+        $uuid                                                           = Data::UUID->new->create_str();
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
         $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
