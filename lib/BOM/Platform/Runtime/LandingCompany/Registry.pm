@@ -16,7 +16,7 @@ BEGIN {
         $landing_companies{$k} = $lc;
         $landing_companies{$v->{short}} = $lc;
         push @all_landing_companies, $lc;
-        map { $currencies{$_} = 1 } @{$v->{legal_allowed_currencies}};
+        @currencies{@{$v->{legal_allowed_currencies}}} = ();
     }
     @all_currencies = keys %currencies;
 }
@@ -50,10 +50,6 @@ sub all {
 }
 
 1;
-
-=head1 AUTHOR
-
-Arun Murali, C<< <arun at regentmarkets.com> >>
 
 =head1 LICENSE AND COPYRIGHT
 
