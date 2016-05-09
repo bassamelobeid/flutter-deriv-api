@@ -211,6 +211,16 @@ subtest $method => sub {
         'The token is invalid.',
         'invalid token error if token undef'
     );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                token => $token1,
+            }
+            )->{error}{message_to_client},
+        'The token is invalid.',
+        'no token error if token is valid'
+    );
 
     is(
         $c->tcall(
