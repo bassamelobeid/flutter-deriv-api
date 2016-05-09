@@ -8,7 +8,6 @@ use BOM::Platform::Runtime::LandingCompany::Registry;
 my $registry;
 lives_ok {
     $registry = BOM::Platform::Runtime::LandingCompany::Registry->new();
-    $registry->keys;
 }
 'Initialized Registry';
 
