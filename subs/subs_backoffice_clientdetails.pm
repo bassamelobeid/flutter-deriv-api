@@ -1,6 +1,5 @@
 use strict 'vars';
 use Encode;
-use Carp qw( croak );
 
 use Format::Util::Strings qw( set_selected_item );
 use Date::Utility;

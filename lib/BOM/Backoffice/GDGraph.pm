@@ -6,7 +6,6 @@ use 5.010;
 use utf8;
 use File::Temp;
 use GD::Graph::lines;
-use Carp;
 use File::Basename qw(fileparse);
 
 our $VERSION = '1.0';
@@ -100,10 +99,10 @@ sub generate_line_graph {
         title   => $args->{title},
         dclrs   => [qw(dgreen dpink lblue)],
         y_max_value => $args->{y_max_value},
-    ) or croak $graph->error;
+    ) or die $graph->error;
 
-    my $gp = $graph->plot($data) or croak $graph->error;
-    open my $IMG, '>', $file or croak $!;
+    my $gp = $graph->plot($data) or die $graph->error;
+    open my $IMG, '>', $file or die $!;
     binmode $IMG;
     print $IMG $gp->png;
     close $IMG;

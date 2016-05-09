@@ -2,8 +2,6 @@
 package main;
 use strict;
 
-use Carp qw( croak );
-
 use BOM::Platform::Sysinit ();
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Client;
@@ -11,7 +9,7 @@ use BOM::Platform::Client;
 BOM::Platform::Sysinit::init();
 
 if ($ENV{REQUEST_METHOD}) {
-    croak 'REQUEST_METHOD[' . $ENV{REQUEST_METHOD} . '] exists!?';
+    die 'REQUEST_METHOD[' . $ENV{REQUEST_METHOD} . '] exists!?';
 }
 
 my $check_date = Date::Utility->new(time - 86400)->date;
