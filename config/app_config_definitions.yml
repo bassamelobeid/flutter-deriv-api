@@ -298,11 +298,6 @@ quants:
           isa: ArrayRef
           default: []
           global: 1
-        newly_added:
-          description: "Specify the new launched underlyings that need more closely monitoring, eg: KOSPI2, JCI, .."
-          isa: ArrayRef
-          default: []
-          global: 1
         suspend_trades:
           description: "A list of underlyings for which trades should be suspended"
           global: 1
