@@ -107,12 +107,12 @@ sub _init {
         });
     BOM::Platform::Runtime->instance(undef);
 
-    initialize_symbol_dividend "R_25",    0;
-    initialize_symbol_dividend "R_50",    0;
-    initialize_symbol_dividend "R_75",    0;
-    initialize_symbol_dividend "R_100",   0;
-    initialize_symbol_dividend "RDBULL",  -35;
-    initialize_symbol_dividend "RDBEAR",  20;
+    initialize_symbol_dividend "R_25",   0;
+    initialize_symbol_dividend "R_50",   0;
+    initialize_symbol_dividend "R_75",   0;
+    initialize_symbol_dividend "R_100",  0;
+    initialize_symbol_dividend "RDBULL", -35;
+    initialize_symbol_dividend "RDBEAR", 20;
 
     BOM::System::Chronicle::set(
         'interest_rates',
