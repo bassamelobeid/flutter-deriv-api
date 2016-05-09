@@ -108,23 +108,30 @@ sub ticks_history {
                             }
                         }
                     } elsif ($response->{type} eq 'candles') {
-                        my $need_sorting;
                         my @candles = @{$response->{data}->{candles}};
                         foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
-                            # check if epoch exists in candles response
-                            $index = last_index { $_->{epoch} eq $epoch } @candles;
-                            # if no epoch of cache is in response then update the candles with cached data
+                            my $window = $epoch - $epoch % $publish;
+                            # check if window exists in candles response
+                            $index = last_index { $_->{epoch} eq $window } @candles;
+                            # if no window is in response then update the candles with cached data
                             if ($index < 0) {
-                                $need_sorting = 1;
                                 push @candles, {
                                     open  => $feed_channel_cache->{$channel}->{$epoch}->{open},
                                     close => $feed_channel_cache->{$channel}->{$epoch}->{close},
-                                    epoch => $epoch + 0,                                           # need to send as integer
+                                    epoch => $window + 0,                                          # need to send as integer
+                                    high  => $feed_channel_cache->{$channel}->{$epoch}->{high},
+                                    low   => $feed_channel_cache->{$channel}->{$epoch}->{low}};
+                            } else {
+                                # if window exists replace it with new data
+                                $candles[$index] = {
+                                    open  => $feed_channel_cache->{$channel}->{$epoch}->{open},
+                                    close => $feed_channel_cache->{$channel}->{$epoch}->{close},
+                                    epoch => $window + 0,                                          # need to send as integer
                                     high  => $feed_channel_cache->{$channel}->{$epoch}->{high},
                                     low   => $feed_channel_cache->{$channel}->{$epoch}->{low}};
                             }
                         }
-                        @candles = sort { $a->{epoch} cmp $b->{epoch} } @candles if $need_sorting;
+                        @candles = sort { $a->{epoch} cmp $b->{epoch} } @candles;
                         $response->{data}->{candles} = \@candles;
                     }
 
