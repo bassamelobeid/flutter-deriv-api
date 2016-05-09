@@ -25,7 +25,7 @@ subtest 'BOM::Market::SubMarket::Registry' => sub {
     my %markets = (
         forex       => 3,
         volidx      => 3,
-        indices     => 5,
+        indices     => 6,
         stocks      => 3,
         commodities => 2,
     );

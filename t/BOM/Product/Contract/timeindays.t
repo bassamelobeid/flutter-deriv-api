@@ -221,7 +221,7 @@ subtest Equity => sub {
     my $bet        = _sample_bet(
         underlying  => $underlying,
         date_start  => Date::Utility->new('2012-01-11 10:30:00'),
-        date_expiry => $underlying->exchange->closing_on(Date::Utility->new('18-Jan-12')),
+        date_expiry => $underlying->calendar->closing_on(Date::Utility->new('18-Jan-12')),
     );
     cmp_ok($bet->timeindays->amount, '==', 7.25, 'One week EQ bet: does not follow integer days concept.');
 };
