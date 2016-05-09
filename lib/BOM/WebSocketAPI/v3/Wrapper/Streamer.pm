@@ -86,14 +86,14 @@ sub price_stream {
     my $symbol   = $args->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
-        return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
+        return $c->new_error('price_stream', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
     } else {
         my $id;
         if ($args->{subscribe} == 1 and not $id = _pricing_channel($c, 'subscribe', $args)) {
-            return $c->new_error('proposal',
+            return $c->new_error('price_stream',
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
-        send_ask($c, $id, $args);
+        # send_ask($c, $id, $args);
     }
     return;
 }
@@ -126,26 +126,26 @@ sub process_pricing_events {
         next if $amount eq 'channel_name';
         my $results;
         if ($response and exists $response->{error}) {
-            my $err = $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
+            my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
             $results = {
-                msg_type => 'proposal',
-                proposal => $response,
+                msg_type     => 'price_stream',
+                price_stream => $response,
             };
             # For non spread
             if ($pricing_channel->{$serialized_args}->{$amount}->{args}->{basis}) {
-                $results->{proposal}->{ask_price} *= $amount / 1000;
-                $results->{proposal}->{ask_price} = roundnear(0.01, $results->{proposal}->{ask_price});
+                $results->{price_stream}->{ask_price} *= $amount / 1000;
+                $results->{price_stream}->{ask_price} = roundnear(0.01, $results->{price_stream}->{ask_price});
 
-                $results->{proposal}->{display_value} *= $amount / 1000;
-                $results->{proposal}->{display_value} = roundnear(0.01, $results->{proposal}->{display_value});
+                $results->{price_stream}->{display_value} *= $amount / 1000;
+                $results->{price_stream}->{display_value} = roundnear(0.01, $results->{price_stream}->{display_value});
 
             }
-            $results->{proposal}->{id} = $pricing_channel->{$serialized_args}->{$amount}->{uuid};
+            $results->{price_stream}->{id} = $pricing_channel->{$serialized_args}->{$amount}->{uuid};
         }
-        BOM::WebSocketAPI::Websocket_v3::_process_result($c, $results, 'proposal', $pricing_channel->{$serialized_args}->{$amount}->{args},
+        BOM::WebSocketAPI::Websocket_v3::_process_result($c, $results, 'price_stream', $pricing_channel->{$serialized_args}->{$amount}->{args},
             undef, undef);
     }
     return;
