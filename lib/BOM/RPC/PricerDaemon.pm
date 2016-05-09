@@ -6,6 +6,7 @@ use warnings;
 use Carp;
 use JSON::XS qw(encode_json decode_json);
 use BOM::RPC::v3::Contract;
+use BOM::System::RedisReplicated;
 
 sub new {
     my ($class, @args) = @_;
@@ -41,6 +42,8 @@ sub _initialize {
 
 sub price {
     my $self = shift;
+
+    return if (not BOM::System::RedisReplicated::redis_read->get('BOM::RPC::PricerDaemon::doprice'));
 
     my $response = BOM::RPC::v3::Contract::send_ask({args => $self->{params}});
     $response->{data} = $self->{data};
