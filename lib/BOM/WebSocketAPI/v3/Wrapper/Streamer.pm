@@ -150,9 +150,11 @@ sub process_pricing_events {
                 msg_type => 'proposal',
                 proposal => $response,
             };
-            $results->{proposal}->{ask_price} *= $amount / 1000;
-            $results->{proposal}->{ask_price} = roundnear(0.01, $results->{proposal}->{ask_price});
-            if (not exists $results->{proposal}->{spread}) {
+            # For non spread
+            if ($pricing_channel->{$serialized_args}->{$amount}->{args}->{basis}) {
+                $results->{proposal}->{ask_price} *= $amount / 1000;
+                $results->{proposal}->{ask_price} = roundnear(0.01, $results->{proposal}->{ask_price});
+
                 $results->{proposal}->{display_value} *= $amount / 1000;
                 $results->{proposal}->{display_value} = roundnear(0.01, $results->{proposal}->{display_value});
 
@@ -169,7 +171,9 @@ sub _pricing_channel {
     my ($c, $subs, $args) = @_;
 
     my %args_hash = %{$args};
-    $args_hash{amount} = 1000;
+
+    $args_hash{amount}   = 1000;
+    $args_hash{basis}    = 'payout' if $args_hash{basis};
     $args_hash{language} = $c->stash('language') || 'EN';
     my $serialized_args = _serialized_args(\%args_hash);
 
