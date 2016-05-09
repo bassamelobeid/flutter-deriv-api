@@ -15,8 +15,10 @@ BEGIN {
   %long_landing_companies = %{LoadFile('/home/git/regentmarkets/bom-platform/config/landing_companies.yml')};
   while (my ($k, $v) = each %long_landing_companies) {
     $v->{name} ||= $k;
+    my $lc = BOM::Platform::Runtime::LandingCompany->new($v);
     $short_landing_companies{$v->{short}} = $v;
-    $landing_companies{$k} =  BOM::Platform::Runtime::LandingCompany->new($v);
+    $landing_companies{$k} = $lc;
+    $landing_companies{$v->{short}} = $lc;
   }
 }
 
