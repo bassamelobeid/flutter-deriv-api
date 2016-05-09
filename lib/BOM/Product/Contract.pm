@@ -2487,7 +2487,7 @@ sub _build_date_start_blackouts {
     if (my $sod = $calendar->opening_on($start)) {
         my $sod_blackout =
               ($underlying->sod_blackout_start) ? $underlying->sod_blackout_start
-            : (( $underlying->market->name eq 'forex' ) and $self->is_forward_starting and $start->day_of_week == 1)
+            : ( $underlying->market->name eq 'forex'  and $self->is_forward_starting and $start->day_of_week == 1)
             ? '10m'
             : '';
         if ($sod_blackout) {
