@@ -9,6 +9,7 @@ use Time::HiRes;
 
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
+use BOM::Platform::Client;
 use BOM::Database::Rose::DB;
 use BOM::Database::Model::OAuth;
 use BOM::RPC::v3::Utility;
@@ -71,6 +72,17 @@ sub register {
 
             my $r = BOM::Platform::Context::Request->new($args);
             BOM::Platform::Context::request($r);
+
+            if ($require_auth) {
+                return BOM::RPC::v3::Utility::invalid_token_error()
+                    unless $token_details and exists $token_details->{loginid};
+
+                my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
+                if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+                    return $auth_error;
+                }
+                $params->{client} = $client;
+            }
 
             goto &$code;
         });
