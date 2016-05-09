@@ -25,7 +25,6 @@ use Carp qw( croak );
 use YAML::XS;
 
 use BOM::MarketData::VolSurface::Delta;
-use BOM::MarketData::VolSurface::Phased;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::System::Chronicle;
 use BOM::System::RedisReplicated;
