@@ -66,6 +66,8 @@ sub entry_point {
             message => sub {
                 my ($self, $msg, $channel) = @_;
 
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_pricing_events($c, $msg, $channel)
+                    if $channel =~ /^Redis::Processor::/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
                     if $channel =~ /^(?:FEED|PricingTable)::/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
@@ -164,6 +166,7 @@ my @dispatch = (
         \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history, 0
     ],
     ['proposal',       \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,      0],
+    ['price_stream',   \&BOM::WebSocketAPI::v3::Wrapper::Streamer::price_stream,  0],
     ['pricing_table',  \&BOM::WebSocketAPI::v3::Wrapper::Streamer::pricing_table, 0],
     ['forget',         \&BOM::WebSocketAPI::v3::Wrapper::System::forget,          0],
     ['forget_all',     \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,      0],
@@ -563,42 +566,49 @@ sub rpc {
                 $self->send({json => $data});
                 return;
             }
-            my $send = 1;
 
             $data = &$callback($res->result);
 
-            if (not $data) {
-                $send = undef;
-                $data = {};
-            }
-            my $l = length JSON::to_json($data);
-            if ($l > 328000) {
-                $data = $self->new_error('error', 'ResponseTooLarge', $self->l('Response too large.'));
-            }
-
-            $data->{echo_req} = $args;
-            $data->{req_id} = $req_id if $req_id;
-
-            if ($self->stash('debug')) {
-                $data->{debug} = {
-                    time   => 1000 * Time::HiRes::tv_interval($tv),
-                    method => $method
-                };
-            }
-
-            if ($send) {
-                $tv = [Time::HiRes::gettimeofday];
-
-                $self->send({json => $data});
-
-                DataDog::DogStatsd::Helper::stats_timing(
-                    'bom_websocket_api.v_3.rpc.call.timing.sent',
-                    1000 * Time::HiRes::tv_interval($tv),
-                    {tags => ["rpc:$method"]});
-
-            }
+            _process_result($self, $data, $method, $args, $req_id, $tv);
             return;
         });
+    return;
+}
+
+sub _process_result {
+    my ($self, $data, $method, $args, $req_id, $tv) = @_;
+
+    my $send = 1;
+    if (not $data) {
+        $send = undef;
+        $data = {};
+    }
+    my $l = length JSON::to_json($data);
+    if ($l > 328000) {
+        $data = $self->new_error('error', 'ResponseTooLarge', $self->l('Response too large.'));
+    }
+
+    $data->{echo_req} = $args;
+    $data->{req_id} = $req_id if $req_id;
+
+    if ($self->stash('debug')) {
+        $data->{debug} = {
+            time   => 1000 * Time::HiRes::tv_interval($tv),
+            method => $method
+        };
+    }
+
+    if ($send) {
+        $tv = [Time::HiRes::gettimeofday];
+
+        $self->send({json => $data});
+
+        DataDog::DogStatsd::Helper::stats_timing(
+            'bom_websocket_api.v_3.rpc.call.timing.sent',
+            1000 * Time::HiRes::tv_interval($tv),
+            {tags => ["rpc:$method"]});
+
+    }
     return;
 }
 

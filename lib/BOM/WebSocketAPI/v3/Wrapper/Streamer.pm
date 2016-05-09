@@ -6,11 +6,15 @@ use warnings;
 use JSON;
 use Data::UUID;
 use Scalar::Util qw (looks_like_number);
+use Format::Util::Numbers qw(roundnear);
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Japan::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::System;
+use Mojo::Redis::Processor;
+use JSON::XS qw(encode_json decode_json);
+use BOM::System::RedisReplicated;
 
 sub ticks {
     my ($c, $args) = @_;
@@ -76,6 +80,129 @@ sub ticks_history {
     return;
 }
 
+sub price_stream {
+    my ($c, $args) = @_;
+
+    my $symbol   = $args->{symbol};
+    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
+    if ($response and exists $response->{error}) {
+        return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
+    } else {
+        my $id;
+        if ($args->{subscribe} == 1 and not $id = _pricing_channel($c, 'subscribe', $args)) {
+            return $c->new_error('proposal',
+                'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+        }
+        send_ask($c, $id, $args);
+    }
+    return;
+}
+
+sub _serialized_args {
+    my $h = shift;
+    my @a = ();
+    foreach my $k (sort keys %$h) {
+        push @a, ($k, $h->{$k});
+    }
+    return encode_json(\@a);
+}
+
+sub process_pricing_events {
+    my ($c, $message, $chan) = @_;
+
+    return if not $message;
+
+    my $response        = decode_json($message);
+    my $serialized_args = $response->{data};
+
+    my $pricing_channel = $c->stash('pricing_channel');
+    return if not $pricing_channel or not $pricing_channel->{$serialized_args};
+    BOM::System::RedisReplicated::redis_write->expire($response->{key}, 60);
+
+    delete $response->{data};
+    delete $response->{key};
+
+    foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
+        next if $amount eq 'channel_name';
+        my $results;
+        if ($response and exists $response->{error}) {
+            my $err = $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
+            $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
+            $results = $err;
+        } else {
+            $results = {
+                msg_type => 'proposal',
+                proposal => $response,
+            };
+            # For non spread
+            if ($pricing_channel->{$serialized_args}->{$amount}->{args}->{basis}) {
+                $results->{proposal}->{ask_price} *= $amount / 1000;
+                $results->{proposal}->{ask_price} = roundnear(0.01, $results->{proposal}->{ask_price});
+
+                $results->{proposal}->{display_value} *= $amount / 1000;
+                $results->{proposal}->{display_value} = roundnear(0.01, $results->{proposal}->{display_value});
+
+            }
+            $results->{proposal}->{id} = $pricing_channel->{$serialized_args}->{$amount}->{uuid};
+        }
+        BOM::WebSocketAPI::Websocket_v3::_process_result($c, $results, 'proposal', $pricing_channel->{$serialized_args}->{$amount}->{args},
+            undef, undef);
+    }
+    return;
+}
+
+sub _pricing_channel {
+    my ($c, $subs, $args) = @_;
+
+    my %args_hash = %{$args};
+
+    $args_hash{amount}   = 1000;
+    $args_hash{basis}    = 'payout' if $args_hash{basis};
+    $args_hash{language} = $c->stash('language') || 'EN';
+    my $serialized_args = _serialized_args(\%args_hash);
+
+    my $pricing_channel = $c->stash('pricing_channel') || {};
+
+    if ($pricing_channel->{$serialized_args} and $pricing_channel->{$serialized_args}->{$args->{amount}}) {
+        return;
+    }
+
+    my %skip_duration_list = map { $_ => 1 } qw(s m h);
+    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
+    my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
+
+    my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
+    my $atm_contract = ($args->{contract_type} =~ /^(CALL|PUT)$/ and not $args->{barrier}) ? 1 : 0;
+    my $fixed_expiry = $args->{date_expiry} ? 1 : 0;
+    my $skip_tick_expiry =
+        ($skip_symbols and $skip_type_list{$args->{contract_type}} and $args->{duration_unit} eq 't');
+    my $skip_intraday_atm_non_fixed_expiry =
+        ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_contract and not $fixed_expiry);
+
+    my $uuid = Data::UUID->new->create_str();
+    if ($skip_tick_expiry or $skip_intraday_atm_non_fixed_expiry) {
+        return $uuid;
+    }
+
+    if (not $pricing_channel->{$serialized_args}) {
+        my $rp = Mojo::Redis::Processor->new({
+            'write_conn' => BOM::System::RedisReplicated::redis_write,
+            'read_conn'  => BOM::System::RedisReplicated::redis_read,
+            data         => $serialized_args,
+            trigger      => 'FEED::' . $args->{symbol},
+        });
+        $rp->send();
+        $c->stash('redis')->subscribe([$rp->_processed_channel], sub { });
+
+        $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
+        $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
+        $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
+
+        $c->stash('pricing_channel' => $pricing_channel);
+    }
+    return $uuid;
+}
+
 sub proposal {
     my ($c, $args) = @_;
 
@@ -90,6 +217,10 @@ sub proposal {
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
         send_ask($c, $id, $args);
+
+        if ($c->stash->{redis}->get('BOM::RPC::PricerDaemon::doprice')) {
+            price_stream($c, $args);
+        }
     }
     return;
 }
@@ -100,8 +231,8 @@ sub pricing_table {
     my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args);
 
     if ($response and exists $response->{error}) {
-        return $c->new_error('pricing_table', $response->{error}->{code},
-            $c->l($response->{error}->{message}, @{$response->{error}->{params} || []}));
+        return $c->new_error('pricing_table',
+            $response->{error}->{code}, $c->l($response->{error}->{message}, @{$response->{error}->{params} || []}));
     }
 
     my $symbol = $args->{symbol};
