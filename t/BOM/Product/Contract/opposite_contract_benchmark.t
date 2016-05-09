@@ -28,6 +28,20 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $pricing_date
     });
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
+    {
+        events => [
+            {
+                symbol           => 'USD',
+                impact           => 1,
+                release_date     => $pricing_date->minus_time_interval('10d')->epoch,
+                recorded_date    => $pricing_date->epoch,
+            }
+        ]
+    },
+);
+
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 
