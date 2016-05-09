@@ -16,7 +16,6 @@ A wrapper to let us use Redis SortedSets to get aggregated tick data.
 
 use 5.010;
 use Moose;
-use Carp;
 
 use DataDog::DogStatsd::Helper qw(stats_timing);
 use Cache::RedisDB;

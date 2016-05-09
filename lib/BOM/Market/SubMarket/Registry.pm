@@ -23,7 +23,6 @@ call I<new>, just get the object using I<instance> method.
 
 use namespace::autoclean;
 use MooseX::Singleton;
-use Carp;
 
 use BOM::Market::SubMarket;
 

@@ -148,7 +148,7 @@ Changes filter behavior to disallow listing of symbols which have buying/trading
 
 sub get_symbols_for {
     my ($self, %args) = @_;
-    die("market is not specified!" . Carp::longmess)
+    die("market is not specified!")
         unless $args{market};
 
     $args{contract_category} = $args{contract_category}->code

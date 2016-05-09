@@ -24,7 +24,6 @@ use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::VolSurface::Delta;
 use List::Util qw( first );
-use Carp;
 
 has file => (
     is         => 'ro',

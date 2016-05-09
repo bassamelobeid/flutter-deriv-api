@@ -1,6 +1,5 @@
 package BOM::MarketData::VolSurface::Cutoff;
 
-use Carp;
 use Moose;
 use DateTime;
 use DateTime::TimeZone;

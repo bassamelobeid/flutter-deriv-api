@@ -5,7 +5,6 @@ extends 'BOM::MarketData::AutoUpdater';
 
 use Text::CSV::Slurp;
 use File::Slurp;
-use Carp;
 
 use Date::Utility;
 use BOM::Market::Registry;

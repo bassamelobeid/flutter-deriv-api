@@ -24,7 +24,6 @@ use List::MoreUtils qw(indexes);
 use List::Util qw(min first);
 use Storable qw( dclone );
 use JSON qw(from_json);
-use Carp;
 
 =head2 for_date
 

@@ -17,7 +17,6 @@ my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 use open qw[ :encoding(UTF-8) ];
 use BOM::Market::Types;
 
-use Carp;
 use List::MoreUtils qw( any );
 use List::Util qw( first max min);
 use Scalar::Util qw( looks_like_number );
@@ -847,7 +846,7 @@ sub last_licensed_display_epoch {
     } elsif ($lic eq 'chartonly') {
         return 0;
     } else {
-        confess "don't know how to deal with '$lic' license of " . $self->symbol;
+        die "don't know how to deal with '$lic' license of " . $self->symbol;
     }
 }
 
@@ -1612,7 +1611,7 @@ sub get_ohlc_data_for_period {
     my $end_date   = Date::Utility->new($end);
 
     if ($end_date->epoch < $start_date->epoch) {
-        confess "[$0][get_ohlc_data_for_period] start_date > end_date ("
+        die "[$0][get_ohlc_data_for_period] start_date > end_date ("
             . $start_date->datetime . ' > '
             . $end_date->datetime
             . ") with input: $start > $end";

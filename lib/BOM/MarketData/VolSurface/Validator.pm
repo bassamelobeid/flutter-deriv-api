@@ -29,7 +29,6 @@ use 5.010;
 
 use Format::Util::Numbers qw(roundnear);
 use List::Util qw( min reduce );
-use Carp;
 use Math::Business::BlackScholes::Binaries;
 
 use List::MoreUtils qw(indexes any);

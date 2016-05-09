@@ -11,7 +11,6 @@ use Format::Util::Numbers qw( roundnear );
 use BOM::Platform::Runtime;
 use VolSurface::Utils qw( get_delta_for_strike get_strike_for_moneyness );
 use List::MoreUtils qw(none);
-use Carp;
 use Math::Function::Interpolator;
 use Storable qw( dclone );
 use Try::Tiny;

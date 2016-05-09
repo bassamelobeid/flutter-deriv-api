@@ -13,7 +13,6 @@ Base class for all volatility surfaces.
 use 5.010;
 
 use Moose;
-use Carp;
 use Try::Tiny;
 use DateTime::TimeZone;
 use List::MoreUtils qw(notall none all);
