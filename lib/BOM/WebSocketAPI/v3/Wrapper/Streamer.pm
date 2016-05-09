@@ -6,6 +6,7 @@ use warnings;
 use JSON;
 use Data::UUID;
 use Scalar::Util qw (looks_like_number);
+use Format::Util::Numbers qw(roundnear);
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Japan::Contract;
@@ -149,7 +150,10 @@ sub process_pricing_events {
                 msg_type => 'proposal',
                 proposal => $response,
             };
-            $results->{proposal}->{ask_price} *= $amount / 1000;
+            $results->{proposal}->{ask_price} *= roundnear(0.01, $amount / 1000);
+            if (not exist $results->{proposal}->{spread}) {
+                $results->{proposal}->{display_value} *= roundnear(0.01, $amount / 1000);
+            }
             $results->{proposal}->{id} = $pricing_channel->{$serialized_args}->{$amount}->{uuid};
         }
         BOM::WebSocketAPI::Websocket_v3::_process_result($c, $results, 'proposal', $pricing_channel->{$serialized_args}->{$amount}->{args},
