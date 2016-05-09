@@ -261,13 +261,8 @@ subtest 'proveid' => sub {
         $v->mock(-_fetch_proveid, sub { return {} });
         $v->mock(-_fetch_checkid, sub { return });
         do {
-            my @warnings;
-            local $SIG{__WARN__} = sub { push @warnings, shift };
+            local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
             $v->run_authentication;
-            if (@warnings) {
-                is @warnings, 1, 'expected 1 warning';
-                like $warnings[0], qr/^Error sending mail/, 'expected mail sending error';
-            }
         };
         my @notif = @{$v->notified};
         is @notif, 2, 'sent two notification';
