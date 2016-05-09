@@ -9,13 +9,14 @@ use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Runtime::LandingCompany;
 
-my (%long_landing_companies, %short_landing_companies);
+my (%long_landing_companies, %short_landing_companies, %landing_companies);
 
 BEGIN {
   %long_landing_companies = %{LoadFile('/home/git/regentmarkets/bom-platform/config/landing_companies.yml')};
   while (my ($k, $v) = each %long_landing_companies) {
     $v->{name} = $k;
     $short_landing_companies{$v->{short}} = $v;
+    $landing_companies{$k} =  BOM::Platform::Runtime::LandingCompany->new($result);
   }
 }
 
@@ -36,8 +37,7 @@ sub new {
 
 sub get{
       my $name = $_[-1];
-      my $result = $short_landing_companies{$name} || $long_landing_companies{$name};
-      return $result ? BOM::Platform::Runtime::LandingCompany->new($result) : undef;
+      return $short_landing_companies{$name} || $long_landing_companies{$name};
 }
 
 
