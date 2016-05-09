@@ -291,10 +291,7 @@ sub calculate_limits {
     defined($lim = $client->get_limit_for_30day_losses)
         and $self->limits->{max_30day_losses} = $lim;
 
-    my $turnover_limit;
-    if ($client->get_limit_for_daily_turnover) {
-        $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
-    }
+    $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
 
     if ($contract->is_spread) {
         $self->limits->{spread_bet_profit_limit} =
