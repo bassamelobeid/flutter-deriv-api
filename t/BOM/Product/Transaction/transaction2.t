@@ -15,7 +15,7 @@ use BOM::Platform::Client::Utility;
 use BOM::Platform::Static::Config;
 
 use BOM::Product::Transaction;
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory qw( produce_contract make_similar_contract);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -27,7 +27,7 @@ use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $now = Date::Utility->new;
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD', 'WLDUSD');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -49,12 +49,31 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol => 'GDAXI',
+        date   => Date::Utility->new,
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/USD EUR JPY JPY-USD/);
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => 'GDAXI',
+        recorded_date => Date::Utility->new,
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'correlation_matrix',
+    {
+        recorded_date => Date::Utility->new,
+    }
+);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -227,7 +246,6 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
                 payout      => $contract->payout,
                 amount_type => 'payout',
             });
-
             $txn->buy;
         };
         SKIP: {
@@ -258,6 +276,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             note ("mocked high_risk USD limit to 150");
             BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
+            $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
                 client      => $cl,
@@ -266,7 +285,6 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
                 payout      => $contract->payout,
                 amount_type => 'payout',
             });
-
             $txn->buy;
         };
         is $error, undef, 'exactly matching the limit ==> successful buy';
@@ -363,6 +381,7 @@ subtest 'asian_daily_turnover_limit', sub {
             note ("mocked high_risk USD limit to 150.00");
             BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
+            $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
                 client      => $cl,
@@ -425,7 +444,6 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_validate_stake_limit  => sub { note "mocked Transaction->_validate_stake_limit returning nothing";  () });
             $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
@@ -476,13 +494,13 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_validate_stake_limit  => sub { note "mocked Transaction->_validate_stake_limit returning nothing";  () });
             $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note ("mocked high_risk USD limit to 150.00");
             BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
+            $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
                 client      => $cl,
@@ -539,7 +557,6 @@ subtest 'smartfx_turnover_limit', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
             note ("smart_fx_turnover_limit's risk type is high_risk");
@@ -589,6 +606,7 @@ subtest 'smartfx_turnover_limit', sub {
             note ("mocked high_risk USD limit to 150.00");
             BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
+            $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
                 client      => $cl,
@@ -684,12 +702,8 @@ subtest 'spreads', sub {
                 purchase_date => $contract->date_start,
             });
 
-        $DB::single=1;
-        1;
             $txn->buy;
         };
-        $DB::single=1;
-        1;
         SKIP: {
             skip 'no error', 6
                 unless isa_ok $error, 'Error::Base';
@@ -718,6 +732,7 @@ subtest 'spreads', sub {
             note ("mocked high_risk USD limit to 60.00");
             BOM::Platform::Static::Config::quants->{risk_profile}{extreme_risk}{turnover}{USD} = 60.00;
 
+            $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
                 client   => $cl,

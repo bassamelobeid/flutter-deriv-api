@@ -2832,7 +2832,8 @@ sub _build_market_name {
 # This belongs here because different contracts can potentially
 # have different turnover limits now. This also makes this customizable.
 has turnover_limit_parameters => (
-    is => 'rw',
+    is      => 'rw',
+    default => sub {[]},
 );
 
 has [qw(maximum_payout_limit risk_type)] => (
