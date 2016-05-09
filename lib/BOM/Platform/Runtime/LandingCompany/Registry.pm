@@ -9,7 +9,7 @@ use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Runtime::LandingCompany;
 
-my (%long_landing_companies, %short_landing_companies, %landing_companies, @all_currencies;
+my (%long_landing_companies, %short_landing_companies, %landing_companies, @all_currencies);
 
 BEGIN {
     %long_landing_companies = %{LoadFile('/home/git/regentmarkets/bom-platform/config/landing_companies.yml')};
