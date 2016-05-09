@@ -124,7 +124,7 @@ sub _check_volatility_jump {
             my $diff            = abs($new_vol - $existing_vol);
             my $percentage_diff = $diff / $existing_vol * 100;
             if ($diff > 0.03 and $percentage_diff > 100) {
-                die(    'Big difference found on term['
+                die(      'Big difference found on term['
                         . $days
                         . '] for point ['
                         . $sought_point
@@ -217,13 +217,11 @@ sub _admissible_check {
                 # For delta surface, the strike(prob) is decreasing(increasing) across delta point, hence the slope is positive
                 # For moneyness surface, the strike(prob) is increasing(decreasing) across moneyness point, hence the slope is negative
                 if ($surface_type eq 'delta' and $slope <= 0) {
-                    die(
-                        "Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level);
+                    die("Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level);
                 }
 
                 if ($surface_type eq 'moneyness' and $slope >= 0.0) {
-                    die(
-                        "Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level);
+                    die("Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level);
                 }
             }
 
@@ -247,7 +245,7 @@ sub _admissible_check {
             $barrier = $S * 10000;
             my $call_prob_for_inf_strike = Math::Business::BlackScholes::Binaries::call($S, $barrier, $t, $r, $r - $q, $vol);
             if ($call_prob_for_inf_strike > 1e-10) {
-                die(    "Admissible check 5 failure for maturity[$day] vol at level[$vol_level].BS digital call price not -> 0 ["
+                die(      "Admissible check 5 failure for maturity[$day] vol at level[$vol_level].BS digital call price not -> 0 ["
                         . $call_prob_for_inf_strike
                         . "] as barrier -> 'infinity'.");
             }
@@ -384,7 +382,7 @@ sub _check_structure {
                 my $levels_mismatch = (@volatility_level != @vol_levels_for_smile)
                     || (any { $volatility_level[$_] != $vol_levels_for_smile[$_] } (0 .. @volatility_level - 1));
                 if ($levels_mismatch) {
-                    die(    'Deltas['
+                    die(      'Deltas['
                             . join(',', @vol_levels_for_smile)
                             . "] for maturity[$day], underlying["
                             . $system_symbol
@@ -434,7 +432,7 @@ sub check_smile {
     foreach my $vol_level (keys %{$smile}) {
         my $vol = $smile->{$vol_level};
         if ($vol !~ /^\d?\.?\d*$/ or $vol > 5) {
-            die(    'Invalid smile volatility for '
+            die(      'Invalid smile volatility for '
                     . $day
                     . ' days at volatility level (either delta or moneyness level) '
                     . $vol_level . ' ('
