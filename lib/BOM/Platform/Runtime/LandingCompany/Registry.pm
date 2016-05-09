@@ -12,14 +12,14 @@ use BOM::Platform::Runtime::LandingCompany;
 my (%long_landing_companies, %short_landing_companies, %landing_companies);
 
 BEGIN {
-  %long_landing_companies = %{LoadFile('/home/git/regentmarkets/bom-platform/config/landing_companies.yml')};
-  while (my ($k, $v) = each %long_landing_companies) {
-    $v->{name} ||= $k;
-    my $lc = BOM::Platform::Runtime::LandingCompany->new($v);
-    $short_landing_companies{$v->{short}} = $v;
-    $landing_companies{$k} = $lc;
-    $landing_companies{$v->{short}} = $lc;
-  }
+    %long_landing_companies = %{LoadFile('/home/git/regentmarkets/bom-platform/config/landing_companies.yml')};
+    while (my ($k, $v) = each %long_landing_companies) {
+        $v->{name} ||= $k;
+        my $lc = BOM::Platform::Runtime::LandingCompany->new($v);
+        $short_landing_companies{$v->{short}} = $v;
+        $landing_companies{$k}                = $lc;
+        $landing_companies{$v->{short}}       = $lc;
+    }
 }
 
 =head1 METHODS
@@ -29,19 +29,18 @@ BEGIN {
 =cut
 
 sub new {
-  my $class = shift;
-  return bless {}, $class;
+    my $class = shift;
+    return bless {}, $class;
 }
 
 =head2 get
 
 =cut
 
-sub get{
-      my $name = $_[-1];
-      return $landing_companies{$name};
+sub get {
+    my $name = $_[-1];
+    return $landing_companies{$name};
 }
-
 
 #=head2 build_registry_object
 #
@@ -142,7 +141,6 @@ Make it as a singleton
 #sub instance {
 #    return $instance;
 #}
-
 
 1;
 
