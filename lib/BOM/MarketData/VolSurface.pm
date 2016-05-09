@@ -89,7 +89,7 @@ sub _build_recorded_date {
     my $self          = shift;
     my $recorded_date = Date::Utility->new($self->document->{date});
 
-    if (scalar grep { $self->type eq $_ } (qw(flat phased))) {
+    if ($self->type eq 'flat') {
         $recorded_date = $self->for_date // Date::Utility->new;
     }
 
