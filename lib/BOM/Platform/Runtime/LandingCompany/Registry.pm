@@ -13,8 +13,8 @@ BEGIN {
     while (my ($k, $v) = each %$loaded_landing_companies) {
         $v->{name} ||= $k;
         my $lc = BOM::Platform::Runtime::LandingCompany->new($v);
-        $landing_companies{$k}                = $lc;
-        $landing_companies{$v->{short}}       = $lc;
+        $landing_companies{$k} = $lc;
+        $landing_companies{$v->{short}} = $lc;
         push @all_landing_companies, $lc;
         map { $currencies{$_} = 1 } @{$v->{legal_allowed_currencies}};
     }
@@ -48,7 +48,6 @@ sub all_currencies {
 sub all {
     return @all_landing_companies;
 }
-
 
 1;
 
