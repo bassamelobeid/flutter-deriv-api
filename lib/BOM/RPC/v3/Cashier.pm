@@ -36,6 +36,11 @@ use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
+use BOM::Market::Registry;
+use JSON qw(from_json);
+use BOM::Market::SubMarket::Registry;
+use BOM::Product::Offerings qw(get_offerings_with_filter);
+
 sub cashier {
     my $params = shift;
 
@@ -300,7 +305,7 @@ sub get_limits {
         open_positions  => $client->get_limit_for_open_positions,
     };
 
-    $limit->{market_specific} = _get_market_limit_profile($client->currency);
+    $limit->{market_specific} = _get_market_limit_profile($client);
 
     my $numdays       = $wl_config->for_days;
     my $numdayslimit  = $wl_config->limit_for_days;
@@ -1244,14 +1249,16 @@ sub topup_virtual {
 }
 
 sub _get_market_limit_profile {
-    my $currency = shift;
+    my $client = shift;
 
-    my @markets = get_offerings_with_filter('market');
+    my $currency        = $client->currency;
+    my $landing_company = $client->landing_company->short;
+    my @markets         = get_offerings_with_filter('market', {landing_company => $landing_company});
 
     my $risk_profile = BOM::Platform::Static::Config::quants->{risk_profile};
     # If we have submarket limit set, we should mention here.
     # Note that we are not showing underlying limit even if they are set.
-    my $submarket_str = BOM::Platform::Runtime->instance->app_config->client_limits->submarket_limits;
+    my $submarket_str = BOM::Platform::Runtime->instance->app_config->quants->client_limits->submarket_limits;
     my $submarket_limit = $submarket_str ? from_json($submarket_str) : {};
 
     my %limits;
