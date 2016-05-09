@@ -219,7 +219,6 @@ sub proposal {
         if ($c->stash->{redis}->get('BOM::RPC::PricerDaemon::doprice')) {
             price_stream($c, $args);
         }
-)
     }
     return;
 }
@@ -230,8 +229,8 @@ sub pricing_table {
     my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args);
 
     if ($response and exists $response->{error}) {
-        return $c->new_error('pricing_table', $response->{error}->{code},
-            $c->l($response->{error}->{message}, @{$response->{error}->{params} || []}));
+        return $c->new_error('pricing_table',
+            $response->{error}->{code}, $c->l($response->{error}->{message}, @{$response->{error}->{params} || []}));
     }
 
     my $symbol = $args->{symbol};
