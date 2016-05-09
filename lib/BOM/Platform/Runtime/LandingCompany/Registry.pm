@@ -16,7 +16,7 @@ BEGIN {
   while (my ($k, $v) = each %long_landing_companies) {
     $v->{name} = $k;
     $short_landing_companies{$v->{short}} = $v;
-    $landing_companies{$k} =  BOM::Platform::Runtime::LandingCompany->new($result);
+    $landing_companies{$k} =  BOM::Platform::Runtime::LandingCompany->new($v);
   }
 }
 
