@@ -1256,7 +1256,7 @@ sub _get_market_limit_profile {
 
     my %limits;
     foreach my $market (@markets) {
-        my @submarket_list = get_offerings_with_filter('submarket', {market => $_});
+        my @submarket_list = get_offerings_with_filter('submarket', {market => $market});
         if (my @limited_submarkets = grep { $submarket_limit->{$_} } @submarket_list) {
             foreach my $submarket (@limited_submarkets) {
                 my $display_name = BOM::Market::SubMarket::Registry->get($submarket)->display_name;
