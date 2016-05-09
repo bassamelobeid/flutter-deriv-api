@@ -876,7 +876,7 @@ sub _build_quoted_currency {
         return Quant::Framework::Currency->new({
             symbol           => $self->quoted_currency_symbol,
             for_date         => $self->for_date,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         });
     }
@@ -902,7 +902,7 @@ sub _build_asset {
     return $which->new({
         symbol           => $self->asset_symbol,
         for_date         => $self->for_date,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
 }
