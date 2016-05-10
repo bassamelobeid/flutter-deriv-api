@@ -74,7 +74,7 @@ sub ticks_history {
             'ticks_history',
             sub {
                 my $response = shift;
-                if ($response and exists $response->{error}) {
+                if (exists $response->{error}) {
                     # cancel subscription if response has error
                     _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args);
                     return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
@@ -99,7 +99,7 @@ sub ticks_history {
                             if ($index < 0) {
                                 push @times, $epoch;
                                 # sort times so to find index where to push price
-                                @times = sort @times;
+                                @times = sort { $a <=> $b } @times;
                                 # find last index again of pushed epoch
                                 $index = last_index { $_ eq $epoch } @times;
                                 # add the quote to prices array i.e at same index as epoch in times
@@ -133,7 +133,7 @@ sub ticks_history {
                                     low   => $feed_channel_cache->{$channel}->{$epoch}->{low}};
                             }
                         }
-                        @candles = sort { $a->{epoch} cmp $b->{epoch} } @candles;
+                        @candles = sort { $a->{epoch} <=> $b->{epoch} } @candles;
                         $response->{data}->{candles} = \@candles;
                     }
 
