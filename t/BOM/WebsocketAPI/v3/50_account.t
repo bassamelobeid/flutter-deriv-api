@@ -10,6 +10,7 @@ use TestHelper qw/test_schema build_mojo_test/;
 
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Product::ContractFactory qw( produce_contract );
 
 my $t = build_mojo_test();
 
