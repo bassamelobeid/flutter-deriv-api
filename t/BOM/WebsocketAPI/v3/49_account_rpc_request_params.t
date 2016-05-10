@@ -33,7 +33,7 @@ $rpc_caller->mock(
         my ($c, $params) = @_;
         my $rpc_response_cb;
         ($rpc_method, $rpc_response_cb, $call_params) = ($params->{method}, $params->{rpc_response_cb}, $params->{call_params});
-        $c->send({json => $rpc_response_cb->({ok => 1})});
+        $c->send({json => $rpc_response_cb->($rpc_response)});
     });
 
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
@@ -165,6 +165,7 @@ $t = $t->send_ok({
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'login_history');
+print Dumper $res;
 ok(ref $res->{login_history});
 is $call_params->{token}, $token;
 
@@ -270,7 +271,7 @@ $rpc_caller->mock(
         my ($c, $params) = @_;
         my $rpc_response_cb;
         ($rpc_method, $rpc_response_cb, $call_params) = ($params->{method}, $params->{rpc_response_cb}, $params->{call_params});
-        $c->send({json => $rpc_response_cb->({ok => 1})});
+        $c->send({json => $rpc_response_cb->($rpc_response)});
     });
 
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
