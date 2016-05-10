@@ -168,78 +168,46 @@ subtest 'legal allowed underlyings' => sub {
         OTC_HSI
         OTC_N225
         OTC_SPC
-        FCHI
         frxAUDJPY
-        FPEDF
-        FPDG
         frxUSDJPY
-        FPCA
         frxAUDCAD
         TOP40
-        NAASML
-        FPFP
         WLDUSD
-        FPCS
         frxAUDPLN
         GDAXI
-        FPBN
-        BBABI
-        FPKER
-        BBUCB
         STI
         frxAUDNZD
         frxEURNZD
-        BBGBLB
         frxUSDCAD
-        FPSAF
         OBX
-        NARDSA
         JCI
         frxEURAUD
-        NAUNA
         frxGBPJPY
         frxEURCHF
         frxEURJPY
-        NAHEIA
         frxXPDUSD
-        FPVIV
-        BBKBC
-        FPSU
         frxGBPUSD
         WLDGBP
-        FPRI
-        FPAI
         DJI
+	FCHI
         frxGBPNZD
-        FPEI
-        FPOR
         frxXAGUSD
-        FPACA
         frxAUDCHF
-        BBBELG
         frxUSDPLN
         frxUSDCHF
         frxNZDJPY
         frxGBPCAD
         frxBROUSD
-        FPGSZ
         SPC
         WLDEUR
-        FPMC
-        FPORA
         N225
         frxXPTUSD
         DFMGI
-        FPRNO
         frxUSDNOK
         frxEURCAD
-        FPGLE
         SSMI
         frxGBPNOK
         frxXAUUSD
-        NAINGA
-        FPAIR
-        FPBNP
         BFX
         frxGBPPLN
         frxGBPAUD
@@ -249,15 +217,38 @@ subtest 'legal allowed underlyings' => sub {
         frxUSDMXN
         frxAUDUSD
         frxGBPCHF
-        FPSAN
         AS51
         frxEURUSD
-        FPSGO
         frxEURGBP
         BSESENSEX30
         WLDAUD
         frxNZDUSD
         AEX
+	USAAPL
+	USAMZN
+	USCT
+	USFB
+	USGE
+	USGOOG
+	USKO
+	USMSFT
+	USPFE
+	USXOM
+	UKBARC
+	UKBATS
+	UKGSK
+	UKHSBA
+	UKVOD
+	DEALV
+	DEBAYER
+	DEDAI
+	DESIE
+	DEVOWGEN
+	AUANZ
+	AUBHP
+	AUCBA
+	AUMQG
+	AUQAN
     );
     my %expected_list = (
         japan           => [qw(frxAUDJPY frxAUDUSD frxEURGBP frxEURJPY frxEURUSD frxGBPJPY frxGBPUSD frxUSDCAD frxUSDJPY)],
