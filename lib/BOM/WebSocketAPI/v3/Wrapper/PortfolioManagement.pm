@@ -26,7 +26,7 @@ sub get_corporate_actions {
                 };
             }
         },
-        {args  => $args});
+        {args => $args});
 
     return;
 }
