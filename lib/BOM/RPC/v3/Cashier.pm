@@ -302,6 +302,7 @@ sub get_limits {
 
     my $limit = +{
         account_balance => $client->get_limit_for_account_balance,
+        payout          => $client->get_limit_for_payout,
         open_positions  => $client->get_limit_for_open_positions,
     };
 
