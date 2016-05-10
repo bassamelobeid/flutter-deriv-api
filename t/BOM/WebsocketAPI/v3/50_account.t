@@ -19,7 +19,6 @@ my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
 
-
 my $token = BOM::Platform::SessionCookie->new(
     loginid => $test_client2->loginid,
     email   => 'unit_test@binary.com',
