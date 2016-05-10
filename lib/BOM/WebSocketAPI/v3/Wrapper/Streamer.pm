@@ -122,7 +122,6 @@ sub process_pricing_events {
 
     delete $response->{data};
     delete $response->{key};
-    delete $response->{longcode};
 
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
         next if $amount eq 'channel_name';
