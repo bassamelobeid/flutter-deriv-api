@@ -8,6 +8,7 @@ use JSON::XS qw(encode_json decode_json);
 use BOM::RPC::v3::Contract;
 use BOM::System::RedisReplicated;
 use DataDog::DogStatsd::Helper;
+use utf8;
 
 sub new {
     my ($class, @args) = @_;
