@@ -39,14 +39,8 @@ use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 sub cashier {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client_loginid = $token_details->{loginid};
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client         = $params->{client};
+    my $client_loginid = $client->loginid;
 
     if ($client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
@@ -277,14 +271,8 @@ sub cashier {
 sub get_limits {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client_loginid = $token_details->{loginid};
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client         = $params->{client};
+    my $client_loginid = $client->loginid;
 
     if ($client->get_status('cashier_locked') or $client->documents_expired or $client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
@@ -407,15 +395,8 @@ sub paymentagent_list {
 sub paymentagent_transfer {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $loginid_fm = $token_details->{loginid};
-    my $client_fm = BOM::Platform::Client->new({loginid => $loginid_fm});
-
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client_fm)) {
-        return $auth_error;
-    }
+    my $client_fm  = $params->{client};
+    my $loginid_fm = $client->loginid;
 
     my $payment_agent = $client_fm->payment_agent;
     my ($website_name, $args) = @{$params}{qw/website_name args/};
@@ -637,14 +618,8 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
 sub paymentagent_withdraw {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client_loginid = $token_details->{loginid};
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client         = $params->{client};
+    my $client_loginid = $client->loginid;
 
     my ($website_name, $args) = @{$params}{qw/website_name args/};
 
@@ -983,13 +958,7 @@ sub __client_withdrawal_notes {
 sub transfer_between_accounts {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -1203,13 +1172,7 @@ sub transfer_between_accounts {
 sub topup_virtual {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
