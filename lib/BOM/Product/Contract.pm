@@ -1252,17 +1252,30 @@ sub _build_bs_price {
     return $self->_price_from_prob('bs_probability');
 }
 
-sub _build_model_markup {
+has [qw(risk_markup commission_markup)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_risk_markup {
     my $self = shift;
 
-    my $model_markup;
     if ($self->new_interface_engine) {
-        my $risk_markup = Math::Util::CalculatedValue::Validatable->new({
+        return Math::Util::CalculatedValue::Validatable->new({
             name        => 'risk_markup',
             description => 'Risk markup for a pricing model',
             set_by      => $self->pricing_engine_name,
             base_amount => $self->pricing_engine->risk_markup,
         });
+    }
+
+    return $self->pricing_engine->risk_markup;
+}
+
+sub _build_commission_markup {
+    my $self = shift;
+
+    if ($self->new_interface_engine) {
         my $commission_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'commission_markup',
             description => 'Commission markup for a pricing model',
@@ -1278,13 +1291,24 @@ sub _build_model_markup {
             });
             $commission_markup->include_adjustment('multiply', $sell_discount);
         }
+        return $commission_markup;
+    }
+
+    return $self->pricing_engine->commission_markup;
+}
+
+sub _build_model_markup {
+    my $self = shift;
+
+    my $model_markup;
+    if ($self->new_interface_engine) {
         $model_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'model_markup',
             description => 'Risk and commission markup for a pricing model',
             set_by      => $self->pricing_engine_name,
         });
-        $model_markup->include_adjustment('reset', $risk_markup);
-        $model_markup->include_adjustment('add',   $commission_markup);
+        $model_markup->include_adjustment('reset', $self->risk_markup);
+        $model_markup->include_adjustment('add',   $self->commission_markup);
     } else {
         $model_markup = $self->pricing_engine->model_markup;
     }
