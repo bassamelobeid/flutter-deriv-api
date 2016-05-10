@@ -23,6 +23,8 @@ sub forget_all {
     if (my $type = $args->{forget_all}) {
         if ($type eq 'balance' or $type eq 'transaction') {
             $removed_ids = _forget_transaction_subscription($c, $type);
+        } elsif ($type eq 'price_stream') {
+            $removed_ids = _forget_all_pricing_subscriptions($c);
         } else {
             $removed_ids = _forget_feed_subscription($c, $type);
         }
@@ -41,6 +43,7 @@ sub forget_one {
     if ($id =~ /-/) {
         $removed_ids = _forget_transaction_subscription($c, $id) unless (scalar @$removed_ids);
         $removed_ids = _forget_feed_subscription($c, $id) unless (scalar @$removed_ids);
+        $removed_ids = _forget_pricing_subscription($c, $id) unless (scalar @$removed_ids);
     }
 
     return scalar @$removed_ids;
@@ -97,6 +100,45 @@ sub _forget_transaction_subscription {
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
             }
         }
+    }
+    return $removed_ids;
+}
+
+sub _forget_pricing_subscription {
+    my ($c, $uuid) = @_;
+    my $removed_ids     = [];
+    my $pricing_channel = $c->stash('pricing_channel');
+    if ($pricing_channel) {
+        foreach my $channel (keys %{$pricing_channel}) {
+            foreach my $amount (keys %{$pricing_channel->{$channel}}) {
+                next if $amount eq 'channel_name';
+                if ($pricing_channel->{$channel}->{$amount}->{uuid} eq $uuid) {
+                    push @$removed_ids, $pricing_channel->{$channel}->{$amount}->{uuid};
+                    delete $pricing_channel->{$channel}->{$amount};
+                }
+            }
+
+            if (scalar keys %{$pricing_channel->{$channel}} == 1) {
+                $c->stash('redis')->unsubscribe([$pricing_channel->{$channel}->{channel_name}]);
+                delete $pricing_channel->{$channel};
+            }
+        }
+        $c->stash('pricing_channel' => $pricing_channel);
+    }
+
+    return $removed_ids;
+}
+
+sub _forget_all_pricing_subscriptions {
+    my ($c)             = @_;
+    my $removed_ids     = [];
+    my $pricing_channel = $c->stash('pricing_channel');
+    if ($pricing_channel) {
+        foreach my $channel (keys %{$pricing_channel}) {
+            $c->stash('redis')->unsubscribe([$pricing_channel->{$channel}->{channel_name}]);
+            delete $pricing_channel->{$channel};
+        }
+        $c->stash('pricing_channel' => $pricing_channel);
     }
     return $removed_ids;
 }
