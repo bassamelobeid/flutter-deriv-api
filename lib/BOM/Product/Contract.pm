@@ -1253,7 +1253,7 @@ sub _build_bs_price {
     return $self->_price_from_prob('bs_probability');
 }
 
-has [qw(risk_markup commission_markup)] => (
+has [qw(risk_markup commission_markup estimated_payout base_commission)] => (
     is         => 'ro',
     lazy_build => 1,
 );
