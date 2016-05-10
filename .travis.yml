@@ -12,7 +12,6 @@ services:
 cache: apt
 env:
     - TEST_SUITE=v3
-
 before_install:
     - git clone https://8d1fe00a1db5e23412e4e316bfc1324d7f662aac@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
@@ -55,7 +54,7 @@ install:
     - perl -MBOM::Test::Data::Utility::UnitTestRedis -e '1'
     - perl -MBOM::Test /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
 script:
-    - perl t/BOM/WebsocketAPI/v3/50_account.t
+    - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
