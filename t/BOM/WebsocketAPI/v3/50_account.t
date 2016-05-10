@@ -101,12 +101,11 @@ is $authorize->{authorize}->{loginid}, $test_client2->loginid;
 $t = $t->send_ok({
         json => {
             statement => 1,
-            limit     => 54
+            limit     => 5
         }})->message_ok;
 my $statement = decode_json($t->message->[1]);
-print Dumper($statement);
 ok($statement->{statement});
-is($statement->{statement}->{count}, 54);
+is($statement->{statement}->{count}, 5);
 test_schema('statement', $statement);
 
 ## balance
