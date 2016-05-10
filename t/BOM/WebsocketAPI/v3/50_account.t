@@ -13,6 +13,81 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $t = build_mojo_test();
 
+my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+
+my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
+
+$test_client2->payment_free_gift(
+    currency => 'USD',
+    amount   => 1000,
+    remark   => 'free gift',
+);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol => $_,
+        date   => Date::Utility->new,
+    }) for qw(JPY USD JPY-USD);
+
+my $now        = Date::Utility->new('2005-09-21 06:46:00');
+my $underlying = BOM::Market::Underlying->new('R_50');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'randomindex',
+    {
+        symbol => 'R_50',
+        date   => $now,
+    });
+
+my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 99,
+    underlying => 'R_50',
+    quote      => 76.5996,
+    bid        => 76.6010,
+    ask        => 76.2030,
+});
+
+my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 52,
+    underlying => 'R_50',
+    quote      => 76.6996,
+    bid        => 76.7010,
+    ask        => 76.3030,
+});
+
+my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch,
+    underlying => 'R_50',
+});
+
+for (1 .. 10) {
+    my $contract_expired = produce_contract({
+        underlying   => $underlying,
+        bet_type     => 'FLASHU',
+        currency     => 'USD',
+        stake        => 100,
+        date_start   => $now->epoch - 100,
+        date_expiry  => $now->epoch - 50,
+        current_tick => $tick,
+        entry_tick   => $old_tick1,
+        exit_tick    => $old_tick2,
+        barrier      => 'S0P',
+    });
+
+    my $txn = BOM::Product::Transaction->new({
+        client        => $test_client2,
+        contract      => $contract_expired,
+        price         => 100,
+        payout        => $contract_expired->payout,
+        amount_type   => 'stake',
+        purchase_date => $now->epoch - 101,
+    });
+
+    $txn->buy(skip_validation => 1);
+
+}
+
 my $token = BOM::Platform::SessionCookie->new(
     loginid => "CR0021",
     email   => 'shuwnyuan@regentmarkets.com',
