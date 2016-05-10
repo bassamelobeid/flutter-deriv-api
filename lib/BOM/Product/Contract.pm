@@ -1913,7 +1913,9 @@ sub _build_rho {
         my $index           = $self->underlying->asset_symbol;
         my $payout_currency = $self->currency;
         my $tiy             = $self->timeinyears->amount;
-        $rhos{fd_dq} = $rho_data->correlation_for($index, $payout_currency, $tiy);
+        my $correlation_u   = BOM::Market::Underlying->new($index);
+
+        $rhos{fd_dq} = $rho_data->correlation_for($index, $payout_currency, $tiy, $correlation_u->expiry_conventions);
     }
 
     return \%rhos;
