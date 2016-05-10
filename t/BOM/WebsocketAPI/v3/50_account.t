@@ -19,9 +19,11 @@ my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
 
-my $m              = BOM::Database::Model::AccessToken->new;
-my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
 
+my $token = BOM::Platform::SessionCookie->new(
+    loginid => $test_client2->loginid,
+    email   => 'unit_test@binary.com',
+)->token;
 $test_client2->payment_free_gift(
     currency => 'USD',
     amount   => 1000,
@@ -91,7 +93,7 @@ for (1 .. 10) {
 
 }
 
-$t = $t->send_ok({json => {authorize => $token_with_txn}})->message_ok;
+$t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'unit_test@binary.com';
 is $authorize->{authorize}->{loginid}, $test_client2->loginid;
