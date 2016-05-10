@@ -15,15 +15,15 @@ use BOM::Product::Transaction;
 
 my $t = build_mojo_test();
 
-my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
 
 my $token = BOM::Platform::SessionCookie->new(
-    loginid => $test_client2->loginid,
+    loginid => $test_client->loginid,
     email   => 'unit_test@binary.com',
 )->token;
-$test_client2->payment_free_gift(
+$test_client->payment_free_gift(
     currency => 'USD',
     amount   => 1000,
     remark   => 'free gift',
@@ -80,7 +80,7 @@ for (1 .. 10) {
     });
 
     my $txn = BOM::Product::Transaction->new({
-        client        => $test_client2,
+        client        => $test_client,
         contract      => $contract_expired,
         price         => 100,
         payout        => $contract_expired->payout,
@@ -95,7 +95,7 @@ for (1 .. 10) {
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'unit_test@binary.com';
-is $authorize->{authorize}->{loginid}, $test_client2->loginid;
+is $authorize->{authorize}->{loginid}, $test_client->loginid;
 
 $t = $t->send_ok({
         json => {
