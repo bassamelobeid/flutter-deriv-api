@@ -85,55 +85,46 @@ sub ticks_history {
 
                 # check for cached data
                 if (exists $feed_channel_cache->{$channel} and scalar(keys %{$feed_channel_cache->{$channel}})) {
-                    my $index;
+                    my $cache = $feed_channel_cache->{$channel};
                     # both history and candles have different structure, check rpc ticks_history sub
                     if ($response->{type} eq 'history') {
-                        my @times  = @{$response->{data}->{history}->{times}};
-                        my @prices = @{$response->{data}->{history}->{prices}};
-
-                        foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
-                            # check if epoch is present in rpc response
-                            $index = last_index { $_ eq $epoch } @times;
-                            # if no index means subscription response came before rpc response
-                            # so update response with cached value
-                            if ($index < 0) {
-                                push @times, $epoch;
-                                # sort times so to find index where to push price
-                                @times = sort { $a <=> $b } @times;
-                                # find last index again of pushed epoch
-                                $index = last_index { $_ eq $epoch } @times;
-                                # add the quote to prices array i.e at same index as epoch in times
-                                splice @prices, $index, 0, $feed_channel_cache->{$channel}->{$epoch}->{quote};
-
-                                $response->{data}->{history}->{times}  = \@times;
-                                $response->{data}->{history}->{prices} = \@prices;
-                            }
-                        }
+                        my %times;
+                        # store whats in cache
+                        @times{keys %$cache} = map { $_->{quote} } values %$cache;
+                        # merge with response data
+                        @times{@{$response->{data}->{history}->{times}}} = @{$response->{data}->{history}->{prices}};
+                        @{$response->{data}->{history}->{times}} = sort { $a <=> $b } keys %times;
+                        @{$response->{data}->{history}->{prices}} = @times{@{$response->{data}->{history}->{times}}};
                     } elsif ($response->{type} eq 'candles') {
+                        my $index;
                         my @candles = @{$response->{data}->{candles}};
-                        foreach my $epoch (keys %{$feed_channel_cache->{$channel}}) {
+
+                        # delete all cache value that have epoch lower than last candle epoch
+                        my @matches = grep { $_ < $candles[-1]->{epoch} } keys %$cache;
+                        delete @$cache{@matches};
+
+                        foreach my $epoch (sort { $a->{epoch} <=> $b->{epoch} } keys %$cache) {
                             my $window = $epoch - $epoch % $publish;
                             # check if window exists in candles response
                             $index = last_index { $_->{epoch} eq $window } @candles;
                             # if no window is in response then update the candles with cached data
                             if ($index < 0) {
                                 push @candles, {
-                                    open  => $feed_channel_cache->{$channel}->{$epoch}->{open},
-                                    close => $feed_channel_cache->{$channel}->{$epoch}->{close},
-                                    epoch => $window + 0,                                          # need to send as integer
-                                    high  => $feed_channel_cache->{$channel}->{$epoch}->{high},
-                                    low   => $feed_channel_cache->{$channel}->{$epoch}->{low}};
+                                    open  => $cache->{$epoch}->{open},
+                                    close => $cache->{$epoch}->{close},
+                                    epoch => $window + 0,                 # need to send as integer
+                                    high  => $cache->{$epoch}->{high},
+                                    low   => $cache->{$epoch}->{low}};
                             } else {
                                 # if window exists replace it with new data
                                 $candles[$index] = {
-                                    open  => $feed_channel_cache->{$channel}->{$epoch}->{open},
-                                    close => $feed_channel_cache->{$channel}->{$epoch}->{close},
-                                    epoch => $window + 0,                                          # need to send as integer
-                                    high  => $feed_channel_cache->{$channel}->{$epoch}->{high},
-                                    low   => $feed_channel_cache->{$channel}->{$epoch}->{low}};
+                                    open  => $cache->{$epoch}->{open},
+                                    close => $cache->{$epoch}->{close},
+                                    epoch => $window + 0,                 # need to send as integer
+                                    high  => $cache->{$epoch}->{high},
+                                    low   => $cache->{$epoch}->{low}};
                             }
                         }
-                        @candles = sort { $a->{epoch} <=> $b->{epoch} } @candles;
                         $response->{data}->{candles} = \@candles;
                     }
 
