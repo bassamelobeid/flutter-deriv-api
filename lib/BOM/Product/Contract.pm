@@ -1905,10 +1905,11 @@ sub _build_rho {
             $w * (($atm_vols->{forqqq}**2 - $atm_vols->{fordom}**2 - $atm_vols->{domqqq}**2) / (2 * $atm_vols->{fordom} * $atm_vols->{domqqq}));
     } elsif ($self->underlying->market->name eq 'indices') {
         my $construct_args = {
-            symbol   => $self->underlying->market->name,
-            for_date => $self->underlying->for_date
+            symbol          => $self->underlying->market->name,
+            for_date        => $self->underlying->for_date,
+            chronicle_reader=> BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
         };
-        my $rho_data = BOM::MarketData::CorrelationMatrix->new($construct_args);
+        my $rho_data = Quant::Framework::CorrelationMatrix->new($construct_args);
 
         my $index           = $self->underlying->asset_symbol;
         my $payout_currency = $self->currency;
