@@ -224,31 +224,6 @@ subtest 'legal allowed underlyings' => sub {
         WLDAUD
         frxNZDUSD
         AEX
-	USAAPL
-	USAMZN
-	USCT
-	USFB
-	USGE
-	USGOOG
-	USKO
-	USMSFT
-	USPFE
-	USXOM
-	UKBARC
-	UKBATS
-	UKGSK
-	UKHSBA
-	UKVOD
-	DEALV
-	DEBAYER
-	DEDAI
-	DESIE
-	DEVOWGEN
-	AUANZ
-	AUBHP
-	AUCBA
-	AUMQG
-	AUQAN
     );
     my %expected_list = (
         japan           => [qw(frxAUDJPY frxAUDUSD frxEURGBP frxEURJPY frxEURUSD frxGBPJPY frxGBPUSD frxUSDCAD frxUSDJPY)],
