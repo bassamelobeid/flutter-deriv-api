@@ -15,6 +15,7 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use BOM::System::RedisReplicated;
+use utf8;
 
 sub ticks {
     my ($c, $args) = @_;
