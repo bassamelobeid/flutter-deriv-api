@@ -61,7 +61,6 @@ foreach my $i (@instrumentlist) {
 
     my $underlying = BOM::Market::Underlying->new($i);
 
-    my $realexchange = $underlying->exchange;
     next unless $all or $underlying->calendar->is_open;
 
     my $MAXDIFF = 0.002;
