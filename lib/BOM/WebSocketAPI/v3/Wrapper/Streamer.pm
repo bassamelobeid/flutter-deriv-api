@@ -363,6 +363,11 @@ sub process_realtime_events {
         my $cache     = $feed_channels_type->{$channel}->{cache};
 
         if ($type eq 'tick' and $m[0] eq $symbol) {
+            unless ($c->tx) {
+                _feed_channel($c, 'unsubscribe', $symbol, $type, $arguments);
+                return;
+            }
+
             my $tick = {
                 id     => $feed_channels_type->{$channel}->{uuid},
                 symbol => $symbol,
@@ -407,6 +412,11 @@ sub process_realtime_events {
             BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
                 if $c->tx;
         } elsif ($m[0] eq $symbol) {
+            unless ($c->tx) {
+                _feed_channel($c, 'unsubscribe', $symbol, $type, $arguments);
+                return;
+            }
+
             my $u = BOM::Market::Underlying->new($symbol);
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             my $ohlc = {
