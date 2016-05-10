@@ -81,7 +81,7 @@ test_schema('states_list', $res);
 ## website_status
 my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
 my $call_params;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
 ok $call_params->{country_code};
 $rpc_caller->unmock_all;

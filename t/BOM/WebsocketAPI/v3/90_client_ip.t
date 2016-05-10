@@ -12,7 +12,7 @@ use Clone;
 my $valid_client_ip = '98.1.1.1';
 
 my $websapi = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-$websapi->mock('call_rpc', sub { $_[0]->send({json => $_[3]}); });
+$websapi->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
 
 my ($t, $res);
 

@@ -48,7 +48,7 @@ subtest 'verify_email' => sub {
 
     my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
     my $call_params;
-    $rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+    $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
     $t = $t->send_ok({
             json => {
                 verify_email => $email,

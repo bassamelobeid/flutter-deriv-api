@@ -56,7 +56,7 @@ test_schema('profit_table', $profit_table);
 
 my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
 my $call_params;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
 $t = $t->send_ok({json => {get_limits => 1}})->message_ok;
 is $call_params->{language}, 'EN';
 ok exists $call_params->{token};

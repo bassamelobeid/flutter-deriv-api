@@ -80,7 +80,7 @@ is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
 my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
 my $call_params;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
 $t = $t->send_ok({
         json => {
             get_corporate_actions => 1,
@@ -101,7 +101,7 @@ $t = $t->send_ok({
 my $corporate_actions = decode_json($t->message->[1]);
 is $corporate_actions->{msg_type}, 'get_corporate_actions';
 
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
 $t = $t->send_ok({json => {portfolio => 1}})->message_ok;
 ok $call_params->{source};
 is $call_params->{token}, $token;
@@ -128,8 +128,8 @@ if (exists $res->{proposal_open_contract}) {
 }
 
 sleep 1;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
 $t = $t->send_ok({
         json => {
             buy        => 1,
@@ -167,7 +167,7 @@ while (1) {
     last;
 }
 
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
 $t = $t->send_ok({
         json => {
             sell       => 1,

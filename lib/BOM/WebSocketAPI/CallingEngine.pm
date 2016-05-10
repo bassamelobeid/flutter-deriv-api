@@ -6,14 +6,15 @@ use warnings;
 use MojoX::JSON::RPC::Client;
 use Guard;
 use JSON;
+use Data::UUID;
 
 # TODO Move to callbacks
-use BOM::System::Config;
-use Time::HiRes;
-use Proc::CPUUsage;
-use feature 'state';
-use DataDog::DogStatsd::Helper;
-use Data::UUID;
+# use BOM::System::Config;
+# use Time::HiRes;
+# use Proc::CPUUsage;
+# use feature 'state';
+# use DataDog::DogStatsd::Helper;
+#
 # /TODO Move to callbacks
 
 sub forward {
@@ -21,7 +22,16 @@ sub forward {
 
     $params->{msg_type} ||= $rpc_method;
 
-    return call_rpc($c, $rpc_method, rpc_reponse_cb($c, $args, $params), make_call_params($c, $args, $params));
+    return call_rpc(
+        $c,
+        {
+            method   => $rpc_method,
+            msg_type => $rpc_method // $params->{msg_type},
+            # TODO
+            # url => $url,
+            call_params => make_call_params($c, $args, $params),
+            rpc_response_cb => rpc_response_cb($c, $args, $params),
+        });
 }
 
 sub make_call_params {
@@ -34,6 +44,7 @@ sub make_call_params {
     my $call_params = {
         args     => $args,
         language => $c->stash('language'),
+        country  => $c->stash('country') || $c->country_code,
     };
 
     if (defined $stash_params) {
@@ -50,7 +61,7 @@ sub make_call_params {
     return $call_params;
 }
 
-sub rpc_reponse_cb {
+sub rpc_response_cb {
     my ($c, $args, $params) = @_;
 
     my $success_handler = $params->{success};
@@ -123,34 +134,31 @@ sub error_api_response {
 }
 
 sub call_rpc {
-    my $self        = shift;
-    my $method      = shift;
-    my $callback    = shift;
-    my $params      = shift;
-    my $method_name = shift // $method;
+    my $c      = shift;
+    my $params = shift;
 
-    my $tv = [Time::HiRes::gettimeofday];
-    state $cpu = Proc::CPUUsage->new();
+    my $method      = $params->{method};
+    my $msg_type    = $params->{msg_type};
+    my $url         = $params->{url};
+    my $call_params = $params->{call_params};
 
-    $params->{language} = $self->stash('language');
-    $params->{country} = $self->stash('country') || $self->country_code;
+    my $rpc_response_cb   = $params->{rpc_response_cb};
+    my $max_response_size = $params->{max_response_size};
 
-    my $client = MojoX::JSON::RPC::Client->new;
-    my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
-    if (BOM::System::Config::env eq 'production') {
-        if (BOM::System::Config::node->{node}->{www2}) {
-            $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
-        } else {
-            $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
-        }
-    }
+    # TODO It'll be hooks
+    my $before_get_rpc_response_hook  = $params->{before_get_rpc_response};
+    my $after_got_rpc_response_hook   = $params->{after_got_rpc_response};
+    my $before_send_api_response_hook = $params->{before_send_api_response};
+    my $after_sent_api_response_hook  = $params->{after_sent_api_response};
+    my $before_call_hook              = $params->{before_call};
 
-    $url .= $method;
+    $before_call_hook->($c, $call_params) if $before_call_hook;
 
+    my $client  = MojoX::JSON::RPC::Client->new;
     my $callobj = {
         id     => Data::UUID->new()->create_str(),
         method => $method,
-        params => $params
+        params => $call_params,
     };
 
     $client->call(
@@ -158,93 +166,50 @@ sub call_rpc {
         sub {
             my $res = pop;
 
-            DataDog::DogStatsd::Helper::stats_timing(
-                'bom_websocket_api.v_3.rpc.call.timing',
-                1000 * Time::HiRes::tv_interval($tv),
-                {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$method"]});
+            $before_get_rpc_response_hook->($c) if $before_get_rpc_response_hook;
 
             # unconditionally stop any further processing if client is already disconnected
-            return unless $self->tx;
+            return unless $c->tx;
 
             my $client_guard = guard { undef $client };
 
-            my ($data, $req_id);
-            my $args = $params->{args};
-            $req_id = $args->{req_id} if ($args and exists $args->{req_id});
+            my $api_response;
+            my %binding = (
+                echo_req => $call_params->{args},
+                $call_params->{args}->{req_id} ? (req_id => $call_params->{args}->{req_id}) : (),
+            );
 
             if (!$res) {
-                my $tx_res = $client->tx->res;
-                warn $tx_res->message;
-                $data = $self->new_error($method, 'WrongResponse', $self->l('Sorry, an error occurred while processing your request.'));
-                $data->{echo_req} = $args;
-                $data->{req_id} = $req_id if $req_id;
-                $self->send({json => $data});
+                warn $client->tx->res;
+                $api_response = $c->new_error($msg_type, 'WrongResponse', $c->l('Sorry, an error occurred while processing your request.'));
+                $c->send({json => {%binding, %$api_response}});
                 return;
             }
 
-            my $rpc_time;
-            $rpc_time = delete $res->result->{rpc_time} if (ref($res->result) eq "HASH");
-
-            if ($rpc_time) {
-                DataDog::DogStatsd::Helper::stats_timing(
-                    'bom_websocket_api.v_3.rpc.call.timing.connection',
-                    1000 * Time::HiRes::tv_interval($tv) - $rpc_time,
-                    {tags => ["rpc:$method"]});
-            }
+            $after_got_rpc_response_hook->($c, $res) if $after_got_rpc_response_hook;
 
             if ($res->is_error) {
                 warn $res->error_message;
-                $data = $self->new_error($method_name, 'CallError', $self->l('Sorry, an error occurred while processing your request.'));
-                $data->{echo_req} = $args;
-                $data->{req_id} = $req_id if $req_id;
-                $self->send({json => $data});
+                $api_response = $c->new_error($msg_type, 'CallError', $c->l('Sorry, an error occurred while processing your request.'));
+                $c->send({json => {%binding, %$api_response}});
                 return;
             }
 
-            $data = &$callback($res->result);
+            $api_response = &$rpc_response_cb($res->result);
 
-            _process_result($self, $data, $method, $args, $req_id, $tv);
+            return unless $api_response;
+
+            if (length(JSON::to_json($api_response)) > $max_response_size) {
+                $api_response = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
+            }
+
+            $api_response = {%binding, %$api_response};
+            $before_send_api_response_hook->($c, $api_response) if $before_send_api_response_hook;
+            $c->send({json => $api_response});
+            $after_sent_api_response_hook->($c) if $after_sent_api_response_hook;
+
             return;
         });
-    return;
-}
-
-sub _process_result {
-    my ($self, $data, $method, $args, $req_id, $tv) = @_;
-
-    my $send = 1;
-    if (not $data) {
-        $send = undef;
-        $data = {};
-    }
-    my $l = length JSON::to_json($data);
-    if ($l > 328000) {
-        $data = $self->new_error('error', 'ResponseTooLarge', $self->l('Response too large.'));
-    }
-
-    $data->{echo_req} = $args;
-    $data->{req_id} = $req_id if $req_id;
-
-    if ($self->stash('debug')) {
-        $data->{debug} = {
-            time   => 1000 * Time::HiRes::tv_interval($tv),
-            method => $method
-        };
-    }
-
-    if ($send) {
-        $tv = [Time::HiRes::gettimeofday];
-
-        $self->send({json => $data});
-
-        DataDog::DogStatsd::Helper::stats_timing(
-            'bom_websocket_api.v_3.rpc.call.timing.sent',
-            1000 * Time::HiRes::tv_interval($tv),
-            {tags => ["rpc:$method"]});
-
-    }
     return;
 }
 
@@ -279,7 +244,7 @@ Method params:
     stash_params - it contains params to forward from server storage.
     call_params - callback for custom making call params.
 
-=head2 rpc_reponse_cb
+=head2 rpc_response_cb
 
 Callback for RPC service response.
 Can use custom handlers error and success.

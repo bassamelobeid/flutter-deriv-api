@@ -93,9 +93,9 @@ SKIP: {
     $rpc_caller->mock(
         'call_rpc',
         sub {
-            my $c = shift;
+            my ($c, $params) = @_;
             my $rpc_response_cb;
-            ($rpc_method, $rpc_response_cb, $call_params) = @_;
+            ($rpc_method, $rpc_response_cb, $call_params) = ($params->{method}, $params->{rpc_response_cb}, $params->{call_params});
             $c->send({json => $rpc_response_cb->({ok => 1})});
         });
 
@@ -128,7 +128,7 @@ SKIP: {
 
 $t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok;
 
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
 $t = $t->send_ok({
         json => {
             proposal_open_contract => 1,

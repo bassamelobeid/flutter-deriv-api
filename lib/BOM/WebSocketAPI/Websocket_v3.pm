@@ -486,7 +486,86 @@ sub _failed_key_value {
     return;
 }
 
-sub rpc { return BOM::WebSocketAPI::CallingEngine::call_rpc(@_) }
+sub rpc {
+    my $c               = shift;
+    my $method          = shift;
+    my $rpc_response_cb = shift;
+    my $params          = shift;
+    my $method_name     = shift;
+
+    # TODO New dispatcher plugin has to do this
+    my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
+    if (BOM::System::Config::env eq 'production') {
+        if (BOM::System::Config::node->{node}->{www2}) {
+            $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
+        } else {
+            $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
+        }
+    }
+    $url .= $method;
+
+    return BOM::WebSocketAPI::CallingEngine::call_rpc(
+        $c,
+        {
+            method          => $method,
+            msg_type        => $method_name // $method,
+            url             => $url,
+            call_params     => $params,
+            rpc_response_cb => $rpc_response_cb,
+            before_call     => sub {
+                my ($c, $call_params) = shift;
+
+                $c->stash(
+                    'tv'  => [Time::HiRes::gettimeofday],
+                    'cpu' => Proc::CPUUsage->new(),
+                );
+                # TODO DELETE After dispatcher will be changed
+                $call_params->{language} = $c->stash('language');
+                $call_params->{country} = $c->stash('country') || $c->country_code;
+            },
+            before_get_rpc_response => sub {
+                my $c = shift;
+
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'bom_websocket_api.v_3.rpc.call.timing',
+                    1000 * Time::HiRes::tv_interval($c->stash('tv')),
+                    {tags => ["rpc:$method"]});
+                DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.cpuusage', $c->stash('cpu')->usage(), {tags => ["rpc:$method"]});
+                DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$method"]});
+            },
+            after_got_rpc_response => sub {
+                my ($c, $rpc_response) = @_;
+
+                if (ref($rpc_response->result) eq "HASH"
+                    && (my $rpc_time = delete $rpc_response->result->{rpc_time}))
+                {
+                    DataDog::DogStatsd::Helper::stats_timing(
+                        'bom_websocket_api.v_3.rpc.call.timing.connection',
+                        1000 * Time::HiRes::tv_interval($c->stash('tv')) - $rpc_time,
+                        {tags => ["rpc:$method"]});
+                }
+            },
+            before_send_response => sub {
+                my ($c, $api_response) = @_;
+
+                if ($c->stash('debug')) {
+                    $api_response->{debug} = {
+                        time   => 1000 * Time::HiRes::tv_interval($c->stash('tv')),
+                        method => $method
+                    };
+                }
+                $c->stash('tv' => [Time::HiRes::gettimeofday]);
+            },
+            after_sent_response => sub {
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'bom_websocket_api.v_3.rpc.call.timing.sent',
+                    1000 * Time::HiRes::tv_interval($c->stash('tv')),
+                    {tags => ["rpc:$method"]});
+            },
+            max_response_size => 328000,
+        },
+    );
+}
 
 sub _sanity_failed {
     my ($c, $arg) = @_;
