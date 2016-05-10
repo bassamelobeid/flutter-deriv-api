@@ -7,6 +7,7 @@ use Try::Tiny;
 
 # pre-load controlleres to have more shared code among workers (COW)
 use BOM::WebSocketAPI::Websocket_v3();
+use BOM::WebSocketAPI::CallingEngine();
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -67,6 +68,13 @@ sub startup {
             if ($c->req->param('debug')) {
                 $c->stash(debug => 1);
             }
+
+            $c->stash(
+                server_name  => $c->server_name,
+                client_ip    => $c->client_ip,
+                country_code => $c->country_code,
+                user_agent   => $c->req->headers->header('User-Agent'),
+            );
         });
 
     $app->plugin('ClientIP');
