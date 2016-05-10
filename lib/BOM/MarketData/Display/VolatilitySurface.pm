@@ -92,11 +92,7 @@ sub rmg_table_format {
         my @points = @{$volsurface->smile_points};
         push @headers, @points;
         @surface = $self->calculate_moneyness_vol_for_display;
-    } elsif (
-        scalar grep {
-            $volsurface->type eq $_
-        } (qw(flat phased)))
-    {
+    } elsif ($volsurface->type ew 'flat'){
         push @headers, qw(tenor date flat_vol flat_atm_spread);
         @surface =
             map { [$volsurface->flat_vol, $volsurface->flat_atm_spread] } @days;
@@ -252,7 +248,7 @@ sub get_forward_vol {
     my $self = shift;
 
     my $volsurface = $self->surface;
-    my $atm_key = (grep { $volsurface->type =~ $_ } qw(delta flat phased)) ? 50 : 100;
+    my $atm_key = (grep { $volsurface->type =~ $_ } qw(delta flat )) ? 50 : 100;
 
     my @days = @{$volsurface->original_term_for_smile};
 
