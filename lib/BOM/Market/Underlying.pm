@@ -43,6 +43,7 @@ use BOM::Market::Types;
 use BOM::Platform::Static::Config;
 use Quant::Framework::Asset;
 use Quant::Framework::Currency;
+use Quant::Framework::ExpiryConventions;
 use BOM::System::Chronicle;
 use BOM::Market::SubMarket::Registry;
 use BOM::Market;
@@ -648,10 +649,10 @@ sub _build_exchange_name {
 }
 
 has expiry_conventions => (
-    is        => 'ro',
-    isa       => 'Quant::Framework::ExpiryConventions',
-    lazy_build=> 1,
-    handles   => ['vol_expiry_date', '_spot_date', 'forward_expiry_date'],
+    is         => 'ro',
+    isa        => 'Quant::Framework::ExpiryConventions',
+    lazy_build => 1,
+    handles    => ['vol_expiry_date', '_spot_date', 'forward_expiry_date'],
 );
 
 sub _build_expiry_conventions {
