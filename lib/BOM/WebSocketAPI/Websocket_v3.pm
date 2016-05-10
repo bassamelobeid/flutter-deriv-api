@@ -267,10 +267,10 @@ my @dispatch = (
     ],
     ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1, 'trade'],
 
-    ['app_register', '',   1, 'admin'],
-    ['app_list',     '',       1, 'admin'],
-    ['app_get',      '',        1, 'admin'],
-    ['app_delete',   '',     1, 'admin'],
+    ['app_register', '', 1, 'admin'],
+    ['app_list',     '', 1, 'admin'],
+    ['app_get',      '', 1, 'admin'],
+    ['app_delete',   '', 1, 'admin'],
     ['oauth_apps',   '', 1, 'admin'],
 
     ['topup_virtual',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual,     1, 'trade'],
