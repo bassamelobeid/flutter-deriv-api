@@ -1198,9 +1198,7 @@ sub _build_ask_price {
 sub _build_payout {
     my $self = shift;
 
-    # If client selects amount type as stake, we are excluding commission in payout calculation because
-    # contract commission is a function of payout and it will go circular.
-    my $payout = $self->ask_price / ($self->theo_probability->amount + $self->risk_markup->amount);
+    my $payout = min($self->ask_price / $self->ask_probability->amount, $self->estimated_payout);
     my $dollar_commission = $payout * $self->total_markup->amount;
     if ($dollar_commission < 0.02) {
         $payout -= (0.02 - $dollar_commission);
@@ -1275,12 +1273,25 @@ sub _build_risk_markup {
     return $self->pricing_engine->risk_markup;
 }
 
+sub _build_base_commission {
+    my $self = shift;
+
+    return $self->new_interface_engine ? $self->pricing_engine->commission_markup : $self->pricing_engine->commission_markup->amount;
+}
+
+sub _build_estimated_payout {
+    my $self = shift;
+
+    return $self->ask_price / ($self->theo_probability->amount = $self->risk_markup->amount + $self->base_commission);
+}
+
 sub _build_commission_markup {
     my $self = shift;
 
-    my $base_commission = $self->new_interface_engine ? $self->pricing_engine->commission_markup : $self->pricing_engine->commission_markup->amount;
-    my $commission_scale = $self->payout * sqrt($self->theo_probability->amount * (1 - $self->theo_probability->amount));
-    my $interpolator = Math::Function::Interpolator->new(
+    my $base_commission  = $self->base_commission;
+    my $estimated_payout = $self->estimated_payout;
+    my $commission_scale = $estimated_payout * sqrt($self->theo_probability->amount * (1 - $self->theo_probability->amount));
+    my $interpolator     = Math::Function::Interpolator->new(
         points => {
             500   => $base_commission,
             25000 => $base_commission * 2,
