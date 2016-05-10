@@ -99,7 +99,11 @@ copy across the system's execution environment.
 
 =cut
 
-state $instance = __PACKAGE__->new;
+my $instance;
+
+BEGIN {
+    $instance = __PACKAGE__->new;
+}
 
 sub instance {
     my ($class, $new) = @_;
@@ -108,14 +112,22 @@ sub instance {
     return $instance;
 }
 
-my $countries = Locale::Country::Extra->new();
+my $countries;
+
+BEGIN {
+    $countries = Locale::Country::Extra->new();
+}
 
 sub _build_countries {
     my $self = shift;
     return $countries;
 }
 
-my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+my $countries_list;
+
+BEGIN {
+    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+}
 
 sub _build_countries_list {
     return $countries_list;
@@ -167,7 +179,11 @@ sub _build_app_config {
     return BOM::Platform::Runtime::AppConfig->new();
 }
 
-my $websites = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml');
+my $websites;
+
+BEGIN {
+    $websites = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml');
+}
 
 sub _build_website_list {
     my $self = shift;
@@ -177,7 +193,11 @@ sub _build_website_list {
     );
 }
 
-my $broker_codes = YAML::XS::LoadFile('/etc/rmg/broker_codes.yml');
+my $broker_codes;
+
+BEGIN {
+    $broker_codes = YAML::XS::LoadFile('/etc/rmg/broker_codes.yml');
+}
 
 sub _build_broker_codes {
     my $self = shift;
