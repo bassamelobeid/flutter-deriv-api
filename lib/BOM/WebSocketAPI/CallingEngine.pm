@@ -8,15 +8,6 @@ use Guard;
 use JSON;
 use Data::UUID;
 
-# TODO Move to callbacks
-# use BOM::System::Config;
-# use Time::HiRes;
-# use Proc::CPUUsage;
-# use feature 'state';
-# use DataDog::DogStatsd::Helper;
-#
-# /TODO Move to callbacks
-
 sub forward {
     my ($c, $rpc_method, $args, $params) = @_;
 
