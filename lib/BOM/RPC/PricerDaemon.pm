@@ -51,7 +51,6 @@ sub price {
     DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.price.call');
     DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.price.time', $response->{rpc_time});
 
-
     $response->{data} = $self->{data};
     $response->{key}  = $self->{key};
     return encode_json($response);
