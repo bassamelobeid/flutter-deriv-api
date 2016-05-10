@@ -23,15 +23,15 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'shuwnyuan@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR0021';
 
-#$t = $t->send_ok({
-#        json => {
-#            statement => 1,
-#            limit     => 54
-#        }})->message_ok;
-#my $statement = decode_json($t->message->[1]);
-#ok($statement->{statement});
-#is($statement->{statement}->{count}, 54);
-#test_schema('statement', $statement);
+$t = $t->send_ok({
+        json => {
+            statement => 1,
+            limit     => 54
+        }})->message_ok;
+my $statement = decode_json($t->message->[1]);
+ok($statement->{statement});
+is($statement->{statement}->{count}, 54);
+test_schema('statement', $statement);
 
 ## balance
 $t = $t->send_ok({json => {balance => 1}})->message_ok;
