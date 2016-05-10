@@ -504,7 +504,7 @@ sub rpc {
     }
     $url .= $method;
 
-    return BOM::WebSocketAPI::CallingEngine::call_rpc(
+    BOM::WebSocketAPI::CallingEngine::call_rpc(
         $c,
         {
             method          => $method,
@@ -565,6 +565,7 @@ sub rpc {
             max_response_size => 328000,
         },
     );
+    return;
 }
 
 sub _sanity_failed {
