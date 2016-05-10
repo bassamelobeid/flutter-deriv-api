@@ -30,10 +30,10 @@ $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
 $rpc_caller->mock(
     'call_rpc',
     sub {
-        my $c = shift;
+        my ($c, $params) = @_;
         my $rpc_response_cb;
-        ($rpc_method, $rpc_response_cb, $call_params) = @_;
-        $c->send({json => $rpc_response_cb->($rpc_response)});
+        ($rpc_method, $rpc_response_cb, $call_params) = ($params->{method}, $params->{rpc_response_cb}, $params->{call_params});
+        $c->send({json => $rpc_response_cb->({ok => 1})});
     });
 
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
@@ -267,10 +267,10 @@ $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
 $rpc_caller->mock(
     'call_rpc',
     sub {
-        my $c = shift;
+        my ($c, $params) = @_;
         my $rpc_response_cb;
-        ($rpc_method, $rpc_response_cb, $call_params) = @_;
-        $c->send({json => $rpc_response_cb->($rpc_response)});
+        ($rpc_method, $rpc_response_cb, $call_params) = ($params->{method}, $params->{rpc_response_cb}, $params->{call_params});
+        $c->send({json => $rpc_response_cb->({ok => 1})});
     });
 
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
