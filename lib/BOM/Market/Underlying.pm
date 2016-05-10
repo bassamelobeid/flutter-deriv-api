@@ -663,7 +663,9 @@ sub _build_expiry_conventions {
         is_forex_market  => $self->market->name eq 'forex',
         symbol           => $self->symbol,
         for_date         => $self->for_date,
+        asset            => $self->asset,
         quoted_currency  => $self->quoted_currency,
+        asset_symbol     => $self->asset_symbol,
         calendar         => $self->calendar,
     );
 }
