@@ -17,6 +17,7 @@ my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
 
+my $m              = BOM::Database::Model::AccessToken->new;
 my $token_with_txn = $m->create_token($test_client2->loginid, 'test token');
 
 $test_client2->payment_free_gift(
