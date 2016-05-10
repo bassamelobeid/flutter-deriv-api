@@ -66,8 +66,8 @@ sub rmg_table_format {
         # We are working on a new calibration method.
         # Will replace this once we have the new calibrator.
         my $calibration_error = 'none';
-        my $day          = $surface_date->day_as_string;
-        my $date_display = '(' . $day . ') ' . $surface_date->db_timestamp;
+        my $day               = $surface_date->day_as_string;
+        my $date_display      = '(' . $day . ') ' . $surface_date->db_timestamp;
         push @{$dates_tt},
             {
             value             => $date,
@@ -92,7 +92,7 @@ sub rmg_table_format {
         my @points = @{$volsurface->smile_points};
         push @headers, @points;
         @surface = $self->calculate_moneyness_vol_for_display;
-    } elsif ($volsurface->type ew 'flat'){
+    } elsif ($volsurface->type eq 'flat') {
         push @headers, qw(tenor date flat_vol flat_atm_spread);
         @surface =
             map { [$volsurface->flat_vol, $volsurface->flat_atm_spread] } @days;
