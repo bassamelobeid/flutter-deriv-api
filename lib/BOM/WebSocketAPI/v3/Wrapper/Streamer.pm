@@ -73,9 +73,6 @@ sub ticks_history {
             $c,
             'ticks_history',
             sub {
-                my $channel = $args->{ticks_history} . ';' . $publish;
-                my $feed_channel_type = $c->stash('feed_channel_type') || {};
-
                 my $response = shift;
                 if ($response and exists $response->{error}) {
                     # cancel subscription if response has error
@@ -83,6 +80,7 @@ sub ticks_history {
                     return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
                 }
 
+                my $channel = $args->{ticks_history} . ';' . $publish;
                 my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
                 # check for cached data
@@ -142,6 +140,7 @@ sub ticks_history {
                     delete $feed_channel_cache->{$channel};
                 }
 
+                my $feed_channel_type = $c->stash('feed_channel_type') || {};
                 # remove the cache flag which was set during subscription
                 delete $feed_channel_type->{$channel}->{cache} if exists $feed_channel_type->{$channel};
 
