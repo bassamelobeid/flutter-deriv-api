@@ -29,3 +29,5 @@ sub update_details_for {
     BOM::Platform::Runtime->instance->app_config->quants->internal->watch_list($current);
     return BOM::Platform::Runtime->instance->app_config->save_dynamic;
 }
+
+1;
