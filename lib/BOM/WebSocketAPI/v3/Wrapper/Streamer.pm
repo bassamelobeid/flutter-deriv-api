@@ -15,6 +15,7 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use BOM::System::RedisReplicated;
+use utf8;
 
 sub ticks {
     my ($c, $args) = @_;
@@ -93,7 +94,7 @@ sub price_stream {
             return $c->new_error('price_stream',
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
-        # send_ask($c, $id, $args);
+        send_ask($c, $id, $args);
     }
     return;
 }
@@ -217,10 +218,6 @@ sub proposal {
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
         send_ask($c, $id, $args);
-
-        if ($c->stash->{redis}->get('BOM::RPC::PricerDaemon::doprice')) {
-            price_stream($c, $args);
-        }
     }
     return;
 }
