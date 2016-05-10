@@ -6,6 +6,7 @@ use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
+use Test::MockModule;
 use BOM::Platform::Runtime;
 
 my $t = build_mojo_test();
@@ -68,6 +69,7 @@ test_schema('residence_list', $res);
 ## states_list
 $t = $t->send_ok({json => {states_list => 'MY'}})->message_ok;
 $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'states_list';
 ok $res->{states_list};
 is_deeply $res->{states_list}->[0],
     {
@@ -77,8 +79,16 @@ is_deeply $res->{states_list}->[0],
 test_schema('states_list', $res);
 
 ## website_status
+my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+my $call_params;
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$t = $t->send_ok({json => {website_status => 1}})->message_ok;
+ok $call_params->{country_code};
+$rpc_caller->unmock_all;
+
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'website_status';
 is $res->{website_status}->{terms_conditions_version}, BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
 
 $t->finish_ok;

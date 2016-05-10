@@ -6,6 +6,7 @@ use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
+use Test::MockModule;
 
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -21,7 +22,7 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
 $email_mocked->mock('send_email', sub { return 1 });
 
-my $t = build_mojo_test();
+my $t = build_mojo_test({language => 'EN'});
 
 my $email     = 'abc@binary.com';
 my $password  = 'jSkjd8292922';
@@ -50,9 +51,22 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $cr_1;
 
+my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+my $call_params;
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$t = $t->send_ok({json => {cashier => 'deposit'}})->message_ok;
+is $call_params->{language}, 'EN';
+ok exists $call_params->{token};
+$rpc_caller->unmock_all;
+
+my $res;
+$t = $t->send_ok({json => {cashier => 'deposit'}})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'cashier';
+
 # lock cashier
 $t = $t->send_ok({json => {cashier_password => 1}})->message_ok;
-my $res = decode_json($t->message->[1]);
+$res = decode_json($t->message->[1]);
 ok $res->{cashier_password} == 0, 'password was not set';
 test_schema('cashier_password', $res);
 

@@ -7,6 +7,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Net::EmptyPort qw(empty_port);
+use Test::MockModule;
 
 use BOM::Platform::SessionCookie;
 use BOM::System::RedisReplicated;
@@ -77,8 +78,38 @@ my $forget = decode_json($t->message->[1]);
 note explain $forget;
 is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
+my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+my $call_params;
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$t = $t->send_ok({
+        json => {
+            get_corporate_actions => 1,
+            symbol                => "FPFP",
+            start                 => "2013-03-27",
+            end                   => "2013-03-30",
+        }})->message_ok;
+is $call_params->{token}, $token;
+$rpc_caller->unmock_all;
+
+$t = $t->send_ok({
+        json => {
+            get_corporate_actions => 1,
+            symbol                => "FPFP",
+            start                 => "2013-03-27",
+            end                   => "2013-03-30",
+        }})->message_ok;
+my $corporate_actions = decode_json($t->message->[1]);
+is $corporate_actions->{msg_type}, 'get_corporate_actions';
+
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$t = $t->send_ok({json => {portfolio => 1}})->message_ok;
+ok $call_params->{source};
+is $call_params->{token}, $token;
+$rpc_caller->unmock_all;
+
 $t = $t->send_ok({json => {portfolio => 1}})->message_ok;
 my $portfolio = decode_json($t->message->[1]);
+is $portfolio->{msg_type}, 'portfolio';
 ok $portfolio->{portfolio}->{contracts};
 ok $portfolio->{portfolio}->{contracts}->[0]->{contract_id};
 test_schema('portfolio', $portfolio);
@@ -97,6 +128,20 @@ if (exists $res->{proposal_open_contract}) {
 }
 
 sleep 1;
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$t = $t->send_ok({
+        json => {
+            buy        => 1,
+            price      => $ask_price || 0,
+            parameters => \%contractParameters,
+        },
+    })->message_ok;
+is $call_params->{token}, $token;
+ok $call_params->{source};
+ok $call_params->{contract_parameters};
+$rpc_caller->unmock_all;
+
 $t = $t->send_ok({
         json => {
             buy        => 1,
@@ -113,6 +158,7 @@ while (1) {
     next if $res->{msg_type} eq 'proposal';
 
     # note explain $res;
+    is $res->{msg_type}, 'buy';
     ok $res->{buy};
     ok $res->{buy}->{contract_id};
     ok $res->{buy}->{purchase_time};
@@ -120,6 +166,18 @@ while (1) {
     test_schema('buy', $res);
     last;
 }
+
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[3], shift->send({json => {ok => 1}}) });
+$t = $t->send_ok({
+        json => {
+            sell       => 1,
+            price      => $ask_price || 0,
+            parameters => \%contractParameters,
+        },
+    })->message_ok;
+is $call_params->{token}, $token;
+ok $call_params->{source};
+$rpc_caller->unmock_all;
 
 $t->finish_ok;
 

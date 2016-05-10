@@ -11,8 +11,8 @@ use Clone;
 
 my $valid_client_ip = '98.1.1.1';
 
-my $websapi = Test::MockModule->new('BOM::WebSocketAPI::Websocket_v3');
-$websapi->mock('rpc', sub { $_[0]->send({json => $_[3]}); });
+my $websapi = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+$websapi->mock('call_rpc', sub { $_[0]->send({json => $_[3]}); });
 
 my ($t, $res);
 
