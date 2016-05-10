@@ -61,9 +61,7 @@ foreach my $i (@instrumentlist) {
 
     my $underlying = BOM::Market::Underlying->new($i);
 
-    my $realexchange = $underlying->exchange;
-    my $realcalendar = $underlying->calendar;
-    next unless $all or $calendar->is_open;
+    next unless $all or $underlying->calendar->is_open;
 
     my $MAXDIFF = 0.002;
     if ($underlying->instrument_type eq 'individualstock') { $MAXDIFF = 0.004; }    #stocks are more volatile
