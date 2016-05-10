@@ -102,25 +102,25 @@ australia:
     name: australia
     offered: 0
     display_name: "Australia Stocks"
-    display_order: 4
+    display_order: 12
     market: stocks
 belgium:
     name: belgium
     display_name: "Belgian Stocks"
     offered: 0
-    display_order: 1
+    display_order: 11
     market: stocks
 amsterdam:
     name: amsterdam
     offered: 0
     display_name: "Dutch Stocks"
-    display_order: 2
+    display_order: 10
     market: stocks
 france:
     name: france
     offered: 0
     display_name: "French Stocks"
-    display_order: 3
+    display_order: 9
     market: stocks
 germany:
     name: germany
@@ -149,7 +149,7 @@ us:
 us_otc_stock:
     name: us_otc_stock
     display_name: 'US OTC Stocks'
-    display_order: 12
+    display_order: 4
     asset_type: 'stock'
     market: stocks
     explanation: 'US OTC Stocks'
@@ -157,7 +157,7 @@ us_otc_stock:
 uk_otc_stock:
     name: uk_otc_stock
     display_name: 'UK OTC Stocks'
-    display_order: 11
+    display_order: 3
     asset_type: 'stock'
     market: stocks
     explanation: 'UK OTC Stocks'
@@ -165,7 +165,7 @@ uk_otc_stock:
 au_otc_stock:
     name: au_otc_stock
     display_name: 'Australian OTC Stocks'
-    display_order: 9
+    display_order: 1
     asset_type: 'stock'
     market: stocks
     explanation: 'Australian OTC Stocks'
@@ -173,7 +173,7 @@ au_otc_stock:
 ge_otc_stock:
     name: ge_otc_stock
     display_name: 'German OTC Stocks'
-    display_order: 10
+    display_order: 2
     asset_type: 'stock'
     market: stocks
     explanation: 'German OTC Stocks'
