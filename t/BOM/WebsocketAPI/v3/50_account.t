@@ -102,6 +102,7 @@ $t = $t->send_ok({
             limit     => 54
         }})->message_ok;
 my $statement = decode_json($t->message->[1]);
+print Dumper($statement);
 ok($statement->{statement});
 is($statement->{statement}->{count}, 54);
 test_schema('statement', $statement);
