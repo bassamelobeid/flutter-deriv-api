@@ -193,7 +193,7 @@ sub startup {
     );
     my $services = {};
     foreach my $srv (@services) {
-        $services->{'/' . $srv->[0]} = register($srv);
+        $services->{'/' . $srv->[0]} = register(@$srv);
     }
 
     $app->plugin(

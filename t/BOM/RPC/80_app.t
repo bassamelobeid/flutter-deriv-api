@@ -91,7 +91,7 @@ my $get_apps = $c->call_ok(
         args  => {
             app_list => 1,
         },
-    })->has_no_system_error->has_no_error->result;
+    })->has_no_system_error->result;
 
 $get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
 is_deeply($get_apps, [$app1, $app2], 'list ok');
@@ -103,7 +103,7 @@ my $delete_st = $c->call_ok(
         args  => {
             app_delete => $app2->{app_id},
         },
-    })->has_no_system_error->has_no_error->result;
+    })->has_no_system_error->result;
 ok $delete_st;
 
 $get_apps = $c->call_ok(
@@ -113,7 +113,7 @@ $get_apps = $c->call_ok(
         args  => {
             app_list => 1,
         },
-    })->has_no_system_error->has_no_error->result;
+    })->has_no_system_error->result;
 $get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
 is_deeply($get_apps, [$app1], 'delete ok');
 
@@ -125,11 +125,12 @@ $delete_st = $c->call_ok(
         args  => {
             app_delete => $app2->{app_id},
         },
-    })->has_no_system_error->has_no_error->result;
+    })->has_no_system_error->result;
 ok !$delete_st, 'was deleted';
 
 ## for used and revoke
 my $test_appid = $app1->{app_id};
+$oauth = BOM::Database::Model::OAuth->new;    # re-connect db
 ok $oauth->confirm_scope($test_appid, $test_loginid), 'confirm scope';
 my ($access_token) = $oauth->store_access_token_only($test_appid, $test_loginid);
 my $used_apps = $c->call_ok(
@@ -139,12 +140,13 @@ my $used_apps = $c->call_ok(
         args  => {
             oauth_apps => 1,
         },
-    })->has_no_system_error->has_no_error->result;
+    })->has_no_system_error->result;
 is scalar(@{$used_apps}), 1;
 is $used_apps->[0]->{app_id}, $test_appid, 'app_id 1';
 is_deeply([sort @{$used_apps->[0]->{scopes}}], ['read', 'trade'], 'scopes are right');
 ok $used_apps->[0]->{last_used}, 'last_used ok';
 
+$oauth = BOM::Database::Model::OAuth->new;    # re-connect db
 my $is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 1, 'was confirmed';
 $c->call_ok(
@@ -155,8 +157,9 @@ $c->call_ok(
             oauth_apps => 1,
             revoke_app => $test_appid,
         },
-    })->has_no_system_error->has_no_error;
+    })->has_no_system_error;
 
+$oauth = BOM::Database::Model::OAuth->new;                                # re-connect db
 $is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 0, 'not confirmed after revoke';
 
