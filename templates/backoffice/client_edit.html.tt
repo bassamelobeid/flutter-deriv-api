@@ -176,6 +176,12 @@ table#client_edit td{
         <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
     </tr>
     <tr>
+        <td class="label">AML Risk Classification</td>
+            <select>
+            </select>
+        <td>
+    </tr>
+    <tr>
         <td class="label">ID Authentication</td>
         [%
             authentication_options = [
