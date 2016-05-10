@@ -455,6 +455,9 @@ RDBEAR: &4
         euro_atm:
           max: 10
           min: 5
+        euro_non_atm:
+          max: 10
+          min: 5
   digits:
     tick:
       spot:
@@ -507,6 +510,9 @@ R_100: &6
     tick:
       spot:
         euro_atm:
+          max: 10
+          min: 5
+        euro_non_atm:
           max: 10
           min: 5
   digits:
