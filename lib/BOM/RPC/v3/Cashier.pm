@@ -1276,7 +1276,7 @@ sub _get_market_limit_profile {
             }
         } else {
             my $market_obj = BOM::Market::Registry->get($market);
-            my $limit      = $risk_profile->{$market};
+            my $limit      = $risk_profile->{$market_obj->risk_profile->{risk_type}};
             $limits{$market} = {
                 name           => $market_obj->display_name,
                 turnover_limit => $limit->{turnover}{$currency},
