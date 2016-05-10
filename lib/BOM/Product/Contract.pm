@@ -4,6 +4,7 @@ use Moose;
 
 # very bad name, not sure why it needs to be
 # attached to Validatable.
+use Math::Function::Interpolator;
 use MooseX::Role::Validatable::Error;
 use Quant::Framework::Currency;
 use BOM::Product::Contract::Category;
@@ -1197,7 +1198,9 @@ sub _build_ask_price {
 sub _build_payout {
     my $self = shift;
 
-    my $payout            = $self->ask_price / $self->ask_probability->amount;
+    # If client selects amount type as stake, we are excluding commission in payout calculation because
+    # contract commission is a function of payout and it will go circular.
+    my $payout = $self->ask_price / ($self->theo_probability->amount + $self->risk_markup->amount);
     my $dollar_commission = $payout * $self->total_markup->amount;
     if ($dollar_commission < 0.02) {
         $payout -= (0.02 - $dollar_commission);
@@ -1275,26 +1278,20 @@ sub _build_risk_markup {
 sub _build_commission_markup {
     my $self = shift;
 
-    if ($self->new_interface_engine) {
-        my $commission_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'Commission markup for a pricing model',
-            set_by      => $self->pricing_engine_name,
-            base_amount => $self->pricing_engine->commission_markup,
+    my $base_commission = $self->new_interface_engine ? $self->pricing_engine->commission_markup : $self->pricing_engine->commission_markup->amount;
+    my $commission_scale = $self->payout * sqrt($self->theo_probability->amount * (1 - $self->theo_probability->amount));
+    my $interpolator = Math::Function::Interpolator->new(
+        points => {
+            500   => $base_commission,
+            25000 => $base_commission * 2,
         });
-        if ($self->for_sale) {
-            my $sell_discount = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'sell_discount',
-                description => 'Discount on sell',
-                set_by      => __PACKAGE__,
-                base_amount => BOM::Platform::Static::Config::quants->{commission}->{resell_discount_factor},
-            });
-            $commission_markup->include_adjustment('multiply', $sell_discount);
-        }
-        return $commission_markup;
-    }
 
-    return $self->pricing_engine->commission_markup;
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'commission_markup',
+        description => 'Commission markup for a pricing model',
+        set_by      => $self->pricing_engine_name,
+        base_amount => $interpolator->linear($commission_scale),
+    });
 }
 
 sub _build_model_markup {
