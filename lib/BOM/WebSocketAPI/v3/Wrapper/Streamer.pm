@@ -103,7 +103,7 @@ sub ticks_history {
                         my @matches = grep { $_ < $candles[-1]->{epoch} } keys %$cache;
                         delete @$cache{@matches};
 
-                        foreach my $epoch (sort { $a->{epoch} <=> $b->{epoch} } keys %$cache) {
+                        foreach my $epoch (sort { $a <=> $b } keys %$cache) {
                             my $window = $epoch - $epoch % $publish;
                             # check if window exists in candles response
                             $index = last_index { $_->{epoch} eq $window } @candles;
