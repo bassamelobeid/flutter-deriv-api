@@ -648,21 +648,21 @@ sub _build_exchange_name {
 }
 
 has expiry_conventions => (
-    is          => 'ro',
-    isa         => 'Quant::Framework::ExpiryConventions',
-    lazy_buid   => 1,
-    handles     => [ 'vol_expiry_date', '_spot_date', 'forward_expiry_date' ],
+    is        => 'ro',
+    isa       => 'Quant::Framework::ExpiryConventions',
+    lazy_build=> 1,
+    handles   => ['vol_expiry_date', '_spot_date', 'forward_expiry_date'],
 );
 
 sub _build_expiry_conventions {
     my $self = shift;
 
     return Quant::Framework::ExpiryConventions->new(
-        chronicle_reader        => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-        is_forex_market         => $self->market->name eq 'forex',
-        symbol                  => $self->symbol,
-        quoted_currency         => $self->quoted_currency,
-        calendar                => $self->calendar,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+        is_forex_market  => $self->market->name eq 'forex',
+        symbol           => $self->symbol,
+        quoted_currency  => $self->quoted_currency,
+        calendar         => $self->calendar,
     );
 }
 
