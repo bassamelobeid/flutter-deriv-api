@@ -3,7 +3,7 @@ package BOM::QuantsWatchList;
 use BOM::Platform::Runtime;
 
 sub get_watchlist {
-    return BOM::Platform::Runtime->instance->app_config->quants->internal->watch_list;
+    return BOM::Platform::Runtime->instance->app_config->quants->internal->watchlist;
 }
 
 sub get_details_for {
