@@ -96,7 +96,7 @@ my $token = BOM::Platform::SessionCookie->new(
     email   => 'shuwnyuan@regentmarkets.com',
 )->token;
 
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
+$t = $t->send_ok({json => {authorize => $token_with_txn}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'shuwnyuan@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR0021';
