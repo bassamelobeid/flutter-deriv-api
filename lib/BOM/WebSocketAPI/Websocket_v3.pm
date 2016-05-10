@@ -513,7 +513,7 @@ sub rpc {
             call_params     => $params,
             rpc_response_cb => $rpc_response_cb,
             before_call     => sub {
-                my ($c, $call_params) = shift;
+                my ($c, $call_params) = @_;
 
                 $c->stash(
                     'tv'  => [Time::HiRes::gettimeofday],
