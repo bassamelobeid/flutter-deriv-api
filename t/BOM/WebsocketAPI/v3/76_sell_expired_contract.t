@@ -21,13 +21,13 @@ is $response->{error}->{code},    'AuthorizationRequired';
 is $response->{error}->{message}, 'Please log in.';
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                                                                             broker_code => 'MF',
-                                                                            });
+    broker_code => 'MF',
+});
 
 my $token = BOM::Platform::SessionCookie->new(
-                                              loginid => $test_client->loginid,
-                                              email   => 'unit_test@binary.com',
-                                             )->token;
+    loginid => $test_client->loginid,
+    email   => 'unit_test@binary.com',
+)->token;
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
