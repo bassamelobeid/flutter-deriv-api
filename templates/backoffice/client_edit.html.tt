@@ -177,9 +177,28 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">AML Risk Classification</td>
-            <select>
-            </select>
+        [%
+            risk_classification_options = [
+                {'value' => '', 'details' => '-' }
+                {'value' => 'low', 'details' => 'Low' }
+                {'value' => 'standard', 'details' => 'Standard' }
+                {'value' => 'high', 'details' => 'High' }
+                {'value' => 'manual override - low', 'details' => 'Manual override - low' }
+                {'value' => 'manual override - standard', 'details' => 'Manual override - standard' }
+                {'value' => 'manual override - low', 'details' => 'Manual override - high' }
+            ]
+        %]
         <td>
+            <select name="client_aml_risk_classification">
+                [% FOREACH risk_classification = risk_classification_options %]
+                    [% IF risk_classification.value == client.aml_risk_classification %]
+                        <option value="[% risk_classification.value %]" selected="selected">[% risk_classification.details %]</option>
+                    [% ELSE %]
+                        <option value="[% risk_classification.value %]">[% risk_classification.details %]</option>
+                    [% END %]
+                [% END %]
+            </select>
+        </td>
     </tr>
     <tr>
         <td class="label">ID Authentication</td>
@@ -192,7 +211,7 @@ table#client_edit td{
                 {'value' => 'ID_192', 'details' => 'Authenticated (via Experian)' }
             ]
         %]
-        <td id="verification">: 
+        <td id="verification">:
                 Current methods:(
                     [% IF  client.get_authentication('ADDRESS').status == 'pass' %]Authenticated (deprecated address method),[% END %]
                     [% IF  client.get_authentication('ID_DOCUMENT').status == 'pass' %]Authenticated (by post),[% END %]
