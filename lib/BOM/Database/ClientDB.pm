@@ -59,12 +59,6 @@ BEGIN {
 
 sub _build_db {
     my $self = shift;
-    state $environment = +{
-        map {
-            my ($bcodes, $landing_company) = @{$_}{qw/code landing_company/};
-            local $_;
-            map { $_ => $landing_company } @$bcodes;
-        } @{$broker_codes->{definitions}}};
 
     my $domain = $environment->{$self->broker_code};
     my $type   = $self->operation;
