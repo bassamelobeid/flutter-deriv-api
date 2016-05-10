@@ -168,8 +168,33 @@ sub price_stream {
             return $c->new_error('price_stream',
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
-        send_ask($c, $id, $args);
+        send_ask_price_stream($c, $id, $args);
     }
+    return;
+}
+
+sub send_ask_price_stream {
+    my ($c, $id, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'send_ask',
+        sub {
+            my $response = shift;
+            if ($response and exists $response->{error}) {
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
+                $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
+                return $err;
+            }
+            delete $response->{longcode};
+            return {
+                msg_type => 'price_stream',
+                price_stream => {($id ? (id => $id) : ()), %$response}};
+        },
+        {args => $args},
+        'price_stream'
+    );
     return;
 }
 
