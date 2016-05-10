@@ -25,7 +25,6 @@ use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
-use BOM::WebSocketAPI::v3::Wrapper::App;
 use BOM::Database::Rose::DB;
 
 sub ok {
@@ -268,11 +267,11 @@ my @dispatch = (
     ],
     ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1, 'trade'],
 
-    ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register,   1, 'admin'],
-    ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,       1, 'admin'],
-    ['app_get',      \&BOM::WebSocketAPI::v3::Wrapper::App::get,        1, 'admin'],
-    ['app_delete',   \&BOM::WebSocketAPI::v3::Wrapper::App::delete,     1, 'admin'],
-    ['oauth_apps',   \&BOM::WebSocketAPI::v3::Wrapper::App::oauth_apps, 1, 'admin'],
+    ['app_register', '',   1, 'admin'],
+    ['app_list',     '',       1, 'admin'],
+    ['app_get',      '',        1, 'admin'],
+    ['app_delete',   '',     1, 'admin'],
+    ['oauth_apps',   '', 1, 'admin'],
 
     ['topup_virtual',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual,     1, 'trade'],
     ['get_limits',        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,        1, 'read'],
@@ -445,7 +444,13 @@ sub __handle {
                 {tags => [$tag, $descriptor->{category}, "account_type:$account_type"]});
         }
 
-        my $result = $descriptor->{handler}->($c, $p1);
+        my $result;
+        if (my $handler = $descriptor->{handler}) {
+            $result = $handler->($c, $p1, {require_auth => $descriptor->{require_auth}});
+        } else {
+            # No need return result because always do async response
+            BOM::WebSocketAPI::CallingEngine::forward($c, $descriptor->{category}, $p1, {require_auth => $descriptor->{require_auth}});
+        }
 
         if ($result) {
             my $output_validation_result = $descriptor->{out_validator}->validate($result);
