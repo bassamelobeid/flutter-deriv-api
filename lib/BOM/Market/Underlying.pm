@@ -662,6 +662,7 @@ sub _build_expiry_conventions {
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         is_forex_market  => $self->market->name eq 'forex',
         symbol           => $self->symbol,
+        for_date         => $self->for_date,
         quoted_currency  => $self->quoted_currency,
         calendar         => $self->calendar,
     );
