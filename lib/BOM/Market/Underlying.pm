@@ -48,8 +48,6 @@ use BOM::Market::SubMarket::Registry;
 use BOM::Market;
 use BOM::Market::Registry;
 
-with 'BOM::Market::Role::ExpiryConventions';
-
 our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
 =head1 METHODS
@@ -649,7 +647,26 @@ sub _build_exchange_name {
     return $exchange_name;
 }
 
-=head2 exchange
+has expiry_conventions => (
+    is          => 'ro',
+    isa         => 'Quant::Framework::ExpiryConventions',
+    lazy_buid   => 1,
+    handles     => [ 'vol_expiry_date', '_spot_date', 'forward_expiry_date' ],
+);
+
+sub _build_expiry_conventions {
+    my $self = shift;
+
+    return Quant::Framework::ExpiryConventions->new(
+        chronicle_reader        => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+        is_forex_market         => $self->market->name eq 'forex',
+        symbol                  => $self->symbol,
+        quoted_currency         => $self->quoted_currency,
+        calendar                => $self->calendar,
+    );
+}
+
+=head2 calendar
 
 Returns a Quant::Framework::TradingCalendar object where this underlying is traded.  Useful for
 determining market open and closing times and other restrictions which may
