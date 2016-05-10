@@ -46,16 +46,25 @@ sub BUILDARGS {
     croak "At least one of broker_code, or client_loginid must be specified";
 }
 
-my $broker_codes = YAML::XS::LoadFile('/etc/rmg/broker_codes.yml');
+my $environment;
+
+BEGIN {
+    $environment = +{
+        map {
+            my ($bcodes, $landing_company) = @{$_}{qw/code landing_company/};
+            local $_;
+            map { $_ => $landing_company } @$bcodes;
+        } @{YAML::XS::LoadFile('/etc/rmg/broker_codes.yml')->{definitions}}};
+}
+
 sub _build_db {
     my $self = shift;
     state $environment = +{
         map {
             my ($bcodes, $landing_company) = @{$_}{qw/code landing_company/};
             local $_;
-            map {$_ => $landing_company} @$bcodes;
-        } @{$broker_codes->{definitions}}
-    };
+            map { $_ => $landing_company } @$bcodes;
+        } @{$broker_codes->{definitions}}};
 
     my $domain = $environment->{$self->broker_code};
     my $type   = $self->operation;
