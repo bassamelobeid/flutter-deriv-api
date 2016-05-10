@@ -4,7 +4,6 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use CGI;
-use Carp qw( croak );
 
 use f_brokerincludeall;
 
@@ -48,7 +47,7 @@ if (@request_list) {
             args      => \@request_list
         },
         \$request_f
-    ) || croak BOM::Platform::Context::template->error();
+    ) || die BOM::Platform::Context::template->error();
 
     print $request_f;
     print "</br></br>";
@@ -64,7 +63,7 @@ if (@response_list) {
             args      => \@response_list
         },
         $response_f
-    ) || croak BOM::Platform::Context::template->error();
+    ) || die BOM::Platform::Context::template->error();
 
     print $response_f;
 }
