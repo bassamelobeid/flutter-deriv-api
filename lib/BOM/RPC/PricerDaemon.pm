@@ -45,8 +45,6 @@ sub _initialize {
 sub price {
     my $self = shift;
 
-    return if (not BOM::System::RedisReplicated::redis_read->get('BOM::RPC::PricerDaemon::doprice'));
-
     my $response = BOM::RPC::v3::Contract::send_ask({args => $self->{params}});
 
     delete $response->{longcode};
