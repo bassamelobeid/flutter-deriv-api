@@ -59,7 +59,7 @@ my %jp_client_details = (
     declare_not_fatca                           => 1,
 );
 
-my ($vr_client, $user, $token, $jp_loginid, $jp_client, $res);
+my ($vr_client, $user, $jp_loginid, $jp_client, $res);
 
 subtest 'create VRTJ & JP client' => sub {
     # new VR client
@@ -69,15 +69,10 @@ subtest 'create VRTJ & JP client' => sub {
         residence       => 'jp',
     });
 
-    $token = BOM::Platform::SessionCookie->new(
-        loginid => $vr_client->loginid,
-        email   => $vr_client->email,
-    )->token;
-
     # new JP client
     $res = BOM::RPC::v3::NewAccount::new_account_japan({
-        token => $token,
-        args  => \%jp_client_details
+        client => $vr_client,
+        args   => \%jp_client_details
     });
     $jp_loginid = $res->{client_id};
     like $jp_loginid, qr/^JP\d+$/, "JP client created";
@@ -108,17 +103,12 @@ my @jp_only = qw(
 );
 
 subtest 'VRTJ get_settings' => sub {
-    $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
+    $res = BOM::RPC::v3::Accounts::get_settings({client => $vr_client});
     is($res->{jp_settings}, undef, "no JP settings for Japan Virtual Acc");
 };
 
 subtest 'JP get_settings' => sub {
-    $token = BOM::Platform::SessionCookie->new(
-        loginid => $jp_client->loginid,
-        email   => $jp_client->email,
-    )->token;
-
-    $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
+    $res = BOM::RPC::v3::Accounts::get_settings({client => $jp_client});
 
     my %jp_specific = (
         salutation    => '',
@@ -153,11 +143,6 @@ subtest 'non-JP client get_settings' => sub {
             residence       => 'au',
         });
 
-        $token = BOM::Platform::SessionCookie->new(
-            loginid => $vr_client->loginid,
-            email   => $vr_client->email,
-        )->token;
-
         # new CR client
         my %cr_client_details = (
             salutation       => 'Ms',
@@ -176,15 +161,15 @@ subtest 'non-JP client get_settings' => sub {
         );
 
         $res = BOM::RPC::v3::NewAccount::new_account_real({
-            token => $token,
-            args  => \%cr_client_details
+            client => $vr_client,
+            args   => \%cr_client_details
         });
         my $cr_loginid = $res->{client_id};
         like($cr_loginid, qr/^CR\d+$/, "got CR client $cr_loginid");
     };
 
     subtest 'VRTC - get_settings' => sub {
-        $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
+        $res = BOM::RPC::v3::Accounts::get_settings({client => $vr_client});
         is($res->{jp_settings}, undef, "no jp_settings for VRTC");
     };
 };

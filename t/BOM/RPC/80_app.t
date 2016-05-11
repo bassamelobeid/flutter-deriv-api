@@ -10,7 +10,8 @@ use BOM::Database::Model::AccessToken;
 use Test::BOM::RPC::Client;
 use Test::Mojo;
 
-my $test_loginid = create_test_user();
+my $test_client  = create_test_user();
+my $test_loginid = $test_client->loginid;
 
 # cleanup
 my $oauth = BOM::Database::Model::OAuth->new;
