@@ -7,7 +7,6 @@ use base qw( Exporter );
 our @EXPORT_OK = qw( get_offerings_with_filter get_offerings_flyby get_permitted_expiries get_historical_pricer_durations get_contract_specifics );
 
 use Cache::RedisDB;
-use Carp qw( croak );
 use FlyBy;
 use List::MoreUtils qw( uniq all );
 use Time::Duration::Concise;
@@ -140,7 +139,7 @@ sub _make_new_flyby {
 sub get_offerings_with_filter {
     my ($what, $args) = @_;
 
-    croak 'Must supply an output key' unless defined $what;
+    die 'Must supply an output key' unless defined $what;
     my $landing_company = delete $args->{landing_company};
     my $fb              = get_offerings_flyby($landing_company);
 
@@ -153,7 +152,7 @@ sub get_offerings_with_filter {
 sub get_contract_specifics {
     my $args = shift;
 
-    croak 'Improper arguments to get_contract_specifics'
+    die 'Improper arguments to get_contract_specifics'
         unless (all { exists $args->{$_} } (qw(underlying_symbol contract_category barrier_category expiry_type start_type)));
 
     my $to_format = ($args->{expiry_type} eq 'tick') ? sub { $_[0]; } : sub { Time::Duration::Concise->new(interval => $_[0]) };
