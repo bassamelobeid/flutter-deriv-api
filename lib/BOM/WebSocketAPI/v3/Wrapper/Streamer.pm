@@ -98,19 +98,19 @@ sub ticks_history {
                         @{$response->{data}->{history}->{prices}} = @times{@{$response->{data}->{history}->{times}}};
                     } elsif ($response->{type} eq 'candles') {
                         my $index;
-                        my @candles = @{$response->{data}->{candles}};
+                        my $candles = $response->{data}->{candles};
 
                         # delete all cache value that have epoch lower than last candle epoch
-                        my @matches = grep { $_ < $candles[-1]->{epoch} } keys %$cache;
+                        my @matches = grep { $_ < $candles->[-1]->{epoch} } keys %$cache;
                         delete @$cache{@matches};
 
                         foreach my $epoch (sort { $a <=> $b } keys %$cache) {
                             my $window = $epoch - $epoch % $publish;
                             # check if window exists in candles response
-                            $index = last_index { $_->{epoch} eq $window } @candles;
+                            $index = last_index { $_->{epoch} eq $window } @$candles;
                             # if no window is in response then update the candles with cached data
                             if ($index < 0) {
-                                push @candles, {
+                                push @$candles, {
                                     open  => $cache->{$epoch}->{open},
                                     close => $cache->{$epoch}->{close},
                                     epoch => $window + 0,                 # need to send as integer
@@ -118,7 +118,7 @@ sub ticks_history {
                                     low   => $cache->{$epoch}->{low}};
                             } else {
                                 # if window exists replace it with new data
-                                $candles[$index] = {
+                                $candles->[$index] = {
                                     open  => $cache->{$epoch}->{open},
                                     close => $cache->{$epoch}->{close},
                                     epoch => $window + 0,                 # need to send as integer
@@ -126,7 +126,6 @@ sub ticks_history {
                                     low   => $cache->{$epoch}->{low}};
                             }
                         }
-                        $response->{data}->{candles} = \@candles;
                     }
 
                     delete $feed_channel_cache->{$channel};
