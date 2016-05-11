@@ -571,7 +571,7 @@ sub combined_realtime_tick {
         if ($args->{end_time});
 
     my $sth = $self->_combined_realtime_tick_stmt;
-    $statement = $self->dbh->prepare($statement);
+    $sth = $self->dbh->prepare($sth);
     $sth->bind_param(1, $self->underlying);
     $sth->bind_param(2, $start_time);
     $sth->bind_param(3, $end_time);
