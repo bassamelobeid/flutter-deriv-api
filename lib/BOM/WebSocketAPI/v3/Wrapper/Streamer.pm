@@ -272,7 +272,7 @@ sub _pricing_channel {
     }
 
     my %skip_duration_list = map { $_ => 1 } qw(s m h);
-    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
+    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR);
     my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
 
     my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
@@ -377,7 +377,7 @@ sub process_realtime_events {
     my @m                  = split(';', $message);
     my $feed_channels_type = $c->stash('feed_channel_type');
     my %skip_duration_list = map { $_ => 1 } qw(s m h);
-    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
+    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR);
     my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
