@@ -13,7 +13,6 @@ Updates our vols with the latest quotes we have received from Bloomberg.
 
 use Moose;
 with 'App::Base::Script';
-with 'BOM::Utility::Logging';
 
 use List::Util qw(first);
 use BOM::Market::Underlying;

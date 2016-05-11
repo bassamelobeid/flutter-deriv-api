@@ -37,7 +37,6 @@ use List::Util qw(first);
 use List::MoreUtils qw( uniq );
 use Memoize;
 
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Market::Registry;
 use BOM::Market::SubMarket::Registry;
 use BOM::Market::SubMarket;
@@ -149,7 +148,7 @@ Changes filter behavior to disallow listing of symbols which have buying/trading
 
 sub get_symbols_for {
     my ($self, %args) = @_;
-    get_logger->logdie("market is not specified!" . Carp::longmess)
+    die("market is not specified!")
         unless $args{market};
 
     $args{contract_category} = $args{contract_category}->code
