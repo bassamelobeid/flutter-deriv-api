@@ -167,6 +167,8 @@ sub register_and_return_new_client {
         $self->$_ || $self->$_('');
     }
 
+    $self->aml_risk_classification('low') unless $self->is_virtual;
+
     # resolve Gender from Salutation
     if ($self->salutation and not $self->gender) {
         my $gender = (uc $self->salutation eq 'MR') ? 'm' : 'f';
