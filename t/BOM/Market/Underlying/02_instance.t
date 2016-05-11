@@ -288,6 +288,30 @@ subtest 'sub market' => sub {
     }
 };
 
+subtest 'is_OTC' => sub {
+    my @OTC_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(market => ['forex', 'commodities', 'voldix']);
+    push @OTC_symbols,
+        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market    => 'indices',
+        submarket => ['otc_index', 'smart_index'],
+        );
+    foreach my $symbol (@OTC_symbols) {
+        my $underlying = BOM::Market::Underlying->new($symbol);
+
+        is($underlying->submarket->is_OTC, 1, "$symbol submarket is OTC");
+    }
+    my @non_OTC_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(market => ['stocks']);
+    push @non_OTC_symbols,
+        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market    => 'indices',
+        submarket => ['asia_oceania', 'europe_africa', 'americas', 'middle_east']);
+    foreach my $symbol (@non_OTC_symbols) {
+        my $underlying = BOM::Market::Underlying->new($symbol);
+
+        is($underlying->submarket->is_OTC, 0, "$symbol submarket is non OTC");
+
+    }
+};
 subtest 'tick_at' => sub {
     # Due to caching/delays, even tho we do have a tick for some previous second, if that is the last tick
     # received, we cannot guarantee that there won't be a "closer" one until the next tick is written and
