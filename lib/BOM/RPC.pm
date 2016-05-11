@@ -155,7 +155,7 @@ sub startup {
         ['get_account_status',       \&BOM::RPC::v3::Accounts::get_account_status,       1],
         ['change_password',          \&BOM::RPC::v3::Accounts::change_password,          1],
         ['cashier_password',         \&BOM::RPC::v3::Accounts::cashier_password,         1],
-        ['reset_password',           \&BOM::RPC::v3::Accounts::reset_password,           1],
+        ['reset_password',           \&BOM::RPC::v3::Accounts::reset_password],
         ['get_settings',             \&BOM::RPC::v3::Accounts::get_settings,             1],
         ['set_settings',             \&BOM::RPC::v3::Accounts::set_settings,             1],
         ['get_self_exclusion',       \&BOM::RPC::v3::Accounts::get_self_exclusion,       1],
