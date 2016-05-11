@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use JSON qw(encode_json);
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
@@ -22,9 +21,7 @@ sub _validate {
     my $company = BOM::Platform::Runtime->instance->financial_company_for_country($from_client->residence) // '';
     return if ($company eq 'maltainvest' or ($from_client->residence eq 'gb' and $from_client->landing_company->short eq 'malta'));
 
-    get_logger()
-        ->warn(
-        "maltainvest acc opening err: loginid:" . $from_client->loginid . " residence:" . $from_client->residence . " financial_company:$company");
+    warn("maltainvest acc opening err: loginid:" . $from_client->loginid . " residence:" . $from_client->residence . " financial_company:$company");
     return {error => 'invalid'};
 }
 

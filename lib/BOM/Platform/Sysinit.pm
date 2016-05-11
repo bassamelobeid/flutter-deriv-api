@@ -3,9 +3,6 @@ package BOM::Platform::Sysinit;
 use warnings;
 use strict;
 
-use BOM::Utility::Log4perl qw( get_logger );
-
-use Carp qw(croak);
 use Time::HiRes ();
 use Guard;
 use File::Copy;

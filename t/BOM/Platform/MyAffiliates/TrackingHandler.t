@@ -16,8 +16,6 @@ use BOM::Platform::Context;
 use BOM::Platform::Client;
 use BOM::Platform::MyAffiliates::TrackingHandler;
 
-use BOM::Utility::Log4perl;
-
 subtest 'Basic Instantiation.' => sub {
     my $handler;
     lives_ok { $handler = BOM::Platform::MyAffiliates::TrackingHandler->new } 'Creating an instance doesn\'t cause us to die.';
