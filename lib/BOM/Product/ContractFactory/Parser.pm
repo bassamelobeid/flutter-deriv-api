@@ -3,8 +3,6 @@ package BOM::Product::ContractFactory::Parser;
 use strict;
 use warnings;
 
-use Carp;
-
 use Exporter 'import';
 our @EXPORT_OK = qw(
     shortcode_to_parameters
@@ -43,7 +41,7 @@ my %AVAILABLE_CONTRACTS = map { $_ => 1 } uniq(@available_contracts);
 sub financial_market_bet_to_parameters {
     my $fmb      = shift;
     my $currency = shift;
-    croak 'Expected BOM::Database::Model::FinancialMarketBet instance.'
+    die 'Expected BOM::Database::Model::FinancialMarketBet instance.'
         if not $fmb->isa('BOM::Database::Model::FinancialMarketBet');
 
     # don't bother to get legacy parameters; rather we can just use shortcode
@@ -218,7 +216,7 @@ sub shortcode_to_parameters {
             $how_many_ticks = $5;
         }
     } else {
-        croak 'Unknown shortcode ' . $shortcode;
+        die 'Unknown shortcode ' . $shortcode;
     }
 
     my $underlying = BOM::Market::Underlying->new($underlying_symbol);

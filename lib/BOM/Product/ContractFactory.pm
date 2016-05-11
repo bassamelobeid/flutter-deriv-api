@@ -13,7 +13,6 @@ Some general utility subroutines related to bet parameters.
 
 =cut
 
-use Carp qw( croak );
 use Cache::RedisDB;
 use List::Util qw( first );
 use Time::Duration::Concise;
@@ -109,7 +108,7 @@ sub produce_contract {
     if (my $missing = first { not defined $input_params{$_} } (qw(bet_type currency))) {
         # Some things are required for all possible contracts
         # This list is pretty small, though!
-        croak $missing. ' is required.';
+        die $missing . ' is required.';
     }
 
     # common initialization for spreads and derivatives

@@ -16,7 +16,6 @@ This class represents available contract categories.
 
 =cut
 
-use Carp;
 use Moose;
 use YAML::XS qw(LoadFile);
 use namespace::autoclean;
@@ -96,7 +95,7 @@ around BUILDARGS => sub {
     my $orig  = shift;
     my $class = shift;
 
-    croak 'Cannot build BOM::Product::Contract::Category without code'
+    die 'Cannot build BOM::Product::Contract::Category without code'
         unless $_[0];
 
     my %args   = ref $_[0] eq 'HASH' ? %{$_[0]} : (code => $_[0]);
