@@ -3,7 +3,6 @@ package BOM::MarketData::Fetcher::VolSurface;
 use Moose;
 
 use Module::Load::Conditional qw( can_load );
-use Carp qw(croak);
 
 =head1 fetch_surface
 
@@ -21,7 +20,7 @@ sub fetch_surface {
     my $class      = 'BOM::MarketData::VolSurface::' . ucfirst lc $underlying->volatility_surface_type;
 
     if (not can_load(modules => {$class => undef})) {
-        croak "Could not load volsurface for " . $underlying->symbol;
+        die "Could not load volsurface for " . $underlying->symbol;
     }
     my $surface_args = {
         underlying => $args->{underlying},
