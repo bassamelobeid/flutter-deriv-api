@@ -186,16 +186,6 @@ Returns
 
 =cut
 
-has '_ticks_start_limit_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__ticks_start_limit_statement {
-    my $self = shift;
-    return 'SELECT * FROM ticks_start_limit($1, $2, $3)';
-}
-
 sub ticks_start_limit {
     my $self = shift;
     my $args = shift;
@@ -204,8 +194,7 @@ sub ticks_start_limit {
     $start_time = Date::Utility->new($args->{start_time})->datetime_yyyymmdd_hhmmss
         if ($args->{start_time});
 
-    my $statement = $self->_ticks_start_limit_statement;
-    $statement = $self->dbh->prepare($statement);
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_start_limit($1, $2, $3)');
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $args->{limit});
