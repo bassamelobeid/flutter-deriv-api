@@ -544,7 +544,7 @@ sub rpc {
                         {tags => ["rpc:$method"]});
                 }
             },
-            before_send_response => sub {
+            before_send_api_response => sub {
                 my ($c, $api_response) = @_;
 
                 if ($c->stash('debug')) {
@@ -555,7 +555,7 @@ sub rpc {
                 }
                 $c->stash('tv' => [Time::HiRes::gettimeofday]);
             },
-            after_sent_response => sub {
+            after_sent_api_response => sub {
                 DataDog::DogStatsd::Helper::stats_timing(
                     'bom_websocket_api.v_3.rpc.call.timing.sent',
                     1000 * Time::HiRes::tv_interval($c->stash('tv')),
