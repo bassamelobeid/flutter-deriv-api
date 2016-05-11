@@ -218,7 +218,8 @@ sub active_symbols {
 
     my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
 
-    if ($params->{token} and my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token})) {
+    my $token_details = $params->{token_details};
+    if ($token_details and exists $token_details->{loginid}) {
         my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
         $landing_company_name = $client->landing_company->short if $client;
     }

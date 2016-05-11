@@ -34,10 +34,10 @@ use BOM::Database::DataMapper::Transaction;
 sub payout_currencies {
     my $params = shift;
 
+    my $token_details = $params->{token_details};
     my $client;
-    if ($params->{token}) {
-        my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-        $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}}) if ($token_details and exists $token_details->{loginid});
+    if ($token_details and exists $token_details->{loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     }
 
     my $currencies;
@@ -1043,7 +1043,8 @@ sub get_financial_assessment {
 sub reality_check {
     my $params = shift;
 
-    my $client = $params->{client};
+    my $client        = $params->{client};
+    my $token_details = $params->{token_details};
 
     my $has_reality_check = $client->landing_company->has_reality_check;
     return {} unless ($has_reality_check);

@@ -343,10 +343,10 @@ sub paymentagent_list {
     my $params = shift;
     my ($language, $args) = @{$params}{qw/language args/};
 
+    my $token_details = $params->{token_details};
     my $client;
-    if ($params->{token}) {
-        my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-        $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}}) if ($token_details and exists $token_details->{loginid});
+    if ($token_details and exists $token_details->{loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     }
 
     my $broker_code = $client ? $client->broker_code : 'CR';

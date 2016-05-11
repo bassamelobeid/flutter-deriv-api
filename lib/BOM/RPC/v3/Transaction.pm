@@ -17,7 +17,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 sub buy {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    my $token_details = $params->{token_details};
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
     my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});

@@ -64,6 +64,7 @@ sub register {
             if ($token_details and exists $token_details->{loginid} and $token_details->{loginid} =~ /^(\D+)\d+$/) {
                 $args->{broker_code} = $1;
             }
+            $params->{token_details} = $token_details;
             $args->{language} = $params->{language} if ($params->{language});
 
             if (exists $params->{server_name}) {
