@@ -10,7 +10,6 @@ use Time::HiRes;
 use Data::UUID;
 use Time::Out qw(timeout);
 use Guard;
-use Proc::CPUUsage;
 use feature "state";
 use RateLimitations qw(within_rate_limits);
 
@@ -534,10 +533,7 @@ sub rpc {
             before_call     => sub {
                 my ($c, $call_params) = @_;
 
-                $c->stash(
-                    'tv'  => [Time::HiRes::gettimeofday],
-                    'cpu' => Proc::CPUUsage->new(),
-                );
+                $c->stash('tv' => [Time::HiRes::gettimeofday]);
                 # TODO DELETE After dispatcher will be changed
                 $call_params->{language} = $c->stash('language');
                 $call_params->{country} = $c->stash('country') || $c->country_code;
@@ -549,7 +545,6 @@ sub rpc {
                     'bom_websocket_api.v_3.rpc.call.timing',
                     1000 * Time::HiRes::tv_interval($c->stash('tv')),
                     {tags => ["rpc:$method"]});
-                DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.cpuusage', $c->stash('cpu')->usage(), {tags => ["rpc:$method"]});
                 DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$method"]});
             },
             after_got_rpc_response => sub {
