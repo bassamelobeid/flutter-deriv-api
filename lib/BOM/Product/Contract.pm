@@ -1195,11 +1195,79 @@ sub _build_ask_price {
     return $self->_price_from_prob('ask_probability');
 }
 
+my $commission_base_multiplier = 1;
+my $commission_max_multiplier  = 2;
+my $commission_min_std         = 500;
+my $commission_max_std         = 25000;
+
+sub commission_multiplier {
+    my ($self, $payout) = @_;
+
+    my $theo_prob = $self->theo_probability->amount;
+
+    my $std = $payout * sqrt($theo_prob * (1 - $theo_prob));
+
+    return $commission_base_multiplier if $std <= $commission_min_std;
+    return $commission_max_multiplier  if $std >= $commission_max_std;
+
+    my $slope      = $self->commission_multiplier_slope;
+    my $multiplier = ($std - $commission_min_std) * $slope + 1;
+
+    return $multiplier;
+}
+
+has commission_multiplier_slope => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_commission_multiplier_slope {
+    return ($commission_max_multiplier - $commission_base_multiplier) / ($commission_max_std - $commission_min_std);
+}
+
 sub _build_payout {
     my $self = shift;
 
-    my $payout = min($self->ask_price / $self->ask_probability->amount, $self->estimated_payout);
-    my $dollar_commission = $payout * $self->total_markup->amount;
+    my $theo_prob       = $self->theo_probability->amount;
+    my $risk_markup     = $self->risk_markup->amount;
+    my $base_commission = $self->base_commission;
+
+    # payout calculated with base commission.
+    my $initial_payout = $self->ask_price / ($theo_prob * $risk_markup * $base_commission);
+    if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
+        my $comm = $base_commission;
+        return $self->_forced_minimum_commission($self->ask_price / ($theo_prob * $risk_markup * $comm), $comm);
+    }
+
+    # payout calculated with 2 times base commission.
+    $initial_payout = $self->ask_price / ($theo_prob * $risk_markup * $base_commission * 2);
+    if ($self->commission_multiplier($initial_payout) == $commission_max_multiplier) {
+        my $comm = $base_commission * 2;
+        return $self->_forced_minimum_commission($self->ask_price / ($theo_prob * $risk_markup * $comm), $comm);
+    }
+
+    my $slope  = $self->commission_multiplier_slope;
+    my $a      = $base_commission * $slope * sqrt($theo_prob * (1 - $theo_prob));
+    my $b      = $theo_prob + $self->risk_markup->amount + $base_commission - $base_commission * $commission_min_std * $slope;
+    my $c      = -$self->ask_price;
+    my $payout = 0;
+    for my $w (1, -1) {
+        my $estimated_payout = (-$b + $w * sqrt($b**2 - 4 * $a * $c)) / 2 * $a;
+        if ($estimated_payout > 0) {
+            $payout = $estimated_payout;
+            last;
+        }
+    }
+
+    my $comm = $base_commission * $self->commission_multiplier($payout);
+    return $self->_forced_minimum_commission($self->ask_price / ($theo_prob * $risk_markup * $comm), $comm);
+}
+
+sub _forced_minimum_commission {
+    my ($self, $payout, $commission) = @_;
+
+    my $dollar_commission = $payout * $self->risk_markup->amount * $commission * $self->commission_adjustment->amount;
+
     if ($dollar_commission < 0.02) {
         $payout -= (0.02 - $dollar_commission);
     }
@@ -1253,7 +1321,7 @@ sub _build_bs_price {
     return $self->_price_from_prob('bs_probability');
 }
 
-has [qw(risk_markup commission_markup estimated_payout base_commission)] => (
+has [qw(risk_markup commission_markup base_commission)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -1279,29 +1347,14 @@ sub _build_base_commission {
     return $self->new_interface_engine ? $self->pricing_engine->commission_markup : $self->pricing_engine->commission_markup->amount;
 }
 
-sub _build_estimated_payout {
-    my $self = shift;
-
-    return $self->ask_price / ($self->theo_probability->amount = $self->risk_markup->amount + $self->base_commission);
-}
-
 sub _build_commission_markup {
     my $self = shift;
-
-    my $base_commission  = $self->base_commission;
-    my $estimated_payout = $self->estimated_payout;
-    my $commission_scale = $estimated_payout * sqrt($self->theo_probability->amount * (1 - $self->theo_probability->amount));
-    my $interpolator     = Math::Function::Interpolator->new(
-        points => {
-            500   => $base_commission,
-            25000 => $base_commission * 2,
-        });
 
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'commission_markup',
         description => 'Commission markup for a pricing model',
         set_by      => $self->pricing_engine_name,
-        base_amount => $interpolator->linear($commission_scale),
+        base_amount => $self->base_commission * $self->commission_multiplier($self->payout),
     });
 }
 
