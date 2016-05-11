@@ -1233,17 +1233,17 @@ sub _build_payout {
     my $base_commission = $self->base_commission;
 
     # payout calculated with base commission.
-    my $initial_payout = $self->ask_price / ($theo_prob * $risk_markup * $base_commission);
+    my $initial_payout = $self->ask_price / ($theo_prob + $risk_markup + $base_commission);
     if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
         my $comm = $base_commission;
-        return $self->_forced_minimum_commission($self->ask_price / ($theo_prob * $risk_markup * $comm), $comm);
+        return $self->_forced_minimum_commission($self->ask_price / ($theo_prob + $risk_markup + $comm), $comm);
     }
 
     # payout calculated with 2 times base commission.
-    $initial_payout = $self->ask_price / ($theo_prob * $risk_markup * $base_commission * 2);
+    $initial_payout = $self->ask_price / ($theo_prob + $risk_markup + $base_commission * 2);
     if ($self->commission_multiplier($initial_payout) == $commission_max_multiplier) {
         my $comm = $base_commission * 2;
-        return $self->_forced_minimum_commission($self->ask_price / ($theo_prob * $risk_markup * $comm), $comm);
+        return $self->_forced_minimum_commission($self->ask_price / ($theo_prob + $risk_markup + $comm), $comm);
     }
 
     my $slope  = $self->commission_multiplier_slope;
@@ -1252,7 +1252,7 @@ sub _build_payout {
     my $c      = -$self->ask_price;
     my $payout = 0;
     for my $w (1, -1) {
-        my $estimated_payout = (-$b + $w * sqrt($b**2 - 4 * $a * $c)) / 2 * $a;
+        my $estimated_payout = (-$b + $w * sqrt($b**2 - 4 * $a * $c)) / (2 * $a);
         if ($estimated_payout > 0) {
             $payout = $estimated_payout;
             last;
