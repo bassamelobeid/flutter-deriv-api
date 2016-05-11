@@ -132,7 +132,7 @@ sub get_account_status {
             } else {
                 return {
                     msg_type           => 'get_account_status',
-                    get_account_status => $response->{status},
+                    get_account_status => $response,
                 };
             }
         },
