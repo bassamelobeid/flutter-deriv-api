@@ -7,8 +7,6 @@ use File::Temp qw(tempdir);
 use Date::Utility;
 use BOM::MarketData::AutoUpdater::OHLC;
 use Test::MockObject::Extends;
-use BOM::Utility::Log4perl;
-use Test::Log4perl;
 use Test::MockModule;
 my $abspath   = rel2abs((splitpath(__FILE__))[1]);
 my $data_path = $abspath . '/../../../data/bbdl/ohlc';
