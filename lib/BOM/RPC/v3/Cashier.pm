@@ -396,7 +396,7 @@ sub paymentagent_transfer {
     my $params = shift;
 
     my $client_fm  = $params->{client};
-    my $loginid_fm = $client->loginid;
+    my $loginid_fm = $client_fm->loginid;
 
     my $payment_agent = $client_fm->payment_agent;
     my ($website_name, $args) = @{$params}{qw/website_name args/};
