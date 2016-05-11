@@ -112,7 +112,7 @@ has '_ticks_start_end_statement' => (
 
 sub _build__ticks_start_end_statement {
     my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM ticks_start_end($1, $2, $3)');
+    return 'SELECT * FROM ticks_start_end($1, $2, $3)';
 }
 
 sub ticks_start_end {
@@ -127,6 +127,7 @@ sub ticks_start_end {
         if ($args->{end_time});
 
     my $statement = $self->_ticks_start_end_statement;
+    $statement = $self->dbh->prepare($statement);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $end_time);
@@ -204,7 +205,7 @@ has '_ticks_start_limit_statement' => (
 
 sub _build__ticks_start_limit_statement {
     my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM ticks_start_limit($1, $2, $3)');
+    return 'SELECT * FROM ticks_start_limit($1, $2, $3)';
 }
 
 sub ticks_start_limit {
@@ -216,6 +217,7 @@ sub ticks_start_limit {
         if ($args->{start_time});
 
     my $statement = $self->_ticks_start_limit_statement;
+    $statement = $self->dbh->prepare($statement);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $args->{limit});
@@ -249,7 +251,7 @@ has '_ticks_end_limit_statement' => (
 
 sub _build__ticks_end_limit_statement {
     my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM ticks_end_limit($1, $2, $3)');
+    return 'SELECT * FROM ticks_end_limit($1, $2, $3)';
 }
 
 sub ticks_end_limit {
@@ -261,6 +263,7 @@ sub ticks_end_limit {
         if ($args->{end_time});
 
     my $statement = $self->_ticks_end_limit_statement;
+    $statement = $self->dbh->prepare($statement);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $end_time);
     $statement->bind_param(3, $args->{limit});
@@ -287,7 +290,7 @@ has [qw(_tick_at_or_before_statement _consistent_tick_at_or_before_statement)] =
 sub _build__tick_at_or_before_statement {
     my $self = shift;
 
-    return $self->dbh->prepare(<<'SQL');
+    return <<'SQL';
 SELECT * FROM tick_at_or_before($1, $2::TIMESTAMP)
 SQL
 }
@@ -295,7 +298,7 @@ SQL
 sub _build__consistent_tick_at_or_before_statement {
     my $self = shift;
 
-    return $self->dbh->prepare(<<'SQL');
+    return <<'SQL';
 SELECT * FROM consistent_tick_at_or_before($1, $2::TIMESTAMP)
 SQL
 }
@@ -309,6 +312,7 @@ sub tick_at {
     my $end_time = Date::Utility->new($args->{end_time});
 
     my $statement = ($args->{allow_inconsistent}) ? $self->_tick_at_or_before_statement : $self->_consistent_tick_at_or_before_statement;
+    $statement = $self->dbh->prepare($statement);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $end_time->db_timestamp);
 
@@ -332,7 +336,7 @@ has '_tick_after_statement' => (
 
 sub _build__tick_after_statement {
     my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM tick_after($1, $2)');
+    return 'SELECT * FROM tick_after($1, $2)';
 }
 
 sub tick_after {
@@ -343,6 +347,7 @@ sub tick_after {
     $time = Date::Utility->new($time);
 
     my $statement = $self->_tick_after_statement;
+    $statement = $self->dbh->prepare($statement);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $time->datetime_yyyymmdd_hhmmss);
 
@@ -366,7 +371,7 @@ has '_ticks_start_end_with_limit_for_charting_stmt' => (
 
 sub _build__ticks_start_end_with_limit_for_charting_stmt {
     my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM ticks_start_end_with_limit_for_charting($1, $2, $3, $4)');
+    return 'SELECT * FROM ticks_start_end_with_limit_for_charting($1, $2, $3, $4)';
 }
 
 sub ticks_start_end_with_limit_for_charting {
@@ -381,6 +386,7 @@ sub ticks_start_end_with_limit_for_charting {
         if ($args->{end_time});
 
     my $statement = $self->_ticks_start_end_with_limit_for_charting_stmt;
+    $statement = $self->dbh->prepare($statement);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $end_time);
@@ -462,7 +468,7 @@ has '_ohlc_start_end_statement' => (
 
 sub _build__ohlc_start_end_statement {
     my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM ohlc_start_end($1, $2, $3, $4, $5, $6)');
+    return 'SELECT * FROM ohlc_start_end($1, $2, $3, $4, $5, $6)';
 }
 
 sub ohlc_start_end {
@@ -477,6 +483,7 @@ sub ohlc_start_end {
         if ($args->{end_time});
 
     my $statement = $self->_ohlc_start_end_statement;
+    $statement = $self->dbh->prepare($statement);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $args->{aggregation_period});
     $statement->bind_param(3, $start_time);
@@ -494,7 +501,7 @@ has '_ohlc_daily_list_statement' => (
 
 sub _build__ohlc_daily_list_statement {
     my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM ohlc_daily_list($1, $2, $3, $4)');
+    return 'SELECT * FROM ohlc_daily_list($1, $2, $3, $4)';
 }
 
 =head2 $self->ohlc_daily_list(\%args)
@@ -533,6 +540,7 @@ sub ohlc_daily_list {
         if ($args->{end_time});
 
     my $statement = $self->_ohlc_daily_list_statement;
+    $statement = $self->dbh->prepare($statement);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $end_time);
@@ -548,7 +556,7 @@ has '_combined_realtime_tick_stmt' => (
 
 sub _build__combined_realtime_tick_stmt {
     my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM combined_realtime_tick ($1, $2, $3)');
+    return 'SELECT * FROM combined_realtime_tick ($1, $2, $3)';
 }
 
 sub combined_realtime_tick {
@@ -563,6 +571,7 @@ sub combined_realtime_tick {
         if ($args->{end_time});
 
     my $sth = $self->_combined_realtime_tick_stmt;
+    $statement = $self->dbh->prepare($statement);
     $sth->bind_param(1, $self->underlying);
     $sth->bind_param(2, $start_time);
     $sth->bind_param(3, $end_time);
@@ -591,7 +600,7 @@ has '_ohlc_start_end_with_limit_for_charting_stmt' => (
 
 sub _build__ohlc_start_end_with_limit_for_charting_stmt {
     my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM ohlc_start_end_with_limit_for_charting ($1, $2, $3, $4, $5, $6, $7)');
+    return 'SELECT * FROM ohlc_start_end_with_limit_for_charting ($1, $2, $3, $4, $5, $6, $7)';
 }
 
 sub ohlc_start_end_with_limit_for_charting {
@@ -606,6 +615,7 @@ sub ohlc_start_end_with_limit_for_charting {
         if ($args->{end_time});
 
     my $statement = $self->_ohlc_start_end_with_limit_for_charting_stmt;
+    $statement = $self->dbh->prepare($statement);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $args->{aggregation_period});
     $statement->bind_param(3, $start_time);
@@ -670,7 +680,8 @@ sub _query_ticks {
 sub _query_single_tick {
     my $self      = shift;
     my $statement = shift;
-
+use Carp;
+eval {confess "here"}; warn $@;
     my $tick_compiled;
     if ($statement->execute()) {
         my ($epoch, $quote, $runbet_quote, $bid, $ask);
