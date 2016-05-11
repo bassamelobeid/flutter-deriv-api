@@ -389,7 +389,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             }
         }
 
-        if ($key eq 'client_aml_risk_classification') {
+        if ($key eq 'client_aml_risk_classification' and not $client->is_virtual) {
             $client->aml_risk_classification($input{$key});
         }
 
