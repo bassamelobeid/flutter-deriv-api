@@ -16,7 +16,6 @@ BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
 
 use Bytes::Random::Secure;
 use JSON;
-use Carp;
 use Array::Utils qw (array_minus);
 use Digest::MD5 qw(md5_hex);
 
@@ -90,12 +89,12 @@ sub new {    ## no critic RequireArgUnpack
         return bless {}, $package unless $self->{token};
     } else {
         my @valid = grep { !$self->{$_} } @REQUIRED;
-        croak "Error adding new session, missing: " . join(',', @valid)
+        die "Error adding new session, missing: " . join(',', @valid)
             if @valid;
 
         my @passed = keys %$self;
         @valid = array_minus(@passed, @ALLOWED);
-        croak "Error adding new session, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
+        die "Error adding new session, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
 
         # NOTE, we need to use the object interface here. Bytes::Random::Secure
         # also offers a function interface but that uses a RNG which is

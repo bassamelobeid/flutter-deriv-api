@@ -4,7 +4,6 @@ use Moose;
 extends 'BOM::Platform::Runtime::AppConfig::Node';
 use namespace::autoclean;
 use JSON::XS qw( decode_json );
-use Carp;
 
 use MooseX::Types -declare => ['LongStr'];
 use Moose::Util::TypeConstraints;
@@ -29,13 +28,13 @@ sub _check_type {
     my $def = $self->{definition};
     $self->{_json_string} //= $def->{isa} eq 'json_string' ? 1 : 0;
     if ($self->{_json_string}) {
-        try { $value = decode_json($value) } catch { croak "Couldn't decode JSON attribute" };
+        try { $value = decode_json($value) } catch { die "Couldn't decode JSON attribute" };
     } else {
         $self->{_type_constraint} //= find_type_constraint($def->{isa});
         unless ($self->{_type_constraint}) {
-            croak "Couldn't find type constraint for " . $def->{isa} . " for " . $self->name;
+            die "Couldn't find type constraint for " . $def->{isa} . " for " . $self->name;
         }
-        $self->{_type_constraint}->check($value) or croak $self->name . " expecting a value of type " . $def->{isa};
+        $self->{_type_constraint}->check($value) or die $self->name . " expecting a value of type " . $def->{isa};
     }
     return;
 }
