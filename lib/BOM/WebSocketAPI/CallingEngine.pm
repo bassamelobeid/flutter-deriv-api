@@ -9,19 +9,18 @@ use JSON;
 use Data::UUID;
 
 sub forward {
-    my ($c, $rpc_method, $args, $params) = @_;
+    my ($c, $url, $rpc_method, $args, $params) = @_;
 
     $params->{msg_type} ||= $rpc_method;
 
     return call_rpc(
         $c,
         {
-            method   => $rpc_method,
-            msg_type => $rpc_method // $params->{msg_type},
-            # TODO
-            # url => $url,
+            url             => ($url . $rpc_method),
+            method          => $rpc_method,
+            msg_type        => $rpc_method // $params->{msg_type},
             call_params     => make_call_params($c, $args, $params),
-            rpc_response_cb => rpc_response_cb($c,  $args, $params),
+            rpc_response_cb => rpc_response_cb($c, $args, $params),
         });
 }
 
@@ -190,7 +189,7 @@ sub call_rpc {
 
             return unless $api_response;
 
-            if (length(JSON::to_json($api_response)) > $max_response_size) {
+            if (length(JSON::to_json($api_response)) > ($max_response_size || 328000)) {
                 $api_response = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
             }
 
