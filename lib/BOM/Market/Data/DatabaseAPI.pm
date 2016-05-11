@@ -104,16 +104,6 @@ Returns
 
 =cut
 
-has '_ticks_start_end_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__ticks_start_end_statement {
-    my $self = shift;
-    return 'SELECT * FROM ticks_start_end($1, $2, $3)';
-}
-
 sub ticks_start_end {
     my $self = shift;
     my $args = shift;
@@ -125,8 +115,7 @@ sub ticks_start_end {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->_ticks_start_end_statement;
-    $statement = $self->dbh->prepare($statement);
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_start_end($1, $2, $3)');
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $end_time);
