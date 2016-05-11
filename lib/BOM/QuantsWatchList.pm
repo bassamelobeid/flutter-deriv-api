@@ -1,5 +1,8 @@
 package BOM::QuantsWatchList;
 
+use strict;
+use warnings;
+
 use BOM::Platform::Runtime;
 
 sub get_watchlist {
