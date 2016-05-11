@@ -46,10 +46,12 @@ ok $call_params->{source};
 is $call_params->{token}, $token;
 $rpc_caller->unmock_all;
 
-$t = $t->send_ok({json => {sell_expired => 1}})->message_ok;
+$t = $t->send_ok({json => {sell_expired => 1, req_id => 'test'}})->message_ok;
 $response = decode_json($t->message->[1]);
 
 is $response->{msg_type}, 'sell_expired';
 is $response->{echo_req}->{sell_expired}, 1;
+is $response->{echo_req}->{req_id}, 'test';
+is $response->{req_id}, 'test';
 
 done_testing();
