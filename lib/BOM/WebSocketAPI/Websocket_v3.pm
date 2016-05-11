@@ -326,13 +326,14 @@ for my $order (0 .. @dispatch - 1) {
     my $in_validator  = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")), format => \%JSON::Schema::FORMATS);
     my $out_validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")), format => \%JSON::Schema::FORMATS);
     $dispatch_handler_for{$category} = {
-        category      => $category,
-        order         => $order,
-        handler       => $dispatch->[1],
-        require_auth  => $dispatch->[2],
-        out_validator => $out_validator,
-        in_validator  => $in_validator,
-        require_scope => $dispatch->[3],
+        category       => $category,
+        order          => $order,
+        handler        => $dispatch->[1],
+        require_auth   => $dispatch->[2],
+        out_validator  => $out_validator,
+        in_validator   => $in_validator,
+        require_scope  => $dispatch->[3],
+        forward_params => $dispatch->[4],
     };
 }
 
@@ -457,7 +458,15 @@ sub __handle {
             }
 
             # No need return result because always do async response
-            BOM::WebSocketAPI::CallingEngine::forward($c, $url, $descriptor->{category}, $p1, {require_auth => $descriptor->{require_auth}});
+            BOM::WebSocketAPI::CallingEngine::forward(
+                $c,
+                $url,
+                $descriptor->{category},
+                $p1,
+                {
+                    require_auth => $descriptor->{require_auth},
+                    %{$descriptor->{forward_params}},
+                });
         }
 
         if ($result) {
