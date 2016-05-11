@@ -64,7 +64,7 @@ BEGIN
     v_fmb.sell_time := p_sell_time;
     v_fmb.is_sold := true;
     v_fmb.is_expired := true;
-	INSERT INTO bet.financial_market_bet VALUES(v_fmb.*); -- When removing compatibility mode, this statement remains after the surrounding IF block is removed.
+    INSERT INTO bet.financial_market_bet VALUES(v_fmb.*);
 
     IF p_chld IS NOT NULL THEN
         EXECUTE 'UPDATE bet.' || v_fmb.bet_class || ' target SET '
