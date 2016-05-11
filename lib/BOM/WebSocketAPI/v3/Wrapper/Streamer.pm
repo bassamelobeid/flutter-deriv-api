@@ -216,7 +216,11 @@ sub process_pricing_events {
 
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
-    BOM::System::RedisReplicated::redis_write->expire($response->{key}, 60);
+
+    if (not $c->stash->{last_pricer_expiry_update} or time - $c->stash->{last_pricer_expiry_update} > 30) {
+        BOM::System::RedisReplicated::redis_write->expire($response->{key}, 60);
+        $c->stash->{last_pricer_expiry_update} = time;
+    }
 
     delete $response->{data};
     delete $response->{key};
@@ -225,6 +229,7 @@ sub process_pricing_events {
         next if $amount eq 'channel_name';
         my $results;
         if ($response and exists $response->{error}) {
+            $c->stash('redis')->subscribe([$pricing_channel->{$serialized_args}->{channel_name}]);
             my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
