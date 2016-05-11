@@ -9,7 +9,6 @@ Customer-specific turnover limits against known exploitable conditions.
 =cut
 
 use Moose;
-use Carp qw(confess);
 use List::MoreUtils qw(notall);
 
 use BOM::Platform::Runtime;
@@ -119,7 +118,7 @@ sub update {
     # Apply a bare minimum of data hygiene
     my @required = qw(loginid market contract_kind payout_limit comment staff);
     if (notall { defined $supplied->{$_} } @required) {
-        confess('Must supply a hashref with all required parameters: ' . join(',', @required));
+        die('Must supply a hashref with all required parameters: ' . join(',', @required));
     }
 
     my $current = $self->full_list;

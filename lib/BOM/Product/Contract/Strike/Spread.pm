@@ -4,8 +4,6 @@ use Moose;
 use namespace::autoclean;
 extends 'BOM::Product::Contract::Strike';
 
-use Carp qw( croak );
-
 has '+basis_tick' => (
     required => 0,
 );
@@ -13,7 +11,7 @@ has '+basis_tick' => (
 sub BUILD {
     my $self = shift;
 
-    croak(__PACKAGE__ . ' can only accept absolute barrier as supplied barrier: [' . $self->supplied_barrier . ']')
+    die(__PACKAGE__ . ' can only accept absolute barrier as supplied barrier: [' . $self->supplied_barrier . ']')
         unless (defined $self->supplied_barrier
         && $self->supplied_barrier =~ /^(\d+)\.?(\d+)?$/);
 
