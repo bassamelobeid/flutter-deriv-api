@@ -1458,12 +1458,7 @@ sub _build_pricing_vol {
 
     my $vol;
     my $pen = $self->pricing_engine_name;
-    if ($self->volsurface->type eq 'phased') {
-        $vol = $self->volsurface->get_volatility({
-            start_epoch => $self->effective_start->epoch,
-            end_epoch   => $self->date_expiry->epoch
-        });
-    } elsif ($pen =~ /VannaVolga/) {
+    if ($pen =~ /VannaVolga/) {
         $vol = $self->volsurface->get_volatility({
             days  => $self->timeindays->amount,
             delta => 50
@@ -1856,12 +1851,7 @@ sub _market_data {
             my ($args, $surface_data) = @_;
             # if there's new surface data, calculate vol from that.
             my $vol;
-            if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility({
-                    start_epoch => $effective_start->epoch,
-                    end_epoch   => $date_expiry->epoch
-                });
-            } elsif ($surface_data) {
+            if ($surface_data) {
                 my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
                 $vol = $new_volsurface_obj->get_volatility($args);
             } else {
@@ -1872,16 +1862,8 @@ sub _market_data {
         },
         get_atm_volatility => sub {
             my $args = shift;
-            my $vol;
-            if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility({
-                    start_epoch => $effective_start->epoch,
-                    end_epoch   => $date_expiry->epoch
-                });
-            } else {
-                $args->{delta} = 50;
-                $vol = $volsurface->get_volatility($args);
-            }
+            $args->{delta} = 50;
+            my $vol = $volsurface->get_volatility($args);
 
             return $vol;
         },
@@ -2842,7 +2824,7 @@ sub confirm_validity {
     my @validation_methods =
         qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed _validate_stake _validate_payout);
 
-    push @validation_methods, '_validate_volsurface' if (not($self->volsurface->type eq 'flat' or $self->volsurface->type eq 'phased'));
+    push @validation_methods, '_validate_volsurface' if (not($self->volsurface->type eq 'flat'));
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) if not $self->underlying->always_available;
 
     foreach my $method (@validation_methods) {
