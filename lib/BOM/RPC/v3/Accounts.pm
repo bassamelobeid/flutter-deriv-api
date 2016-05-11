@@ -274,10 +274,10 @@ sub get_account_status {
     }
 
     push @status, 'authenticated' if ($client->client_fully_authenticated);
-    my $risk_classification = $client->aml_risk_classification;
+    my $risk_classification = $client->aml_risk_classification // '';
 
     # we need to send only low, standard, high as manual override is for internal purpose
-    $risk_classification =~ s/manual override - // if $risk_classification;
+    $risk_classification =~ s/manual override - //;
 
     return {
         status              => \@status,
