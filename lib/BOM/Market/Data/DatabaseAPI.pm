@@ -83,7 +83,7 @@ sub tick_at_for_interval {
     my $end_time   = $args->{end_date}->datetime_yyyymmdd_hhmmss;
     my $interval   = $args->{interval_in_seconds};
 
-    my $statement = $self->dbh->prepare('SELECT * FROM tick_at_for_interval($1, $2, $3, $4)');
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM tick_at_for_interval($1, $2, $3, $4)');
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $end_time);
@@ -156,7 +156,7 @@ sub get_first_tick {
     }
     $sql .= " AND (" . join(" OR ", @barriers) . q[) ORDER BY ts ASC LIMIT 1];
 
-    my $statement = $self->dbh->prepare($sql);
+    my $statement = $self->dbh->prepare_cached($sql);
     foreach my $which_param (1 .. scalar @sql_args) {
 
         # There has to be a more reasonable standard way to do this.
@@ -221,16 +221,6 @@ Returns
 
 =cut
 
-has '_ticks_end_limit_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__ticks_end_limit_statement {
-    my $self = shift;
-    return 'SELECT * FROM ticks_end_limit($1, $2, $3)';
-}
-
 sub ticks_end_limit {
     my $self = shift;
     my $args = shift;
@@ -239,8 +229,7 @@ sub ticks_end_limit {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->_ticks_end_limit_statement;
-    $statement = $self->dbh->prepare($statement);
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_end_limit($1, $2, $3)');
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $end_time);
     $statement->bind_param(3, $args->{limit});
@@ -259,27 +248,6 @@ Returns
 
 =cut
 
-has [qw(_tick_at_or_before_statement _consistent_tick_at_or_before_statement)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__tick_at_or_before_statement {
-    my $self = shift;
-
-    return <<'SQL';
-SELECT * FROM tick_at_or_before($1, $2::TIMESTAMP)
-SQL
-}
-
-sub _build__consistent_tick_at_or_before_statement {
-    my $self = shift;
-
-    return <<'SQL';
-SELECT * FROM consistent_tick_at_or_before($1, $2::TIMESTAMP)
-SQL
-}
-
 sub tick_at {
     my $self = shift;
     my $args = shift;
@@ -288,8 +256,10 @@ sub tick_at {
     return unless ($args->{end_time});
     my $end_time = Date::Utility->new($args->{end_time});
 
-    my $statement = ($args->{allow_inconsistent}) ? $self->_tick_at_or_before_statement : $self->_consistent_tick_at_or_before_statement;
-    $statement = $self->dbh->prepare($statement);
+    my $sql = ($args->{allow_inconsistent}) ?
+      'SELECT * FROM tick_at_or_before($1, $2::TIMESTAMP)'
+      : 'SELECT * FROM consistent_tick_at_or_before($1, $2::TIMESTAMP)';
+    my $statement = $self->dbh->prepare_cached($statement);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $end_time->db_timestamp);
 
@@ -306,16 +276,6 @@ Returns
 
 =cut
 
-has '_tick_after_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__tick_after_statement {
-    my $self = shift;
-    return 'SELECT * FROM tick_after($1, $2)';
-}
-
 sub tick_after {
     my $self = shift;
     my $time = shift;
@@ -323,8 +283,7 @@ sub tick_after {
 
     $time = Date::Utility->new($time);
 
-    my $statement = $self->_tick_after_statement;
-    $statement = $self->dbh->prepare($statement);
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM tick_after($1, $2)');
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $time->datetime_yyyymmdd_hhmmss);
 
@@ -341,16 +300,6 @@ Returns
 
 =cut
 
-has '_ticks_start_end_with_limit_for_charting_stmt' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__ticks_start_end_with_limit_for_charting_stmt {
-    my $self = shift;
-    return 'SELECT * FROM ticks_start_end_with_limit_for_charting($1, $2, $3, $4)';
-}
-
 sub ticks_start_end_with_limit_for_charting {
     my $self = shift;
     my $args = shift;
@@ -362,8 +311,7 @@ sub ticks_start_end_with_limit_for_charting {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->_ticks_start_end_with_limit_for_charting_stmt;
-    $statement = $self->dbh->prepare($statement);
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_start_end_with_limit_for_charting($1, $2, $3, $4)');
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $end_time);
@@ -438,16 +386,6 @@ L<BOM::Market::Data::OHLC>
 
 =cut
 
-has '_ohlc_start_end_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__ohlc_start_end_statement {
-    my $self = shift;
-    return 'SELECT * FROM ohlc_start_end($1, $2, $3, $4, $5, $6)';
-}
-
 sub ohlc_start_end {
     my $self = shift;
     my $args = shift;
@@ -459,8 +397,7 @@ sub ohlc_start_end {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->_ohlc_start_end_statement;
-    $statement = $self->dbh->prepare($statement);
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ohlc_start_end($1, $2, $3, $4, $5, $6)');
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $args->{aggregation_period});
     $statement->bind_param(3, $start_time);
@@ -469,16 +406,6 @@ sub ohlc_start_end {
     $statement->bind_param(6, $self->ohlc_daily_open);
 
     return $self->_query_ohlc($statement);
-}
-
-has '_ohlc_daily_list_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__ohlc_daily_list_statement {
-    my $self = shift;
-    return 'SELECT * FROM ohlc_daily_list($1, $2, $3, $4)';
 }
 
 =head2 $self->ohlc_daily_list(\%args)
@@ -516,24 +443,13 @@ sub ohlc_daily_list {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->_ohlc_daily_list_statement;
-    $statement = $self->dbh->prepare($statement);
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ohlc_daily_list($1, $2, $3, $4)');
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $end_time);
     $statement->bind_param(4, $self->_is_official_query_param);
 
     return $self->_query_ohlc($statement);
-}
-
-has '_combined_realtime_tick_stmt' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__combined_realtime_tick_stmt {
-    my $self = shift;
-    return 'SELECT * FROM combined_realtime_tick ($1, $2, $3)';
 }
 
 sub combined_realtime_tick {
@@ -547,8 +463,7 @@ sub combined_realtime_tick {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $sth = $self->_combined_realtime_tick_stmt;
-    $sth = $self->dbh->prepare($sth);
+    my $sth = $self->dbh->prepare_cached('SELECT * FROM combined_realtime_tick ($1, $2, $3)');
     $sth->bind_param(1, $self->underlying);
     $sth->bind_param(2, $start_time);
     $sth->bind_param(3, $end_time);
@@ -570,16 +485,6 @@ sub combined_realtime_tick {
     return $tick;
 }
 
-has '_ohlc_start_end_with_limit_for_charting_stmt' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__ohlc_start_end_with_limit_for_charting_stmt {
-    my $self = shift;
-    return 'SELECT * FROM ohlc_start_end_with_limit_for_charting ($1, $2, $3, $4, $5, $6, $7)';
-}
-
 sub ohlc_start_end_with_limit_for_charting {
     my $self = shift;
     my $args = shift;
@@ -591,8 +496,7 @@ sub ohlc_start_end_with_limit_for_charting {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->_ohlc_start_end_with_limit_for_charting_stmt;
-    $statement = $self->dbh->prepare($statement);
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ohlc_start_end_with_limit_for_charting ($1, $2, $3, $4, $5, $6, $7)');
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $args->{aggregation_period});
     $statement->bind_param(3, $start_time);
