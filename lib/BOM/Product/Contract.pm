@@ -1231,25 +1231,33 @@ sub _build_payout {
     my $theo_prob       = $self->theo_probability->amount;
     my $risk_markup     = $self->risk_markup->amount;
     my $base_commission = $self->base_commission;
+    my $ask_price       = $self->ask_price;
 
     # payout calculated with base commission.
-    my $initial_payout = $self->ask_price / ($theo_prob + $risk_markup + $base_commission);
+    my $initial_payout = $ask_price / ($theo_prob + $risk_markup + $base_commission);
     if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
-        my $comm = $base_commission;
-        return $self->_forced_minimum_commission($self->ask_price / ($theo_prob + $risk_markup + $comm), $comm);
+        my $comm              = $base_commission;
+        my $payout            = $ask_price / ($theo_prob + $risk_markup + $comm);
+        my $dollar_commission = $payout * $self->risk_markup->amount * $comm * $self->commission_adjustment->amount;
+
+        if ($dollar_commission < 0.02) {
+            $payout -= (0.02 - $dollar_commission);
+        }
+
+        return roundnear(0.01, $payout);
     }
 
     # payout calculated with 2 times base commission.
-    $initial_payout = $self->ask_price / ($theo_prob + $risk_markup + $base_commission * 2);
+    $initial_payout = $ask_price / ($theo_prob + $risk_markup + $base_commission * 2);
     if ($self->commission_multiplier($initial_payout) == $commission_max_multiplier) {
-        my $comm = $base_commission * 2;
-        return $self->_forced_minimum_commission($self->ask_price / ($theo_prob + $risk_markup + $comm), $comm);
+        my $comm = $base_commission * $commission_max_multiplier;
+        return roundnear(0.01, $ask_price / ($theo_prob + $risk_markup + $comm));
     }
 
     my $slope  = $self->commission_multiplier_slope;
     my $a      = $base_commission * $slope * sqrt($theo_prob * (1 - $theo_prob));
     my $b      = $theo_prob + $self->risk_markup->amount + $base_commission - $base_commission * $commission_min_std * $slope;
-    my $c      = -$self->ask_price;
+    my $c      = -$ask_price;
     my $payout = 0;
     for my $w (1, -1) {
         my $estimated_payout = (-$b + $w * sqrt($b**2 - 4 * $a * $c)) / (2 * $a);
@@ -1260,18 +1268,7 @@ sub _build_payout {
     }
 
     my $comm = $base_commission * $self->commission_multiplier($payout);
-    return $self->_forced_minimum_commission($self->ask_price / ($theo_prob * $risk_markup * $comm), $comm);
-}
-
-sub _forced_minimum_commission {
-    my ($self, $payout, $commission) = @_;
-
-    my $dollar_commission = $payout * $self->risk_markup->amount * $commission * $self->commission_adjustment->amount;
-
-    if ($dollar_commission < 0.02) {
-        $payout -= (0.02 - $dollar_commission);
-    }
-
+    $payout = max($ask_price, $ask_price / ($theo_prob + $risk_markup + $comm));
     return roundnear(0.01, $payout);
 }
 
