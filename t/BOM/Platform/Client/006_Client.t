@@ -153,8 +153,6 @@ subtest 'create client' => sub {
 
     $client->set_default_account('EUR');
     throws_ok { $client->set_payment_agent } qr/Payment Agent currency can only be in USD/, 'client with currency EUR cannot be paymentagent';
-    throws_ok { $client->aml_risk_classification('dummy') } qr/Invalid aml_risk_classification/,
-        'risk classification value can only be in predefined values';
     $client->aml_risk_classification('standard');
     Test::Exception::lives_ok { $client->save(); } "[save] call client save OK";
     is($client->aml_risk_classification, 'standard', 'correct risk classification after update');
