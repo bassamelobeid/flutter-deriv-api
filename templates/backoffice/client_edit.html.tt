@@ -185,7 +185,7 @@ table#client_edit td{
                 {'value' => 'high', 'details' => 'High' }
                 {'value' => 'manual override - low', 'details' => 'Manual override - low' }
                 {'value' => 'manual override - standard', 'details' => 'Manual override - standard' }
-                {'value' => 'manual override - low', 'details' => 'Manual override - high' }
+                {'value' => 'manual override - high', 'details' => 'Manual override - high' }
             ]
         %]
         <td>
