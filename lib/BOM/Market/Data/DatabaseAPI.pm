@@ -680,8 +680,6 @@ sub _query_ticks {
 sub _query_single_tick {
     my $self      = shift;
     my $statement = shift;
-use Carp;
-eval {confess "here"}; warn $@;
     my $tick_compiled;
     if ($statement->execute()) {
         my ($epoch, $quote, $runbet_quote, $bid, $ask);
