@@ -57,4 +57,5 @@ script:
     - prove -v t/BOM/WebsocketAPI/v3/[45]*.t
     - cat /tmp/rpc.error
 
-
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh
