@@ -145,8 +145,20 @@ sub entry_point {
 
 # [param key, sub, require auth]
 my @dispatch = (
-    ['authorize', \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize, 0],
-    ['logout',    \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout,    0],
+    [
+        'authorize',
+        '', 0, '',
+        {
+            call_params => \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize_call_params,
+        },
+    ],
+    [
+        'logout', '', 0, '',
+        {
+            stash_params => [qw/ token token_type email client_ip country_code user_agent /],
+            success      => \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
+        },
+    ],
     [
         'trading_times',
         \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times, 0
@@ -433,7 +445,7 @@ sub __handle {
             return $c->new_error($descriptor->{category}, 'AuthorizationRequired', $c->l('Please log in.'));
         }
 
-        if ($descriptor->{require_scope} and not(grep { $_ eq $descriptor->{require_scope} } @{$c->stash('token_scopes') || []})) {
+        if ($descriptor->{require_scope} and not(grep { $_ eq $descriptor->{require_scope} } @{$c->stash('scopes') || []})) {
             return $c->new_error($descriptor->{category}, 'PermissionDenied',
                 $c->l('Permission denied, requiring [_1]', $descriptor->{require_scope}));
         }
