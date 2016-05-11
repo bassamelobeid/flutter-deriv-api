@@ -448,9 +448,20 @@ sub __handle {
         if (my $handler = $descriptor->{handler}) {
             $result = $handler->($c, $p1, {require_auth => $descriptor->{require_auth}});
         } else {
+            # TODO New dispatcher plugin has to do this
+            my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
+            if (BOM::System::Config::env eq 'production') {
+                if (BOM::System::Config::node->{node}->{www2}) {
+                    $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
+                } else {
+                    $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
+                }
+            }
+
             # No need return result because always do async response
             BOM::WebSocketAPI::CallingEngine::forward(
                 $c,
+                $url,
                 $descriptor->{category},
                 $p1,
                 {
