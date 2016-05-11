@@ -83,7 +83,7 @@ sub tick_at_for_interval {
     my $end_time   = $args->{end_date}->datetime_yyyymmdd_hhmmss;
     my $interval   = $args->{interval_in_seconds};
 
-    my $statement = $self->dbh->prepare_cached('SELECT * FROM tick_at_for_interval($1, $2, $3, $4)');
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM tick_at_for_interval($1, $2, $3, $4)', {}, 3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $end_time);
@@ -115,7 +115,7 @@ sub ticks_start_end {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_start_end($1, $2, $3)');
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_start_end($1, $2, $3)', {}, 3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $end_time);
@@ -156,7 +156,7 @@ sub get_first_tick {
     }
     $sql .= " AND (" . join(" OR ", @barriers) . q[) ORDER BY ts ASC LIMIT 1];
 
-    my $statement = $self->dbh->prepare_cached($sql);
+    my $statement = $self->dbh->prepare_cached($sql, {}, 3);
     foreach my $which_param (1 .. scalar @sql_args) {
 
         # There has to be a more reasonable standard way to do this.
@@ -194,7 +194,7 @@ sub ticks_start_limit {
     $start_time = Date::Utility->new($args->{start_time})->datetime_yyyymmdd_hhmmss
         if ($args->{start_time});
 
-    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_start_limit($1, $2, $3)');
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_start_limit($1, $2, $3)' {}, 3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $args->{limit});
@@ -229,7 +229,7 @@ sub ticks_end_limit {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_end_limit($1, $2, $3)');
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_end_limit($1, $2, $3)', {}, 3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $end_time);
     $statement->bind_param(3, $args->{limit});
@@ -260,7 +260,7 @@ sub tick_at {
         ($args->{allow_inconsistent})
         ? 'SELECT * FROM tick_at_or_before($1, $2::TIMESTAMP)'
         : 'SELECT * FROM consistent_tick_at_or_before($1, $2::TIMESTAMP)';
-    my $statement = $self->dbh->prepare_cached($sql,{},3);
+    my $statement = $self->dbh->prepare_cached($sql, {}, 3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $end_time->db_timestamp);
 
@@ -284,7 +284,7 @@ sub tick_after {
 
     $time = Date::Utility->new($time);
 
-    my $statement = $self->dbh->prepare_cached('SELECT * FROM tick_after($1, $2)');
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM tick_after($1, $2)', {}, 3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $time->datetime_yyyymmdd_hhmmss);
 
@@ -312,7 +312,7 @@ sub ticks_start_end_with_limit_for_charting {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_start_end_with_limit_for_charting($1, $2, $3, $4)');
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ticks_start_end_with_limit_for_charting($1, $2, $3, $4)', {}, 3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $end_time);
@@ -398,7 +398,7 @@ sub ohlc_start_end {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->dbh->prepare_cached('SELECT * FROM ohlc_start_end($1, $2, $3, $4, $5, $6)');
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ohlc_start_end($1, $2, $3, $4, $5, $6)' {}, 3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $args->{aggregation_period});
     $statement->bind_param(3, $start_time);
@@ -444,7 +444,7 @@ sub ohlc_daily_list {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->dbh->prepare_cached('SELECT * FROM ohlc_daily_list($1, $2, $3, $4)');
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ohlc_daily_list($1, $2, $3, $4)', {}, 3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $start_time);
     $statement->bind_param(3, $end_time);
@@ -464,7 +464,7 @@ sub combined_realtime_tick {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $sth = $self->dbh->prepare_cached('SELECT * FROM combined_realtime_tick ($1, $2, $3)');
+    my $sth = $self->dbh->prepare_cached('SELECT * FROM combined_realtime_tick ($1, $2, $3)', {}, 3);
     $sth->bind_param(1, $self->underlying);
     $sth->bind_param(2, $start_time);
     $sth->bind_param(3, $end_time);
@@ -497,7 +497,7 @@ sub ohlc_start_end_with_limit_for_charting {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->dbh->prepare_cached('SELECT * FROM ohlc_start_end_with_limit_for_charting ($1, $2, $3, $4, $5, $6, $7)');
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ohlc_start_end_with_limit_for_charting ($1, $2, $3, $4, $5, $6, $7)', {}, 3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $args->{aggregation_period});
     $statement->bind_param(3, $start_time);
