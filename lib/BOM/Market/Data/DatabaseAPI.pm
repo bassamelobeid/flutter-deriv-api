@@ -256,9 +256,10 @@ sub tick_at {
     return unless ($args->{end_time});
     my $end_time = Date::Utility->new($args->{end_time});
 
-    my $sql = ($args->{allow_inconsistent}) ?
-      'SELECT * FROM tick_at_or_before($1, $2::TIMESTAMP)'
-      : 'SELECT * FROM consistent_tick_at_or_before($1, $2::TIMESTAMP)';
+    my $sql =
+        ($args->{allow_inconsistent})
+        ? 'SELECT * FROM tick_at_or_before($1, $2::TIMESTAMP)'
+        : 'SELECT * FROM consistent_tick_at_or_before($1, $2::TIMESTAMP)';
     my $statement = $self->dbh->prepare_cached($statement);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $end_time->db_timestamp);
