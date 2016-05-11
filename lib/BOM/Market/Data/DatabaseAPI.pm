@@ -260,7 +260,7 @@ sub tick_at {
         ($args->{allow_inconsistent})
         ? 'SELECT * FROM tick_at_or_before($1, $2::TIMESTAMP)'
         : 'SELECT * FROM consistent_tick_at_or_before($1, $2::TIMESTAMP)';
-    my $statement = $self->dbh->prepare_cached($sql);
+    my $statement = $self->dbh->prepare_cached($sql,{},3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $end_time->db_timestamp);
 
