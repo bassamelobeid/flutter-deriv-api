@@ -455,7 +455,12 @@ sub __handle {
                 return $c->new_error($descriptor->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error);
             }
         }
-        $result->{debug} = [Time::HiRes::tv_interval($t0), $loginid ? $loginid : ''] if ref $result;
+        if (ref($result) && $c->stash('debug')) {
+            $result->{debug} = {
+                time   => 1000 * Time::HiRes::tv_interval($t0),
+                method => $descriptor->{category},
+            };
+        }
         return $result;
     }
 
