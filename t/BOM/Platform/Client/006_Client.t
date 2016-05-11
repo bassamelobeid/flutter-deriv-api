@@ -144,27 +144,35 @@ subtest 'create client' => sub {
     Test::Exception::lives_ok { $client->save(); } "[save] call client save OK";
 
     BOM::Platform::Client::get_instance({'loginid' => $new_loginid});
-    is($client->first_name, "Amy",                        "[save] client first_name is: Amy");
-    is($client->last_name,  "mimi",                       "[save] client last_name is: mimi");
-    is($client->email,      'test@betonmarkets.com', '[save] client email is: shuwnyuan@betonmarkets.com');
+    is($client->first_name,              "Amy",                   "[save] client first_name is: Amy");
+    is($client->last_name,               "mimi",                  "[save] client last_name is: mimi");
+    is($client->email,                   'test@betonmarkets.com', '[save] client email is: shuwnyuan@betonmarkets.com');
+    is($client->aml_risk_classification, 'low',                   'by default risk classification is low for new client');
+    throws_ok { $client->aml_risk_classification('dummy') } qr/Invalid aml_risk_classification/,
+        'risk classification value can only be in predefined values';
 
     $client->set_default_account('EUR');
     throws_ok { $client->set_payment_agent } qr/Payment Agent currency can only be in USD/, 'client with currency EUR cannot be paymentagent';
+    throws_ok { $client->aml_risk_classification('dummy') } qr/Invalid aml_risk_classification/,
+        'risk classification value can only be in predefined values';
+    $client->aml_risk_classification('standard');
+    Test::Exception::lives_ok { $client->save(); } "[save] call client save OK";
+    is($client->aml_risk_classification, 'standard', 'correct risk classification after update');
 };
 
 subtest 'Gender based on Salutation' => sub {
     my %gender_map = (
-            Mr      => 'm',
-            Ms      => 'f',
-            Mrs     => 'f',
-            Miss    => 'f',
-        );
+        Mr   => 'm',
+        Ms   => 'f',
+        Mrs  => 'f',
+        Miss => 'f',
+    );
 
     foreach my $salutation (keys %gender_map) {
         my %details = %$open_account_details;
         $details{salutation} = $salutation;
-        $details{email} = 'test+'.$salutation.'@binary.com';
-        $details{first_name} = 'first-name-'.$salutation;
+        $details{email}      = 'test+' . $salutation . '@binary.com';
+        $details{first_name} = 'first-name-' . $salutation;
 
         $client = BOM::Platform::Client->register_and_return_new_client(\%details);
 
@@ -174,7 +182,7 @@ subtest 'Gender based on Salutation' => sub {
 };
 
 subtest 'no salutation, default Gender: m' => sub {
-    foreach my $i (0..1) {
+    foreach my $i (0 .. 1) {
         my %details = %$open_account_details;
 
         if ($i == 0) {
@@ -185,25 +193,25 @@ subtest 'no salutation, default Gender: m' => sub {
             note 'salutation not exists';
         }
 
-        $details{email} = 'test++'.$i.'@binary.com';
-        $details{first_name} = 'first-name-'.$i;
-        $client = BOM::Platform::Client->register_and_return_new_client(\%details);
+        $details{email}      = 'test++' . $i . '@binary.com';
+        $details{first_name} = 'first-name-' . $i;
+        $client              = BOM::Platform::Client->register_and_return_new_client(\%details);
 
-        is($client->salutation, '', 'Salutation: ' . $client->salutation);
-        is($client->gender, 'm', 'default gender: m');
-    };
+        is($client->salutation, '',  'Salutation: ' . $client->salutation);
+        is($client->gender,     'm', 'default gender: m');
+    }
 };
 
 subtest 'no salutation, set Gender explicitly' => sub {
     my %details = %$open_account_details;
 
     $details{salutation} = '';
-    $details{gender} = 'f';
-    $details{email} = 'test++ff@binary.com';
+    $details{gender}     = 'f';
+    $details{email}      = 'test++ff@binary.com';
     $details{first_name} = 'first-name-ff';
-    $client = BOM::Platform::Client->register_and_return_new_client(\%details);
+    $client              = BOM::Platform::Client->register_and_return_new_client(\%details);
 
-    is($client->salutation, '', 'Salutation: ' . $client->salutation);
-    is($client->gender, 'f', 'gender: ' . $client->gender);
+    is($client->salutation, '',  'Salutation: ' . $client->salutation);
+    is($client->gender,     'f', 'gender: ' . $client->gender);
 };
 
