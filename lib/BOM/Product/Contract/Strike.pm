@@ -3,7 +3,6 @@ package BOM::Product::Contract::Strike;
 use Moose;
 use namespace::autoclean;
 
-use Carp qw( croak );
 use POSIX qw( floor );
 use Scalar::Util qw(looks_like_number);
 use Readonly;
@@ -289,7 +288,7 @@ my %modifiers = (
 sub adjust {
     my ($self, $args) = @_;
 
-    croak 'Adjust requires a proper modifier, numeric amount and reason string'
+    die 'Adjust requires a proper modifier, numeric amount and reason string'
         unless ($args->{reason} and looks_like_number($args->{amount}) and (my $modifier = $modifiers{$args->{modifier}}));
 
     # We have to do this here to retain barrier type of a contract.
