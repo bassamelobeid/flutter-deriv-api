@@ -155,7 +155,7 @@ END %]
         <input type="hidden" name="loginID" value="[% loginid %]"/>
         <input type="hidden" name="startdate" value="[% startdate %]" />
         <input type="hidden" name="enddate" value="[% enddate %]" />
-        <td><input type="text" name="watchlist_comment" value="[% limit %]" size=10 /></td>
+        <td><input type="text" name="watchlist_comment" value="[% limits %]" size=10 /></td>
         <td><input type="submit" name="update_watchlist" value="Update"/></td>
     </form>
     <caption>Leave <strong>comment</strong> blank to remove a single line. Leave <strong>maxpayout</strong> blank to watch but not impose a limit.</caption>
