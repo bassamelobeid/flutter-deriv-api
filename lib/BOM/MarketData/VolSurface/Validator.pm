@@ -52,7 +52,7 @@ smile_flags will be set on the surface.
 sub validate_surface {
     my ($self, $surface) = @_;
 
-    return 1 if (scalar grep { $surface->type eq $_ } (qw(flat phased)));
+    return 1 if ($surface->type eq 'flat');
 
     # Throws exceptions if unsuccessful
     $self->_do_raw_validation_on($surface);
