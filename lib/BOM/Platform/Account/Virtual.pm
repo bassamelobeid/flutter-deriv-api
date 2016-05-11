@@ -6,7 +6,6 @@ use warnings;
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
-use BOM::Utility::Log4perl qw(get_logger);
 use BOM::System::Password;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context::Request;
@@ -68,7 +67,7 @@ sub create_account {
         $error = $_;
     };
     if ($error) {
-        get_logger()->warn("Virtual: register_and_return_new_client err [$error]");
+        warn("Virtual: register_and_return_new_client err [$error]");
         return {error => 'invalid'};
     }
 

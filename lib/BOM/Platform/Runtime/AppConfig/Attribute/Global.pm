@@ -1,7 +1,6 @@
 package BOM::Platform::Runtime::AppConfig::Attribute::Global;
 
 use Moose;
-use Carp;
 extends 'BOM::Platform::Runtime::AppConfig::Attribute';
 
 =head1 NAME

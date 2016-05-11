@@ -14,7 +14,6 @@ Email verification token handler
 
 use Bytes::Random::Secure;
 use JSON;
-use Carp;
 use Array::Utils qw (array_minus);
 use Digest::MD5 qw(md5_hex);
 
@@ -47,13 +46,13 @@ sub new {                                    ## no critic RequireArgUnpack
     }
 
     my @valid = grep { !$self->{$_} } qw(email created_for);
-    croak "Error creating new verification token, missing: " . join(',', @valid)
+    die "Error creating new verification token, missing: " . join(',', @valid)
         if @valid;
 
     my @allowed = qw(email token expires_in created_for);
     my @passed  = keys %$self;
     @valid = array_minus(@passed, @allowed);
-    croak "Error adding new verification token, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
+    die "Error adding new verification token, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
 
     $self->{token} = Bytes::Random::Secure->new(
         Bits        => 160,
