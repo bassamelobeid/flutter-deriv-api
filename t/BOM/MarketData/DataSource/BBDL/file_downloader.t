@@ -4,14 +4,12 @@ use strict;
 use warnings;
 use Test::Exception;
 use Test::MockObject::Extends;
-use Test::Log4perl;
 use Test::More tests => 3;
 use Test::NoWarnings;
 
 use Path::Tiny;
 use Bloomberg::FileDownloader;
 use Date::Utility;
-use BOM::Utility::Log4perl;
 
 subtest 'sftp_server_ip(s).' => sub {
     plan tests => 2;

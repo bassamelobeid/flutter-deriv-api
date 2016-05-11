@@ -3,6 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::FailWarnings;
+use Test::Warn;
 use File::Slurp;
 use List::Util qw(max min);
 use Scalar::Util qw(looks_like_number);
@@ -58,7 +59,10 @@ subtest 'what happens to an undefined symbol name' => sub {
     is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
     is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
 
-    is($symbol_undefined->market->name,     'config',   'an undefined symbol has correct market');
+    warning_like {
+        is($symbol_undefined->market->name, 'config', 'an undefined symbol has correct market');
+    }
+    [qr/^Unknown symbol/], "Expected warning is thrown";
     is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
     is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
     is($symbol_undefined->display_decimals, 4,          'an undefined symbol has correct display_decimals');
@@ -770,7 +774,7 @@ subtest 'forward_starts_on' => sub {
 };
 
 subtest 'weekend outlier tick' => sub {
-    cmp_ok(BOM::Market::Underlying->new('frxUSDJPY')->weekend_outlier_tick, '==', 0.1, 'non quanto fx weekend outlier move is 0.05');
+    cmp_ok(BOM::Market::Underlying->new('frxUSDJPY')->weekend_outlier_tick, '==', 0.1,  'non quanto fx weekend outlier move is 0.05');
     cmp_ok(BOM::Market::Underlying->new('frxUSDSGD')->weekend_outlier_tick, '==', 0.1,  'quanto fx weekend outlier move is 0.1');
     cmp_ok(BOM::Market::Underlying->new('frxXAUUSD')->weekend_outlier_tick, '==', 0.05, 'commodities weekend outlier move is 0.05');
     cmp_ok(
