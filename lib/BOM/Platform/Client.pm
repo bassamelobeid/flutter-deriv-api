@@ -11,7 +11,6 @@ use Date::Utility;
 use Cache::RedisDB;
 use List::Util qw(min);
 use Format::Util::Numbers qw(roundnear);
-use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;

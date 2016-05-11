@@ -5,7 +5,6 @@ use strict;
 use warnings;
 
 use Path::Tiny;
-use Carp;
 
 use BOM::Platform::Runtime;
 
@@ -49,7 +48,7 @@ sub configs_for {
     my $config = {};
 
     my $locales_dir = path(BOM::Platform::Static::Config::get_static_path())->child('config');
-    carp("Unable to locate locales directory. Looking in $locales_dir") unless (-d $locales_dir);
+    warn("Unable to locate locales directory. Looking in $locales_dir") unless (-d $locales_dir);
 
     foreach my $language (@{BOM::Platform::Runtime->instance->app_config->cgi->supported_languages}) {
         my $po_file_path;

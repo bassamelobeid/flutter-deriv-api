@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use JSON qw(encode_json);
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
@@ -19,7 +18,7 @@ sub _validate {
     my $from_client = $args->{from_client};
     return if ($from_client->residence eq 'jp');
 
-    get_logger()->warn("japan acc opening err: loginid:" . $from_client->loginid . " wrong residence:" . $from_client->residence);
+    warn("japan acc opening err: loginid:" . $from_client->loginid . " wrong residence:" . $from_client->residence);
     return {err => 'invalid'};
 }
 

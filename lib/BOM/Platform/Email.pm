@@ -9,12 +9,10 @@ use URL::Encode;
 use Mail::Sender;
 use HTML::FromText;
 use Try::Tiny;
-use Carp;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Static::Config;
-use BOM::Utility::Log4perl qw(get_logger);
 
 use base 'Exporter';
 our @EXPORT_OK = qw(send_email);
@@ -31,21 +29,20 @@ sub send_email {
     my $attachment         = $args_ref->{'attachment'};
     my $ctype              = $args_ref->{'att_type'} // 'text/plain';
     my $skip_text2html     = $args_ref->{'skip_text2html'};
-    croak 'No email provided' unless $email;
+    die 'No email provided' unless $email;
 
     my $template_loginid = $args_ref->{template_loginid} || (request && request->loginid);
 
-    my $logger = get_logger();
     if (not $fromemail) {
-        $logger->warn("fromemail missing - [$fromemail, $email, $subject]");
+        warn("fromemail missing - [$fromemail, $email, $subject]");
         return;
     }
     if (not $email) {
-        $logger->warn("email missing - [$fromemail, $email, $subject]");
+        warn("email missing - [$fromemail, $email, $subject]");
         return;
     }
     if (not $subject) {
-        $logger->warn("subject missing - [$fromemail, $email, $subject]");
+        warn("subject missing - [$fromemail, $email, $subject]");
         return;
     }
 
@@ -69,7 +66,7 @@ sub send_email {
     my @toemails = split(/\s*\,\s*/, $email);
     foreach my $toemail (@toemails) {
         if ($toemail and $toemail !~ /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/) {
-            $logger->warn("erroneous email address $toemail");
+            warn("erroneous email address $toemail");
             return;
         }
     }
@@ -101,7 +98,7 @@ sub send_email {
                 });
         }
         catch {
-            $logger->warn("Error sending mail: ", $Mail::Sender::Error // $_);
+            warn("Error sending mail: ", $Mail::Sender::Error // $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
             0;
         } or return;
     } else {
@@ -146,7 +143,7 @@ sub send_email {
                 })->SendEnc($mail_message)->Close();
         }
         catch {
-            $logger->warn("Error sending mail [$subject]: ", $Mail::Sender::Error // $_);
+            warn("Error sending mail [$subject]: ", $Mail::Sender::Error // $_) unless $ENV{BOM_SUPPRESS_WARNINGS};
             0;
         } or return;
     }
