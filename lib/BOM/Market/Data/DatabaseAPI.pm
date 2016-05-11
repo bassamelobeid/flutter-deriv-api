@@ -398,7 +398,7 @@ sub ohlc_start_end {
     $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
         if ($args->{end_time});
 
-    my $statement = $self->dbh->prepare_cached('SELECT * FROM ohlc_start_end($1, $2, $3, $4, $5, $6)' {}, 3);
+    my $statement = $self->dbh->prepare_cached('SELECT * FROM ohlc_start_end($1, $2, $3, $4, $5, $6)', {}, 3);
     $statement->bind_param(1, $self->underlying);
     $statement->bind_param(2, $args->{aggregation_period});
     $statement->bind_param(3, $start_time);
