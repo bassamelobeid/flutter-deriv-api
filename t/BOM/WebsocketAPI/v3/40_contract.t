@@ -88,7 +88,7 @@ $t = $t->send_ok({
             start                 => "2013-03-27",
             end                   => "2013-03-30",
         }})->message_ok;
-is $call_params->{token}, $token;
+ok !$call_params->{token};
 $rpc_caller->unmock_all;
 
 $t = $t->send_ok({
