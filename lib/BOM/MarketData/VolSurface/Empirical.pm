@@ -262,7 +262,7 @@ sub _build_per_second_seasonality_curve {
 
         if (not $per_second) {
             my $coefficients = $self->_get_coefficients('volatility_seasonality_coef')->{data}
-                || confess 'No volatility seasonality coefficients for this underlying [' . $symbol . ']';
+                || die 'No volatility seasonality coefficients for this underlying [' . $symbol . ']';
             my $interpolator = Math::Function::Interpolator->new(points => $coefficients);
             # The coefficients from the YAML are stored as hours. We want to do per-second.
             $per_second = [map { $interpolator->cubic($_ / 3600) } (0 .. 86399)];
