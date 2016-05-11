@@ -196,8 +196,8 @@ table#client_edit td{
                         <option value="[% risk_classification.value %]">[% risk_classification.details %]</option>
                     [% END %]
                 [% END %]
-                Current risk classification: [% client.aml_risk_classification %]
             </select>
+            Current risk classification: [% client.aml_risk_classification %]
         </td>
     </tr>
     <tr>
