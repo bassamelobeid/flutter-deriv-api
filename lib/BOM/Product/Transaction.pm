@@ -268,39 +268,41 @@ sub stats_stop {
 }
 
 sub calculate_limits {
-    my $self = shift;
+    my $self   = shift;
+    my $client = shift || $self->client;
+
+    my %limits;
 
     my $app_config    = BOM::Platform::Runtime->instance->app_config->quants->client_limits;
     my $static_config = BOM::Platform::Static::Config::quants->{client_limits};
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
-    my $client   = $self->client;
 
-    $self->limits->{max_balance} = $client->get_limit_for_account_balance;
+    $limits{max_balance} = $client->get_limit_for_account_balance;
 
     if (not $contract->tick_expiry) {
-        $self->limits->{max_open_bets}                      = $client->get_limit_for_open_positions;
-        $self->limits->{max_payout_open_bets}               = $client->get_limit_for_payout;
-        $self->limits->{max_payout_per_symbol_and_bet_type} = $static_config->{payout_per_symbol_and_bet_type_limit}->{$currency};
+        $limits{max_open_bets}                      = $client->get_limit_for_open_positions;
+        $limits{max_payout_open_bets}               = $client->get_limit_for_payout;
+        $limits{max_payout_per_symbol_and_bet_type} = $static_config->{payout_per_symbol_and_bet_type_limit}->{$currency};
     }
 
-    $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
+    $limits{max_turnover} = $client->get_limit_for_daily_turnover;
 
     my $lim;
     defined($lim = $client->get_limit_for_daily_losses)
-        and $self->limits->{max_losses} = $lim;
+        and $limits{max_losses} = $lim;
     defined($lim = $client->get_limit_for_7day_turnover)
-        and $self->limits->{max_7day_turnover} = $lim;
+        and $limits{max_7day_turnover} = $lim;
     defined($lim = $client->get_limit_for_7day_losses)
-        and $self->limits->{max_7day_losses} = $lim;
+        and $limits{max_7day_losses} = $lim;
     defined($lim = $client->get_limit_for_30day_turnover)
-        and $self->limits->{max_30day_turnover} = $lim;
+        and $limits{max_30day_turnover} = $lim;
     defined($lim = $client->get_limit_for_30day_losses)
-        and $self->limits->{max_30day_losses} = $lim;
+        and $limits{max_30day_losses} = $lim;
 
     if ($client->loginid !~ /^VRT/ and $contract->market->name eq 'forex' and $contract->is_intraday and not $contract->is_atm_bet) {
-        $lim = $self->limits->{intraday_forex_iv_action} = {
+        $lim = $limits{intraday_forex_iv_action} = {
             turnover         => $app_config->intraday_forex_iv_turnover->$currency,
             realized_profit  => $app_config->intraday_forex_iv_realized_profit->$currency,
             potential_profit => $app_config->intraday_forex_iv_potential_profit->$currency,
@@ -311,11 +313,11 @@ sub calculate_limits {
     }
 
     if ($contract->is_spread) {
-        $self->limits->{spread_bet_profit_limit} = $app_config->spreads_daily_profit->$currency;
+        $limits{spread_bet_profit_limit} = $app_config->spreads_daily_profit->$currency;
     }
 
     if ($contract->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
-        push @{$self->limits->{specific_turnover_limits}},
+        push @{$limits{specific_turnover_limits}},
             +{
             bet_type => [map { {n => $_} } 'CALL', 'PUT'],
             name     => 'tick_expiry_engine_turnover_limit',
@@ -332,7 +334,7 @@ sub calculate_limits {
     }
 
     if ($contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
-        push @{$self->limits->{specific_turnover_limits}},
+        push @{$limits{specific_turnover_limits}},
             +{
             bet_type => [map { {n => $_} } 'CALL', 'PUT'],
             name     => 'intraday_spot_index_turnover_limit',
@@ -342,7 +344,7 @@ sub calculate_limits {
     }
 
     if ($contract->underlying->submarket->name eq 'smart_fx') {
-        push @{$self->limits->{specific_turnover_limits}},
+        push @{$limits{specific_turnover_limits}},
             +{
             name    => 'smartfx_turnover_limit',
             limit   => $static_config->{smartfx_turnover_limit}->{$currency},
@@ -351,7 +353,7 @@ sub calculate_limits {
     }
 
     if ($contract->market->name eq 'stocks') {
-        push @{$self->limits->{specific_turnover_limits}},
+        push @{$limits{specific_turnover_limits}},
             +{
             name    => 'stocks_turnover_limit',
             limit   => $static_config->{stocks_turnover_limit}->{$currency},
@@ -360,7 +362,7 @@ sub calculate_limits {
     }
 
     if ($contract->category_code eq 'asian') {
-        push @{$self->limits->{specific_turnover_limits}},
+        push @{$limits{specific_turnover_limits}},
             +{
             bet_type    => [map { {n => $_} } 'ASIANU', 'ASIAND'],
             name        => 'asian_turnover_limit',
@@ -369,7 +371,7 @@ sub calculate_limits {
             };
     }
 
-    return;
+    return \%limits;
 }
 
 sub prepare_bet_data_for_buy {
@@ -490,7 +492,14 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
             _validate_stake_limit/
             );
 
-        $self->calculate_limits;
+        if ($self->multiple) {
+            for my $m (@{$self->multiple}) {
+                next if $m->{code};
+                $m->{limits} = $self->calculate_limits($m->{client});
+            }
+        } else {
+            $self->limits($self->calculate_limits);
+        }
 
         $self->comment(
             _build_pricing_comment({
@@ -594,42 +603,38 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
     my %per_broker;
     for my $m (@{$self->multiple}) {
         next if $m->{code};
-        (my $broker = $m->{loginid}) =~ s/\D+$//;
-
-        my $c = BOM::Platform::Client->new({loginid => $m->{loginid}});
-        next unless $c;
-
-        $m->{client} = $c;
-
-        push @{$per_broker{$broker}}, $m;
+        push @{$per_broker{$m->{client}->broker_code}}, $m;
     }
 
     for my $broker (keys %per_broker) {
         my $list = $per_broker{$broker};
         # with hash key caching introduced in recent perl versions
         # the "map sort map" pattern does not make sense anymore.
+
+        # this sorting is to prevent deadlocks in the database
         @$list = sort { $a->{loginid} cmp $b->{loginid} } @$list;
 
-    }
-
-    for my $broker (keys %per_broker) {
-        my $list = $per_broker{$broker};
-
-        my ($error_status, $stats_data, $bet_data) = $self->prepare_buy(@options, clients => $list);
-        #return $error_status if $error_status;
-
+        my $currency   = $self->contract->currency;
         my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
             %$bet_data,
-            account_data => {
-                client_loginid => $self->client->loginid,
-                currency_code  => $self->contract->currency,
-            },
-            limits => $self->limits,
-            db     => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
+            account_data => [map {client_loginid => $_->{loginid}, currency_code => $currency} @$list],
+            limits       => [map {$_->{limits}} @$list] $self->limits,
+            db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
         );
-    }
 
-    ...;
+        my @res = $fmb_helper->batch_buy_bet;
+        for my $el (@$list) {
+            my $res = shift @res;
+            if ($res->{e_code}) {
+                # TODO: map DB errors to client messages
+                $el->{code}  = $res->{e_code};
+                $el->{error} = $res->{e_description};
+            } else {
+                $el->{fmb} = $res->{fmb};
+                $el->{txn} = $res->{txn};
+            }
+        }
+    }
 
     # return $self->stats_stop(
     #     $stats_data,
@@ -639,9 +644,9 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
     #         -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
     #     )) if $error;
 
-    $self->stats_stop($stats_data);
+    # $self->stats_stop($stats_data);
 
-    enqueue_new_transaction($self);    # For soft realtime expiration notification.
+    # enqueue_new_transaction($self);    # For soft realtime expiration notification.
 
     return;
 }
@@ -2033,6 +2038,7 @@ Returns: Error::Base object with message to client
 
 =cut
 
+# TODO: move this to bom-app: BOM::View::Controller::Bet
 sub validate_request_method {
     if (BOM::Platform::Context::request()->http_method ne 'POST') {
         return Error::Base->cuss(
