@@ -561,7 +561,6 @@ sub rpc {
                     1000 * Time::HiRes::tv_interval($c->stash('tv')),
                     {tags => ["rpc:$method"]});
             },
-            max_response_size => 328000,
         },
     );
     return;
