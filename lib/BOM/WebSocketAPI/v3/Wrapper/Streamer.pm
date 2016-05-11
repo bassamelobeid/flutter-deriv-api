@@ -6,6 +6,7 @@ use warnings;
 use JSON;
 use Data::UUID;
 use Scalar::Util qw (looks_like_number);
+use List::MoreUtils qw(last_index);
 use Format::Util::Numbers qw(roundnear);
 
 use BOM::RPC::v3::Contract;
@@ -15,6 +16,7 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use BOM::System::RedisReplicated;
+use utf8;
 
 sub ticks {
     my ($c, $args) = @_;
@@ -46,6 +48,9 @@ sub ticks {
     return;
 }
 
+# this sub is different from others as we subscribe to feed channel first
+# then call rpc, we cache the ticks from feed channel and when rpc response
+# comes then we merge cache data with rpc response
 sub ticks_history {
     my ($c, $args) = @_;
 
@@ -53,29 +58,98 @@ sub ticks_history {
         return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'));
     }
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'ticks_history',
-        sub {
-            my $response = shift;
-            if ($response and exists $response->{error}) {
-                return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
-            }
+    my $publish;
+    my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
+    if ($style eq 'ticks') {
+        $publish = 'tick';
+    } elsif ($style eq 'candles') {
+        $args->{granularity} = $args->{granularity} || 60;
+        $publish = $args->{granularity};
+    } else {
+        return $c->new_error('ticks_history', "InvalidStyle", $c->l('Style [_1] invalid', $style));
+    }
 
-            if (exists $args->{subscribe}) {
-                if ($args->{subscribe} eq '1') {
-                    $args->{granularity} = $response->{granularity} if $response->{granularity};
-                    if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $response->{publish}, $args)) {
-                        return $c->new_error('ticks_history',
-                            'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
-                    }
+    my $callback = sub {
+        BOM::WebSocketAPI::Websocket_v3::rpc(
+            $c,
+            'ticks_history',
+            sub {
+                my $response = shift;
+                if (exists $response->{error}) {
+                    # cancel subscription if response has error
+                    _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args);
+                    return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
                 }
-            }
-            return {
-                msg_type => $response->{type},
-                %{$response->{data}}};
-        },
-        {args => $args});
+
+                my $channel = $args->{ticks_history} . ';' . $publish;
+                my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
+
+                # check for cached data
+                if (exists $feed_channel_cache->{$channel} and scalar(keys %{$feed_channel_cache->{$channel}})) {
+                    my $cache = $feed_channel_cache->{$channel};
+                    # both history and candles have different structure, check rpc ticks_history sub
+                    if ($response->{type} eq 'history') {
+                        my %times;
+                        # store whats in cache
+                        @times{keys %$cache} = map { $_->{quote} } values %$cache;
+                        # merge with response data
+                        @times{@{$response->{data}->{history}->{times}}} = @{$response->{data}->{history}->{prices}};
+                        @{$response->{data}->{history}->{times}} = sort { $a <=> $b } keys %times;
+                        @{$response->{data}->{history}->{prices}} = @times{@{$response->{data}->{history}->{times}}};
+                    } elsif ($response->{type} eq 'candles') {
+                        my $index;
+                        my $candles = $response->{data}->{candles};
+
+                        # delete all cache value that have epoch lower than last candle epoch
+                        my @matches = grep { $_ < $candles->[-1]->{epoch} } keys %$cache;
+                        delete @$cache{@matches};
+
+                        foreach my $epoch (sort { $a <=> $b } keys %$cache) {
+                            my $window = $epoch - $epoch % $publish;
+                            # check if window exists in candles response
+                            $index = last_index { $_->{epoch} eq $window } @$candles;
+                            # if no window is in response then update the candles with cached data
+                            if ($index < 0) {
+                                push @$candles, {
+                                    open  => $cache->{$epoch}->{open},
+                                    close => $cache->{$epoch}->{close},
+                                    epoch => $window + 0,                 # need to send as integer
+                                    high  => $cache->{$epoch}->{high},
+                                    low   => $cache->{$epoch}->{low}};
+                            } else {
+                                # if window exists replace it with new data
+                                $candles->[$index] = {
+                                    open  => $cache->{$epoch}->{open},
+                                    close => $cache->{$epoch}->{close},
+                                    epoch => $window + 0,                 # need to send as integer
+                                    high  => $cache->{$epoch}->{high},
+                                    low   => $cache->{$epoch}->{low}};
+                            }
+                        }
+                    }
+
+                    delete $feed_channel_cache->{$channel};
+                }
+
+                my $feed_channel_type = $c->stash('feed_channel_type') || {};
+                # remove the cache flag which was set during subscription
+                delete $feed_channel_type->{$channel}->{cache} if exists $feed_channel_type->{$channel};
+
+                return {
+                    msg_type => $response->{type},
+                    %{$response->{data}}};
+            },
+            {args => $args});
+    };
+
+    # subscribe first with flag of cache passed as 1 to indicate to cache the feed data
+    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
+        if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $publish, $args, $callback, 1)) {
+            return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
+        }
+    } else {
+        &$callback;
+    }
 
     return;
 }
@@ -93,8 +167,33 @@ sub price_stream {
             return $c->new_error('price_stream',
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
-        # send_ask($c, $id, $args);
+        send_ask_price_stream($c, $id, $args);
     }
+    return;
+}
+
+sub send_ask_price_stream {
+    my ($c, $id, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'send_ask',
+        sub {
+            my $response = shift;
+            if ($response and exists $response->{error}) {
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
+                $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
+                return $err;
+            }
+            delete $response->{longcode};
+            return {
+                msg_type => 'price_stream',
+                price_stream => {($id ? (id => $id) : ()), %$response}};
+        },
+        {args => $args},
+        'price_stream'
+    );
     return;
 }
 
@@ -217,10 +316,6 @@ sub proposal {
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
         send_ask($c, $id, $args);
-
-        if ($c->stash->{redis}->get('BOM::RPC::PricerDaemon::doprice')) {
-            price_stream($c, $args);
-        }
     }
     return;
 }
@@ -279,25 +374,40 @@ sub process_realtime_events {
     my %skip_duration_list = map { $_ => 1 } qw(s m h);
     my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
     my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
+    my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
+
     foreach my $channel (keys %{$feed_channels_type}) {
         $channel =~ /(.*);(.*)/;
         my $symbol    = $1;
         my $type      = $2;
         my $arguments = $feed_channels_type->{$channel}->{args};
+        my $cache     = $feed_channels_type->{$channel}->{cache};
 
         if ($type eq 'tick' and $m[0] eq $symbol) {
-            $c->send({
-                    json => {
-                        msg_type => 'tick',
-                        echo_req => $arguments,
-                        (exists $arguments->{req_id})
-                        ? (req_id => $arguments->{req_id})
-                        : (),
-                        tick => {
-                            id     => $feed_channels_type->{$channel}->{uuid},
-                            symbol => $symbol,
-                            epoch  => $m[1],
-                            quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
+            unless ($c->tx) {
+                _feed_channel($c, 'unsubscribe', $symbol, $type, $arguments);
+                return;
+            }
+
+            my $tick = {
+                id     => $feed_channels_type->{$channel}->{uuid},
+                symbol => $symbol,
+                epoch  => $m[1],
+                quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])};
+
+            if ($cache) {
+                $feed_channel_cache->{$channel}->{$m[1]} = $tick;
+            } else {
+                $c->send({
+                        json => {
+                            msg_type => 'tick',
+                            echo_req => $arguments,
+                            (exists $arguments->{req_id})
+                            ? (req_id => $arguments->{req_id})
+                            : (),
+                            tick => $tick
+                        }}) if $c->tx;
+            }
         } elsif ($type =~ /^pricing_table:/) {
             if ($chan eq BOM::RPC::v3::Japan::Contract::get_channel_name($arguments)) {
                 send_pricing_table($c, $feed_channels_type->{$channel}->{uuid}, $arguments, $message);
@@ -323,39 +433,53 @@ sub process_realtime_events {
             BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
                 if $c->tx;
         } elsif ($m[0] eq $symbol) {
+            unless ($c->tx) {
+                _feed_channel($c, 'unsubscribe', $symbol, $type, $arguments);
+                return;
+            }
+
             my $u = BOM::Market::Underlying->new($symbol);
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
-            $c->send({
-                    json => {
-                        msg_type => 'ohlc',
-                        echo_req => $arguments,
-                        (exists $arguments->{req_id}) ? (req_id => $arguments->{req_id})
-                        : (),
-                        ohlc => {
-                            id        => $feed_channels_type->{$channel}->{uuid},
-                            epoch     => $m[1],
-                            open_time => ($type and looks_like_number($type)) ? $m[1] - $m[1] % $type
-                            : $m[1] - $m[1] % 60,    #defining default granularity
-                            symbol      => $symbol,
-                            granularity => $type,
-                            open        => $u->pipsized_value($1),
-                            high        => $u->pipsized_value($2),
-                            low         => $u->pipsized_value($3),
-                            close       => $u->pipsized_value($4)}}}) if $c->tx;
+            my $ohlc = {
+                id        => $feed_channels_type->{$channel}->{uuid},
+                epoch     => $m[1],
+                open_time => ($type and looks_like_number($type))
+                ? $m[1] - $m[1] % $type
+                : $m[1] - $m[1] % 60,    #defining default granularity
+                symbol      => $symbol,
+                granularity => $type,
+                open        => $u->pipsized_value($1),
+                high        => $u->pipsized_value($2),
+                low         => $u->pipsized_value($3),
+                close       => $u->pipsized_value($4)};
+
+            if ($cache) {
+                $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
+            } else {
+                $c->send({
+                        json => {
+                            msg_type => 'ohlc',
+                            echo_req => $arguments,
+                            (exists $arguments->{req_id})
+                            ? (req_id => $arguments->{req_id})
+                            : (),
+                            ohlc => $ohlc
+                        }}) if $c->tx;
+            }
         }
     }
+    $c->stash('feed_channel_cache', $feed_channel_cache);
 
     return;
 }
 
 sub _feed_channel {
-
-    my ($c, $subs, $symbol, $type, $args) = @_;
+    my ($c, $subs, $symbol, $type, $args, $callback, $cache) = @_;
 
     my $uuid;
-
-    my $feed_channel      = $c->stash('feed_channel')      || {};
-    my $feed_channel_type = $c->stash('feed_channel_type') || {};
+    my $feed_channel       = $c->stash('feed_channel')       || {};
+    my $feed_channel_type  = $c->stash('feed_channel_type')  || {};
+    my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
     my $redis = $c->stash('redis');
     if ($subs eq 'subscribe') {
@@ -368,17 +492,20 @@ sub _feed_channel {
         }
         $uuid = Data::UUID->new->create_str();
         $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{"$symbol;$type"}->{args} = $args if $args;
-        $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
+        $feed_channel_type->{"$symbol;$type"}->{args}  = $args if $args;
+        $feed_channel_type->{"$symbol;$type"}->{uuid}  = $uuid;
+        $feed_channel_type->{"$symbol;$type"}->{cache} = $cache || 0;
 
         my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
-        $redis->subscribe([$channel_name], sub { });
+        $redis->subscribe([$channel_name], $callback // sub { });
     }
 
     if ($subs eq 'unsubscribe') {
         $feed_channel->{$symbol} -= 1;
         my $args = $feed_channel_type->{"$symbol;$type"}->{args};
         delete $feed_channel_type->{"$symbol;$type"};
+        # delete cache on unsubscribe
+        delete $feed_channel_cache->{"$symbol;$type"};
         if ($feed_channel->{$symbol} <= 0) {
             my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
             $redis->unsubscribe([$channel_name], sub { });
