@@ -193,6 +193,10 @@ my @dispatch = (
         'landing_company_details',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company_details, 0
     ],
+    [
+        'get_corporate_actions',
+        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::get_corporate_actions, 0
+    ],
 
     ['balance',   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,   1, 'read'],
     ['statement', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement, 1, 'read'],
@@ -258,11 +262,6 @@ my @dispatch = (
     [
         'proposal_open_contract',
         \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
-        1, 'read'
-    ],
-    [
-        'get_corporate_actions',
-        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::get_corporate_actions,
         1, 'read'
     ],
     ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1, 'trade'],
@@ -470,7 +469,12 @@ sub __handle {
                 return $c->new_error($descriptor->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error);
             }
         }
-        $result->{debug} = [Time::HiRes::tv_interval($t0), $loginid ? $loginid : ''] if ref $result;
+        if (ref($result) && $c->stash('debug')) {
+            $result->{debug} = {
+                time   => 1000 * Time::HiRes::tv_interval($t0),
+                method => $descriptor->{category},
+            };
+        }
         return $result;
     }
 
