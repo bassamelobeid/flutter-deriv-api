@@ -112,7 +112,10 @@ subtest 'When auth not required' => sub {
 
             my $v = IDAuthentication->new(client => $c);
             Test::MockObject::Extends->new($v);
-            $v->run_authentication;
+            do {
+                local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
+                $v->run_authentication;
+            };
             my @notif = @{$v->notified};
             is @notif, 1, 'sent one notification';
             like $notif[0][0], qr/SET TO CASHIER_LOCKED PENDING EMAIL REQUEST FOR ID/, 'notification is correct';
@@ -128,7 +131,10 @@ subtest 'When auth not required' => sub {
 
             my $v = IDAuthentication->new(client => $c);
             Test::MockObject::Extends->new($v);
-            $v->run_authentication;
+            do {
+                local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
+                $v->run_authentication;
+            };
             my @notif = @{$v->notified};
             is @notif, 2, 'sent 2 notifications';
             like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'notification is correct';
@@ -210,7 +216,10 @@ subtest 'proveid' => sub {
         Test::MockObject::Extends->new($v);
 
         $v->mock(-_fetch_proveid, sub { return {deny => 1} });
-        $v->run_authentication;
+        do {
+            local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
+            $v->run_authentication;
+        };
         my @notif = @{$v->notified};
         is @notif, 2, 'sent one notification';
         like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'notification is correct';
@@ -251,7 +260,10 @@ subtest 'proveid' => sub {
 
         $v->mock(-_fetch_proveid, sub { return {} });
         $v->mock(-_fetch_checkid, sub { return });
-        $v->run_authentication;
+        do {
+            local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
+            $v->run_authentication;
+        };
         my @notif = @{$v->notified};
         is @notif, 2, 'sent two notification';
         like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'first notification is correct';

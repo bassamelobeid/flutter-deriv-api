@@ -27,7 +27,6 @@ use Moose;
 use MooseX::StrictConstructor;
 use namespace::autoclean;
 
-use Carp;
 use URI;
 
 =head2 short

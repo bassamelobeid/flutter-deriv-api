@@ -17,7 +17,6 @@ use MooseX::StrictConstructor;
 use Path::Tiny;
 use JSON qw(decode_json);
 use List::Util qw(first);
-use Carp;
 use URI;
 
 require Locale::Maketext::Lexicon;

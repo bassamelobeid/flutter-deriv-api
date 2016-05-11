@@ -21,7 +21,6 @@ use Try::Tiny;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use BOM::Platform::MyAffiliates::TrackingHandler;
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Context qw(request localize);
 use base qw( Exporter );
 
@@ -52,7 +51,7 @@ sub http_redirect {
         );
     }
     catch {
-        /too late to set a HTTP header/ and get_logger->error($_);
+        /too late to set a HTTP header/ and warn($_);
         die $_;
     };
     $http_handler->status(302);    #Moved
@@ -229,7 +228,7 @@ sub PrintContentType_JSON {
         $http_handler->print_header('Cache-control' => "private, no-cache, must-revalidate");
     }
     catch {
-        /too late to set a HTTP header/ and get_logger->error($_);
+        /too late to set a HTTP header/ and warn($_);
         die $_;
     };
     $http_handler->status(200);
@@ -245,7 +244,7 @@ sub panic_code_timeout {
     my $runtime = time - $^T;
     my $timenow = Date::Utility->new->datetime;
 
-    get_logger->error("Panic timeout after $runtime seconds");
+    warn("Panic timeout after $runtime seconds");
 
     if (not request()->from_ui) {
         print 'The script timed out.';
