@@ -229,6 +229,7 @@ sub process_pricing_events {
         next if $amount eq 'channel_name';
         my $results;
         if ($response and exists $response->{error}) {
+            $c->stash('redis')->subscribe([$pricing_channel->{$serialized_args}->{channel_name}]);
             my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
