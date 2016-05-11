@@ -1749,7 +1749,6 @@ Returns,
 
 =head2 ohlc_daily_open
 
-Some underlying, eg: RDYANG, RDYIN open at 12GMT. The open & close cross over GMT day.
 Daily ohlc from feed.ohlc_daily table can't be used, as there are computed based on GMT day.
 In this case, daily ohlc need to be computed from feed.ohlc_hourly table, based on actual market open time
 
