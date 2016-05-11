@@ -674,7 +674,7 @@ has exchange => (
     is         => 'ro',
     isa        => 'Quant::Framework::Exchange',
     lazy_build => 1,
-    handles    => ['is_OTC',]);
+);
 
 sub _build_exchange {
     my $self = shift;
