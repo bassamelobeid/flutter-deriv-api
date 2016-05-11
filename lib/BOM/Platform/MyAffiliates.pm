@@ -5,7 +5,6 @@ use warnings;
 use base 'WebService::MyAffiliates';
 use BOM::System::Config;
 
-use Carp;
 use List::Util qw( first );
 use Scalar::Util qw( looks_like_number );
 
@@ -122,7 +121,7 @@ sub _find_affiliate_by_variable {
 sub get_token {
     my ($self, $args_ref) = @_;
 
-    my $affiliate_id = $args_ref->{affiliate_id} or croak 'Must pass affiliate_id to get_token';
+    my $affiliate_id = $args_ref->{affiliate_id} or die 'Must pass affiliate_id to get_token';
 
     my $plan = $args_ref->{plan} || $self->get_default_plan($affiliate_id) || '';
     my $setup_id = $plan ? $self->_get_setup_id($plan) : '';

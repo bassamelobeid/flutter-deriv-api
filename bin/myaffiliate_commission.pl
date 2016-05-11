@@ -18,11 +18,9 @@ use DateTime;
 use DateTime::Format::HTTP;
 use Date::Utility;
 use BOM::Platform::Runtime;
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Context qw(request);
 
 with 'App::Base::Script';
-with 'BOM::Utility::Logging';
 
 sub options {
     return [{
@@ -42,8 +40,6 @@ sub options {
 
 sub script_run {
     my $self = shift;
-
-    my $logger = get_logger();
 
     my $start_date = $self->start_date;
     my $end_date   = $self->end_date;
@@ -73,8 +69,6 @@ sub script_run {
         }
     }
 
-    $logger->info('Myaffiliate Commission Calculation: start_date[' . $start_date->ymd . '], end_date[' . $end_date . ']');
-
     my $dbh = BOM::Database::ClientDB->new({
             broker_code => 'FOG',
             operation   => 'collector',
@@ -100,25 +94,20 @@ sub script_run {
             day   => $start_date->day
         );
 
-        $logger->info('Check for duplicate, month[' . $start_date->ymd . ']');
         $check_duplicate_sth->execute($start_date->ymd);
         my @count = $check_duplicate_sth->fetchrow_array();
         if ($count[0] > 0) {
-            $logger->warn('Already calculated for month[' . $start_date->ymd . "], SKIPPING...");
+            warn('Already calculated for month[' . $start_date->ymd . "], SKIPPING...");
             $start_date->add(months => 1);
             next;
         }
 
         eval {
-            $logger->info('Calculating affiliate commission for month[' . $start_date->ymd . ']');
-
             $calc_commission_sth->execute($start_date->ymd, $end_date_loop->ymd);
             @count = $calc_commission_sth->fetchrow_array();
-
-            $logger->info('Affiliate commission for month[' . $start_date->ymd . "], inserted $count[0] rows to db");
-        };
-        if ($@) {
-            $logger->error('Failed Calculating affiliate commission, month[' . $start_date->ymd . "], error[$@]");
+            1;
+        } or {
+            warn('Failed Calculating affiliate commission, month[' . $start_date->ymd . "], error[$@]");
             last;
         }
 

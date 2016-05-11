@@ -10,7 +10,6 @@ use DateTime;
 use Date::Utility;
 use Cache::RedisDB;
 use Format::Util::Numbers qw(roundnear);
-use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
