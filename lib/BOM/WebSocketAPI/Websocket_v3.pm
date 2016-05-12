@@ -10,7 +10,6 @@ use Time::HiRes;
 use Data::UUID;
 use Time::Out qw(timeout);
 use Guard;
-use Proc::CPUUsage;
 use feature "state";
 use RateLimitations qw(within_rate_limits);
 
@@ -491,19 +490,13 @@ sub _failed_key_value {
 }
 
 sub rpc {
-    my $self        = shift;
-    my $method      = shift;
-    my $callback    = shift;
-    my $params      = shift;
-    my $method_name = shift // $method;
+    my $c               = shift;
+    my $method          = shift;
+    my $rpc_response_cb = shift;
+    my $params          = shift;
+    my $method_name     = shift;
 
-    my $tv = [Time::HiRes::gettimeofday];
-    state $cpu = Proc::CPUUsage->new();
-
-    $params->{language} = $self->stash('language');
-    $params->{country} = $self->stash('country') || $self->country_code;
-
-    my $client = MojoX::JSON::RPC::Client->new;
+    # TODO New dispatcher plugin has to do this
     my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
     if (BOM::System::Config::env eq 'production') {
         if (BOM::System::Config::node->{node}->{www2}) {
@@ -512,107 +505,64 @@ sub rpc {
             $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
         }
     }
-
     $url .= $method;
 
-    my $callobj = {
-        id     => Data::UUID->new()->create_str(),
-        method => $method,
-        params => $params
-    };
+    BOM::WebSocketAPI::CallingEngine::call_rpc(
+        $c,
+        {
+            method          => $method,
+            msg_type        => $method_name // $method,
+            url             => $url,
+            call_params     => $params,
+            rpc_response_cb => $rpc_response_cb,
+            before_call     => sub {
+                my ($c, $call_params) = @_;
 
-    $client->call(
-        $url, $callobj,
-        sub {
-            my $res = pop;
+                $c->stash('tv' => [Time::HiRes::gettimeofday]);
+                # TODO DELETE After dispatcher will be changed
+                $call_params->{language} = $c->stash('language');
+                $call_params->{country} = $c->stash('country') || $c->country_code;
+            },
+            before_get_rpc_response => sub {
+                my $c = shift;
 
-            DataDog::DogStatsd::Helper::stats_timing(
-                'bom_websocket_api.v_3.rpc.call.timing',
-                1000 * Time::HiRes::tv_interval($tv),
-                {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$method"]});
-
-            # unconditionally stop any further processing if client is already disconnected
-            return unless $self->tx;
-
-            my $client_guard = guard { undef $client };
-
-            my ($data, $req_id);
-            my $args = $params->{args};
-            $req_id = $args->{req_id} if ($args and exists $args->{req_id});
-
-            if (!$res) {
-                my $tx_res = $client->tx->res;
-                warn $tx_res->message;
-                $data = $self->new_error($method, 'WrongResponse', $self->l('Sorry, an error occurred while processing your request.'));
-                $data->{echo_req} = $args;
-                $data->{req_id} = $req_id if $req_id;
-                $self->send({json => $data});
-                return;
-            }
-
-            my $rpc_time;
-            $rpc_time = delete $res->result->{rpc_time} if (ref($res->result) eq "HASH");
-
-            if ($rpc_time) {
                 DataDog::DogStatsd::Helper::stats_timing(
-                    'bom_websocket_api.v_3.rpc.call.timing.connection',
-                    1000 * Time::HiRes::tv_interval($tv) - $rpc_time,
+                    'bom_websocket_api.v_3.rpc.call.timing',
+                    1000 * Time::HiRes::tv_interval($c->stash('tv')),
                     {tags => ["rpc:$method"]});
-            }
+                DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$method"]});
+            },
+            after_got_rpc_response => sub {
+                my ($c, $rpc_response) = @_;
 
-            if ($res->is_error) {
-                warn $res->error_message;
-                $data = $self->new_error($method_name, 'CallError', $self->l('Sorry, an error occurred while processing your request.'));
-                $data->{echo_req} = $args;
-                $data->{req_id} = $req_id if $req_id;
-                $self->send({json => $data});
-                return;
-            }
+                if (ref($rpc_response->result) eq "HASH"
+                    && (my $rpc_time = delete $rpc_response->result->{rpc_time}))
+                {
+                    DataDog::DogStatsd::Helper::stats_timing(
+                        'bom_websocket_api.v_3.rpc.call.timing.connection',
+                        1000 * Time::HiRes::tv_interval($c->stash('tv')) - $rpc_time,
+                        {tags => ["rpc:$method"]});
+                }
+            },
+            before_send_api_response => sub {
+                my ($c, $api_response) = @_;
 
-            $data = &$callback($res->result);
-
-            _process_result($self, $data, $method, $args, $req_id, $tv);
-            return;
-        });
-    return;
-}
-
-sub _process_result {
-    my ($self, $data, $method, $args, $req_id, $tv) = @_;
-
-    my $send = 1;
-    if (not $data) {
-        $send = undef;
-        $data = {};
-    }
-    my $l = length JSON::to_json($data);
-    if ($l > 328000) {
-        $data = $self->new_error('error', 'ResponseTooLarge', $self->l('Response too large.'));
-    }
-
-    $data->{echo_req} = $args;
-    $data->{req_id} = $req_id if $req_id;
-
-    if ($self->stash('debug')) {
-        $data->{debug} = {
-            time   => 1000 * Time::HiRes::tv_interval($tv),
-            method => $method
-        };
-    }
-
-    if ($send) {
-        $tv = [Time::HiRes::gettimeofday];
-
-        $self->send({json => $data});
-
-        DataDog::DogStatsd::Helper::stats_timing(
-            'bom_websocket_api.v_3.rpc.call.timing.sent',
-            1000 * Time::HiRes::tv_interval($tv),
-            {tags => ["rpc:$method"]});
-
-    }
+                if ($c->stash('debug')) {
+                    $api_response->{debug} = {
+                        time   => 1000 * Time::HiRes::tv_interval($c->stash('tv')),
+                        method => $method
+                    };
+                }
+                $c->stash('tv' => [Time::HiRes::gettimeofday]);
+            },
+            after_sent_api_response => sub {
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'bom_websocket_api.v_3.rpc.call.timing.sent',
+                    1000 * Time::HiRes::tv_interval($c->stash('tv')),
+                    {tags => ["rpc:$method"]});
+            },
+        },
+    );
     return;
 }
 

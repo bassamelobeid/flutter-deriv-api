@@ -88,8 +88,16 @@ subtest 'MLT upgrade to MF account' => sub {
     };
 
     subtest 'upgrade to MF' => sub {
+        my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+        my $call_params;
+        $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+        $t = $t->send_ok({json => $mf_details})->message_ok;
+        is $call_params->{token}, $token;
+        $rpc_caller->unmock_all;
+
         $t = $t->send_ok({json => $mf_details})->message_ok;
         my $res = decode_json($t->message->[1]);
+        is($res->{msg_type}, 'new_account_maltainvest');
         ok($res->{new_account_maltainvest});
         test_schema('new_account_maltainvest', $res);
 
@@ -185,6 +193,7 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
             $t = $t->send_ok({json => $mf_details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
+            is($res->{msg_type}, 'new_account_maltainvest');
             is($res->{error}->{code},           'InvalidAccount', "no MF upgrade for $broker");
             is($res->{new_account_maltainvest}, undef,            'NO account created');
         };

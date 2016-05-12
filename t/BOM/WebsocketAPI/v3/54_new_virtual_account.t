@@ -30,6 +30,7 @@ subtest 'verify_email' => sub {
                 type         => 'some_garbage_value'
             }})->message_ok;
     my $res = decode_json($t->message->[1]);
+    is($res->{msg_type}, 'verify_email');
     is($res->{error}->{code}, 'InputValidationFailed', 'verify_email failed');
     is($res->{msg_type},      'verify_email',          'Message type is correct in case of error');
     test_schema('verify_email', $res);
@@ -45,13 +46,29 @@ subtest 'verify_email' => sub {
 
     my $old_token = _get_token();
 
+    my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+    my $call_params;
+    $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+    $t = $t->send_ok({
+            json => {
+                verify_email => $email,
+                type         => 'account_opening'
+            }})->message_ok;
+    is $call_params->{email}, $email;
+    ok $call_params->{server_name};
+    ok $call_params->{code};
+    ok $call_params->{type};
+    $rpc_caller->unmock_all;
+
     # send this again to check if invalidates old one
+    Cache::RedisDB->redis->flushall;
     $t = $t->send_ok({
             json => {
                 verify_email => $email,
                 type         => 'account_opening'
             }})->message_ok;
     $res = decode_json($t->message->[1]);
+    is($res->{msg_type}, 'verify_email');
     is($res->{verify_email}, 1, 'verify_email OK');
     test_schema('verify_email', $res);
     ok _get_token(), "Token exists";
@@ -86,6 +103,7 @@ subtest 'create Virtual account' => sub {
 
     $t = $t->send_ok({json => $create_vr})->message_ok;
     $res = decode_json($t->message->[1]);
+    is($res->{msg_type}, 'new_account_virtual');
     ok($res->{new_account_virtual});
     test_schema('new_account_virtual', $res);
 
@@ -98,6 +116,7 @@ subtest 'Invalid email verification code' => sub {
     $t = $t->send_ok({json => $create_vr})->message_ok;
     my $res = decode_json($t->message->[1]);
 
+    is($res->{msg_type}, 'new_account_virtual');
     is($res->{error}->{code},       'InvalidToken', 'wrong verification code');
     is($res->{new_account_virtual}, undef,          'NO account created');
 };
