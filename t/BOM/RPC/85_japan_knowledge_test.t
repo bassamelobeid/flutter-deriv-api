@@ -59,7 +59,7 @@ my %jp_client_details = (
     declare_not_fatca                           => 1,
 );
 
-my ($vr_client, $user, $token, $jp_loginid, $jp_client, $res);
+my ($vr_client, $user, $jp_loginid, $jp_client, $res);
 
 my $dt_mocked = Test::MockModule->new('DateTime');
 $dt_mocked->mock('day_of_week', sub { return 1 });
@@ -72,22 +72,17 @@ subtest 'create VRTJ & JP client' => sub {
         residence       => 'jp',
     });
 
-    $token = BOM::Platform::SessionCookie->new(
-        loginid => $vr_client->loginid,
-        email   => $vr_client->email,
-    )->token;
-
     # new JP client
     $res = BOM::RPC::v3::NewAccount::new_account_japan({
-        token => $token,
-        args  => \%jp_client_details
+        client => $vr_client,
+        args   => \%jp_client_details
     });
     $jp_loginid = $res->{client_id};
     like $jp_loginid, qr/^JP\d+$/, "JP client created";
 };
 
 subtest 'no test taken yet' => sub {
-    $res = BOM::RPC::v3::Accounts::get_settings({token => $token})->{jp_account_status};
+    $res = BOM::RPC::v3::Accounts::get_settings({client => $vr_client})->{jp_account_status};
     is $res->{status}, 'jp_knowledge_test_pending', 'jp_knowledge_test_pending';
     like $res->{next_test_epoch}, qr/^\d+$/, 'Test available time is epoch';
 };
@@ -95,8 +90,8 @@ subtest 'no test taken yet' => sub {
 my $test_epoch;
 subtest 'First Test taken: fail test' => sub {
     $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
-            token => $token,
-            args  => {
+            client => $vr_client,
+            args   => {
                 score  => 10,
                 status => 'fail'
             }});
@@ -105,7 +100,7 @@ subtest 'First Test taken: fail test' => sub {
     like $test_epoch, qr/^\d+$/, "test taken time is epoch";
 
     subtest 'get_settings' => sub {
-        $res = BOM::RPC::v3::Accounts::get_settings({token => $token})->{jp_account_status};
+        $res = BOM::RPC::v3::Accounts::get_settings({client => $vr_client})->{jp_account_status};
 
         is $res->{status},          'jp_knowledge_test_fail';
         is $res->{last_test_epoch}, $test_epoch, 'Correct last test taken time';
@@ -128,8 +123,8 @@ subtest 'First Test taken: fail test' => sub {
 
 subtest 'No test allow within same day' => sub {
     $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
-            token => $token,
-            args  => {
+            client => $vr_client,
+            args   => {
                 score  => 18,
                 status => 'pass'
             }});
@@ -155,8 +150,8 @@ subtest 'Test is allowed after 1 day' => sub {
 
     subtest 'Pass test' => sub {
         $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
-                token => $token,
-                args  => {
+                client => $vr_client,
+                args   => {
                     score  => 18,
                     status => 'pass'
                 }});
@@ -166,7 +161,7 @@ subtest 'Test is allowed after 1 day' => sub {
     };
 
     subtest 'get_settings' => sub {
-        $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
+        $res = BOM::RPC::v3::Accounts::get_settings({client => $vr_client});
         is $res->{jp_account_status}->{status}, 'jp_activation_pending';
     };
 
@@ -186,8 +181,8 @@ subtest 'Test is allowed after 1 day' => sub {
 
 subtest 'No test allowed after passing' => sub {
     $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
-            token => $token,
-            args  => {
+            client => $vr_client,
+            args   => {
                 score  => 18,
                 status => 'pass'
             }});
@@ -201,11 +196,6 @@ subtest 'Test not allowed for non Japanese Client' => sub {
             client_password => 'abc123',
             residence       => 'au',
         });
-
-        $token = BOM::Platform::SessionCookie->new(
-            loginid => $vr_client->loginid,
-            email   => $vr_client->email,
-        )->token;
 
         # new CR client
         my %cr_client_details = (
@@ -225,22 +215,22 @@ subtest 'Test not allowed for non Japanese Client' => sub {
         );
 
         $res = BOM::RPC::v3::NewAccount::new_account_real({
-            token => $token,
-            args  => \%cr_client_details
+            client => $vr_client,
+            args   => \%cr_client_details
         });
         my $cr_loginid = $res->{client_id};
         like($cr_loginid, qr/^CR\d+$/, "got CR client $cr_loginid");
     };
 
     subtest 'get_settings has NO jp_account_status' => sub {
-        $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
+        $res = BOM::RPC::v3::Accounts::get_settings({client => $vr_client});
         is $res->{jp_account_status}, undef, 'NO jp_account_status';
     };
 
     subtest 'Test not allowed for VRTC Client' => sub {
         $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
-                token => $token,
-                args  => {
+                client => $vr_client,
+                args   => {
                     score  => 18,
                     status => 'pass'
                 }});
@@ -255,23 +245,18 @@ subtest 'No test allowed for VRTJ, unless JP exists' => sub {
             client_password => 'abc123',
             residence       => 'jp',
         });
-
-        $token = BOM::Platform::SessionCookie->new(
-            loginid => $vr_client->loginid,
-            email   => $vr_client->email,
-        )->token;
     }
-    'new VRTJ client & token';
+    'new VRTJ client';
 
     subtest 'get_settings has NO jp_account_status' => sub {
-        $res = BOM::RPC::v3::Accounts::get_settings({token => $token});
+        $res = BOM::RPC::v3::Accounts::get_settings({client => $vr_client});
         is $res->{jp_account_status}, undef, 'NO jp_account_status';
     };
 
     subtest 'Test not allowed, unless upgraded to JP client' => sub {
         $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
-                token => $token,
-                args  => {
+                client => $vr_client,
+                args   => {
                     score  => 18,
                     status => 'pass'
                 }});

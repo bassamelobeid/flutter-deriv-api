@@ -154,13 +154,7 @@ sub verify_email {
 sub new_account_real {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
 
     my $response  = 'new_account_real';
     my $error_map = BOM::Platform::Locale::error_map();
@@ -205,13 +199,7 @@ sub new_account_real {
 sub new_account_maltainvest {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
 
     my $response  = 'new_account_maltainvest';
     my $args      = $params->{args};
@@ -259,13 +247,7 @@ sub new_account_maltainvest {
 sub new_account_japan {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
 
     my $response  = 'new_account_japan';
     my $error_map = BOM::Platform::Locale::error_map();
