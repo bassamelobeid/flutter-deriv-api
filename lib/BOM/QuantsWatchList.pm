@@ -29,7 +29,7 @@ sub update_details_for {
         delete $current->{$client_loginid};
     }
 
-    BOM::Platform::Runtime->instance->app_config->quants->internal->watch_list($current);
+    BOM::Platform::Runtime->instance->app_config->quants->internal->watchlist($current);
     return BOM::Platform::Runtime->instance->app_config->save_dynamic;
 }
 
