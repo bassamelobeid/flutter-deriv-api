@@ -3,6 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::FailWarnings;
+use Test::Warn;
 use File::Slurp;
 use List::Util qw(max min);
 use Scalar::Util qw(looks_like_number);
@@ -58,7 +59,10 @@ subtest 'what happens to an undefined symbol name' => sub {
     is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
     is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
 
-    is($symbol_undefined->market->name,     'config',   'an undefined symbol has correct market');
+    warning_like {
+        is($symbol_undefined->market->name, 'config', 'an undefined symbol has correct market');
+    }
+    [qr/^Unknown symbol/], "Expected warning is thrown";
     is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
     is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
     is($symbol_undefined->display_decimals, 4,          'an undefined symbol has correct display_decimals');
@@ -284,6 +288,30 @@ subtest 'sub market' => sub {
     }
 };
 
+subtest 'is_OTC' => sub {
+    my @OTC_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(market => ['forex', 'commodities', 'voldix']);
+    push @OTC_symbols,
+        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market    => 'indices',
+        submarket => ['otc_index', 'smart_index'],
+        );
+    foreach my $symbol (@OTC_symbols) {
+        my $underlying = BOM::Market::Underlying->new($symbol);
+
+        is($underlying->submarket->is_OTC, 1, "$symbol submarket is OTC");
+    }
+    my @non_OTC_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(market => ['stocks']);
+    push @non_OTC_symbols,
+        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market    => 'indices',
+        submarket => ['asia_oceania', 'europe_africa', 'americas', 'middle_east']);
+    foreach my $symbol (@non_OTC_symbols) {
+        my $underlying = BOM::Market::Underlying->new($symbol);
+
+        is($underlying->submarket->is_OTC, 0, "$symbol submarket is non OTC");
+
+    }
+};
 subtest 'tick_at' => sub {
     # Due to caching/delays, even tho we do have a tick for some previous second, if that is the last tick
     # received, we cannot guarantee that there won't be a "closer" one until the next tick is written and

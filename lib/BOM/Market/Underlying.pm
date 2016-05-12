@@ -17,11 +17,9 @@ my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 use open qw[ :encoding(UTF-8) ];
 use BOM::Market::Types;
 
-use Carp;
 use List::MoreUtils qw( any );
 use List::Util qw( first max min);
 use Scalar::Util qw( looks_like_number );
-use BOM::Utility::Log4perl qw( get_logger );
 use Memoize;
 use Time::HiRes;
 use Finance::Asset;
@@ -68,7 +66,7 @@ sub new {
     $args = {symbol => $args} if (not ref $args);
     my $symbol = $args->{symbol};
 
-    croak 'No symbol provided to constructor.' if (not $symbol);
+    die 'No symbol provided to constructor.' if (not $symbol);
 
     delete $args->{for_date}
         if (exists $args->{for_date} and not defined $args->{for_date});
@@ -439,14 +437,10 @@ around BUILDARGS => sub {
         if ($params) {
             @$params_ref{keys %$params} = @$params{keys %$params};
             $params_ref->{inverted} = 1;
-        } else {
-            get_logger()->debug("Forex underlying does not exist in yml file [" . $params_ref->{symbol} . "]");
         }
         $params_ref->{symbol}          = $requested_symbol;
         $params_ref->{asset}           = $asset;
         $params_ref->{quoted_currency} = $quoted;
-    } elsif ($params_ref->{symbol} ne 'HEARTB') {
-        get_logger()->debug("Underlying does not exist in yml file [" . $params_ref->{symbol} . "]");
     }
 
     # Pre-convert to seconds.  let underlyings.yml have easy to read.
@@ -553,7 +547,7 @@ sub _build_market {
         $market = BOM::Market::Registry->instance->get('config');
     } elsif (length($symbol) >= 15) {
         $market = BOM::Market::Registry->instance->get('config');
-        get_logger()->warn("Unknown symbol, symbol[$symbol]");
+        warn("Unknown symbol, symbol[$symbol]");
     }
 
     return $market;
@@ -670,7 +664,7 @@ sub _build_calendar {
     $self->_exchange_refreshed(time);
     return Quant::Framework::TradingCalendar->new(
         $self->exchange_name,
-        BOM::System::Chronicle::get_chronicle_reader(),
+        BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         BOM::Platform::Context::request()->language,
         $self->for_date
     );
@@ -680,7 +674,7 @@ has exchange => (
     is         => 'ro',
     isa        => 'Quant::Framework::Exchange',
     lazy_build => 1,
-    handles    => ['is_OTC',]);
+);
 
 sub _build_exchange {
     my $self = shift;
@@ -852,7 +846,7 @@ sub last_licensed_display_epoch {
     } elsif ($lic eq 'chartonly') {
         return 0;
     } else {
-        confess "don't know how to deal with '$lic' license of " . $self->symbol;
+        die "don't know how to deal with '$lic' license of " . $self->symbol;
     }
 }
 
@@ -876,7 +870,7 @@ sub _build_quoted_currency {
         return Quant::Framework::Currency->new({
             symbol           => $self->quoted_currency_symbol,
             for_date         => $self->for_date,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         });
     }
@@ -902,7 +896,7 @@ sub _build_asset {
     return $which->new({
         symbol           => $self->asset_symbol,
         for_date         => $self->for_date,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
 }
@@ -1086,7 +1080,7 @@ sub dividend_rate_for {
     if ($self->market->name eq 'volidx') {
         my $div = Quant::Framework::Dividend->new({
             symbol           => $self->symbol,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         });
         my @rates = values %{$div->rates};
@@ -1124,7 +1118,7 @@ sub get_discrete_dividend_for_period {
     my %valid_dividends;
     my $discrete_points = Quant::Framework::Dividend->new(
         symbol           => $self->asset->symbol,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     )->discrete_points;
 
@@ -1274,7 +1268,7 @@ sub fullfeed_file {
         $date = $1 . '-' . ucfirst(lc($2)) . '-' . $3;
     }    #convert 10-JAN-05 to 10-Jan-05
     else {
-        croak 'Bad date for fullfeed_file';
+        die 'Bad date for fullfeed_file';
     }
 
     my $folder = $override_folder || $self->combined_folder;
@@ -1306,7 +1300,7 @@ sub is_in_quiet_period {
         map {
             $_ => Quant::Framework::TradingCalendar->new(
                 $_,
-                BOM::System::Chronicle::get_chronicle_reader(),
+                BOM::System::Chronicle::get_chronicle_reader($self->for_date),
                 BOM::Platform::Context::request()->language,
                 $self->for_date
                 )
@@ -1617,7 +1611,7 @@ sub get_ohlc_data_for_period {
     my $end_date   = Date::Utility->new($end);
 
     if ($end_date->epoch < $start_date->epoch) {
-        confess "[$0][get_ohlc_data_for_period] start_date > end_date ("
+        die "[$0][get_ohlc_data_for_period] start_date > end_date ("
             . $start_date->datetime . ' > '
             . $end_date->datetime
             . ") with input: $start > $end";
@@ -1754,7 +1748,6 @@ Returns,
 
 =head2 ohlc_daily_open
 
-Some underlying, eg: RDYANG, RDYIN open at 12GMT. The open & close cross over GMT day.
 Daily ohlc from feed.ohlc_daily table can't be used, as there are computed based on GMT day.
 In this case, daily ohlc need to be computed from feed.ohlc_hourly table, based on actual market open time
 
@@ -2032,7 +2025,7 @@ sub _build_corporate_actions {
 
     my $corp = Quant::Framework::CorporateAction->new(
         symbol           => $self->symbol,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
 
     my $available_actions = $corp->actions;
@@ -2087,7 +2080,7 @@ sub _build_corporate_actions {
         }
 
         if (scalar @{$order->{first}} > 1 or scalar @{$order->{last}} > 1) {
-            croak 'Could not determine order of corporate actions on '
+            die 'Could not determine order of corporate actions on '
                 . $self->system_symbol
                 . '.  Have ['
                 . scalar @{$order->{first}}
