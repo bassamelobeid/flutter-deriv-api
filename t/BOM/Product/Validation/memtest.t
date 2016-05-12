@@ -25,7 +25,7 @@ my @underlyings = map { BOM::Market::Underlying->new($_) } map { (get_offerings_
 
 # just do for everything
 my $all                     = Finance::Asset->all_parameters;
-my @market_data_underlyings = map { BOM::Market::Underlying->new($_) } keys %$all;
+my @market_data_underlyings = map { BOM::Market::Underlying->new({symbol => $_, for_date => $now}) } keys %$all;
 my @exchanges               = map { Finance::Asset->get_parameters_for($_->symbol)->{exchange_name} } @market_data_underlyings;
 my %known_surfaces          = map { $_ => 1 } qw(moneyness delta);
 my %volsurfaces =
@@ -84,6 +84,14 @@ my %correlations = map {
     } grep {
     $_->symbol !~ /frx/
     } @market_data_underlyings;
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'correlation_matrix',
+    {
+        symbol       => 'indices',
+        correlations => \%correlations,
+        recorded_date=> Date::Utility->new->minus_time_interval('1d'),
+    });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',

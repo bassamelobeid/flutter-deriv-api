@@ -17,7 +17,7 @@ use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::Market::Data::Tick;
-use BOM::MarketData::CorrelationMatrix;
+use Quant::Framework::CorrelationMatrix;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise;
 use BOM::Product::Types;
@@ -1887,15 +1887,18 @@ sub _build_rho {
             $w * (($atm_vols->{forqqq}**2 - $atm_vols->{fordom}**2 - $atm_vols->{domqqq}**2) / (2 * $atm_vols->{fordom} * $atm_vols->{domqqq}));
     } elsif ($self->underlying->market->name eq 'indices') {
         my $construct_args = {
-            symbol   => $self->underlying->market->name,
-            for_date => $self->underlying->for_date
+            symbol           => $self->underlying->market->name,
+            for_date         => $self->underlying->for_date,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->underlying->for_date),
         };
-        my $rho_data = BOM::MarketData::CorrelationMatrix->new($construct_args);
+        my $rho_data = Quant::Framework::CorrelationMatrix->new($construct_args);
 
         my $index           = $self->underlying->asset_symbol;
         my $payout_currency = $self->currency;
         my $tiy             = $self->timeinyears->amount;
-        $rhos{fd_dq} = $rho_data->correlation_for($index, $payout_currency, $tiy);
+        my $correlation_u   = BOM::Market::Underlying->new($index);
+
+        $rhos{fd_dq} = $rho_data->correlation_for($index, $payout_currency, $tiy, $correlation_u->expiry_conventions);
     }
 
     return \%rhos;
