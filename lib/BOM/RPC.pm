@@ -9,6 +9,7 @@ use Time::HiRes;
 
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
+use BOM::Platform::Client;
 use BOM::Database::Rose::DB;
 use BOM::Database::Model::OAuth;
 use BOM::RPC::v3::Utility;
@@ -51,7 +52,7 @@ sub apply_usergroup {
 }
 
 sub register {
-    my ($method, $code) = @_;
+    my ($method, $code, $require_auth) = @_;
     return MojoX::JSON::RPC::Service->new->register(
         $method,
         sub {
@@ -64,6 +65,7 @@ sub register {
             if ($token_details and exists $token_details->{loginid} and $token_details->{loginid} =~ /^(\D+)\d+$/) {
                 $args->{broker_code} = $1;
             }
+            $params->{token_details} = $token_details;
             $args->{language} = $params->{language} if ($params->{language});
 
             if (exists $params->{server_name}) {
@@ -72,6 +74,17 @@ sub register {
 
             my $r = BOM::Platform::Context::Request->new($args);
             BOM::Platform::Context::request($r);
+
+            if ($require_auth) {
+                return BOM::RPC::v3::Utility::invalid_token_error()
+                    unless $token_details and exists $token_details->{loginid};
+
+                my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
+                if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+                    return $auth_error;
+                }
+                $params->{client} = $client;
+            }
 
             goto &$code;
         });
@@ -106,68 +119,88 @@ sub startup {
         $log->info(@_);
     };
 
+    my @services = (
+        ['residence_list', \&BOM::RPC::v3::Static::residence_list],
+        ['states_list',    \&BOM::RPC::v3::Static::states_list],
+        ['website_status', \&BOM::RPC::v3::Static::website_status],
+
+        ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
+
+        ['buy', \&BOM::RPC::v3::Transaction::buy],
+        ['sell', \&BOM::RPC::v3::Transaction::sell, 1],
+
+        ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
+        ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
+        ['active_symbols',        \&BOM::RPC::v3::MarketDiscovery::active_symbols],
+        ['get_corporate_actions', \&BOM::RPC::v3::MarketDiscovery::get_corporate_actions],
+
+        ['contracts_for', \&BOM::RPC::v3::Offerings::contracts_for],
+
+        ['authorize', \&BOM::RPC::v3::Authorize::authorize],
+        ['logout',    \&BOM::RPC::v3::Authorize::logout],
+
+        ['get_limits',                \&BOM::RPC::v3::Cashier::get_limits,                1],
+        ['paymentagent_list',         \&BOM::RPC::v3::Cashier::paymentagent_list],
+        ['paymentagent_withdraw',     \&BOM::RPC::v3::Cashier::paymentagent_withdraw,     1],
+        ['paymentagent_transfer',     \&BOM::RPC::v3::Cashier::paymentagent_transfer,     1],
+        ['transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts, 1],
+        ['cashier',                   \&BOM::RPC::v3::Cashier::cashier,                   1],
+        ['topup_virtual',             \&BOM::RPC::v3::Cashier::topup_virtual,             1],
+
+        ['payout_currencies',       \&BOM::RPC::v3::Accounts::payout_currencies],
+        ['landing_company',         \&BOM::RPC::v3::Accounts::landing_company],
+        ['landing_company_details', \&BOM::RPC::v3::Accounts::landing_company_details],
+
+        ['statement',                \&BOM::RPC::v3::Accounts::statement,                1],
+        ['profit_table',             \&BOM::RPC::v3::Accounts::profit_table,             1],
+        ['get_account_status',       \&BOM::RPC::v3::Accounts::get_account_status,       1],
+        ['change_password',          \&BOM::RPC::v3::Accounts::change_password,          1],
+        ['cashier_password',         \&BOM::RPC::v3::Accounts::cashier_password,         1],
+        ['reset_password',           \&BOM::RPC::v3::Accounts::reset_password],
+        ['get_settings',             \&BOM::RPC::v3::Accounts::get_settings,             1],
+        ['set_settings',             \&BOM::RPC::v3::Accounts::set_settings,             1],
+        ['get_self_exclusion',       \&BOM::RPC::v3::Accounts::get_self_exclusion,       1],
+        ['set_self_exclusion',       \&BOM::RPC::v3::Accounts::set_self_exclusion,       1],
+        ['balance',                  \&BOM::RPC::v3::Accounts::balance,                  1],
+        ['api_token',                \&BOM::RPC::v3::Accounts::api_token,                1],
+        ['login_history',            \&BOM::RPC::v3::Accounts::login_history,            1],
+        ['set_account_currency',     \&BOM::RPC::v3::Accounts::set_account_currency,     1],
+        ['tnc_approval',             \&BOM::RPC::v3::Accounts::tnc_approval,             1],
+        ['set_financial_assessment', \&BOM::RPC::v3::Accounts::set_financial_assessment, 1],
+        ['get_financial_assessment', \&BOM::RPC::v3::Accounts::get_financial_assessment, 1],
+        ['reality_check',            \&BOM::RPC::v3::Accounts::reality_check,            1],
+
+        ['verify_email', \&BOM::RPC::v3::NewAccount::verify_email],
+
+        ['send_ask', \&BOM::RPC::v3::Contract::send_ask],
+        ['get_bid',  \&BOM::RPC::v3::Contract::get_bid],
+        ['get_contract_details', \&BOM::RPC::v3::Contract::get_contract_details, 1],
+
+        ['new_account_real',        \&BOM::RPC::v3::NewAccount::new_account_real,         1],
+        ['new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest,  1],
+        ['new_account_japan',       \&BOM::RPC::v3::NewAccount::new_account_japan,        1],
+        ['new_account_virtual',     \&BOM::RPC::v3::NewAccount::new_account_virtual],
+        ['jp_knowledge_test',       \&BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test, 1],
+
+        ['portfolio',              \&BOM::RPC::v3::PortfolioManagement::portfolio,              1],
+        ['sell_expired',           \&BOM::RPC::v3::PortfolioManagement::sell_expired,           1],
+        ['proposal_open_contract', \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract, 1],
+
+        ['app_register', \&BOM::RPC::v3::App::register,   1],
+        ['app_list',     \&BOM::RPC::v3::App::list,       1],
+        ['app_get',      \&BOM::RPC::v3::App::get,        1],
+        ['app_delete',   \&BOM::RPC::v3::App::delete,     1],
+        ['oauth_apps',   \&BOM::RPC::v3::App::oauth_apps, 1],
+
+    );
+    my $services = {};
+    foreach my $srv (@services) {
+        $services->{'/' . $srv->[0]} = register(@$srv);
+    }
+
     $app->plugin(
         'json_rpc_dispatcher' => {
-            services => {
-                '/residence_list'            => register('residence_list',            \&BOM::RPC::v3::Static::residence_list),
-                '/states_list'               => register('states_list',               \&BOM::RPC::v3::Static::states_list),
-                '/website_status'            => register('website_status',            \&BOM::RPC::v3::Static::website_status),
-                '/ticks_history'             => register('ticks_history',             \&BOM::RPC::v3::TickStreamer::ticks_history),
-                '/buy'                       => register('buy',                       \&BOM::RPC::v3::Transaction::buy),
-                '/sell'                      => register('sell',                      \&BOM::RPC::v3::Transaction::sell),
-                '/trading_times'             => register('trading_times',             \&BOM::RPC::v3::MarketDiscovery::trading_times),
-                '/asset_index'               => register('asset_index',               \&BOM::RPC::v3::MarketDiscovery::asset_index),
-                '/active_symbols'            => register('active_symbols',            \&BOM::RPC::v3::MarketDiscovery::active_symbols),
-                '/contracts_for'             => register('contracts_for',             \&BOM::RPC::v3::Offerings::contracts_for),
-                '/authorize'                 => register('authorize',                 \&BOM::RPC::v3::Authorize::authorize),
-                '/logout'                    => register('logout',                    \&BOM::RPC::v3::Authorize::logout),
-                '/get_limits'                => register('get_limits',                \&BOM::RPC::v3::Cashier::get_limits),
-                '/tnc_approval'              => register('tnc_approval',              \&BOM::RPC::v3::Accounts::tnc_approval),
-                '/paymentagent_list'         => register('paymentagent_list',         \&BOM::RPC::v3::Cashier::paymentagent_list),
-                '/paymentagent_withdraw'     => register('paymentagent_withdraw',     \&BOM::RPC::v3::Cashier::paymentagent_withdraw),
-                '/paymentagent_transfer'     => register('paymentagent_transfer',     \&BOM::RPC::v3::Cashier::paymentagent_transfer),
-                '/transfer_between_accounts' => register('transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts),
-                '/cashier'                   => register('cashier',                   \&BOM::RPC::v3::Cashier::cashier),
-                '/topup_virtual'             => register('topup_virtual',             \&BOM::RPC::v3::Cashier::topup_virtual),
-                '/payout_currencies'         => register('payout_currencies',         \&BOM::RPC::v3::Accounts::payout_currencies),
-                '/landing_company'           => register('landing_company',           \&BOM::RPC::v3::Accounts::landing_company),
-                '/landing_company_details'   => register('landing_company_details',   \&BOM::RPC::v3::Accounts::landing_company_details),
-                '/statement'                 => register('statement',                 \&BOM::RPC::v3::Accounts::statement),
-                '/profit_table'              => register('profit_table',              \&BOM::RPC::v3::Accounts::profit_table),
-                '/get_account_status'        => register('get_account_status',        \&BOM::RPC::v3::Accounts::get_account_status),
-                '/change_password'           => register('change_password',           \&BOM::RPC::v3::Accounts::change_password),
-                '/cashier_password'          => register('cashier_password',          \&BOM::RPC::v3::Accounts::cashier_password),
-                '/reset_password'            => register('reset_password',            \&BOM::RPC::v3::Accounts::reset_password),
-                '/get_settings'              => register('get_settings',              \&BOM::RPC::v3::Accounts::get_settings),
-                '/set_settings'              => register('set_settings',              \&BOM::RPC::v3::Accounts::set_settings),
-                '/get_self_exclusion'        => register('get_self_exclusion',        \&BOM::RPC::v3::Accounts::get_self_exclusion),
-                '/set_self_exclusion'        => register('set_self_exclusion',        \&BOM::RPC::v3::Accounts::set_self_exclusion),
-                '/balance'                   => register('balance',                   \&BOM::RPC::v3::Accounts::balance),
-                '/api_token'                 => register('api_token',                 \&BOM::RPC::v3::Accounts::api_token),
-                '/login_history'             => register('login_history',             \&BOM::RPC::v3::Accounts::login_history),
-                '/set_account_currency'      => register('set_account_currency',      \&BOM::RPC::v3::Accounts::set_account_currency),
-                '/set_financial_assessment'  => register('set_financial_assessment',  \&BOM::RPC::v3::Accounts::set_financial_assessment),
-                '/get_financial_assessment'  => register('get_financial_assessment',  \&BOM::RPC::v3::Accounts::get_financial_assessment),
-                '/reality_check'             => register('reality_check',             \&BOM::RPC::v3::Accounts::reality_check),
-                '/verify_email'              => register('verify_email',              \&BOM::RPC::v3::NewAccount::verify_email),
-                '/send_ask'                  => register('send_ask',                  \&BOM::RPC::v3::Contract::send_ask),
-                '/get_bid'                   => register('get_bid',                   \&BOM::RPC::v3::Contract::get_bid),
-                '/get_corporate_actions'     => register('get_corporate_actions',     \&BOM::RPC::v3::MarketDiscovery::get_corporate_actions),
-                '/get_contract_details'      => register('get_contract_details',      \&BOM::RPC::v3::Contract::get_contract_details),
-                '/new_account_real'          => register('new_account_real',          \&BOM::RPC::v3::NewAccount::new_account_real),
-                '/new_account_maltainvest'   => register('new_account_maltainvest',   \&BOM::RPC::v3::NewAccount::new_account_maltainvest),
-                '/new_account_japan'         => register('new_account_japan',         \&BOM::RPC::v3::NewAccount::new_account_japan),
-                '/new_account_virtual'       => register('new_account_virtual',       \&BOM::RPC::v3::NewAccount::new_account_virtual),
-                '/jp_knowledge_test'         => register('jp_knowledge_test',         \&BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test),
-                '/portfolio'                 => register('portfolio',                 \&BOM::RPC::v3::PortfolioManagement::portfolio),
-                '/sell_expired'              => register('sell_expired',              \&BOM::RPC::v3::PortfolioManagement::sell_expired),
-                '/proposal_open_contract'    => register('proposal_open_contract',    \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract),
-                '/app_register'              => register('app_register',              \&BOM::RPC::v3::App::register),
-                '/app_list'                  => register('app_list',                  \&BOM::RPC::v3::App::list),
-                '/app_get'                   => register('app_get',                   \&BOM::RPC::v3::App::get),
-                '/app_delete'                => register('app_delete',                \&BOM::RPC::v3::App::delete),
-                '/oauth_apps'                => register('oauth_apps',                \&BOM::RPC::v3::App::oauth_apps),
-            },
+            services          => $services,
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
                 my $path = $dispatcher->req->url->path;
