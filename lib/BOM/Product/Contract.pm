@@ -2841,7 +2841,7 @@ sub _build_maximum_payout_limit {
 sub _build_risk_type {
     my $self = shift;
 
-    my @risk_order   = qw(extreme_risk high_righ medium_risk low_risk);
+    my @risk_order   = qw(extreme_risk high_risk medium_risk low_risk);
     my $curr         = $self->currency;
     my $fb           = get_offerings_flyby;
     my $risk_profile = BOM::Platform::Static::Config::quants->{risk_profile};
