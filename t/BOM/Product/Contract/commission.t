@@ -8,6 +8,16 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Test::More tests => 3;
 use Test::NoWarnings;
 use Math::Util::CalculatedValue::Validatable;
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use Date::Utility;
+
+my $now = Date::Utility->new;
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => 'USD',
+        recorded_date => $now
+    });
 
 subtest 'payout' => sub {
     my $mocked           = Test::MockModule->new('BOM::Product::Contract::Call');
@@ -33,26 +43,20 @@ subtest 'payout' => sub {
 };
 
 subtest 'stake' => sub {
-    my $mocked          = Test::MockModule->new('BOM::Product::Contract::Call');
-    my $stake           = 10;
-    my $ask_probability = 0.1;
-    my $payout          = $stake / $ask_probability;
+    my $mocked            = Test::MockModule->new('BOM::Product::Contract::Call');
+    my $stake             = 10;
+    my $theo_probability  = 0.0998;
+    my $commission_markup = 0.0002;
+    my $payout            = $stake / 0.1;
+    $mocked->mock('_calculate_payout', $payout);
+    $mocked->mock('base_commission', sub { 0.0001 });
     $mocked->mock(
-        'ask_probability',
-        Math::Util::CalculatedValue::Validatable->new({
-                name        => 'ask_probability',
-                description => 'test ask probability',
-                set_by      => 'test',
-                base_amount => $ask_probability,
-            }));
-    my $min_total_markup = 0.02 / $payout;
-    $mocked->mock(
-        'total_markup',
+        'risk_markup',
         Math::Util::CalculatedValue::Validatable->new({
                 name        => 'total_markup',
                 description => 'test total markup',
                 set_by      => 'test',
-                base_amount => $min_total_markup - 0.0001,
+                base_amount => 0,
             }));
     my $c = produce_contract({
         bet_type    => 'CALL',

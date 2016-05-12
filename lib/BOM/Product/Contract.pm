@@ -1225,6 +1225,12 @@ sub _build_commission_multiplier_slope {
     return ($commission_max_multiplier - $commission_base_multiplier) / ($commission_max_std - $commission_min_std);
 }
 
+sub _calculate_payout {
+    my ($self, $commission) = @_;
+
+    return $self->ask_price / ($self->theo_probability->amount + ($self->risk_markup->amount + $commission) * $self->commission_adjustment->amount);
+}
+
 sub _build_payout {
     my $self = shift;
 
@@ -1234,12 +1240,13 @@ sub _build_payout {
     my $ask_price       = $self->ask_price;
 
     # payout calculated with base commission.
-    my $initial_payout = $ask_price / ($theo_prob + $risk_markup + $base_commission);
+    my $initial_payout = $self->_calculate_payout($base_commission);
     if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
         my $comm              = $base_commission;
-        my $payout            = $ask_price / ($theo_prob + $risk_markup + $comm);
-        my $dollar_commission = $payout * $self->risk_markup->amount * $comm * $self->commission_adjustment->amount;
+        my $payout            = $initial_payout;
+        my $dollar_commission = $payout * (($risk_markup + $comm) * $self->commission_adjustment->amount);
 
+        # makes sure we get a minimum of 2 cents
         if ($dollar_commission < 0.02) {
             $payout -= (0.02 - $dollar_commission);
         }
@@ -1248,15 +1255,14 @@ sub _build_payout {
     }
 
     # payout calculated with 2 times base commission.
-    $initial_payout = $ask_price / ($theo_prob + $risk_markup + $base_commission * 2);
+    $initial_payout = $self->_calculate_payout($base_commission * 2);
     if ($self->commission_multiplier($initial_payout) == $commission_max_multiplier) {
-        my $comm = $base_commission * $commission_max_multiplier;
-        return roundnear(0.01, $ask_price / ($theo_prob + $risk_markup + $comm));
+        return roundnear(0.01, $initial_payout);
     }
 
     my $slope  = $self->commission_multiplier_slope;
     my $a      = $base_commission * $slope * sqrt($theo_prob * (1 - $theo_prob));
-    my $b      = $theo_prob + $self->risk_markup->amount + $base_commission - $base_commission * $commission_min_std * $slope;
+    my $b      = $theo_prob + $risk_markup + $base_commission - $base_commission * $commission_min_std * $slope;
     my $c      = -$ask_price;
     my $payout = 0;
     for my $w (1, -1) {
@@ -1267,8 +1273,7 @@ sub _build_payout {
         }
     }
 
-    my $comm = $base_commission * $self->commission_multiplier($payout);
-    $payout = max($ask_price, $ask_price / ($theo_prob + $risk_markup + $comm));
+    $payout = max($ask_price, $self->_calculate_payout($base_commission * $self->commission_multiplier($payout)));
     return roundnear(0.01, $payout);
 }
 
@@ -1458,7 +1463,12 @@ sub _build_pricing_vol {
 
     my $vol;
     my $pen = $self->pricing_engine_name;
-    if ($pen =~ /VannaVolga/) {
+    if ($self->volsurface->type eq 'phased') {
+        $vol = $self->volsurface->get_volatility({
+            start_epoch => $self->effective_start->epoch,
+            end_epoch   => $self->date_expiry->epoch
+        });
+    } elsif ($pen =~ /VannaVolga/) {
         $vol = $self->volsurface->get_volatility({
             days  => $self->timeindays->amount,
             delta => 50
@@ -1851,7 +1861,12 @@ sub _market_data {
             my ($args, $surface_data) = @_;
             # if there's new surface data, calculate vol from that.
             my $vol;
-            if ($surface_data) {
+            if ($volsurface->type eq 'phased') {
+                $vol = $volsurface->get_volatility({
+                    start_epoch => $effective_start->epoch,
+                    end_epoch   => $date_expiry->epoch
+                });
+            } elsif ($surface_data) {
                 my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
                 $vol = $new_volsurface_obj->get_volatility($args);
             } else {
@@ -1862,8 +1877,16 @@ sub _market_data {
         },
         get_atm_volatility => sub {
             my $args = shift;
-            $args->{delta} = 50;
-            my $vol = $volsurface->get_volatility($args);
+            my $vol;
+            if ($volsurface->type eq 'phased') {
+                $vol = $volsurface->get_volatility({
+                    start_epoch => $effective_start->epoch,
+                    end_epoch   => $date_expiry->epoch
+                });
+            } else {
+                $args->{delta} = 50;
+                $vol = $volsurface->get_volatility($args);
+            }
 
             return $vol;
         },
@@ -2824,7 +2847,7 @@ sub confirm_validity {
     my @validation_methods =
         qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed _validate_stake _validate_payout);
 
-    push @validation_methods, '_validate_volsurface' if (not($self->volsurface->type eq 'flat'));
+    push @validation_methods, '_validate_volsurface' if (not($self->volsurface->type eq 'flat' or $self->volsurface->type eq 'phased'));
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) if not $self->underlying->always_available;
 
     foreach my $method (@validation_methods) {
