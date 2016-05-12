@@ -11,7 +11,7 @@ addons:
     postgresql: "9.3"
 cache: apt
 before_install:
-    - git clone https://4567a7cce4d5523d146047ec96cbb2a6204fd253@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone https://8d1fe00a1db5e23412e4e316bfc1324d7f662aac@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
     - dpkg -l | grep postgres
     - pg_lsclusters
