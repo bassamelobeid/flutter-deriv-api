@@ -497,16 +497,6 @@ subtest 'all methods on a selection of underlyings' => sub {
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig_buy);
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades($orig_trades);
 
-    my $orig_newly_added = BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added;
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added([]);
-    is($EURUSD->is_newly_added, 0, 'Underlying is not newly_added');
-
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added(['frxEURUSD']);
-    $EURUSD->clear_is_newly_added;
-    is($EURUSD->is_newly_added, 1, 'Underlying is now newly_added');
-
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added($orig_newly_added);
-
     my $eu_symbol       = $EURUSD->symbol;
     my $looks_like_euff = qr%$eu_symbol/\d{1,2}-[A-Z]{1}[a-z]{2}-\d{1,2}(?:-fullfeed\.csv|\.fullfeed)%;
 

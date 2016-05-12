@@ -1200,7 +1200,7 @@ has '_recheck_appconfig' => (
     default => sub { return time; },
 );
 
-my $appconfig_attrs = [qw(is_newly_added is_buying_suspended is_trading_suspended)];
+my $appconfig_attrs = [qw(is_buying_suspended is_trading_suspended)];
 has $appconfig_attrs => (
     is         => 'ro',
     lazy_build => 1,
@@ -1219,12 +1219,6 @@ before $appconfig_attrs => sub {
     }
 
 };
-
-sub _build_is_newly_added {
-    my $self = shift;
-
-    return grep { $_ eq $self->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added});
-}
 
 =head2 is_buying_suspended
 
