@@ -6,7 +6,7 @@ use warnings;
 use Format::Util::Numbers qw(roundnear);
 use Test::MockModule;
 use BOM::Product::ContractFactory qw(produce_contract);
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::NoWarnings;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
