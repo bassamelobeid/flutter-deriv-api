@@ -13,15 +13,14 @@ use BOM::Test::Data::Utility::UnitTestMarketData;
 use Quant::Framework::TradingCalendar;
 
 #tests related to underlying-exchange are moved here because exchange is moved to Q::F
-my $date = Date::Utility->new('2013-12-01');    # first of December 2014
-my $trade_start = Date::Utility->new('30-Mar-13');
-my $sunday      = Date::Utility->new('7-Apr-13');
-my $trade_end   = Date::Utility->new('8-Apr-13');
-my $trade_end2  = Date::Utility->new('9-Apr-13');    # Just to avoid memoization on weighted_days_in_period
+my $date                 = Date::Utility->new('2013-12-01');    # first of December 2014
+my $trade_start          = Date::Utility->new('30-Mar-13');
+my $sunday               = Date::Utility->new('7-Apr-13');
+my $trade_end            = Date::Utility->new('8-Apr-13');
+my $trade_end2           = Date::Utility->new('9-Apr-13');      # Just to avoid memoization on weighted_days_in_period
 my $friday               = Date::Utility->new('2016-03-25');
 my $normal_thursday      = Date::Utility->new('2016-03-24');
 my $early_close_thursday = Date::Utility->new('2016-12-24');
-
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
@@ -76,15 +75,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 
 
 my $chronicle_r = BOM::System::Chronicle::get_chronicle_reader($date);
 
-my $LSE             = Quant::Framework::TradingCalendar->new('LSE', $chronicle_r, 'EN', $date);
+my $LSE = Quant::Framework::TradingCalendar->new('LSE', $chronicle_r, 'EN', $date);
 my $ul_LSE = BOM::Market::Underlying->new('FTSE');
 is $ul_LSE->exchange->symbol, $LSE->symbol, "This underlying's exchange is what we expect";
 is $ul_LSE->closed_weight, 0.55, 'Sanity check so that our weighted math matches :-)';
-is $ul_LSE->weighted_days_in_period($trade_start, $trade_end), 7.2,
-   'Weighted period calculated correctly: 5 trading days, plus 4 weekends/holidays';
+is $ul_LSE->weighted_days_in_period($trade_start, $trade_end), 7.2, 'Weighted period calculated correctly: 5 trading days, plus 4 weekends/holidays';
 
-is $ul_LSE->weighted_days_in_period($trade_start, $trade_end2), 8.2,
-   'Weighted period calculated correctly: 6 trading days, plus 4 weekends/holidays';
+is $ul_LSE->weighted_days_in_period($trade_start, $trade_end2), 8.2, 'Weighted period calculated correctly: 6 trading days, plus 4 weekends/holidays';
 
 # Gold has the same exchange as FOREX.
 # Yng Shan is planning to create a commodities exchange in the near future.
@@ -92,9 +89,9 @@ is $ul_LSE->weighted_days_in_period($trade_start, $trade_end2), 8.2,
 my $gold = BOM::Market::Underlying->new('frxXAUUSD');
 is $gold->calendar->standard_closing_on($friday)->epoch, $friday->plus_time_interval('21h')->epoch, 'standard close for friday is 21:00 GMT';
 is $gold->calendar->standard_closing_on($normal_thursday)->epoch, $normal_thursday->plus_time_interval('23h59m59s')->epoch,
-   'normal standard closing is 23:59:59 GMT';
+    'normal standard closing is 23:59:59 GMT';
 is $gold->calendar->standard_closing_on($early_close_thursday)->epoch, $early_close_thursday->plus_time_interval('23h59m59s')->epoch,
-   'normal standard closing is 23:59:59 GMT';
+    'normal standard closing is 23:59:59 GMT';
 
 done_testing;
 1;

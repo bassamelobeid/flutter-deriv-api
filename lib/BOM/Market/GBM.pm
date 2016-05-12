@@ -16,7 +16,6 @@ use strict;
 use warnings;
 use feature "state";
 
-use Carp qw( confess );
 use List::MoreUtils qw( all );
 use List::Util qw( max );
 use Math::Random::Normal::Leva qw( gbm_sample );
@@ -116,7 +115,8 @@ suitable for use in random_index_gbm
 sub get_randoms_ref {
     my %GBM_vars;
     my @available_random_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-        market => 'volidx',
+        market            => 'volidx',
+        contract_category => 'ANY'
     );
 
     foreach my $ticker (@available_random_symbols) {
