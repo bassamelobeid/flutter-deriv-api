@@ -7,7 +7,6 @@ use JSON;
 use Cache::RedisDB;
 
 use BOM::WebSocketAPI::Websocket_v3;
-use BOM::Platform::Runtime::LandingCompany::Registry;
 
 sub trading_times {
     my ($c, $args) = @_;
