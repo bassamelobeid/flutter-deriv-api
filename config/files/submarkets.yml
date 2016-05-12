@@ -164,19 +164,19 @@ uk_otc_stock:
     volatility_surface_type: "moneyness"   
 au_otc_stock:
     name: au_otc_stock
-    display_name: 'Australian OTC Stocks'
+    display_name: 'Australia OTC Stocks'
     display_order: 1
     asset_type: 'stock'
     market: stocks
-    explanation: 'Australian OTC Stocks'
+    explanation: 'Australia OTC Stocks'
     volatility_surface_type: "moneyness"
 ge_otc_stock:
     name: ge_otc_stock
-    display_name: 'German OTC Stocks'
+    display_name: 'Germany OTC Stocks'
     display_order: 2
     asset_type: 'stock'
     market: stocks
-    explanation: 'German OTC Stocks'
+    explanation: 'Germany OTC Stocks'
     volatility_surface_type: "moneyness"
 asia_oceania_future:
     name: asia_oceania_future
