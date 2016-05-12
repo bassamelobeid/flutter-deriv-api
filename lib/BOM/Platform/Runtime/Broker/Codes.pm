@@ -13,7 +13,6 @@ It primarily builds I<BOM::Platform::Runtime::Broker> objects from broker_codes.
 
 use Moose;
 use namespace::autoclean;
-use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Runtime::Broker;
 
 =head1 METHODS
