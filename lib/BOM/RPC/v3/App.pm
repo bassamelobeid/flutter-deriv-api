@@ -11,15 +11,8 @@ use BOM::Database::Model::OAuth;
 sub register {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
-
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $client  = $params->{client};
+    my $user    = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
     my $args         = $params->{args};
@@ -74,15 +67,8 @@ sub register {
 sub list {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
-
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $client  = $params->{client};
+    my $user    = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
     my $oauth = BOM::Database::Model::OAuth->new;
@@ -92,15 +78,8 @@ sub list {
 sub get {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
-
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $client  = $params->{client};
+    my $user    = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
     my $oauth  = BOM::Database::Model::OAuth->new;
@@ -118,15 +97,8 @@ sub get {
 sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
-
-    my $user = BOM::Platform::User->new({email => $client->email});
+    my $client  = $params->{client};
+    my $user    = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
     my $oauth  = BOM::Database::Model::OAuth->new;
@@ -139,13 +111,7 @@ sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
 sub oauth_apps {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
 
     my $oauth = BOM::Database::Model::OAuth->new;
     if ($params->{args} and $params->{args}->{revoke_app}) {
@@ -155,7 +121,7 @@ sub oauth_apps {
         }
     }
 
-    return $oauth->get_used_apps_by_loginid($token_details->{loginid});
+    return $oauth->get_used_apps_by_loginid($client->loginid);
 }
 
 1;

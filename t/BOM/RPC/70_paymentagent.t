@@ -75,8 +75,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
 
     my $code = 'mocked';
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            token => $client_token,
-            args  => {
+            client => $client,
+            args   => {
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
@@ -95,8 +95,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ## test for failure
     foreach my $amount (-1, 1, 2001) {
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-                token => $client_token,
-                args  => {
+                client => $client,
+                args   => {
                     paymentagent_withdraw => 1,
                     paymentagent_loginid  => $pa_client->loginid,
                     currency              => 'USD',
@@ -107,8 +107,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     }
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            token => $client_token,
-            args  => {
+            client => $client,
+            args   => {
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => 'VRTC000001',
                 currency              => 'USD',
@@ -118,8 +118,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ok $res->{error}->{message_to_client} =~ /the Payment Agent does not exist/, 'the Payment Agent does not exist';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            token => $client_token,
-            args  => {
+            client => $client,
+            args   => {
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'RMB',
@@ -131,8 +131,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     $client->set_status('withdrawal_locked', 'test.t', "just for test");
     $client->save();
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            token => $client_token,
-            args  => {
+            client => $client,
+            args   => {
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
@@ -146,8 +146,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     $pa_client->set_status('cashier_locked', 'test.t', 'just for test');
     $pa_client->save();
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            token => $client_token,
-            args  => {
+            client => $client,
+            args   => {
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
@@ -159,8 +159,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     $pa_client->clr_status('cashier_locked');
     $pa_client->save();
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            token => $client_token,
-            args  => {
+            client => $client,
+            args   => {
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
@@ -170,8 +170,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ok $res->{error}->{message_to_client} =~ /you cannot withdraw./, 'you cannot withdraw.';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            token => $client_token,
-            args  => {
+            client => $client,
+            args   => {
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
@@ -182,8 +182,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     is $res->{status}, 2, 'paymentagent_withdraw dry_run ok';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            token => $client_token,
-            args  => {
+            client => $client,
+            args   => {
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
@@ -196,8 +196,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     BOM::Platform::Transaction->unfreeze_client($client->loginid);
     BOM::Platform::Transaction->unfreeze_client($pa_client->loginid);
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
-            token => $client_token,
-            args  => {
+            client => $client,
+            args   => {
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
@@ -216,8 +216,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
 
     # from client to pa_client is not allowed
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $client_token,
-            args  => {
+            client => $client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $pa_client->loginid,
                 currency              => 'USD',
@@ -226,8 +226,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ok $res->{error}->{message_to_client} =~ /You are not a Payment Agent/, 'You are not a Payment Agent';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $pa_client_token,
-            args  => {
+            client => $pa_client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $client->loginid,
                 currency              => 'USD',
@@ -246,8 +246,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ## test for failure
     foreach my $amount (-1, 1, 2001) {
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-                token => $pa_client_token,
-                args  => {
+                client => $pa_client,
+                args   => {
                     paymentagent_transfer => 1,
                     transfer_to           => $client->loginid,
                     currency              => 'USD',
@@ -257,8 +257,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     }
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $pa_client_token,
-            args  => {
+            client => $pa_client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => 'VRTC000001',
                 currency              => 'USD',
@@ -267,8 +267,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ok $res->{error}->{message_to_client} =~ /Login ID \(VRTC000001\) does not exist/, 'Login ID (VRTC000001) does not exist';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $pa_client_token,
-            args  => {
+            client => $pa_client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => 'OK992002',
                 currency              => 'USD',
@@ -278,8 +278,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ok $res->{error}->{message_to_client} =~ /Login ID \(OK992002\) does not exist/, 'Login ID (VRTC000001) does not exist';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $pa_client_token,
-            args  => {
+            client => $pa_client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $client->loginid,
                 currency              => 'RMB',
@@ -288,8 +288,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ok $res->{error}->{message_to_client} =~ /only USD is allowed/, 'only USD is allowed';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $pa_client_token,
-            args  => {
+            client => $pa_client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $pa_client->loginid,
                 currency              => 'USD',
@@ -301,8 +301,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     $client->save();
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $pa_client_token,
-            args  => {
+            client => $pa_client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $client->loginid,
                 currency              => 'USD',
@@ -315,8 +315,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     $pa_client->set_status('cashier_locked', 'test.t', 'just for test');
     $pa_client->save();
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $pa_client_token,
-            args  => {
+            client => $pa_client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $client->loginid,
                 currency              => 'USD',
@@ -327,8 +327,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     $pa_client->clr_status('cashier_locked');
     $pa_client->save();
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $pa_client_token,
-            args  => {
+            client => $pa_client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $client->loginid,
                 currency              => 'USD',
@@ -337,8 +337,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ok $res->{error}->{message_to_client} =~ /you cannot withdraw./, 'you cannot withdraw.';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $pa_client_token,
-            args  => {
+            client => $pa_client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $client->loginid,
                 currency              => 'USD',
@@ -348,8 +348,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     is $res->{status}, 2, 'paymentagent_transfer dry_run ok';
 
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $pa_client_token,
-            args  => {
+            client => $pa_client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $client->loginid,
                 currency              => 'USD',
@@ -361,8 +361,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     BOM::Platform::Transaction->unfreeze_client($client->loginid);
     BOM::Platform::Transaction->unfreeze_client($pa_client->loginid);
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
-            token => $pa_client_token,
-            args  => {
+            client => $pa_client,
+            args   => {
                 paymentagent_transfer => 1,
                 transfer_to           => $client->loginid,
                 currency              => 'USD',

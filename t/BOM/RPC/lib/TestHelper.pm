@@ -30,7 +30,7 @@ sub create_test_user {
     $user->add_loginid({loginid => $cr_1});
     $user->save;
 
-    return $cr_1;
+    return $client_cr;
 }
 
 1;
