@@ -482,17 +482,45 @@ subtest $method => sub {
         'check authorization'
     );
 
-    is_deeply($c->tcall($method, {token => $token1}), {status => []}, 'status empty');
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status              => [],
+            risk_classification => ''
+        },
+        'status empty'
+    );
     $test_client->set_status('tnc_approval', 'test staff', 1);
     $test_client->save();
-    is_deeply($c->tcall($method, {token => $token1}), {status => []}, 'tnc_approval is excluded, still status is empty');
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status              => [],
+            risk_classification => ''
+        },
+        'tnc_approval is excluded, still status is empty'
+    );
     $test_client->set_status('ok', 'test staff', 1);
     $test_client->save();
-    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok)]}, 'ok status');
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status              => [qw(ok)],
+            risk_classification => ''
+        },
+        'ok status'
+    );
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
-    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok authenticated)]}, 'ok, authenticated');
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status              => [qw(ok authenticated)],
+            risk_classification => ''
+        },
+        'ok, authenticated'
+    );
 };
 
 $method = 'change_password';
