@@ -25,7 +25,6 @@ use Carp qw( croak );
 use YAML::XS;
 
 use BOM::MarketData::VolSurface::Delta;
-use BOM::MarketData::VolSurface::Phased;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::System::Chronicle;
 use BOM::System::RedisReplicated;
@@ -107,18 +106,12 @@ sub _init {
         });
     BOM::Platform::Runtime->instance(undef);
 
-    initialize_symbol_dividend "R_25",    0;
-    initialize_symbol_dividend "R_50",    0;
-    initialize_symbol_dividend "R_75",    0;
-    initialize_symbol_dividend "R_100",   0;
-    initialize_symbol_dividend "RDBULL",  -35;
-    initialize_symbol_dividend "RDBEAR",  20;
-    initialize_symbol_dividend "RDSUN",   0;
-    initialize_symbol_dividend "RDMOON",  0;
-    initialize_symbol_dividend "RDMARS",  0;
-    initialize_symbol_dividend "RDVENUS", 0;
-    initialize_symbol_dividend "RDYANG",  -35;
-    initialize_symbol_dividend "RDYIN",   20;
+    initialize_symbol_dividend "R_25",   0;
+    initialize_symbol_dividend "R_50",   0;
+    initialize_symbol_dividend "R_75",   0;
+    initialize_symbol_dividend "R_100",  0;
+    initialize_symbol_dividend "RDBULL", -35;
+    initialize_symbol_dividend "RDBEAR", 20;
 
     BOM::System::Chronicle::set(
         'interest_rates',
