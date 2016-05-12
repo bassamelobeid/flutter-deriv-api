@@ -5,11 +5,6 @@ use warnings;
 
 use BOM::WebSocketAPI::CallingEngine;
 
-sub authorize_call_params {
-    my ($c, $args) = @_;
-    return {token => $args->{authorize}};
-}
-
 sub logout_success {
     my ($c, $args, $rpc_response) = @_;
     $c->stash(
