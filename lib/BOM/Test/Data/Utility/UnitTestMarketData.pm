@@ -18,7 +18,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use BOM::MarketData::CorrelationMatrix;
+use Quant::Framework::CorrelationMatrix;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Platform::Runtime;
 use Carp qw( croak );
@@ -137,7 +137,7 @@ sub _init {
 sub create_doc {
     my ($yaml_db, $data_mod) = @_;
 
-    if (grep { $_ eq $yaml_db } qw{currency randomindex stock index holiday economic_events partial_trading asset}) {
+    if (grep { $_ eq $yaml_db } qw{currency randomindex stock index holiday economic_events partial_trading asset correlation_matrix}) {
         $data_mod->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader();
         $data_mod->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();
 
