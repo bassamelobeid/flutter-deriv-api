@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -78,9 +78,17 @@ subtest 'new JP real account' => sub {
     )->token;
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
+    my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+    my $call_params;
+    $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+    $t = $t->send_ok({json => \%client_details})->message_ok;
+    is $call_params->{token}, $token;
+    $rpc_caller->unmock_all;
+
     subtest 'create JP account' => sub {
         $t = $t->send_ok({json => \%client_details})->message_ok;
         my $res = decode_json($t->message->[1]);
+        is $res->{msg_type}, 'new_account_japan';
         ok($res->{new_account_japan});
         test_schema('new_account_japan', $res);
 
@@ -88,10 +96,36 @@ subtest 'new JP real account' => sub {
         like($loginid, qr/^JP\d+$/, "got JP client $loginid");
     };
 
+    subtest 'jp_knowledge_test' => sub {
+        my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+        my $call_params;
+        $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+        $t = $t->send_ok({
+                json => {
+                    "jp_knowledge_test" => 1,
+                    "score"             => 12,
+                    "status"            => "pass"
+                }})->message_ok;
+        is $call_params->{token}, $token;
+        $rpc_caller->unmock_all;
+
+        $t = $t->send_ok({
+                json => {
+                    "jp_knowledge_test" => 1,
+                    "score"             => 12,
+                    "status"            => "pass"
+                }})->message_ok;
+        my $res = decode_json($t->message->[1]);
+
+        is $res->{msg_type}, 'jp_knowledge_test';
+        ok $res->{jp_knowledge_test};
+    };
+
     subtest 'no duplicate account - same email' => sub {
         $t = $t->send_ok({json => \%client_details})->message_ok;
         my $res = decode_json($t->message->[1]);
 
+        is $res->{msg_type}, 'new_account_japan';
         is($res->{error}->{code},    'duplicate email', 'no duplicate account for JP');
         is($res->{new_account_real}, undef,             'NO account created');
     };
@@ -206,6 +240,19 @@ subtest 'VR Residence check' => sub {
             is($res->{new_account_japan}, undef,                                    'NO account created');
         };
     };
+};
+
+subtest 'jp_knowledge_test' => sub {
+    $t = $t->send_ok({
+            json => {
+                "jp_knowledge_test" => 1,
+                "score"             => 12,
+                "status"            => "pass"
+            }})->message_ok;
+    my $res = decode_json($t->message->[1]);
+
+    is $res->{msg_type}, 'jp_knowledge_test';
+    is $res->{error}->{code}, 'PermissionDenied';
 };
 
 sub create_vr_account {

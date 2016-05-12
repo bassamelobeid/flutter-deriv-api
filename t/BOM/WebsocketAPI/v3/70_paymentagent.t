@@ -7,6 +7,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use Test::Exception;
+use Test::MockModule;
 
 use BOM::Database::Model::AccessToken;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -19,7 +20,7 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
 $email_mocked->mock('send_email', sub { return 1 });
 
-my $t     = build_mojo_test();
+my $t = build_mojo_test({language => 'EN'});
 my $email = 'joe@example.com';
 
 subtest 'verify_email' => sub {
@@ -76,8 +77,17 @@ subtest 'Initialization' => sub {
 };
 
 # paymentagent_list
+my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+my $call_params;
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+$t = $t->send_ok({json => {paymentagent_list => 'id'}})->message_ok;
+is $call_params->{language}, 'EN';
+ok exists $call_params->{token};
+$rpc_caller->unmock_all;
+
 $t = $t->send_ok({json => {paymentagent_list => 'id'}})->message_ok;
 my $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'paymentagent_list';
 ok(grep { $_->[0] eq 'id' } @{$res->{paymentagent_list}{available_countries}});
 ok(grep { $_->{name} eq 'Joe' } @{$res->{paymentagent_list}{list}});
 test_schema('paymentagent_list', $res);
@@ -105,6 +115,21 @@ foreach my $key (@{$tokens}) {
     my $client_b_balance    = $client->default_account->balance;
     my $pa_client_b_balance = $pa_client->default_account->balance;
 
+    my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+    my $call_params;
+    $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+    $t = $t->send_ok({
+            json => {
+                paymentagent_withdraw => 1,
+                paymentagent_loginid  => $pa_client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+                verification_code     => $code
+            }})->message_ok;
+    ok $call_params->{server_name};
+    ok $call_params->{token};
+    $rpc_caller->unmock_all;
+
     $t = $t->send_ok({
             json => {
                 paymentagent_withdraw => 1,
@@ -114,7 +139,10 @@ foreach my $key (@{$tokens}) {
                 verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
+    is $res->{msg_type}, 'paymentagent_withdraw';
     is $res->{paymentagent_withdraw}, 1, 'paymentagent_withdraw ok';
+    ok $res->{transaction_id} =~ /\d+/;
+    is $res->{paymentagent_name}, 'Joe';
 
     ## after withdraw, check both balance
     $client = BOM::Platform::Client->new({loginid => $client->loginid});
@@ -133,12 +161,13 @@ foreach my $key (@{$tokens}) {
                     (defined $amount) ? (amount => $amount) : ()}})->message_ok;
         $res = decode_json($t->message->[1]);
         if (defined $amount and $amount ne '') {
+            is $res->{msg_type}, 'paymentagent_withdraw';
             ok $res->{error}->{message} =~ /Invalid amount/, "test amount $amount";
         } else {
+            is $res->{msg_type}, 'paymentagent_withdraw';
             ok $res->{error}->{message} =~ /Input validation failed: amount/, "test amount " . ($amount // 'undef');
         }
     }
-
     $t = $t->send_ok({
             json => {
                 paymentagent_withdraw => 1,
@@ -259,6 +288,20 @@ foreach my $key (@{$tokens}) {
     my $client_b_balance    = $client->default_account->balance;
     my $pa_client_b_balance = $pa_client->default_account->balance;
 
+    my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+    my $call_params;
+    $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+    $t = $t->send_ok({
+            json => {
+                paymentagent_transfer => 1,
+                transfer_to           => $pa_client->loginid,
+                currency              => 'USD',
+                amount                => 100
+            }})->message_ok;
+    ok $call_params->{server_name};
+    ok $call_params->{token};
+    $rpc_caller->unmock_all;
+
     # from client to pa_client is not allowed
     $t = $t->send_ok({
             json => {
@@ -268,10 +311,11 @@ foreach my $key (@{$tokens}) {
                 amount                => 100
             }})->message_ok;
     $res = decode_json($t->message->[1]);
+    is $res->{msg_type}, 'paymentagent_transfer';
     ok $res->{error}->{message} =~ /You are not a Payment Agent/, 'You are not a Payment Agent';
 
     $t->finish_ok;
-    $t = build_mojo_test();
+    $t = build_mojo_test({language => 'EN'});
 
     my $token = BOM::Database::Model::AccessToken->new->create_token($pa_client->loginid, 'Test Token', 'read', 'payments');
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
@@ -284,7 +328,11 @@ foreach my $key (@{$tokens}) {
                 amount                => 100
             }})->message_ok;
     $res = decode_json($t->message->[1]);
+    is $res->{msg_type}, 'paymentagent_transfer';
     is $res->{paymentagent_transfer}, 1, 'paymentagent_transfer ok';
+    ok $res->{transaction_id} =~ /\d+/;
+    is $res->{client_to_loginid},   $client->loginid;
+    is $res->{client_to_full_name}, $client->full_name;
 
     ## after withdraw, check both balance
     $client = BOM::Platform::Client->new({loginid => $client->loginid});

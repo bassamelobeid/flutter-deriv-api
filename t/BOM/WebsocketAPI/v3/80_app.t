@@ -60,6 +60,7 @@ $t = $t->send_ok({
             redirect_uri => 'https://www.example.com/',
         }})->message_ok;
 my $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'app_register';
 test_schema('app_register', $res);
 my $app1   = $res->{app_register};
 my $app_id = $app1->{app_id};
@@ -69,6 +70,7 @@ $t = $t->send_ok({
             app_get => $app_id,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'app_get';
 test_schema('app_get', $res);
 is_deeply($res->{app_get}, $app1, 'app_get ok');
 
@@ -81,6 +83,7 @@ $t = $t->send_ok({
             redirect_uri => 'https://www.example.com/',
         }})->message_ok;
 $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'app_register';
 ok $res->{error}->{message} =~ /The name is taken/, 'The name is taken';
 
 $t = $t->send_ok({
@@ -118,6 +121,7 @@ $t = $t->send_ok({
             app_list => 1,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'app_list';
 test_schema('app_list', $res);
 my $get_apps = [grep { $_->{app_id} ne 'binarycom' } @{$res->{app_list}}];
 is_deeply($get_apps, [$app1, $app2], 'app_list ok');
@@ -127,6 +131,7 @@ $t = $t->send_ok({
             app_delete => $app2->{app_id},
         }})->message_ok;
 $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'app_delete';
 test_schema('app_delete', $res);
 
 $t = $t->send_ok({
@@ -151,6 +156,7 @@ $t = $t->send_ok({
             oauth_apps => 1,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'oauth_apps';
 test_schema('oauth_apps', $res);
 
 my $used_apps = $res->{oauth_apps};
@@ -177,6 +183,7 @@ $t = $t->send_ok({
             revoke_app => $test_appid,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'oauth_apps';
 is $res->{error}->{code}, 'InvalidToken', 'not valid after revoke';
 
 $t->finish_ok;

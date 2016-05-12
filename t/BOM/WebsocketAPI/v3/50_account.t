@@ -7,13 +7,14 @@ use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
+use Test::MockModule;
 
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Transaction;
 
-my $t = build_mojo_test();
+my $t = build_mojo_test({language => 'EN'});
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
@@ -127,9 +128,18 @@ ok($trx);
 ok($trx->{$_}, "got $_") foreach (qw/sell_price buy_price purchase_time contract_id transaction_id/);
 test_schema('profit_table', $profit_table);
 
+my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+my $call_params;
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+$t = $t->send_ok({json => {get_limits => 1}})->message_ok;
+is $call_params->{language}, 'EN';
+ok exists $call_params->{token};
+$rpc_caller->unmock_all;
+
 $t = $t->send_ok({json => {get_limits => 1}})->message_ok;
 my $res = decode_json($t->message->[1]);
 ok($res->{get_limits});
+is $res->{msg_type}, 'get_limits';
 is $res->{get_limits}->{open_positions}, 60;
 test_schema('get_limits', $res);
 
