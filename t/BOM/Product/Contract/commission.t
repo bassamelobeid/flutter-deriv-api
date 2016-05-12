@@ -46,8 +46,6 @@ subtest 'payout' => sub {
 subtest 'stake' => sub {
     my $mocked            = Test::MockModule->new('BOM::Product::Contract::Call');
     my $stake             = 10;
-    my $theo_probability  = 0.0998;
-    my $commission_markup = 0.0002;
     my $payout            = $stake / 0.1;
     $mocked->mock('_calculate_payout', $payout);
     $mocked->mock('base_commission', sub { 0.0001 });
