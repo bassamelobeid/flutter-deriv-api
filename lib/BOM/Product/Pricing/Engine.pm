@@ -16,7 +16,6 @@ extends 'BOM::Product::Pricing::Engine';
 
 =cut
 
-use Carp qw(croak);
 use Moose;
 use Math::Business::BlackScholes::Binaries;
 use Math::Util::CalculatedValue::Validatable;
@@ -60,7 +59,7 @@ sub BUILD {
     my $self = shift;
 
     my $claimtype = $self->bet->pricing_code;
-    croak 'Invalid claimtype[' . $claimtype . '] for engine.' unless $self->_supported_types->{$claimtype};
+    die 'Invalid claimtype[' . $claimtype . '] for engine.' unless $self->_supported_types->{$claimtype};
 
     return;
 }
