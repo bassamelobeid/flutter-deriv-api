@@ -22,9 +22,9 @@ use BOM::MarketData::VolSurface::Flat;
 use Test::MockTime qw(set_absolute_time);
 use Test::MockModule;
 
-my $mocked_slope = Test::MockModule->new('Pricing::Engine::EuropeanDigitalSlope');
-# mock value for test
-$mocked_slope->mock('commission_markup', sub { return 0.01 });
+#my $mocked_slope = Test::MockModule->new('Pricing::Engine::EuropeanDigitalSlope');
+## mock value for test
+#$mocked_slope->mock('commission_markup', sub { return 0.01 });
 
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
@@ -950,7 +950,7 @@ subtest 'Purchase Sell Contract' => sub {
         barrier      => 'S0P',
     });
     my $mocked = Test::MockModule->new('BOM::Product::Transaction');
-    $mocked->mock('_validate_trade_pricing_adjustment', sub { });
+    $mocked->mock('_validate_sell_pricing_adjustment', sub { });
     $error = BOM::Product::Transaction->new({
             client      => $client,
             contract    => $contract,
