@@ -1251,13 +1251,13 @@ sub _build_payout {
             $payout -= (0.02 - $dollar_commission);
         }
 
-        return roundnear(0.01, $payout);
+        return roundnear(0.01, max($ask_price, $payout));
     }
 
     # payout calculated with 2 times base commission.
     $initial_payout = $self->_calculate_payout($base_commission * 2);
     if ($self->commission_multiplier($initial_payout) == $commission_max_multiplier) {
-        return roundnear(0.01, $initial_payout);
+        return roundnear(0.01, max($ask_price, $initial_payout));
     }
 
     my $slope  = $self->commission_multiplier_slope;
