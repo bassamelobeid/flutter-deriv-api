@@ -255,13 +255,7 @@ sub send_ask {
 sub get_contract_details {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
 
     my $response;
     try {
