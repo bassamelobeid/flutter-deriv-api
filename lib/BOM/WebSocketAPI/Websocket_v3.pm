@@ -465,7 +465,7 @@ sub __handle {
                 $p1,
                 {
                     require_auth => $descriptor->{require_auth},
-                    %{$descriptor->{forward_params}},
+                    $descriptor->{forward_params} ? %{$descriptor->{forward_params}} : (),
                 });
         }
 
