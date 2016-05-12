@@ -148,7 +148,7 @@ us:
     market: stocks
 us_otc_stock:
     name: us_otc_stock
-    display_name: 'US OTC Stocks'
+    display_name: 'US'
     display_order: 4
     asset_type: 'stock'
     market: stocks
@@ -156,7 +156,7 @@ us_otc_stock:
     volatility_surface_type: "moneyness"
 uk_otc_stock:
     name: uk_otc_stock
-    display_name: 'UK OTC Stocks'
+    display_name: 'UK'
     display_order: 3
     asset_type: 'stock'
     market: stocks
@@ -164,7 +164,7 @@ uk_otc_stock:
     volatility_surface_type: "moneyness"   
 au_otc_stock:
     name: au_otc_stock
-    display_name: 'Australia OTC Stocks'
+    display_name: 'Australia'
     display_order: 1
     asset_type: 'stock'
     market: stocks
@@ -172,7 +172,7 @@ au_otc_stock:
     volatility_surface_type: "moneyness"
 ge_otc_stock:
     name: ge_otc_stock
-    display_name: 'Germany OTC Stocks'
+    display_name: 'Germany'
     display_order: 2
     asset_type: 'stock'
     market: stocks
