@@ -25,11 +25,10 @@ my %skip_category = (
     spreads => 1,
 );
 
-my $expectation = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/slope_config.yml');
-my @underlying_symbols =
-    ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', 'R_100', 'R_25', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
-my $payout_currency = 'USD';
-my $spot            = 100;
+my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/slope_config.yml');
+my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', 'R_100', 'R_25', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
+my $payout_currency    = 'USD';
+my $spot               = 100;
 
 foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
     BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
@@ -44,10 +43,11 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         next if $category_obj->is_path_dependent;
         my @duration = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
-            my $vol =
-                $ul->volatility_surface_type eq 'phased'
-                ? 0.1
-                : BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul, for_date => $now})->get_volatility({
+            my $vol = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
+                    underlying => $ul,
+                    for_date   => $now
+                }
+                )->get_volatility({
                     delta => 50,
                     days  => $duration / 86400
                 });
