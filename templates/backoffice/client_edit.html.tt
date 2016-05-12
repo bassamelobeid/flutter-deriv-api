@@ -179,7 +179,6 @@ table#client_edit td{
         <td class="label">AML Risk Classification</td>
         [%
             risk_classification_options = [
-                {'value' => '', 'details' => '-' }
                 {'value' => 'low', 'details' => 'Low' }
                 {'value' => 'standard', 'details' => 'Standard' }
                 {'value' => 'high', 'details' => 'High' }
@@ -198,6 +197,7 @@ table#client_edit td{
                     [% END %]
                 [% END %]
             </select>
+            Current risk classification: [% client.aml_risk_classification %]
         </td>
     </tr>
     <tr>
