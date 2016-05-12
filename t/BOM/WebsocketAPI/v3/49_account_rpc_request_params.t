@@ -165,7 +165,6 @@ $t = $t->send_ok({
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'login_history');
-print Dumper $res;
 ok(ref $res->{login_history});
 is $call_params->{token}, $token;
 
@@ -176,7 +175,7 @@ $t = $t->send_ok({
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type},           'get_account_status');
-is($res->{get_account_status}, 1);
+ok(ref $res->{get_account_status});
 is $call_params->{token}, $token;
 
 $t = $t->send_ok({
