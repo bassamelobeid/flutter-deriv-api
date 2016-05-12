@@ -22,7 +22,7 @@ use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Platform::Context;
-use BOM::MarketData::CorrelationMatrix;
+use Quant::Framework::CorrelationMatrix;
 my $broker = request()->broker->code;
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
@@ -59,8 +59,11 @@ if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
     local $CGI::POST_MAX        = 1024 * 100 * 8;    # max 800K posts
     local $CGI::DISABLE_UPLOADS = 0;                 # enable uploads
     my ($data, @to_print) = upload_and_process_correlations($filetoupload);
-    my $correlation_matrix = BOM::MarketData::CorrelationMatrix->new({
+    my $correlation_matrix = Quant::Framework::CorrelationMatrix->new({
         symbol        => 'indices',
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        chronicle_write => 1,
         recorded_date => Date::Utility->new
     });
     $correlation_matrix->correlations($data);
