@@ -19,21 +19,17 @@ BOM::Database::Model::AccessToken->new->dbh->do("
     DELETE FROM $_
 ") foreach ('auth.access_token');
 
-my $test_loginid = create_test_user();
-
-my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
-# need to mock it as to access api token we need token beforehand
-$mock_utility->mock('get_token_details', sub { return {loginid => $test_loginid} });
+my $client = create_test_user();
 
 my $res = BOM::RPC::v3::Accounts::api_token({
-    client_loginid => $test_loginid,
-    args           => {},
+    client => $client,
+    args   => {},
 });
 is_deeply($res, {tokens => []}, 'empty token list');
 
 $res = BOM::RPC::v3::Accounts::api_token({
-        client_loginid => $test_loginid,
-        args           => {
+        client => $client,
+        args   => {
             new_token        => 'Test Token',
             new_token_scopes => ['read'],
         },
@@ -45,8 +41,8 @@ is $test_token->{display_name}, 'Test Token';
 
 # delete token
 $res = BOM::RPC::v3::Accounts::api_token({
-        client_loginid => $test_loginid,
-        args           => {
+        client => $client,
+        args   => {
             delete_token => $test_token->{token},
         },
     });
@@ -55,27 +51,27 @@ is_deeply($res->{tokens}, [], 'empty');
 
 ## re-create
 $res = BOM::RPC::v3::Accounts::api_token({
-    client_loginid => $test_loginid,
-    args           => {new_token => '1'},
+    client => $client,
+    args   => {new_token => '1'},
 });
 ok $res->{error}->{message_to_client} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
 
 $res = BOM::RPC::v3::Accounts::api_token({
-    client_loginid => $test_loginid,
-    args           => {new_token => '1' x 33},
+    client => $client,
+    args   => {new_token => '1' x 33},
 });
 ok $res->{error}->{message_to_client} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
 
 ## we default to all scopes for backwards
 # $res = BOM::RPC::v3::Accounts::api_token({
-#     client_loginid => $test_loginid,
+#     client => $client,
 #     args           => {new_token => 'Test'},
 # });
 # ok $res->{error}->{message_to_client} =~ /new_token_scopes/, 'new_token_scopes is required';
 
 $res = BOM::RPC::v3::Accounts::api_token({
-        client_loginid => $test_loginid,
-        args           => {
+        client => $client,
+        args   => {
             new_token        => 'Test',
             new_token_scopes => ['read', 'trade']
         },
