@@ -174,7 +174,7 @@ $t = $t->send_ok({
             get_account_status => 1,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
-is($res->{msg_type},           'get_account_status');
+is($res->{msg_type}, 'get_account_status');
 ok(ref $res->{get_account_status});
 is $call_params->{token}, $token;
 

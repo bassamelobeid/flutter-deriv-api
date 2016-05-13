@@ -21,6 +21,7 @@ sub forward {
             msg_type        => $rpc_method // $params->{msg_type},
             call_params     => make_call_params($c, $args, $params),
             rpc_response_cb => rpc_response_cb($c, $args, $params),
+            %$params,
         });
 }
 
@@ -132,17 +133,18 @@ sub call_rpc {
     my $url         = $params->{url};
     my $call_params = $params->{call_params};
 
+    # TODO It should be ibject attributes
     my $rpc_response_cb   = $params->{rpc_response_cb};
     my $max_response_size = $params->{max_response_size};
 
     # TODO It'll be hooks
-    my $before_get_rpc_response_hook  = $params->{before_get_rpc_response};
-    my $after_got_rpc_response_hook   = $params->{after_got_rpc_response};
-    my $before_send_api_response_hook = $params->{before_send_api_response};
-    my $after_sent_api_response_hook  = $params->{after_sent_api_response};
-    my $before_call_hook              = $params->{before_call};
+    my $before_get_rpc_response_hook  = $params->{before_get_rpc_response}  || [];
+    my $after_got_rpc_response_hook   = $params->{after_got_rpc_response}   || [];
+    my $before_send_api_response_hook = $params->{before_send_api_response} || [];
+    my $after_sent_api_response_hook  = $params->{after_sent_api_response}  || [];
+    my $before_call_hook              = $params->{before_call}              || [];
 
-    $before_call_hook->($c, $call_params) if $before_call_hook;
+    $_->($c, $params) for @$before_call_hook;
 
     my $client  = MojoX::JSON::RPC::Client->new;
     my $callobj = {
@@ -156,7 +158,7 @@ sub call_rpc {
         sub {
             my $res = pop;
 
-            $before_get_rpc_response_hook->($c) if $before_get_rpc_response_hook;
+            $_->($c, $params) for @$before_get_rpc_response_hook;
 
             # unconditionally stop any further processing if client is already disconnected
             return unless $c->tx;
@@ -176,7 +178,7 @@ sub call_rpc {
                 return;
             }
 
-            $after_got_rpc_response_hook->($c, $res) if $after_got_rpc_response_hook;
+            $_->($c, $params, $res) for @$after_got_rpc_response_hook;
 
             if ($res->is_error) {
                 warn $res->error_message;
@@ -194,9 +196,9 @@ sub call_rpc {
             }
 
             $api_response = {%binding, %$api_response};
-            $before_send_api_response_hook->($c, $api_response) if $before_send_api_response_hook;
+            $_->($c, $params, $api_response) for @$before_send_api_response_hook;
             $c->send({json => $api_response});
-            $after_sent_api_response_hook->($c) if $after_sent_api_response_hook;
+            $_->($c, $params) for @$after_sent_api_response_hook;
 
             return;
         });
