@@ -904,13 +904,13 @@ subtest 'underlying with critical corporate actions' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol => 'FPFP',
+            symbol => 'USAAPL',
             date   => Date::Utility->new,
         });
 
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions;
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions([]);
-    my $underlying = BOM::Market::Underlying->new('FPFP');
+    my $underlying = BOM::Market::Underlying->new('USAAPL');
     my $starting   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-28'))->plus_time_interval('1h');
 
     my $bet_params = {
@@ -927,26 +927,26 @@ subtest 'underlying with critical corporate actions' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'FPFP',
+            symbol        => 'USAAPL',
             date          => Date::Utility->new,
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'FPFP',
+            symbol         => 'USAAPL',
             recorded_date  => Date::Utility->new($bet_params->{date_pricing}),
             spot_reference => $tick->quote,
         });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'FPFP',
+            symbol         => 'USAAPL',
             recorded_date  => Date::Utility->new,
             spot_reference => $tick->quote,
         });
     my $bet = produce_contract($bet_params);
     ok $bet->confirm_validity, 'can buy stock';
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['FPFP']);
+    BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['USAAPL']);
     $bet = produce_contract($bet_params);
     my $expected_reasons = [qr/Underlying.*suspended/];
     test_error_list('buy', $bet, $expected_reasons);
