@@ -165,7 +165,7 @@ sub _latest_tick_info {
     }
     my $when;
     my $spot;
-    if ($i == 30) {
+    if ($i == 31) { # no file found
         $when = time - 2;
         $spot = _reset_value($underlying);
     } else {
