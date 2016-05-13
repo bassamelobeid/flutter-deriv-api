@@ -346,6 +346,9 @@ sub _feed_channel {
         delete $feed_channel_type->{"$symbol;$type"};
         # delete cache on unsubscribe
         delete $feed_channel_cache->{"$symbol;$type"};
+        # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
+        _transaction_channel($c, 'unsubscribe', $args->{account_id}, $args->{contract_id}) if $type =~ /^proposal_open_contract:/;
+
         if ($feed_channel->{$symbol} <= 0) {
             my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
             $redis->unsubscribe([$channel_name], sub { });
@@ -397,7 +400,7 @@ sub process_transaction_updates {
         my $args    = {};
         foreach my $type (keys %{$channel}) {
             if ($payload and exists $payload->{error} and exists $payload->{error}->{code} and $payload->{error}->{code} eq 'TokenDeleted') {
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+                _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
             } else {
                 $args = (exists $channel->{$type}->{args}) ? $channel->{$type}->{args} : {};
 
@@ -471,7 +474,7 @@ sub process_transaction_updates {
                             delete $args->{underlying},
                             'proposal_open_contract:' . JSON::to_json($args), $args
                         ) if $args->{underlying};
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+                        _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
 
                         $args->{is_sold}    = 1;
                         $args->{sell_price} = $payload->{amount};
@@ -481,7 +484,7 @@ sub process_transaction_updates {
                         BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, undef, $args);
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
-                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+                    _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
                 }
             }
         }
