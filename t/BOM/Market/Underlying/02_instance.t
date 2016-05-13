@@ -295,13 +295,17 @@ subtest 'is_OTC' => sub {
         market    => 'indices',
         submarket => ['otc_index', 'smart_index'],
         );
+    my @OTC_stocks = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market    => 'stocks',
+        submarket => ['au_otc_stock', 'ge_otc_stock', 'uk_otc_stock', 'us_otc_stock'],
+    );
+    push @OTC_symbols, @OTC_stocks;
     foreach my $symbol (@OTC_symbols) {
         my $underlying = BOM::Market::Underlying->new($symbol);
 
         is($underlying->submarket->is_OTC, 1, "$symbol submarket is OTC");
     }
-    my @non_OTC_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(market => ['stocks']);
-    push @non_OTC_symbols,
+    my @non_OTC_symbols,
         BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market    => 'indices',
         submarket => ['asia_oceania', 'europe_africa', 'americas', 'middle_east']);
