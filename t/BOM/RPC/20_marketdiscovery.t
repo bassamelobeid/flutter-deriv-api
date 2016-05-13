@@ -68,11 +68,12 @@ subtest $method => sub {
     $params->{args}{active_symbols} = 'full';
     push @$expected_keys, qw(exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time spot_age);
     $result = $c->call_ok($method, $params)->has_no_system_error->result;
+    $DB::single=1;
     ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
     is($indices->{market_display_name},    'Indices',       'the market_display_name is translated');
     is($indices->{submarket_display_name}, 'Europe/Africa', 'the submarket_display_name is translated');
-    is(scalar @$result,                    109,             'the default landing company is "costarica", the number of result should be ok');
+    is(scalar @$result,                    100,              'the default landing company is "costarica", the number of result should be ok');
 
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
@@ -88,7 +89,7 @@ subtest $method => sub {
 
     $params->{token} = $token;
     $result = $c->call_ok($method, $params)->has_no_system_error->result;
-    is(scalar @$result, 103, 'the landing company now is maltainvest, the number of result should be ok');
+    is(scalar @$result, 94, 'the landing company now is maltainvest, the number of result should be ok');
 };
 
 done_testing();
