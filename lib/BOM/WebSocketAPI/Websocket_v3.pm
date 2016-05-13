@@ -195,7 +195,7 @@ my @dispatch = (
     ['cashier_password',   '', 1, 'payments', {stash_params => [qw/ client_ip /]}],
 
     ['api_token',                '', 1, 'admin', {stash_params => [qw/ account_id /]}],
-    ['tnc_approval',             '',                                                               1, 'admin'],
+    ['tnc_approval',             '', 1, 'admin'],
     ['login_history',            '', 1, 'read',  {response     => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history_response_handler}],
     ['set_account_currency',     '', 1, 'admin', {call_params  => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler}],
     ['set_financial_assessment', '', 1, 'admin'],

@@ -168,7 +168,10 @@ is($res->{msg_type}, 'login_history');
 ok(ref $res->{login_history});
 is $call_params->{token}, $token;
 
-%$rpc_response = (status => [], risk_classification => 1);
+%$rpc_response = (
+    status              => [],
+    risk_classification => 1
+);
 $t = $t->send_ok({
         json => {
             get_account_status => 1,
