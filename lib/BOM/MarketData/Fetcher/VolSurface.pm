@@ -20,13 +20,13 @@ sub fetch_surface {
     my ($self, $args) = @_;
 
     my $underlying = $args->{underlying};
-    my $class      = 'BOM::MarketData::VolSurface::' . ucfirst lc $underlying->volatility_surface_type;
+    my $class      = 'Quant::Framework::VolSurface::' . ucfirst lc $underlying->volatility_surface_type;
     my $module     = $class;
     if (not $INC{($module =~ s!::!/!gr) . '.pm'}) {
         die "Could not load volsurface for " . $underlying->symbol;
     }
     my $surface_args = {
-        underlying => $args->{underlying},
+        underlying_config => $args->{underlying}->config,
         $args->{for_date} ? (for_date => $args->{for_date}) : ($underlying->for_date) ? (for_date => $underlying->for_date) : (),
         $args->{cutoff} ? (cutoff => $args->{cutoff}) : (),
     };
