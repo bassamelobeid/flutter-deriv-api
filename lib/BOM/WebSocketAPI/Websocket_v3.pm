@@ -175,7 +175,7 @@ my @dispatch = (
     ['contracts_for',           '', 0],
     ['residence_list',          '', 0],
     ['states_list',             '', 0],
-    ['payout_currencies',       '', 0, '',  {stash_params => [qw/ token /]}],
+    ['payout_currencies',       '', 0, '', {stash_params => [qw/ token /]}],
     ['landing_company',         '', 0],
     ['landing_company_details', '', 0],
     [
