@@ -160,6 +160,7 @@ us_otc_stock:
     name: us_otc_stock
     display_name: 'US'
     display_order: 4
+    is_OTC: 1
     asset_type: 'stock'
     market: stocks
     explanation: 'US OTC Stocks'
@@ -167,6 +168,7 @@ us_otc_stock:
 uk_otc_stock:
     name: uk_otc_stock
     display_name: 'UK'
+    is_OTC: 1
     display_order: 3
     asset_type: 'stock'
     market: stocks
@@ -175,6 +177,7 @@ uk_otc_stock:
 au_otc_stock:
     name: au_otc_stock
     display_name: 'Australia'
+    is_OTC: 1
     display_order: 1
     asset_type: 'stock'
     market: stocks
@@ -183,6 +186,7 @@ au_otc_stock:
 ge_otc_stock:
     name: ge_otc_stock
     display_name: 'Germany'
+    is_OTC: 1
     display_order: 2
     asset_type: 'stock'
     market: stocks
