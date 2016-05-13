@@ -19,7 +19,7 @@ use BOM::Platform::Client::IDAuthentication;
         push @{$self->{notifications}}, [@info];
     }
     sub notified { shift->{notifications} }
-    sub requires_authentication { my $s = shift; $s->_needs_proveid or $s->_needs_checkid }
+    sub requires_authentication { my $s = shift; $s->_needs_proveid }
 }
 
 subtest 'Constructor' => sub {
@@ -247,8 +247,6 @@ subtest 'proveid' => sub {
         ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
     };
 
-    # 'fallback to checkid' removed.. we don't fallback to checkid test anymore.
-
     subtest 'failed authentication' => sub {
         my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MX',
@@ -259,7 +257,6 @@ subtest 'proveid' => sub {
         Test::MockObject::Extends->new($v);
 
         $v->mock(-_fetch_proveid, sub { return {} });
-        $v->mock(-_fetch_checkid, sub { return });
         do {
             local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
             $v->run_authentication;

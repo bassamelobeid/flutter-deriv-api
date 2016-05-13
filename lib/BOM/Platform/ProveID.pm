@@ -13,11 +13,7 @@ use base 'Experian::IDAuth';
 ProveID is for UK clients only. It checks the client against credit rating agencies. It checks his name, DOB, address.
 
 If more than 2 items are found, the client is considered fully authenticated.
-We fall back to CheckID if it fails.
 
-CheckID, for UK clients, will check against the electoral roll.
-In other countries, it checks the drivers license, ID card number, passport MRZ.
-But since we don't capture this data it won't work for us.
 =cut
 
 # override some of the defaults with our credentials, and our folder.
