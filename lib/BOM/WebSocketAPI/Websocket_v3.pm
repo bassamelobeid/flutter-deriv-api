@@ -588,6 +588,7 @@ sub _sanity_failed {
 sub start_timing {
     my ($c, $params) = @_;
     $c->stash('tv' => [Time::HiRes::gettimeofday]);
+    return;
 }
 
 sub log_call_timing {
@@ -597,6 +598,7 @@ sub log_call_timing {
         1000 * Time::HiRes::tv_interval($c->stash('tv')),
         {tags => ["rpc:$params->{method}"]});
     DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$params->{method}"]});
+    return;
 }
 
 sub log_call_timing_connection {
@@ -609,6 +611,7 @@ sub log_call_timing_connection {
             1000 * Time::HiRes::tv_interval($c->stash('tv')) - $rpc_time,
             {tags => ["rpc:$params->{method}"]});
     }
+    return;
 }
 
 sub add_debug_time {
@@ -619,6 +622,7 @@ sub add_debug_time {
             method => $params->{method},
         };
     }
+    return;
 }
 
 sub log_call_timing_sent {
@@ -627,6 +631,7 @@ sub log_call_timing_sent {
         'bom_websocket_api.v_3.rpc.call.timing.sent',
         1000 * Time::HiRes::tv_interval($c->stash('tv')),
         {tags => ["rpc:$params->{method}"]});
+    return;
 }
 
 1;
