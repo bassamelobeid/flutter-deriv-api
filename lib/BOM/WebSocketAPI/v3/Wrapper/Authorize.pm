@@ -7,16 +7,9 @@ use BOM::WebSocketAPI::CallingEngine;
 
 sub logout_success {
     my ($c, $args, $rpc_response) = @_;
-    $c->stash(
-        loginid              => undef,
-        email                => undef,
-        token                => undef,
-        token_type           => undef,
-        account_id           => undef,
-        currency             => undef,
-        landing_company_name => undef,
-        country              => undef
-    );
+    my %stash;
+    @stash{qw/ loginid email token token_type account_id currency landing_company_name country /} = ();
+    $c->stash(%stash);
     return;
 }
 

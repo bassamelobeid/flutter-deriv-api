@@ -80,7 +80,7 @@ my $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'logout';
 is $res->{logout},   1;
 test_schema('logout', $res);
-ok !$stash->{loginid},              'TShould remove loginid from  stash';
+ok !$stash->{loginid},              'Should remove loginid from stash';
 ok !$stash->{email},                'Should remove email from stash';
 ok !$stash->{token},                'Should remove token from stash';
 ok !$stash->{token_type},           'Should remove token_type from stash';
