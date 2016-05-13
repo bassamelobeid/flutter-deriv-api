@@ -15,7 +15,6 @@ use RateLimitations qw(within_rate_limits);
 
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::Transaction;
-use BOM::WebSocketAPI::v3::Wrapper::Offerings;
 use BOM::WebSocketAPI::v3::Wrapper::Authorize;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Accounts;
@@ -171,10 +170,7 @@ my @dispatch = (
     ['ping',          \&BOM::WebSocketAPI::v3::Wrapper::System::ping,            0],
     ['time',          \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,     0],
     ['website_status', '', 0, '', {stash_params => [qw/ country_code /]}],
-    [
-        'contracts_for',
-        \&BOM::WebSocketAPI::v3::Wrapper::Offerings::contracts_for, 0
-    ],
+    ['contracts_for',  '', 0],
     ['residence_list', '', 0],
     ['states_list',    '', 0],
     [
