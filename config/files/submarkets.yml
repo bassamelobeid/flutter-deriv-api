@@ -112,22 +112,25 @@ australia:
     name: australia
     offered: 0
     display_name: "Australia Stocks"
-    display_order: 4
+    display_order: 12
     market: stocks
 belgium:
     name: belgium
     display_name: "Belgian Stocks"
-    display_order: 1
+    offered: 0
+    display_order: 11
     market: stocks
 amsterdam:
     name: amsterdam
+    offered: 0
     display_name: "Dutch Stocks"
-    display_order: 2
+    display_order: 10
     market: stocks
 france:
     name: france
+    offered: 0
     display_name: "French Stocks"
-    display_order: 3
+    display_order: 9
     market: stocks
 germany:
     name: germany
@@ -153,7 +156,42 @@ us:
     display_name: "United States Stocks"
     display_order: 8
     market: stocks
-
+us_otc_stock:
+    name: us_otc_stock
+    display_name: 'US'
+    display_order: 4
+    is_OTC: 1
+    asset_type: 'stock'
+    market: stocks
+    explanation: 'US OTC Stocks'
+    volatility_surface_type: "moneyness"
+uk_otc_stock:
+    name: uk_otc_stock
+    display_name: 'UK'
+    is_OTC: 1
+    display_order: 3
+    asset_type: 'stock'
+    market: stocks
+    explanation: 'UK OTC Stocks'
+    volatility_surface_type: "moneyness"   
+au_otc_stock:
+    name: au_otc_stock
+    display_name: 'Australia'
+    is_OTC: 1
+    display_order: 1
+    asset_type: 'stock'
+    market: stocks
+    explanation: 'Australia OTC Stocks'
+    volatility_surface_type: "moneyness"
+ge_otc_stock:
+    name: ge_otc_stock
+    display_name: 'Germany'
+    is_OTC: 1
+    display_order: 2
+    asset_type: 'stock'
+    market: stocks
+    explanation: 'Germany OTC Stocks'
+    volatility_surface_type: "moneyness"
 asia_oceania_future:
     name: asia_oceania_future
     display_name: "Asia/Oceania Future"
