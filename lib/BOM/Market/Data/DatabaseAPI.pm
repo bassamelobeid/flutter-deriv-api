@@ -19,7 +19,6 @@ If any of the functions fail due to any reason it will cause an exception thrown
 =cut
 
 use Moose;
-use Carp;
 use BOM::Platform::Runtime;
 use BOM::Market::Data::OHLC;
 use BOM::Market::Data::Tick;
@@ -163,7 +162,7 @@ sub get_first_tick {
         $next++;
     }
     unless (@barriers) {
-        confess "At least one of higher or lower must be specified";
+        die "At least one of higher or lower must be specified";
     }
     $sql .= " AND (" . join(" OR ", @barriers) . q[) ORDER BY ts ASC LIMIT 1];
 

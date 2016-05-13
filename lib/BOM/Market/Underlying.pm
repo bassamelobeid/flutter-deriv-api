@@ -17,11 +17,9 @@ my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 use open qw[ :encoding(UTF-8) ];
 use BOM::Market::Types;
 
-use Carp;
 use List::MoreUtils qw( any );
 use List::Util qw( first max min);
 use Scalar::Util qw( looks_like_number );
-use BOM::Utility::Log4perl qw( get_logger );
 use Memoize;
 use Time::HiRes;
 use Finance::Asset;
@@ -43,12 +41,11 @@ use BOM::Market::Types;
 use BOM::Platform::Static::Config;
 use Quant::Framework::Asset;
 use Quant::Framework::Currency;
+use Quant::Framework::ExpiryConventions;
 use BOM::System::Chronicle;
 use BOM::Market::SubMarket::Registry;
 use BOM::Market;
 use BOM::Market::Registry;
-
-with 'BOM::Market::Role::ExpiryConventions';
 
 our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
@@ -68,7 +65,7 @@ sub new {
     $args = {symbol => $args} if (not ref $args);
     my $symbol = $args->{symbol};
 
-    croak 'No symbol provided to constructor.' if (not $symbol);
+    die 'No symbol provided to constructor.' if (not $symbol);
 
     delete $args->{for_date}
         if (exists $args->{for_date} and not defined $args->{for_date});
@@ -439,14 +436,10 @@ around BUILDARGS => sub {
         if ($params) {
             @$params_ref{keys %$params} = @$params{keys %$params};
             $params_ref->{inverted} = 1;
-        } else {
-            get_logger()->debug("Forex underlying does not exist in yml file [" . $params_ref->{symbol} . "]");
         }
         $params_ref->{symbol}          = $requested_symbol;
         $params_ref->{asset}           = $asset;
         $params_ref->{quoted_currency} = $quoted;
-    } elsif ($params_ref->{symbol} ne 'HEARTB') {
-        get_logger()->debug("Underlying does not exist in yml file [" . $params_ref->{symbol} . "]");
     }
 
     # Pre-convert to seconds.  let underlyings.yml have easy to read.
@@ -553,7 +546,7 @@ sub _build_market {
         $market = BOM::Market::Registry->instance->get('config');
     } elsif (length($symbol) >= 15) {
         $market = BOM::Market::Registry->instance->get('config');
-        get_logger()->warn("Unknown symbol, symbol[$symbol]");
+        warn("Unknown symbol, symbol[$symbol]");
     }
 
     return $market;
@@ -649,7 +642,29 @@ sub _build_exchange_name {
     return $exchange_name;
 }
 
-=head2 exchange
+has expiry_conventions => (
+    is         => 'ro',
+    isa        => 'Quant::Framework::ExpiryConventions',
+    lazy_build => 1,
+    handles    => ['vol_expiry_date', '_spot_date', 'forward_expiry_date'],
+);
+
+sub _build_expiry_conventions {
+    my $self = shift;
+
+    return Quant::Framework::ExpiryConventions->new(
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+        is_forex_market  => $self->market->name eq 'forex',
+        symbol           => $self->symbol,
+        for_date         => $self->for_date,
+        asset            => $self->asset,
+        quoted_currency  => $self->quoted_currency,
+        asset_symbol     => $self->asset_symbol,
+        calendar         => $self->calendar,
+    );
+}
+
+=head2 calendar
 
 Returns a Quant::Framework::TradingCalendar object where this underlying is traded.  Useful for
 determining market open and closing times and other restrictions which may
@@ -852,7 +867,7 @@ sub last_licensed_display_epoch {
     } elsif ($lic eq 'chartonly') {
         return 0;
     } else {
-        confess "don't know how to deal with '$lic' license of " . $self->symbol;
+        die "don't know how to deal with '$lic' license of " . $self->symbol;
     }
 }
 
@@ -1274,7 +1289,7 @@ sub fullfeed_file {
         $date = $1 . '-' . ucfirst(lc($2)) . '-' . $3;
     }    #convert 10-JAN-05 to 10-Jan-05
     else {
-        croak 'Bad date for fullfeed_file';
+        die 'Bad date for fullfeed_file';
     }
 
     my $folder = $override_folder || $self->combined_folder;
@@ -1617,7 +1632,7 @@ sub get_ohlc_data_for_period {
     my $end_date   = Date::Utility->new($end);
 
     if ($end_date->epoch < $start_date->epoch) {
-        confess "[$0][get_ohlc_data_for_period] start_date > end_date ("
+        die "[$0][get_ohlc_data_for_period] start_date > end_date ("
             . $start_date->datetime . ' > '
             . $end_date->datetime
             . ") with input: $start > $end";
@@ -1754,7 +1769,6 @@ Returns,
 
 =head2 ohlc_daily_open
 
-Some underlying, eg: RDYANG, RDYIN open at 12GMT. The open & close cross over GMT day.
 Daily ohlc from feed.ohlc_daily table can't be used, as there are computed based on GMT day.
 In this case, daily ohlc need to be computed from feed.ohlc_hourly table, based on actual market open time
 
@@ -2087,7 +2101,7 @@ sub _build_corporate_actions {
         }
 
         if (scalar @{$order->{first}} > 1 or scalar @{$order->{last}} > 1) {
-            croak 'Could not determine order of corporate actions on '
+            die 'Could not determine order of corporate actions on '
                 . $self->system_symbol
                 . '.  Have ['
                 . scalar @{$order->{first}}
