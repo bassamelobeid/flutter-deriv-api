@@ -30,6 +30,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
+use BOM::Database::Model::OAuth;
 
 sub payout_currencies {
     my $params = shift;

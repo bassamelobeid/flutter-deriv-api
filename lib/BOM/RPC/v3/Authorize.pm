@@ -11,6 +11,7 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 
 sub authorize {
     my $params = shift;
@@ -69,12 +70,12 @@ sub logout {
             $user->save;
 
             if ($params->{token_type} eq 'oauth_token') {
-                # revoke tokens for user per app_id
-                my $oauth  = BOM::Database::Model::OAuth->new;
-                my $app_id = $oauth->get_app_id_by_token($params->{token});
+                # revoke tokens for user per app_key
+                my $oauth   = BOM::Database::Model::OAuth->new;
+                my $app_key = $oauth->get_app_key_by_token($params->{token});
 
                 foreach my $c1 ($user->clients) {
-                    $oauth->revoke_tokens_by_loginid_app($c1->loginid, $app_id);
+                    $oauth->revoke_tokens_by_loginid_app($c1->loginid, $app_key);
                 }
             }
         }
