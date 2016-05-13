@@ -21,7 +21,6 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Accounts;
 use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
-use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use BOM::WebSocketAPI::v3::Wrapper::App;
@@ -176,11 +175,8 @@ my @dispatch = (
         'contracts_for',
         \&BOM::WebSocketAPI::v3::Wrapper::Offerings::contracts_for, 0
     ],
-    [
-        'residence_list',
-        \&BOM::WebSocketAPI::v3::Wrapper::Static::residence_list, 0
-    ],
-    ['states_list', \&BOM::WebSocketAPI::v3::Wrapper::Static::states_list, 0],
+    ['residence_list', '', 0],
+    ['states_list',    '', 0],
     [
         'payout_currencies',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::payout_currencies, 0
