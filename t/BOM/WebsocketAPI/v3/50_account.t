@@ -11,27 +11,101 @@ use Test::MockModule;
 
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::Transaction;
 
 my $t = build_mojo_test({language => 'EN'});
 
+my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+
 my $token = BOM::Platform::SessionCookie->new(
-    loginid => "CR0021",
-    email   => 'shuwnyuan@regentmarkets.com',
+    loginid => $test_client->loginid,
+    email   => 'unit_test@binary.com',
 )->token;
+$test_client->payment_free_gift(
+    currency => 'USD',
+    amount   => 1000,
+    remark   => 'free gift',
+);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol => $_,
+        date   => Date::Utility->new,
+    }) for qw(JPY USD JPY-USD);
+
+my $now        = Date::Utility->new('2005-09-21 06:46:00');
+my $underlying = BOM::Market::Underlying->new('R_50');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'randomindex',
+    {
+        symbol => 'R_50',
+        date   => $now,
+    });
+
+my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 99,
+    underlying => 'R_50',
+    quote      => 76.5996,
+    bid        => 76.6010,
+    ask        => 76.2030,
+});
+
+my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch - 52,
+    underlying => 'R_50',
+    quote      => 76.6996,
+    bid        => 76.7010,
+    ask        => 76.3030,
+});
+
+my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch,
+    underlying => 'R_50',
+});
+
+for (1 .. 10) {
+    my $contract_expired = produce_contract({
+        underlying   => $underlying,
+        bet_type     => 'FLASHU',
+        currency     => 'USD',
+        stake        => 100,
+        date_start   => $now->epoch - 100,
+        date_expiry  => $now->epoch - 50,
+        current_tick => $tick,
+        entry_tick   => $old_tick1,
+        exit_tick    => $old_tick2,
+        barrier      => 'S0P',
+    });
+
+    my $txn = BOM::Product::Transaction->new({
+        client        => $test_client,
+        contract      => $contract_expired,
+        price         => 100,
+        payout        => $contract_expired->payout,
+        amount_type   => 'stake',
+        purchase_date => $now->epoch - 101,
+    });
+
+    $txn->buy(skip_validation => 1);
+
+}
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
-is $authorize->{authorize}->{email},   'shuwnyuan@regentmarkets.com';
-is $authorize->{authorize}->{loginid}, 'CR0021';
+is $authorize->{authorize}->{email},   'unit_test@binary.com';
+is $authorize->{authorize}->{loginid}, $test_client->loginid;
 
 $t = $t->send_ok({
         json => {
             statement => 1,
-            limit     => 54
+            limit     => 5
         }})->message_ok;
 my $statement = decode_json($t->message->[1]);
 ok($statement->{statement});
-is($statement->{statement}->{count}, 54);
+is($statement->{statement}->{count}, 5);
 test_schema('statement', $statement);
 
 ## balance
