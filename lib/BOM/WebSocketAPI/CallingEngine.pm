@@ -16,12 +16,12 @@ sub forward {
     return call_rpc(
         $c,
         {
+            %$params,
             url             => ($url . $rpc_method),
             method          => $rpc_method,
             msg_type        => $rpc_method // $params->{msg_type},
             call_params     => make_call_params($c, $args, $params),
             rpc_response_cb => rpc_response_cb($c, $args, $params),
-            %$params,
         });
 }
 
