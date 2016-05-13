@@ -22,15 +22,19 @@ is $response->{msg_type}, 'sell_expired';
 is $response->{error}->{code},    'AuthorizationRequired';
 is $response->{error}->{message}, 'Please log in.';
 
+my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+
 my $token = BOM::Platform::SessionCookie->new(
-    loginid => "CR0021",
-    email   => 'shuwnyuan@regentmarkets.com',
+    loginid => $test_client->loginid,
+    email   => 'unit_test@binary.com',
 )->token;
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
-is $authorize->{authorize}->{email},   'shuwnyuan@regentmarkets.com';
-is $authorize->{authorize}->{loginid}, 'CR0021';
+is $authorize->{authorize}->{email},   'unit_test@binary.com';
+is $authorize->{authorize}->{loginid}, $test_client->loginid;
 
 # wrong call
 $t = $t->send_ok({json => {sell_expired => 2}})->message_ok;
