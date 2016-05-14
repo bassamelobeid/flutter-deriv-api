@@ -802,7 +802,7 @@ subtest 'forward_starts_on' => sub {
 };
 
 subtest 'weekend outlier tick' => sub {
-    cmp_ok(BOM::Market::Underlying->new('frxUSDJPY')->weekend_outlier_tick, '==', 0.1,  'non quanto fx weekend outlier move is 0.05');
+    cmp_ok(BOM::Market::Underlying->new('frxUSDJPY')->weekend_outlier_tick, '==', 0.05, 'non quanto fx weekend outlier move is 0.05');
     cmp_ok(BOM::Market::Underlying->new('frxUSDSGD')->weekend_outlier_tick, '==', 0.1,  'quanto fx weekend outlier move is 0.1');
     cmp_ok(BOM::Market::Underlying->new('frxXAUUSD')->weekend_outlier_tick, '==', 0.05, 'commodities weekend outlier move is 0.05');
     cmp_ok(
