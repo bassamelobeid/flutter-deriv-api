@@ -16,8 +16,8 @@ sub read_dbh {
 }
 
 sub write_dbh {
-  my $ip = 'ip';
-  $ip = shift if @_;
+    my $ip = 'ip';
+    $ip = shift if @_;
     my $db_postfix = $ENV{DB_POSTFIX} // '';
     state $config = YAML::XS::LoadFile('/etc/rmg/feeddb.yml');
     return DBI->connect_cached(
