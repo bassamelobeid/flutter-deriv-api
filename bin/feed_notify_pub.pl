@@ -11,7 +11,7 @@ use BOM::Database::FeedDB;
 
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Registry;
-use BOM::System::RedisReplicate;
+use BOM::System::RedisReplicated;
 
 update_crossing_underlyings();
 while (1) {
@@ -41,8 +41,8 @@ sub _publish {
     my $payload = shift;
     my @data    = split(';', $payload);
 
-    $BOM::System::RedisReplicate::redis_write->publish('FEED::' . $data[0], $payload);
-    $BOM::System::RedisReplicate::redis_pricer->publish('FEED::' . $data[0], $payload);
+    BOM::System::RedisReplicated::redis_write->publish('FEED::' . $data[0], $payload);
+    BOM::System::RedisReplicated::redis_pricer->publish('FEED::' . $data[0], $payload);
 
 }
 
