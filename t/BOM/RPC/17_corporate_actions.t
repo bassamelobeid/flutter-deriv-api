@@ -31,7 +31,7 @@ my $token = BOM::Platform::SessionCookie->new(
     email   => $email
 )->token;
 
-#Create_doc for symbol FPFP
+#Create_doc for symbol USAAPL
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -41,32 +41,32 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'FPFP',
+        symbol => 'USAAPL',
         date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'FPFP',
+        symbol        => 'USAAPL',
         recorded_date => Date::Utility->new,
     });
 
 my $date       = Date::Utility->new('2013-03-27');
-my $opening    = BOM::Market::Underlying->new('FPFP')->calendar->opening_on($date);
-my $underlying = BOM::Market::Underlying->new('FPFP');
+my $opening    = BOM::Market::Underlying->new('USAAPL')->calendar->opening_on($date);
+my $underlying = BOM::Market::Underlying->new('USAAPL');
 my $starting   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-27'))->plus_time_interval('50m');
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
+    underlying => 'USAAPL',
     epoch      => $starting->epoch,
     quote      => 100
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
+    underlying => 'USAAPL',
     epoch      => $starting->epoch + 30,
     quote      => 111
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
+    underlying => 'USAAPL',
     epoch      => $starting->epoch + 90,
     quote      => 80
 });
@@ -100,7 +100,7 @@ subtest 'get_corporate_actions_one_action' => sub {
     my $purchase_date = $date->epoch;
 
     my $params = {
-        symbol => 'FPFP',
+        symbol => 'USAAPL',
         start  => $opening->date_ddmmmyyyy,
         end    => $closing_time->date_ddmmmyyyy,
     };
@@ -117,7 +117,7 @@ subtest 'get_corporate_actions_one_action' => sub {
 
     #Test for error case.
     my $params_err = {
-        symbol => 'FPFP',
+        symbol => 'USAAPL',
         start  => $closing_time->date_ddmmmyyyy,
         end    => $opening->date_ddmmmyyyy,
     };
