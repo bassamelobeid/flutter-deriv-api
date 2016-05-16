@@ -177,7 +177,7 @@ sub _add {
 
     my %to_store = %$tick;
 
-    $to_store{count} = 1;    # These are all single ticks;
+    $to_store{count} = 1;                                                                               # These are all single ticks;
 
     return _update($self->_redis, $key, $tick->{epoch}, $encoder->encode(\%to_store), $fast_insert);    # These are all single ticks.
 }
