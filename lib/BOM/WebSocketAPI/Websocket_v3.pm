@@ -379,7 +379,7 @@ sub __handle {
                 $c, $url, $method, $p1,
                 {
                     require_auth => $descriptor->{require_auth},
-                    $descriptor->{forward_params} ? %{$descriptor->{forward_params} || {}} : (),
+                    %{$descriptor->{forward_params} || {}},
                     before_call              => [\&start_timing],
                     before_get_rpc_response  => [\&log_call_timing],
                     after_got_rpc_response   => [\&log_call_timing_connection],
