@@ -9,11 +9,14 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use Test::MockModule;
 
-my $t = build_mojo_test({debug => 1, language => 'RU'});
+my $t = build_mojo_test({
+    debug    => 1,
+    language => 'RU'
+});
 my ($req, $res, $start, $end);
 
 my $datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
-my $params = [];
+my $params  = [];
 $datadog->mock('stats_timing', sub { push @$params, \@_ });
 
 $t->send_ok({json => {website_status => 1}})->message_ok;
