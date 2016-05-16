@@ -37,7 +37,7 @@ sub make_call_params {
     my $require_auth   = $params->{require_auth};
 
     my $call_params = $params->{call_params} ||= {};
-    $call_params->{args} = $args;
+    $call_params->{args}     = $args;
     $call_params->{language} = $c->stash('language');
     $call_params->{country}  = $c->stash('country') || $c->country_code;
 
