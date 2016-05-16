@@ -8,24 +8,6 @@ use Cache::RedisDB;
 
 use BOM::WebSocketAPI::Websocket_v3;
 
-sub trading_times {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'trading_times',
-        sub {
-            my $response = shift;
-            return {
-                msg_type      => 'trading_times',
-                trading_times => $response
-            };
-        },
-        {args => $args});
-
-    return;
-}
-
 sub asset_index {
     my ($c, $args) = @_;
 
@@ -52,25 +34,6 @@ sub asset_index {
             language => $language
         });
 
-    return;
-}
-
-sub active_symbols {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'active_symbols',
-        sub {
-            my $response = shift;
-            return {
-                msg_type       => 'active_symbols',
-                active_symbols => $response
-            };
-        },
-        {
-            args  => $args,
-            token => $c->stash('token')});
     return;
 }
 
