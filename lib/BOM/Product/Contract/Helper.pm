@@ -31,7 +31,7 @@ sub commission {
     die "you need to provide theo_probability and risk_markup and base_commission to calculate commission." if not ($args->{theo_probability} and $args->{risk_markup} and $args->{base_commission});
 
     if ($args->{payout}) {
-        return $base_commission * commission_multiplier($args->{payout}, $args->{theo_probability});
+        return $args->{base_commission} * commission_multiplier($args->{payout}, $args->{theo_probability});
     }
 
     if ($args->{stake}) {
@@ -44,7 +44,7 @@ sub commission {
         my $initial_payout = _calculate_payout($args);
         if (commission_multiplier($initial_payout) == $commission_base_multiplier) {
             # a minimum of 2 cents please.
-            my $minimun_commission = 0.02 / $initial_payout;
+            my $minimum_commission = 0.02 / $initial_payout;
             return ($minimum_commission > $base_commission) ? $minimum_commission : $base_commission;
         }
 
@@ -72,7 +72,7 @@ sub commission {
         # die if we could not get a positive payout value.
         die 'Could not calculate a payout' unless $initial_payout;
 
-        return $base_commission * commission_multiplier($payout);
+        return $base_commission * commission_multiplier($initial_payout);
     }
 
     die 'Stake or payout is required to calculate commission.';
