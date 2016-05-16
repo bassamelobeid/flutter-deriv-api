@@ -18,7 +18,7 @@ my $oauth = BOM::Database::Model::OAuth->new;
 my $dbh   = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
-$dbh->do("DELETE FROM oauth.apps WHERE key <> 'binarycom'");
+$dbh->do("DELETE FROM oauth.apps");
 BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
@@ -59,7 +59,7 @@ my $get_app = $c->call_ok(
     {
         token => $token,
         args  => {
-            app_get => $app1->{app_key},
+            app_get => $app1->{app_id},
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply($app1, $get_app, 'same on get');
@@ -94,7 +94,7 @@ my $get_apps = $c->call_ok(
         },
     })->has_no_system_error->result;
 
-$get_apps = [grep { $_->{app_key} ne 'binarycom' } @$get_apps];
+$get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
 is_deeply($get_apps, [$app1, $app2], 'list ok');
 
 my $delete_st = $c->call_ok(
@@ -102,7 +102,7 @@ my $delete_st = $c->call_ok(
     {
         token => $token,
         args  => {
-            app_delete => $app2->{app_key},
+            app_delete => $app2->{app_id},
         },
     })->has_no_system_error->result;
 ok $delete_st;
@@ -115,7 +115,7 @@ $get_apps = $c->call_ok(
             app_list => 1,
         },
     })->has_no_system_error->result;
-$get_apps = [grep { $_->{app_key} ne 'binarycom' } @$get_apps];
+$get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
 is_deeply($get_apps, [$app1], 'delete ok');
 
 # delete again will return 0
@@ -124,16 +124,16 @@ $delete_st = $c->call_ok(
     {
         token => $token,
         args  => {
-            app_delete => $app2->{app_key},
+            app_delete => $app2->{app_id},
         },
     })->has_no_system_error->result;
 ok !$delete_st, 'was deleted';
 
 ## for used and revoke
-my $test_appkey = $app1->{app_key};
+my $test_appid = $app1->{app_id};
 $oauth = BOM::Database::Model::OAuth->new;    # re-connect db
-ok $oauth->confirm_scope($test_appkey, $test_loginid), 'confirm scope';
-my ($access_token) = $oauth->store_access_token_only($test_appkey, $test_loginid);
+ok $oauth->confirm_scope($test_appid, $test_loginid), 'confirm scope';
+my ($access_token) = $oauth->store_access_token_only($test_appid, $test_loginid);
 my $used_apps = $c->call_ok(
     'oauth_apps',
     {
@@ -143,12 +143,12 @@ my $used_apps = $c->call_ok(
         },
     })->has_no_system_error->result;
 is scalar(@{$used_apps}), 1;
-is $used_apps->[0]->{app_key}, $test_appkey, 'app_key 1';
+is $used_apps->[0]->{app_id}, $test_appid, 'app_id 1';
 is_deeply([sort @{$used_apps->[0]->{scopes}}], ['read', 'trade'], 'scopes are right');
 ok $used_apps->[0]->{last_used}, 'last_used ok';
 
 $oauth = BOM::Database::Model::OAuth->new;    # re-connect db
-my $is_confirmed = $oauth->is_scope_confirmed($test_appkey, $test_loginid);
+my $is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 1, 'was confirmed';
 $c->call_ok(
     'oauth_apps',
@@ -156,12 +156,12 @@ $c->call_ok(
         token => $access_token,
         args  => {
             oauth_apps => 1,
-            revoke_app => $test_appkey,
+            revoke_app => $test_appid,
         },
     })->has_no_system_error;
 
 $oauth = BOM::Database::Model::OAuth->new;                                # re-connect db
-$is_confirmed = $oauth->is_scope_confirmed($test_appkey, $test_loginid);
+$is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 0, 'not confirmed after revoke';
 
 ## the access_token is not working after revoke

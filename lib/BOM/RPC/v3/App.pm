@@ -82,9 +82,9 @@ sub get {
     my $user    = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
-    my $oauth   = BOM::Database::Model::OAuth->new;
-    my $app_key = $params->{args}->{app_get};
-    my $app     = $oauth->get_app($user_id, $app_key);
+    my $oauth  = BOM::Database::Model::OAuth->new;
+    my $app_id = $params->{args}->{app_get};
+    my $app    = $oauth->get_app($user_id, $app_id);
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'AppGet',
@@ -101,9 +101,9 @@ sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my $user    = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
-    my $oauth   = BOM::Database::Model::OAuth->new;
-    my $app_key = $params->{args}->{app_delete};
-    my $status  = $oauth->delete_app($user_id, $app_key);
+    my $oauth  = BOM::Database::Model::OAuth->new;
+    my $app_id = $params->{args}->{app_delete};
+    my $status = $oauth->delete_app($user_id, $app_id);
 
     return $status ? 1 : 0;
 }
