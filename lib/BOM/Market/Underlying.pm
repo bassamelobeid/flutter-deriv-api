@@ -262,6 +262,23 @@ sub _build_config {
         });
 }
 
+has '_builder' => (
+    is          => 'ro',
+    isa         => 'Quant::Framework::Utils::Builder',
+    lazy_build  => 1
+);
+
+sub _build__builder {
+    my $self = shift;
+
+    return Quant::Framework::Utils::Builder->new({
+            for_date => $self->for_date,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+            underlying_config => $self->config
+        });
+}
+
 has contracts => (
     is         => 'ro',
     isa        => 'HashRef',
@@ -1081,6 +1098,43 @@ sub _build_rate_to_imply_from {
         ? $self->asset_symbol
         : $self->quoted_currency_symbol;
 }
+
+=head2 dividend_rate_for
+
+Get the dividend rate for this underlying over a given time period (expressed in timeinyears.)
+
+=cut
+
+sub dividend_rate_for {
+    my ($self, $tiy) = @_;
+
+    return $self->_builder->dividend_rate_for($tiy);
+}
+
+=head2 interest_rate_for
+
+Get the interest rate for this underlying over a given time period (expressed in timeinyears.)
+
+=cut
+
+sub interest_rate_for {
+    my ($self, $tiy) = @_;
+
+    return $self->_builder->interest_rate_for($tiy);
+}
+
+sub get_discrete_dividend_for_period {
+    my ($self, $args) = @_;
+
+    return $self->_builder->get_discrete_dividend_for_period($args);
+}
+
+sub dividend_adjustments_for_period {
+    my ($self, $args) = @_;
+
+    return $self->_builder->dividend_adjustments_for_period($args);
+}
+
 
 sub uses_implied_rate {
     my ($self, $which) = @_;
