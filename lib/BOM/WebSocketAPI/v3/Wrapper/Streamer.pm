@@ -302,8 +302,8 @@ sub _pricing_channel {
 
     if (not $pricing_channel->{$serialized_args}) {
         my $rp = Mojo::Redis::Processor->new({
-            'write_conn' => BOM::System::RedisReplicated::redis_write,
-            'read_conn'  => BOM::System::RedisReplicated::redis_read,
+            'write_conn' => BOM::System::RedisReplicated::redis_pricer,
+            'read_conn'  => BOM::System::RedisReplicated::redis_pricer,
             data         => $serialized_args,
             trigger      => 'FEED::' . $args->{symbol},
         });
