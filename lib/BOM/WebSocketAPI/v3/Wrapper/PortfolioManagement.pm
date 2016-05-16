@@ -80,7 +80,7 @@ sub proposal_open_contract {
                     # need to do this as args are passed back to client as response echo_req
                     my $details = {%$args};
                     # as req_id and passthrough can change so we should not send them in type else
-                    # they can subscribe to multiple proposal_open_contract
+                    # client can subscribe to multiple proposal_open_contract as feed channel type will change
                     my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
 
                     foreach my $contract_id (@contract_ids) {
@@ -120,7 +120,7 @@ sub proposal_open_contract {
                                 $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                                     $c, 'subscribe',
                                     $response->{$contract_id}->{underlying},
-                                    'proposal_open_contract:' . JSON::to_json(%type_args), $details
+                                    'proposal_open_contract:' . JSON::to_json(\%type_args), $details
                                 );
 
                                 # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
