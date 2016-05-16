@@ -7,7 +7,7 @@
       "type":"string",
       "pattern": "^.{32}$",
       "required": "1",
-      "description": "Application app_id"
+      "description": "Application app_key"
     },
     "passthrough": {
       "type": "object",

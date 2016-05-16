@@ -22,7 +22,7 @@ my $oauth = BOM::Database::Model::OAuth->new;
 my $dbh   = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
-$dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
+$dbh->do("DELETE FROM oauth.apps WHERE key <> 'binarycom'");
 
 my $email     = 'abc@binary.com';
 my $password  = 'jskjd8292922';
@@ -63,11 +63,11 @@ my $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'app_register';
 test_schema('app_register', $res);
 my $app1   = $res->{app_register};
-my $app_id = $app1->{app_id};
+my $app_key = $app1->{app_key};
 
 $t = $t->send_ok({
         json => {
-            app_get => $app_id,
+            app_get => $app_key,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'app_get';
@@ -123,12 +123,12 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'app_list';
 test_schema('app_list', $res);
-my $get_apps = [grep { $_->{app_id} ne 'binarycom' } @{$res->{app_list}}];
+my $get_apps = [grep { $_->{app_key} ne 'binarycom' } @{$res->{app_list}}];
 is_deeply($get_apps, [$app1, $app2], 'app_list ok');
 
 $t = $t->send_ok({
         json => {
-            app_delete => $app2->{app_id},
+            app_delete => $app2->{app_key},
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'app_delete';
@@ -140,14 +140,14 @@ $t = $t->send_ok({
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 test_schema('app_list', $res);
-$get_apps = [grep { $_->{app_id} ne 'binarycom' } @{$res->{app_list}}];
+$get_apps = [grep { $_->{app_key} ne 'binarycom' } @{$res->{app_list}}];
 is_deeply($get_apps, [$app1], 'app_delete ok');
 
 ## for used and revoke
-my $test_appid = $app1->{app_id};
+my $test_appkey = $app1->{app_key};
 $oauth = BOM::Database::Model::OAuth->new;
-ok $oauth->confirm_scope($test_appid, $cr_1), 'confirm scope';
-my ($access_token) = $oauth->store_access_token_only($test_appid, $cr_1);
+ok $oauth->confirm_scope($test_appkey, $cr_1), 'confirm scope';
+my ($access_token) = $oauth->store_access_token_only($test_appkey, $cr_1);
 
 $t = build_mojo_test();
 $t = $t->send_ok({json => {authorize => $access_token}})->message_ok;
@@ -161,26 +161,26 @@ test_schema('oauth_apps', $res);
 
 my $used_apps = $res->{oauth_apps};
 is scalar(@{$used_apps}), 1;
-is $used_apps->[0]->{app_id}, $test_appid, 'app_id 1';
+is $used_apps->[0]->{app_key}, $test_appkey, 'app_key 1';
 is_deeply([sort @{$used_apps->[0]->{scopes}}], ['admin', 'read'], 'scopes are right');
 ok $used_apps->[0]->{last_used}, 'last_used ok';
 
-my $is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($test_appid, $cr_1);
+my $is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($test_appkey, $cr_1);
 is $is_confirmed, 1, 'was confirmed';
 $t = $t->send_ok({
         json => {
             oauth_apps => 1,
-            revoke_app => $test_appid,
+            revoke_app => $test_appkey,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
-$is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($test_appid, $cr_1);
+$is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($test_appkey, $cr_1);
 is $is_confirmed, 0, 'not confirmed after revoke';
 
 ## the access_token is not working after revoke
 $t = $t->send_ok({
         json => {
             oauth_apps => 1,
-            revoke_app => $test_appid,
+            revoke_app => $test_appkey,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'oauth_apps';

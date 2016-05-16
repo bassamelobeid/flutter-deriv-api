@@ -16,9 +16,9 @@
           "type": "string",
           "description":"Application name"
         },
-        "app_id": {
+        "app_key": {
           "type": "string",
-          "description":"Application id"
+          "description":"Application key"
         },
         "redirect_uri": {
           "type": "string",
