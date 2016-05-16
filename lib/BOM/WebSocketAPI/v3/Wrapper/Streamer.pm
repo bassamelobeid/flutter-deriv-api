@@ -473,7 +473,7 @@ sub process_transaction_updates {
                         BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                             $c, 'unsubscribe',
                             delete $args->{underlying},
-                            'proposal_open_contract:' . JSON::to_json($channel->{$type}->{$type_args}), $args
+                            'proposal_open_contract:' . JSON::to_json($channel->{$type}->{type_args}), $args
                         ) if $args->{underlying};
                         _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
 
