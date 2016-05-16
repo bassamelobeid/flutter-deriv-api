@@ -5,7 +5,6 @@ use Moose;
 use namespace::autoclean;
 
 use BOM::Platform::Email qw(send_email);
-use BOM::Database::Model::Constants;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
@@ -27,7 +26,7 @@ sub run_authentication {
     my $self   = shift;
     my $client = $self->client;
 
-    return $client->is_virtual;
+    return if $client->is_virtual;
 
     # Binary Investment clients should already be fully_authenticated by the time this code runs following an intial deposit.
     # Binary Investment accounts are set to "unwelcome" when they are first created.  Document
