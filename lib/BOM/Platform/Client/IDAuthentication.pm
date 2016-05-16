@@ -98,15 +98,15 @@ sub _do_proveid {
     }
     # result is FULLY AUTHENTICATED
     elsif ($prove_id_result->{fully_authenticated}) {
-        $self->_notify('EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT', 'passed PROVE ID KYC on first deposit and is fully authenticated.');
+        $self->_notify('EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT', 'passed PROVE ID KYC and is fully authenticated.');
         $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-        $client->set_authentication('ID_192')->status('pass');
+        # $client->set_authentication('ID_192')->status('pass'); #The IOM GSC no longer accept Experian to authenticate clients
         $client->save;
     }
     # result is AGE VERIFIED ONLY
     elsif ($prove_id_result->{age_verified}) {
         $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION', 'could only get enough score for age verification.');
-        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+        $client->set_status('age_verification', 'system', 'Successfully age verified via Experian Prove ID');
         $client->save;
     }
     # failed to authenticate
