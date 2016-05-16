@@ -150,8 +150,6 @@ my @dispatch = (
             success      => \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
         },
     ],
-
-<<<<<<< HEAD
     ['trading_times',  \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,  0],
     ['asset_index',    \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,    0],
     ['active_symbols', \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::active_symbols, 0],
@@ -171,10 +169,7 @@ my @dispatch = (
     ['payout_currencies',       '', 0, '', {stash_params => [qw/ token /]}],
     ['landing_company',         '', 0],
     ['landing_company_details', '', 0],
-    [
-        'get_corporate_actions',
-        \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::get_corporate_actions, 0
-    ],
+    ['get_corporate_actions', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::get_corporate_actions, 0],
 
     ['balance', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance, 1, 'read'],
     ['statement',          '', 1, 'read',     {stash_params => [qw/ source /]}],
@@ -195,12 +190,9 @@ my @dispatch = (
     ['get_financial_assessment', '', 1, 'admin'],
     ['reality_check',            '', 1, 'read'],
 
-    ['verify_email', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email, 0],
-    [
-        'new_account_virtual',
-        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0
-    ],
-    ['reset_password', '', 0],
+    ['verify_email',        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email,        0],
+    ['new_account_virtual', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0],
+    ['reset_password',      '',                                                                0],
 
     # authenticated calls
     ['sell',                   \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,                           1, 'trade'],
