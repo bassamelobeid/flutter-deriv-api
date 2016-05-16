@@ -50,9 +50,9 @@ sub entry_point {
     if (not $c->stash->{redis_pricer}) {
         state $url_pricers = do {
             my $cf = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write};
-            defined($cf->{password})
-                ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
-                : "redis://$cf->{host}:$cf->{port}";
+            my $url = Mojo::URL->new("redis://$cf->{host}:$cf->{port}");
+            $url->userinfo('dummy:' . $cf->{password}) if $cf->{password};
+            $url;
         };
 
         my $redis_pricer = Mojo::Redis2->new(url => $url_pricers);
