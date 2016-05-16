@@ -197,7 +197,6 @@ sub send_ask_price_stream {
     return;
 }
 
-
 sub _serialized_args {
     my $h = shift;
     my @a = ();
