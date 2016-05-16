@@ -185,14 +185,21 @@ my @dispatch = (
     ['api_token',                '', 1, 'admin', {stash_params => [qw/ account_id /]}],
     ['tnc_approval',             '', 1, 'admin'],
     ['login_history',            '', 1, 'read',  {response     => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history_response_handler}],
-    ['set_account_currency',     '', 1, 'admin', {call_params  => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler}],
+    ['set_account_currency',     '', 1, 'admin', {make_call_params  => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler}],
     ['set_financial_assessment', '', 1, 'admin'],
     ['get_financial_assessment', '', 1, 'admin'],
     ['reality_check',            '', 1, 'read'],
 
-    ['verify_email',        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email,        0],
-    ['new_account_virtual', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual, 0],
-    ['reset_password',      '',                                                                0],
+    [
+        'verify_email',
+        '', 0, '',
+        {
+            before_call  => [\&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email_get_type_code],
+            stash_params => [qw/ server_name /],
+        }
+    ],
+    ['new_account_virtual', '', 0],
+    ['reset_password',      '', 0],
 
     # authenticated calls
     ['sell',                   \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,                           1, 'trade'],
@@ -208,17 +215,17 @@ my @dispatch = (
     ['app_delete',   '', 1, 'admin'],
     ['oauth_apps',   '', 1, 'admin'],
 
-    ['topup_virtual',             \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual,              1, 'trade'],
-    ['get_limits',                \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                 1, 'read'],
-    ['paymentagent_list',         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,          0],
-    ['paymentagent_withdraw',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,      1, 'payments'],
-    ['paymentagent_transfer',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer,      1, 'payments'],
-    ['transfer_between_accounts', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::transfer_between_accounts,  1, 'payments'],
-    ['cashier',                   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::cforward,                   1, 'payments'],
-    ['new_account_real',          \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real,        1, 'admin'],
-    ['new_account_japan',         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_japan,       1, 'admin'],
-    ['new_account_maltainvest',   \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_maltainvest, 1, 'admin'],
-    ['jp_knowledge_test',         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::jp_knowledge_test,       1, 'admin'],
+    ['topup_virtual',             \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual,             1, 'trade'],
+    ['get_limits',                \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                1, 'read'],
+    ['paymentagent_list',         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,         0],
+    ['paymentagent_withdraw',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,     1, 'payments'],
+    ['paymentagent_transfer',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer,     1, 'payments'],
+    ['transfer_between_accounts', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::transfer_between_accounts, 1, 'payments'],
+    ['cashier',                   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::cforward,                  1, 'payments'],
+    ['new_account_real',          '',                                                                   1, 'admin'],
+    ['new_account_japan',         '',                                                                   1, 'admin'],
+    ['new_account_maltainvest',   '',                                                                   1, 'admin'],
+    ['jp_knowledge_test',         '',                                                                   1, 'admin'],
 );
 
 # key: category, value:  hashref (descriptor) with fields
@@ -371,17 +378,23 @@ sub __handle {
 
             my $method = $descriptor->{category};
 
+            my %forward_params;
+            if (ref $descriptor->{forward_params} eq 'HASH') {
+                %forward_params = %{$descriptor->{forward_params}};
+            }
+
+            $forward_params{before_call}              = [@{$forward_params{before_call}              || []}, \&start_timing];
+            $forward_params{before_get_rpc_response}  = [@{$forward_params{before_get_rpc_response}  || []}, \&log_call_timing];
+            $forward_params{after_got_rpc_response}   = [@{$forward_params{after_got_rpc_response}   || []}, \&log_call_timing_connection];
+            $forward_params{before_send_api_response} = [@{$forward_params{before_send_api_response} || []}, \&add_debug_time, \&start_timing];
+            $forward_params{after_sent_api_response}  = [@{$forward_params{after_sent_api_response}  || []}, \&log_call_timing_sent];
+
             # No need return result because always do async response
             BOM::WebSocketAPI::CallingEngine::forward(
                 $c, $url, $method, $p1,
                 {
                     require_auth => $descriptor->{require_auth},
-                    %{$descriptor->{forward_params} || {}},
-                    before_call              => [\&start_timing],
-                    before_get_rpc_response  => [\&log_call_timing],
-                    after_got_rpc_response   => [\&log_call_timing_connection],
-                    before_send_api_response => [\&add_debug_time, \&start_timing],
-                    after_sent_api_response  => [\&log_call_timing_sent],
+                    %forward_params,
                 });
         }
 
