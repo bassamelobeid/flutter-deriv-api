@@ -363,7 +363,7 @@ sub _feed_channel {
 }
 
 sub _transaction_channel {
-    my ($c, $action, $account_id, $type, $args) = @_;
+    my ($c, $action, $account_id, $type, $args, $type_args) = @_;
     my $uuid;
 
     my $redis              = $c->stash('redis');
@@ -375,8 +375,9 @@ sub _transaction_channel {
         if ($action eq 'subscribe' and not $already_subscribed) {
             $uuid = Data::UUID->new->create_str();
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
-            $channel->{$type}->{args}       = $args if $args;
-            $channel->{$type}->{uuid}       = $uuid;
+            $channel->{$type}->{args}      = $args      if $args;
+            $channel->{$type}->{type_args} = $type_args if $type_args;
+            $channel->{$type}->{uuid}      = $uuid;
             $channel->{$type}->{account_id} = $account_id;
             $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
@@ -472,7 +473,7 @@ sub process_transaction_updates {
                         BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                             $c, 'unsubscribe',
                             delete $args->{underlying},
-                            'proposal_open_contract:' . JSON::to_json($args), $args
+                            'proposal_open_contract:' . JSON::to_json($channel->{$type}->{$type_args}), $args
                         ) if $args->{underlying};
                         _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
 

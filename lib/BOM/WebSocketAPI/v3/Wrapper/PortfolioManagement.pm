@@ -125,7 +125,7 @@ sub proposal_open_contract {
 
                                 # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
                                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $details->{account_id},
-                                    $contract_id, $details)
+                                    $contract_id, $details, \%type_args)
                                     if $id;
                             }
                             my $res = {$id ? (id => $id) : (), %{$response->{$contract_id}}};
