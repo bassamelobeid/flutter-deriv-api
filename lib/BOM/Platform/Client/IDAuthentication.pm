@@ -7,7 +7,7 @@ use namespace::autoclean;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::Constants;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(localize request);
+use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
 use BOM::Platform::ProveID;
 use BOM::Platform::Static::Config;
@@ -23,33 +23,11 @@ has force_recheck => (
     default => 0
 );
 
-sub _landing_company_country {
-    my $self = shift;
-    return $self->client->landing_company->country;
-}
-
-sub _needs_proveid {
-    my $self = shift;
-
-    my $landing_company_country = $self->_landing_company_country;
-
-    # All MX clients needs authentication
-    if ($landing_company_country eq 'Isle of Man') {
-        return 1;
-    }
-    return;
-}
-
-sub _requires_age_verified {
-    my $self = shift;
-
-    return if $self->client->is_virtual;
-    return $self->_landing_company_country ne 'Costa Rica';
-}
-
 sub run_authentication {
     my $self   = shift;
     my $client = $self->client;
+
+    return $client->is_virtual;
 
     # Binary Investment clients should already be fully_authenticated by the time this code runs following an intial deposit.
     # Binary Investment accounts are set to "unwelcome" when they are first created.  Document
@@ -62,17 +40,13 @@ sub run_authentication {
 
     my $envelope;
 
-    if ($self->_needs_proveid) {
-
-        $envelope = $self->_do_proveid
-
-    } elsif ($self->_requires_age_verified
+    if ($client->landing_company->country eq 'Isle of Man') {
+        $envelope = $self->_do_proveid;
+    } elsif ($client->landing_company->country ne 'Costa Rica'
         && !$client->get_status('age_verification')
         && !$client->has_valid_documents)
     {
-
-        $envelope = $self->_request_id_authentication
-
+        $envelope = $self->_request_id_authentication;
     }
 
     send_email($envelope) if $envelope;
@@ -172,7 +146,7 @@ sub _request_id_authentication {
     my $ce_body       = localize(<<'EOM', $client_name, $support_email);
 Dear [_1],
 
-I am writing to you regarding your account with Binary.com.
+We are writing to you regarding your account with Binary.com.
 
 We are legally required to verify that clients are over the age of 18, and so we request that you forward scanned copies of one of the following to [_2]:
 
@@ -180,7 +154,7 @@ We are legally required to verify that clients are over the age of 18, and so we
 
 In order to comply with licencing regulations, you will be unable to make further deposits or withdrawals or to trade on the account until we receive this document.
 
-I look forward to hearing from you soon.
+We look forward to hearing from you soon.
 
 Kind regards,
 
@@ -206,24 +180,20 @@ sub _notify {
     return;
 }
 
-sub _premise {
-    my $self    = shift;
-    my $premise = $self->client->address_1;
-    if ($premise =~ /^(\d+)/) {
-        $premise = $1;
-    }
-    return $premise;
-}
-
 sub _fetch_proveid {
     my $self = shift;
 
     return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
 
+    my $premise = $self->client->address_1;
+    if ($premise =~ /^(\d+)/) {
+        $premise = $1;
+    }
+
     return BOM::Platform::ProveID->new(
         client        => $self->client,
         search_option => 'ProveID_KYC',
-        premise       => $self->_premise,
+        premise       => $premise,
         force_recheck => $self->force_recheck
     )->get_result;
 }
