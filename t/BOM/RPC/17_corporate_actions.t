@@ -105,12 +105,6 @@ subtest 'get_corporate_actions_one_action' => sub {
     $params->{args}{start}  = $opening->date_ddmmmyyyy;
     $params->{args}{end}    = $closing_time->date_ddmmmyyyy;
 
-    #my $params = {
-    #    symbol => 'USAAPL',
-    #    start  => $opening->date_ddmmmyyyy,
-    #    end    => $closing_time->date_ddmmmyyyy,
-    #};
-
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (qw(28-Mar-2013));
