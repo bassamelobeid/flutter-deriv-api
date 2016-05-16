@@ -52,16 +52,26 @@ subtest $method => sub {
     $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
     $params->{token} = $token;
     my $expected_result = {
-        fullname             => $test_client->full_name,
-        loginid              => $test_client->loginid,
-        balance              => 0,
-        currency             => '',
-        email                => 'dummy@binary.com',
-        account_id           => '',
-        landing_company_name => 'costarica',
-        country              => 'id',
-        scopes               => [qw(read trade admin payments)],
-        is_virtual           => 0,
+        'stash' => {
+            'email'                => 'dummy@binary.com',
+            'scopes'               => ['read', 'trade', 'admin', 'payments'],
+            'country'              => 'id',
+            'loginid'              => $test_client->loginid,
+            'token'                => $token,
+            'token_type'           => 'session_token',
+            'account_id'           => '',
+            'currency'             => '',
+            'landing_company_name' => 'costarica',
+            'is_virtual'           => '0'
+        },
+        'currency'             => '',
+        'email'                => 'dummy@binary.com',
+        'scopes'               => ['read', 'trade', 'admin', 'payments'],
+        'balance'              => '0',
+        'landing_company_name' => 'costarica',
+        'fullname'             => $test_client->full_name,
+        'loginid'              => $test_client->loginid,
+        'is_virtual'           => '0'
     };
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
 
@@ -72,9 +82,9 @@ subtest $method => sub {
         amount   => 1000,
         remark   => 'free gift',
     );
-    $expected_result->{account_id} = $test_client->default_account->id;
-    $expected_result->{currency}   = 'USD';
-    $expected_result->{balance}    = '1000.0000';
+    $expected_result->{stash}->{account_id} = $test_client->default_account->id;
+    $expected_result->{currency} = $expected_result->{stash}->{currency} = 'USD';
+    $expected_result->{balance} = '1000.0000';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
 
     $params->{token} = $token_vr;
@@ -89,7 +99,7 @@ subtest 'logout' => sub {
     )->token;
 
     my $params = {
-        client_email => $email,
+        email        => $email,
         client_ip    => '1.1.1.1',
         country_code => 'id',
         language     => 'EN',
