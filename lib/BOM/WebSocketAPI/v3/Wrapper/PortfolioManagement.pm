@@ -76,14 +76,19 @@ sub proposal_open_contract {
                                     msg_type               => 'proposal_open_contract',
                                     proposal_open_contract => {%$result}}});
                     };
+
+                    # need to do this as args are passed back to client as response echo_req
+                    my $details = {%$args};
+                    # as req_id and passthrough can change so we should not send them in type else
+                    # they can subscribe to multiple proposal_open_contract
+                    my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
+
                     foreach my $contract_id (@contract_ids) {
                         if (exists $response->{$contract_id}->{error}) {
                             $send_details->({
                                     contract_id      => $contract_id,
                                     validation_error => $response->{$contract_id}->{error}->{message_to_client}});
                         } else {
-                            # need to do this as args are passed back to client as response echo_req
-                            my $details = {%$args};
                             # we don't want to leak account_id to client
                             $details->{account_id} = delete $response->{$contract_id}->{account_id};
                             my $id;
@@ -104,13 +109,18 @@ sub proposal_open_contract {
                                 $details->{is_sold}         = $response->{$contract_id}->{is_sold};
                                 $details->{transaction_ids} = $response->{$contract_id}->{transaction_ids};
 
+                                # pass account_id so that we can categorize it based on type, can't use contract_id
+                                # as we send contract_id also, we want both request to stream i.e one with contract_id
+                                # and one for all contracts
+                                $type_args{account_id} = $details->{account_id};
+
                                 # need underlying to cancel streaming when manual sell occurs
                                 $details->{underlying} = $response->{$contract_id}->{underlying};
 
                                 $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                                     $c, 'subscribe',
                                     $response->{$contract_id}->{underlying},
-                                    'proposal_open_contract:' . JSON::to_json($details), $details
+                                    'proposal_open_contract:' . JSON::to_json(%type_args), $details
                                 );
 
                                 # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
