@@ -232,51 +232,51 @@ has [qw(
     );
 
 has 'config' => (
-    is          => 'ro',
-    isa         => 'Quant::Framework::Utils::UnderlyingConfig',
-    lazy_build  => 1
+    is         => 'ro',
+    isa        => 'Quant::Framework::Utils::UnderlyingConfig',
+    lazy_build => 1
 );
 
 sub _build_config {
     my $self = shift;
-    
+
     return Quant::Framework::Utils::UnderlyingConfig->new({
-            symbol => $self->symbol,
-            system_symbol => $self->system_symbol,
-            market_name => $self->market->name,
-            market_asset_type => $self->market->asset_type,
-            market_prefer_discrete_dividend => $self->market->prefer_discrete_dividend,
-            quanto_only => $self->quanto_only,
-            submarket_name => $self->submarket->name,
-            rate_to_imply_from => $self->rate_to_imply_from,
-            submarket_asset_type => $self->submarket->asset_type,
-            volatility_surface_type => $self->volatility_surface_type,
-            exchange_name => $self->exchange_name,
-            locale => BOM::Platform::Context::request()->language,
-            uses_implied_rate => $self->uses_implied_rate,
-            spot => $self->spot,
-            asset => $self->asset->config,
-            quoted_currency => $self->quoted_currency->config,
-            extra_vol_diff_by_delta => BOM::Platform::Static::Config::quants->{market_data}->{extra_vol_diff_by_delta},
-            market_convention => $self->market_convention,
-        });
+        symbol                          => $self->symbol,
+        system_symbol                   => $self->system_symbol,
+        market_name                     => $self->market->name,
+        market_asset_type               => $self->market->asset_type,
+        market_prefer_discrete_dividend => $self->market->prefer_discrete_dividend,
+        quanto_only                     => $self->quanto_only,
+        submarket_name                  => $self->submarket->name,
+        rate_to_imply_from              => $self->rate_to_imply_from,
+        submarket_asset_type            => $self->submarket->asset_type,
+        volatility_surface_type         => $self->volatility_surface_type,
+        exchange_name                   => $self->exchange_name,
+        locale                          => BOM::Platform::Context::request()->language,
+        uses_implied_rate               => $self->uses_implied_rate,
+        spot                            => $self->spot,
+        asset                           => $self->asset->config,
+        quoted_currency                 => $self->quoted_currency->config,
+        extra_vol_diff_by_delta         => BOM::Platform::Static::Config::quants->{market_data}->{extra_vol_diff_by_delta},
+        market_convention               => $self->market_convention,
+    });
 }
 
 has '_builder' => (
-    is          => 'ro',
-    isa         => 'Quant::Framework::Utils::Builder',
-    lazy_build  => 1
+    is         => 'ro',
+    isa        => 'Quant::Framework::Utils::Builder',
+    lazy_build => 1
 );
 
 sub _build__builder {
     my $self = shift;
 
     return Quant::Framework::Utils::Builder->new({
-            for_date => $self->for_date,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
-            underlying_config => $self->config
-        });
+        for_date          => $self->for_date,
+        chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+        chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
+        underlying_config => $self->config
+    });
 }
 
 has contracts => (
@@ -1134,7 +1134,6 @@ sub dividend_adjustments_for_period {
 
     return $self->_builder->dividend_adjustments_for_period($args);
 }
-
 
 sub uses_implied_rate {
     my ($self, $which) = @_;
