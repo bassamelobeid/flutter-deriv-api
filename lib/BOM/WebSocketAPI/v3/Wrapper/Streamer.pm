@@ -238,21 +238,31 @@ sub process_pricing_events {
                 msg_type     => 'price_stream',
                 price_stream => $response,
             };
-            # For non spread
-            if ($pricing_channel->{$serialized_args}->{$amount}->{args}->{basis}) {
-                $results->{price_stream}->{ask_price} *= $amount / 1000;
-                $results->{price_stream}->{ask_price} = roundnear(0.01, $results->{price_stream}->{ask_price});
 
-                $results->{price_stream}->{display_value} *= $amount / 1000;
-                $results->{price_stream}->{display_value} = roundnear(0.01, $results->{price_stream}->{display_value});
+            $results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $results, $amount);
 
-            }
             $results->{price_stream}->{id} = $pricing_channel->{$serialized_args}->{$amount}->{uuid};
         }
-        BOM::WebSocketAPI::Websocket_v3::_process_result($c, $results, 'price_stream', $pricing_channel->{$serialized_args}->{$amount}->{args},
-            undef, undef);
+
+        $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
+        $c->send({json => $results});
     }
     return;
+}
+
+sub _price_stream_results_adjustment {
+    my $orig_args = shift;
+    my $results   = shift;
+    my $amount    = shift;
+    # For non spread
+    if ($orig_args->{basis}) {
+        $results->{price_stream}->{ask_price} *= $amount / 1000;
+        $results->{price_stream}->{ask_price} = roundnear(0.01, $results->{price_stream}->{ask_price});
+
+        $results->{price_stream}->{display_value} *= $amount / 1000;
+        $results->{price_stream}->{display_value} = roundnear(0.01, $results->{price_stream}->{display_value});
+    }
+    return $results;
 }
 
 sub _pricing_channel {
@@ -260,8 +270,10 @@ sub _pricing_channel {
 
     my %args_hash = %{$args};
 
-    $args_hash{amount}   = 1000;
-    $args_hash{basis}    = 'payout' if $args_hash{basis};
+    if ($args_hash{basis}) {
+        $args_hash{amount} = 1000;
+        $args_hash{basis}  = 'payout';
+    }
     $args_hash{language} = $c->stash('language') || 'EN';
     my $serialized_args = _serialized_args(\%args_hash);
 
