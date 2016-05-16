@@ -40,13 +40,6 @@ sub _needs_proveid {
     return;
 }
 
-sub _needs_checkid {
-    my $self   = shift;
-    my $client = $self->client;
-    return unless $self->_landing_company_country eq 'Malta';
-    return BOM::Platform::ProveID->valid_country($client->residence);
-}
-
 sub _requires_age_verified {
     my $self = shift;
 
@@ -72,10 +65,6 @@ sub run_authentication {
     if ($self->_needs_proveid) {
 
         $envelope = $self->_do_proveid
-
-    } elsif ($self->_needs_checkid) {
-
-        $envelope = $self->_do_checkid
 
     } elsif ($self->_requires_age_verified
         && !$client->get_status('age_verification')
@@ -167,21 +156,6 @@ sub _do_proveid {
     return;
 }
 
-sub _do_checkid {
-    my $self   = shift;
-    my $client = $self->client;
-
-    if ($self->_fetch_checkid) {
-        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian CHECK ID');
-        $client->save;
-        $self->_notify('EXPERIAN CHECK ID PASSED ON FIRST DEPOSIT', 'passed CHECK ID on first deposit.');
-    } else {
-        $self->_notify('192_CHECKID_AUTH_FAILED', 'failed to authenticate via CHECK ID through Experian');
-        return $self->_request_id_authentication;
-    }
-    return;
-}
-
 sub _request_id_authentication {
     my $self   = shift;
     my $client = $self->client;
@@ -249,19 +223,6 @@ sub _fetch_proveid {
     return BOM::Platform::ProveID->new(
         client        => $self->client,
         search_option => 'ProveID_KYC',
-        premise       => $self->_premise,
-        force_recheck => $self->force_recheck
-    )->get_result;
-}
-
-sub _fetch_checkid {
-    my $self = shift;
-
-    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
-
-    return BOM::Platform::ProveID->new(
-        client        => $self->client,
-        search_option => 'CheckID',
         premise       => $self->_premise,
         force_recheck => $self->force_recheck
     )->get_result;

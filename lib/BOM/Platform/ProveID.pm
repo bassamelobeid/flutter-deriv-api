@@ -3,11 +3,9 @@ package BOM::Platform::ProveID;
 use strict;
 use warnings;
 
-use BOM::Utility::Log4perl;
 use BOM::Platform::Runtime;
 use BOM::System::Config;
 use BOM::System::RedisReplicated;
-use Carp;
 use base 'Experian::IDAuth';
 
 =head1 NOTES
@@ -15,14 +13,10 @@ use base 'Experian::IDAuth';
 ProveID is for UK clients only. It checks the client against credit rating agencies. It checks his name, DOB, address.
 
 If more than 2 items are found, the client is considered fully authenticated.
-We fall back to CheckID if it fails.
 
-CheckID, for UK clients, will check against the electoral roll.
-In other countries, it checks the drivers license, ID card number, passport MRZ.
-But since we don't capture this data it won't work for us.
 =cut
 
-# override some of the defaults with our credentials, our logger, and our folder.
+# override some of the defaults with our credentials, and our folder.
 sub new {
     my ($class, %args) = @_;
     my $client = $args{client} || die 'needs a client';
@@ -37,7 +31,7 @@ sub _throttle {
     my $key     = 'PROVEID::THROTTLE::' . $loginid;
 
     if (BOM::System::RedisReplicated::redis_read()->get($key)) {
-        Carp::confess 'Too many ProveID requests for ' . $loginid;
+        die 'Too many ProveID requests for ' . $loginid;
     }
 
     BOM::System::RedisReplicated::redis_write()->set($key, 1);
@@ -62,7 +56,6 @@ sub defaults {
 
     return (
         $self->SUPER::defaults,
-        logger        => BOM::Utility::Log4perl::get_logger,
         username      => BOM::System::Config::third_party->{proveid}->{username},
         password      => BOM::System::Config::third_party->{proveid}->{password},
         folder        => $folder,

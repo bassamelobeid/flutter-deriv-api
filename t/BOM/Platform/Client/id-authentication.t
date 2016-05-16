@@ -19,7 +19,7 @@ use BOM::Platform::Client::IDAuthentication;
         push @{$self->{notifications}}, [@info];
     }
     sub notified { shift->{notifications} }
-    sub requires_authentication { my $s = shift; $s->_needs_proveid or $s->_needs_checkid }
+    sub requires_authentication { my $s = shift; $s->_needs_proveid }
 }
 
 subtest 'Constructor' => sub {
@@ -68,7 +68,7 @@ subtest 'MLT clients' => sub {
 
             my $v = IDAuthentication->new(client => $c);
             ok $v->client->is_first_deposit_pending, 'real client awaiting first deposit';
-            ok $v->requires_authentication, '.. does not require authentication';
+            is $v->requires_authentication, undef, '.. does not require authentication';
             }
     }
 
@@ -112,7 +112,10 @@ subtest 'When auth not required' => sub {
 
             my $v = IDAuthentication->new(client => $c);
             Test::MockObject::Extends->new($v);
-            $v->run_authentication;
+            do {
+                local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
+                $v->run_authentication;
+            };
             my @notif = @{$v->notified};
             is @notif, 1, 'sent one notification';
             like $notif[0][0], qr/SET TO CASHIER_LOCKED PENDING EMAIL REQUEST FOR ID/, 'notification is correct';
@@ -128,7 +131,10 @@ subtest 'When auth not required' => sub {
 
             my $v = IDAuthentication->new(client => $c);
             Test::MockObject::Extends->new($v);
-            $v->run_authentication;
+            do {
+                local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
+                $v->run_authentication;
+            };
             my @notif = @{$v->notified};
             is @notif, 2, 'sent 2 notifications';
             like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'notification is correct';
@@ -210,7 +216,10 @@ subtest 'proveid' => sub {
         Test::MockObject::Extends->new($v);
 
         $v->mock(-_fetch_proveid, sub { return {deny => 1} });
-        $v->run_authentication;
+        do {
+            local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
+            $v->run_authentication;
+        };
         my @notif = @{$v->notified};
         is @notif, 2, 'sent one notification';
         like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'notification is correct';
@@ -238,8 +247,6 @@ subtest 'proveid' => sub {
         ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
     };
 
-    # 'fallback to checkid' removed.. we don't fallback to checkid test anymore.
-
     subtest 'failed authentication' => sub {
         my $c = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MX',
@@ -250,8 +257,10 @@ subtest 'proveid' => sub {
         Test::MockObject::Extends->new($v);
 
         $v->mock(-_fetch_proveid, sub { return {} });
-        $v->mock(-_fetch_checkid, sub { return });
-        $v->run_authentication;
+        do {
+            local $ENV{BOM_SUPPRESS_WARNINGS} = 1;
+            $v->run_authentication;
+        };
         my @notif = @{$v->notified};
         is @notif, 2, 'sent two notification';
         like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'first notification is correct';

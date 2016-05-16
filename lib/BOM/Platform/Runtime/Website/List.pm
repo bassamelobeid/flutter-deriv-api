@@ -5,7 +5,6 @@ use namespace::autoclean;
 use Sys::Hostname qw(hostname);
 
 use BOM::Platform::Runtime::Website;
-use Carp;
 
 =head1 NAME
 
@@ -148,7 +147,7 @@ sub _build_default_website {
         }
     }
 
-    croak "No Default website provided, please mention atleast one website as default";
+    die "No Default website provided, please mention atleast one website as default";
 }
 
 sub _broker_objects {

@@ -13,7 +13,6 @@ BOM::Platform::MyAffiliates::PaymentToBOMAccountManager
 use strict;
 use warnings;
 use Moose;
-use Carp;
 use IO::File;
 use Try::Tiny;
 use Data::Dumper qw( Dumper );
@@ -190,7 +189,7 @@ sub _get_csv_line_from_transaction {
     my $USD_amount = $transaction->{'AMOUNT'};
 # since this was a debit from the affiliate MyAffiliates account, the amount comes through negative
     if (not defined $USD_amount or $USD_amount >= 0) {
-        croak 'Amount[' . $USD_amount . '] is invalid. Full transaction details: ' . Dumper($transaction);
+        die 'Amount[' . $USD_amount . '] is invalid. Full transaction details: ' . Dumper($transaction);
     }
     $USD_amount = abs $USD_amount;
     my $preferred_currency = $client->currency;
@@ -198,7 +197,7 @@ sub _get_csv_line_from_transaction {
 
     my $month_str = _get_month_from_transaction($transaction);
     if (not $month_str) {
-        croak 'Could not extract month from transaction. Full transaction details: ' . Dumper($transaction);
+        die 'Could not extract month from transaction. Full transaction details: ' . Dumper($transaction);
     }
 
     my $comment = 'Payment from Binary Services Ltd ' . $month_str;

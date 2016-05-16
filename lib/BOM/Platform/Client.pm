@@ -10,7 +10,6 @@ use DateTime;
 use Date::Utility;
 use Cache::RedisDB;
 use Format::Util::Numbers qw(roundnear);
-use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
@@ -166,6 +165,8 @@ sub register_and_return_new_client {
     for (qw(citizen address_2 state postcode salutation)) {
         $self->$_ || $self->$_('');
     }
+
+    $self->aml_risk_classification('low') unless $self->is_virtual;
 
     # resolve Gender from Salutation
     if ($self->salutation and not $self->gender) {

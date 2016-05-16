@@ -255,7 +255,7 @@ Volatility surface types.
 
 =cut
 
-my @surface_types = qw( delta flat moneyness phased);
+my @surface_types = qw( delta flat moneyness);
 subtype 'bom_surface_type', as Str, where {
     my $regex = '(' . join('|', @surface_types) . ')';
     /^$regex$/;
