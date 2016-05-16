@@ -41,28 +41,56 @@ RETURNS SETOF RECORD AS $def$
 DECLARE
     v_nrows      INTEGER;
     v_r          RECORD;
+    fmb_updated  BOOLEAN := FALSE;	-- this is only used for compatibility mode and can be removed once we strip out compatibility mode
 BEGIN
 
     -- It is important that this function is used only in circumstances when the
     -- transaction.account row is already locked FOR UPDATE by the current transaction.
     -- Otherwise, it is prone to deadlock.
 
-    UPDATE bet.financial_market_bet
-       SET sell_price=p_sell_price, sell_time=p_sell_time, is_sold=true, is_expired=true
+    DELETE FROM bet.financial_market_bet_open
      WHERE id=p_id
        AND account_id=p_account_id
-       AND NOT is_sold
     RETURNING * INTO v_fmb;
 
     GET DIAGNOSTICS v_nrows=ROW_COUNT;
     IF v_nrows>1 THEN
-        RAISE EXCEPTION 'FMB Update modifies multiple rows for id=%', p_id;
+        RAISE EXCEPTION 'FMBo delete modifies multiple rows for id=%', p_id;
     ELSIF v_nrows=0 THEN
-        RETURN;
+--        RETURN;
+/* This block is necessary until we get all remaining open contracts out of fmb and into fmbo.
+ * Once everything in fmb is_sold, then we can remove this block and uncomment the return above. */
+    	UPDATE bet.financial_market_bet SET
+    		sell_price = p_sell_price,
+    		sell_time = p_sell_time,
+    		is_sold = true,
+    		is_expired = true
+     	WHERE id=p_id
+       		AND account_id=p_account_id
+       		AND NOT is_sold
+    	RETURNING * INTO v_fmb;
+
+    	GET DIAGNOSTICS v_nrows=ROW_COUNT;
+    	IF v_nrows>1 THEN
+        	RAISE EXCEPTION 'FMB Update modifies multiple rows for id=%', p_id;
+    	ELSIF v_nrows=0 THEN
+        	RETURN;
+    	END IF;
+    	
+    	fmb_updated := true;
+/* end compatibility block */
     END IF;
 
     -- exactly 1 row modified
-
+    v_fmb.sell_price := p_sell_price;
+    v_fmb.sell_time := p_sell_time;
+    v_fmb.is_sold := true;
+    v_fmb.is_expired := true;
+/* the 'IF' block is more compatibility mode in case we updated the record above */
+    IF NOT fmb_updated THEN
+    	INSERT INTO bet.financial_market_bet VALUES(v_fmb.*); -- When removing compatibility mode, this statement remains after the surrounding IF block is removed.
+    END IF;
+    
     IF p_chld IS NOT NULL THEN
         EXECUTE 'UPDATE bet.' || v_fmb.bet_class || ' target SET '
              || (SELECT string_agg(k || ' = r.' || k, ', ') FROM json_object_keys(p_chld) k)

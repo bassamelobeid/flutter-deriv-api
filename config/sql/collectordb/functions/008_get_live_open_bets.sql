@@ -30,9 +30,8 @@ RETURNS TABLE (
             WHERE
                 fmb.account_id = acc.id
                 AND fmb.id = txn.financial_market_bet_id
-                AND fmb.is_sold IS false
-                AND fmb.bet_class <> 'run_bet'
-                AND fmb.bet_class <> 'legacy_bet'
+                AND fmb.is_sold = false
+                AND fmb.bet_class NOT IN ('run_bet','legacy_bet')
         $$
         ) AS t(id BIGINT, client_loginid VARCHAR, currency_code VARCHAR, short_code VARCHAR, buy_price NUMERIC, transaction_id BIGINT)
 
