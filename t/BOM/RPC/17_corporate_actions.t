@@ -99,11 +99,11 @@ subtest 'get_corporate_actions_one_action' => sub {
 
     my $purchase_date = $date->epoch;
 
-    my $params = {
-        symbol => 'USAAPL',
-        start  => $opening->date_ddmmmyyyy,
-        end    => $closing_time->date_ddmmmyyyy,
-    };
+    my $params = {};
+
+    $params->{args}{symbol} = 'USAAPL';
+    $params->{args}{start}  = $opening->date_ddmmmyyyy;
+    $params->{args}{end}    = $closing_time->date_ddmmmyyyy;
 
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 

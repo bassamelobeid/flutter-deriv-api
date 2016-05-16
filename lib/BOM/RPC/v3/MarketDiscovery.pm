@@ -25,11 +25,14 @@ my %name_mapper = (
 
 sub get_corporate_actions {
     my $params = shift;
-    my ($symbol, $start, $end) = @{$params}{qw/symbol start end/};
+
+    my $symbol = $params->{args}->{symbol};
+    my $start  = $params->{args}->{start};
+    my $end    = $params->{args}->{end};
 
     my ($start_date, $end_date);
 
-    my $response;
+    my $response = {};
 
     if (not $end) {
         $end_date = Date::Utility->new;
