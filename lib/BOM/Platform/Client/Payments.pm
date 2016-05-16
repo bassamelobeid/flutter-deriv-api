@@ -400,6 +400,7 @@ sub payment_affiliate_reward {
     my $remark       = $args{remark}       || die "no remark";
     my $payment_type = $args{payment_type} || 'affiliate_reward';
     my $staff        = $args{staff}        || 'system';
+    my $source       = $args{source};
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $fdp         = $self->is_first_deposit_pending;
