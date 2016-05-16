@@ -50,12 +50,12 @@ foreach my $i (1 .. 6) {
         symbol => $fake_symbol,
         epoch  => $now - $i * $agg,
         quote  => $i,
-    });
+    }, $at->_make_key($fake_symbol));
     $at->add({
         symbol => $ersatz_symbol,
         epoch  => $now - $i * $agg,
         quote  => $i,
-    });
+    }, $at->_make_key($ersatz_symbol));
 }
 
 my %intervals = (
@@ -145,7 +145,8 @@ is(
             symbol => $real_symbol,
             epoch  => $old_epoch - 1,
             quote  => 100,
-        }
+        },
+        $big_at->_make_key($real_symbol),
     ),
     1,
     'Able to add a tick at the end of day'
