@@ -197,6 +197,7 @@ sub send_ask_price_stream {
     return;
 }
 
+
 sub _serialized_args {
     my $h = shift;
     my @a = ();
@@ -249,8 +250,9 @@ sub process_pricing_events {
             }
             $results->{price_stream}->{id} = $pricing_channel->{$serialized_args}->{$amount}->{uuid};
         }
-        BOM::WebSocketAPI::Websocket_v3::_process_result($c, $results, 'price_stream', $pricing_channel->{$serialized_args}->{$amount}->{args},
-            undef, undef);
+
+        $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
+        $c->send({json => $results});
     }
     return;
 }
