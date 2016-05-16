@@ -308,7 +308,7 @@ sub _pricing_channel {
             trigger      => 'FEED::' . $args->{symbol},
         });
         $rp->send();
-        $c->stash('redis')->subscribe([$rp->_processed_channel], sub { });
+        $c->stash('redis_pricer')->subscribe([$rp->_processed_channel], sub { });
 
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
