@@ -51,8 +51,16 @@ subtest 'new CR real account' => sub {
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     subtest 'create CR account' => sub {
+        my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+        my $call_params;
+        $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+        $t = $t->send_ok({json => \%client_details})->message_ok;
+        is $call_params->{token}, $token;
+        $rpc_caller->unmock_all;
+
         $t = $t->send_ok({json => \%client_details})->message_ok;
         my $res = decode_json($t->message->[1]);
+        ok($res->{msg_type}, 'new_account_real');
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
 
@@ -64,6 +72,7 @@ subtest 'new CR real account' => sub {
         $t = $t->send_ok({json => \%client_details})->message_ok;
         my $res = decode_json($t->message->[1]);
 
+        ok($res->{msg_type}, 'new_account_real');
         is($res->{error}->{code},    'duplicate email', 'no duplicate account for CR');
         is($res->{new_account_real}, undef,             'NO account created');
     };

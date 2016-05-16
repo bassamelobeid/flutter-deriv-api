@@ -6,6 +6,7 @@ use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
+use Test::MockModule;
 
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -14,7 +15,7 @@ use BOM::System::Password;
 use BOM::Platform::User;
 use BOM::Platform::Client;
 
-my $t = build_mojo_test();
+my $t = build_mojo_test({language => 'EN'});
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
@@ -55,8 +56,17 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $cr_1;
 
+my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+my $call_params;
+$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+$t = $t->send_ok({json => {topup_virtual => 1}})->message_ok;
+is $call_params->{language}, 'EN';
+ok exists $call_params->{token};
+$rpc_caller->unmock_all;
+
 $t = $t->send_ok({json => {topup_virtual => 1}})->message_ok;
 my $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'topup_virtual';
 ok $res->{error}->{message} =~ /virtual accounts only/, 'virtual accounts only';
 
 # virtual is ok
@@ -73,6 +83,7 @@ is $authorize->{authorize}->{loginid}, $vr_1;
 
 $t = $t->send_ok({json => {topup_virtual => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'topup_virtual';
 my $topup_amount = $res->{topup_virtual}->{amount};
 ok $topup_amount, 'topup ok';
 
