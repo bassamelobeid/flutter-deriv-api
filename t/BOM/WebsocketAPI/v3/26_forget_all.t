@@ -13,10 +13,10 @@ use BOM::Feed::Buffer::TickFile;
 use File::Temp;
 use Date::Utility;
 
-my $now = Date::Utility->new('2012-03-14');
+my $now = Date::Utility->new('2012-03-13');
 my $work_dir = File::Temp->newdir();
 my $buffer = BOM::Feed::Buffer::TickFile->new(base_dir => "$work_dir");
-my  $fill_start = $now->minus_time_interval('1d7h');
+my  $fill_start = $now;
 my $populator  = BOM::Feed::Populator::InsertTicks->new({
      symbols            => [qw/ frxUSDJPY /],
      last_migrated_time => $fill_start,
@@ -27,13 +27,12 @@ my $fh;
 open($fh, "<", "/home/git/regentmarkets/bom-test/feed/combined/frxUSDJPY/13-Apr-12.fullfeed") or die $!;
 my  @ticks = <$fh>;
 close $fh;
-foreach my $i (0 .. 1) {
-    $populator->insert_to_db({
+$populator->insert_to_db({
                 ticks  => \@ticks,
-                date   => $fill_start->plus_time_interval("${i}d"),
+                date   => $fill_start,
                 symbol => 'frxUSDJPY',
             });
-        }
+        
 
 
 my $t = build_mojo_test();
