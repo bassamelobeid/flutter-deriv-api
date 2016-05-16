@@ -20,7 +20,7 @@ my $oauth = BOM::Database::Model::OAuth->new();
 my $dbh   = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
-$dbh->do("DELETE FROM oauth.apps WHERE key <> 'binarycom'");
+$dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
 
 ## create test app for scopes
 my $app = $oauth->create_app({
@@ -28,9 +28,9 @@ my $app = $oauth->create_app({
     scopes  => ['read'],
     user_id => 999
 });
-my $app_key = $app->{app_key};
+my $app_id = $app->{app_id};
 
-my ($token) = $oauth->store_access_token_only($app_key, $cr_1);
+my ($token) = $oauth->store_access_token_only($app_id, $cr_1);
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{loginid}, $cr_1;
@@ -41,7 +41,7 @@ $t = $t->send_ok({json => {get_account_status => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{get_account_status}, 'get_account_status is read scope';
 
-($token) = BOM::Database::Model::OAuth->new->store_access_token_only($app_key, $cr_1);
+($token) = BOM::Database::Model::OAuth->new->store_access_token_only($app_id, $cr_1);
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{loginid}, $cr_1;

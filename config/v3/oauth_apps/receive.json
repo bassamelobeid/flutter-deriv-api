@@ -18,9 +18,9 @@
             "type": "string",
             "description":"Application name"
           },
-          "app_key": {
+          "app_id": {
             "type": "string",
-            "description":"Application key"
+            "description":"Application id"
           },
           "last_used": {
             "type": ["string", "null"],

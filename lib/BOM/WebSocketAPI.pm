@@ -76,8 +76,6 @@ sub startup {
 
                 if ($app) {
                     $c->stash(
-                        app_key  => $app_key,
-                        app_id   => $app->{id},
                         app_name => $app->{name},
                         source   => $app->{id},
                     );

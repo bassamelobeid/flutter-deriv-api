@@ -2,13 +2,13 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "App Get Send",
-  "description":"get created OAuth application by app_key",
+  "description":"get created OAuth application by app_id",
   "properties": {
     "app_get": {
       "type":"string",
       "pattern": "^.{32}$",
       "required": "1",
-      "description": "Application app_key"
+      "description": "Application app_id"
     },
     "passthrough": {
       "type": "object",
