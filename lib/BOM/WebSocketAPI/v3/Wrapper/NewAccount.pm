@@ -19,6 +19,7 @@ sub verify_email_get_type_code {
     $params->{call_params}->{email} = $email;
     $params->{call_params}->{code}  = $code;
     $params->{call_params}->{type}  = $type;
+    return;
 }
 
 1;
