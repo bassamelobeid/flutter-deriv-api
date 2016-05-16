@@ -195,12 +195,19 @@ my @dispatch = (
     ['reset_password',      \&BOM::WebSocketAPI::v3::Wrapper::Accounts::reset_password,        0],
 
     # authenticated calls
-    ['sell',                   \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,                           1, 'trade'],
-    ['buy',                    \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,                            1, 'trade'],
-    ['transaction',            \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction,                    1, 'read'],
-    ['portfolio',              \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio,              1, 'read'],
-    ['proposal_open_contract', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract, 1, 'read'],
-    ['sell_expired',           \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired,           1, 'trade'],
+    ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1, 'trade'],
+    ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1, 'trade'],
+    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
+    ['portfolio', '', 1, 'read', {stash_params => [qw/ source /]}],
+    [
+        'proposal_open_contract',
+        '', 1, 'read',
+        {
+            make_call_params => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract_make_call_params,
+            response         => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract_response_handler,
+        }
+    ],
+    ['sell_expired', '', 1, 'trade', {stash_params => [qw/ source /]}],
 
     ['app_register', '', 1, 'admin'],
     ['app_list',     '', 1, 'admin'],
