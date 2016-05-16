@@ -68,7 +68,7 @@ subtest 'MLT clients' => sub {
 
             my $v = IDAuthentication->new(client => $c);
             ok $v->client->is_first_deposit_pending, 'real client awaiting first deposit';
-            ok $v->requires_authentication, '.. does not require authentication';
+            is $v->requires_authentication, undef, '.. does not require authentication';
             }
     }
 
