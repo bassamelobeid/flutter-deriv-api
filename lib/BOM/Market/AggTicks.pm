@@ -157,6 +157,20 @@ Add tick data to the cache.
 =cut
 
 sub add {
+    my ($self, $tick, $fast_insert) = @_;
+
+    $tick = $tick->as_hash if blessed($tick);
+
+    my %to_store = %$tick;
+
+    $to_store{count} = 1;    # These are all single ticks;
+    my $key = $self->_make_key($to_store{symbol}, 0);
+
+    return _update($self->_redis, $key, $tick->{epoch}, $encoder->encode(\%to_store), $fast_insert);    # These are all single ticks.
+}
+
+# faster version
+sub _add {
     my ($self, $tick, $key, $fast_insert) = @_;
 
     $tick = $tick->as_hash if blessed($tick);
@@ -350,7 +364,7 @@ sub fill_from_historical_feed {
     if (@$ticks) {
         my $ticks_key = $self->_make_key($underlying, 0);
         foreach my $tick (@$ticks) {
-            $self->add($tick, $ticks_key, $fast_insert);
+            $self->_add($tick, $ticks_key, $fast_insert);
         }
     }
 
