@@ -1173,6 +1173,7 @@ sub topup_virtual {
     my $params = shift;
 
     my $client = $params->{client};
+    my $source = $params->{source};
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -1198,7 +1199,7 @@ sub topup_virtual {
     }
 
     # CREDIT HIM WITH THE MONEY
-    my ($curr, $amount, $trx) = $client->deposit_virtual_funds;
+    my ($curr, $amount, $trx) = $client->deposit_virtual_funds($source);
 
     return {
         amount   => $amount,
