@@ -19,7 +19,7 @@ use BOM::Platform::Client::IDAuthentication;
         push @{$self->{notifications}}, [@info];
     }
     sub notified { shift->{notifications} }
-    sub requires_authentication { my $s = shift; $s->_needs_proveid }
+    sub requires_authentication { my $s = shift; $s->client->landing_company->country eq 'Isle of Man' }
 }
 
 subtest 'Constructor' => sub {
@@ -97,7 +97,7 @@ subtest 'MX clients' => sub {
 
             my $v = IDAuthentication->new(client => $c);
             ok $v->client->is_first_deposit_pending, 'real client awaiting first deposit';
-            ok $v->_needs_proveid, '.. requires proveid';
+            ok $v->requires_authentication, '.. requires proveid';
             }
     }
 };
