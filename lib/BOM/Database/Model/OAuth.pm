@@ -33,11 +33,11 @@ sub __filter_valid_scopes {
 
 ## app
 sub verify_app {
-    my ($self, $app_key) = @_;
+    my ($self, $app_id) = @_;
 
     my $app = $self->dbh->selectrow_hashref("
-        SELECT id, key, name, redirect_uri, scopes FROM oauth.apps WHERE key = ? AND active
-    ", undef, $app_key);
+        SELECT id, name, redirect_uri, scopes FROM oauth.apps WHERE id = ? AND active
+    ", undef, $app_id);
     return unless $app;
 
     $app->{scopes} = __parse_array($app->{scopes});
@@ -45,40 +45,40 @@ sub verify_app {
 }
 
 sub confirm_scope {
-    my ($self, $app_key, $loginid) = @_;
+    my ($self, $app_id, $loginid) = @_;
 
     my $dbh = $self->dbh;
 
     my ($is_exists, $exists_scopes) = $dbh->selectrow_array("
-        SELECT true FROM oauth.user_scope_confirm WHERE app_key = ? AND loginid = ?
-    ", undef, $app_key, $loginid);
+        SELECT true FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
+    ", undef, $app_id, $loginid);
     unless ($is_exists) {
-        $dbh->do("INSERT INTO oauth.user_scope_confirm (app_key, loginid) VALUES (?, ?)", undef, $app_key, $loginid);
+        $dbh->do("INSERT INTO oauth.user_scope_confirm (app_id, loginid) VALUES (?, ?)", undef, $app_id, $loginid);
     }
 
     return 1;
 }
 
 sub is_scope_confirmed {
-    my ($self, $app_key, $loginid) = @_;
+    my ($self, $app_id, $loginid) = @_;
 
     my ($confirmed_scopes) = $self->dbh->selectrow_array("
-        SELECT true FROM oauth.user_scope_confirm WHERE app_key = ? AND loginid = ?
-    ", undef, $app_key, $loginid);
+        SELECT true FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
+    ", undef, $app_id, $loginid);
 
     return $confirmed_scopes ? 1 : 0;
 }
 
 sub store_access_token_only {
-    my ($self, $app_key, $loginid) = @_;
+    my ($self, $app_id, $loginid) = @_;
 
     my $dbh          = $self->dbh;
     my $expires_in   = 5184000;                                                   # 60 * 86400
     my $access_token = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
-    $dbh->do("INSERT INTO oauth.access_token (access_token, app_key, loginid, expires) VALUES (?, ?, ?, ?)",
-        undef, $access_token, $app_key, $loginid, $expires_time);
+    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires) VALUES (?, ?, ?, ?)",
+        undef, $access_token, $app_id, $loginid, $expires_time);
 
     return ($access_token, $expires_in);
 }
@@ -103,7 +103,7 @@ sub get_scopes_by_access_token {
 
     my $sth = $self->dbh->prepare("
         SELECT app.scopes FROM oauth.access_token at
-        JOIN oauth.apps app ON app.key=at.app_key
+        JOIN oauth.apps app ON app.id=at.app_id
         WHERE access_token = ?
     ");
     $sth->execute($access_token);
@@ -121,16 +121,16 @@ sub is_name_taken {
 sub create_app {
     my ($self, $app) = @_;
 
-    my $key = $app->{key} || 'id-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
+    my $id = $app->{id} || 'id-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.apps
-            (key, name, scopes, homepage, github, appstore, googleplay, redirect_uri, binary_user_id)
+            (id, name, scopes, homepage, github, appstore, googleplay, redirect_uri, binary_user_id)
         VALUES
             (? ,?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $sth->execute(
-        $key,
+        $id,
         $app->{name},
         $app->{scopes},
         $app->{homepage}     || '',
@@ -141,7 +141,7 @@ sub create_app {
         $app->{user_id});
 
     return {
-        app_key      => $key,
+        app_id       => $id,
         name         => $app->{name},
         scopes       => $app->{scopes},
         redirect_uri => $app->{redirect_uri},
@@ -149,11 +149,11 @@ sub create_app {
 }
 
 sub get_app {
-    my ($self, $user_id, $app_key) = @_;
+    my ($self, $user_id, $app_id) = @_;
 
     my $app = $self->dbh->selectrow_hashref("
-        SELECT key as app_key, name, redirect_uri, scopes FROM oauth.apps WHERE key = ? AND binary_user_id = ? AND active
-    ", undef, $app_key, $user_id);
+        SELECT id as app_id, name, redirect_uri, scopes FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
+    ", undef, $app_id, $user_id);
     return unless $app;
 
     $app->{scopes} = __parse_array($app->{scopes});
@@ -165,7 +165,7 @@ sub get_apps_by_user_id {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            key as app_key, name, redirect_uri, scopes
+            id as app_id, name, redirect_uri, scopes
         FROM oauth.apps WHERE binary_user_id = ? AND active ORDER BY name
     ", {Slice => {}}, $user_id);
     return [] unless $apps;
@@ -178,19 +178,19 @@ sub get_apps_by_user_id {
 }
 
 sub delete_app {
-    my ($self, $user_id, $app_key) = @_;
+    my ($self, $user_id, $app_id) = @_;
 
-    my $app = $self->get_app($user_id, $app_key);
+    my $app = $self->get_app($user_id, $app_id);
     return 0 unless $app;
 
     my $dbh = $self->dbh;
 
     ## delete real delete
     foreach my $table ('user_scope_confirm', 'access_token') {
-        $dbh->do("DELETE FROM oauth.$table WHERE app_key = ?", undef, $app_key);
+        $dbh->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id);
     }
 
-    $dbh->do("DELETE FROM oauth.apps WHERE key = ?", undef, $app_key);
+    $dbh->do("DELETE FROM oauth.apps WHERE id = ?", undef, $app_id);
 
     return 1;
 }
@@ -200,19 +200,19 @@ sub get_used_apps_by_loginid {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            u.app_key, name, a.scopes
-        FROM oauth.apps a JOIN oauth.user_scope_confirm u ON a.key=u.app_key
+            u.app_id, name, a.scopes
+        FROM oauth.apps a JOIN oauth.user_scope_confirm u ON a.id=u.app_id
         WHERE loginid = ? AND a.active ORDER BY a.name
     ", {Slice => {}}, $loginid);
     return [] unless $apps;
 
     my $get_last_used_sth = $self->dbh->prepare("
-        SELECT MAX(last_used)::timestamp(0) FROM oauth.access_token WHERE app_key = ?
+        SELECT MAX(last_used)::timestamp(0) FROM oauth.access_token WHERE app_id = ?
     ");
 
     foreach (@$apps) {
         $_->{scopes} = __parse_array($_->{scopes});
-        $get_last_used_sth->execute($_->{app_key});
+        $get_last_used_sth->execute($_->{app_id});
         $_->{last_used} = $get_last_used_sth->fetchrow_array;
     }
 
@@ -220,11 +220,11 @@ sub get_used_apps_by_loginid {
 }
 
 sub revoke_app {
-    my ($self, $app_key, $loginid) = @_;
+    my ($self, $app_id, $loginid) = @_;
 
     my $dbh = $self->dbh;
     foreach my $table ('user_scope_confirm', 'access_token') {
-        $dbh->do("DELETE FROM oauth.$table WHERE app_key = ? AND loginid = ?", undef, $app_key, $loginid);
+        $dbh->do("DELETE FROM oauth.$table WHERE app_id = ? AND loginid = ?", undef, $app_id, $loginid);
     }
 
     return 1;
@@ -237,16 +237,16 @@ sub revoke_tokens_by_loginid {
 }
 
 sub revoke_tokens_by_loginid_app {
-    my ($self, $loginid, $app_key) = @_;
-    $self->dbh->do("DELETE FROM oauth.access_token WHERE loginid = ? AND app_key = ?", undef, $loginid, $app_key);
+    my ($self, $loginid, $app_id) = @_;
+    $self->dbh->do("DELETE FROM oauth.access_token WHERE loginid = ? AND app_id = ?", undef, $loginid, $app_id);
     return 1;
 }
 
-sub get_app_key_by_token {
+sub get_app_id_by_token {
     my ($self, $token) = @_;
 
     my $dbh = $self->dbh;
-    my @result = $self->dbh->selectrow_array("SELECT app_key FROM oauth.access_token WHERE access_token = ?", undef, $token);
+    my @result = $self->dbh->selectrow_array("SELECT app_id FROM oauth.access_token WHERE access_token = ?", undef, $token);
     return $result[0];
 }
 
