@@ -199,14 +199,7 @@ my @dispatch = (
     ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1, 'trade'],
     ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
     ['portfolio', '', 1, 'read', {stash_params => [qw/ source /]}],
-    [
-        'proposal_open_contract',
-        '', 1, 'read',
-        {
-            make_call_params => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract_make_call_params,
-            response         => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract_response_handler,
-        }
-    ],
+    ['proposal_open_contract', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract, 1, 'read'],
     ['sell_expired', '', 1, 'trade', {stash_params => [qw/ source /]}],
 
     ['app_register', '', 1, 'admin'],
@@ -215,17 +208,40 @@ my @dispatch = (
     ['app_delete',   '', 1, 'admin'],
     ['oauth_apps',   '', 1, 'admin'],
 
-    ['topup_virtual',             \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual,              1, 'trade'],
-    ['get_limits',                \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                 1, 'read'],
-    ['paymentagent_list',         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,          0],
-    ['paymentagent_withdraw',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,      1, 'payments'],
-    ['paymentagent_transfer',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer,      1, 'payments'],
-    ['transfer_between_accounts', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::transfer_between_accounts,  1, 'payments'],
-    ['cashier',                   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::cforward,                   1, 'payments'],
-    ['new_account_real',          \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real,        1, 'admin'],
-    ['new_account_japan',         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_japan,       1, 'admin'],
-    ['new_account_maltainvest',   \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_maltainvest, 1, 'admin'],
-    ['jp_knowledge_test',         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::jp_knowledge_test,       1, 'admin'],
+    ['topup_virtual', '', 1, 'trade'],
+    ['get_limits',    '', 1, 'read'],
+    ['paymentagent_list', '', 0, '', {stash_params => [qw/ token /]}],
+    [
+        'paymentagent_withdraw',
+        '', 1,
+        'payments',
+        {
+            response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_withdraw'),
+            stash_params => [qw/ server_name /],
+        }
+    ],
+    [
+        'paymentagent_transfer',
+        '', 1,
+        'payments',
+        {
+            response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_transfer'),
+            stash_params => [qw/ server_name /],
+        }
+    ],
+    [
+        'transfer_between_accounts',
+        '', 1,
+        'payments',
+        {
+            response => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
+        }
+    ],
+    ['cashier',                 '',                                                                    1, 'payments'],
+    ['new_account_real',        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real,        1, 'admin'],
+    ['new_account_japan',       \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_japan,       1, 'admin'],
+    ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_maltainvest, 1, 'admin'],
+    ['jp_knowledge_test',       \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::jp_knowledge_test,       1, 'admin'],
 );
 
 # key: category, value:  hashref (descriptor) with fields
