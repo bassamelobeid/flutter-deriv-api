@@ -28,9 +28,7 @@ use BOM::WebSocketAPI::v3::Wrapper::App;
 use BOM::Database::Rose::DB;
 
 sub ok {
-    my $c      = shift;
-    my $source = 1;       # check http origin here
-    $c->stash(source => $source);
+    my $c = shift;
     return 1;
 }
 
