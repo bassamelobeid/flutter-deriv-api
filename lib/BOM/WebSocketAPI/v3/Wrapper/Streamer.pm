@@ -239,7 +239,7 @@ sub process_pricing_events {
                 price_stream => $response,
             };
 
-            $results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $results);
+            $results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $results, $amount);
 
             $results->{price_stream}->{id} = $pricing_channel->{$serialized_args}->{$amount}->{uuid};
         }
@@ -252,7 +252,8 @@ sub process_pricing_events {
 
 sub _price_stream_results_adjustment {
     my $orig_args = shift;
-    my $result    = shift;
+    my $results   = shift;
+    my $amount    = shift;
     # For non spread
     if ($orig_args->{basis}) {
         $results->{price_stream}->{ask_price} *= $amount / 1000;
