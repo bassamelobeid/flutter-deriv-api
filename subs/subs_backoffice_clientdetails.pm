@@ -57,18 +57,13 @@ sub print_client_details {
         $country_codes->{$country_name} = BOM::Platform::Runtime->instance->countries->code_from_country($country_name);
     }
 
-    my ($proveID, $checkID, $show_uploaded_documents);
+    my ($proveID, $show_uploaded_documents);
     unless ($client->is_virtual) {
         # KYC/IDENTITY VERIFICATION SECTION
         $proveID = BOM::Platform::ProveID->new(
             client        => $client,
             search_option => 'ProveID_KYC'
         );
-        $checkID = BOM::Platform::ProveID->new(
-            client        => $client,
-            search_option => 'CheckID'
-        );
-
         $show_uploaded_documents = show_client_id_docs($client, show_delete => 1);
     }
 
@@ -108,7 +103,6 @@ sub print_client_details {
         countries               => \@countries,
         country_codes           => $country_codes,
         proveID                 => $proveID,
-        checkID                 => $checkID,
         show_uploaded_documents => $show_uploaded_documents,
         client_phone_country    => $client_phone_country,
         language_options        => \@language_options,

@@ -244,9 +244,9 @@ table#client_edit td{
                 doc_url  = 'backoffice/download_document.cgi';
                 args     = { loginID => client.loginid };
                 pdf_args = { broker => client.broker, category => '192_result' };
-                FOREACH auth_request IN [ proveID, checkID ];
+                FOREACH auth_request IN [ proveID ];
                     option = auth_request.search_option;
-                    IF auth_request.has_done_request; 
+                    IF auth_request.has_done_request;
                         args.search_option = option;
                         args.raw = 0; href_rpt = request.url_for(raw_url, args );
                         args.raw = 1; href_xml = request.url_for(raw_url, args );
@@ -266,7 +266,6 @@ table#client_edit td{
                     <br/>
                 [%  END %]
                 <input type="submit" name="do_id_check" value="Submit a new ProveID request"/>
-                <input type="submit" name="do_id_check" value="Submit a new CheckID request"/>
             <br/>
         <td>
     </tr>
