@@ -4,14 +4,15 @@ use Moose;
 
 # very bad name, not sure why it needs to be
 # attached to Validatable.
-use Math::Function::Interpolator;
 use MooseX::Role::Validatable::Error;
+use Math::Function::Interpolator;
 use Quant::Framework::Currency;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time);
 use List::Util qw(min max first);
 use List::MoreUtils qw(none);
 use Scalar::Util qw(looks_like_number);
+use BOM::Product::Contract::Helper;
 
 use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
@@ -1195,42 +1196,6 @@ sub _build_ask_price {
     return $self->_price_from_prob('ask_probability');
 }
 
-my $commission_base_multiplier = 1;
-my $commission_max_multiplier  = 2;
-my $commission_min_std         = 500;
-my $commission_max_std         = 25000;
-
-sub commission_multiplier {
-    my ($self, $payout) = @_;
-
-    my $theo_prob = $self->theo_probability->amount;
-
-    my $std = $payout * sqrt($theo_prob * (1 - $theo_prob));
-
-    return $commission_base_multiplier if $std <= $commission_min_std;
-    return $commission_max_multiplier  if $std >= $commission_max_std;
-
-    my $slope      = $self->commission_multiplier_slope;
-    my $multiplier = ($std - $commission_min_std) * $slope + 1;
-
-    return $multiplier;
-}
-
-has commission_multiplier_slope => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_commission_multiplier_slope {
-    return ($commission_max_multiplier - $commission_base_multiplier) / ($commission_max_std - $commission_min_std);
-}
-
-sub _calculate_payout {
-    my ($self, $commission) = @_;
-
-    return $self->ask_price / ($self->theo_probability->amount + ($self->risk_markup->amount + $commission) * $self->commission_adjustment->amount);
-}
-
 sub _build_payout {
     my $self = shift;
 
@@ -1239,41 +1204,15 @@ sub _build_payout {
     my $base_commission = $self->base_commission;
     my $ask_price       = $self->ask_price;
 
-    # payout calculated with base commission.
-    my $initial_payout = $self->_calculate_payout($base_commission);
-    if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
-        my $comm              = $base_commission;
-        my $payout            = $initial_payout;
-        my $dollar_commission = $payout * (($risk_markup + $comm) * $self->commission_adjustment->amount);
+    my $commission = BOM::Product::Contract::Helper::commission({
+        theo_probability => $theo_prob,
+        stake            => $ask_price,
+        risk_markup      => $risk_markup,
+        base_commission  => $base_commission,
+    });
 
-        # makes sure we get a minimum of 2 cents
-        if ($dollar_commission < 0.02) {
-            $payout -= (0.02 - $dollar_commission);
-        }
-
-        return roundnear(0.01, max($ask_price, $payout));
-    }
-
-    # payout calculated with 2 times base commission.
-    $initial_payout = $self->_calculate_payout($base_commission * 2);
-    if ($self->commission_multiplier($initial_payout) == $commission_max_multiplier) {
-        return roundnear(0.01, max($ask_price, $initial_payout));
-    }
-
-    my $slope  = $self->commission_multiplier_slope;
-    my $a      = $base_commission * $slope * sqrt($theo_prob * (1 - $theo_prob));
-    my $b      = $theo_prob + $risk_markup + $base_commission - $base_commission * $commission_min_std * $slope;
-    my $c      = -$ask_price;
-    my $payout = 0;
-    for my $w (1, -1) {
-        my $estimated_payout = (-$b + $w * sqrt($b**2 - 4 * $a * $c)) / (2 * $a);
-        if ($estimated_payout > 0) {
-            $payout = $estimated_payout;
-            last;
-        }
-    }
-
-    $payout = max($ask_price, $self->_calculate_payout($base_commission * $self->commission_multiplier($payout)));
+    my $payout = $ask_price / ($theo_prob + ($risk_markup + $commission) * $self->commission_adjustment->amount);
+    $payout = max($ask_price, $payout);
     return roundnear(0.01, $payout);
 }
 
@@ -1356,7 +1295,7 @@ sub _build_commission_markup {
         name        => 'commission_markup',
         description => 'Commission markup for a pricing model',
         set_by      => $self->pricing_engine_name,
-        base_amount => $self->base_commission * $self->commission_multiplier($self->payout),
+        base_amount => $self->base_commission * BOM::Product::Contract::Helper::commission_multiplier($self->payout, $self->theo_probability->amount),
     });
 }
 
