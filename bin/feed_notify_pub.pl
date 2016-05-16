@@ -7,16 +7,15 @@ use DBI;
 use DBD::Pg;
 use IO::Select;
 use Try::Tiny;
-use RedisDB;
 use BOM::Database::FeedDB;
 
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Registry;
+use BOM::System::RedisReplicate;
 
 update_crossing_underlyings();
 while (1) {
     try {
-        my $redis = _redis();
         my $dbh   = BOM::Database::FeedDB::write_dbh();
 
         my $MAX_FEED_CHANNELS = 80;
@@ -27,7 +26,7 @@ while (1) {
         while ($sel->can_read) {
             while (my $notify = $dbh->pg_notifies) {
                 my ($name, $pid, $payload) = @$notify;
-                _publish($redis, $payload);
+                _publish($payload);
             }
         }
     }
@@ -39,20 +38,12 @@ while (1) {
 exit;
 
 sub _publish {
-    my $redis   = shift;
     my $payload = shift;
     my @data    = split(';', $payload);
 
-    $redis->publish('FEED::' . $data[0], $payload);
+    $BOM::System::RedisReplicate::redis_write->publish('FEED::' . $data[0], $payload);
+    $BOM::System::RedisReplicate::redis_pricer->publish('FEED::' . $data[0], $payload);
 
-}
-
-sub _redis {
-    my $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
-    return RedisDB->new(
-        host     => $config->{write}->{host},
-        port     => $config->{write}->{port},
-        password => $config->{write}->{password});
 }
 
 sub update_crossing_underlyings {
