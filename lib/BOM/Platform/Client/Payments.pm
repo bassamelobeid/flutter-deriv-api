@@ -266,6 +266,7 @@ sub payment_bank_wire {
     my $amount   = delete $args{amount}   || die "no amount";
     my $staff    = delete $args{staff}    || 'system';
     my $remark   = delete $args{remark}   || '';
+    my $source   = delete $args{source};
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $fdp         = $self->is_first_deposit_pending;
@@ -291,6 +292,7 @@ sub payment_bank_wire {
         referrer_type => 'payment',
         action_type   => $action_type,
         quantity      => 1,
+        source        => $source,
     });
     $account->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
@@ -312,6 +314,7 @@ sub payment_account_transfer {
     my $remark   = delete $args{remark};
     my $toRemark = delete $args{toRemark} || $remark || ("Transfer from " . $fmClient->loginid);
     my $fmRemark = delete $args{fmRemark} || $remark || ("Transfer to " . $toClient->loginid);
+    my $source   = delete $args{source};
 
     my $fmAccount = $fmClient->set_default_account($currency);
     my $toAccount = $toClient->set_default_account($currency);
@@ -359,6 +362,7 @@ sub payment_account_transfer {
         referrer_type => 'payment',
         action_type   => 'withdrawal',
         quantity      => 1,
+        source        => $source,
     });
     my ($toPayment) = $toAccount->add_payment({
         amount               => $amount,
@@ -375,6 +379,7 @@ sub payment_account_transfer {
         referrer_type => 'payment',
         action_type   => 'deposit',
         quantity      => 1,
+        source        => $source,
     });
 
     $fmAccount->save(cascade => 1);
@@ -416,6 +421,7 @@ sub payment_affiliate_reward {
         referrer_type => 'payment',
         action_type   => $action_type,
         quantity      => 1,
+        source        => $source,
     });
     $account->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
@@ -441,6 +447,7 @@ sub payment_doughflow {
     my $remark       = $args{remark}       || die "no remark";
     my $payment_type = $args{payment_type} || 'external_cashier';
     my $staff        = $args{staff}        || 'system';
+    my $source       = $args{source};
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $fdp         = $self->is_first_deposit_pending;
@@ -470,6 +477,7 @@ sub payment_doughflow {
         referrer_type => 'payment',
         action_type   => $action_type,
         quantity      => 1,
+        source        => $source,
     });
     $account->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
@@ -493,6 +501,7 @@ sub payment_free_gift {
     my $remark       = $args{remark}       || die "no remark";
     my $payment_type = $args{payment_type} || 'free_gift';
     my $staff        = $args{staff}        || 'system';
+    my $source       = $args{source};
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $fdp         = $self->is_first_deposit_pending;
@@ -514,6 +523,7 @@ sub payment_free_gift {
         referrer_type => 'payment',
         action_type   => $action_type,
         quantity      => 1,
+        source        => $source,
     });
     $account->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
@@ -531,6 +541,7 @@ sub payment_payment_fee {
     my $remark       = $args{remark}       || die "no remark";
     my $payment_type = $args{payment_type} || 'payment_fee';
     my $staff        = $args{staff}        || 'system';
+    my $source       = $args{source};
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account = $self->set_default_account($currency);
@@ -551,6 +562,7 @@ sub payment_payment_fee {
         referrer_type => 'payment',
         action_type   => $action_type,
         quantity      => 1,
+        source        => $source,
     });
     $account->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
@@ -567,6 +579,7 @@ sub payment_western_union {
     my $remark       = $args{remark}       || die "no remark";
     my $payment_type = $args{payment_type} || 'cash_transfer';
     my $staff        = $args{staff}        || 'system';
+    my $source       = $args{source};
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $fdp         = $self->is_first_deposit_pending;
@@ -596,6 +609,7 @@ sub payment_western_union {
         referrer_type => 'payment',
         action_type   => $action_type,
         quantity      => 1,
+        source        => $source,
     });
     $account->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
