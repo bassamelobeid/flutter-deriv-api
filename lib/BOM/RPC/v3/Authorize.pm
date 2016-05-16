@@ -16,7 +16,7 @@ use BOM::Platform::SessionCookie;
 sub authorize {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    my $token_details = $params->{token_details};
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
     my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
@@ -59,7 +59,7 @@ sub logout {
     my $params = shift;
 
     if (my $email = $params->{client_email}) {
-        my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+        my $token_details = $params->{token_details};
         my $loginid = ($token_details and exists $token_details->{loginid}) ? $token_details->{loginid} : '';
         if (my $user = BOM::Platform::User->new({email => $email})) {
             $user->add_login_history({

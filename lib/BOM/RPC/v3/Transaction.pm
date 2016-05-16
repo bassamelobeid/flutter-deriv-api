@@ -17,7 +17,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 sub buy {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+    my $token_details = $params->{token_details};
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
     my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
@@ -170,13 +170,7 @@ sub buy_contract_for_multiple_accounts {
 sub sell {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
 
     my ($source, $args) = ($params->{source}, $params->{args});
     my $id = $args->{sell};
