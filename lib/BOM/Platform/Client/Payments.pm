@@ -159,7 +159,7 @@ sub validate_payment {
 
 #######################################
 sub deposit_virtual_funds {
-    my $self = shift;
+    my ($self, $source) = @_;
     $self->is_virtual || die "not a virtual client";
 
     my $currency = (($self->default_account and $self->default_account->currency_code eq 'JPY') or $self->residence eq 'jp') ? 'JPY' : 'USD';
@@ -170,6 +170,7 @@ sub deposit_virtual_funds {
         amount       => $amount,
         payment_type => 'virtual_credit',
         remark       => 'Virtual money credit to account',
+        source       => $source,
     );
     return ($currency, $amount, $trx);
 }
@@ -224,6 +225,7 @@ sub payment_legacy_payment {
     # these are only here to support some tests which set up historic payments :(
     my $payment_time     = delete $args{payment_time};
     my $transaction_time = delete $args{transaction_time};
+    my $source           = delete $args{source};
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $fdp         = $self->is_first_deposit_pending;
@@ -246,6 +248,7 @@ sub payment_legacy_payment {
         referrer_type => 'payment',
         action_type   => $action_type,
         quantity      => 1,
+        source        => $source,
         ($transaction_time ? (transaction_time => $transaction_time) : ()),
     });
     $account->save(cascade => 1);
