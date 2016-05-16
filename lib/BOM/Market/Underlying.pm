@@ -255,8 +255,8 @@ sub _build_config {
         locale                          => BOM::Platform::Context::request()->language,
         uses_implied_rate               => $self->uses_implied_rate,
         spot                            => $self->spot,
-        asset                           => $self->asset->config,
-        quoted_currency                 => $self->quoted_currency->config,
+        asset_symbol                    => $self->asset_symbol,
+        quoted_currency_symbol          => $self->quoted_currency_symbol,
         extra_vol_diff_by_delta         => BOM::Platform::Static::Config::quants->{market_data}->{extra_vol_diff_by_delta},
         market_convention               => $self->market_convention,
     });
