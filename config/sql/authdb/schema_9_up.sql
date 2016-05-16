@@ -18,12 +18,11 @@ ALTER TABLE oauth.access_token ADD CONSTRAINT access_token_app_key_fkey FOREIGN 
 ALTER TABLE oauth.user_scope_confirm ADD CONSTRAINT user_scope_confirm_app_key_fkey FOREIGN KEY (app_key) REFERENCES oauth.apps (key);
 
 -- primary key
-CREATE SEQUENCE sequence_app_id
-     START WITH 1000
-     INCREMENT BY 1
-     MINVALUE 1000
-     NO MAXVALUE
-     CACHE 1;
-ALTER TABLE oauth.apps ADD COLUMN id BIGINT DEFAULT nextval('sequence_app_id'::regclass) NOT NULL PRIMARY KEY;
+ALTER TABLE oauth.apps ADD COLUMN id SERIAL PRIMARY KEY;
+
+GRANT USAGE ON oauth.apps_id_seq TO postgres;
+GRANT USAGE ON oauth.apps_id_seq TO write;
+GRANT USAGE ON oauth.apps_id_seq TO read;
+ALTER SEQUENCE auth.apps_id_seq RESTART WITH 1000;
 
 COMMIT;
