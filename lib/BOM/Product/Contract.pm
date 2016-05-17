@@ -1614,37 +1614,21 @@ sub _build_staking_limits {
         if ($self->underlying->market->name eq 'indices' and not $self->is_atm_bet and $self->timeindays->amount < 7);
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
-    my $stake_max = $payout_max;
-
-    # Client likes lower stake/payout limit on volidx market.
     my $payout_min =
         ($self->underlying->market->name eq 'volidx')
         ? $bet_limits->{min_payout}->{volidx}->{$curr}
         : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->for_sale) ? $payout_min / 20 : $payout_min / 2;
 
-    # err is included here to allow the web front-end access to the same message generated in the back-end.
+    my $message_to_client =
+        $self->for_sale
+        ? localize('Contract market price is too close to final payout.')
+        : localize('Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max));
+
     return {
-        stake => {
-            min => $stake_min,
-            max => $stake_max,
-            err => ($self->for_sale)
-            ? localize('Contract market price is too close to final payout.')
-            : localize(
-                'Buy price must be between [_1] and [_2].',
-                to_monetary_number_format($stake_min, 1),
-                to_monetary_number_format($stake_max, 1)
-            ),
-        },
-        payout => {
-            min => $payout_min,
-            max => $payout_max,
-            err => localize(
-                'Payout must be between [_1] and [_2].',
-                to_monetary_number_format($payout_min, 1),
-                to_monetary_number_format($payout_max, 1)
-            ),
-        },
+        min               => $stake_min,
+        max               => $payout_max,
+        message_to_client => $message_to_client,
     };
 }
 
@@ -2208,21 +2192,19 @@ sub _validate_payout {
     # Extant contracts can have whatever payouts were OK then.
     return if $self->for_sale;
 
+    my $ref             = $self->staking_limits;
     my $bet_payout      = $self->payout;
     my $payout_currency = $self->currency;
-    my $limits          = $self->staking_limits->{payout};
-    my $payout_max      = $limits->{max};
-    my $payout_min      = $limits->{min};
+    my $payout_max      = $ref->{max};
 
-    if ($bet_payout < $payout_min or $bet_payout > $payout_max) {
+    if ($bet_payout > $payout_max) {
         return {
             message => format_error_string(
                 'payout amount outside acceptable range',
                 given => $bet_payout,
-                min   => $payout_min,
                 max   => $payout_max
             ),
-            message_to_client => $limits->{err},
+            message_to_client => $ref->{message_to_client},
         };
     }
 
@@ -2251,10 +2233,9 @@ sub _validate_stake {
 
     return ($self->ask_probability->all_errors)[0] if (not $self->ask_probability->confirm_validity);
 
+    my $ref             = $self->staking_limits;
     my $contract_payout = $self->payout;
-    my $limits          = $self->staking_limits->{stake};
-    my $stake_minimum   = $limits->{min};
-    my $stake_maximum   = $limits->{max};
+    my $stake_minimum   = $ref->{min};
 
     if (not $contract_stake) {
         return {
@@ -2263,15 +2244,14 @@ sub _validate_stake {
         };
     }
 
-    if ($contract_stake < $stake_minimum or $contract_stake > $stake_maximum) {
+    if ($contract_stake < $stake_minimum) {
         return {
             message => format_error_string(
                 'stake is not within limits',
                 stake => $contract_stake,
                 min   => $stake_minimum,
-                max   => $stake_maximum
             ),
-            message_to_client => $limits->{err},
+            message_to_client => $ref->{message_to_client},
         };
     }
 
