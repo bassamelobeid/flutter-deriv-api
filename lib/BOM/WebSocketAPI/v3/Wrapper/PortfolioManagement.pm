@@ -109,10 +109,11 @@ sub proposal_open_contract {
                                 $details->{is_sold}         = $response->{$contract_id}->{is_sold};
                                 $details->{transaction_ids} = $response->{$contract_id}->{transaction_ids};
 
-                                # pass account_id so that we can categorize it based on type, can't use contract_id
+                                # pass account_id, transaction_id so that we can categorize it based on type, can't use contract_id
                                 # as we send contract_id also, we want both request to stream i.e one with contract_id
                                 # and one for all contracts
-                                $type_args{account_id} = $details->{account_id};
+                                $type_args{account_id}     = $details->{account_id};
+                                $type_args{transaction_id} = $response->{$contract_id}->{transaction_ids}->{buy};
 
                                 # need underlying to cancel streaming when manual sell occurs
                                 $details->{underlying} = $response->{$contract_id}->{underlying};
