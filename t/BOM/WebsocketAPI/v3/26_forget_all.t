@@ -6,6 +6,7 @@ use Test::More;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
+use Test::MockTime qw/:all/;
 use TestHelper qw/test_schema build_mojo_test/;
 use BOM::System::RedisReplicated;
 use BOM::Feed::Populator::InsertTicks;
@@ -13,7 +14,25 @@ use BOM::Feed::Buffer::TickFile;
 use File::Temp;
 use Date::Utility;
 
-my $now = Date::Utility->new('2012-03-13');
+my $t = build_mojo_test();
+
+$t->send_ok({json => {ticks => 'R_50'}});
+BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
+$t->send_ok({json => {ticks => 'R_50'}})->message_ok;
+my $res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'AlreadySubscribed';
+
+$t->send_ok({json => {forget_all => 'ticks'}});
+$t = $t->message_ok;
+my $m = JSON::from_json($t->message->[1]);
+ok $m->{forget_all} or diag explain $m;
+is scalar(@{$m->{forget_all}}), 1;
+test_schema('forget_all', $m);
+
+
+
+my $now = Date::Utility->new('2012-04-13 00:00:00');
+set_fixed_time($now->epoch);
 my $work_dir = File::Temp->newdir();
 my $buffer = BOM::Feed::Buffer::TickFile->new(base_dir => "$work_dir");
 my  $fill_start = $now;
@@ -32,25 +51,8 @@ $populator->insert_to_db({
                 date   => $fill_start,
                 symbol => 'frxUSDJPY',
             });
-        
-
-
-my $t = build_mojo_test();
-
-$t->send_ok({json => {ticks => 'R_50'}});
-BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
-$t->send_ok({json => {ticks => 'R_50'}})->message_ok;
-my $res = decode_json($t->message->[1]);
-is $res->{error}->{code}, 'AlreadySubscribed';
-
-$t->send_ok({json => {forget_all => 'ticks'}});
-$t = $t->message_ok;
-my $m = JSON::from_json($t->message->[1]);
-ok $m->{forget_all} or diag explain $m;
-is scalar(@{$m->{forget_all}}), 1;
-test_schema('forget_all', $m);
-
-my $start = $now->plus_time_interval('1h');
+ 
+my $start = $now;
 my $end = $start->plus_time_interval('30m');
 
 $t->send_ok({json => {ticks_history => 'frxUSDJPY', style => 'candles',  granularity   => 60, end => $end->epoch, start => $start->epoch}});
