@@ -8,7 +8,7 @@ use JSON::XS qw(encode_json decode_json);
 use BOM::RPC::v3::Contract;
 use BOM::System::RedisReplicated;
 use DataDog::DogStatsd::Helper;
-use Time::HiRes qw(gettimeofday);
+use Time::HiRes qw(gettimeofday tv_interval);
 use utf8;
 
 sub new {
@@ -51,9 +51,11 @@ sub _initialize {
 sub price {
     my $self = shift;
 
-    my $response = BOM::RPC::v3::Contract::send_ask({args => $self->{params}});
+    my $t                        = gettimeofday;
+    my $response                 = BOM::RPC::v3::Contract::send_ask({args => $self->{params}});
+    my $response->{pricing_time} = tv_interval($t)
 
-    delete $response->{longcode};
+        delete $response->{longcode};
 
     DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.price.call');
     DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.price.time', $response->{rpc_time});
