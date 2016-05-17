@@ -123,7 +123,7 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'app_list';
 test_schema('app_list', $res);
-my $get_apps = [grep { $_->{app_id} ne 'binarycom' } @{$res->{app_list}}];
+my $get_apps = $res->{app_list};
 is_deeply($get_apps, [$app1, $app2], 'app_list ok');
 
 $t = $t->send_ok({
@@ -140,7 +140,7 @@ $t = $t->send_ok({
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 test_schema('app_list', $res);
-$get_apps = [grep { $_->{app_id} ne 'binarycom' } @{$res->{app_list}}];
+$get_apps = $res->{app_list};
 is_deeply($get_apps, [$app1], 'app_delete ok');
 
 ## for used and revoke
