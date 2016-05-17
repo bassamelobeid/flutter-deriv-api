@@ -394,6 +394,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             if ($input{$key} eq 'ADDRESS' or $input{$key} eq 'ID_DOCUMENT') {
                 $client->set_authentication($input{$key})->status('pass');
             }
+            if ($input{$key} eq 'AGE_VERIFIED') {
+                $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+            }
             if ($input{$key} eq 'CLEAR ALL') {
                 foreach my $m (@{$client->client_authentication_method}) {
                     $m->delete;

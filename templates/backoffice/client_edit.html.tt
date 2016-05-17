@@ -204,8 +204,8 @@ table#client_edit td{
         <td class="label">ID Authentication</td>
         [%
             authentication_options = [
-                {'value' => '', 'details' => '-' }
-                {'value' => 'CLEAR ALL', 'details' => 'Delete all authentications' }
+                {'value' => 'CLEAR ALL', 'details' => 'Not authenticated' }
+                {'value' => 'AGE_VERIFIED', 'details' => 'ID/Age Verified' }
                 {'value' => 'ADDRESS', 'details' => 'Authenticated (deprecated address method)' }
                 {'value' => 'ID_DOCUMENT', 'details' => 'Authenticated (by post)' }
             ]
