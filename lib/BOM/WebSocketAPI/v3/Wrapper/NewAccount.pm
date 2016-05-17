@@ -3,175 +3,22 @@ package BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use strict;
 use warnings;
 
-use BOM::WebSocketAPI::Websocket_v3;
 use BOM::Platform::Token::Verification;
 
-sub new_account_virtual {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'new_account_virtual',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('new_account_virtual', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type            => 'new_account_virtual',
-                    new_account_virtual => $response
-                };
-            }
-        },
-        {args => $args});
-    return;
-}
-
-sub verify_email {
-    my ($c, $args) = @_;
+sub verify_email_get_type_code {
+    my ($c, $args, $params) = @_;
 
     my $email = $args->{verify_email};
     my $type  = $args->{type};
-
-    my $code;
-    if ($type eq 'account_opening') {
-        $code = BOM::Platform::Token::Verification->new({
-                email       => $email,
-                expires_in  => 3600,
-                created_for => 'account_opening'
-            })->token;
-    } elsif ($type eq 'reset_password') {
-        $code = BOM::Platform::Token::Verification->new({
-                email       => $email,
-                expires_in  => 3600,
-                created_for => 'reset_password'
-            })->token;
-    } elsif ($type eq 'paymentagent_withdraw') {
-        $code = BOM::Platform::Token::Verification->new({
-                email       => $email,
-                expires_in  => 3600,
-                created_for => 'paymentagent_withdraw'
-            })->token;
-    } elsif ($type eq 'payment_withdraw') {
-        $code = BOM::Platform::Token::Verification->new({
-                email       => $email,
-                expires_in  => 3600,
-                created_for => 'payment_withdraw'
-            })->token;
-    }
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'verify_email',
-        sub {
-            my $response = shift;
-            return {
-                msg_type     => 'verify_email',
-                verify_email => $response->{status}};
-        },
-        {
-            args        => $args,
+    my $code  = BOM::Platform::Token::Verification->new({
             email       => $email,
-            server_name => $c->server_name,
-            code        => $code,
-            type        => $type
-        });
-    return;
-}
+            expires_in  => 3600,
+            created_for => $type,
+        })->token;
 
-sub new_account_real {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'new_account_real',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('new_account_real', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type         => 'new_account_real',
-                    new_account_real => $response
-                };
-            }
-        },
-        {
-            args  => $args,
-            token => $c->stash('token'),
-        });
-    return;
-}
-
-sub new_account_maltainvest {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'new_account_maltainvest',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('new_account_maltainvest', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type                => 'new_account_maltainvest',
-                    new_account_maltainvest => $response
-                };
-            }
-        },
-        {
-            args  => $args,
-            token => $c->stash('token'),
-        });
-    return;
-}
-
-sub new_account_japan {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'new_account_japan',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('new_account_japan', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type          => 'new_account_japan',
-                    new_account_japan => $response
-                };
-            }
-        },
-        {
-            args  => $args,
-            token => $c->stash('token'),
-        });
-    return;
-}
-
-sub jp_knowledge_test {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'jp_knowledge_test',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('jp_knowledge_test', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type          => 'jp_knowledge_test',
-                    jp_knowledge_test => $response
-                };
-            }
-        },
-        {
-            args  => $args,
-            token => $c->stash('token'),
-        });
+    $params->{call_params}->{email} = $email;
+    $params->{call_params}->{code}  = $code;
+    $params->{call_params}->{type}  = $type;
     return;
 }
 
