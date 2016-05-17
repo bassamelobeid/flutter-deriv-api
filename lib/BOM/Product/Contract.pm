@@ -1282,7 +1282,7 @@ sub _build_base_commission {
 sub _build_commission_markup {
     my $self = shift;
 
-    my %min = ($self->has_payout and $payout != 0) ? (minimum => 0.02 / $self->payout) : ();
+    my %min = ($self->has_payout and $self->payout != 0) ? (minimum => 0.02 / $self->payout) : ();
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'commission_markup',
         description => 'Commission markup for a pricing model',
