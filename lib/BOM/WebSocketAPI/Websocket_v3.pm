@@ -228,7 +228,13 @@ my @dispatch = (
     ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1, 'trade'],
     ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
     ['portfolio', '', 1, 'read', {stash_params => [qw/ source /]}],
-    ['proposal_open_contract', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract, 1, 'read'],
+    [
+        'proposal_open_contract',
+        '', 1, 'read',
+        {
+            rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
+        }
+    ],
     ['sell_expired', '', 1, 'trade', {stash_params => [qw/ source /]}],
 
     ['app_register', '', 1, 'admin'],

@@ -12,12 +12,7 @@ sub forward {
     my ($c, $url, $rpc_method, $args, $params) = @_;
 
     $params->{msg_type} ||= $rpc_method;
-    $params->{rpc_response_cb} ||= get_rpc_response_cb($c, $args, $params);
-
-    my $before_call_hook = $params->{before_call} || [];
-    $_->($c, $args, $params) for @$before_call_hook;
-
-    make_call_params($c, $args, $params);
+    $params->{rpc_response_cb} = get_rpc_response_cb($c, $args, $params);
 
     my $before_call_hook = $params->{before_call} || [];
     $_->($c, $args, $params) for @$before_call_hook;
@@ -66,18 +61,27 @@ sub get_rpc_response_cb {
     my $error_handler   = $params->{error};
     my $msg_type        = $params->{msg_type};
 
-    return sub {
-        my $rpc_response = shift;
-        if (ref($rpc_response) eq 'HASH' and exists $rpc_response->{error}) {
-            $error_handler->($c, $args, $rpc_response) if defined $error_handler;
-            return error_api_response($c, $rpc_response, $params);
-        } else {
-            $success_handler->($c, $args, $rpc_response) if defined $success_handler;
-            store_response($c, $rpc_response);
-            return success_api_response($c, $rpc_response, $params);
-        }
-        return;
-    };
+    if (my $rpc_response_cb = $params->{rpc_response_cb}) {
+        return sub {
+            my $rpc_response = shift;
+            $rpc_response_cb->($c, $args, $rpc_response);
+            return;
+        };
+    } else {
+        return sub {
+            my $rpc_response = shift;
+            if (ref($rpc_response) eq 'HASH' and exists $rpc_response->{error}) {
+                $error_handler->($c, $args, $rpc_response) if defined $error_handler;
+                return error_api_response($c, $rpc_response, $params);
+            } else {
+                $success_handler->($c, $args, $rpc_response) if defined $success_handler;
+                store_response($c, $rpc_response);
+                return success_api_response($c, $rpc_response, $params);
+            }
+            return;
+        };
+    }
+    return;
 }
 
 sub store_response {
