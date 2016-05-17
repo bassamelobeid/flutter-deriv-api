@@ -1242,14 +1242,10 @@ sub _build_payout {
     # payout calculated with base commission.
     my $initial_payout = $self->_calculate_payout($base_commission);
     if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
-        my $comm              = $base_commission;
+        my $minimum_commission = 0.02 / $initial_payout;
+        my $comm              = $base_commission < $minimum_commission ? $minimum_commission : $base_commission;
         my $payout            = $initial_payout;
-        my $dollar_commission = $payout * $comm * $self->commission_adjustment->amount;
-
-        # makes sure we get a minimum of 2 cents
-        if ($dollar_commission < 0.02) {
-            $payout -= (0.02 - $dollar_commission);
-        }
+        $payout = $ask_price / ($theo_prob + (($comm + $risk_markup) * $self->commission_adjustment->amount));
 
         return roundnear(0.01, max($ask_price, $payout));
     }
