@@ -169,7 +169,7 @@ my @dispatch = (
     ['payout_currencies',       \&BOM::WebSocketAPI::v3::Wrapper::Accounts::payout_currencies,       0],
     ['landing_company',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company,         0],
     ['landing_company_details', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company_details, 0],
-    ['get_corporate_actions', '', 0],
+    ['get_corporate_actions',   '',                                                                  0],
 
     ['balance',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,            1, 'read'],
     ['statement',          \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement,          1, 'read'],
