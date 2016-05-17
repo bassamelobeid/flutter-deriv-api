@@ -31,11 +31,11 @@ sub commission {
     die "you need to provide theo_probability and risk_markup and base_commission to calculate commission."
         if not(exists $args->{theo_probability} and exists $args->{risk_markup} and exists $args->{base_commission});
 
-    if ($args->{payout}) {
+    if (defined $args->{payout}) {
         return $args->{base_commission} * commission_multiplier($args->{payout}, $args->{theo_probability});
     }
 
-    if ($args->{stake}) {
+    if (defined $args->{stake}) {
         my ($theo_prob, $risk_markup, $base_commission, $ask_price) = @{$args}{'theo_probability', 'risk_markup', 'base_commission', 'stake'};
 
         delete $args->{base_commission};
