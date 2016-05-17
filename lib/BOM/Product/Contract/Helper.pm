@@ -3,8 +3,11 @@ package BOM::Product::Contract::Helper;
 use strict;
 use warnings;
 
+use BOM::Platform::Runtime;
+use BOM::Platform::Static::Config;
+use List::Util qw(max min);
+
 # static definition of the commission slope
-my $global_commission_adjustment = 1;
 my $commission_base_multiplier   = 1;
 my $commission_max_multiplier    = 2;
 my $commission_min_std           = 500;
@@ -46,7 +49,7 @@ sub commission {
         if (commission_multiplier($initial_payout, $theo_prob) == $commission_base_multiplier) {
             # a minimum of 2 cents please, payout could be zero.
             my $minimum_commission = $initial_payout ? 0.02 / $initial_payout : 0.02;
-            return ($minimum_commission > $base_commission) ? $minimum_commission : $base_commission;
+            return max($minimum_commission, $base_commission);
         }
 
         $args->{commission} = $base_commission * 2;
@@ -79,10 +82,22 @@ sub commission {
     die 'Stake or payout is required to calculate commission.';
 }
 
+#A multiplicative factor which adjusts the model_markup.  This scale factor must be in the range [0.01, 5].
+sub global_commission_adjustment {
+    my $self = shift;
+
+    my $minimum     = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100,
+    my $maximum     = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100,
+    my $adjustment  = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
+
+    return min(max($adjustment, $minimum), $maximum);
+}
+
+
 sub _calculate_payout {
     my $args = shift;
 
-    return $args->{stake} / ($args->{theo_probability} + ($args->{risk_markup} + $args->{commission}) * $global_commission_adjustment);
+    return $args->{stake} / ($args->{theo_probability} + ($args->{risk_markup} + $args->{commission}) * global_commission_adjustment());
 }
 
 1;

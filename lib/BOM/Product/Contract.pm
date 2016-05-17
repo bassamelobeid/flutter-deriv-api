@@ -407,11 +407,9 @@ has [qw(volsurface)] => (
     lazy_build => 1,
 );
 
-# commission_adjustment - A multiplicative factor which adjusts the model_markup.  This scale factor must be in the range [0.01, 5].
 # discounted_probability - The discounted total probability, given the time value of the money at stake.
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
 has [qw(
-        commission_adjustment
         model_markup
         total_markup
         ask_probability
@@ -969,7 +967,13 @@ sub _build_total_markup {
     });
 
     $total_markup->include_adjustment('reset',    $self->model_markup);
-    $total_markup->include_adjustment('multiply', $self->commission_adjustment);
+    my $commission_adjustment_cv = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'global_commission_adjustment',
+        description => 'global commission scaling factory',
+        set_by      => 'BOM::Product::Contract',
+        base_amount => BOM::Product::Contract::Helper::global_commission_adjustment(),
+    });
+    $total_markup->include_adjustment('multiply', $commission_adjustment_cv);
 
     return $total_markup;
 }
@@ -1045,43 +1049,6 @@ sub _build_ask_probability {
     }
 
     return $marked_up;
-}
-
-sub _build_commission_adjustment {
-    my $self = shift;
-
-    my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'global_commission_adjustment',
-        description => 'Our scaling adjustment to calculated model markup.',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100),
-        maximum     => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100),
-        base_amount => 0,
-    });
-
-    my $adjustment_used = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'scaling_factor',
-        description => 'Our scaling adjustment to calculated model markup.',
-        set_by      => 'quants.commission.adjustment.global_scaling',
-        base_amount => (BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100),
-    });
-
-    $comm_scale->include_adjustment('reset', $adjustment_used);
-
-    if ($self->for_sale) {
-        $comm_scale->include_adjustment(
-            'multiply',
-            Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'bom_created_bet',
-                    description => 'We created this bet with the intent to get more action.',
-                    minimum     => 0,
-                    maximum     => 1,
-                    set_by      => 'quants.commission.adjustment.bom_created_bet',
-                    base_amount => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{bom_created_bet} / 100),
-                }));
-    }
-
-    return $comm_scale;
 }
 
 sub is_valid_to_buy {
@@ -1202,7 +1169,7 @@ sub _build_payout {
         base_commission  => $base_commission,
     });
 
-    my $payout = $ask_price / ($theo_prob + ($risk_markup + $commission) * $self->commission_adjustment->amount);
+    my $payout = $ask_price / ($theo_prob + ($risk_markup + $commission) * BOM::Product::Contract::Helper::global_commission_adjustment());
     $payout = max($ask_price, $payout);
     return roundnear(0.01, $payout);
 }
