@@ -31,7 +31,8 @@ sub _create_oauth_token {
 
     my $oauth_model = BOM::Database::Model::OAuth->new;
     my @scopes      = qw(read admin trade payments);
-    my ($access_token, $expires_in) = $oauth_model->store_access_token_only('binarycom', $loginid, @scopes);
+    # for binary.com, app id = 1
+    my ($access_token, $expires_in) = $oauth_model->store_access_token_only('1', $loginid, @scopes);
 
     return $access_token;
 }
