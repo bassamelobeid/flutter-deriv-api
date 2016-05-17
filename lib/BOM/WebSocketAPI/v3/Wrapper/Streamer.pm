@@ -346,6 +346,7 @@ sub _feed_channel {
         delete $feed_channel_type->{"$symbol;$type"};
         # delete cache on unsubscribe
         delete $feed_channel_cache->{"$symbol;$type"};
+
         # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
         _transaction_channel($c, 'unsubscribe', $args->{account_id}, $args->{contract_id}) if $type =~ /^proposal_open_contract:/;
 

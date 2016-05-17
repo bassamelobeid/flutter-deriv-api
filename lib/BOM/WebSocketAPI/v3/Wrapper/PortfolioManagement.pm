@@ -77,18 +77,18 @@ sub proposal_open_contract {
                                     proposal_open_contract => {%$result}}});
                     };
 
-                    # need to do this as args are passed back to client as response echo_req
-                    my $details = {%$args};
-                    # as req_id and passthrough can change so we should not send them in type else
-                    # client can subscribe to multiple proposal_open_contract as feed channel type will change
-                    my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
-
                     foreach my $contract_id (@contract_ids) {
                         if (exists $response->{$contract_id}->{error}) {
                             $send_details->({
                                     contract_id      => $contract_id,
                                     validation_error => $response->{$contract_id}->{error}->{message_to_client}});
                         } else {
+                            # need to do this as args are passed back to client as response echo_req
+                            my $details = {%$args};
+                            # as req_id and passthrough can change so we should not send them in type else
+                            # client can subscribe to multiple proposal_open_contract as feed channel type will change
+                            my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
+
                             # we don't want to leak account_id to client
                             $details->{account_id} = delete $response->{$contract_id}->{account_id};
                             my $id;
