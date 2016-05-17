@@ -40,7 +40,7 @@ my @currencies =
     map { $_->market->name =~ /(forex|commodities)/ ? ($_->asset_symbol, $_->quoted_currency_symbol) : ($_->quoted_currency_symbol) } @underlyings;
 
 my @payout_curr = qw(USD GBP EUR AUD);
-for (@currencies, @payout_curr, 'AUD-JPY', 'AUD-CAD', 'JPY-AUD', 'CAD-AUD') {
+for (@currencies, @payout_curr, 'AUD-JPY', 'CAD-AUD') {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
