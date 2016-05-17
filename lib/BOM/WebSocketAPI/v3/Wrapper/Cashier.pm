@@ -8,6 +8,7 @@ use BOM::WebSocketAPI::CallingEngine;
 sub log_paymentagent_error {
     my ($c, $args, $response) = @_;
     $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
+    return;
 }
 
 sub get_response_handler {
