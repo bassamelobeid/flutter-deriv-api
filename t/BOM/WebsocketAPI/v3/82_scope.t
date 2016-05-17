@@ -20,7 +20,7 @@ my $oauth = BOM::Database::Model::OAuth->new();
 my $dbh   = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
-$dbh->do("DELETE FROM oauth.apps");
+$dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
 
 ## create test app for scopes
 my $app = $oauth->create_app({
