@@ -5,11 +5,11 @@ use warnings;
 
 # static definition of the commission slope
 my $global_commission_adjustment = 1;
-my $commission_base_multiplier = 1;
-my $commission_max_multiplier  = 2;
-my $commission_min_std         = 500;
-my $commission_max_std         = 25000;
-my $commission_slope = ($commission_max_multiplier - $commission_base_multiplier) / ($commission_max_std - $commission_min_std);
+my $commission_base_multiplier   = 1;
+my $commission_max_multiplier    = 2;
+my $commission_min_std           = 500;
+my $commission_max_std           = 25000;
+my $commission_slope             = ($commission_max_multiplier - $commission_base_multiplier) / ($commission_max_std - $commission_min_std);
 
 sub commission_multiplier {
     my ($payout, $theo_probability) = @_;
@@ -28,7 +28,8 @@ sub commission_multiplier {
 sub commission {
     my $args = shift;
 
-    die "you need to provide theo_probability and risk_markup and base_commission to calculate commission." if not (exists $args->{theo_probability} and exists $args->{risk_markup} and exists $args->{base_commission});
+    die "you need to provide theo_probability and risk_markup and base_commission to calculate commission."
+        if not(exists $args->{theo_probability} and exists $args->{risk_markup} and exists $args->{base_commission});
 
     if ($args->{payout}) {
         return $args->{base_commission} * commission_multiplier($args->{payout}, $args->{theo_probability});
@@ -55,9 +56,9 @@ sub commission {
             return $base_commission * 2;
         }
 
-        my $a      = $base_commission * $commission_slope * sqrt($theo_prob * (1 - $theo_prob));
-        my $b      = $theo_prob + $risk_markup + $base_commission - $base_commission * $commission_min_std * $commission_slope;
-        my $c      = -$ask_price;
+        my $a = $base_commission * $commission_slope * sqrt($theo_prob * (1 - $theo_prob));
+        my $b = $theo_prob + $risk_markup + $base_commission - $base_commission * $commission_min_std * $commission_slope;
+        my $c = -$ask_price;
 
         # sets it to zero first.
         $initial_payout = 0;

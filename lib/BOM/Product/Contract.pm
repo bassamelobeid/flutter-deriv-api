@@ -957,16 +957,7 @@ sub _build_total_markup {
         ? ()
         : (maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100);
 
-    my %min;
-    if ($self->pricing_engine_name =~ /TickExpiry/) {
-        # we allowed tick expiry total markup to be less than zero
-        # because of equal tick discount.
-        %min = ();
-    } elsif ($self->has_payout and $self->payout != 0) {
-        %min = (minimum => 0.02 / $self->payout);
-    } else {
-        %min = (minimum => 0);
-    }
+    my %min = $self->pricing_engine_name !~ /TickExpiry/ ? (minimum => 0) : ();
 
     my $total_markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'total_markup',
@@ -1295,7 +1286,9 @@ sub _build_commission_markup {
         name        => 'commission_markup',
         description => 'Commission markup for a pricing model',
         set_by      => $self->pricing_engine_name,
-        base_amount => $self->base_commission * BOM::Product::Contract::Helper::commission_multiplier($self->payout, $self->theo_probability->amount),
+        minimum     => 0.02 / $self->payout,
+        base_amount => $self->base_commission *
+            BOM::Product::Contract::Helper::commission_multiplier($self->payout, $self->theo_probability->amount),
     });
 }
 
