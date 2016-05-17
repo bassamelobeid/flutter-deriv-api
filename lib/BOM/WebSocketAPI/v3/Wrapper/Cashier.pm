@@ -35,8 +35,7 @@ sub paymentagent_withdraw {
         {
             args        => $args,
             token       => $c->stash('token'),
-            server_name => $c->server_name,
-            source      => $c->stash('source'),
+            server_name => $c->server_name
         });
     return;
 }
@@ -64,7 +63,6 @@ sub paymentagent_transfer {
             args        => $args,
             token       => $c->stash('token'),
             server_name => $c->server_name,
-            source      => $c->stash('source'),
         });
     return;
 }
@@ -89,9 +87,8 @@ sub transfer_between_accounts {
             }
         },
         {
-            args   => $args,
-            token  => $c->stash('token'),
-            source => $c->stash('source'),
+            args  => $args,
+            token => $c->stash('token'),
         });
     return;
 }
@@ -123,9 +120,7 @@ sub __call_rpc {
         {
             args     => $args,
             token    => $c->stash('token'),
-            language => $c->stash('language'),
-            source   => $c->stash('source'),
-        });
+            language => $c->stash('language')});
 }
 
 1;
