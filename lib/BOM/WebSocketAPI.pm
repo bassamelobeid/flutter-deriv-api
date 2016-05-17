@@ -69,15 +69,15 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            if ($c->req->param('app_key')) {
-                my $app_key = $c->req->param('app_key');
-                my $oauth   = BOM::Database::Model::OAuth->new;
-                my $app     = $oauth->verify_app($app_key);
+            if ($c->req->param('app_id')) {
+                my $app_id = $c->req->param('app_id');
+                my $oauth  = BOM::Database::Model::OAuth->new;
+                my $app    = $oauth->verify_app($app_id);
 
                 if ($app) {
                     $c->stash(
+                        source   => $app_id,
                         app_name => $app->{name},
-                        source   => $app->{id},
                     );
                 }
             }
