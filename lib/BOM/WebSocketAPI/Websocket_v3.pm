@@ -44,6 +44,30 @@ sub entry_point {
     Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(120);
     Mojo::IOLoop->singleton->max_connections(100000);
 
+    if (not $c->stash->{redis_pricer}) {
+        state $url_pricers = do {
+            my $cf = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write};
+            my $url = Mojo::URL->new("redis://$cf->{host}:$cf->{port}");
+            $url->userinfo('dummy:' . $cf->{password}) if $cf->{password};
+            $url;
+        };
+
+        my $redis_pricer = Mojo::Redis2->new(url => $url_pricers);
+        $redis_pricer->on(
+            error => sub {
+                my ($self, $err) = @_;
+                warn("error: $err");
+            });
+        $redis_pricer->on(
+            message => sub {
+                my ($self, $msg, $channel) = @_;
+
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_pricing_events($c, $msg, $channel)
+                    if $channel =~ /^Redis::Processor::/;
+            });
+        $c->stash->{redis_pricer} = $redis_pricer;
+    }
+
     if (not $c->stash->{redis}) {
         state $url = do {
             my $cf = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml')->{read};
@@ -62,8 +86,6 @@ sub entry_point {
             message => sub {
                 my ($self, $msg, $channel) = @_;
 
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_pricing_events($c, $msg, $channel)
-                    if $channel =~ /^Redis::Processor::/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
                     if $channel =~ /^(?:FEED|PricingTable)::/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)

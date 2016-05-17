@@ -16,6 +16,7 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use BOM::System::RedisReplicated;
+use Time::HiRes qw(gettimeofday);
 use utf8;
 
 sub ticks {
@@ -274,6 +275,9 @@ sub _pricing_channel {
         $args_hash{amount} = 1000;
         $args_hash{basis}  = 'payout';
     }
+
+    $args_hash{request_time} = gettimeofday;
+
     $args_hash{language} = $c->stash('language') || 'EN';
     my $serialized_args = _serialized_args(\%args_hash);
 
@@ -302,13 +306,13 @@ sub _pricing_channel {
 
     if (not $pricing_channel->{$serialized_args}) {
         my $rp = Mojo::Redis::Processor->new({
-            'write_conn' => BOM::System::RedisReplicated::redis_write,
-            'read_conn'  => BOM::System::RedisReplicated::redis_read,
+            'write_conn' => BOM::System::RedisReplicated::redis_pricer,
+            'read_conn'  => BOM::System::RedisReplicated::redis_pricer,
             data         => $serialized_args,
             trigger      => 'FEED::' . $args->{symbol},
         });
         $rp->send();
-        $c->stash('redis')->subscribe([$rp->_processed_channel], sub { });
+        $c->stash('redis_pricer')->subscribe([$rp->_processed_channel], sub { });
 
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
