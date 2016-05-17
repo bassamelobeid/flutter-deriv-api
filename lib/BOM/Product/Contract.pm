@@ -1244,7 +1244,7 @@ sub _build_payout {
     if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
         my $comm              = $base_commission;
         my $payout            = $initial_payout;
-        my $dollar_commission = $payout * (($risk_markup + $comm) * $self->commission_adjustment->amount);
+        my $dollar_commission = $payout * $comm * $self->commission_adjustment->amount;
 
         # makes sure we get a minimum of 2 cents
         if ($dollar_commission < 0.02) {
