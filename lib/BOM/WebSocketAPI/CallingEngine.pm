@@ -17,7 +17,7 @@ sub forward {
     my $before_call_hook = $params->{before_call} || [];
     $_->($c, $args, $params) for @$before_call_hook;
 
-    make_call_params($c, $args, $params);
+    $params->{call_params} = make_call_params($c, $args, $params);
 
     return call_rpc(
         $c,
@@ -51,7 +51,7 @@ sub make_call_params {
         $call_params->{$_} = $cb_params->{$_} for keys %$cb_params;
     }
 
-    return;
+    return $call_params;
 }
 
 sub get_rpc_response_cb {
@@ -195,7 +195,7 @@ sub call_rpc {
                 return;
             }
 
-            $api_response = &$rpc_response_cb($res->result);
+            $api_response = &$rpc_response_cb($c, $call_params->{args}, $res->result);
 
             return unless $api_response;
 
