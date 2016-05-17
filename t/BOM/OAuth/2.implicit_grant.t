@@ -56,7 +56,7 @@ my $t = Test::Mojo->new('BOM::OAuth');
 $t = $t->get_ok("/authorize");
 $t->json_is('/error', 'invalid_request')->json_like('/error_description', qr/missing app_id/);
 
-$t = $t->get_ok("/authorize?app_id=XXX");
+$t = $t->get_ok("/authorize?app_id=9999999");
 $t->json_like('/error_description', qr/valid app_id/);
 
 $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
