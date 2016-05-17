@@ -12,9 +12,10 @@ sub forward {
     my ($c, $url, $rpc_method, $args, $params) = @_;
 
     $params->{msg_type} ||= $rpc_method;
-    $params->{rpc_response_cb} = get_rpc_response_cb($c, $args, $params);
 
-    my $before_call_hook = $params->{before_call} || [];
+    my $rpc_response_cb = get_rpc_response_cb($c, $args, $params);
+
+    my $before_call_hook = delete($params->{before_call}) || [];
     $_->($c, $args, $params) for @$before_call_hook;
 
     $params->{call_params} = make_call_params($c, $args, $params);
@@ -24,6 +25,7 @@ sub forward {
         {
             url    => ($url . $rpc_method),
             method => $rpc_method,
+            rpc_response_cb => $rpc_response_cb,
             %$params,
         });
 }
@@ -32,8 +34,8 @@ sub make_call_params {
     my ($c, $args, $params) = @_;
 
     my $stash_params   = $params->{stash_params};
-    my $call_params_cb = $params->{make_call_params};
     my $require_auth   = $params->{require_auth};
+    my $call_params_cb = delete $params->{make_call_params};
 
     my $call_params = $params->{call_params} ||= {};
     $call_params->{args}     = $args;
@@ -57,11 +59,11 @@ sub make_call_params {
 sub get_rpc_response_cb {
     my ($c, $args, $params) = @_;
 
-    my $success_handler = $params->{success};
-    my $error_handler   = $params->{error};
+    my $success_handler = delete $params->{success};
+    my $error_handler   = delete $params->{error};
     my $msg_type        = $params->{msg_type};
 
-    if (my $rpc_response_cb = $params->{rpc_response_cb}) {
+    if (my $rpc_response_cb = delete $params->{rpc_response_cb}) {
         return sub {
             my $rpc_response = shift;
             $rpc_response_cb->($c, $args, $rpc_response);
@@ -145,14 +147,14 @@ sub call_rpc {
     my $call_params = $params->{call_params};
 
     # TODO It should be object attributes
-    my $rpc_response_cb   = $params->{rpc_response_cb};
+    my $rpc_response_cb   = delete $params->{rpc_response_cb};
     my $max_response_size = $params->{max_response_size};
 
     # TODO It'll be hooks
-    my $before_get_rpc_response_hook  = $params->{before_get_rpc_response}  || [];
-    my $after_got_rpc_response_hook   = $params->{after_got_rpc_response}   || [];
-    my $before_send_api_response_hook = $params->{before_send_api_response} || [];
-    my $after_sent_api_response_hook  = $params->{after_sent_api_response}  || [];
+    my $before_get_rpc_response_hook  = delete($params->{before_get_rpc_response})  || [];
+    my $after_got_rpc_response_hook   = delete($params->{after_got_rpc_response})   || [];
+    my $before_send_api_response_hook = delete($params->{before_send_api_response}) || [];
+    my $after_sent_api_response_hook  = delete($params->{after_sent_api_response})  || [];
 
     my $client  = MojoX::JSON::RPC::Client->new;
     my $callobj = {
