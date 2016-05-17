@@ -3,8 +3,6 @@ package BOM::Product::ContractFactory::Parser;
 use strict;
 use warnings;
 
-use Carp;
-
 use Exporter 'import';
 our @EXPORT_OK = qw(
     shortcode_to_parameters
@@ -43,7 +41,7 @@ my %AVAILABLE_CONTRACTS = map { $_ => 1 } uniq(@available_contracts);
 sub financial_market_bet_to_parameters {
     my $fmb      = shift;
     my $currency = shift;
-    croak 'Expected BOM::Database::Model::FinancialMarketBet instance.'
+    die 'Expected BOM::Database::Model::FinancialMarketBet instance.'
         if not $fmb->isa('BOM::Database::Model::FinancialMarketBet');
 
     # don't bother to get legacy parameters; rather we can just use shortcode
@@ -66,7 +64,7 @@ sub financial_market_bet_to_parameters {
     # since a forward starting contract needs to start 5 minutes in the future,
     # 5 seconds is a safe mark.
     if ($contract_start_time->epoch - $purchase_time->epoch > 5) {
-        $bet_parameters->{is_forward_starting} = 1;
+        $bet_parameters->{starts_as_forward_starting} = 1;
     }
     $bet_parameters->{date_start} = $contract_start_time;
     $bet_parameters->{date_expiry} = Date::Utility->new($fmb->expiry_time->epoch) if $fmb->expiry_time;
@@ -218,17 +216,17 @@ sub shortcode_to_parameters {
             $how_many_ticks = $5;
         }
     } else {
-        croak 'Unknown shortcode ' . $shortcode;
+        die 'Unknown shortcode ' . $shortcode;
     }
 
     my $underlying = BOM::Market::Underlying->new($underlying_symbol);
     if (Date::Utility::is_ddmmmyy($date_expiry)) {
-        my $exchange = $underlying->exchange;
+        my $calendar = $underlying->calendar;
         $date_expiry = Date::Utility->new($date_expiry);
-        if (my $closing = $exchange->closing_on($date_expiry)) {
+        if (my $closing = $calendar->closing_on($date_expiry)) {
             $date_expiry = $closing->epoch;
         } else {
-            my $regular_close = $exchange->closing_on($exchange->regular_trading_day_after($date_expiry));
+            my $regular_close = $calendar->closing_on($calendar->regular_trading_day_after($date_expiry));
             $date_expiry = Date::Utility->new($date_expiry->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
         }
     }
@@ -259,7 +257,7 @@ sub shortcode_to_parameters {
         tick_expiry  => $tick_expiry,
         tick_count   => $how_many_ticks,
         is_sold      => $is_sold,
-        ($forward_start) ? (is_forward_starting => $forward_start) : (),
+        ($forward_start) ? (starts_as_forward_starting => $forward_start) : (),
         %barriers,
     };
 

@@ -89,7 +89,7 @@ AS51:
         american:
           max: 365d
           min: 1d
-BBABI: &1
+USAAAPL: &1
   callput:
     daily:
       spot:
@@ -113,10 +113,31 @@ BBABI: &1
             GBP: 1000
             AUD: 1000
             JPY: 100000
-BBBELG: *1
-BBGBLB: *1
-BBKBC: *1
-BBUCB: *1
+USAAPL: *1
+USAMZN: *1
+USCT: *1
+USFB: *1
+USGE: *1
+USGOOG: *1
+USKO: *1
+USMSFT: *1
+USPFE: *1
+USXOM: *1
+UKBARC: *1
+UKBATS: *1
+UKGSK: *1
+UKHSBA: *1
+UKVOD: *1
+DEALV: *1
+DEBAYER: *1
+DEDAI: *1
+DESIE: *1
+DEVOWGEN: *1
+AUANZ: *1
+AUBHP: *1
+AUCBA: *1
+AUMQG: *1
+AUQAN: *1
 BFX:
   callput:
     daily:
@@ -141,7 +162,7 @@ BFX:
             GBP: 5000
             AUD: 5000
             JPY: 500000
-BSESENSEX30:
+BSESENSEX30: &forward_and_daily
   callput:
     daily:
       spot:
@@ -243,30 +264,6 @@ FCHI:
         american:
           max: 365d
           min: 7d
-FPACA: *1
-FPAI: *1
-FPAIR: *1
-FPBN: *1
-FPBNP: *1
-FPCA: *1
-FPCS: *1
-FPDG: *1
-FPEDF: *1
-FPEI: *1
-FPFP: *1
-FPGLE: *1
-FPGSZ: *1
-FPKER: *1
-FPMC: *1
-FPOR: *1
-FPORA: *1
-FPRI: *1
-FPRNO: *1
-FPSAF: *1
-FPSAN: *1
-FPSGO: *1
-FPSU: *1
-FPVIV: *1
 GDAXI:
   callput:
     daily:
@@ -413,6 +410,19 @@ OBX:
         euro_atm:
           max: 1d
           min: 5m
+OTC_IXIC: *forward_and_daily
+OTC_BSESENSEX30: *forward_and_daily
+OTC_BIST100: *forward_and_daily
+OTC_AEX: *forward_and_daily
+OTC_AS51: *forward_and_daily
+OTC_FTSE: *forward_and_daily
+OTC_BFX: *forward_and_daily
+OTC_DJI: *forward_and_daily
+OTC_FCHI: *forward_and_daily
+OTC_GDAXI: *forward_and_daily
+OTC_HSI: *forward_and_daily
+OTC_N225: *forward_and_daily
+OTC_SPC: *forward_and_daily
 RDBEAR: &4
   asian:
     tick:

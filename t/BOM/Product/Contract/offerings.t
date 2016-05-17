@@ -27,7 +27,7 @@ subtest 'markets' => sub {
 
 subtest 'submarkets' => sub {
     my @expected = (
-        qw(americas amsterdam asia_oceania belgium energy europe_africa france major_pairs metals middle_east minor_pairs random_daily random_index smart_fx)
+        qw(americas asia_oceania  energy europe_africa otc_index us_otc_stock uk_otc_stock ge_otc_stock au_otc_stock major_pairs metals middle_east minor_pairs random_daily random_index smart_fx)
     );
     lives_ok {
         my @submarkets = get_offerings_with_filter('submarket');
@@ -43,10 +43,12 @@ subtest 'underlying symbols' => sub {
         ],
         commodities => [qw( frxBROUSD frxXAGUSD frxXAUUSD frxXPDUSD frxXPTUSD)],
         stocks      => [
-            qw( BBABI BBBELG BBGBLB BBKBC BBUCB FPACA FPAI FPAIR FPBN FPBNP FPCA FPCS FPDG FPEDF FPEI FPFP FPGLE FPGSZ FPKER FPMC FPOR FPORA FPRI FPRNO FPSAF FPSAN FPSGO FPSU FPVIV NAASML NAHEIA NAINGA NARDSA NAUNA)
+            qw(USAAPL USAMZN USCT USFB USGE USGOOG USKO USMSFT USPFE USXOM UKBARC UKBATS UKGSK UKHSBA UKVOD DEALV DEBAYER DEDAI DESIE DEVOWGEN AUANZ AUBHP AUCBA AUMQG AUQAN )
         ],
-        indices => [qw( AEX AS51 BFX BSESENSEX30 DFMGI DJI FCHI GDAXI HSI JCI N225 OBX SPC SSMI STI TOP40 ISEQ)],
-        volidx  => [qw( RDBEAR RDBULL R_100 R_25 R_50 R_75)],
+        indices => [
+            qw( AEX AS51 BFX BSESENSEX30 DFMGI DJI FCHI GDAXI HSI JCI N225 OBX SPC SSMI STI TOP40 ISEQ OTC_AEX OTC_AS51 OTC_BFX OTC_BIST100 OTC_BSESENSEX30 OTC_DJI OTC_FCHI OTC_FTSE OTC_GDAXI OTC_HSI OTC_IXIC OTC_N225 OTC_SPC)
+        ],
+        volidx => [qw( RDBEAR RDBULL R_100 R_25 R_50 R_75)],
     );
 
     lives_ok {

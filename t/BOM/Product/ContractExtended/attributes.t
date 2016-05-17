@@ -163,7 +163,7 @@ subtest 'Range on R_100.' => sub {
 
     cmp_bag(
         [keys %{$pricing_args}],
-        [qw(barrier1 barrier2 iv payouttime_code q_rate r_rate spot starttime t mu discount_rate)],
+        [qw(barrier1 barrier2 iv payouttime_code q_rate r_rate spot t mu discount_rate)],
         'pricing_args has expected keys.'
     );
 };
@@ -184,7 +184,7 @@ subtest 'Exchange' => sub {
     };
 
     my $bet = produce_contract($bet_params);
-    is($bet->exchange->symbol, $bet->underlying->exchange->symbol, ' Bet exchange matches that of underlying');
+    is($bet->calendar->symbol, $bet->underlying->calendar->symbol, ' Bet exchange matches that of underlying');
 
 };
 

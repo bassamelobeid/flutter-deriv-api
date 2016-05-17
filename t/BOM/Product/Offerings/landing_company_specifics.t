@@ -130,78 +130,84 @@ subtest 'offerings check' => sub {
 subtest 'legal allowed underlyings' => sub {
     my @random     = qw(R_75 RDBEAR RDBULL R_25 R_100 R_50);
     my @non_random = qw(
-        FCHI
+        USAAPL
+        USAMZN
+        USCT
+        USFB
+        USGE
+        USGOOG
+        USKO
+        USMSFT
+        USPFE
+        USXOM
+        UKBARC
+        UKBATS
+        UKGSK
+        UKHSBA
+        UKVOD
+        DEALV
+        DEBAYER
+        DEDAI
+        DESIE
+        DEVOWGEN
+        AUANZ
+        AUBHP
+        AUCBA
+        AUMQG
+        AUQAN
+        OTC_IXIC
+        OTC_BSESENSEX30
+        OTC_BIST100
+        OTC_AEX
+        OTC_AS51
+        OTC_FTSE
+        OTC_BFX
+        OTC_DJI
+        OTC_FCHI
+        OTC_GDAXI
+        OTC_HSI
+        OTC_N225
+        OTC_SPC
         frxAUDJPY
-        FPEDF
-        FPDG
         frxUSDJPY
-        FPCA
         frxAUDCAD
         TOP40
-        NAASML
-        FPFP
         WLDUSD
-        FPCS
         frxAUDPLN
         GDAXI
-        FPBN
-        BBABI
-        FPKER
-        BBUCB
         STI
         frxAUDNZD
         frxEURNZD
-        BBGBLB
         frxUSDCAD
-        FPSAF
         OBX
-        NARDSA
         JCI
         frxEURAUD
-        NAUNA
         frxGBPJPY
         frxEURCHF
         frxEURJPY
-        NAHEIA
         frxXPDUSD
-        FPVIV
-        BBKBC
-        FPSU
         frxGBPUSD
         WLDGBP
-        FPRI
-        FPAI
         DJI
+	FCHI
         frxGBPNZD
-        FPEI
-        FPOR
         frxXAGUSD
-        FPACA
         frxAUDCHF
-        BBBELG
         frxUSDPLN
         frxUSDCHF
         frxNZDJPY
         frxGBPCAD
         frxBROUSD
-        FPGSZ
         SPC
         WLDEUR
-        FPMC
-        FPORA
         N225
         frxXPTUSD
         DFMGI
-        FPRNO
         frxUSDNOK
         frxEURCAD
-        FPGLE
         SSMI
         frxGBPNOK
         frxXAUUSD
-        NAINGA
-        FPAIR
-        FPBNP
         BFX
         frxGBPPLN
         frxGBPAUD
@@ -211,10 +217,8 @@ subtest 'legal allowed underlyings' => sub {
         frxUSDMXN
         frxAUDUSD
         frxGBPCHF
-        FPSAN
         AS51
         frxEURUSD
-        FPSGO
         frxEURGBP
         BSESENSEX30
         WLDAUD

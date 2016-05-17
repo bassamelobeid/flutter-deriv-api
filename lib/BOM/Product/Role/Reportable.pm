@@ -1,7 +1,6 @@
 package BOM::Product::Role::Reportable;
 
 use Moose::Role;
-use Carp;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 

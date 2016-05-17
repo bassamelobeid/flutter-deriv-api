@@ -74,7 +74,7 @@ foreach my $code (@codes) {
     }
     $bet_args{payout}       = 250;
     $bet_args{currency}     = $currency;
-    $bet_args{current_tick} = BOM::Market::Data::Tick->new({
+    $bet_args{entry_tick} = $bet_args{current_tick} = BOM::Market::Data::Tick->new({
         symbol => $underlying->symbol,
         epoch  => $start_time->epoch + 300,
         quote  => 1.6084

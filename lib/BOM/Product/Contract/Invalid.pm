@@ -4,7 +4,6 @@ use Moose;
 extends 'BOM::Product::Contract';
 
 use BOM::Platform::Context qw(localize);
-use Carp qw(croak);
 
 sub value { return 0; }
 
@@ -22,8 +21,8 @@ sub _build_longcode {
     return localize('Legacy contract. No further information is available.');
 }
 
-sub _price_from_prob        { croak "Can not price legacy bet: " . shift->shortcode; }
-sub _build_shortcode        { croak "Invalid legacy bet type[" . shift->code . ']'; }
+sub _price_from_prob        { die "Can not price legacy bet: " . shift->shortcode; }
+sub _build_shortcode        { die "Invalid legacy bet type[" . shift->code . ']'; }
 sub is_expired              { return 1; }
 sub _build_ask_probability  { return 1; }
 sub _build_bid_probability  { return 1; }

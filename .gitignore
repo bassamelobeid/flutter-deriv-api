@@ -5,7 +5,6 @@
 *~
 .#*
 *.lock
-*.appcache
 api/api_server.log
 cover_db
 .sass-cache

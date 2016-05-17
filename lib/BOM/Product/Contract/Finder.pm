@@ -25,11 +25,11 @@ sub available_contracts_for_symbol {
 
     my $now        = Date::Utility->new;
     my $underlying = BOM::Market::Underlying->new($symbol);
-    my $exchange   = $underlying->exchange;
+    my $calendar   = $underlying->calendar;
     my ($open, $close);
-    if ($exchange->trades_on($now)) {
-        $open  = $exchange->opening_on($now)->epoch;
-        $close = $exchange->closing_on($now)->epoch;
+    if ($calendar->trades_on($now)) {
+        $open  = $calendar->opening_on($now)->epoch;
+        $close = $calendar->closing_on($now)->epoch;
     }
 
     my $flyby = get_offerings_flyby($landing_company);
@@ -45,12 +45,12 @@ sub available_contracts_for_symbol {
         if ($o->{start_type} eq 'forward') {
             my @trade_dates;
             for (my $date = $now; @trade_dates < 3; $date = $date->plus_time_interval('1d')) {
-                $date = $exchange->trade_date_after($date) unless $exchange->trades_on($date);
+                $date = $calendar->trade_date_after($date) unless $calendar->trades_on($date);
                 push @trade_dates, $date;
             }
             $o->{forward_starting_options} = [
                 map { {date => Date::Utility->new($_->{open})->truncate_to_day->epoch, open => $_->{open}, close => $_->{close}} }
-                map { @{$exchange->trading_period($_)} } @trade_dates
+                map { @{$calendar->trading_period($_)} } @trade_dates
             ];
         }
 
@@ -145,18 +145,12 @@ sub _default_barrier {
     # latest available spot should be sufficient.
     my $barrier_spot = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
     return unless $barrier_spot;
-    my $tid = $duration / 86400;
-    my $tiy = $tid / 365;
-    my $vol_args =
-        ($volsurface->type eq 'phased')
-        ? {
-        start_epoch => time,
-        end_epoch   => time + $duration
-        }
-        : {
+    my $tid      = $duration / 86400;
+    my $tiy      = $tid / 365;
+    my $vol_args = {
         delta => 50,
         days  => $tid
-        };
+    };
     my $volatility          = $volsurface->get_volatility($vol_args);
     my $approximate_barrier = get_strike_for_spot_delta({
         delta            => 0.2,

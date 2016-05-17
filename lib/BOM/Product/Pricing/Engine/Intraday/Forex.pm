@@ -489,7 +489,7 @@ sub _build_commission_markup {
 
     $comm_markup->include_adjustment('add', $stitch);
 
-    my $open_at_start = $bet->underlying->exchange->is_open_at($bet->date_start);
+    my $open_at_start = $bet->underlying->calendar->is_open_at($bet->date_start);
 
     if ($open_at_start and $bet->underlying->is_in_quiet_period) {
         my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
@@ -540,7 +540,7 @@ sub _build_risk_markup {
     });
 
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
-    $risk_markup->include_adjustment('add', $self->eod_market_risk_markup);
+    $risk_markup->include_adjustment('add', $self->eod_market_risk_markup) if not $bet->is_atm_bet;
 
     if ($bet->is_path_dependent) {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
