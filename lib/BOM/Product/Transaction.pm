@@ -139,7 +139,7 @@ has contract_class => (
 
 has source => (
     is  => 'ro',
-    isa => 'Int',
+    isa => 'Maybe[Int]',
 );
 
 has transaction_parameters => (
