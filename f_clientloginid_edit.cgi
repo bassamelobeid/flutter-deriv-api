@@ -616,11 +616,13 @@ Bar("Upload new ID document");
 print qq{
 <br /><form enctype="multipart/form-data" ACTION="$self_post" method="POST">
   <select name="doctype">
-    <option value="passport">Proof of Identity</option>
-    <option value="proofaddress">Proof of Address</option>
-    <option value="notarised">Notarised Docs</option>
+    <option value="passport">Passport</option>
+    <option value="proofid">ID</option>
     <option value="driverslicense">Drivers License</option>
-                <option value="experianproveid">192 check</option>
+    <option value="proofaddress">Proof of Address</option>
+    <option value="bankstatement">Bank statement</option>
+    <option value="amlglobalcheck">AML Global Check</option>
+    <option value="docverification">Doc Verification (Autodoc)</option>
     <option value="other">Other</option>
   </select>
   <select name=docformat>
