@@ -23,8 +23,8 @@ sub forward {
     return call_rpc(
         $c,
         {
-            url    => ($url . $rpc_method),
-            method => $rpc_method,
+            url             => ($url . $rpc_method),
+            method          => $rpc_method,
             rpc_response_cb => $rpc_response_cb,
             %$params,
         });
