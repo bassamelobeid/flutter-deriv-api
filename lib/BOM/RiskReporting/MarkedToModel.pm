@@ -103,11 +103,12 @@ sub generate {
 
                 die 'Missing spot.' if (not $bet->underlying->spot);
 
+                my $is_expired    = $bet->is_expired;
                 my $current_value = $bet->is_spread ? $bet->bid_price : $bet->theo_price;
-                my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
+                my $value         = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
                 $totals{value} += $value;
 
-                if ($bet->is_expired) {
+                if ($is_expired) {
                     $total_expired++;
                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                         undef, $open_fmb_id, $value);

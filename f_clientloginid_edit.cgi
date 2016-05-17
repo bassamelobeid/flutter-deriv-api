@@ -211,10 +211,7 @@ if (my $check_str = $input{do_id_check}) {
         force_recheck => 1
     );
     for ($check_str) {
-        $result =
-              /CheckID/ ? $id_auth->_fetch_checkid()
-            : /ProveID/ ? $id_auth->_fetch_proveid()
-            :             die("unknown IDAuthentication method $_");
+        $result = /ProveID/ ? $id_auth->_fetch_proveid() : die("unknown IDAuthentication method $_");
     }
     print qq[<p><b>"$check_str" completed</b></p>
              <p><a href="$self_href">&laquo;Return to Client Details<a/></p>];
