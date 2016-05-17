@@ -14,7 +14,7 @@ use BOM::Feed::Buffer::TickFile;
 use File::Temp;
 use Date::Utility;
 
-my $now = Date::Utility->new('2012-04-13 00:00:00');
+my $now = Date::Utility->new('2016-05-13 00:00:00');
 set_fixed_time($now->epoch);
 my $work_dir   = File::Temp->newdir();
 my $buffer     = BOM::Feed::Buffer::TickFile->new(base_dir => "$work_dir");
@@ -26,6 +26,7 @@ my $populator  = BOM::Feed::Populator::InsertTicks->new({
 });
 
 my $fh;
+# Just to insert dummy tick 
 open($fh, "<", "/home/git/regentmarkets/bom-test/feed/combined/frxUSDJPY/13-Apr-12.fullfeed") or die $!;
 my @ticks = <$fh>;
 close $fh;
@@ -89,6 +90,6 @@ $t->send_ok({
             subscribe     => 1
         }})->message_ok;
 $m = JSON::from_json($t->message->[1]);
-diag explain $m;
+ok $m->{candles}, "Manage to get candles"  or diag explain $m;
 $t->finish_ok;
 done_testing();
