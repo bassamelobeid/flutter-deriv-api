@@ -1204,6 +1204,7 @@ sub _build_payout {
     my $base_commission = $self->base_commission;
     my $ask_price       = $self->ask_price;
 
+    $DB::single=1;
     my $commission = BOM::Product::Contract::Helper::commission({
         theo_probability => $theo_prob,
         stake            => $ask_price,
