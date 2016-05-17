@@ -12,6 +12,7 @@ sub forward {
     my ($c, $url, $rpc_method, $args, $params) = @_;
 
     $params->{msg_type} ||= $rpc_method;
+    $params->{rpc_response_cb} ||= get_rpc_response_cb($c, $args, $params);
 
     my $before_call_hook = $params->{before_call} || [];
     $_->($c, $args, $params) for @$before_call_hook;
@@ -21,11 +22,9 @@ sub forward {
     return call_rpc(
         $c,
         {
+            url    => ($url . $rpc_method),
+            method => $rpc_method,
             %$params,
-            url             => ($url . $rpc_method),
-            method          => $rpc_method,
-            msg_type        => $rpc_method // $params->{msg_type},
-            rpc_response_cb => rpc_response_cb($c, $args, $params),
         });
 }
 
@@ -55,7 +54,7 @@ sub make_call_params {
     return;
 }
 
-sub rpc_response_cb {
+sub get_rpc_response_cb {
     my ($c, $args, $params) = @_;
 
     my $success_handler = $params->{success};
@@ -136,7 +135,7 @@ sub call_rpc {
     my $url         = $params->{url};
     my $call_params = $params->{call_params};
 
-    # TODO It should be ibject attributes
+    # TODO It should be object attributes
     my $rpc_response_cb   = $params->{rpc_response_cb};
     my $max_response_size = $params->{max_response_size};
 
