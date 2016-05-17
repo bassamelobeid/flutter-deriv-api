@@ -3,8 +3,6 @@ package BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use strict;
 use warnings;
 
-use BOM::WebSocketAPI::CallingEngine;
-
 sub log_paymentagent_error {
     my ($c, $args, $response) = @_;
     $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
