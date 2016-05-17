@@ -22,6 +22,6 @@ lives_ok {
     my $actions = $corp->get_underlyings_with_corporate_action;
     my @symbols = keys %$actions;
     is scalar @symbols, 1, 'only one underlying with action';
-    is $symbols[0], 'FPFP', 'underlying is FPFP';
+    is $symbols[0], 'USAAPL', 'underlying is USAAPL';
 }
 'get underlying with actions';

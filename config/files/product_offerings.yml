@@ -79,7 +79,7 @@ AS51: &limited_ao_equities
         american:
           max: 365d
           min: 1d
-BBABI: &stocks
+USAAPL: &stocks
   callput:
     daily:
       spot:
@@ -91,10 +91,30 @@ BBABI: &stocks
         euro_atm:
           max: 1d
           min: 5m
-BBBELG: *stocks
-BBGBLB: *stocks
-BBKBC: *stocks
-BBUCB: *stocks
+USAMZN: *stocks
+USCT: *stocks
+USFB: *stocks
+USGE: *stocks
+USGOOG: *stocks
+USKO: *stocks
+USMSFT: *stocks
+USPFE: *stocks
+USXOM: *stocks
+UKBARC: *stocks
+UKBATS: *stocks
+UKGSK: *stocks
+UKHSBA: *stocks
+UKVOD: *stocks
+DEALV: *stocks
+DEBAYER: *stocks
+DEDAI: *stocks
+DESIE: *stocks
+DEVOWGEN: *stocks
+AUANZ: *stocks
+AUBHP: *stocks
+AUCBA: *stocks
+AUMQG: *stocks
+AUQAN: *stocks
 BFX: &limited_callput
   callput:
     daily:
@@ -160,30 +180,6 @@ DJI:
           max: 365d
           min: 1d
 FCHI: *limited_equities
-FPACA: *stocks
-FPAI: *stocks
-FPAIR: *stocks
-FPBN: *stocks
-FPBNP: *stocks
-FPCA: *stocks
-FPCS: *stocks
-FPDG: *stocks
-FPEDF: *stocks
-FPEI: *stocks
-FPFP: *stocks
-FPGLE: *stocks
-FPGSZ: *stocks
-FPKER: *stocks
-FPMC: *stocks
-FPOR: *stocks
-FPORA: *stocks
-FPRI: *stocks
-FPRNO: *stocks
-FPSAF: *stocks
-FPSAN: *stocks
-FPSGO: *stocks
-FPSU: *stocks
-FPVIV: *stocks
 GDAXI: *limited_equities
 HSI: *limited_ao_equities
 JCI:
@@ -225,11 +221,6 @@ N225: &index_no_intraday
     daily:
       spot:
         american: *seven_day_to_year
-NAASML: *stocks
-NAHEIA: *stocks
-NAINGA: *stocks
-NARDSA: *stocks
-NAUNA: *stocks
 OBX: *forward_and_daily
 OTC_IXIC: *forward_and_daily
 OTC_BSESENSEX30: *forward_and_daily

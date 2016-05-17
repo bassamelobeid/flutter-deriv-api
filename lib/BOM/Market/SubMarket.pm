@@ -50,6 +50,11 @@ has official_ohlc => (
     default => sub { shift->market->official_ohlc },
 );
 
+has is_OTC => (
+    is      => 'ro',
+    default => 0,
+);
+
 =head2 volatility_surface_type
 Type of surface this financial market should have.
 =cut
