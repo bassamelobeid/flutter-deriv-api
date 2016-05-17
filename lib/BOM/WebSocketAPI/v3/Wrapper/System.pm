@@ -65,29 +65,6 @@ sub server_time {
         time     => BOM::RPC::v3::Utility::server_time()};
 }
 
-sub website_status {
-    my ($c, $args) = @_;
-
-    my $method = 'website_status';
-    return BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c, $method,
-        sub {
-            my $response = shift;
-            if (ref($response) eq 'HASH' and exists $response->{error}) {
-                return $c->new_error($method, $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type => $method,
-                    $method  => $response,
-                };
-            }
-        },
-        {
-            args         => $args,
-            country_code => $c->country_code,
-        });
-}
-
 sub _forget_transaction_subscription {
     my ($c, $typeoruuid) = @_;
 
