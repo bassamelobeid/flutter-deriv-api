@@ -61,7 +61,8 @@ sub authorize {
     }
 
     # set session on first page visit (GET)
-    if ($app_id eq 'binarycom' and $c->req->method eq 'GET') {
+    # for binary.com, app id = 1
+    if ($app_id eq '1' and $c->req->method eq 'GET') {
         my $r           = $c->stash('request');
         my $referer     = $c->req->headers->header('Referer') // '';
         my $domain_name = $r->domain_name;
@@ -76,8 +77,8 @@ sub authorize {
     unless ($client) {
         ## show login form
         return $c->render(
-            template => $app_id eq 'binarycom' ? 'loginbinary' : 'login',
-            layout   => 'default',
+            template => $app_id eq '1' ? 'loginbinary' : 'login',
+            layout => 'default',
 
             app       => $app,
             l         => \&localize,
@@ -106,8 +107,8 @@ sub authorize {
         }
     }
 
-    ## if app_id=binarycom and referer is binary.com, we do not show the scope confirm screen
-    if ($app_id eq 'binarycom' and $c->session('__is_app_approved')) {
+    ## if app_id=1 and referer is binary.com, we do not show the scope confirm screen
+    if ($app_id eq '1' and $c->session('__is_app_approved')) {
         $is_all_approved = 1;
     }
 
@@ -198,8 +199,8 @@ sub __login {
 
     if ($err) {
         $c->render(
-            template => $app->{id} eq 'binarycom' ? 'loginbinary' : 'login',
-            layout   => 'default',
+            template => $app->{id} eq '1' ? 'loginbinary' : 'login',
+            layout => 'default',
 
             app       => $app,
             error     => $err,
