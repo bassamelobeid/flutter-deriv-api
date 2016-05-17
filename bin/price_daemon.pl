@@ -27,8 +27,8 @@ while (1) {
     my $pid = $pm->start and next;
 
     my $rp = Mojo::Redis::Processor->new(
-        'read_conn'   => BOM::System::RedisReplicated::redis_read,
-        'write_conn'  => BOM::System::RedisReplicated::redis_write,
+        'read_conn'   => BOM::System::RedisReplicated::redis_pricer,
+        'write_conn'  => BOM::System::RedisReplicated::redis_pricer,
         'daemon_conn' => _dameon_redis,
     );
 
