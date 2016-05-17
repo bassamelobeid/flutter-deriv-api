@@ -216,6 +216,7 @@ my @dispatch = (
         '', 1,
         'payments',
         {
+            error        => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
             response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_withdraw'),
             stash_params => [qw/ server_name /],
         }
@@ -225,6 +226,7 @@ my @dispatch = (
         '', 1,
         'payments',
         {
+            error        => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
             response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_transfer'),
             stash_params => [qw/ server_name /],
         }
@@ -234,6 +236,7 @@ my @dispatch = (
         '', 1,
         'payments',
         {
+            error    => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
             response => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
         }
     ],
