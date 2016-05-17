@@ -13,15 +13,19 @@ sub forward {
 
     $params->{msg_type} ||= $rpc_method;
 
+    my $before_call_hook = $params->{before_call} || [];
+    $_->($c, $args, $params) for @$before_call_hook;
+
+    make_call_params($c, $args, $params);
+
     return call_rpc(
         $c,
         {
+            %$params,
             url             => ($url . $rpc_method),
             method          => $rpc_method,
             msg_type        => $rpc_method // $params->{msg_type},
-            call_params     => make_call_params($c, $args, $params),
             rpc_response_cb => rpc_response_cb($c, $args, $params),
-            %$params,
         });
 }
 
@@ -29,14 +33,13 @@ sub make_call_params {
     my ($c, $args, $params) = @_;
 
     my $stash_params   = $params->{stash_params};
-    my $call_params_cb = $params->{call_params};
+    my $call_params_cb = $params->{make_call_params};
     my $require_auth   = $params->{require_auth};
 
-    my $call_params = {
-        args     => $args,
-        language => $c->stash('language'),
-        country  => $c->stash('country') || $c->country_code,
-    };
+    my $call_params = $params->{call_params} ||= {};
+    $call_params->{args}     = $args;
+    $call_params->{language} = $c->stash('language');
+    $call_params->{country}  = $c->stash('country') || $c->country_code;
 
     if (defined $stash_params) {
         $call_params->{$_} = $c->stash($_) for @$stash_params;
@@ -49,7 +52,7 @@ sub make_call_params {
         $call_params->{$_} = $cb_params->{$_} for keys %$cb_params;
     }
 
-    return $call_params;
+    return;
 }
 
 sub rpc_response_cb {
@@ -142,9 +145,6 @@ sub call_rpc {
     my $after_got_rpc_response_hook   = $params->{after_got_rpc_response}   || [];
     my $before_send_api_response_hook = $params->{before_send_api_response} || [];
     my $after_sent_api_response_hook  = $params->{after_sent_api_response}  || [];
-    my $before_call_hook              = $params->{before_call}              || [];
-
-    $_->($c, $params) for @$before_call_hook;
 
     my $client  = MojoX::JSON::RPC::Client->new;
     my $callobj = {
