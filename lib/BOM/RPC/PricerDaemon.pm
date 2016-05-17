@@ -38,7 +38,7 @@ sub _initialize {
 
     $self->{params} = {@{JSON::XS::decode_json($self->{data})}};
 
-    $pickup_time = gettimeofday;
+    my $pickup_time = gettimeofday;
     DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.price.pickup_delay', $pickup_time - $self->{request_time});
     delete $self->{request_time};
 
