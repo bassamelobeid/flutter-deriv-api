@@ -70,10 +70,9 @@ sub _do_proveid {
         and defined $prove_id_result->{matches}
         and (scalar @{$prove_id_result->{matches}} > 0))
     {
-        if (grep { /(PEP|OFAC|BOE)/ } @{$prove_id_result->{matches}}) {
-            my $type = $1;
-            $self->_notify("$1 match", "$1 match");
-            $client->set_status('disabled', 'system', "$1 match");
+        if (my ($type) = grep { /(PEP|OFAC|HMT)/ } @{$prove_id_result->{matches}}) {
+            $self->_notify("$type match", "$type match");
+            $client->set_status('disabled', 'system', "$type match");
             $client->save;
         } else {
             $self->_notify('EXPERIAN PROVE ID RETURNED DENY ', join(', ', @{$prove_id_result->{matches}}));
@@ -96,7 +95,7 @@ sub _do_proveid {
     }
     # failed to authenticate
     else {
-        $self->_notify('192_PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
+        $self->_notify('PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
         return $self->_request_id_authentication;
     }
 

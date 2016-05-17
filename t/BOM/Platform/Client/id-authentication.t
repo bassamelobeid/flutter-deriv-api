@@ -137,7 +137,7 @@ subtest 'When auth not required' => sub {
             };
             my @notif = @{$v->notified};
             is @notif, 2, 'sent 2 notifications';
-            like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'notification is correct';
+            like $notif[0][0], qr/PROVEID_AUTH_FAILED/, 'notification is correct';
             like $notif[1][0], qr/SET TO CASHIER_LOCKED PENDING EMAIL REQUEST FOR ID/, 'notification is correct';
             ok !$v->client->client_fully_authenticated, 'client should not be fully authenticated';
             ok !$v->client->get_status('age_verification'), 'client should not be age verified';
@@ -183,7 +183,7 @@ subtest 'proveid' => sub {
         my @notif = @{$v->notified};
         is @notif, 1, 'sent one notification';
         like $notif[0][0], qr/PASSED ON FIRST DEPOSIT/, 'notification is correct';
-        ok $v->client->client_fully_authenticated, 'client is fully authenticated';
+        ok $v->client->get_status('age_verification'), 'client is age verified';
         ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
     };
 
@@ -222,7 +222,7 @@ subtest 'proveid' => sub {
         };
         my @notif = @{$v->notified};
         is @notif, 2, 'sent one notification';
-        like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'notification is correct';
+        like $notif[0][0], qr/PROVEID_AUTH_FAILED/, 'notification is correct';
         like $notif[1][0], qr/SET TO CASHIER_LOCKED PENDING EMAIL REQUEST FOR ID/, 'notification is correct';
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok !$v->client->get_status('age_verification'), 'client not age verified';
@@ -263,7 +263,7 @@ subtest 'proveid' => sub {
         };
         my @notif = @{$v->notified};
         is @notif, 2, 'sent two notification';
-        like $notif[0][0], qr/192_PROVEID_AUTH_FAILED/, 'first notification is correct';
+        like $notif[0][0], qr/PROVEID_AUTH_FAILED/, 'first notification is correct';
         like $notif[1][0], qr/SET TO CASHIER_LOCKED PENDING EMAIL REQUEST FOR ID/, 'notification is correct';
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok !$v->client->get_status('age_verification'), 'client not age verified';
