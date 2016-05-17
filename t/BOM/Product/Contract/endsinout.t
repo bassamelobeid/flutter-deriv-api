@@ -113,7 +113,6 @@ subtest 'expiry range' => sub {
     }
     'generic';
 
-    $DB::single=1;
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
