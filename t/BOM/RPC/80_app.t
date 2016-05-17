@@ -94,7 +94,7 @@ my $get_apps = $c->call_ok(
         },
     })->has_no_system_error->result;
 
-$get_apps = $get_apps;
+$get_apps = [grep { $_->{app_id} ne '1' } @$get_apps];
 is_deeply($get_apps, [$app1, $app2], 'list ok');
 
 my $delete_st = $c->call_ok(
@@ -115,7 +115,7 @@ $get_apps = $c->call_ok(
             app_list => 1,
         },
     })->has_no_system_error->result;
-$get_apps = $get_apps;
+$get_apps = [grep { $_->{app_id} ne '1' } @$get_apps];
 is_deeply($get_apps, [$app1], 'delete ok');
 
 # delete again will return 0
