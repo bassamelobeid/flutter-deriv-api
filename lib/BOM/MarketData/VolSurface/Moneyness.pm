@@ -24,7 +24,6 @@ use List::MoreUtils qw(indexes);
 use List::Util qw(min first);
 use Storable qw( dclone );
 use JSON qw(from_json);
-use BOM::Utility::Log4perl qw( get_logger );
 
 =head2 for_date
 
@@ -181,7 +180,7 @@ sub get_volatility {
     my ($self, $args) = @_;
 
     if (scalar(grep { defined $args->{$_} } qw(delta moneyness strike)) != 1) {
-        get_logger('QUANT')->logdie("Must pass exactly one of [delta, moneyness, strike] to get_volatility.");
+        die("Must pass exactly one of [delta, moneyness, strike] to get_volatility.");
     }
 
     $args->{days} =
@@ -287,7 +286,7 @@ sub _interpolate_delta {
 
     my %smile = %{$args->{smile}};
 
-    get_logger('QUANT')->logcroak('minimum of three points on a smile')
+    die('minimum of three points on a smile')
         if keys %smile < 3;
 
     my @sorted = sort { $a <=> $b } keys %smile;
@@ -412,7 +411,7 @@ sub _build_cutoff {
 
     my $date = $self->for_date ? $self->for_date : Date::Utility->new;
 
-    return BOM::MarketData::VolSurface::Cutoff->new('UTC ' . $self->underlying->exchange->standard_closing_on($date)->time_hhmm);
+    return BOM::MarketData::VolSurface::Cutoff->new('UTC ' . $self->underlying->calendar->standard_closing_on($date)->time_hhmm);
 }
 
 no Moose;

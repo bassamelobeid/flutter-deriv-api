@@ -3,6 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::FailWarnings;
+use Test::Warn;
 use File::Slurp;
 use List::Util qw(max min);
 use Scalar::Util qw(looks_like_number);
@@ -18,6 +19,7 @@ use DateTime;
 use Cache::RedisDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
+use BOM::System::Chronicle;
 use BOM::Market::SubMarket;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
@@ -57,7 +59,10 @@ subtest 'what happens to an undefined symbol name' => sub {
     is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
     is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
 
-    is($symbol_undefined->market->name,     'config',   'an undefined symbol has correct market');
+    warning_like {
+        is($symbol_undefined->market->name, 'config', 'an undefined symbol has correct market');
+    }
+    [qr/^Unknown symbol/], "Expected warning is thrown";
     is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
     is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
     is($symbol_undefined->display_decimals, 4,          'an undefined symbol has correct display_decimals');
@@ -171,7 +176,7 @@ subtest 'all attributes on a variety of underlyings' => sub {
             is($underlying->spot_spread_size,       50, "special markets have default spot spread size");
         } else {
             like($underlying->quoted_currency_symbol, $looks_like_currency, 'Quoted currency symbol looks like a currency');
-            isa_ok($underlying->quoted_currency, 'BOM::Market::Currency', 'Quoted currency');
+            isa_ok($underlying->quoted_currency, 'Quant::Framework::Currency', 'Quoted currency');
             is($underlying->quoted_currency_symbol, $underlying->quoted_currency->symbol, 'Which has the same symbol');
             cmp_ok($underlying->spot_spread_size, '>',  0,   'Publically traded items have a spot spread size greater than 0');
             cmp_ok($underlying->spot_spread_size, '<=', 100, ' and less than 100');
@@ -283,6 +288,34 @@ subtest 'sub market' => sub {
     }
 };
 
+subtest 'is_OTC' => sub {
+    my @OTC_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(market => ['forex', 'commodities', 'voldix']);
+    push @OTC_symbols,
+        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market    => 'indices',
+        submarket => ['otc_index', 'smart_index'],
+        );
+    my @OTC_stocks = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market    => 'stocks',
+        submarket => ['au_otc_stock', 'ge_otc_stock', 'uk_otc_stock', 'us_otc_stock'],
+    );
+    push @OTC_symbols, @OTC_stocks;
+    foreach my $symbol (@OTC_symbols) {
+        my $underlying = BOM::Market::Underlying->new($symbol);
+
+        is($underlying->submarket->is_OTC, 1, "$symbol submarket is OTC");
+    }
+    my @non_OTC_symbols,
+        BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market    => 'indices',
+        submarket => ['asia_oceania', 'europe_africa', 'americas', 'middle_east']);
+    foreach my $symbol (@non_OTC_symbols) {
+        my $underlying = BOM::Market::Underlying->new($symbol);
+
+        is($underlying->submarket->is_OTC, 0, "$symbol submarket is non OTC");
+
+    }
+};
 subtest 'tick_at' => sub {
     # Due to caching/delays, even tho we do have a tick for some previous second, if that is the last tick
     # received, we cannot guarantee that there won't be a "closer" one until the next tick is written and
@@ -356,7 +389,7 @@ subtest vol_expiry_date => sub {
 };
 subtest 'all methods on a selection of underlyings' => sub {
     my $simulated_time = 1326957372;
-    my $NZ50           = BOM::Market::Underlying->new('NZ50');
+    my $AS51           = BOM::Market::Underlying->new('AS51');
     my $FTSE           = BOM::Market::Underlying->new('FTSE');
     my $EURUSD         = BOM::Market::Underlying->new('frxEURUSD');
     my $USDEUR         = BOM::Market::Underlying->new('frxUSDEUR');
@@ -449,9 +482,9 @@ subtest 'all methods on a selection of underlyings' => sub {
     isnt($USDEUR->system_symbol, $USDEUR->symbol, ' and different for inverted');
 
     # We don't have translations in the sandbox.. we should probably fix that.
-    is($NZ50->display_name, $NZ50->translated_display_name, 'Translated to undefined is English');
+    is($AS51->display_name, $AS51->translated_display_name, 'Translated to undefined is English');
 
-    is($NZ50->exchange->symbol, $NZ50->exchange_name, 'Got our exchange from the provided name');
+    is($AS51->exchange->symbol, $AS51->exchange_name, 'Got our exchange from the provided name');
 
     # Assumption: EUR/USD still has the 1030 to 1330 restriction.
 
@@ -537,7 +570,8 @@ subtest 'all methods on a selection of underlyings' => sub {
         is($EURUSD->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
-    my $eod = BOM::Market::Exchange->new('NYSE')->closing_on(Date::Utility->new('2016-04-05'));
+    my $eod =
+        Quant::Framework::TradingCalendar->new('NYSE', BOM::System::Chronicle::get_chronicle_reader())->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
         my $worm = BOM::Market::Underlying->new($pair, $eod->minus_time_interval('1s'));
         is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');
@@ -553,7 +587,7 @@ subtest 'all methods on a selection of underlyings' => sub {
         });
 
     my $today = Date::Utility->today;
-    foreach my $ul ($NZ50, $EURUSD) {
+    foreach my $ul ($AS51, $EURUSD) {
         my $prev_weight = 0;
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
@@ -572,13 +606,13 @@ subtest 'all methods on a selection of underlyings' => sub {
         }
     }
 
-    is($NZ50->pipsized_value(100.234567), 100.23,   'Index values are set by pipsized_value');
+    is($AS51->pipsized_value(100.234567), 100.23,   'Index values are set by pipsized_value');
     is($EURUSD->pipsized_value(1.234567), 1.23457,  'Forex values are chopped to pip size');
     is($EURUSD->pipsized_value(1.23657),  1.23657,  "Value doesn't change if it is already pipsized");
     is($USDJPY->pipsized_value(-0.0079),  -0.008,   'Negative values also can be pipsized (-0.)');
     is($USDJPY->pipsized_value(-1.0079),  -1.008,   'Negative values also can be pipsized (-1.)');
     is($EURUSD->pipsized_value(-1.23651), -1.23651, 'Any negative values also can be pipsized (-1.)');
-    is($NZ50->pipsized_value(-1.61),      -1.61,    'negative values for indices can be pipsized');
+    is($AS51->pipsized_value(-1.61),      -1.61,    'negative values for indices can be pipsized');
     cmp_ok($EURUSD->pipsized_value(1.230061), '==', 1.23006,   'pipsized_value is numerically as expected');
     cmp_ok($EURUSD->pipsized_value(1.230061), 'eq', '1.23006', ' and string-wise, too.');
 };
@@ -685,7 +719,7 @@ subtest 'last_licensed_display_epoch' => sub {
     # daily license
     my $N225  = BOM::Market::Underlying->new('N225');
     my $today = Date::Utility->today;
-    my $close = $N225->exchange->closing_on($today);
+    my $close = $N225->calendar->closing_on($today);
     if (not $close or time < $close->epoch) {
         ok $N225->last_licensed_display_epoch < $today->epoch, "Do not display any ticks for today before opening";
     } else {

@@ -24,6 +24,7 @@ use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::VolSurface::Delta;
 use List::Util qw( first );
+
 has file => (
     is         => 'ro',
     lazy_build => 1,
@@ -39,7 +40,7 @@ sub _build_file {
     while (not -d $loc . '/' . $on->date_yyyymmdd) {
         $on = Date::Utility->new($on->epoch - 86400);
         if ($on->year <= 2011) {
-            $self->_logger->logcroak('Requested date pre-dates vol surface history.');
+            die('Requested date pre-dates vol surface history.');
         }
     }
     my $day                 = $on->date_yyyymmdd;
@@ -141,7 +142,6 @@ sub run {
         quanto_only => 1,
     );
 
-    $self->_logger->debug(ref($self) . ' starting update.');
     my $surfaces_from_file = $self->surfaces_from_file;
     foreach my $symbol (@{$self->symbols_to_update}) {
         my $quanto_only = 'NO';
@@ -176,7 +176,6 @@ sub run {
             }
         }
     }
-    $self->_logger->debug(ref($self) . ' update complete.');
     $self->SUPER::run();
     return 1;
 }
@@ -215,8 +214,8 @@ sub passes_additional_check {
     # but I am sitting here fixing this on Christmas, so I might be missing something.
     my $underlying         = $volsurface->underlying;
     my $recorded_date      = $volsurface->recorded_date;
-    my $friday_after_close = ($recorded_date->day_of_week == 5 and not $underlying->exchange->is_open_at($recorded_date));
-    my $wont_open          = not $underlying->exchange->trades_on($volsurface->effective_date);
+    my $friday_after_close = ($recorded_date->day_of_week == 5 and not $underlying->calendar->is_open_at($recorded_date));
+    my $wont_open          = not $underlying->calendar->trades_on($volsurface->effective_date);
 
     if (   $volsurface->effective_date->is_a_weekend
         or $friday_after_close

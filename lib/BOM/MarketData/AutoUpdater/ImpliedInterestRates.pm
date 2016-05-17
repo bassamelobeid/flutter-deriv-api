@@ -8,10 +8,12 @@ use Text::CSV::Slurp;
 
 use Format::Util::Numbers qw(roundnear);
 use BOM::Market::Underlying;
+use BOM::System::Chronicle;
 use Bloomberg::FileDownloader;
 use BOM::Platform::Runtime;
 use Bloomberg::UnderlyingConfig;
 use Quant::Framework::ImpliedRate;
+use Quant::Framework::Currency;
 
 has file => (
     is         => 'ro',
@@ -26,7 +28,6 @@ sub _build_file {
 sub _get_forward_rates {
     my $self = shift;
 
-    my $logger = $self->_logger;
     my $csv = Text::CSV::Slurp->load(file => $self->file);
     my $forward_rates;
     my $report = $self->report;
@@ -56,7 +57,6 @@ sub _get_forward_rates {
 sub run {
     my $self = shift;
 
-    $self->_logger->debug(ref($self) . ' starting update.');
     my $report        = $self->report;
     my $forward_rates = $self->_get_forward_rates();
     my @tenors        = ('ON', '1W', '2W', '1M', '2M', '3M', '6M', '9M', '12M');
@@ -69,7 +69,11 @@ sub run {
         my $currency_to_imply_symbol      = $underlying->rate_to_imply;
         my $currency_to_imply_from_symbol = $underlying->rate_to_imply_from;
         my $implied_symbol                = $currency_to_imply_symbol . '-' . $currency_to_imply_from_symbol;
-        my $currency_to_imply             = BOM::Market::Currency->new($currency_to_imply_symbol);
+        my $currency_to_imply             = Quant::Framework::Currency->new({
+            symbol           => $currency_to_imply_symbol,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        });
         # According to Bloomberg,
         # a) Implied rate for asset currency:
         #    - For ON :
@@ -183,7 +187,6 @@ sub run {
         $report->{$implied_symbol}->{success} = 1;
     }
 
-    $self->_logger->debug(ref($self) . ' update complete.');
     $self->SUPER::run();
     return 1;
 }

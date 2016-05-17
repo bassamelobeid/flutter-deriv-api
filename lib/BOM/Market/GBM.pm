@@ -16,7 +16,6 @@ use strict;
 use warnings;
 use feature "state";
 
-use Carp qw( confess );
 use List::MoreUtils qw( all );
 use List::Util qw( max );
 use Math::Random::Normal::Leva qw( gbm_sample );
@@ -148,7 +147,7 @@ sub _next_reset {
 
     # Reset at the next open.
     return ($underlying->submarket->resets_at_open)
-        ? $underlying->exchange->opening_on($underlying->trade_date_after($when))->epoch
+        ? $underlying->calendar->opening_on($underlying->trade_date_after($when))->epoch
         : undef;
 }
 

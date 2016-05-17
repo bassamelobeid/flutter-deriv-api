@@ -1,9 +1,11 @@
 package BOM::MarketData::Fetcher::VolSurface;
 
 use Moose;
-
-use Module::Load::Conditional qw( can_load );
-use Carp qw(croak);
+use BOM::MarketData::VolSurface::Cutoff;
+use BOM::MarketData::VolSurface::Delta;
+use BOM::MarketData::VolSurface::Empirical;
+use BOM::MarketData::VolSurface::Flat;
+use BOM::MarketData::VolSurface::Moneyness;
 
 =head1 fetch_surface
 
@@ -19,9 +21,9 @@ sub fetch_surface {
 
     my $underlying = $args->{underlying};
     my $class      = 'BOM::MarketData::VolSurface::' . ucfirst lc $underlying->volatility_surface_type;
-
-    if (not can_load(modules => {$class => undef})) {
-        croak "Could not load volsurface for " . $underlying->symbol;
+    my $module     = $class;
+    if (not $INC{($module =~ s!::!/!gr) . '.pm'}) {
+        die "Could not load volsurface for " . $underlying->symbol;
     }
     my $surface_args = {
         underlying => $args->{underlying},

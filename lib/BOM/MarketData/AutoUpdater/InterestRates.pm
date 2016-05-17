@@ -8,7 +8,6 @@ use Scalar::Util qw(looks_like_number);
 use Text::CSV::Slurp;
 
 use Bloomberg::FileDownloader;
-use BOM::Market::Currency;
 use BOM::Market::UnderlyingDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
@@ -28,7 +27,6 @@ sub _build_file {
 sub run {
     my $self = shift;
 
-    $self->_logger->debug(ref($self) . ' starting update.');
     my $file   = $self->file;
     my $csv    = Text::CSV::Slurp->load(file => $file);
     my $report = $self->report;
@@ -74,7 +72,6 @@ sub run {
         }
     }
 
-    $self->_logger->debug(ref($self) . ' update complete.');
     $self->SUPER::run();
     return 1;
 }

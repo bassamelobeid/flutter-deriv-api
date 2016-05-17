@@ -1,10 +1,8 @@
 package BOM::MarketData::VolSurface::Cutoff;
 
-use Carp;
 use Moose;
 use DateTime;
 use DateTime::TimeZone;
-use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::Market::Types;
 use Date::Utility;
@@ -146,9 +144,9 @@ to the next cutoff, given a maturity and an underlying.
 sub seconds_to_cutoff_time {
     my ($self, $args) = @_;
 
-    my $from       = $args->{from}       || croak 'No "from" date given to seconds_to_cutoff_time.';
-    my $underlying = $args->{underlying} || croak 'No underlying given to seconds_to_cutoff_time.';
-    my $maturity   = $args->{maturity}   || croak 'No maturity given to seconds_to_cutoff_time.';
+    my $from       = $args->{from}       || die 'No "from" date given to seconds_to_cutoff_time.';
+    my $underlying = $args->{underlying} || die 'No underlying given to seconds_to_cutoff_time.';
+    my $maturity   = $args->{maturity}   || die 'No maturity given to seconds_to_cutoff_time.';
 
     # From the given $from date and $maturity, we get the "effective day"
     # on which the cutoff we are looking for falls on.
@@ -162,7 +160,7 @@ sub seconds_to_cutoff_time {
 
     my $cutoff_date = $self->cutoff_date_for_effective_day($effective_day, $underlying);
 
-    my $seconds = $underlying->exchange->seconds_of_trading_between_epochs($from->epoch, $cutoff_date->epoch);
+    my $seconds = $underlying->calendar->seconds_of_trading_between_epochs($from->epoch, $cutoff_date->epoch);
 
     return $seconds;
 }
@@ -207,7 +205,7 @@ sub cutoff_date_for_effective_day {
     # a loop that could theoretically never break.
     my $attempts;
     while (not _valid_cutoff_date($self->_vol_utils->effective_date_for($cutoff_date), $underlying)) {
-        get_logger('QUANT')->logdie('Could not find valid cutoff date after 10 attempts, so bailing out!') if ++$attempts > 10;
+        die('Could not find valid cutoff date after 10 attempts, so bailing out!') if ++$attempts > 10;
         $cutoff_date = Date::Utility->new($cutoff_date->epoch + 86400);
     }
 
@@ -217,9 +215,9 @@ sub cutoff_date_for_effective_day {
 sub _valid_cutoff_date {
     my ($cutoff_date, $underlying) = @_;
 
-    my $exchange = $underlying->exchange;
+    my $calendar = $underlying->calendar;
 
-    return $exchange->trades_on($cutoff_date);
+    return $calendar->trades_on($cutoff_date);
 }
 
 no Moose;

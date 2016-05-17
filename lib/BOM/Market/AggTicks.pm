@@ -16,8 +16,8 @@ A wrapper to let us use Redis SortedSets to get aggregated tick data.
 
 use 5.010;
 use Moose;
-use Carp;
 
+use DataDog::DogStatsd::Helper qw(stats_timing);
 use Cache::RedisDB;
 use Date::Utility;
 use List::Util qw( first min max );
@@ -96,7 +96,7 @@ sub BUILD {
 
     my ($min, $max) = (1, 20);
 
-    croak 'Unrecoverable error: the ratio ['
+    die 'Unrecoverable error: the ratio ['
         . $self->returns_to_agg_ratio
         . '] between the supplied returns_interval ['
         . $self->returns_interval->as_string
@@ -391,6 +391,23 @@ sub flush {
     my @keys = (map { @{$redis->keys($self->_make_key($underlying, $_))} } (0 .. 1));
 
     return @keys ? $redis->del(@keys) : 0;
+}
+
+sub check_delay {
+    my ($self, $underlying) = @_;
+
+    my $symbol = $underlying->symbol;
+    my ($unagg_key, $agg_key) = map { $self->_make_key($underlying, $_) } (0 .. 1);
+    my $redis        = $self->_redis;
+    my $current_time = time;
+
+    for (['unaggregated', $unagg_key], ['aggregated', $agg_key]) {
+        my @tick = map { $decoder->decode($_) } @{$redis->zrange($_->[1], -1, -1)};
+        my $delay = $current_time - $tick[0]->{epoch};
+        stats_timing("$_->[0]", $delay * 1000, {tags => ["underlying_symbol:$symbol"]});
+    }
+
+    return;
 }
 
 no Moose;
