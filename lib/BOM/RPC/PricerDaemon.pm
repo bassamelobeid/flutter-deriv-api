@@ -8,6 +8,7 @@ use JSON::XS qw(encode_json decode_json);
 use BOM::RPC::v3::Contract;
 use BOM::System::RedisReplicated;
 use DataDog::DogStatsd::Helper;
+use Time::HiRes qw(gettimeofday);
 use utf8;
 
 sub new {
@@ -36,6 +37,11 @@ sub _initialize {
     my $args = {};
 
     $self->{params} = {@{JSON::XS::decode_json($self->{data})}};
+
+    $pickup_time = gettimeofday;
+    DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.price.pickup_delay', $pickup_time - $self->{request_time});
+    delete $self->{request_time};
+
     my $r = BOM::Platform::Context::Request->new({language => $self->{params}->{language}});
 
     BOM::Platform::Context::request($r);
