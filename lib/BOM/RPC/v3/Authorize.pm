@@ -15,6 +15,7 @@ use BOM::Platform::SessionCookie;
 sub authorize {
     my $params = shift;
 
+    my $token         = $params->{token};
     my $token_details = $params->{token_details};
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
@@ -40,24 +41,41 @@ sub authorize {
 
     my $account = $client->default_account;
 
+    my $token_type = 'session_token';
+    if (length $token == 15) {
+        $token_type = 'api_token';
+    } elsif (length $token == 32 && $token =~ /^a1-/) {
+        $token_type = 'oauth_token';
+    }
+
     return {
         fullname             => $client->full_name,
         loginid              => $client->loginid,
         balance              => ($account ? $account->balance : 0),
         currency             => ($account ? $account->currency_code : ''),
         email                => $client->email,
-        account_id           => ($account ? $account->id : ''),
         landing_company_name => $client->landing_company->short,
-        country              => $client->residence,
         scopes               => $scopes,
         is_virtual           => ($client->is_virtual ? 1 : 0),
+        stash                => {
+            loginid              => $client->loginid,
+            email                => $client->email,
+            token                => $token,
+            token_type           => $token_type,
+            scopes               => $scopes,
+            account_id           => ($account ? $account->id : ''),
+            country              => $client->residence,
+            currency             => ($account ? $account->currency_code : ''),
+            landing_company_name => $client->landing_company->short,
+            is_virtual           => ($client->is_virtual ? 1 : 0),
+        },
     };
 }
 
 sub logout {
     my $params = shift;
 
-    if (my $email = $params->{client_email}) {
+    if (my $email = $params->{email}) {
         my $token_details = $params->{token_details};
         my $loginid = ($token_details and exists $token_details->{loginid}) ? $token_details->{loginid} : '';
         if (my $user = BOM::Platform::User->new({email => $email})) {
