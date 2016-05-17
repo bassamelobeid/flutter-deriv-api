@@ -121,18 +121,15 @@ sub is_name_taken {
 sub create_app {
     my ($self, $app) = @_;
 
-    my $id = $app->{id} || 'id-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
-
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.apps
-            (id, name, scopes, homepage, github, appstore, googleplay, redirect_uri, binary_user_id)
+            (name, scopes, homepage, github, appstore, googleplay, redirect_uri, binary_user_id)
         VALUES
-            (? ,?, ?, ?, ?, ?, ?, ?, ?)
+            (?, ?, ?, ?, ?, ?, ?, ?)
+        RETURNING id
     ");
     $sth->execute(
-        $id,
-        $app->{name},
-        $app->{scopes},
+        $app->{name}, $app->{scopes},
         $app->{homepage}     || '',
         $app->{github}       || '',
         $app->{appstore}     || '',
@@ -140,8 +137,10 @@ sub create_app {
         $app->{redirect_uri} || '',
         $app->{user_id});
 
+    my @result = $sth->fetchrow_array();
+
     return {
-        app_id       => $id,
+        app_id       => $result[0],
         name         => $app->{name},
         scopes       => $app->{scopes},
         redirect_uri => $app->{redirect_uri},
