@@ -45,18 +45,15 @@ subtest 'payout' => sub {
 
 subtest 'stake' => sub {
     my $mocked            = Test::MockModule->new('BOM::Product::Contract::Call');
-    my $stake             = 10;
-    my $payout            = $stake / 0.1;
-    $mocked->mock('_calculate_payout', $payout);
-    $mocked->mock('base_commission', sub { 0.0001 });
-    $mocked->mock(
-        'risk_markup',
+    my $stake             = 0.5;
+    $mocked->mock('base_commission', sub { 0 });
+    $mocked->mock('theo_probability', sub {
         Math::Util::CalculatedValue::Validatable->new({
-                name        => 'total_markup',
-                description => 'test total markup',
+                name        => 'theo_probability',
+                description => 'test theo',
                 set_by      => 'test',
-                base_amount => 0,
-            }));
+                base_amount => 0.5,
+            })});
     my $c = produce_contract({
         bet_type    => 'CALL',
         underlying  => 'R_100',
@@ -66,7 +63,7 @@ subtest 'stake' => sub {
         amount_type => 'stake',
         amount      => $stake,
     });
-    is $c->payout, 99.99, 'payout is re-adjusted to 99.99 to get a minimum commission of 2 cents';
+    is $c->payout, 0.96, 'payout is re-adjusted to 0.96 to get a minimum commission of 2 cents';
 };
 
 subtest 'new commission structure' => sub {
