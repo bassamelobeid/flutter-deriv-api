@@ -20,7 +20,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
 use BOM::Platform::Static::Config;
-use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
+use BOM::Platform::CurrencyConverter qw(amount_from_to_currency in_USD);
 use BOM::Platform::Transaction;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
