@@ -16,7 +16,6 @@ use Date::Utility;
 
 my $now = Date::Utility->new('2012-04-13 00:00:00');
 set_fixed_time($now->epoch);
-
 my $work_dir   = File::Temp->newdir();
 my $buffer     = BOM::Feed::Buffer::TickFile->new(base_dir => "$work_dir");
 my $fill_start = $now;
