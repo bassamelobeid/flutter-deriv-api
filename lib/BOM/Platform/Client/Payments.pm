@@ -314,7 +314,7 @@ sub payment_account_transfer {
     my $remark   = delete $args{remark};
     my $toRemark = delete $args{toRemark} || $remark || ("Transfer from " . $fmClient->loginid);
     my $fmRemark = delete $args{fmRemark} || $remark || ("Transfer to " . $toClient->loginid);
-    my $source   = delete $args{source};
+    my $source = delete $args{source};
 
     my $fmAccount = $fmClient->set_default_account($currency);
     my $toAccount = $toClient->set_default_account($currency);
