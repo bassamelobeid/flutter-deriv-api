@@ -132,7 +132,8 @@ sub _forget_feed_subscription {
             # . 's' while we are still using tickS in this calls. backward compatibility that must be removed
             if ($typeoruuid eq 'candles') {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $subscription->{$channel}->{args}->{granularity});
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol,
+                    $subscription->{$channel}->{args}->{granularity});
             } elsif ((($ftype . 's') =~ /^$typeoruuid/) or ($typeoruuid eq $subscription->{$channel}->{uuid})) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
