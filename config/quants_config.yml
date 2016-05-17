@@ -8,7 +8,6 @@ commission:
   adjustment:
     minimum: 1
     maximum: 500
-    bom_created_bet: 100
     spread_multiplier: 1
     forward_start_factor: 1.5
 
