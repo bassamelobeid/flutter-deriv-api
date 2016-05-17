@@ -8,11 +8,11 @@ use BOM::Platform::Static::Config;
 use List::Util qw(max min);
 
 # static definition of the commission slope
-my $commission_base_multiplier   = 1;
-my $commission_max_multiplier    = 2;
-my $commission_min_std           = 500;
-my $commission_max_std           = 25000;
-my $commission_slope             = ($commission_max_multiplier - $commission_base_multiplier) / ($commission_max_std - $commission_min_std);
+my $commission_base_multiplier = 1;
+my $commission_max_multiplier  = 2;
+my $commission_min_std         = 500;
+my $commission_max_std         = 25000;
+my $commission_slope           = ($commission_max_multiplier - $commission_base_multiplier) / ($commission_max_std - $commission_min_std);
 
 sub commission_multiplier {
     my ($payout, $theo_probability) = @_;
@@ -86,13 +86,12 @@ sub commission {
 sub global_commission_adjustment {
     my $self = shift;
 
-    my $minimum     = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100,
-    my $maximum     = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100,
-    my $adjustment  = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
+    my $minimum        = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100,
+        my $maximum    = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100,
+        my $adjustment = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
 
     return min(max($adjustment, $minimum), $maximum);
 }
-
 
 sub _calculate_payout {
     my $args = shift;

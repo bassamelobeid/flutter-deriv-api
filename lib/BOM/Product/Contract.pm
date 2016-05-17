@@ -966,7 +966,7 @@ sub _build_total_markup {
         %max,
     });
 
-    $total_markup->include_adjustment('reset',    $self->model_markup);
+    $total_markup->include_adjustment('reset', $self->model_markup);
     my $commission_adjustment_cv = Math::Util::CalculatedValue::Validatable->new({
         name        => 'global_commission_adjustment',
         description => 'global commission scaling factory',
