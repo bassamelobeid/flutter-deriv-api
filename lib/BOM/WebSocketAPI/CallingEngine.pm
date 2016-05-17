@@ -19,6 +19,11 @@ sub forward {
 
     make_call_params($c, $args, $params);
 
+    my $before_call_hook = $params->{before_call} || [];
+    $_->($c, $args, $params) for @$before_call_hook;
+
+    make_call_params($c, $args, $params);
+
     return call_rpc(
         $c,
         {
