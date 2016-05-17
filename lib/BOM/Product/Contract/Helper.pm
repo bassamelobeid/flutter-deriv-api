@@ -44,8 +44,8 @@ sub commission {
         # payout calculated with base commission.
         my $initial_payout = _calculate_payout($args);
         if (commission_multiplier($initial_payout, $theo_prob) == $commission_base_multiplier) {
-            # a minimum of 2 cents please.
-            my $minimum_commission = 0.02 / $initial_payout;
+            # a minimum of 2 cents please, payout could be zero.
+            my $minimum_commission = $initial_payout ? 0.02 / $initial_payout : 0.02;
             return ($minimum_commission > $base_commission) ? $minimum_commission : $base_commission;
         }
 
