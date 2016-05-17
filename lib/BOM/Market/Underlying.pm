@@ -43,6 +43,7 @@ use Quant::Framework::Asset;
 use Quant::Framework::Currency;
 use Quant::Framework::ExpiryConventions;
 use Quant::Framework::Utils::UnderlyingConfig;
+use Quant::Framework::Utils::Builder;
 use BOM::System::Chronicle;
 use BOM::Market::SubMarket::Registry;
 use BOM::Market;
@@ -241,25 +242,25 @@ sub _build_config {
     my $self = shift;
 
     return Quant::Framework::Utils::UnderlyingConfig->new({
-        symbol                          => $self->symbol,
-        system_symbol                   => $self->system_symbol,
-        market_name                     => $self->market->name,
-        market_asset_type               => $self->market->asset_type,
-        market_prefer_discrete_dividend => $self->market->prefer_discrete_dividend,
-        quanto_only                     => $self->quanto_only,
-        submarket_name                  => $self->submarket->name,
-        rate_to_imply_from              => $self->rate_to_imply_from,
-        submarket_asset_type            => $self->submarket->asset_type,
-        volatility_surface_type         => $self->volatility_surface_type,
-        exchange_name                   => $self->exchange_name,
-        locale                          => BOM::Platform::Context::request()->language,
-        uses_implied_rate_for_asset     => $self->uses_implied_rate($self->asset_symbol),
-        uses_implied_rate_for_quoted_currency  => $self->uses_implied_rate($self->quoted_currency_symbol),
-        spot                            => $self->spot,
-        asset_symbol                    => $self->asset_symbol,
-        quoted_currency_symbol          => $self->quoted_currency_symbol,
-        extra_vol_diff_by_delta         => BOM::Platform::Static::Config::quants->{market_data}->{extra_vol_diff_by_delta},
-        market_convention               => $self->market_convention,
+        symbol                                => $self->symbol,
+        system_symbol                         => $self->system_symbol,
+        market_name                           => $self->market->name,
+        market_asset_type                     => $self->market->asset_type,
+        market_prefer_discrete_dividend       => $self->market->prefer_discrete_dividend,
+        quanto_only                           => $self->quanto_only,
+        submarket_name                        => $self->submarket->name,
+        rate_to_imply_from                    => $self->rate_to_imply_from,
+        submarket_asset_type                  => $self->submarket->asset_type,
+        volatility_surface_type               => $self->volatility_surface_type,
+        exchange_name                         => $self->exchange_name,
+        locale                                => BOM::Platform::Context::request()->language,
+        uses_implied_rate_for_asset           => $self->uses_implied_rate($self->asset_symbol),
+        uses_implied_rate_for_quoted_currency => $self->uses_implied_rate($self->quoted_currency_symbol),
+        spot                                  => $self->spot,
+        asset_symbol                          => $self->asset_symbol,
+        quoted_currency_symbol                => $self->quoted_currency_symbol,
+        extra_vol_diff_by_delta               => BOM::Platform::Static::Config::quants->{market_data}->{extra_vol_diff_by_delta},
+        market_convention                     => $self->market_convention,
     });
 }
 
