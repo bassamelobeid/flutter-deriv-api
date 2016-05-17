@@ -4,7 +4,6 @@ package BOM::Market::Script::TickAgg;
 
 use Moose;
 with 'App::Base::Daemon';
-with 'BOM::Utility::Logging';
 
 use List::Util qw(max);
 use Parallel::ForkManager;
