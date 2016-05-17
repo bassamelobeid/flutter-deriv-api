@@ -18,7 +18,7 @@ my $oauth = BOM::Database::Model::OAuth->new;
 my $dbh   = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
-$dbh->do("DELETE FROM oauth.apps");
+$dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
 BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
