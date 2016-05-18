@@ -701,7 +701,7 @@ sub _build_opposite_contract {
         $opp_parameters{date_start}  = $self->date_start;
         $opp_parameters{pricing_new} = 1;
         push @opposite_contract_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
-        push @opposite_contract_parameters, qw(empirical_volsurface average_tick_count long_term_prediction news_adjusted_pricing_vol)
+        push @opposite_contract_parameters, qw(empirical_volsurface long_term_prediction news_adjusted_pricing_vol)
             if $self->priced_with_intraday_model;
     } else {
         # not pricing_new will only happen when we are repricing an
