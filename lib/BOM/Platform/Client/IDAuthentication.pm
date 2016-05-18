@@ -105,7 +105,7 @@ sub _do_proveid {
     }
     # failed to authenticate
     else {
-        $self->_notify('PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
+        $set_status->('unwelcome', 'PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
         return $self->_request_id_authentication;
     }
 
