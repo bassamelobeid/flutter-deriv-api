@@ -51,14 +51,6 @@ package BOM::Platform::Untaint::qty;
 use base 'CGI::Untaint::object';
 use constant _untaint_re => qr/^([0-9]+)$/;
 
-package BOM::Platform::Untaint::spot;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^([0-9]+\.?[0-9]*)$/;
-
-package BOM::Platform::Untaint::exchange;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^(\w+)$/;
-
 package BOM::Platform::Untaint::comment;
 use base 'CGI::Untaint::object';
 use constant _untaint_re => qr/^(.*)$/;
@@ -66,10 +58,6 @@ use constant _untaint_re => qr/^(.*)$/;
 package BOM::Platform::Untaint::currency;
 use base 'CGI::Untaint::object';
 use constant _untaint_re => qr/^([A-Z]{3})$/;
-
-package BOM::Platform::Untaint::login_id;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^([A-Z]{2,4}[0-9]{4,5})$/;
 
 package BOM::Platform::Untaint::stop_type;
 use base 'CGI::Untaint::object';
@@ -79,14 +67,6 @@ package BOM::Platform::Untaint::market;
 use base 'CGI::Untaint::object';
 use constant _untaint_re => qr/^(forex|indices|stocks|volidx|commodities|sectors|smarties)$/;
 
-package BOM::Platform::Untaint::submarket;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^(\w+)$/;
-
-package BOM::Platform::Untaint::category;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^(digits|callput|staysinout|endsinout|touchnotouch|asian)$/;
-
 package BOM::Platform::Untaint::bet_type;
 use base 'CGI::Untaint::object';
 use constant _untaint_re => qr/^(\w+)$/;
@@ -94,10 +74,6 @@ use constant _untaint_re => qr/^(\w+)$/;
 package BOM::Platform::Untaint::form_name;
 use base 'CGI::Untaint::object';
 use constant _untaint_re => qr/^(risefall|digits|asian|higherlower|touchnotouch|staysinout|endsinout|evenodd|overunder|spreads)$/;
-
-package BOM::Platform::Untaint::prediction;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^(rises|falls|higher|lower|touches|doesnottouch|between|outside|matches|differs|spreadup|spreaddown)$/;
 
 package BOM::Platform::Untaint::underlying_symbol;
 use base 'CGI::Untaint::object';
@@ -110,10 +86,6 @@ use constant _untaint_re => qr/^([dhmst]{1})$/;
 package BOM::Platform::Untaint::duration;
 use base 'CGI::Untaint::object';
 use constant _untaint_re => qr/^([0-9]+[dhmst]{1})$/;
-
-package BOM::Platform::Untaint::expiry;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^([0-9]{1,2}\-\w{3}\-[0-9]{2}|[0-9]+)$/;
 
 package BOM::Platform::Untaint::epoch;
 use base 'CGI::Untaint::object';
@@ -149,40 +121,8 @@ package BOM::Platform::Untaint::shortcode;
 use base 'CGI::Untaint::object';
 use constant _untaint_re => qr/^([A-Z_\-\d\.]+)$/;
 
-package BOM::Platform::Untaint::language;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^(\w+)$/;
-
 package BOM::Platform::Untaint::barrier_type;
 use base 'CGI::Untaint::object';
 use constant _untaint_re => qr/^(relative|absolute)$/;
-
-package BOM::Platform::Untaint::multiple_loginid_separated_by_newline;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^([A-Za-z\d\n\s]+)$/;
-
-package BOM::Platform::Untaint::word;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^(\w+)$/;
-
-package BOM::Platform::Untaint::myaffiliates_token;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^([\w-]{32})$/;
-
-package BOM::Platform::Untaint::surface_date;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z)$/;
-
-package BOM::Platform::Untaint::surface_cutoff;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^([\w|\s]+\s+[0-9]{2}:[0-9]{2})$/;
-
-package BOM::Platform::Untaint::alphanumeric;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^([A-Za-z0-9_]+)$/;
-
-package BOM::Platform::Untaint::password;
-use base 'CGI::Untaint::object';
-use constant _untaint_re => qr/^([ -~]+)$/;
 
 1;

@@ -18,10 +18,6 @@ my $handler = CGI::Untaint->new(
     currency4 => '',
     currency5 => undef,
 
-    login_id1 => 'CR5109',
-    login_id2 => 'cr5109',
-    login_id3 => '>nyo|dthi^g',
-
     market1 => 'stocks',
     market2 => 'anyword',
 
@@ -47,11 +43,6 @@ my $handler = CGI::Untaint->new(
     duration_unit2 => 'z',
     duration_unit3 => 'mm',
     duration_unit4 => '',
-
-    expiry1 => '25-Dec-09',
-    expiry2 => 1261381082,
-    expiry3 => '1d',
-    expiry4 => '5m',
 
     epoch1 => 1261381082,
     epoch2 => 1261,
@@ -111,34 +102,13 @@ my $handler = CGI::Untaint->new(
     granter_loginids3 => "CR90010,CR90011,CR90012",
     granter_loginids4 => "aif44o\n1|c*'",
 
-    alphanumeric1 => 'foo',
-    alphanumeric2 => 'foo_bar_1',
-    alphanumeric3 => 'this is not "right"',
-    alphanumeric4 => '',
-    alphanumeric5 => undef,
-
-    date_yyyymmdd1 => '1960-10-01',
-    date_yyyymmdd2 => 'ab',
-    date_yyyymmdd3 => '',
-
-    exchange1 => 234,
-    exchange2 => 'BOM',
-    exchange3 => '',
-
     expiry_type1 => 'duration',
     expiry_type2 => 'motown',
     expiry_type3 => 'tick5',
 
-    myaffiliates_token1 => '--------------------------------',
-    myaffiliates_token2 => 'a3w_123456UX_23qrvu4Y3219Q23urVq',
-    myaffiliates_token3 => '------',
-
-    password1 => 'Qwerty',
-    password2 => "Qwerty\000",             # null byte, invalid
-    password3 => 'Qwerty\000',             # literal back slash, valid
-    password4 => '$qwert',                 # $ special char, valid
-    password5 => '&func($var1, $var2)',    # perl chars, valid
-    password6 => "\\000* [123]{123}",      # regex special chars, valid
+    date_yyyymmdd1 => '1960-10-01',
+    date_yyyymmdd2 => 'ab',
+    date_yyyymmdd3 => '',
 
     stop_type1 => "dollar",
     stop_type2 => "point",
@@ -164,14 +134,6 @@ my $handler = CGI::Untaint->new(
     floating_point6 => "1",
     floating_point7 => "."
 );
-
-is(
-    $handler->extract(-as_myaffiliates_token => 'myaffiliates_token1'),
-    '--------------------------------',
-    '32 dashes are valid for myaffiliates_token'
-);
-is($handler->extract(-as_myaffiliates_token => 'myaffiliates_token2'), 'a3w_123456UX_23qrvu4Y3219Q23urVq', '"a more likely myaffiliates_token');
-is($handler->extract(-as_myaffiliates_token => 'myaffiliates_token3'), undef, '"a short length entry was detected for myaffiliates_token');
 
 is($handler->extract(-as_form_name => 'form_name2'),  'risefall');
 is($handler->extract(-as_form_name => 'form_name3'),  'digits');
@@ -201,10 +163,6 @@ is($handler->extract(-as_expiry_type => 'expiry_type1'), 'duration', '"duration"
 is($handler->extract(-as_expiry_type => 'expiry_type2'), undef,      '"motown" is not a valid expiry type');
 is($handler->extract(-as_expiry_type => 'expiry_type3'), undef,      '"tick5" is not a valid expiry type');
 
-is($handler->extract(-as_exchange => 'exchange1'), 234,   '"234" qualifies as valid exchange');
-is($handler->extract(-as_exchange => 'exchange2'), 'BOM', '"BOM" is a valid exchange');
-is($handler->extract(-as_exchange => 'exchange3'), undef, 'an empty string is not a valid exchange entry');
-
 is($handler->extract(-as_date_yyyymmdd => 'date_yyyymmdd1'), '1960-10-01', '"1960-10-01" is a valid date format');
 is($handler->extract(-as_date_yyyymmdd => 'date_yyyymmdd2'), undef,        '"ab" is not a valid date format');
 is($handler->extract(-as_date_yyyymmdd => 'date_yyyymmdd3'), undef,        'an empty string is not a valid date');
@@ -214,10 +172,6 @@ is($handler->extract(-as_currency => 'currency2'), undef, 'cannot take currency 
 is($handler->extract(-as_currency => 'currency3'), undef, 'currency string must be uppercase');
 is($handler->extract(-as_currency => 'currency4'), undef, 'currency string must be empty');
 is($handler->extract(-as_currency => 'currency5'), undef, 'currecny value must not be null');
-
-is($handler->extract(-as_login_id => 'login_id1'), 'CR5109', 'CR5109 is a valid login ID');
-is($handler->extract(-as_login_id => 'login_id2'), undef,    'does not consider lower-case broker code as valid');
-is($handler->extract(-as_login_id => 'login_id3'), undef,    'any random string will be rejected');
 
 is($handler->extract(-as_market => 'market1'), 'stocks', '"stocks" is one of our markets');
 is($handler->extract(-as_market => 'market2'), undef,    '"anyword" is not one of our markets');
@@ -244,11 +198,6 @@ is($handler->extract(-as_duration_unit => 'duration_unit1'), 'd',   '"d" is a va
 is($handler->extract(-as_duration_unit => 'duration_unit2'), undef, '"z" is not a valid unit of measure for duration');
 is($handler->extract(-as_duration_unit => 'duration_unit3'), undef, '"mm" is not a valid unit of measure for duration');
 is($handler->extract(-as_duration_unit => 'duration_unit4'), undef, 'unit of measure cannot be empty');
-
-is($handler->extract(-as_expiry => 'expiry1'), '25-Dec-09',  '25-Dec-09 is a valid expiry');
-is($handler->extract(-as_expiry => 'expiry2'), '1261381082', '1261381082 is a valid expiry');
-is($handler->extract(-as_expiry => 'expiry3'), undef,        '1d is not a valid expiry');
-is($handler->extract(-as_expiry => 'expiry4'), undef,        '5m is not a valid expiry');
 
 is($handler->extract(-as_epoch => 'epoch1'), 1261381082, '1261381082 is a valid epoch');
 is($handler->extract(-as_epoch => 'epoch2'), 1261,       '1261 is a valid epoch (albeit quite short)');
@@ -303,26 +252,7 @@ is($handler->extract(-as_barrier_type => 'barrier_type1'), 'relative', 'relative
 is($handler->extract(-as_barrier_type => 'barrier_type2'), 'absolute', 'absolute is a valid barrier_type');
 is($handler->extract(-as_barrier_type => 'barrier_type3'), undef,      'anything else just isnt');
 
-is($handler->extract(-as_multiple_loginid_separated_by_newline => 'granter_loginids1'), 'CR90010', 'a login id');
-is($handler->extract(-as_multiple_loginid_separated_by_newline => 'granter_loginids2'),
-    "CR90010\n\nCR90011\nCR90012", 'login ids separated by newline');
-is($handler->extract(-as_multiple_loginid_separated_by_newline => 'granter_loginids3'), undef, 'separated by comma is not valid');
-is($handler->extract(-as_multiple_loginid_separated_by_newline => 'granter_loginids4'), undef, 'something is not valid');
-
 # Tests added from found bugs:
 'UUUUU' =~ /(U)/;    # $1 now contains "U"
 is($handler->extract(-as_epoch => 1261458000), undef, 'regex checks should be accurate even if $1 is set from a previous regex match');
-
-is($handler->extract(-as_alphanumeric => 'alphanumeric1'), 'foo',       'foo is ok for alphanumeric');
-is($handler->extract(-as_alphanumeric => 'alphanumeric2'), 'foo_bar_1', 'foo_bar_1 is ok for alphanumeric');
-is($handler->extract(-as_alphanumeric => 'alphanumeric3'), undef,       'spaces and quotes are not ok for alphanumeric');
-is($handler->extract(-as_alphanumeric => 'alphanumeric4'), undef,       'alphanumeric string should not be empty');
-is($handler->extract(-as_alphanumeric => 'alphanumeric5'), undef,       'alphanumeric string should not be null');
-
-is($handler->extract(-as_password => 'password1'), 'Qwerty',              'alphabetic password valid');
-is($handler->extract(-as_password => 'password2'), undef,                 'Null characters make password invalid');
-is($handler->extract(-as_password => 'password3'), 'Qwerty\000',          'backslash properly handled');
-is($handler->extract(-as_password => 'password4'), '$qwert',              '$ properly handled');
-is($handler->extract(-as_password => 'password5'), '&func($var1, $var2)', 'Perl chars properly handled');
-is($handler->extract(-as_password => 'password6'), '\\000* [123]{123}',   'regex chars properly handled');
 
