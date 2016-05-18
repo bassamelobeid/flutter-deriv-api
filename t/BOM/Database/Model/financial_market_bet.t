@@ -125,7 +125,7 @@ is_deeply([
     'correct data read back'
 );
 
-$financial_market_bet->save;
+#$financial_market_bet->save; this object is reset below and the save is unnecessary and also violates the business logic that exists now where updates/deletes are disallowed on fmb
 
 lives_ok {
     $financial_market_bet = BOM::Database::Model::FinancialMarketBet::HigherLowerBet->new({
