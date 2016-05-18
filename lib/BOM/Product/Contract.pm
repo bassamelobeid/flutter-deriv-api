@@ -1263,18 +1263,13 @@ sub _build_commission_markup {
 sub _build_model_markup {
     my $self = shift;
 
-    my $model_markup;
-    if ($self->new_interface_engine) {
-        $model_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_markup',
-            description => 'Risk and commission markup for a pricing model',
-            set_by      => $self->pricing_engine_name,
-        });
-        $model_markup->include_adjustment('reset', $self->risk_markup);
-        $model_markup->include_adjustment('add',   $self->commission_markup);
-    } else {
-        $model_markup = $self->pricing_engine->model_markup;
-    }
+    my $model_markup = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'model_markup',
+        description => 'Risk and commission markup for a pricing model',
+        set_by      => $self->pricing_engine_name,
+    });
+    $model_markup->include_adjustment('reset', $self->risk_markup);
+    $model_markup->include_adjustment('add',   $self->commission_markup);
 
     return $model_markup;
 }
