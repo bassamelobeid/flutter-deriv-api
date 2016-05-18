@@ -16,7 +16,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
 use BOM::Market::Types;
-use BOM::Utility::ErrorStrings qw( format_error_string );
+use BOM::Product::ErrorStrings qw( format_error_string );
 use BOM::Platform::Static::Config;
 
 with 'MooseX::Role::Validatable';

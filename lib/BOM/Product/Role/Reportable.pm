@@ -6,7 +6,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::Database::Model::Constants;
 use BOM::System::Config;
-use BOM::Utility::ErrorStrings qw( normalize_error_string );
+use BOM::Product::ErrorStrings qw( normalize_error_string );
 
 my @bool_attrs = qw(is_intraday is_forward_starting is_atm_bet is_spread);
 

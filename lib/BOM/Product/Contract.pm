@@ -27,7 +27,7 @@ use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw( get_contract_specifics );
-use BOM::Utility::ErrorStrings qw( format_error_string );
+use BOM::Product::ErrorStrings qw( format_error_string );
 use BOM::Platform::Static::Config;
 use BOM::System::Chronicle;
 

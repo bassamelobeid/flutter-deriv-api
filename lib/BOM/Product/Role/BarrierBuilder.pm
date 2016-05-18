@@ -5,7 +5,7 @@ use Moose::Role;
 use Try::Tiny;
 use VolSurface::Utils qw( get_strike_for_spot_delta );
 use BOM::Platform::Context qw(localize);
-use BOM::Utility::ErrorStrings qw( format_error_string );
+use BOM::Product::ErrorStrings qw( format_error_string );
 use List::Util qw(max);
 use Scalar::Util::Numeric qw(isint);
 

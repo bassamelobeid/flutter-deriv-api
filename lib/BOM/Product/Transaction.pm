@@ -20,7 +20,7 @@ use BOM::Platform::Client;
 use BOM::System::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Platform::CurrencyConverter qw(in_USD amount_from_to_currency);
-use BOM::Utility::ErrorStrings qw( normalize_error_string );
+use BOM::Product::ErrorStrings qw( normalize_error_string );
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;

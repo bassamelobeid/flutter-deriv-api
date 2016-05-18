@@ -4,7 +4,7 @@ use Moose::Role;
 with 'BOM::Product::Role::BarrierBuilder';
 
 use BOM::Platform::Context qw(localize);
-use BOM::Utility::ErrorStrings qw( format_error_string );
+use BOM::Product::ErrorStrings qw( format_error_string );
 
 sub BUILD {
     my $self = shift;
