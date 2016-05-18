@@ -390,12 +390,8 @@ sub has_valid_documents {
 sub client_fully_authenticated {
     my $self        = shift;
     my $ID_DOCUMENT = $self->get_authentication('ID_DOCUMENT');
-    my $ID_192      = $self->get_authentication('ID_192');
     my $ADDRESS     = $self->get_authentication('ADDRESS');
-    return (
-               ($ID_DOCUMENT and $ID_DOCUMENT->status eq 'pass')
-            or ($ID_192      and $ID_192->status eq 'pass')
-            or ($ADDRESS     and $ADDRESS->status eq 'pass'));
+    return (($ID_DOCUMENT and $ID_DOCUMENT->status eq 'pass') or ($ADDRESS and $ADDRESS->status eq 'pass'));
 }
 
 sub set_exclusion {

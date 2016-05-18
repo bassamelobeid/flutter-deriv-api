@@ -58,40 +58,50 @@ sub _do_proveid {
 
     my $prove_id_result = $self->_fetch_proveid || {};
 
+    my $set_status = sub {
+        my ($status, $reason, $description) = @_;
+        $self->_notify($reason, $description);
+        $client->set_status($status, 'system', $reason);
+        $client->save;
+    };
+
     # deceased or fraud => disable the client
     if ($prove_id_result->{deceased} or $prove_id_result->{fraud}) {
-        my $reason = $prove_id_result->{deceased} ? "deceased" : "fraud";
-        $self->_notify('PROVE ID INDICATES ' . uc($reason), "Client was flagged as $reason by Experian Prove ID check");
-        $client->set_status('disabled', 'system', 'PROVE ID INDICATES ' . uc($reason));
-        $client->save;
+        my $key = $prove_id_result->{deceased} ? "deceased" : "fraud";
+        $set_status->('disabled', 'PROVE ID INDICATES ' . uc($key), "Client was flagged as $key by Experian Prove ID check");
     }
     # we have a match, but result is DENY
     elsif ( $prove_id_result->{deny}
         and defined $prove_id_result->{matches}
         and (scalar @{$prove_id_result->{matches}} > 0))
     {
-        if (my ($type) = grep { /(PEP|OFAC|HMT)/ } @{$prove_id_result->{matches}}) {
-            $self->_notify("$type match", "$type match");
-            $client->set_status('disabled', 'system', "$type match");
-            $client->save;
+        my $type;
+        # Office of Foreign Assets Control, HM Treasury => disable the client
+        if (($type) = grep { /(OFAC|BOE)/ } @{$prove_id_result->{matches}}) {
+            $set_status->('disabled', "$type match", "$type match");
+        }
+        # Director or Politically Exposed => unwelcome client
+        elsif ((($type) = grep { /(PEP|Directors)/ } @{$prove_id_result->{matches}})) {
+            $set_status->('unwelcome', "$type match", "$type match");
         } else {
-            $self->_notify('EXPERIAN PROVE ID RETURNED DENY ', join(', ', @{$prove_id_result->{matches}}));
-            $client->set_status('unwelcome', 'system', 'Experian returned DENY');
-            $client->save();
+            $set_status->('unwelcome', 'EXPERIAN PROVE ID RETURNED DENY', join(', ', @{$prove_id_result->{matches}}));
         }
     }
-    # result is FULLY AUTHENTICATED
+    # County Court Judgement => unwelcome client
+    elsif ($prove_id_result->{CCJ}) {
+        $set_status->('unwelcome', 'PROVE ID INDICATES CCJ', 'Client was flagged as CCJ by Experian Prove ID check');
+    }
+    # result is FULLY AUTHENTICATED => age verified as IOM GSC no longer accept Experian to authenticate clients
     elsif ($prove_id_result->{fully_authenticated}) {
-        $self->_notify('EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT', 'passed PROVE ID KYC and is fully authenticated.');
-        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-        # $client->set_authentication('ID_192')->status('pass'); #The IOM GSC no longer accept Experian to authenticate clients
-        $client->save;
+        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT', 'passed PROVE ID KYC and is age verified');
     }
     # result is AGE VERIFIED ONLY
     elsif ($prove_id_result->{age_verified}) {
-        $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION', 'could only get enough score for age verification.');
-        $client->set_status('age_verification', 'system', 'Successfully age verified via Experian Prove ID');
-        $client->save;
+        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION', 'could only get enough score for age verification.');
+    }
+    # no verifications => unwelcome client
+    elsif ($prove_id_result->{num_verifications} eq 0) {
+        $set_status->('unwelcome', 'PROVE ID INDICATES NO VERIFICATIONS', 'proveid indicates no verifications');
     }
     # failed to authenticate
     else {
