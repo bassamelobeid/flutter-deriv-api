@@ -69,6 +69,7 @@ sub authorize {
         'id-lzNzcmvdgbB99jBFl3IGO3yLgmUSK' => 35,
         'id-EmcupPkdLUKfScM8vsM6Hc4httJrL' => 36,
         'id-yfBPXh3678sX8W1q6xDvr71pk1VJK' => 37,
+        'binary-expiryd'                   => 38,
     };
     $app_id = $id_map->{$app_id} if ($id_map->{$app_id});
 
