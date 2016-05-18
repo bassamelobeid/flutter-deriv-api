@@ -13,23 +13,13 @@ GetOptions ("workers=i" => \$workers,) ;
 
 my $pm = new Parallel::ForkManager($workers);
 
-sub _dameon_redis {
-    my $action = shift;
-    my $config = BOM::System::RedisReplicated::_config;
-    return RedisDB->new(
-        host => $config->{write}->{host},
-        port => $config->{write}->{port},
-        ($config->{write}->{password} ? ('password', $config->{write}->{password}) : ()),
-    );
-}
-
 while (1) {
     my $pid = $pm->start and next;
 
     my $rp = Mojo::Redis::Processor->new(
         'read_conn'   => BOM::System::RedisReplicated::redis_pricer,
         'write_conn'  => BOM::System::RedisReplicated::redis_pricer,
-        'daemon_conn' => _dameon_redis,
+        'daemon_conn' => BOM::System::RedisReplicated::redis_read,
     );
 
     my $next = $rp->next;
