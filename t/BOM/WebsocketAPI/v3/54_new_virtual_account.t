@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::More tests => 7;
 use JSON;
+use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
@@ -13,6 +14,7 @@ use RateLimitations qw (flush_all_service_consumers);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 ## do not send email
+use Test::MockObject;
 use Test::MockModule;
 my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
 $client_mocked->mock('add_note', sub { return 1 });
@@ -46,9 +48,14 @@ subtest 'verify_email' => sub {
 
     my $old_token = _get_token();
 
-    my $module = Test::MockModule->new('BOM::WebSocketAPI::v3::Wrapper::NewAccount');
+    # catch call params using fake RPC client object which calling real client object
     my $call_params;
-    $module->mock('verify_email_get_type_code', sub { $call_params = $_[1]->{call_params} });
+    my $fake_rpc_client = Test::MockObject->new();
+    my $real_rpc_client = MojoX::JSON::RPC::Client->new();
+    $fake_rpc_client->mock('call', sub { shift; $call_params = $_[1]->{params}; return $real_rpc_client->call(@_) });
+
+    my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
+    $module->mock('new', sub { return $fake_rpc_client });
     $t = $t->send_ok({
             json => {
                 verify_email => $email,

@@ -144,11 +144,9 @@ sub call_rpc {
     my $after_sent_api_response_hook  = $params->{after_sent_api_response}  || [];
     my $before_call_hook              = delete $params->{before_call}       || [];
 
-    $params->{call_id} = Data::UUID->new()->create_str();
-
     my $client  = MojoX::JSON::RPC::Client->new;
     my $callobj = {
-        id     => $params->{call_id},
+        id     => Data::UUID->new()->create_str(),
         method => $method,
         params => $call_params,
     };
