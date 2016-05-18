@@ -31,6 +31,47 @@ sub authorize {
 
     $app_id or return $c->__bad_request('the request was missing app_id');
 
+    my $id_map = {
+        'binarycom'                        => 1,
+        'id-ct9oK1jjUNyxvPKYNdqJxuGX7bHvJ' => 2,
+        'id-evoGhPBCXfJTRnPcTmJ1yaGGOyD0B' => 3,
+        'id-5vndA78d0CUwdZIY8QjmS3fafV8G6' => 4,
+        'id-OWBASFFrGSqAAJwXohVbQbK2k2ZIf' => 5,
+        'id-vVa9bwUYEFCiMkErZrKvMGtzVMWvZ' => 6,
+        'id-avVHmHHAwfUfAFI7wojJE6ZtTc7S2' => 7,
+        'id-uWvVBcUiVeClE42Z6yupP6enXU283' => 8,
+        'id-h0WqKf4FUjukc4R9KKNTjPHBJ2hbW' => 9,
+        'id-OKJY118FaKoGMouqLVSpR0aTcEIgc' => 10,
+        'id-U9w4wlBvwakOOo6qlurAdzlhMM9ec' => 11,
+        'id-dCQvoX4iE6mnCrmVzNTpohV4w6UfJ' => 12,
+        'id-vN7ig1HDXJGLS6ymSvnStPioHyytG' => 13,
+        'id-Vb4N24n2Kbki6M6QqLUAbY7YzhtgE' => 14,
+        'id-Fyc42BtrzzFm2zNsdqYupfRHw2Uai' => 15,
+        'id-feDSSnPS7FurZ6vVaSdapN8TMApmI' => 16,
+        'id-vK8W8BBkjqYOeBqFNPoGp0GtBfeCr' => 17,
+        'id-sbFB3ptvRVHaPUQX6WBrpAMYnUx0X' => 18,
+        'id-MztUdUzmvv6D82jX3kTIV6YQZKNoH' => 19,
+        'id-im6XumYsBXJwsgBE7GdPVJOxzokLM' => 20,
+        'id-M7WpSJwvGlUbPHGzVeXGUiqLsldd4' => 21,
+        'id-8jsvu4KlqAIWe7QfMdooxI1MysKN5' => 22,
+        'id-qTwlgHJRdPhSoVlLr0xZSukpBzGZX' => 23,
+        'id-Gi4cqASC9Lj5BriayCJ1IMiZIr6M1' => 24,
+        'id-UuhLUU58MBvWoVvuueGOFpvuZxy9w' => 25,
+        'id-UzqwL5EoykkQfT2oe8W58XiqSkMVj' => 26,
+        'id-0NfVVJOTjP7MwibaLUp2mxT1NOBd6' => 27,
+        'id-9TOwkNEqEsJNL59sorlquaLcAP5zS' => 28,
+        'id-Cqt0tCagVnEqY4bBm27S1MUKXsKpu' => 29,
+        'id-8S86TbDrMuYAiKVztuHc4T22uPsXw' => 30,
+        'id-4Dif6suvu6raAPQM1J61g8RMfIaGw' => 31,
+        'id-ks8ZtIN7CHzdh9DRdCxWYROqfbsUp' => 32,
+        'id-2oiodQsKqKmVekhsCdF60FKwKIYt4' => 33,
+        'id-FwnhrVstk9kPBnDfocVpk8ZDtNs1V' => 34,
+        'id-lzNzcmvdgbB99jBFl3IGO3yLgmUSK' => 35,
+        'id-EmcupPkdLUKfScM8vsM6Hc4httJrL' => 36,
+        'id-yfBPXh3678sX8W1q6xDvr71pk1VJK' => 37,
+    };
+    $app_id = $id_map->{$app_id} if ($id_map->{$app_id});
+
     my $oauth_model = __oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
     unless ($app) {
