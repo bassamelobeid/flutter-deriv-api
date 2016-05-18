@@ -1601,7 +1601,7 @@ Returns: HashRef, with:
 =cut
 
 my %source_to_sell_type = (
-    1063 => 'expiryd',    # app_id for `binaryexpiryd`, see `expiryd.pl`
+    38 => 'expiryd',    # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
 );
 
 sub sell_expired_contracts {
