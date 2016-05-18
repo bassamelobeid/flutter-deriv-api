@@ -159,13 +159,13 @@ sub _latest_tick_info {
     my $date = Date::Utility->today;
     my $i    = 0;
     while (not -e $underlying->fullfeed_file($date->date_ddmmmyy, 'random')
-        and $i++ < 30)
+        and ++$i < 30)
     {
         $date = $date->minus_time_interval('1d');
     }
     my $when;
     my $spot;
-    if ($i == 30) {
+    if ($i == 30) {    # No Feed file found for last 30 days
         $when = time - 2;
         $spot = _reset_value($underlying);
     } else {
