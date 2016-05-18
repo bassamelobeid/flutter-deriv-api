@@ -56,15 +56,15 @@ sub get_volatility {
 
     $self->error('Insufficient tick interval to get_volatility') if @$ticks <= $returns_sep;
 
+    my @tick_epochs = uniq map { $_->{epoch} } @$ticks;
     # check to make sure that 80% of the interval in the lookback period has ticks.
     my $interval_threshold = int(($lookback_interval->minutes * $returns_sep + 1) * 0.8);
-    $self->error('Insufficient ticks in each interval to get_volatility') if (scalar(@$ticks) < $interval_threshold);
+    $self->error('Insufficient ticks in each interval to get_volatility') if (scalar(@tick_epochs) < $interval_threshold);
 
     # if there's error we just return long term volatility
     return $self->long_term_vol if $self->error;
 
-    my @tick_epochs = map { $_->{epoch} } @$ticks;
-    my @time_samples_past = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
+    my @time_samples_past  = map { ($tick_epochs[$_] + $tick_epochs[$_ - $returns_sep]) / 2 } ($returns_sep .. $#tick_epochs);
     my $categorized_events = $self->_categorized_economic_events($economic_events);
     my $weights            = _calculate_weights(\@time_samples_past, $categorized_events);
     my $observed_vol       = _calculate_observed_volatility($ticks, \@time_samples_past, \@tick_epochs, $weights);
