@@ -168,12 +168,12 @@ sub price_stream {
             return $c->new_error('price_stream',
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
-        send_ask_price_stream($c, $id, $args);
+        _send_ask($c, $id, $args);
     }
     return;
 }
 
-sub send_ask_price_stream {
+sub _send_ask {
     my ($c, $id, $args) = @_;
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
@@ -287,6 +287,7 @@ sub _pricing_channel {
         return;
     }
 
+    # Contracts that don't need streaming.
     my %skip_duration_list = map { $_ => 1 } qw(s m h);
     my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR);
     my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
@@ -300,6 +301,7 @@ sub _pricing_channel {
         ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_contract and not $fixed_expiry);
 
     my $uuid = Data::UUID->new->create_str();
+    # We don't stream but still return the UUID to keep it unifom.
     if ($skip_tick_expiry or $skip_intraday_atm_non_fixed_expiry) {
         return $uuid;
     }
