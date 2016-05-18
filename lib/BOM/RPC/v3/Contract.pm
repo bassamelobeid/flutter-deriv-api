@@ -216,11 +216,7 @@ sub get_bid {
             }
         }
 
-        if (@{$contract->corporate_actions}) {
-            $response->{has_applicable_corporate_actions} = 1;
-        } else {
-            $response->{has_applicable_corporate_actions} = 0;
-        }
+        $response->{has_applicable_corporate_actions} = 0;
 
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
