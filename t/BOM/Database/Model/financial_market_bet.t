@@ -8,7 +8,7 @@ use BOM::Database::Model::FinancialMarketBet;
 use BOM::Database::Model::FinancialMarketBet::Factory;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Test::Data::Utility::UnitTestDatabase;# qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $connection_builder;
 my $account;
