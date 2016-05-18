@@ -390,8 +390,8 @@ sub has_valid_documents {
 sub client_fully_authenticated {
     my $self        = shift;
     my $ID_DOCUMENT = $self->get_authentication('ID_DOCUMENT');
-    my $ADDRESS     = $self->get_authentication('ADDRESS');
-    return (($ID_DOCUMENT and $ID_DOCUMENT->status eq 'pass') or ($ADDRESS and $ADDRESS->status eq 'pass'));
+    my $NOTARIZED   = $self->get_authentication('ID_NOTARIZED');
+    return (($ID_DOCUMENT and $ID_DOCUMENT->status eq 'pass') or ($NOTARIZED and $NOTARIZED->status eq 'pass'));
 }
 
 sub set_exclusion {
