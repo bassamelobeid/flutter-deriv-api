@@ -70,7 +70,7 @@ UPDATE oauth.apps   SET id = 34 WHERE __id = 'id-FwnhrVstk9kPBnDfocVpk8ZDtNs1V';
 UPDATE oauth.apps   SET id = 35 WHERE __id = 'id-lzNzcmvdgbB99jBFl3IGO3yLgmUSK';
 UPDATE oauth.apps   SET id = 36 WHERE __id = 'id-EmcupPkdLUKfScM8vsM6Hc4httJrL';
 UPDATE oauth.apps   SET id = 37 WHERE __id = 'id-yfBPXh3678sX8W1q6xDvr71pk1VJK';
-UPDATE oauth.apps   SET id = 39 WHERE __id = 'binary-expiryd';
+UPDATE oauth.apps   SET id = 38 WHERE __id = 'binary-expiryd';
 
 
 -- populate app_id
