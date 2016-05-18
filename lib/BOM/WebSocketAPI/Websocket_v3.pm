@@ -405,7 +405,6 @@ sub __handle {
                 %forward_params = %{$descriptor->{forward_params}};
             }
 
-            $forward_params{before_call}              = [@{$forward_params{before_call}              || []}, \&start_timing];
             $forward_params{before_get_rpc_response}  = [@{$forward_params{before_get_rpc_response}  || []}, \&log_call_timing];
             $forward_params{after_got_rpc_response}   = [@{$forward_params{after_got_rpc_response}   || []}, \&log_call_timing_connection];
             $forward_params{before_send_api_response} = [@{$forward_params{before_send_api_response} || []}, \&add_debug_time, \&start_timing];
@@ -496,7 +495,7 @@ sub rpc {
             before_call              => [],
             before_get_rpc_response  => [\&log_call_timing],
             after_got_rpc_response   => [\&log_call_timing_connection],
-            before_send_api_response => [\&add_debug_time, \&start_timing],
+            before_send_api_response => [\&add_debug_time],
             after_sent_api_response  => [\&log_call_timing_sent],
         },
     );
