@@ -17,7 +17,7 @@ use strict;
 use warnings;
 
 use BOM::System::Localhost;
-use BOM::Utility::CurrencyConverter qw(in_USD);
+use BOM::Platform::CurrencyConverter qw(in_USD);
 
 local $\ = undef;    # Sigh.
 

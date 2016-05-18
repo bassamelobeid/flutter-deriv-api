@@ -7,7 +7,7 @@ use warnings;
 use BOM::Platform::Sysinit ();
 use f_brokerincludeall;
 use BOM::Platform::Transaction;
-use BOM::Utility::CurrencyConverter qw(in_USD);
+use BOM::Platform::CurrencyConverter qw(in_USD);
 use BOM::Product::Transaction;
 use BOM::Platform::Plack qw( PrintContentType );
 

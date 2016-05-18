@@ -6,7 +6,7 @@ use POSIX;
 use BOM::Database::DataMapper::Account;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
-use BOM::Utility::CurrencyConverter qw(in_USD);
+use BOM::Platform::CurrencyConverter qw(in_USD);
 use BOM::Platform::Email qw(send_email);
 use open qw[ :encoding(UTF-8) ];
 use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
