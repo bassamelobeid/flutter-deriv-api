@@ -206,14 +206,14 @@ table#client_edit td{
             authentication_options = [
                 {'value' => 'CLEAR ALL', 'details' => 'Not authenticated' }
                 {'value' => 'AGE_VERIFIED', 'details' => 'ID/Age Verified' }
-                {'value' => 'ADDRESS', 'details' => 'Authenticated (deprecated address method)' }
-                {'value' => 'ID_DOCUMENT', 'details' => 'Authenticated (by post)' }
+                {'value' => 'ID_DOCUMENT', 'details' => 'Authenticated' }
+                {'value' => 'ID_NOTARIZED', 'details' => 'Authenticated with Notarized docs' }
             ]
         %]
         <td id="verification">:
                 Current methods:(
-                    [% IF  client.get_authentication('ADDRESS').status == 'pass' %]Authenticated (deprecated address method),[% END %]
-                    [% IF  client.get_authentication('ID_DOCUMENT').status == 'pass' %]Authenticated (by post),[% END %]
+                    [% IF  client.get_authentication('ID_DOCUMENT').status == 'pass' %]Authenticated,[% END %]
+                    [% IF  client.get_authentication('ID_NOTARIZED').status == 'pass' %]Authenticated with Notarized docs[% END %]
                 ) <br>
             <select name="client_authentication">
                 [% FOREACH authentication = authentication_options %]

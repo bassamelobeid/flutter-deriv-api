@@ -391,7 +391,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
 
         if ($key eq 'client_authentication') {
-            if ($input{$key} eq 'ADDRESS' or $input{$key} eq 'ID_DOCUMENT') {
+            if ($input{$key} eq 'ID_DOCUMENT' or $input{$key} eq 'ID_NOTARIZED') {
                 $client->set_authentication($input{$key})->status('pass');
             }
             if ($input{$key} eq 'AGE_VERIFIED') {
