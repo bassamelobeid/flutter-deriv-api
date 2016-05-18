@@ -4,7 +4,6 @@ use Moose::Role;
 with 'BOM::Product::Role::BarrierBuilder';
 
 use BOM::Platform::Context qw(localize);
-use BOM::Product::ErrorStrings qw( format_error_string );
 
 sub BUILD {
     my $self = shift;
@@ -103,23 +102,19 @@ sub _validate_barrier {
         my $min_allowed   = $self->minimum_allowable_move;
         if ($high_barrier->as_absolute <= $current_spot or $low_barrier->as_absolute >= $current_spot) {
             return {
-                message => format_error_string(
-                    'Barriers should straddle the spot',
-                    spot => $current_spot,
-                    high => $high_barrier->as_absolute,
-                    low  => $low_barrier->as_absolute
-                ),
+                message => 'Barriers should straddle the spot '.
+                    "[spot: ".$current_spot."] ".
+                    "[high: ".$high_barrier->as_absolute."] ".
+                    "[low: ".$low_barrier->as_absolute."]",
                 severity          => 1,
                 message_to_client => localize('Barriers must be on either side of the spot.'),
             };
         } elsif (abs($high_pip_move) < $min_allowed or abs($low_pip_move) < $min_allowed) {
             return {
-                message => format_error_string(
-                    'Relative barrier path dependent move below minimum',
-                    'high move' => $high_pip_move,
-                    'low move'  => $low_pip_move,
-                    min         => $min_allowed
-                ),
+                message => 'Relative barrier path dependent move below minimum '.
+                    "[high move: ".$high_pip_move."] ".
+                    "[low move: ".$low_pip_move."] ".
+                    "[min: ".$min_allowed."]",
                 severity          => 1,
                 message_to_client => localize('Barrier must be at least ' . $min_allowed . ' pips away from the spot.'),
             };
@@ -132,12 +127,10 @@ sub _validate_barrier {
         my $abs_barrier = $barrier->as_absolute;
         if ($abs_barrier > $max_move * $current_spot or $abs_barrier < $min_move * $current_spot) {
             return {
-                message => format_error_string(
-                    'Barrier too far from spot',
-                    move => $abs_barrier / $current_spot,
-                    min  => $min_move,
-                    max  => $max_move
-                ),
+                message => 'Barrier too far from spot '.
+                    "[move: ".($abs_barrier / $current_spot)."] ".
+                    "[min: ".$min_move."] ".
+                    "[max: ".$max_move."]",
                 severity          => 91,
                 message_to_client => ($label eq 'low')
                 ? localize('Low barrier is out of acceptable range. Please adjust the low barrier.')
