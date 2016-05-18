@@ -26,6 +26,8 @@ while (1) {
     if ($next) {
         print "next [$next]\n";
         my $p = BOM::RPC::PricerDaemon->new(data=>$rp->{data}, key=>$rp->_processed_channel);
+
+        # Trigger channel (like FEED::R_25) comes as part of data workload. Here we define what will happend whenever there is a new signal in that channel.
         $rp->on_trigger(
             sub {
                 my $payload = shift;
