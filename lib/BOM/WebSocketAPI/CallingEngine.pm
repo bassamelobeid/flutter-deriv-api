@@ -153,12 +153,13 @@ sub call_rpc {
         params => $call_params,
     };
 
+    my $t0 = [Time::HiRes::gettimeofday];
     $client->call(
         $url, $callobj,
         sub {
             my $res = pop;
 
-            $_->($c, $params) for @$before_get_rpc_response_hook;
+            $_->($c, $params, $t0) for @$before_get_rpc_response_hook;
 
             # unconditionally stop any further processing if client is already disconnected
             return unless $c->tx;
@@ -178,7 +179,7 @@ sub call_rpc {
                 return;
             }
 
-            $_->($c, $params, $res) for @$after_got_rpc_response_hook;
+            $_->($c, $params, $res, $t0) for @$after_got_rpc_response_hook;
 
             if ($res->is_error) {
                 warn $res->error_message;
@@ -196,9 +197,9 @@ sub call_rpc {
             }
 
             $api_response = {%binding, %$api_response};
-            $_->($c, $params, $api_response) for @$before_send_api_response_hook;
+            $_->($c, $params, $api_response, $t0) for @$before_send_api_response_hook;
             $c->send({json => $api_response});
-            $_->($c, $params) for @$after_sent_api_response_hook;
+            $_->($c, $params, $t0) for @$after_sent_api_response_hook;
 
             return;
         });
