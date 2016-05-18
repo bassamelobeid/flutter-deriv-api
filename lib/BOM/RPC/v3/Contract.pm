@@ -216,6 +216,12 @@ sub get_bid {
             }
         }
 
+        if (@{$contract->corporate_actions}) {
+            $response->{has_applicable_corporate_actions} = 1;
+        } else {
+            $response->{has_applicable_corporate_actions} = 0;
+        }
+
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
         stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
