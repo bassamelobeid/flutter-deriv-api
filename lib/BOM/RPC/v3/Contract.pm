@@ -214,9 +214,9 @@ sub get_bid {
                     $response->{barrier} = $contract->barrier->as_absolute;
                 }
             }
-        }
 
-        $response->{has_applicable_corporate_actions} = 0;
+            $response->{has_applicable_corporate_actions} = (not @{$contract->corporate_actions}) ? 0 : 1;
+        }
 
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
