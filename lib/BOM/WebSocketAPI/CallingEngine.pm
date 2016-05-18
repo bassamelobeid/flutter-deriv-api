@@ -142,7 +142,7 @@ sub call_rpc {
     my $after_got_rpc_response_hook   = $params->{after_got_rpc_response}   || [];
     my $before_send_api_response_hook = $params->{before_send_api_response} || [];
     my $after_sent_api_response_hook  = $params->{after_sent_api_response}  || [];
-    my $before_call_hook = delete $params->{before_call} || [];
+    my $before_call_hook              = delete $params->{before_call}       || [];
 
     $params->{call_id} = Data::UUID->new()->create_str();
 
