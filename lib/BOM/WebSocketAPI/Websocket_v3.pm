@@ -455,8 +455,7 @@ sub _failed_key_value {
         # \p{L} is to match utf-8 characters
         # \p{Script=Common} is to match double byte characters in Japanese keyboards, eg: '１−１−１'
         # refer: http://perldoc.perl.org/perlunicode.html
-        or ($value and $value !~ /^[\p{Script=Common}\p{L}\s\w\@_:!-~]{0,300}$/)
-        )
+        or ($value and $value !~ /^[\p{Script=Common}\p{L}\s\w\@_:!-~]{0,300}$/))
     {
         return ($key, $value);
     }
