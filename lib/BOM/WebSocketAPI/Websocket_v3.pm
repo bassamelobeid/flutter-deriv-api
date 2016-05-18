@@ -62,7 +62,7 @@ sub entry_point {
             message => sub {
                 my ($self, $msg, $channel) = @_;
 
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_pricing_events($c, $msg, $channel)
+                BOM::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel)
                     if $channel =~ /^Redis::Processor::/;
             });
         $c->stash->{redis_pricer} = $redis_pricer;
@@ -178,7 +178,7 @@ my @dispatch = (
     ['ticks',          \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks,                 0],
     ['ticks_history',  \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history,         0],
     ['proposal',       \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,              0],
-    ['price_stream',   \&BOM::WebSocketAPI::v3::Wrapper::Streamer::price_stream,          0],
+    ['price_stream',   \&BOM::WebSocketAPI::v3::Wrapper::Pricer::price_stream,            0],
     ['pricing_table',  \&BOM::WebSocketAPI::v3::Wrapper::Streamer::pricing_table,         0],
     ['forget',         \&BOM::WebSocketAPI::v3::Wrapper::System::forget,                  0],
     ['forget_all',     \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,              0],
