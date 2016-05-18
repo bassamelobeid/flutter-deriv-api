@@ -24,6 +24,10 @@
             "value": {
               "type": "integer",
               "description": "Value for the corporate actions. Example: split ratio for stock split."
+            },
+            "modifier": {
+              "type": "string",
+              "description": "Modifier for the corporate actions. Example: divide."
             }
           }
         }
