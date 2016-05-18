@@ -198,8 +198,9 @@ sub call_rpc {
 
             $api_response = {%binding, %$api_response};
             $_->($c, $params, $api_response, $t0) for @$before_send_api_response_hook;
+            my $t1 = [Time::HiRes::gettimeofday];
             $c->send({json => $api_response});
-            $_->($c, $params, $t0) for @$after_sent_api_response_hook;
+            $_->($c, $params, $t1) for @$after_sent_api_response_hook;
 
             return;
         });
