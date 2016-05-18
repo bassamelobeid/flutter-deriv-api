@@ -22,7 +22,7 @@ use BOM::MarketData::VolSurface::Flat;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use BOM::Market::UnderlyingDB;
 use BOM::Platform::Runtime;
-use BOM::MarketData::CorrelationMatrix;
+use Quant::Framework::CorrelationMatrix;
 use Quant::Framework::ImpliedRate;
 use Quant::Framework::InterestRate;
 use Quant::Framework::Dividend;
@@ -183,7 +183,10 @@ sub _collect_rates_ages {
 
 sub _collect_correlation_ages {
 
-    my $latest_correlation_matrix_age = time - BOM::MarketData::CorrelationMatrix->new('indices')->recorded_date->epoch;
+    my $latest_correlation_matrix_age = time - Quant::Framework::CorrelationMatrix->new({
+            symbol              => 'indices',
+            chronicle_reader    => BOM::System::Chronicle::get_chronicle_reader()
+        })->recorded_date->epoch;
     stats_gauge('correlation_matrix.age', $latest_correlation_matrix_age);
     return;
 
