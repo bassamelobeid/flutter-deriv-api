@@ -204,6 +204,7 @@ table#client_edit td{
         <td class="label">ID Authentication</td>
         [%
             authentication_options = [
+                {'value' => '', 'details' => 'Please select to update' }
                 {'value' => 'CLEAR_ALL', 'details' => 'Not authenticated' }
                 {'value' => 'ID_DOCUMENT', 'details' => 'Authenticated' }
                 {'value' => 'ID_NOTARIZED', 'details' => 'Authenticated with Notarized docs' }
