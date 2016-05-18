@@ -407,7 +407,7 @@ sub __handle {
 
             $forward_params{before_get_rpc_response}  = [@{$forward_params{before_get_rpc_response}  || []}, \&log_call_timing];
             $forward_params{after_got_rpc_response}   = [@{$forward_params{after_got_rpc_response}   || []}, \&log_call_timing_connection];
-            $forward_params{before_send_api_response} = [@{$forward_params{before_send_api_response} || []}, \&add_debug_time, \&start_timing];
+            $forward_params{before_send_api_response} = [@{$forward_params{before_send_api_response} || []}, \&add_debug_time];
             $forward_params{after_sent_api_response}  = [@{$forward_params{after_sent_api_response}  || []}, \&log_call_timing_sent];
 
             # No need return result because always do async response
