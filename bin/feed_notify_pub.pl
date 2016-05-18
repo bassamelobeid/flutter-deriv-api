@@ -42,8 +42,6 @@ sub _publish {
     my @data    = split(';', $payload);
 
     BOM::System::RedisReplicated::redis_write->publish('FEED::' . $data[0], $payload);
-    BOM::System::RedisReplicated::redis_pricer->publish('FEED::' . $data[0], $payload);
-
 }
 
 sub update_crossing_underlyings {
