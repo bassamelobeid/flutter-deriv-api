@@ -46,9 +46,9 @@ subtest 'verify_email' => sub {
 
     my $old_token = _get_token();
 
-    my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+    my $module = Test::MockModule->new('BOM::WebSocketAPI::v3::Wrapper::NewAccount');
     my $call_params;
-    $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+    $module->mock('verify_email_get_type_code', sub { $call_params = $_[1]->{call_params} });
     $t = $t->send_ok({
             json => {
                 verify_email => $email,
@@ -58,7 +58,7 @@ subtest 'verify_email' => sub {
     ok $call_params->{server_name};
     ok $call_params->{code};
     ok $call_params->{type};
-    $rpc_caller->unmock_all;
+    $module->unmock_all;
 
     # send this again to check if invalidates old one
     Cache::RedisDB->redis->flushall;
