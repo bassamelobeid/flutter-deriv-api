@@ -70,8 +70,9 @@ sub get_corporate_actions {
             my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
 
             $response->{$display_date} = {
-                type  => $name_mapper{$action->{type}},
-                value => $action->{value},
+                type     => $name_mapper{$action->{type}},
+                value    => $action->{value},
+                modifier => $action->{modifier},
             };
         }
 
