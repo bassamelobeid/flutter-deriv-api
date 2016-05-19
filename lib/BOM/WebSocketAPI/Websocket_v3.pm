@@ -237,7 +237,7 @@ my @dispatch = (
         }
     ],
     ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
-    ['portfolio', '', 1, 'read'],
+    ['portfolio',   '',                                                         1, 'read'],
     [
         'proposal_open_contract',
         '', 1, 'read',
@@ -543,7 +543,7 @@ sub rpc {
     $url .= $method;
 
     $params->{language} = $c->stash('language');
-    $params->{country}  = $c->stash('country') || $c->country_code;
+    $params->{country} = $c->stash('country') || $c->country_code;
 
     BOM::WebSocketAPI::CallingEngine::call_rpc(
         $c,
