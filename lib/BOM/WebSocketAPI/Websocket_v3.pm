@@ -25,9 +25,7 @@ use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use BOM::Database::Rose::DB;
 
 sub ok {
-    my $c      = shift;
-    my $source = 1;       # check http origin here
-    $c->stash(source => $source);
+    my $c = shift;
     return 1;
 }
 
@@ -193,10 +191,10 @@ my @dispatch = (
     ['landing_company_details', '', 0],
     ['get_corporate_actions', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::get_corporate_actions, 0],
 
-    ['balance', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance, 1, 'read'],
-    ['statement',          '', 1, 'read',     {stash_params => [qw/ source /]}],
-    ['profit_table',       '', 1, 'read',     {stash_params => [qw/ source /]}],
-    ['get_account_status', '', 1, 'read'],
+    ['balance',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance, 1, 'read'],
+    ['statement',          '',                                                  1, 'read'],
+    ['profit_table',       '',                                                  1, 'read'],
+    ['get_account_status', '',                                                  1, 'read'],
     ['change_password',    '', 1, 'admin',    {stash_params => [qw/ token_type client_ip /]}],
     ['get_settings',       '', 1, 'read'],
     ['set_settings',       '', 1, 'admin',    {stash_params => [qw/ server_name client_ip user_agent /]}],
@@ -496,7 +494,8 @@ sub rpc {
     $url .= $method;
 
     $params->{language} = $c->stash('language');
-    $params->{country} = $c->stash('country') || $c->country_code;
+    $params->{country}  = $c->stash('country') || $c->country_code;
+    $params->{source}   = $c->stash('source');
 
     BOM::WebSocketAPI::CallingEngine::call_rpc(
         $c,
