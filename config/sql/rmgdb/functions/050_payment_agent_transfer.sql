@@ -54,6 +54,7 @@ CREATE OR REPLACE FUNCTION payment.local_payment_account_transfer(
         p_to_staff_loginid    VARCHAR(12),
         p_from_remark         VARCHAR(800),
         p_to_remark           VARCHAR(800),
+        p_source              BIGINT,
         p_limits              JSON,
     OUT v_from_payment        payment.payment,
     OUT v_to_payment          payment.payment,
@@ -94,9 +95,9 @@ BEGIN
             'internal_transfer', 'OK', p_from_staff_loginid, p_from_remark)
     RETURNING * INTO v_from_payment;
 
-    INSERT INTO transaction.transaction (payment_id, account_id, amount, staff_loginid,
+    INSERT INTO transaction.transaction (payment_id, account_id, amount, staff_loginid, source
                                          referrer_type, action_type, quantity)
-    VALUES (v_from_payment.id, v_from_account.id, -p_amount, p_from_staff_loginid,
+    VALUES (v_from_payment.id, v_from_account.id, -p_amount, p_from_staff_loginid, p_source
             'payment', 'withdrawal', 1)
     RETURNING * INTO v_from_trans;
 
@@ -107,9 +108,9 @@ BEGIN
             'internal_transfer', 'OK', p_to_staff_loginid, p_to_remark)
     RETURNING * INTO v_to_payment;
 
-    INSERT INTO transaction.transaction (payment_id, account_id, amount, staff_loginid,
+    INSERT INTO transaction.transaction (payment_id, account_id, amount, staff_loginid, source
                                          referrer_type, action_type, quantity)
-    VALUES (v_to_payment.id, v_to_account.id, p_amount, p_to_staff_loginid,
+    VALUES (v_to_payment.id, v_to_account.id, p_amount, p_to_staff_loginid, p_source
             'payment', 'deposit', 1)
     RETURNING * INTO v_to_trans;
 
@@ -138,6 +139,7 @@ CREATE OR REPLACE FUNCTION payment.payment_account_transfer(
         p_to_staff_loginid    VARCHAR(12),
         p_from_remark         VARCHAR(800),
         p_to_remark           VARCHAR(800),
+        p_source              BIGINT,
         p_limits              JSON,
     OUT v_from_payment        payment.payment,
     OUT v_to_payment          payment.payment,
@@ -158,6 +160,7 @@ BEGIN
                                                   p_to_staff_loginid,
                                                   p_from_remark,
                                                   p_to_remark,
+                                                  p_source,
                                                   p_limits);
 END
 $def$ LANGUAGE plpgsql VOLATILE SECURITY definer SET log_min_messages = LOG;
