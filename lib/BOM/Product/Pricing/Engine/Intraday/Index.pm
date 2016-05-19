@@ -5,7 +5,6 @@ extends 'BOM::Product::Pricing::Engine::Intraday';
 
 use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
-use BOM::Utility::ErrorStrings qw( format_error_string );
 
 =head2 probability
 

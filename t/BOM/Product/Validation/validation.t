@@ -265,7 +265,7 @@ subtest 'invalid bet payout hobbling around' => sub {
 
     my $bet = produce_contract($bet_params);
 
-    my $expected_reasons = [qr/stake.*is not within limits/];
+    my $expected_reasons = [qr/payout amount outside acceptable range.*/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{amount} = 0.75;
