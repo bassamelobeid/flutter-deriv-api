@@ -336,20 +336,14 @@ subtest 'invalid contract stake evokes sympathy' => sub {
 
     $bet = produce_contract($bet_params);
     my $lookback_time = Date::Utility->new($starting - $bet->timeinyears->amount * 86400 * 365);
-    my $date          = DateTime->new(
-        year   => $lookback_time->year,
-        month  => $lookback_time->month,
-        day    => $lookback_time->day_of_month,
-        hour   => $lookback_time->hour,
-        minute => $lookback_time->minute,
-        second => $lookback_time->second
-    );
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch => $date->epoch,
-        quote => 100.012,
-        bid   => 100.015,
-        ask   => 100.021
-    });
+    for (my $i = $lookback_time->epoch; $i < $bet->date_expiry->epoch; $i+=2) {
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            epoch => $i,
+            quote => 100.012,
+            bid   => 100.015,
+            ask   => 100.021
+        });
+    }
     ok $bet->is_valid_to_buy, 'valid to buy';
     is $bet->theo_probability->amount, 0.1, 'theo floored at 0.1';
 
