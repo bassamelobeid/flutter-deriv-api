@@ -212,7 +212,7 @@ table#client_edit td{
         %]
         <td id="verification">:
                 Current methods:(
-                    [% IF  client.get_authentication('ID_DOCUMENT').status == 'pass' %]Authenticated,[% END %]
+                    [% IF  client.get_authentication('ID_DOCUMENT').status == 'pass' %]Authenticated with scans,[% END %]
                     [% IF  client.get_authentication('ID_NOTARIZED').status == 'pass' %]Authenticated with Notarized docs[% END %]
                 ) <br>
             <select name="client_authentication">
