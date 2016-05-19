@@ -463,16 +463,14 @@ sub _failed_key_value {
         return;
     } elsif (
         $key !~ /^[A-Za-z0-9_-]{1,50}$/
-        # do not allow null
-        or not defined($value)
         # !-~ to allow a range of acceptable characters. To find what is the range, look at ascii table
 
         # please don't remove: \p{Script=Common}\p{L}
         # \p{L} is to match utf-8 characters
         # \p{Script=Common} is to match double byte characters in Japanese keyboards, eg: '１−１−１'
         # refer: http://perldoc.perl.org/perlunicode.html
-        or $value !~ /^[\p{Script=Common}\p{L}\s\w\@_:!-~]{0,300}$/
-        )
+        # null-values are allowed
+        or ($value and $value !~ /^[\p{Script=Common}\p{L}\s\w\@_:!-~]{0,300}$/))
     {
         return ($key, $value);
     }
