@@ -225,20 +225,15 @@ sub _build_intraday_trend {
     my $bet              = $self->bet;
     my $duration_in_secs = $bet->timeindays->amount * 86400;
 
-    my @ticks    = @{$self->ticks_for_trend};
-    my $average  = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->pricing_args->{spot};
+    my @ticks = @{$self->ticks_for_trend};
+    # if there's no ticks for trend calculation, it will fail volatility validation.
+    my $average = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->pricing_args->{spot};
     my $avg_spot = Math::Util::CalculatedValue::Validatable->new({
         name        => 'average_spot',
         description => 'mean of spot over 2 * duration of the contract',
         set_by      => __PACKAGE__,
         base_amount => $average,
     });
-    if (!@ticks) {
-        $avg_spot->add_errors({
-            message           => 'No ticks retrieved to determine trend.',
-            message_to_client => localize('Missing market data.'),
-        });
-    }
 
     my $trend            = (($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($duration_in_secs);
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
