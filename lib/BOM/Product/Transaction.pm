@@ -1072,11 +1072,7 @@ sub _validate_sell_pricing_adjustment {
     my $move              = $recomputed - $requested;
     my $commission_markup = 0;
     if (not $contract->is_expired) {
-        if ($contract->new_interface_engine) {
-            $commission_markup = $contract->pricing_engine->commission_markup;
-        } else {
-            $commission_markup = $contract->bid_probability->peek_amount('commission_markup') || 0;
-        }
+        $commission_markup = $contract->bid_probability->peek_amount('commission_markup') || 0;
     }
     my $allowed_move = $commission_markup * 0.8;
     $allowed_move = 0 if $recomputed == 1;
@@ -1141,11 +1137,7 @@ sub _validate_trade_pricing_adjustment {
     my $move              = $requested - $recomputed;
     my $commission_markup = 0;
     if (not $contract->is_expired) {
-        if ($contract->new_interface_engine) {
-            $commission_markup = $contract->pricing_engine->commission_markup;
-        } else {
-            $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
-        }
+        $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
     }
     my $allowed_move = ($self->contract->category->code eq 'digits') ? $commission_markup : ($commission_markup * 0.5);
     $allowed_move = 0 if $recomputed == 1;
@@ -1372,7 +1364,7 @@ sub _validate_stake_limit {
     my $stake_limit =
         $landing_company->short eq 'maltainvest'
         ? BOM::Platform::Static::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{$currency}
-        : $contract->staking_limits->{stake}->{min};
+        : $contract->staking_limits->{min};    # minimum is always a stake check
 
     if ($contract->ask_price < $stake_limit) {
         return Error::Base->cuss(
