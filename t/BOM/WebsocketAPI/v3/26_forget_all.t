@@ -26,7 +26,7 @@ my $populator  = BOM::Feed::Populator::InsertTicks->new({
 });
 
 my $fh;
-# Just to insert dummy tick 
+# Just to insert dummy tick
 open($fh, "<", "/home/git/regentmarkets/bom-test/feed/combined/frxUSDJPY/13-Apr-12.fullfeed") or die $!;
 my @ticks = <$fh>;
 close $fh;
@@ -47,7 +47,7 @@ is $res->{error}->{code}, 'AlreadySubscribed', 'Already subscribed for tick';
 $t->send_ok({json => {forget_all => 'ticks'}});
 $t = $t->message_ok;
 my $m = JSON::from_json($t->message->[1]);
-ok $m->{forget_all} , "Manage to forget_all: ticks" or diag explain $m;
+ok $m->{forget_all}, "Manage to forget_all: ticks" or diag explain $m;
 is scalar(@{$m->{forget_all}}), 1, "Forget the relevant tick channel";
 test_schema('forget_all', $m);
 
@@ -77,7 +77,7 @@ is $res->{error}->{code}, 'AlreadySubscribed', 'Already subscribed for candles';
 $t->send_ok({json => {forget_all => 'candles'}});
 $t = $t->message_ok;
 $m = JSON::from_json($t->message->[1]);
-ok $m->{forget_all}, "Manage to forget_all: candles"  or diag explain $m;
+ok $m->{forget_all}, "Manage to forget_all: candles" or diag explain $m;
 is scalar(@{$m->{forget_all}}), 1, "Forget the relevant candle feed channel";
 test_schema('forget_all', $m);
 $t->send_ok({
@@ -90,6 +90,6 @@ $t->send_ok({
             subscribe     => 1
         }})->message_ok;
 $m = JSON::from_json($t->message->[1]);
-ok $m->{candles}, "Manage to get candles"  or diag explain $m;
+ok $m->{candles}, "Manage to get candles" or diag explain $m;
 $t->finish_ok;
 done_testing();
