@@ -13,7 +13,7 @@ use BOM::Platform::Client;
 my $login_id = 'CR0022';
 
 subtest "Client load and saving." => sub {
-    plan tests => 42;
+    plan tests => 43;
     # create client object
     my $client;
     lives_ok { $client = BOM::Platform::Client->new({'loginid' => $login_id}); }
