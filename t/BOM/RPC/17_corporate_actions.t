@@ -115,6 +115,10 @@ subtest 'get_corporate_actions_one_action' => sub {
 
     cmp_ok $value, '==', 1.25, 'value for this  corporate action';
 
+    my $modifier = $result->{'28-Mar-2013'}->{modifier};
+
+    cmp_ok $modifier, 'eq', 'divide', 'modifier for this  corporate action';
+
     #Test for error case.
     my $params_err = {
         symbol => 'USAAPL',
