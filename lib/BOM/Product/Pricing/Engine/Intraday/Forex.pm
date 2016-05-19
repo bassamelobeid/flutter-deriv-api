@@ -115,11 +115,13 @@ sub _build_probability {
     my $min_prob = 0.1;
     if ($ifx_prob->amount < $min_prob) {
         $ifx_prob->add_errors({
-                message => 'Theo probability below the minimum acceptable '.
-                    "[probability: ".$ifx_prob->amount."] ".
-                    "[min: ".$min_prob."]",
-                message_to_client => localize('Barrier outside acceptable range.'),
-            });
+            message => 'Theo probability below the minimum acceptable '
+                . "[probability: "
+                . $ifx_prob->amount . "] "
+                . "[min: "
+                . $min_prob . "]",
+            message_to_client => localize('Barrier outside acceptable range.'),
+        });
     }
 
     return $ifx_prob;

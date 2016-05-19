@@ -48,9 +48,7 @@ sub _build_probability {
         my @range     = ($sentiment eq 'under') ? (1, 9) : (0, 8);    # Can only happen for over/under
         $prob_cv->add_errors({
                 severity => 100,
-                message  => 'No winning digits '.
-                    "[code: ".$contract->code."] ".
-                    "[selection: ".$contract->barrier->as_absolute."]",
+                message  => 'No winning digits ' . "[code: " . $contract->code . "] " . "[selection: " . $contract->barrier->as_absolute . "]",
                 message_to_client => localize('Digit must be in the range of [_1] to [_2].', @range)});
     }
 

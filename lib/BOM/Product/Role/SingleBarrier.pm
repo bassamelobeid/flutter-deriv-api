@@ -48,18 +48,23 @@ sub _validate_barrier {
     my $abs_barrier = (defined $barrier) ? $barrier->as_absolute : undef;
     if ($abs_barrier and $current_spot and ($abs_barrier > $max_move * $current_spot or $abs_barrier < $min_move * $current_spot)) {
         return {
-            message => 'Barrier too far from spot '.
-                "[move: ".($abs_barrier / $current_spot)."] ".
-                "[min: ".$min_move."] ".
-                "[max: ".$max_move."]",
+            message => 'Barrier too far from spot '
+                . "[move: "
+                . ($abs_barrier / $current_spot) . "] "
+                . "[min: "
+                . $min_move . "] "
+                . "[max: "
+                . $max_move . "]",
             severity          => 91,
             message_to_client => localize('Barrier is out of acceptable range.'),
         };
     } elsif ($self->is_path_dependent and abs($pip_move) < $self->minimum_allowable_move) {
         return {
-            message => 'Relative barrier path dependent move below minimum '.
-                "[min: ".$self->minimum_allowable_move."] ".
-                "[actual: ".$pip_move."]",
+            message => 'Relative barrier path dependent move below minimum '
+                . "[min: "
+                . $self->minimum_allowable_move . "] "
+                . "[actual: "
+                . $pip_move . "]",
             severity          => 1,
             message_to_client => localize('Barrier must be at least ' . $self->minimum_allowable_move . ' pips away from the spot.'),
         };
