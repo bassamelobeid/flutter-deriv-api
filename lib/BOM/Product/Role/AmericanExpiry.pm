@@ -3,7 +3,6 @@ package BOM::Product::Role::AmericanExpiry;
 use Moose::Role;
 
 use BOM::Platform::Context qw(localize);
-use BOM::Utility::ErrorStrings qw( format_error_string );
 
 sub _build_is_expired {
     my $self = shift;

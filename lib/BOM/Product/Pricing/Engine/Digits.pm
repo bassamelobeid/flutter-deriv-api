@@ -4,7 +4,6 @@ use Moose;
 extends 'BOM::Product::Pricing::Engine';
 
 use BOM::Platform::Context qw(localize);
-use BOM::Utility::ErrorStrings qw( format_error_string );
 
 use List::Util qw(first min max);
 use Math::Util::CalculatedValue::Validatable;

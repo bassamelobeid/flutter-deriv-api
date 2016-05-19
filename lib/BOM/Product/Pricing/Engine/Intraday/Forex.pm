@@ -10,7 +10,6 @@ use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
-use BOM::Utility::ErrorStrings qw( format_error_string );
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
