@@ -45,29 +45,6 @@ sub buy {
     return;
 }
 
-sub sell {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c, 'sell',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('sell', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type => 'sell',
-                    sell     => $response,
-                };
-            }
-        },
-        {
-            args   => $args,
-            token  => $c->stash('token'),
-            source => $c->stash('source')});
-    return;
-}
-
 sub transaction {
     my ($c, $args) = @_;
 

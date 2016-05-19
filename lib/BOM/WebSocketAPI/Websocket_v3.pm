@@ -224,10 +224,10 @@ my @dispatch = (
     ['reset_password',      '', 0],
 
     # authenticated calls
-    ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1, 'trade'],
+    ['sell',        '',                                                         1, 'trade', {stash_params => [qw/ source /]}],
     ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1, 'trade'],
     ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
-    ['portfolio', '', 1, 'read', {stash_params => [qw/ source /]}],
+    ['portfolio',   '',                                                         1, 'read',  {stash_params => [qw/ source /]}],
     [
         'proposal_open_contract',
         '', 1, 'read',
