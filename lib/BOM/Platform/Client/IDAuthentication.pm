@@ -100,7 +100,7 @@ sub _do_proveid {
         $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION', 'could only get enough score for age verification.');
     }
     # no verifications => unwelcome client
-    elsif ($prove_id_result->{num_verifications} eq 0) {
+    elsif (exists $prove_id_result->{num_verifications} and $prove_id_result->{num_verifications} eq 0) {
         $set_status->('unwelcome', 'PROVE ID INDICATES NO VERIFICATIONS', 'proveid indicates no verifications');
     }
     # failed to authenticate
