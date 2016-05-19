@@ -418,9 +418,10 @@ sub __handle {
                 %forward_params = %{$descriptor->{forward_params}};
             }
 
+            $forward_params{before_call}              = [@{$forward_params{before_call}              || []}, \&start_timing];
             $forward_params{before_get_rpc_response}  = [@{$forward_params{before_get_rpc_response}  || []}, \&log_call_timing];
             $forward_params{after_got_rpc_response}   = [@{$forward_params{after_got_rpc_response}   || []}, \&log_call_timing_connection];
-            $forward_params{before_send_api_response} = [@{$forward_params{before_send_api_response} || []}, \&add_debug_time];
+            $forward_params{before_send_api_response} = [@{$forward_params{before_send_api_response} || []}, \&add_debug_time, \&start_timing];
             $forward_params{after_sent_api_response}  = [@{$forward_params{after_sent_api_response}  || []}, \&log_call_timing_sent];
 
             # No need return result because always do async response
@@ -505,10 +506,10 @@ sub rpc {
             url                      => $url,
             call_params              => $params,
             rpc_response_cb          => $rpc_response_cb,
-            before_call              => [],
+            before_call              => [\&start_timing],
             before_get_rpc_response  => [\&log_call_timing],
             after_got_rpc_response   => [\&log_call_timing_connection],
-            before_send_api_response => [\&add_debug_time],
+            before_send_api_response => [\&add_debug_time, \&start_timing],
             after_sent_api_response  => [\&log_call_timing_sent],
         },
     );
@@ -544,34 +545,40 @@ sub _sanity_failed {
     return;
 }
 
+sub start_timing {
+    my ($c, $params) = @_;
+    $params->{tv} = [Time::HiRes::gettimeofday];
+    return;
+}
+
 sub log_call_timing {
-    my ($c, $params, $t0) = @_;
+    my ($c, $params) = @_;
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing',
-        1000 * Time::HiRes::tv_interval($t0),
+        1000 * Time::HiRes::tv_interval($params->{tv}),
         {tags => ["rpc:$params->{method}"]});
     DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$params->{method}"]});
     return;
 }
 
 sub log_call_timing_connection {
-    my ($c, $params, $rpc_response, $t0) = @_;
+    my ($c, $params, $rpc_response) = @_;
     if (ref($rpc_response->result) eq "HASH"
         && (my $rpc_time = delete $rpc_response->result->{rpc_time}))
     {
         DataDog::DogStatsd::Helper::stats_timing(
             'bom_websocket_api.v_3.rpc.call.timing.connection',
-            1000 * Time::HiRes::tv_interval($t0) - $rpc_time,
+            1000 * Time::HiRes::tv_interval($params->{tv}) - $rpc_time,
             {tags => ["rpc:$params->{method}"]});
     }
     return;
 }
 
 sub add_debug_time {
-    my ($c, $params, $api_response, $t0) = @_;
+    my ($c, $params, $api_response) = @_;
     if ($c->stash('debug')) {
         $api_response->{debug} = {
-            time   => 1000 * Time::HiRes::tv_interval($t0),
+            time   => 1000 * Time::HiRes::tv_interval($params->{tv}),
             method => $params->{method},
         };
     }
@@ -579,10 +586,10 @@ sub add_debug_time {
 }
 
 sub log_call_timing_sent {
-    my ($c, $params, $t1) = @_;
+    my ($c, $params) = @_;
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing.sent',
-        1000 * Time::HiRes::tv_interval($t1),
+        1000 * Time::HiRes::tv_interval($params->{tv}),
         {tags => ["rpc:$params->{method}"]});
     return;
 }
