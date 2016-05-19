@@ -324,6 +324,7 @@ sub _reached_limit_check {
     return;
 }
 
+# Set JSON Schema default values for fields which are missing and have default.
 sub _set_defaults {
     my ($validator, $args) = @_;
 
