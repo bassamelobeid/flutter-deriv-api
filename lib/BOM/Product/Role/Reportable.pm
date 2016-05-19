@@ -6,7 +6,6 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::Database::Model::Constants;
 use BOM::System::Config;
-use BOM::Utility::ErrorStrings qw( normalize_error_string );
 
 my @bool_attrs = qw(is_intraday is_forward_starting is_atm_bet is_spread);
 
@@ -32,7 +31,11 @@ sub _report_validation_stats {
         stats_inc($stats_name . 'success', $tags);
     } else {
         # We can be a tiny bit slower here as we're already reporting an error
-        push @{$tags->{tags}}, 'reason:' . normalize_error_string($self->primary_validation_error->message);
+        my $error = $self->primary_validation_error->message;
+        $error =~ s/(?<=[^A-Z])([A-Z])/ $1/g;    # camelCase to words
+        $error =~ s/\[[^\]]+\]//g;               # Bits between [] should be dynamic
+        $error = join('_', split /\s+/, lc $error);
+        push @{$tags->{tags}}, 'reason:' . $error;
         stats_inc($stats_name . 'failure', $tags);
     }
 

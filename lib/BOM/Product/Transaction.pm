@@ -20,7 +20,6 @@ use BOM::Platform::Client;
 use BOM::System::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Platform::CurrencyConverter qw(in_USD amount_from_to_currency);
-use BOM::Utility::ErrorStrings qw( normalize_error_string );
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -230,7 +229,11 @@ sub _normalize_error {
         }
     }
 
-    return normalize_error_string($error);
+    $error =~ s/(?<=[^A-Z])([A-Z])/ $1/g;    # camelCase to words
+    $error =~ s/\[[^\]]+\]//g;               # Bits between [] should be dynamic
+    $error = join('_', split /\s+/, lc $error);
+
+    return $error;
 }
 
 sub stats_stop {
