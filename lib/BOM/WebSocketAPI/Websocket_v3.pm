@@ -577,10 +577,10 @@ sub add_debug_time {
 }
 
 sub log_call_timing_sent {
-    my ($c, $params, $t0) = @_;
+    my ($c, $params, $t1) = @_;
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing.sent',
-        1000 * Time::HiRes::tv_interval($t0),
+        1000 * Time::HiRes::tv_interval($t1),
         {tags => ["rpc:$params->{method}"]});
     return;
 }
