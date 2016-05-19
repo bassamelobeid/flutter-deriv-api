@@ -182,5 +182,4 @@ sub _price_stream_results_adjustment {
     return $results;
 }
 
-
 1;
