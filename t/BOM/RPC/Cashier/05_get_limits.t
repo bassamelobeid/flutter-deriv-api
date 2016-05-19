@@ -90,7 +90,7 @@ subtest 'CR' => sub {
     };
 
     subtest 'authenticated' => sub {
-        $client->set_authentication('ID_192')->status('pass');
+        $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
             'account_balance'   => $client->get_limit_for_account_balance,
@@ -170,7 +170,7 @@ subtest 'JP' => sub {
     };
 
     subtest 'authenticated' => sub {
-        $client->set_authentication('ID_192')->status('pass');
+        $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
             'account_balance'   => $client->get_limit_for_account_balance,
@@ -236,7 +236,7 @@ subtest 'MLT' => sub {
     };
 
     subtest 'authenticated' => sub {
-        $client->set_authentication('ID_192')->status('pass');
+        $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
             'account_balance'   => $client->get_limit_for_account_balance,
@@ -302,7 +302,7 @@ subtest 'MX' => sub {
     };
 
     subtest 'authenticated' => sub {
-        $client->set_authentication('ID_192')->status('pass');
+        $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         my $expected_result = {
             'account_balance'   => $client->get_limit_for_account_balance,
