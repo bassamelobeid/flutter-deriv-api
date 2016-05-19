@@ -325,7 +325,8 @@ sub _reached_limit_check {
 }
 
 sub _set_defaults {
-    my ($c, $validator, $args) = @_;
+    my ($validator, $args) = @_;
+
     my $properties = $validator->{in_validator}->schema->{properties};
 
     foreach my $k (keys %$properties) {
