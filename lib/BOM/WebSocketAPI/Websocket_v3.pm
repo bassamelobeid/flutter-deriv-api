@@ -324,6 +324,17 @@ sub _reached_limit_check {
     return;
 }
 
+sub _set_defaults {
+    my ($validator, $args) = @_;
+
+    my $properties = $validator->{in_validator}->schema->{properties};
+
+    foreach my $k (keys %$properties) {
+        $args->{$k} = $properties->{$k}->{default} if not exists $args->{$k} and $properties->{$k}->{default};
+    }
+    return;
+}
+
 sub __handle {
     my ($c, $p1, $tag) = @_;
 
@@ -364,6 +375,8 @@ sub __handle {
             my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
             return $c->new_error($descriptor->{category}, 'InputValidationFailed', $message, $details);
         }
+
+        _set_defaults($descriptor, $p1);
 
         DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $descriptor->{category}, {tags => [$tag]});
         DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
