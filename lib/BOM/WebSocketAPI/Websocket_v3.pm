@@ -327,8 +327,8 @@ sub _reached_limit_check {
 sub _set_defaults {
     my ($descriptor, $args) = @_;
 
-    $method     = $validator->schema->{category};
-    $properties = $validator->schema->{properties}->{$method}->{properties};
+    my $method     = $validator->schema->{category};
+    my $properties = $validator->schema->{properties}->{$method}->{properties};
 
     foreach my $k (keys @$properties) {
         $args->{$k} = $properties->{$k}->{default} if not exists $args->{$k} and $properties->{$k}->{default};
