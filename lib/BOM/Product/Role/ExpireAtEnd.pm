@@ -4,7 +4,6 @@ use Moose::Role;
 
 use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
-use BOM::Utility::ErrorStrings qw( format_error_string );
 
 sub _build_is_expired {
     my $self = shift;

@@ -10,7 +10,6 @@ use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
-use BOM::Utility::ErrorStrings qw( format_error_string );
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
@@ -112,14 +111,13 @@ sub _build_probability {
     my $min_prob = 0.1;
     if ($ifx_prob->amount < $min_prob) {
         $ifx_prob->add_errors({
-                message => format_error_string(
-                    'Theo probability below the minimum acceptable',
-                    probability => $ifx_prob->amount,
-                    min         => $min_prob
-                ),
-                ,
-                message_to_client => localize('Barrier outside acceptable range.'),
-            });
+            message => 'Theo probability below the minimum acceptable '
+                . "[probability: "
+                . $ifx_prob->amount . "] "
+                . "[min: "
+                . $min_prob . "]",
+            message_to_client => localize('Barrier outside acceptable range.'),
+        });
     }
 
     return $ifx_prob;
