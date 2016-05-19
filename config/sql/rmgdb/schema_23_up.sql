@@ -9,7 +9,8 @@ CREATE TABLE bet.daily_aggregates (
   PRIMARY KEY (day, account_id)
 );
 
-GRANT  SELECT, UPDATE, INSERT ON bet.daily_aggregates to read, write;
+GRANT  SELECT ON bet.daily_aggregates to read;
+GRANT  SELECT, UPDATE, INSERT, DELETE ON bet.daily_aggregates to write;
 
 CREATE OR REPLACE FUNCTION update_daily_aggregates() RETURNS trigger AS $$
 BEGIN
