@@ -6,8 +6,9 @@ use warnings;
 use BOM::Platform::Token::Verification;
 
 sub verify_email_get_type_code {
-    my ($c, $args, $params) = @_;
+    my ($c, $params) = @_;
 
+    my $args  = $params->{call_params}->{args};
     my $email = $args->{verify_email};
     my $type  = $args->{type};
     my $code  = BOM::Platform::Token::Verification->new({
