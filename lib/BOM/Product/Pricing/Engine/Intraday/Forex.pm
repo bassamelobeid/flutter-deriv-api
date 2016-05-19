@@ -104,7 +104,7 @@ sub _build_probability {
         name        => lc($bet->code) . '_theoretical_probability',
         description => 'BS pricing based on realized vols',
         set_by      => __PACKAGE__,
-        minimum     => 0,
+        minimum     => 0.1, # minimum of 0.1.
         maximum     => 1,
         base_amount => $self->formula->($self->_formula_args),
     });
@@ -112,19 +112,6 @@ sub _build_probability {
     $ifx_prob->include_adjustment('add',  $self->intraday_delta_correction);
     $ifx_prob->include_adjustment('add',  $self->intraday_vega_correction);
     $ifx_prob->include_adjustment('info', $self->intraday_vanilla_delta);
-
-    my $min_prob = 0.1;
-    if ($ifx_prob->amount < $min_prob) {
-        $ifx_prob->add_errors({
-                message => format_error_string(
-                    'Theo probability below the minimum acceptable',
-                    probability => $ifx_prob->amount,
-                    min         => $min_prob
-                ),
-                ,
-                message_to_client => localize('Barrier outside acceptable range.'),
-            });
-    }
 
     return $ifx_prob;
 }

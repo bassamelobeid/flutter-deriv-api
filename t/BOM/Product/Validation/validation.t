@@ -335,9 +335,6 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     $bet_params->{barrier}  = 'S8500P';
 
     $bet = produce_contract($bet_params);
-
-    $expected_reasons = [qr/Theo probability.*below the minimum acceptable/];
-
     my $lookback_time = Date::Utility->new($starting - $bet->timeinyears->amount * 86400 * 365);
     my $date          = DateTime->new(
         year   => $lookback_time->year,
@@ -353,8 +350,8 @@ subtest 'invalid contract stake evokes sympathy' => sub {
         bid   => 100.015,
         ask   => 100.021
     });
-
-    test_error_list('buy', $bet, $expected_reasons);
+    ok $bet->is_valid_to_buy, 'valid to buy';
+    is $bet->theo_probability->amount, 0.1,'theo floored at 0.1';
 
     $bet_params->{barrier} = $bet->current_spot;
 
