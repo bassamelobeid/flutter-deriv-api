@@ -14,7 +14,7 @@ use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use BOM::Platform::Runtime::Website;
 use BOM::Platform::SessionCookie;
-use BOM::Utility::Untaint;
+use BOM::Platform::Untaint;
 
 use Plack::App::CGIBin::Streaming::Request;
 
@@ -279,7 +279,7 @@ sub _build_params {
 
 sub _build_untainter {
     my $self = shift;
-    return CGI::Untaint->new({INCLUDE_PATH => 'BOM::Utility::Untaint'}, %{$self->params});
+    return CGI::Untaint->new({INCLUDE_PATH => 'BOM::Platform::Untaint'}, %{$self->params});
 }
 
 sub _build_http_method {
