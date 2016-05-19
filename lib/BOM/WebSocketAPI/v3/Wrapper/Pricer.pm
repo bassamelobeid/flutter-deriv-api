@@ -11,6 +11,7 @@ use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub price_stream {
     my ($c, $args) = @_;
@@ -60,22 +61,9 @@ sub _pricing_channel {
         return;
     }
 
-    # Contracts that don't need streaming.
-    my %skip_duration_list = map { $_ => 1 } qw(s m h);
-    my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR);
-    my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
-
-    my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
-    my $atm_contract = ($args->{contract_type} =~ /^(CALL|PUT)$/ and not $args->{barrier}) ? 1 : 0;
-    my $fixed_expiry = $args->{date_expiry} ? 1 : 0;
-    my $skip_tick_expiry =
-        ($skip_symbols and $skip_type_list{$args->{contract_type}} and $args->{duration_unit} eq 't');
-    my $skip_intraday_atm_non_fixed_expiry =
-        ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_contract and not $fixed_expiry);
-
     my $uuid = Data::UUID->new->create_str();
     # We don't stream but still return the UUID to keep it unifom.
-    if ($skip_tick_expiry or $skip_intraday_atm_non_fixed_expiry) {
+    if (BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args)) {
         return $uuid;
     }
 
