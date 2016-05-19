@@ -172,8 +172,15 @@ my @dispatch = (
             success      => \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
         },
     ],
-    ['trading_times', '',                                                             0],
-    ['asset_index',   \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index, 0],
+    ['trading_times', '', 0],
+    [
+        'asset_index',
+        '', 0, '',
+        {
+            before_forward => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
+            success        => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
+        }
+    ],
     ['active_symbols',          '',                                                        0, '', {stash_params => [qw/ token /]}],
     ['ticks',                   \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks,         0],
     ['ticks_history',           \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history, 0],
