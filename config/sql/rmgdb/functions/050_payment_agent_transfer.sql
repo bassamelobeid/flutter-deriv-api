@@ -95,9 +95,9 @@ BEGIN
             'internal_transfer', 'OK', p_from_staff_loginid, p_from_remark)
     RETURNING * INTO v_from_payment;
 
-    INSERT INTO transaction.transaction (payment_id, account_id, amount, staff_loginid, source
+    INSERT INTO transaction.transaction (payment_id, account_id, amount, staff_loginid, source,
                                          referrer_type, action_type, quantity)
-    VALUES (v_from_payment.id, v_from_account.id, -p_amount, p_from_staff_loginid, p_source
+    VALUES (v_from_payment.id, v_from_account.id, -p_amount, p_from_staff_loginid, p_source,
             'payment', 'withdrawal', 1)
     RETURNING * INTO v_from_trans;
 
@@ -108,9 +108,9 @@ BEGIN
             'internal_transfer', 'OK', p_to_staff_loginid, p_to_remark)
     RETURNING * INTO v_to_payment;
 
-    INSERT INTO transaction.transaction (payment_id, account_id, amount, staff_loginid, source
+    INSERT INTO transaction.transaction (payment_id, account_id, amount, staff_loginid, source,
                                          referrer_type, action_type, quantity)
-    VALUES (v_to_payment.id, v_to_account.id, p_amount, p_to_staff_loginid, p_source
+    VALUES (v_to_payment.id, v_to_account.id, p_amount, p_to_staff_loginid, p_source,
             'payment', 'deposit', 1)
     RETURNING * INTO v_to_trans;
 
