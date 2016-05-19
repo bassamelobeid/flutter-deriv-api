@@ -111,7 +111,6 @@ is $corporate_actions->{msg_type}, 'get_corporate_actions';
 
 $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
 $t = $t->send_ok({json => {portfolio => 1}})->message_ok;
-ok $call_params->{source};
 is $call_params->{token}, $token;
 $rpc_caller->unmock_all;
 
@@ -146,7 +145,6 @@ $t = $t->send_ok({
         },
     })->message_ok;
 is $call_params->{token}, $token;
-ok $call_params->{source};
 ok $call_params->{contract_parameters};
 $rpc_caller->unmock_all;
 
@@ -184,7 +182,6 @@ $t = $t->send_ok({
         },
     })->message_ok;
 is $call_params->{token}, $token;
-ok $call_params->{source};
 $rpc_caller->unmock_all;
 
 $t->finish_ok;

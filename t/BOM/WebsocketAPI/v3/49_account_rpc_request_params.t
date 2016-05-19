@@ -61,7 +61,6 @@ $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'statement');
 ok(ref $res->{statement});
 is $call_params->{token}, $token;
-ok $call_params->{source};
 
 $t = $t->send_ok({
         json => {
@@ -72,7 +71,6 @@ $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'profit_table');
 ok(ref $res->{profit_table});
 is $call_params->{token}, $token;
-ok $call_params->{source};
 
 $t = $t->send_ok({
         json => {

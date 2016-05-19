@@ -25,9 +25,7 @@ use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use BOM::Database::Rose::DB;
 
 sub ok {
-    my $c      = shift;
-    my $source = 1;       # check http origin here
-    $c->stash(source => $source);
+    my $c = shift;
     return 1;
 }
 
@@ -200,10 +198,10 @@ my @dispatch = (
     ['landing_company_details', '',                                                        0],
     ['get_corporate_actions',   '',                                                        0],
 
-    ['balance', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance, 1, 'read'],
-    ['statement',          '', 1, 'read',     {stash_params => [qw/ source /]}],
-    ['profit_table',       '', 1, 'read',     {stash_params => [qw/ source /]}],
-    ['get_account_status', '', 1, 'read'],
+    ['balance',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance, 1, 'read'],
+    ['statement',          '',                                                  1, 'read'],
+    ['profit_table',       '',                                                  1, 'read'],
+    ['get_account_status', '',                                                  1, 'read'],
     ['change_password',    '', 1, 'admin',    {stash_params => [qw/ token_type client_ip /]}],
     ['get_settings',       '', 1, 'read'],
     ['set_settings',       '', 1, 'admin',    {stash_params => [qw/ server_name client_ip user_agent /]}],
@@ -231,16 +229,15 @@ my @dispatch = (
     ['reset_password',      '', 0],
 
     # authenticated calls
-    ['sell', '', 1, 'trade', {stash_params => [qw/ source /]}],
+    ['sell', '', 1, 'trade'],
     [
         'buy', '', 1, 'trade',
         {
-            stash_params   => [qw/ source /],
             before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
         }
     ],
     ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
-    ['portfolio', '', 1, 'read', {stash_params => [qw/ source /]}],
+    ['portfolio', '', 1, 'read'],
     [
         'proposal_open_contract',
         '', 1, 'read',
@@ -248,7 +245,7 @@ my @dispatch = (
             rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
         }
     ],
-    ['sell_expired', '', 1, 'trade', {stash_params => [qw/ source /]}],
+    ['sell_expired', '', 1, 'trade'],
 
     ['app_register', '', 1, 'admin'],
     ['app_list',     '', 1, 'admin'],
@@ -546,7 +543,7 @@ sub rpc {
     $url .= $method;
 
     $params->{language} = $c->stash('language');
-    $params->{country} = $c->stash('country') || $c->country_code;
+    $params->{country}  = $c->stash('country') || $c->country_code;
 
     BOM::WebSocketAPI::CallingEngine::call_rpc(
         $c,
