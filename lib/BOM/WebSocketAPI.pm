@@ -93,12 +93,29 @@ sub startup {
     $app->plugin('ClientIP');
     $app->plugin('BOM::WebSocketAPI::Plugins::Helpers');
 
-    my $r = $app->routes;
 
-    for ($r->under('/websockets/v3')) {
-        $_->to('Websocket_v3#ok');
-        $_->websocket('/')->to('#entry_point');
-    }
+    $app->plugin('BOM::WebSocketAPI::Plugins::WebSocketProxy' => {
+        forward => {
+            'trading_times' => {require_auth => 0},
+        },
+        base_path => '/websockets/v3',
+    });
+
+
+    # my $r = $app->routes;
+
+    # for ($r->under('/websockets/v3')) {
+    #     $_->to('Websocket_v3#ok');
+    #     $_->websocket('/')->to('#entry_point');
+    # }
+
+
+    # my $r = $app->routes;
+
+    # for ($r->under('/websockets/v3')) {
+    #     $_->to('Dispatcher#ok', namespace => 'BOM::WebSocketAPI');
+    #     $_->websocket('/')->to('Dispatcher#forward', namespace => 'BOM::WebSocketAPI');
+    # }
 
     return;
 }
