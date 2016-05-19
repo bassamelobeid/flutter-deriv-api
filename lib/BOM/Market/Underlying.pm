@@ -241,7 +241,8 @@ has 'config' => (
 sub _build_config {
     my $self = shift;
 
-    my $asset_class = $self->submarket->asset_type eq 'currency'
+    my $asset_class =
+          $self->submarket->asset_type eq 'currency'
         ? $self->submarket->asset_type
         : $self->market->asset_type;
 
@@ -253,13 +254,13 @@ sub _build_config {
     my $default_dividend_rate = undef;
 
     $default_dividend_rate = 0 if $zero_rate{$self->submarket->name};
-    
+
     if ($self->market->name eq 'volidx') {
         my $div = Quant::Framework::Dividend->new({
-                symbol           => $self->symbol,
-                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-            });
+            symbol           => $self->symbol,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        });
         my @rates = values %{$div->rates};
         $default_dividend_rate = pop @rates;
     }
