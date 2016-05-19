@@ -1,5 +1,18 @@
 BEGIN;
 
+CREATE OR REPLACE FUNCTION insert_daily_aggregates() RETURNS trigger AS $$
+BEGIN
+  LOOP
+    BEGIN
+      INSERT INTO bet.daily_aggregates VALUES (NEW.purchase_time::date, NEW.account_id, NEW.buy_price, NEW.buy_price - coalesce(NEW.sell_price, 0));
+      RETURN new;
+    EXCEPTION WHEN unique_violation THEN
+      -- nothing
+    END;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION update_daily_aggregates() RETURNS trigger AS $$
 BEGIN
   LOOP
@@ -16,13 +29,6 @@ BEGIN
     IF FOUND THEN
       RETURN new;
     END IF;
-    
-    BEGIN
-      INSERT INTO bet.daily_aggregates VALUES (NEW.purchase_time::date, NEW.account_id, NEW.buy_price, NEW.buy_price - coalesce(NEW.sell_price, 0));
-      RETURN new;
-    EXCEPTION WHEN unique_violation THEN
-      -- nothing
-    END;
   END LOOP;
 END;
 $$ LANGUAGE plpgsql;
