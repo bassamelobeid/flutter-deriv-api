@@ -332,7 +332,7 @@ quants:
           isa: json_string
           global: 1
           default: '[{"expiry_type": "tick","start_type": "spot","category_code": "callput","market_name":"forex","risk_type": "high_risk","name": "tick_expiry_engine_turnover_limit"},{"expiry_type": "intraday","start_type": "spot","market_name": "indices","category_code": "callput","risk_type": "high_risk","name": "intraday_spot_index_turnover_limit"},{"expiry_type": "tick", "category_code": "asian","risk_type": "high_risk","name": "asian_turnover_limit"}]'
-        spreads_daily_profit:
+        spreads_turnover_limit_profile:
           description: "spreads daily profit limit"
           isa: Str
           global: 1
