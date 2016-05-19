@@ -103,7 +103,7 @@ sub _build_probability {
         name        => lc($bet->code) . '_theoretical_probability',
         description => 'BS pricing based on realized vols',
         set_by      => __PACKAGE__,
-        minimum     => 0.1,                                           # minimum of 0.1.
+        minimum     => 0.1,                                           # anything lower than 0.1, we will just sell you at 0.1.
         maximum     => 1,
         base_amount => $self->formula->($self->_formula_args),
     });
