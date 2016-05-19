@@ -544,7 +544,8 @@ sub rpc {
     $url .= $method;
 
     $params->{language} = $c->stash('language');
-    $params->{country} = $c->stash('country') || $c->country_code;
+    $params->{country}  = $c->stash('country') || $c->country_code;
+    $params->{source}   = $c->stash('source');
 
     BOM::WebSocketAPI::CallingEngine::call_rpc(
         $c,
