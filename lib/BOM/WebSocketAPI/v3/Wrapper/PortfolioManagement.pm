@@ -49,9 +49,8 @@ sub portfolio {
             }
         },
         {
-            args   => $args,
-            token  => $c->stash('token'),
-            source => $c->stash('source')});
+            args  => $args,
+            token => $c->stash('token')});
     return;
 }
 
@@ -215,9 +214,8 @@ sub sell_expired {
             }
         },
         {
-            args   => $args,
-            token  => $c->stash('token'),
-            source => $c->stash('source')});
+            args  => $args,
+            token => $c->stash('token')});
     return;
 }
 
