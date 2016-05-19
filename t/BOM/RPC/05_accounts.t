@@ -232,7 +232,7 @@ subtest $method => sub {
         'This account is unavailable.',
         'check authorization'
     );
-    is($c->tcall($method, {token => $token1})->{count},   0,   'have 0 statements if no default account');
+    is($c->tcall($method, {token => $token1})->{count}, 0, 'have 0 statements if no default account');
 
     my $contract_expired = produce_contract({
         underlying   => $underlying,
@@ -260,7 +260,7 @@ subtest $method => sub {
 
     my $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
-    is($result->{count}, 3 , "have 3 statements");
+    is($result->{count},                        3,      "have 3 statements");
     $result = $c->tcall(
         $method,
         {
