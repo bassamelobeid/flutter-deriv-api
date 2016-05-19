@@ -331,6 +331,7 @@ sub _set_defaults {
     foreach my $k (keys %$properties) {
         $args->{$k} = $properties->{$k}->{default} if not exists $args->{$k} and $properties->{$k}->{default};
     }
+    return;
 }
 
 sub __handle {
