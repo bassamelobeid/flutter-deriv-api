@@ -30,7 +30,6 @@ use Date::Utility;
 use BOM::MarketData::Fetcher::VolSurface;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use BOM::Market::Underlying;
-use BOM::Utility::Log4perl qw( get_logger );
 use Try::Tiny;
 
 use YAML::CacheLoader qw(LoadFile);
