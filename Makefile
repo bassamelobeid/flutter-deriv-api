@@ -1,8 +1,8 @@
 v3_1:
-	prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{0,1,2,3,4}*
+	bash -c 'prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{0,1,2,3,4}*'
 
 v3_2:
-	prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{5,6,7,8,9}*
+	bash -c 'prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{5,6,7,8,9}*'
 
 structure:
 	prove --timer -I./lib  -I./t t/BOM/*.t
