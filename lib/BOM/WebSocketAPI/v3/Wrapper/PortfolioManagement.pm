@@ -12,9 +12,6 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 sub proposal_open_contract {
     my ($c, $args, $response) = @_;
 
-use Data::Dumper;
-print Dumper {here => 1, response => $response};
-
     if (exists $response->{error}) {
         return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
