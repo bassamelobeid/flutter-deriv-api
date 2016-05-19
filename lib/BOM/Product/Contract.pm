@@ -2153,7 +2153,7 @@ sub _validate_offerings {
             my %reversed = reverse %$condition;
             if (all { $reversed{$self->$_} } values %reversed) {
                 return {
-                    message           => format_error_string('manually disabled by quants'),
+                    message           => 'manually disabled by quants',
                     message_to_client => localize('Trading is suspended at the moment.'),
                 };
             }
