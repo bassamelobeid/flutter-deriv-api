@@ -183,7 +183,7 @@ sub get_settings_by_group {
                 quants.client_limits.submarket_limits
                 quants.client_limits.underlying_limits
                 quants.client_limits.custom_limits
-                quants.client_limits.spreads_daily_profit
+                quants.client_limits.spreads_turnover_limit_profile
 
                 quants.custom_suspend_trading_conditions
 
