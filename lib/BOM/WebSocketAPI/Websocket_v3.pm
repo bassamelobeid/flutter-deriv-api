@@ -224,10 +224,16 @@ my @dispatch = (
     ['reset_password',      '', 0],
 
     # authenticated calls
-    ['sell',        '',                                                         1, 'trade', {stash_params => [qw/ source /]}],
-    ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1, 'trade'],
+    ['sell', '', 1, 'trade', {stash_params => [qw/ source /]}],
+    [
+        'buy', '', 1, 'trade',
+        {
+            stash_params   => [qw/ source /],
+            before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
+        }
+    ],
     ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
-    ['portfolio',   '',                                                         1, 'read',  {stash_params => [qw/ source /]}],
+    ['portfolio', '', 1, 'read', {stash_params => [qw/ source /]}],
     [
         'proposal_open_contract',
         '', 1, 'read',
@@ -449,19 +455,25 @@ sub __handle {
                 %forward_params = %{$descriptor->{forward_params}};
             }
 
-            $forward_params{before_call}              = [@{$forward_params{before_call}              || []}, \&start_timing];
-            $forward_params{before_get_rpc_response}  = [@{$forward_params{before_get_rpc_response}  || []}, \&log_call_timing];
-            $forward_params{after_got_rpc_response}   = [@{$forward_params{after_got_rpc_response}   || []}, \&log_call_timing_connection];
-            $forward_params{before_send_api_response} = [@{$forward_params{before_send_api_response} || []}, \&add_debug_time, \&start_timing];
-            $forward_params{after_sent_api_response}  = [@{$forward_params{after_sent_api_response}  || []}, \&log_call_timing_sent];
+            # Don't forward call to RPC if there is result
+            my $before_forward = delete $forward_params{before_forward};
+            $result = $before_forward->($c, $p1, \%forward_params) if $before_forward;
 
-            # No need return result because always do async response
-            BOM::WebSocketAPI::CallingEngine::forward(
-                $c, $url, $method, $p1,
-                {
-                    require_auth => $descriptor->{require_auth},
-                    %forward_params,
-                });
+            unless ($result) {
+                $forward_params{before_call}              = [@{$forward_params{before_call}              || []}, \&start_timing];
+                $forward_params{before_get_rpc_response}  = [@{$forward_params{before_get_rpc_response}  || []}, \&log_call_timing];
+                $forward_params{after_got_rpc_response}   = [@{$forward_params{after_got_rpc_response}   || []}, \&log_call_timing_connection];
+                $forward_params{before_send_api_response} = [@{$forward_params{before_send_api_response} || []}, \&add_debug_time, \&start_timing];
+                $forward_params{after_sent_api_response}  = [@{$forward_params{after_sent_api_response}  || []}, \&log_call_timing_sent];
+
+                # No need return result because always do async response
+                BOM::WebSocketAPI::CallingEngine::forward(
+                    $c, $url, $method, $p1,
+                    {
+                        require_auth => $descriptor->{require_auth},
+                        %forward_params,
+                    });
+            }
         }
 
         if ($result) {
