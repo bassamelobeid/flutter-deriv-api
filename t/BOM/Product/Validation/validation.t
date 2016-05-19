@@ -347,14 +347,6 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     ok $bet->is_valid_to_buy, 'valid to buy';
     is $bet->theo_probability->amount, 0.1, 'theo floored at 0.1';
 
-    $bet_params->{barrier} = $bet->current_spot;
-
-    $bet = produce_contract($bet_params);
-
-    $expected_reasons = [qr/few period.*vol/];
-    test_error_list('buy', $bet, $expected_reasons);
-    # This can't be corrected by changing parameters, so that's it.
-
     $bet_params->{duration} = '11d';
     $bet_params->{barrier}  = 'S-2P';
     $bet_params->{bet_type} = 'ONETOUCH';
