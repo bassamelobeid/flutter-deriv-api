@@ -62,8 +62,8 @@ sub _validate_barrier {
 
     if (not $valid_barriers{$barrier}) {
         return {
-            severity => 100,
-            message  => 'No winning digits ' . "[code: " . $self->code . "] " . "[selection: " . $barrier . "]",
+            severity          => 100,
+            message           => 'No winning digits ' . "[code: " . $self->code . "] " . "[selection: " . $barrier . "]",
             message_to_client => localize('Digit must be in the range of [_1] to [_2].', $barrier_range[0], $barrier_range[-1]),
         };
     }
