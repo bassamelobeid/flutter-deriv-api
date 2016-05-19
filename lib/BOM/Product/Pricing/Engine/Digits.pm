@@ -43,20 +43,6 @@ sub _build_probability {
         base_amount => $winning_digits / 10,
     });
 
-    if ($winning_digits == 0) {
-        my $contract  = $self->bet;
-        my $sentiment = $contract->sentiment;
-        my @range     = ($sentiment eq 'under') ? (1, 9) : (0, 8);    # Can only happen for over/under
-        $prob_cv->add_errors({
-                severity => 100,
-                message  => format_error_string(
-                    'No winning digits',
-                    code      => $contract->code,
-                    selection => $contract->barrier->as_absolute,
-                ),
-                message_to_client => localize('Digit must be in the range of [_1] to [_2].', @range)});
-    }
-
     return $prob_cv;
 }
 
