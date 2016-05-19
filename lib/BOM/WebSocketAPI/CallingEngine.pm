@@ -63,8 +63,7 @@ sub get_rpc_response_cb {
     if (my $rpc_response_cb = delete $params->{rpc_response_cb}) {
         return sub {
             my $rpc_response = shift;
-            $rpc_response_cb->($c, $args, $rpc_response);
-            return;
+            return $rpc_response_cb->($c, $args, $rpc_response);
         };
     } else {
         return sub {
