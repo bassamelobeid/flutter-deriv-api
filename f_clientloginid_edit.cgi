@@ -155,7 +155,7 @@ if ($input{whattodo} eq 'uploadID') {
         code_exit_BO();
     }
 
-    if ($doctype eq 'passport' && $expiration_date !~/\d{4}-\d{2}-\d{2}/ && ($broker_code eq 'MF'|| $broker_code eq 'MX')) {
+    if ($doctype =~ /passport|proofid|driverslicense/ && $expiration_date !~/\d{4}-\d{2}-\d{2}/) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered - </p><br />";
         code_exit_BO();
     }
@@ -391,10 +391,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
 
         if ($key eq 'client_authentication') {
-            if ($input{$key} eq 'ADDRESS' or $input{$key} eq 'ID_DOCUMENT' or $input{$key} eq 'ID_192') {
+            if ($input{$key} eq 'ID_DOCUMENT' or $input{$key} eq 'ID_NOTARIZED') {
                 $client->set_authentication($input{$key})->status('pass');
             }
-            if ($input{$key} eq 'CLEAR ALL') {
+            if ($input{$key} eq 'CLEAR_ALL') {
                 foreach my $m (@{$client->client_authentication_method}) {
                     $m->delete;
                 }
@@ -616,11 +616,13 @@ Bar("Upload new ID document");
 print qq{
 <br /><form enctype="multipart/form-data" ACTION="$self_post" method="POST">
   <select name="doctype">
-    <option value="passport">Proof of Identity</option>
-    <option value="proofaddress">Proof of Address</option>
-    <option value="notarised">Notarised Docs</option>
+    <option value="passport">Passport</option>
+    <option value="proofid">ID</option>
     <option value="driverslicense">Drivers License</option>
-                <option value="experianproveid">192 check</option>
+    <option value="proofaddress">Proof of Address</option>
+    <option value="bankstatement">Bank statement</option>
+    <option value="amlglobalcheck">AML Global Check</option>
+    <option value="docverification">Doc Verification (Autodoc)</option>
     <option value="other">Other</option>
   </select>
   <select name=docformat>
