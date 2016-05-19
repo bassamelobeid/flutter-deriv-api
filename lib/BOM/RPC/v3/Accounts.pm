@@ -1068,7 +1068,7 @@ sub reality_check {
     # count for open_contract_count
     BOM::Product::Transaction::sell_expired_contracts({
         client => $client,
-        source => $source,
+        source => $params->{source},
     });
 
     my $txn_dm = BOM::Database::DataMapper::Transaction->new({
