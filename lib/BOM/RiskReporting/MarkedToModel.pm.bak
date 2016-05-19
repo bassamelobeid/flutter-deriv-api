@@ -283,7 +283,7 @@ sub sell_expired_contracts {
                     BOM::Product::Transaction::sell_expired_contracts({
                         client       => $client,
                         contract_ids => [$fmb_id],
-                        source       => 3,           # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
+                        source       => 3,      # app id for `Binary.com riskd.pl` in auth db => oauth.apps table
                     });
 
                     stats_inc("transaction.sell.success", $stats_data->{tags});
