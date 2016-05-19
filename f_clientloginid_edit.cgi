@@ -155,7 +155,7 @@ if ($input{whattodo} eq 'uploadID') {
         code_exit_BO();
     }
 
-    if ($doctype eq 'passport' && $expiration_date !~/\d{4}-\d{2}-\d{2}/ && ($broker_code eq 'MF'|| $broker_code eq 'MX')) {
+    if ($doctype =~ /passport|proofid|driverslicense/ && $expiration_date !~/\d{4}-\d{2}-\d{2}/) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered - </p><br />";
         code_exit_BO();
     }
