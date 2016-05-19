@@ -18,7 +18,7 @@ my $oauth = BOM::Database::Model::OAuth->new;
 my $dbh   = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
-$dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
+$dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
 BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
@@ -94,7 +94,7 @@ my $get_apps = $c->call_ok(
         },
     })->has_no_system_error->result;
 
-$get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
+$get_apps = [grep { $_->{app_id} ne '1' } @$get_apps];
 is_deeply($get_apps, [$app1, $app2], 'list ok');
 
 my $delete_st = $c->call_ok(
@@ -115,7 +115,7 @@ $get_apps = $c->call_ok(
             app_list => 1,
         },
     })->has_no_system_error->result;
-$get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
+$get_apps = [grep { $_->{app_id} ne '1' } @$get_apps];
 is_deeply($get_apps, [$app1], 'delete ok');
 
 # delete again will return 0
