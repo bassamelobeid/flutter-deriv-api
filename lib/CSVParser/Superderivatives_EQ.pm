@@ -5,7 +5,7 @@ use IO::File;
 use List::Util qw(max min);
 
 use Math::Function::Interpolator;
-use BOM::MarketData::CorrelationMatrix;
+use Quant::Framework::CorrelationMatrix;
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Moneyness;
 use SetupDatasetTestFixture;
