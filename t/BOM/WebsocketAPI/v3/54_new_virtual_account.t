@@ -13,6 +13,7 @@ use RateLimitations qw (flush_all_service_consumers);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 ## do not send email
+use Test::MockObject;
 use Test::MockModule;
 my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
 $client_mocked->mock('add_note', sub { return 1 });
@@ -46,9 +47,14 @@ subtest 'verify_email' => sub {
 
     my $old_token = _get_token();
 
-    my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
+    # catch call params using fake RPC client object which calling real client object
     my $call_params;
-    $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+    my $fake_rpc_client = Test::MockObject->new();
+    my $real_rpc_client = MojoX::JSON::RPC::Client->new();
+    $fake_rpc_client->mock('call', sub { shift; $call_params = $_[1]->{params}; return $real_rpc_client->call(@_) });
+
+    my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
+    $module->mock('new', sub { return $fake_rpc_client });
     $t = $t->send_ok({
             json => {
                 verify_email => $email,
@@ -58,7 +64,7 @@ subtest 'verify_email' => sub {
     ok $call_params->{server_name};
     ok $call_params->{code};
     ok $call_params->{type};
-    $rpc_caller->unmock_all;
+    $module->unmock_all;
 
     # send this again to check if invalidates old one
     Cache::RedisDB->redis->flushall;
