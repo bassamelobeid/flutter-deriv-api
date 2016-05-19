@@ -15,9 +15,6 @@ sub forward {
 
     my $rpc_response_cb = get_rpc_response_cb($c, $args, $params);
 
-    my $before_call_hook = delete($params->{before_call}) || [];
-    $_->($c, $args, $params) for @$before_call_hook;
-
     $params->{call_params} = make_call_params($c, $args, $params);
 
     return call_rpc(
@@ -155,6 +152,7 @@ sub call_rpc {
     my $after_got_rpc_response_hook   = delete($params->{after_got_rpc_response})   || [];
     my $before_send_api_response_hook = delete($params->{before_send_api_response}) || [];
     my $after_sent_api_response_hook  = delete($params->{after_sent_api_response})  || [];
+    my $before_call_hook              = delete $params->{before_call}       || [];
 
     my $client  = MojoX::JSON::RPC::Client->new;
     my $callobj = {
@@ -163,13 +161,14 @@ sub call_rpc {
         params => $call_params,
     };
 
-    my $t0 = [Time::HiRes::gettimeofday];
+    $_->($c, $params) for @$before_call_hook;
+
     $client->call(
         $url, $callobj,
         sub {
             my $res = pop;
 
-            $_->($c, $params, $t0) for @$before_get_rpc_response_hook;
+            $_->($c, $params) for @$before_get_rpc_response_hook;
 
             # unconditionally stop any further processing if client is already disconnected
             return unless $c->tx;
@@ -189,7 +188,7 @@ sub call_rpc {
                 return;
             }
 
-            $_->($c, $params, $res, $t0) for @$after_got_rpc_response_hook;
+            $_->($c, $params, $res) for @$after_got_rpc_response_hook;
 
             if ($res->is_error) {
                 warn $res->error_message;
@@ -207,9 +206,9 @@ sub call_rpc {
             }
 
             $api_response = {%binding, %$api_response};
-            $_->($c, $params, $api_response, $t0) for @$before_send_api_response_hook;
+            $_->($c, $params, $api_response) for @$before_send_api_response_hook;
             $c->send({json => $api_response});
-            $_->($c, $params, $t0) for @$after_sent_api_response_hook;
+            $_->($c, $params) for @$after_sent_api_response_hook;
 
             return;
         });
