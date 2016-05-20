@@ -61,7 +61,7 @@ sub entry_point {
             message => sub {
                 my ($self, $msg, $channel) = @_;
 
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_pricing_events($c, $msg, $channel)
+                BOM::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel)
                     if $channel =~ /^Redis::Processor::/;
             });
         $c->stash->{redis_pricer} = $redis_pricer;
@@ -199,10 +199,19 @@ my @dispatch = (
     ['landing_company_details', '',                                                        0],
     ['get_corporate_actions',   '',                                                        0],
 
-    ['balance',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance, 1, 'read'],
-    ['statement',          '',                                                  1, 'read'],
-    ['profit_table',       '',                                                  1, 'read'],
-    ['get_account_status', '',                                                  1, 'read'],
+    [
+        'balance',
+        '', 1, 'read',
+        {
+            before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::subscribe_transaction_channel,
+            error          => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance_error_handler,
+            success        => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
+        }
+    ],
+
+    ['statement',          '', 1, 'read'],
+    ['profit_table',       '', 1, 'read'],
+    ['get_account_status', '', 1, 'read'],
     ['change_password',    '', 1, 'admin',    {stash_params => [qw/ token_type client_ip /]}],
     ['get_settings',       '', 1, 'read'],
     ['set_settings',       '', 1, 'admin',    {stash_params => [qw/ server_name client_ip user_agent /]}],
@@ -237,8 +246,8 @@ my @dispatch = (
             before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
         }
     ],
-    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
-    ['portfolio',   '',                                                         1, 'read'],
+    ['transaction', '', 1, 'read', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction}],
+    ['portfolio',   '', 1, 'read'],
     [
         'proposal_open_contract',
         '', 1, 'read',
@@ -367,6 +376,7 @@ sub _reached_limit_check {
     return;
 }
 
+# Set JSON Schema default values for fields which are missing and have default.
 sub _set_defaults {
     my ($validator, $args) = @_;
 
@@ -444,17 +454,6 @@ sub __handle {
         if (my $handler = $descriptor->{handler}) {
             $result = $handler->($c, $p1, {require_auth => $descriptor->{require_auth}});
         } else {
-            # TODO New dispatcher plugin has to do this
-            my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
-            if (BOM::System::Config::env eq 'production') {
-                if (BOM::System::Config::node->{node}->{www2}) {
-                    $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
-                } else {
-                    $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
-                }
-            }
-
-            my $method = $descriptor->{category};
             my %forward_params;
             if (ref $descriptor->{forward_params} eq 'HASH') {
                 %forward_params = %{$descriptor->{forward_params}};
@@ -465,6 +464,16 @@ sub __handle {
             $result = $before_forward->($c, $p1, \%forward_params) if $before_forward;
 
             unless ($result) {
+                # TODO New dispatcher plugin has to do this
+                my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
+                if (BOM::System::Config::env eq 'production') {
+                    if (BOM::System::Config::node->{node}->{www2}) {
+                        $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
+                    } else {
+                        $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
+                    }
+                }
+
                 $forward_params{before_call}              = [@{$forward_params{before_call}              || []}, \&start_timing];
                 $forward_params{before_get_rpc_response}  = [@{$forward_params{before_get_rpc_response}  || []}, \&log_call_timing];
                 $forward_params{after_got_rpc_response}   = [@{$forward_params{after_got_rpc_response}   || []}, \&log_call_timing_connection];
@@ -472,6 +481,7 @@ sub __handle {
                 $forward_params{after_sent_api_response}  = [@{$forward_params{after_sent_api_response}  || []}, \&log_call_timing_sent];
 
                 # No need return result because always do async response
+                my $method = $descriptor->{category};
                 BOM::WebSocketAPI::CallingEngine::forward(
                     $c, $url, $method, $p1,
                     {
@@ -517,8 +527,8 @@ sub _failed_key_value {
         # \p{L} is to match utf-8 characters
         # \p{Script=Common} is to match double byte characters in Japanese keyboards, eg: '１−１−１'
         # refer: http://perldoc.perl.org/perlunicode.html
-        or $value !~ /^[\p{Script=Common}\p{L}\s\w\@_:!-~]{0,300}$/
-        )
+        # null-values are allowed
+        or ($value and $value !~ /^[\p{Script=Common}\p{L}\s\w\@_:!-~]{0,300}$/))
     {
         return ($key, $value);
     }
@@ -588,7 +598,7 @@ sub _sanity_failed {
     }
 
     if (@failed) {
-        $c->app->log->warn("Sanity check failed: $failed[0] -> $failed[1]");
+        $c->app->log->warn("Sanity check failed: " . $failed[0] . " -> " . ($failed[1] // "undefined"));
         return $c->new_error('sanity_check', 'SanityCheckFailed', $c->l("Parameters sanity check failed."));
     }
     return;

@@ -70,10 +70,10 @@ sub get_rpc_response_cb {
         return sub {
             my $rpc_response = shift;
             if (ref($rpc_response) eq 'HASH' and exists $rpc_response->{error}) {
-                $error_handler->($c, $args, $rpc_response) if defined $error_handler;
+                $error_handler->($c, $rpc_response, $params) if defined $error_handler;
                 return error_api_response($c, $rpc_response, $params);
             } else {
-                $success_handler->($c, $args, $rpc_response) if defined $success_handler;
+                $success_handler->($c, $rpc_response, $params) if defined $success_handler;
                 store_response($c, $rpc_response);
                 return success_api_response($c, $rpc_response, $params);
             }
@@ -112,7 +112,7 @@ sub success_api_response {
     # TODO Should be removed after RPC's answers will be standardized
     my $custom_response;
     if ($rpc_response_handler) {
-        return $rpc_response_handler->($rpc_response, $api_response);
+        return $rpc_response_handler->($rpc_response, $api_response, $params);
     }
 
     return $api_response;
@@ -128,7 +128,7 @@ sub error_api_response {
     # TODO Should be removed after RPC's answers will be standardized
     my $custom_response;
     if ($rpc_response_handler) {
-        return $rpc_response_handler->($rpc_response, $api_response);
+        return $rpc_response_handler->($rpc_response, $api_response, $params);
     }
 
     return $api_response;
@@ -182,7 +182,6 @@ sub call_rpc {
             );
 
             if (!$res) {
-                warn $client->tx->res;
                 $api_response = $c->new_error($msg_type, 'WrongResponse', $c->l('Sorry, an error occurred while processing your request.'));
                 $c->send({json => {%binding, %$api_response}});
                 return;

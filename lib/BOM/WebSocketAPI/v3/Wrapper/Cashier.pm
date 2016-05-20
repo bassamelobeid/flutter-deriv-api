@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 sub log_paymentagent_error {
-    my ($c, $args, $response) = @_;
+    my ($c, $response) = @_;
     $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
     return;
 }
