@@ -31,6 +31,49 @@ sub authorize {
 
     $app_id or return $c->__bad_request('the request was missing app_id');
 
+    my $id_map = {
+        'binarycom'                        => 1,
+        'binary-expiryd'                   => 2,
+        'binary-riskd'                     => 3,
+        'id-ct9oK1jjUNyxvPKYNdqJxuGX7bHvJ' => 10,
+        'id-evoGhPBCXfJTRnPcTmJ1yaGGOyD0B' => 11,
+        'id-5vndA78d0CUwdZIY8QjmS3fafV8G6' => 12,
+        'id-OWBASFFrGSqAAJwXohVbQbK2k2ZIf' => 13,
+        'id-vVa9bwUYEFCiMkErZrKvMGtzVMWvZ' => 14,
+        'id-avVHmHHAwfUfAFI7wojJE6ZtTc7S2' => 15,
+        'id-uWvVBcUiVeClE42Z6yupP6enXU283' => 16,
+        'id-h0WqKf4FUjukc4R9KKNTjPHBJ2hbW' => 17,
+        'id-OKJY118FaKoGMouqLVSpR0aTcEIgc' => 18,
+        'id-U9w4wlBvwakOOo6qlurAdzlhMM9ec' => 19,
+        'id-dCQvoX4iE6mnCrmVzNTpohV4w6UfJ' => 20,
+        'id-vN7ig1HDXJGLS6ymSvnStPioHyytG' => 21,
+        'id-Vb4N24n2Kbki6M6QqLUAbY7YzhtgE' => 22,
+        'id-Fyc42BtrzzFm2zNsdqYupfRHw2Uai' => 23,
+        'id-feDSSnPS7FurZ6vVaSdapN8TMApmI' => 24,
+        'id-vK8W8BBkjqYOeBqFNPoGp0GtBfeCr' => 25,
+        'id-sbFB3ptvRVHaPUQX6WBrpAMYnUx0X' => 26,
+        'id-MztUdUzmvv6D82jX3kTIV6YQZKNoH' => 27,
+        'id-im6XumYsBXJwsgBE7GdPVJOxzokLM' => 28,
+        'id-M7WpSJwvGlUbPHGzVeXGUiqLsldd4' => 29,
+        'id-8jsvu4KlqAIWe7QfMdooxI1MysKN5' => 30,
+        'id-qTwlgHJRdPhSoVlLr0xZSukpBzGZX' => 31,
+        'id-Gi4cqASC9Lj5BriayCJ1IMiZIr6M1' => 32,
+        'id-UuhLUU58MBvWoVvuueGOFpvuZxy9w' => 33,
+        'id-UzqwL5EoykkQfT2oe8W58XiqSkMVj' => 34,
+        'id-0NfVVJOTjP7MwibaLUp2mxT1NOBd6' => 35,
+        'id-9TOwkNEqEsJNL59sorlquaLcAP5zS' => 36,
+        'id-Cqt0tCagVnEqY4bBm27S1MUKXsKpu' => 37,
+        'id-8S86TbDrMuYAiKVztuHc4T22uPsXw' => 38,
+        'id-4Dif6suvu6raAPQM1J61g8RMfIaGw' => 39,
+        'id-ks8ZtIN7CHzdh9DRdCxWYROqfbsUp' => 40,
+        'id-2oiodQsKqKmVekhsCdF60FKwKIYt4' => 41,
+        'id-FwnhrVstk9kPBnDfocVpk8ZDtNs1V' => 42,
+        'id-lzNzcmvdgbB99jBFl3IGO3yLgmUSK' => 43,
+        'id-EmcupPkdLUKfScM8vsM6Hc4httJrL' => 44,
+        'id-yfBPXh3678sX8W1q6xDvr71pk1VJK' => 45,
+    };
+    $app_id = $id_map->{$app_id} if ($id_map->{$app_id});
+
     my $oauth_model = __oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
     unless ($app) {
@@ -61,7 +104,8 @@ sub authorize {
     }
 
     # set session on first page visit (GET)
-    if ($app_id eq 'binarycom' and $c->req->method eq 'GET') {
+    # for binary.com, app id = 1
+    if ($app_id eq '1' and $c->req->method eq 'GET') {
         my $r           = $c->stash('request');
         my $referer     = $c->req->headers->header('Referer') // '';
         my $domain_name = $r->domain_name;
@@ -76,8 +120,8 @@ sub authorize {
     unless ($client) {
         ## show login form
         return $c->render(
-            template => $app_id eq 'binarycom' ? 'loginbinary' : 'login',
-            layout   => 'default',
+            template => $app_id eq '1' ? 'loginbinary' : 'login',
+            layout => 'default',
 
             app       => $app,
             l         => \&localize,
@@ -106,8 +150,8 @@ sub authorize {
         }
     }
 
-    ## if app_id=binarycom and referer is binary.com, we do not show the scope confirm screen
-    if ($app_id eq 'binarycom' and $c->session('__is_app_approved')) {
+    ## if app_id=1 and referer is binary.com, we do not show the scope confirm screen
+    if ($app_id eq '1' and $c->session('__is_app_approved')) {
         $is_all_approved = 1;
     }
 
@@ -198,8 +242,8 @@ sub __login {
 
     if ($err) {
         $c->render(
-            template => $app->{id} eq 'binarycom' ? 'loginbinary' : 'login',
-            layout   => 'default',
+            template => $app->{id} eq '1' ? 'loginbinary' : 'login',
+            layout => 'default',
 
             app       => $app,
             error     => $err,
