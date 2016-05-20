@@ -32,8 +32,16 @@ BEGIN
             + CASE WHEN TG_OP = 'INSERT' THEN (NEW.buy_price - coalesce(NEW.sell_price, 0)) ELSE 0 END  -- add new loss
             - CASE WHEN TG_OP = 'DELETE' THEN (OLD.buy_price - coalesce(OLD.sell_price, 0)) ELSE 0 END  -- del old loss
       WHERE
-        day = coalesce(NEW.purchase_time::date, OLD.purchase_time::date)
-        AND account_id = coalesce(NEW.account_id, OLD.account_id);
+        (
+          TG_OP = 'INSERT'
+          AND day = NEW.purchase_time::date
+          AND account_id = NEW.account_id
+        ) OR (
+          TG_OP = 'DELETE'
+          AND day = OLD.purchase_time::date
+          AND account_id = OLD.account_id
+        )
+      ;
 
     IF FOUND THEN
       RETURN coalesce(new, old);
