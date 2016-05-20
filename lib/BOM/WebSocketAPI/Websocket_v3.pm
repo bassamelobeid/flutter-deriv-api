@@ -60,7 +60,7 @@ sub entry_point {
             message => sub {
                 my ($self, $msg, $channel) = @_;
 
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_pricing_events($c, $msg, $channel)
+                BOM::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel)
                     if $channel =~ /^Redis::Processor::/;
             });
         $c->stash->{redis_pricer} = $redis_pricer;
@@ -366,6 +366,7 @@ sub _reached_limit_check {
     return;
 }
 
+# Set JSON Schema default values for fields which are missing and have default.
 sub _set_defaults {
     my ($validator, $args) = @_;
 
