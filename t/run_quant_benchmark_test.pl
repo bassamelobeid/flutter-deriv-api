@@ -139,7 +139,6 @@ sub script_run {
 
     eval {
         foreach my $test (@{$self->test_suite}) {
-            print STDERR "T: $test\n";
             my $test_class = $self->test_suite_mapper->{$test};
             my $report = $test_class->new(suite => $self->getOption('suite'))->run_dataset($self->getOption('file'));
             $self->analyse_report($report, $test);
