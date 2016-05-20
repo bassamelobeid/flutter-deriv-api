@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE OR REPLACE FUNCTION update_daily_aggregates_ins() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION bet.update_daily_aggregates_ins() RETURNS trigger AS $$
 BEGIN
   LOOP
     BEGIN
@@ -26,7 +26,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION update_daily_aggregates_del() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION bet.update_daily_aggregates_del() RETURNS trigger AS $$
 BEGIN
   LOOP
     BEGIN
