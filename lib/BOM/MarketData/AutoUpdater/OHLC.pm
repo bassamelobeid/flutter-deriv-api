@@ -46,12 +46,13 @@ sub run {
         push @{$report->{error}}, 'OHLC AutoUpdater is terminating prematurely. Number of files in Bloomberg seems too big: [' . $#files . ']';
         return;
     }
-    
+
     my @symbols_to_update;
     @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-            market            => ['stocks', 'indices'],
-            contract_category => 'ANY',
-            exclude_disabled  => 1,);
+        market            => ['stocks', 'indices'],
+        contract_category => 'ANY',
+        exclude_disabled  => 1,
+    );
 
     foreach my $file (@files) {
         my @bloomberg_result_lines = read_file($file);
@@ -80,8 +81,10 @@ sub run {
             my $now        = Date::Utility->new;
 
             next if (not $underlying->trades_on($now));
-    
-            if (grep {$_ eq $bom_underlying_symbol} @symbols_to_update and my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol)) {
+
+            if (grep { $_ eq $bom_underlying_symbol } @symbols_to_update
+                and my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol))
+            {
                 $report->{$bom_underlying_symbol} = {
                     success => 0,
                     reason  => $validation_error,
