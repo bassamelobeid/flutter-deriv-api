@@ -47,7 +47,7 @@ has [qw(id pricing_code display_name sentiment other_side_code payout_type payou
     default => undef,
 );
 
-has [qw(average_tick_count long_term_prediction)] => (
+has [qw(long_term_prediction)] => (
     is      => 'rw',
     default => undef,
 );
@@ -700,7 +700,7 @@ sub _build_opposite_contract {
         $opp_parameters{date_start}  = $self->date_start;
         $opp_parameters{pricing_new} = 1;
         push @opposite_contract_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
-        push @opposite_contract_parameters, qw(empirical_volsurface average_tick_count long_term_prediction news_adjusted_pricing_vol)
+        push @opposite_contract_parameters, qw(empirical_volsurface long_term_prediction news_adjusted_pricing_vol)
             if $self->priced_with_intraday_model;
     } else {
         # not pricing_new will only happen when we are repricing an
@@ -1339,7 +1339,6 @@ sub _build_pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{average_tick_count}   = $self->average_tick_count;
         $args->{long_term_prediction} = $self->long_term_prediction;
         $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
     }
@@ -1376,7 +1375,6 @@ sub _build_pricing_vol {
             uses_flat_vol         => $uses_flat_vol,
         });
         $self->long_term_prediction($volsurface->long_term_prediction);
-        $self->average_tick_count($volsurface->average_tick_count);
         if ($volsurface->error) {
             $self->add_error({
                 message => 'Too few periods for historical vol calculation '
