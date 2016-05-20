@@ -38,7 +38,6 @@ sub buy {
         {
             args                => $args,
             token               => $c->stash('token'),
-            source              => $c->stash('source'),
             contract_parameters => $contract_parameters
         });
 
@@ -62,9 +61,8 @@ sub sell {
             }
         },
         {
-            args   => $args,
-            token  => $c->stash('token'),
-            source => $c->stash('source')});
+            args  => $args,
+            token => $c->stash('token')});
     return;
 }
 

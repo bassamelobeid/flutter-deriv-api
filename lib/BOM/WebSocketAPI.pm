@@ -69,6 +69,19 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
+            if ($c->req->param('app_id')) {
+                my $app_id = $c->req->param('app_id');
+                my $oauth  = BOM::Database::Model::OAuth->new;
+                my $app    = $oauth->verify_app($app_id);
+
+                if ($app) {
+                    $c->stash(
+                        source   => $app_id,
+                        app_name => $app->{name},
+                    );
+                }
+            }
+
             $c->stash(
                 server_name  => $c->server_name,
                 client_ip    => $c->client_ip,

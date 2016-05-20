@@ -37,6 +37,7 @@ sub make_call_params {
     $call_params->{args}     = $args;
     $call_params->{language} = $c->stash('language');
     $call_params->{country}  = $c->stash('country') || $c->country_code;
+    $call_params->{source}   = $c->stash('source');
 
     if (defined $stash_params) {
         $call_params->{$_} = $c->stash($_) for @$stash_params;
@@ -172,7 +173,6 @@ sub call_rpc {
             );
 
             if (!$res) {
-                warn $client->tx->res;
                 $api_response = $c->new_error($msg_type, 'WrongResponse', $c->l('Sorry, an error occurred while processing your request.'));
                 $c->send({json => {%binding, %$api_response}});
                 return;
