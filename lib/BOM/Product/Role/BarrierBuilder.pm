@@ -46,9 +46,9 @@ sub make_barrier {
         %$extra_params,,
     );
 
-    my @corporate_action = @{$self->corporate_actions};
+    my @corporate_actions = @{$self->corporate_actions};
 
-    if (@corporate_action) {
+    if (@corporate_actions) {
         $self->original_barrier = $barrier;
         foreach my $action (@corporate_actions) {
             try {
