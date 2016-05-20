@@ -21,8 +21,8 @@ sub BUILD {
     if (not(looks_like_number($self->supplied_barrier) and $self->supplied_barrier =~ /^[0-9]$/)) {
         $self->add_errors({
             severity          => 110,
-            message           => 'supplied barrier for digits is undefined',
-            message_to_client => localize('We could not process this contract at this time.'),
+            message           => 'invalid supplied barrier format for digits',
+            message_to_client => localize('Barrier is not an integer between 0 to 9.'),
         });
         # setting supplied barrier to zero
         $self->_set_supplied_barrier(0);

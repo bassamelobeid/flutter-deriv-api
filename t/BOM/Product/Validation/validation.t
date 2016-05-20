@@ -447,12 +447,11 @@ subtest 'volsurfaces become old and invalid' => sub {
             recorded_date => Date::Utility->new($starting)->minus_time_interval('10d'),
         });
 
-
-    my $tick       = BOM::Market::Data::Tick->new({
+    my $tick = BOM::Market::Data::Tick->new({
         symbol => 'frxUSDJPY',
-        epoch => $starting,
-        quote => 100
-        });
+        epoch  => $starting,
+        quote  => 100
+    });
     my $bet_params = {
         underlying   => $underlying,
         bet_type     => 'DOUBLEDOWN',
@@ -618,8 +617,8 @@ subtest 'invalid start times' => sub {
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet_params->{entry_tick} = $tick;
-    $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/forward-starting.*blackout/];
+    $bet                      = produce_contract($bet_params);
+    $expected_reasons         = [qr/forward-starting.*blackout/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{date_pricing} = $starting + 45;
@@ -826,8 +825,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
     ok($bet->is_valid_to_buy, '..but when we pick a shorter duration, validates just fine.');
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_start})});
-    $underlying = BOM::Market::Underlying->new('GDAXI');
-    $bet_params->{underlying} = $underlying;
+    $underlying                 = BOM::Market::Underlying->new('GDAXI');
+    $bet_params->{underlying}   = $underlying;
     $bet_params->{date_start}   = $underlying->calendar->opening_on(Date::Utility->new('6-Dec-12'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -1230,7 +1229,12 @@ subtest 'tentative events' => sub {
     $contract_args->{barrier} = 'S20P';
     $c = produce_contract($contract_args);
     ok $c->_validate_start_and_expiry_date, 'throws error if contract expiring on the tentative event\'s blackout period';
-    cmp_ok(($c->_validate_start_and_expiry_date)[0]->{message}, 'eq', 'blackout period [symbol: frxUSDJPY] [from: 1458273600] [to: 1458280800]', 'correct error message');
+    cmp_ok(
+        ($c->_validate_start_and_expiry_date)[0]->{message},
+        'eq',
+        'blackout period [symbol: frxUSDJPY] [from: 1458273600] [to: 1458280800]',
+        'correct error message'
+    );
 
     $c = produce_contract({%$contract_args, underlying => 'frxGBPJPY'});
     ok !$c->_validate_start_and_expiry_date, 'no error if event is not affecting the underlying';
@@ -1238,12 +1242,17 @@ subtest 'tentative events' => sub {
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_end->minus_time_interval('1s');
     $c = produce_contract($contract_args);
     ok $c->_validate_start_and_expiry_date, 'throws error if contract starts on tentative event\'s blackout end';
-    cmp_ok(($c->_validate_start_and_expiry_date)[0]->{message}, 'eq', 'blackout period [symbol: frxUSDJPY] [from: 1458273600] [to: 1458280800]', 'correct error message');
+    cmp_ok(
+        ($c->_validate_start_and_expiry_date)[0]->{message},
+        'eq',
+        'blackout period [symbol: frxUSDJPY] [from: 1458273600] [to: 1458280800]',
+        'correct error message'
+    );
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('1s');
     delete $contract_args->{duration};
     $contract_args->{date_expiry} = $blackout_end->plus_time_interval('1s');
     $c = produce_contract($contract_args);
-    ok !$c->_validate_start_and_expiry_date,  'no error';
+    ok !$c->_validate_start_and_expiry_date, 'no error';
 };
 
 subtest 'integer barrier' => sub {
@@ -1297,9 +1306,9 @@ subtest 'integer barrier' => sub {
             symbol        => $_,
             recorded_date => $now,
         }) for qw(frxUSDJPY frxAUDJPY frxAUDUSD);
-    $params->{underlying} = 'frxUSDJPY';
+    $params->{underlying}   = 'frxUSDJPY';
     $params->{date_pricing} = $now;
-    $c = produce_contract($params);
+    $c                      = produce_contract($params);
     ok $c->is_valid_to_buy, 'valid to buy if barrier is non integer for forex';
 };
 
@@ -1322,7 +1331,7 @@ subtest 'contract must be held' => sub {
     $args->{_date_pricing_milliseconds} = $oft_used_date->epoch + 0.1;
     $args->{date_pricing}               = $oft_used_date->epoch;
     $c                                  = produce_contract($args);
-    ok !$c->pricing_new,      'not pricing_new if it is 0.1 second from start';
+    ok !$c->pricing_new, 'not pricing_new if it is 0.1 second from start';
     ok $c->is_valid_to_sell, 'valid to sell right after buy';
     delete $args->{$_} for qw(date_pricing _date_pricing_milliseconds);
     # we set pricing_new to true if date_start is not provided.
@@ -1336,31 +1345,33 @@ subtest 'zero payout' => sub {
     lives_ok {
         my $fake_tick = BOM::Market::Data::Tick->new({
             underlying => 'R_100',
-            epoch => time,
-            quote => 100,
+            epoch      => time,
+            quote      => 100,
         });
         my $c = produce_contract({
-            bet_type => 'CALL',
-            underlying => 'R_100',
-            barrier => 'S0P',
-            currency => 'USD',
-            payout => 0,
-            duration => '15m',
+            bet_type     => 'CALL',
+            underlying   => 'R_100',
+            barrier      => 'S0P',
+            currency     => 'USD',
+            payout       => 0,
+            duration     => '15m',
             current_tick => $fake_tick,
-            entry_tick => $fake_tick,
+            entry_tick   => $fake_tick,
         });
         ok !$c->is_valid_to_buy, 'not valid to buy';
-        like ($c->primary_validation_error->{message}, qr/Empty or zero stake/, 'throws error');
-    } 'does not die if payout is zero';
+        like($c->primary_validation_error->{message}, qr/Empty or zero stake/, 'throws error');
+    }
+    'does not die if payout is zero';
 };
 
+my $now       = Date::Utility->new;
+my $fake_tick = BOM::Market::Data::Tick->new({
+    underlying => 'R_100',
+    epoch      => $now->epoch,
+    quote      => 100,
+});
+
 subtest 'sellback tick expiry contracts' => sub {
-    my $now       = Date::Utility->new;
-    my $fake_tick = BOM::Market::Data::Tick->new({
-        underlying => 'R_100',
-        epoch      => $now->epoch,
-        quote      => 100,
-    });
     my $params = {
         bet_type     => 'CALL',
         barrier      => 'S0P',
@@ -1385,6 +1396,24 @@ subtest 'sellback tick expiry contracts' => sub {
     $c = produce_contract($params);
     ok $c->is_expired,       'expired';
     ok $c->is_valid_to_sell, 'valid to sell';
+};
+
+subtest 'invalid digits barrier' => sub {
+    my $params = {
+        bet_type     => 'DIGITOVER',
+        underlying   => 'R_100',
+        duration     => '10t',
+        currency     => 'USD',
+        current_tick => $fake_tick,
+        entry_tick   => $fake_tick,
+        barrier      => 'S0P',
+    };
+    my $c = produce_contract($params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like($c->primary_validation_error->{message}, qr/invalid supplied barrier format for digits/, 'throws error');
+    $params->{barrier} = 0;
+    $c = produce_contract($params);
+    ok $c->is_valid_to_buy, 'valid to buy';
 };
 
 # Let's not surprise anyone else
