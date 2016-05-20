@@ -31,7 +31,8 @@ sub _create_oauth_token {
 
     my $oauth_model = BOM::Database::Model::OAuth->new;
     my @scopes      = qw(read admin trade payments);
-    my ($access_token, $expires_in) = $oauth_model->store_access_token_only('binarycom', $loginid, @scopes);
+    # for binary.com, app id = 1
+    my ($access_token, $expires_in) = $oauth_model->store_access_token_only('1', $loginid, @scopes);
 
     return $access_token;
 }
@@ -58,6 +59,7 @@ sub new_account_virtual {
                 email           => $email,
                 client_password => $args->{client_password},
                 residence       => $args->{residence},
+                source          => $params->{source},
                 $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : ()
             },
             email_verified => 1
@@ -167,7 +169,7 @@ sub new_account_real {
 
     my $args = $params->{args};
     my $details_ref =
-        _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code);
+        _get_client_details($params, $client, BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
@@ -211,7 +213,7 @@ sub new_account_maltainvest {
                 message_to_client => $error_map->{'invalid'}});
     }
 
-    my $details_ref = _get_client_details($args, $client, 'MF');
+    my $details_ref = _get_client_details($params, $client, 'MF');
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
@@ -259,7 +261,7 @@ sub new_account_japan {
     }
 
     my $args = $params->{args};
-    my $details_ref = _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => 'jp')->real_account_broker->code);
+    my $details_ref = _get_client_details($params, $client, BOM::Platform::Context::Request->new(country_code => 'jp')->real_account_broker->code);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
@@ -299,16 +301,17 @@ sub new_account_japan {
 }
 
 sub _get_client_details {
-    my ($args, $client, $broker) = @_;
+    my ($params, $client, $broker) = @_;
 
+    my $args    = $params->{args};
     my $details = {
         broker_code                   => $broker,
         email                         => $client->email,
         client_password               => $client->password,
         myaffiliates_token_registered => 0,
         checked_affiliate_exposures   => 0,
-        source                        => 'websocket-api',
-        latest_environment            => ''
+        latest_environment            => '',
+        source                        => $params->{source},
     };
 
     my $affiliate_token;
