@@ -1407,6 +1407,7 @@ subtest 'invalid digits barrier' => sub {
         current_tick => $fake_tick,
         entry_tick   => $fake_tick,
         barrier      => 'S0P',
+        payout       => 10,
     };
     my $c = produce_contract($params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
