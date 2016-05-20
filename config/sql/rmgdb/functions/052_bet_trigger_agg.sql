@@ -14,10 +14,10 @@ RETURN new;
   RETURN new;
 END;
 $$ LANGUAGE plpgsql;
-*/
+
 CREATE OR REPLACE FUNCTION update_daily_aggregates() RETURNS trigger AS $$
 BEGIN
-/*  LOOP
+  LOOP
     UPDATE bet.daily_aggregates
       SET
         turnover = turnover - CASE WHEN TG_OP = 'UPDATE' THEN coalesce(OLD.buy_price, 0) ELSE 0 END + NEW.buy_price,         -- remove old add new
@@ -28,10 +28,10 @@ BEGIN
         day = NEW.purchase_time::date
         AND account_id = NEW.account_id;
 
-    IF FOUND THEN
+--    IF FOUND THEN
       RETURN new;
-    END IF;
-  END LOOP;*/
+--    END IF;
+  END LOOP;
   RETURN
 END;
 $$ LANGUAGE plpgsql;
