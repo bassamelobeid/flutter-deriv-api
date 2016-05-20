@@ -453,17 +453,6 @@ sub __handle {
         if (my $handler = $descriptor->{handler}) {
             $result = $handler->($c, $p1, {require_auth => $descriptor->{require_auth}});
         } else {
-            # TODO New dispatcher plugin has to do this
-            my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
-            if (BOM::System::Config::env eq 'production') {
-                if (BOM::System::Config::node->{node}->{www2}) {
-                    $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
-                } else {
-                    $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
-                }
-            }
-
-            my $method = $descriptor->{category};
             my %forward_params;
             if (ref $descriptor->{forward_params} eq 'HASH') {
                 %forward_params = %{$descriptor->{forward_params}};
@@ -474,6 +463,16 @@ sub __handle {
             $result = $before_forward->($c, $p1, \%forward_params) if $before_forward;
 
             unless ($result) {
+                # TODO New dispatcher plugin has to do this
+                my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
+                if (BOM::System::Config::env eq 'production') {
+                    if (BOM::System::Config::node->{node}->{www2}) {
+                        $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
+                    } else {
+                        $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
+                    }
+                }
+
                 $forward_params{before_call}              = [@{$forward_params{before_call}              || []}, \&start_timing];
                 $forward_params{before_get_rpc_response}  = [@{$forward_params{before_get_rpc_response}  || []}, \&log_call_timing];
                 $forward_params{after_got_rpc_response}   = [@{$forward_params{after_got_rpc_response}   || []}, \&log_call_timing_connection];
@@ -481,6 +480,7 @@ sub __handle {
                 $forward_params{after_sent_api_response}  = [@{$forward_params{after_sent_api_response}  || []}, \&log_call_timing_sent];
 
                 # No need return result because always do async response
+                my $method = $descriptor->{category};
                 BOM::WebSocketAPI::CallingEngine::forward(
                     $c, $url, $method, $p1,
                     {
