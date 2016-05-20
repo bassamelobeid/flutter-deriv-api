@@ -517,8 +517,8 @@ sub _failed_key_value {
         # \p{L} is to match utf-8 characters
         # \p{Script=Common} is to match double byte characters in Japanese keyboards, eg: '１−１−１'
         # refer: http://perldoc.perl.org/perlunicode.html
-        or $value !~ /^[\p{Script=Common}\p{L}\s\w\@_:!-~]{0,300}$/
-        )
+        # null-values are allowed
+        or ($value and $value !~ /^[\p{Script=Common}\p{L}\s\w\@_:!-~]{0,300}$/))
     {
         return ($key, $value);
     }
@@ -588,7 +588,7 @@ sub _sanity_failed {
     }
 
     if (@failed) {
-        $c->app->log->warn("Sanity check failed: $failed[0] -> $failed[1]");
+        $c->app->log->warn("Sanity check failed: " . $failed[0] . " -> " . ($failed[1] // "undefined"));
         return $c->new_error('sanity_check', 'SanityCheckFailed', $c->l("Parameters sanity check failed."));
     }
     return;
