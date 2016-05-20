@@ -107,21 +107,21 @@ sub _setup_rates {
     my $quoted_currency = $underlying->quoted_currency;
     if ($underlying->rate_to_imply eq $quoted_currency->symbol) {
         $quoted_currency = Quant::Framework::InterestRate->new(
-            symbol        => $quoted_currency->symbol,
-            rates         => $rates->{quoted_currency_rate},
-            recorded_date => $date,
-            type          => 'implied',
-            implied_from  => $asset->symbol,
+            symbol           => $quoted_currency->symbol,
+            rates            => $rates->{quoted_currency_rate},
+            recorded_date    => $date,
+            type             => 'implied',
+            implied_from     => $asset->symbol,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
         $quoted_currency->save;
     } else {
         $quoted_currency = Quant::Framework::InterestRate->new(
-            symbol        => $quoted_currency->symbol,
-            rates         => $rates->{quoted_currency_rate},
-            recorded_date => $date,
-            type          => 'market',
+            symbol           => $quoted_currency->symbol,
+            rates            => $rates->{quoted_currency_rate},
+            recorded_date    => $date,
+            type             => 'market',
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
@@ -130,11 +130,11 @@ sub _setup_rates {
 
     if ($underlying->rate_to_imply eq $asset->symbol) {
         $asset = Quant::Framework::InterestRate->new(
-            symbol        => $asset->symbol,
-            rates         => $rates->{asset_rate}->{continuous},
-            recorded_date => $date,
-            type          => 'implied',
-            implied_from  => $quoted_currency->symbol,
+            symbol           => $asset->symbol,
+            rates            => $rates->{asset_rate}->{continuous},
+            recorded_date    => $date,
+            type             => 'implied',
+            implied_from     => $quoted_currency->symbol,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
@@ -142,19 +142,19 @@ sub _setup_rates {
     } else {
         if ($underlying->market->name eq 'indices') {
             $asset = Quant::Framework::Dividend->new(
-                symbol          => $asset->symbol,
-                rates           => $rates->{asset_rate}->{continuous},
-                discrete_points => $rates->{asset_rate}->{discrete},
-                recorded_date   => $date,
+                symbol           => $asset->symbol,
+                rates            => $rates->{asset_rate}->{continuous},
+                discrete_points  => $rates->{asset_rate}->{discrete},
+                recorded_date    => $date,
                 chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             );
         } else {
             $asset = Quant::Framework::InterestRate->new(
-                symbol        => $asset->symbol,
-                rates         => $rates->{asset_rate}->{continuous},
-                recorded_date => $date,
-                type          => 'market',
+                symbol           => $asset->symbol,
+                rates            => $rates->{asset_rate}->{continuous},
+                recorded_date    => $date,
+                type             => 'market',
                 chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             );
@@ -202,11 +202,11 @@ sub _reset_rates {
     my ($current_quoted_currency_data, $current_asset_data);
     if ($underlying->rate_to_imply eq $underlying->quoted_currency->symbol) {
         $current_quoted_currency_data = Quant::Framework::InterestRate->new(
-            symbol        => $underlying->quoted_currency->symbol,
-            rates         => $reset_data->{quoted_currency},
-            recorded_date => Date::Utility->new,
-            type          => 'implied',
-            implied_from  => $underlying->asset->symbol,
+            symbol           => $underlying->quoted_currency->symbol,
+            rates            => $reset_data->{quoted_currency},
+            recorded_date    => Date::Utility->new,
+            type             => 'implied',
+            implied_from     => $underlying->asset->symbol,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
@@ -215,10 +215,10 @@ sub _reset_rates {
     } else {
 
         $current_quoted_currency_data = Quant::Framework::InterestRate->new(
-            symbol        => $underlying->quoted_currency->symbol,
-            rates         => $reset_data->{quoted_currency},
-            recorded_date => Date::Utility->new,
-            type          => 'market',
+            symbol           => $underlying->quoted_currency->symbol,
+            rates            => $reset_data->{quoted_currency},
+            recorded_date    => Date::Utility->new,
+            type             => 'market',
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
 
@@ -229,11 +229,11 @@ sub _reset_rates {
 
     if ($underlying->rate_to_imply eq $underlying->asset->symbol) {
         $current_asset_data = Quant::Framework::InterestRate->new(
-            symbol        => $underlying->asset->symbol,
-            rates         => $reset_data->{asset},
-            recorded_date => Date::Utility->new,
-            type          => 'implied',
-            implied_from  => $underlying->quoted_currency->symbol,
+            symbol           => $underlying->asset->symbol,
+            rates            => $reset_data->{asset},
+            recorded_date    => Date::Utility->new,
+            type             => 'implied',
+            implied_from     => $underlying->quoted_currency->symbol,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
@@ -242,10 +242,10 @@ sub _reset_rates {
     } else {
 
         $current_asset_data = Quant::Framework::InterestRate->new(
-            symbol        => $underlying->asset->symbol,
-            rates         => $reset_data->{asset},
-            recorded_date => Date::Utility->new,
-            type          => 'market',
+            symbol           => $underlying->asset->symbol,
+            rates            => $reset_data->{asset},
+            recorded_date    => Date::Utility->new,
+            type             => 'market',
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
