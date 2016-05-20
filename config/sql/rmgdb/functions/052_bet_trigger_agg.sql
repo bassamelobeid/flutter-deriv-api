@@ -1,5 +1,5 @@
 BEGIN;
-/*
+
 CREATE OR REPLACE FUNCTION insert_daily_aggregates() RETURNS trigger AS $$
 BEGIN
   LOOP
@@ -12,7 +12,7 @@ BEGIN
   END LOOP;
 END;
 $$ LANGUAGE plpgsql;
-
+/*
 CREATE OR REPLACE FUNCTION update_daily_aggregates() RETURNS trigger AS $$
 BEGIN
   LOOP
