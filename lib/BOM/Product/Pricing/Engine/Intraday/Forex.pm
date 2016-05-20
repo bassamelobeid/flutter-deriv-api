@@ -214,6 +214,8 @@ sub _build_ticks_for_trend {
 
 =head1 intraday_trend
 
+ASSUMPTIONS: If there's no ticks to calculate trend, we will assume there's no trend. But we will not sell since volatility calculation (which uses the same set of ticks), will fail.
+
 The current observed trend in the market movements.  Math::Util::CalculatedValue::Validatable
 
 =cut
@@ -225,7 +227,6 @@ sub _build_intraday_trend {
     my $duration_in_secs = $bet->timeindays->amount * 86400;
 
     my @ticks = @{$self->ticks_for_trend};
-    # if there's no ticks for trend calculation, it will fail volatility validation.
     my $average = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->pricing_args->{spot};
     my $avg_spot = Math::Util::CalculatedValue::Validatable->new({
         name        => 'average_spot',
