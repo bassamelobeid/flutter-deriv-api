@@ -50,6 +50,7 @@ ok $proposal->{proposal}->{id};
 ok $proposal->{proposal}->{ask_price};
 test_schema('proposal', $proposal);
 
+sleep 1;
 $t = $t->send_ok({
         json => {
             buy   => 1,
