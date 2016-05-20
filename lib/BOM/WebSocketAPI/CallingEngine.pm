@@ -182,7 +182,6 @@ sub call_rpc {
             );
 
             if (!$res) {
-                warn $client->tx->res;
                 $api_response = $c->new_error($msg_type, 'WrongResponse', $c->l('Sorry, an error occurred while processing your request.'));
                 $c->send({json => {%binding, %$api_response}});
                 return;
