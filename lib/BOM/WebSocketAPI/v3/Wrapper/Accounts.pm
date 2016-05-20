@@ -36,14 +36,12 @@ sub subscribe_transaction_channel {
 
 sub balance_error_handler {
     my ($c, $rpc_response, $params) = @_;
-
     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $params->{transaction_channel_id}) if $params->{transaction_channel_id};
     return;
 }
 
 sub balance_success_handler {
     my ($c, $rpc_response, $params) = @_;
-
     $rpc_response->{id} = $params->{transaction_channel_id} if $params->{transaction_channel_id};
     return;
 }
