@@ -4,7 +4,7 @@ v3_1:
 v3_2:
 	bash -c 'prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{5,6,7}*'
 
-v3_2:
+v3_3:
 	bash -c 'prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{8,9}*'
 
 structure:
