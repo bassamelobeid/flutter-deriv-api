@@ -18,7 +18,7 @@ has '+supplied_barrier' => (
 sub BUILD {
     my $self = shift;
 
-    if (not(defined $self->supplied_barrier and looks_like_number($self->supplied_barrier) and $self->supplied_barrier =~ /^[0-9]$/)) {
+    if (not(looks_like_number($self->supplied_barrier) and $self->supplied_barrier =~ /^[0-9]$/)) {
         $self->add_errors({
             severity          => 110,
             message           => 'supplied barrier for digits is undefined',
