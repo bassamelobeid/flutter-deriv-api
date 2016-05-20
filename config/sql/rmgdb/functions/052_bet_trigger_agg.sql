@@ -11,7 +11,7 @@ BEGIN
       BEGIN
         INSERT INTO bet.daily_aggregates VALUES (NEW.purchase_time::date, NEW.account_id, NEW.buy_price, NEW.buy_price - coalesce(NEW.sell_price, 0));
         RETURN new;
-      EXCEPTION WHEN unique_violation THENdel
+      EXCEPTION WHEN unique_violation THEN
         -- nothing
       END;
     ELSIF TG_IP = 'DELETE' THEN
