@@ -71,14 +71,32 @@ sub startup {
 
             if ($c->req->param('app_id')) {
                 my $app_id = $c->req->param('app_id');
-                my $oauth  = BOM::Database::Model::OAuth->new;
-                my $app    = $oauth->verify_app($app_id);
 
-                if ($app) {
+                my $error;
+                APP_ID:
+                {
+                    if ($app_id !~ /^\d+$/) {
+                        $error = 1;
+                        last;
+                    }
+
+                    my $oauth = BOM::Database::Model::OAuth->new;
+                    my $app   = $oauth->verify_app($app_id);
+
+                    if (not $app) {
+                        $error = 1;
+                        last;
+                    }
+
                     $c->stash(
                         source   => $app_id,
                         app_name => $app->{name},
                     );
+                }
+
+                if ($error) {
+                    $c->send({json => $c->new_error('error', 'InvalidAppID', $c->l('Your app_id is invalid.'))});
+                    $c->finish();
                 }
             }
 
