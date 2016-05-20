@@ -44,7 +44,7 @@ BEGIN
       ;
 
     IF FOUND THEN
-      RETURN coalesce(new, old);
+      RETURN CASE WHEN TG_OP = 'INSERT' THEN new WHEN TG_OP = 'DELETE' THEN old END;
     END IF;
   END LOOP;
 END;
