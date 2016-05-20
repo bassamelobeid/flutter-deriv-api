@@ -85,7 +85,7 @@ sub _daemon_run {
                 # but for now we will ignore it.
                 my $is_sold = BOM::Product::Transaction::sell_expired_contracts({
                         client       => $client,
-                        source       => 1063,            # Third party application 'binaryexpiryd'
+                        source       => 2,             # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
                         contract_ids => [$contract_id]});
 
                 if (not $is_sold or $is_sold->{number_of_sold_bets} == 0) {
