@@ -184,7 +184,7 @@ sub cashier {
     my $sportsbook = get_sportsbook($broker, $currency);
 
     # hit DF's CreateCustomer API
-    my $ua = LWP::UserAgent->new(timeout => 60);
+    my $ua = LWP::UserAgent->new(timeout => 20);
     $ua->ssl_opts(
         verify_hostname => 0,
         SSL_verify_mode => SSL_VERIFY_NONE
