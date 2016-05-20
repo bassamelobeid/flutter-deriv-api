@@ -137,7 +137,7 @@ has contract_class => (
 
 has source => (
     is  => 'ro',
-    isa => 'Int',
+    isa => 'Maybe[Int]',
 );
 
 has transaction_parameters => (
@@ -1509,7 +1509,7 @@ Returns: HashRef, with:
 =cut
 
 my %source_to_sell_type = (
-    1063 => 'expiryd',    # app_id for `binaryexpiryd`, see `expiryd.pl`
+    2 => 'expiryd',    # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
 );
 
 sub sell_expired_contracts {
