@@ -7,14 +7,14 @@ BEGIN
     -- when delete in same period
     -- when delete in new period
   
-    IF TG_IP = 'INSERT' THEN
+    IF TG_OP = 'INSERT' THEN
       BEGIN
         INSERT INTO bet.daily_aggregates VALUES (NEW.purchase_time::date, NEW.account_id, NEW.buy_price, NEW.buy_price - coalesce(NEW.sell_price, 0));
         RETURN new;
       EXCEPTION WHEN unique_violation THEN
         -- nothing
       END;
-    ELSIF TG_IP = 'DELETE' THEN
+    ELSIF TG_OP = 'DELETE' THEN
       BEGIN
         INSERT INTO bet.daily_aggregates VALUES (OLD.purchase_time::date, OLD.account_id, OLD.buy_price, OLD.buy_price - coalesce(OLD.sell_price, 0));
         RETURN old;
