@@ -245,8 +245,8 @@ my @dispatch = (
             before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
         }
     ],
-    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1, 'read'],
-    ['portfolio',   '',                                                         1, 'read'],
+    ['transaction', '', 1, 'read', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction}],
+    ['portfolio',   '', 1, 'read'],
     [
         'proposal_open_contract',
         '', 1, 'read',
