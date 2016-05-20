@@ -7,11 +7,10 @@ BEGIN
       INSERT INTO bet.daily_aggregates VALUES (NEW.purchase_time::date, NEW.account_id, NEW.buy_price, NEW.buy_price - coalesce(NEW.sell_price, 0));
       RETURN new;
     EXCEPTION WHEN unique_violation THEN
-RETURN new;
       -- nothing
+RETURN new;
     END;
   END LOOP;
-  RETURN new;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -32,7 +31,6 @@ BEGIN
       RETURN new;
 --    END IF;
   END LOOP;
-  RETURN
 END;
 $$ LANGUAGE plpgsql;
 
