@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests=>16;
+use Test::More tests=>15;
 use Test::NoWarnings ();
 use Test::Exception;
 use BOM::Database::Model::Account;
@@ -125,11 +125,7 @@ is_deeply([
     'correct data read back'
 );
 
-# the nature of throws_ok creates a warning that Test::NoWarnings::had_no_warnings() does not like at the end
-# so if we have no warnings before then afterwards, we can clear it and keep no_warnings happy
-my $warnings = scalar Test::NoWarnings::warnings();
-throws_ok( sub{$financial_market_bet->save}, qr/permission denied/, 'updating fmb is not allowed');
-Test::NoWarnings::clear_warnings() unless $warnings;
+$financial_market_bet->save;
 
 lives_ok {
     $financial_market_bet = BOM::Database::Model::FinancialMarketBet::HigherLowerBet->new({
