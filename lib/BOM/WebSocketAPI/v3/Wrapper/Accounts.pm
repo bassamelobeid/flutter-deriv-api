@@ -7,7 +7,6 @@ use warnings;
 use JSON;
 use List::Util qw(first);
 
-use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub set_self_exclusion_response_handler {
@@ -18,8 +17,8 @@ sub set_self_exclusion_response_handler {
     return $api_response;
 }
 
-sub balance {
-    my ($c, $args) = @_;
+sub subscribe_transaction_channel {
+    my ($c, $args, $params) = @_;
 
     my $id;
     my $account_id = $c->stash('account_id');
@@ -31,24 +30,21 @@ sub balance {
         return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
     }
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'balance',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                return $c->new_error('balance', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type => 'balance',
-                    balance => {$id ? (id => $id) : (), %$response}};
-            }
-        },
-        {
-            args  => $args,
-            token => $c->stash('token'),
-        });
+    $params->{transaction_channel_id} = $id if $id;
+    return;
+}
+
+sub balance_error_handler {
+    my ($c, $rpc_response, $params) = @_;
+
+    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $params->{transaction_channel_id}) if $params->{transaction_channel_id};
+    return;
+}
+
+sub balance_success_handler {
+    my ($c, $rpc_response, $params) = @_;
+
+    $rpc_response->{id} = $params->{transaction_channel_id} if $params->{transaction_channel_id};
     return;
 }
 

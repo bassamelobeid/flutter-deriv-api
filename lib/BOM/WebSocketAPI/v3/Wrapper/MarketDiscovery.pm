@@ -21,7 +21,7 @@ sub asset_index_cached {
 }
 
 sub cache_asset_index {
-    my ($c, $args, $rpc_response) = @_;
+    my ($c, $rpc_response) = @_;
 
     my $language = $c->stash('language');
     Cache::RedisDB->set("WS_ASSETINDEX", $language, JSON::to_json($rpc_response), 3600);

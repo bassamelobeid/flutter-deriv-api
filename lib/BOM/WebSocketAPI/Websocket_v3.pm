@@ -198,10 +198,19 @@ my @dispatch = (
     ['landing_company_details', '',                                                        0],
     ['get_corporate_actions',   '',                                                        0],
 
-    ['balance',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance, 1, 'read'],
-    ['statement',          '',                                                  1, 'read'],
-    ['profit_table',       '',                                                  1, 'read'],
-    ['get_account_status', '',                                                  1, 'read'],
+    [
+        'balance',
+        '', 1, 'read',
+        {
+            before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::subscribe_transaction_channel,
+            error          => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance_error_handler,
+            success        => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
+        }
+    ],
+
+    ['statement',          '', 1, 'read'],
+    ['profit_table',       '', 1, 'read'],
+    ['get_account_status', '', 1, 'read'],
     ['change_password',    '', 1, 'admin',    {stash_params => [qw/ token_type client_ip /]}],
     ['get_settings',       '', 1, 'read'],
     ['set_settings',       '', 1, 'admin',    {stash_params => [qw/ server_name client_ip user_agent /]}],
