@@ -81,7 +81,7 @@ sub run {
 
             next if (not $underlying->trades_on($now));
     
-            if (grep {$_ eq $symbols_to_update} @bom_underlying_symbol and my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol)) {
+            if (grep {$_ eq $bom_underlying_symbol} @symbols_to_update and my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol)) {
                 $report->{$bom_underlying_symbol} = {
                     success => 0,
                     reason  => $validation_error,
