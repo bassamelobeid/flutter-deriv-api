@@ -1,10 +1,10 @@
 BEGIN;
 
-CREATE OR REPLACE FUNCTION bet.update_daily_aggregates_ins() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION bet.update_daily_aggregates_buy() RETURNS trigger AS $$
 BEGIN
   LOOP
     BEGIN
-      INSERT INTO bet.daily_aggregates VALUES (NEW.purchase_time::date, NEW.account_id, NEW.buy_price, NEW.buy_price - coalesce(NEW.sell_price, 0));
+      INSERT INTO bet.daily_aggregates VALUES (NEW.purchase_time::date, NEW.account_id, NEW.buy_price, 0);
       RETURN new;
     EXCEPTION WHEN unique_violation THEN
       -- nothing
@@ -12,8 +12,7 @@ BEGIN
 
     UPDATE bet.daily_aggregates
       SET
-        turnover = turnover + coalesce(NEW.buy_price, 0),
-        loss = loss + (NEW.buy_price - coalesce(NEW.sell_price, 0))
+        turnover = turnover + NEW.buy_price,
       WHERE
           day = NEW.purchase_time::date
           AND account_id = NEW.account_id
@@ -26,27 +25,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION bet.update_daily_aggregates_del() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION bet.update_daily_aggregates_sell() RETURNS trigger AS $$
 BEGIN
   LOOP
     BEGIN
-      INSERT INTO bet.daily_aggregates VALUES (OLD.purchase_time::date, OLD.account_id, OLD.buy_price, OLD.buy_price - coalesce(OLD.sell_price, 0));
-      RETURN old;
+      INSERT INTO bet.daily_aggregates VALUES (NEW.purchase_time::date, NEW.account_id, 0, NEW.buy_price - NEW.sell_price);
+      RETURN new;
     EXCEPTION WHEN unique_violation THEN
       -- nothing
     END;
 
     UPDATE bet.daily_aggregates
       SET
-        turnover = turnover - coalesce(OLD.buy_price, 0),
-        loss = loss - (OLD.buy_price - coalesce(OLD.sell_price, 0))
+        loss = loss + (NEW.buy_price - NEW.sell_price)
       WHERE
-          day = OLD.purchase_time::date
-          AND account_id = OLD.account_id
+          day = NEW.purchase_time::date
+          AND account_id = NEW.account_id
       ;
 
     IF FOUND THEN
-      RETURN old;
+      RETURN new;
     END IF;
   END LOOP;
 END;
