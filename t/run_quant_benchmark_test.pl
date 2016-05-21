@@ -3,7 +3,6 @@ package DatasetRunner;
 
 use Moose;
 with 'App::Base::Script';
-with 'BOM::Utility::Logging';
 
 use File::Slurp;
 use TAP::Harness;
