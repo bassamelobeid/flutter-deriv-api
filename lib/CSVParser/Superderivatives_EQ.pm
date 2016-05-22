@@ -31,7 +31,6 @@ has suite => (
     required => 1,
 );
 
-
 sub _build_records {
     my $self = shift;
     my $data = $self->read_the_lines_and_parse_the_categories($self->file);
@@ -86,7 +85,7 @@ sub _build_records {
         my $barrier2 = (defined $record->{barrier2}) ? $record->{barrier2} / 100 * $spot : undef;
         my $bet_type = $record->{bet_type};
 
-        my $closing = $underlying->exchange->closing_on($date_expiry);
+        my $closing = $underlying->calendar->closing_on($date_expiry);
         next unless $closing;
         my $params = {
             spot          => $spot,
@@ -133,10 +132,10 @@ sub _setup_quanto_rate {
     my %applicable_rates = map { $_ => $rates->{$_} } grep { $_ <= 366 } keys %$rates;
 
     my $rate = Quant::Framework::InterestRate->new(
-        symbol        => $symbol,
-        rates         => \%applicable_rates,
-        recorded_date => $date->datetime_iso8601,
-        type          => 'market',
+        symbol           => $symbol,
+        rates            => \%applicable_rates,
+        recorded_date    => $date->datetime_iso8601,
+        type             => 'market',
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );

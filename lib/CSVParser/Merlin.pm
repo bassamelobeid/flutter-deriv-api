@@ -132,31 +132,31 @@ sub _build_records {
             date_start        => Date::Utility->new($line->{Epoch_time_now}),
             volcut            => $line->{VolCut},
             cut               => $line->{Cut},
-            current_spot     => $line->{Spot},
-            q_rate   => $line->{UNDDepo},
-            r_rate   => $line->{ACCDepo},
-            currency => $line->{PayoutCurrency},
-            payout   => $line->{Payout},
-            numeraire  => substr($line->{Underlying}, 3, 6),
-            bet_type   => $self->_mapper->{$line->{Type}},
-            merlin_ask => $line->{AskPrice_Live},
-            merlin_bid => abs($line->{BidPrice_Live}),
-            merlin_tv  => $line->{TV},
-            bet_num    => $line->{bet_num},
-            atm_vol    => $line->{ATMVol},
+            current_spot      => $line->{Spot},
+            q_rate            => $line->{UNDDepo},
+            r_rate            => $line->{ACCDepo},
+            currency          => $line->{PayoutCurrency},
+            payout            => $line->{Payout},
+            numeraire         => substr($line->{Underlying}, 3, 6),
+            bet_type          => $self->_mapper->{$line->{Type}},
+            merlin_ask        => $line->{AskPrice_Live},
+            merlin_bid        => abs($line->{BidPrice_Live}),
+            merlin_tv         => $line->{TV},
+            bet_num           => $line->{bet_num},
+            atm_vol           => $line->{ATMVol},
             date_expiry => _get_formatted_date_expiry($line->{Expiry}, $self->_expiry->{$line->{Cut}}->{bom}),
         );
 
-       if ($line->{Strike}){
-           $record{barrier} = $line->{Strike};
-        }elsif ($line->{UpperBarrier}){
-           if ($line->{LowerBarrier}){
-            $record{high_barrier} = $line->{UpperBarrier};
-            $record{low_barrier} = $line->{LowerBarrier};
-           }else{
-             $record{barrier} = $line->{UpperBarrier};
-           }
-        }else{
+        if ($line->{Strike}) {
+            $record{barrier} = $line->{Strike};
+        } elsif ($line->{UpperBarrier}) {
+            if ($line->{LowerBarrier}) {
+                $record{high_barrier} = $line->{UpperBarrier};
+                $record{low_barrier}  = $line->{LowerBarrier};
+            } else {
+                $record{barrier} = $line->{UpperBarrier};
+            }
+        } else {
             $record{barrier} = 'S0P';
         }
 

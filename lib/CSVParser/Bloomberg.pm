@@ -46,13 +46,13 @@ has 'bet' => (
 );
 
 has 'r' => (
-    is         => 'rw',
-    isa        => 'Maybe[Num]',
+    is  => 'rw',
+    isa => 'Maybe[Num]',
 );
 
 has 'q' => (
-    is         => 'rw',
-    isa        => 'Maybe[Num]',
+    is  => 'rw',
+    isa => 'Maybe[Num]',
 );
 
 #BOM bet type.
@@ -62,25 +62,24 @@ has 'bet_type' => (
 );
 
 has 'date_pricing' => (
-    is         => 'rw',
-    isa        => 'Date::Utility',
+    is  => 'rw',
+    isa => 'Date::Utility',
 );
 
 has 'date_start' => (
-    is         => 'rw',
-    isa        => 'Date::Utility',
+    is  => 'rw',
+    isa => 'Date::Utility',
 );
 
 has 'expiry_date_bom' => (
-    is         => 'rw',
-    isa        => 'Date::Utility',
+    is  => 'rw',
+    isa => 'Date::Utility',
 );
 
 has 'id' => (
     is  => 'rw',
     isa => 'Str',
 );
-
 
 #This is the portfolio name in bloomberg
 has 'portfolio' => (
@@ -94,11 +93,10 @@ has 'payout_currency' => (
 );
 
 has 'payout_amount' => (
-    is         => 'rw',
-    isa        => 'Num',
-    default    => 100,
+    is      => 'rw',
+    isa     => 'Num',
+    default => 100,
 );
-
 
 has 'underlying_symbol' => (
     is  => 'rw',
@@ -130,21 +128,20 @@ has 'price' => (
 
 #higher barrier or the main barrier
 has 'high_barrier' => (
-    is         => 'rw',
-    isa        => 'Num',
+    is  => 'rw',
+    isa => 'Num',
 );
 
 #lower barrier in two barrier bets
 has 'low_barrier' => (
-    is         => 'rw',
-    isa        => 'Maybe[Num]',
+    is  => 'rw',
+    isa => 'Maybe[Num]',
 );
 
 has 'barrier' => (
-    is         => 'rw',
-    isa        => 'Maybe[Num]',
+    is  => 'rw',
+    isa => 'Maybe[Num]',
 );
-
 
 has 'spot' => (
     is         => 'rw',
@@ -162,7 +159,6 @@ has 'barrier_type' => (
     isa        => 'Str',
     lazy_build => 1,
 );
-
 
 has 'premium_adjusted' => (
     is         => 'rw',
@@ -203,7 +199,6 @@ sub _get_value {
     return $default_value;
 }
 
-
 #UI = Up and In, DI = Down and In, DO = Down and out, UO = Up and out
 sub _build_barrier_type {
     my $self = shift;
@@ -242,16 +237,20 @@ sub _build_bet {
     if ($self->_get_bet_type_bloomberg eq 'DNT' or $self->_get_bet_type_bloomberg eq 'DOT') {
         $bet_args->{high_barrier} = $self->high_barrier;
         $bet_args->{low_barrier}  = $self->low_barrier;
-    }else{
+    } else {
         $bet_args->{barrier} = $self->barrier;
     }
 
     $bet_args->{volsurface} = $self->volsurface if defined $self->volsurface;
+    $bet_args->{current_tick} = BOM::Market::Data::Tick->new(
+        underlying => $bet_args->{underlying}->symbol,
+        quote      => $bet_args->{current_spot},
+        epoch      => $bet_args->{date_start}->epoch,
+    );
     my $bet = produce_contract($bet_args);
 
     return $bet;
 }
-
 
 sub _build_premium_adjusted {
     my $self = shift;
@@ -275,8 +274,6 @@ sub _build_price {
     #if (price_type eq 'VV')
     return sprintf("%.2f", $price);
 }
-
-
 
 sub _build_underlying {
     my $self = shift;
@@ -358,8 +355,8 @@ sub _get_expiry_date_bloomberg {
 sub _get_delivery_date_bloomberg {
     my $self          = shift;
     my $delivery_date = Date::Utility->new($self->expiry_date_bom->epoch + 86400);
-    if (!$self->underlying->exchange->trades_on($delivery_date)) {
-        $delivery_date = $self->underlying->exchange->trade_date_after($delivery_date);
+    if (!$self->underlying->calendar->trades_on($delivery_date)) {
+        $delivery_date = $self->underlying->calendar->trade_date_after($delivery_date);
     }
     return $delivery_date->month . '/' . $delivery_date->day_of_month . '/' . $delivery_date->year;
 }
@@ -681,7 +678,6 @@ sub _build_config {
     return $config;
 }
 
-
 sub get_volsurface {
     my ($self, $underlying_symbol) = @_;
 
@@ -717,8 +713,8 @@ sub price_list {
     my $headers      = exported_field_headers(\@lines);
     my $pricing_date = exported_pricing_date(\@lines);
 
-    my $cleaned_lines  = clean_the_content(\@lines);
-    my $csv_header     = get_csv_header() . "\n";
+    my $cleaned_lines = clean_the_content(\@lines);
+    my $csv_header    = get_csv_header() . "\n";
 
     my $content;
     for (my $i = 1; $i < scalar @{$cleaned_lines}; $i++) {
@@ -745,14 +741,14 @@ sub price_list {
 
         my $underlying_symbol = exported_underlying_symbol(\@fields, $headers);
         my $contract_args = {
-            id                           => exported_external_id(\@fields, $headers),
-            bet_type                     => exported_bet_type(\@fields, $headers),
-            payout_currency              => exported_payout_currency(\@fields, $headers),
+            id                           => exported_external_id(\@fields,         $headers),
+            bet_type                     => exported_bet_type(\@fields,            $headers),
+            payout_currency              => exported_payout_currency(\@fields,     $headers),
             underlying_symbol            => $underlying_symbol,
-            cut_off_time                 => exported_cut_off_time(\@fields, $headers),
+            cut_off_time                 => exported_cut_off_time(\@fields,        $headers),
             price_type                   => 'theo',
             portfolio                    => 'Reprice',
-            current_spot                 => exported_spot(\@fields, $headers),
+            current_spot                 => exported_spot(\@fields,                $headers),
             date_start                   => $pricing_date,
             expiry_date_bom              => $expiry_date_bom,
             date_pricing                 => $pricing_date,
@@ -761,10 +757,10 @@ sub price_list {
             q                            => $q_rate / 100,
             payout_amount                => 100,
         };
-        if ($contract_args->{bet_type} eq 'RANGE'  or $contract_args->{bet_type} eq 'UPORDOWN') {
+        if ($contract_args->{bet_type} eq 'RANGE' or $contract_args->{bet_type} eq 'UPORDOWN') {
             $contract_args->{high_barrier} = exported_high_barrier(\@fields, $headers);
-            $contract_args->{low_barrier}  = exported_low_barrier(\@fields, $headers);
-        }else{
+            $contract_args->{low_barrier} = exported_low_barrier(\@fields, $headers);
+        } else {
             $contract_args->{barrier} = exported_high_barrier(\@fields, $headers);
         }
         my $fixture = SetupDatasetTestFixture->new;
@@ -782,7 +778,6 @@ sub price_list {
     }
     return ($csv_header, $content);
 }
-
 
 __PACKAGE__->meta->make_immutable;
 1;

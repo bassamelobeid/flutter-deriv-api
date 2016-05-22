@@ -15,7 +15,6 @@ has suite => (
     default => 'mini',
 );
 
-
 has report_file => (
     is      => 'ro',
     isa     => 'HashRef',
@@ -40,11 +39,11 @@ sub run_dataset {
     my @files = $file ? ($file) : ('DJI', 'FCHI', 'SPC', 'N225', 'SSECOMP', 'FTSE');
 
     write_file($self->report_file->{all}, $self->csv_title . "\n");
-    my $path  = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/superderivatives';
+    my $path = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/superderivatives';
     my $all_results;
-    for my $symbol (@files){
-        my $file_path    = "$path/SD_$symbol.csv";
-        my $records = CSVParser::Superderivatives_EQ->new(
+    for my $symbol (@files) {
+        my $file_path = "$path/SD_$symbol.csv";
+        my $records   = CSVParser::Superderivatives_EQ->new(
             file  => $file_path,
             suite => $self->suite,
         )->records;
@@ -71,19 +70,19 @@ sub _calculate_and_saves_analysis_report {
     foreach my $bet_type (keys %{$results}) {
         my @records          = @{$results->{$bet_type}};
         my $number_of_record = scalar @records;
-        my $avg = sum(@records) / $number_of_record;
-        my $max  = max(@records);
+        my $avg              = sum(@records) / $number_of_record;
+        my $max              = max(@records);
         $analysis_results->{$bet_type}->{avg} = $avg;
         $analysis_results->{$bet_type}->{max} = $max;
-         my $output_string = $bet_type . "," . $avg . "," . $max . "\n";
-            append_file($file, $output_string);
-        }
-      return $analysis_results;
+        my $output_string = $bet_type . "," . $avg . "," . $max . "\n";
+        append_file($file, $output_string);
+    }
+    return $analysis_results;
 }
 
 sub price_superderivatives_bets_locally {
     my ($self, $records) = @_;
-    my $csv = Text::CSV->new();
+    my $csv       = Text::CSV->new();
     my $breakdown = {};
     my $i         = 0;
     foreach my $record (@$records) {
@@ -99,21 +98,30 @@ sub price_superderivatives_bets_locally {
             date_pricing => $record->{date_start}->epoch + 9 * 3600,
         };
 
-       if ($record->{barrier2}){
-           $bet_args->{low_barrier}  = $record->{barrier2};
-           $bet_args->{high_barrier} = $record->{barrier};
-       }else{
-           $bet_args->{barrier} = $record->{barrier};
-       }
+        if ($record->{barrier2}) {
+            $bet_args->{low_barrier}  = $record->{barrier2};
+            $bet_args->{high_barrier} = $record->{barrier};
+        } else {
+            $bet_args->{barrier} = $record->{barrier};
+        }
+        $bet_args->{current_tick} = BOM::Market::Data::Tick->new(
+            underlying => $bet_args->{underlying}->symbol,
+            quote      => $bet_args->{current_spot},
+            epoch      => $bet_args->{date_start},
+        );
 
         my $bet = produce_contract($bet_args);
 
         my $bom_mid  = $bet->theo_probability->amount;
         my $sd_mid   = $record->{sd_mid};
         my $mid_diff = abs($sd_mid - $bom_mid);
-        my @barriers   = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute,'NA');
+        my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
 
-        $csv->combine($record->{ID}, $record->{underlying}->symbol,$record->{bet_type},$record->{date_start}->epoch,$record->{date_expiry}->epoch,$record->{spot},@barriers,$bet->pricing_args->{iv},$sd_mid,$bom_mid,$mid_diff);
+        $csv->combine(
+            $record->{ID},                 $record->{underlying}->symbol, $record->{bet_type}, $record->{date_start}->epoch,
+            $record->{date_expiry}->epoch, $record->{spot},               @barriers,           $bet->pricing_args->{iv},
+            $sd_mid,                       $bom_mid,                      $mid_diff
+        );
 
         my $result = $csv->string;
         append_file($self->report_file->{all}, $result . "\n");
