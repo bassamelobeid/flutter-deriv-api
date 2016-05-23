@@ -6,8 +6,6 @@ use warnings;
 use JSON;
 use Cache::RedisDB;
 
-use BOM::WebSocketAPI::Websocket_v3;
-
 sub asset_index_cached {
     my ($c, $args, $params) = @_;
 

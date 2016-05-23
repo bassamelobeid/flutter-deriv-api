@@ -7,7 +7,6 @@ use warnings;
 use JSON;
 use List::Util qw(first);
 
-use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
