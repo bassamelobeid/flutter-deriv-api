@@ -7,6 +7,7 @@ use Test::More tests => 2;
 use Test::Exception;
 use Test::NoWarnings;
 
+use Format::Util::Numbers qw(roundnear);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -54,7 +55,7 @@ subtest 'tuesday to friday close' => sub {
             date_pricing => $now,
         });
 
-        is $c->ask_probability->amount, $data->{$now->datetime}{ask_probability}, 'ask_probability';
+        is roundnear(0.00001,$c->ask_probability->amount), roundnear(0.00001,$data->{$now->datetime}{ask_probability}), 'ask_probability';
         is $c->timeindays->amount,      $data->{$now->datetime}{timeindays},      'timeindays';
     }
 };

@@ -111,7 +111,7 @@ subtest 'new commission structure' => sub {
             name        => 'theo_probability',
             description => 'test theo',
             set_by      => 'test',
-            base_amount => $theo,
+            base_amount => $theo + $fake_risk->amount,
         });
         foreach my $data (@{$test_cases{$theo}}) {
             my $stake = $data->{stake};
@@ -124,7 +124,6 @@ subtest 'new commission structure' => sub {
                 amount_type => 'stake',
                 amount      => $stake,
                 base_commission => $base_commission,
-                risk_markup => $fake_risk,
                 theo_probability => $fake_theo,
             });
             is $c->payout, roundnear(0.01,$data->{payout}), 'correct payout amount';
