@@ -132,16 +132,6 @@ sub calculate_ask_probability {
     # final sanity check
     $ask_probability = max(min($ask_probability, $maximum), $minimum);
 
-    # If BS is very high, we don't want that business, even if it makes sense.
-    # Also, if the market supplement would absolutely drive us out of [0,1]
-    # Then it is nonsense to be ignored.
-    if (   $bs_probability >= 0.999
-        || abs($market_supplement) >= 1
-        || $market_supplement <= -0.5)
-    {
-        $ask_probability = $maximum;
-    }
-
     return $ask_probability;
 }
 

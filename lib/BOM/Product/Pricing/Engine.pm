@@ -97,7 +97,29 @@ sub _build_bs_probability {
         @max,
         base_amount => $tv,
     });
+
+    # If BS is very high, we don't want that business, even if it makes sense.
+    if ($tv > 0.999) {
+        $bs_prob->include_adjustment('add', $self->no_business_probability);
+    }
+
     return $bs_prob;
+}
+
+has no_business_probability => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_no_business_probability',
+);
+
+sub _build_no_business_probability {
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'no_business',
+        description => 'setting probability to 1',
+        set_by      => 'BOM::Product::Pricing::Engine::VannaVolga',
+        base_amount => 1,
+    });
+
 }
 
 sub _build_d2 {

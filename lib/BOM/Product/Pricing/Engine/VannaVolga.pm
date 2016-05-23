@@ -165,8 +165,14 @@ sub _build_probability {
         maximum     => 1,
     });
 
-    $ctv->include_adjustment('reset', $self->bs_probability);
-    $ctv->include_adjustment('add',   $self->market_supplement);
+    # If the market supplement would absolutely drive us out of [0,1]
+    # Then it is nonsense to be ignored.
+    if ($self->market_supplement->amount <= -0.5 || $self->market_supplement->amount >= 1) {
+        $ctv->include_adjustment('reset', $self->no_business_probability);
+    } else {
+        $ctv->include_adjustment('reset', $self->bs_probability);
+        $ctv->include_adjustment('add',   $self->market_supplement);
+    }
 
     return $ctv;
 }
