@@ -104,8 +104,8 @@ sub _build_probability {
         base_amount => $self->formula->($self->_formula_args),
     });
 
-    $ifx_prob->include_adjustment('add',  $self->intraday_delta_correction);
-    $ifx_prob->include_adjustment('add',  $self->intraday_vega_correction);
+    $ifx_prob->include_adjustment('add', $self->intraday_delta_correction);
+    $ifx_prob->include_adjustment('add', $self->intraday_vega_correction);
 
     return $ifx_prob;
 }
