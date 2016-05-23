@@ -16,7 +16,7 @@ sub get_display_languages {
 }
 
 sub get_static_path {
-    return "/home/git/binary-com/binary-static/";
+    return "/home/git/binary-com/binary-static/src/";
 }
 
 sub get_static_url {
