@@ -16,17 +16,11 @@ sub get_display_languages {
 }
 
 sub get_static_path {
-    if (BOM::System::Config::node->{node}->{www2} or BOM::System::Config::env =~ /^qa\d+$/) {
-        return "/home/git/binary-static/binary-static-www2/";
-    }
     return "/home/git/binary-com/binary-static/";
 }
 
 sub get_static_url {
-    if (BOM::System::Config::node->{node}->{www2} or BOM::System::Config::env =~ /^qa\d+$/) {
-        return "https://static-www2.binary.com/";
-    }
-    return "https://static.binary.com/";
+    return "https://www.binary.com/";
 }
 
 sub get_customer_support_email {
