@@ -13,10 +13,14 @@
       "title": "Get corporate actions response",
       "description": "Corporate actions for an equity symbol",
       "properties": {
-        "display_date": {
+        "index": {
           "type": "object",
-          "description": "Effective date of the corporate action.",
+          "description": "Index of the corporate action.",
           "properties":{
+            "display_date": {
+              "type": "string",
+              "description": "Effective date of the corporate actions."
+            },
             "type": {
               "type": "integer",
               "description": "Type of corporate actions."
