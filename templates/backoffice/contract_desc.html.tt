@@ -2,6 +2,4 @@
         [% l("Legacy Contract") %]
 [% ELSE %]
         [% longcode | replace('\s+:\s+', ': ') %]
-        <br/>
-        [% analyse_link %]
 [% END %]
