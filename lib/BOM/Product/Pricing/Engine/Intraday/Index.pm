@@ -17,7 +17,7 @@ Model markup of zero for Intraday Index
 
 =cut
 
-has [qw(pricing_vol probability model_markup)] => (
+has [qw(pricing_vol probability risk_markup commission_markup)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -50,14 +50,25 @@ sub _build_probability {
     });
 }
 
-sub _build_model_markup {
+sub _build_commission_markup {
     my $self = shift;
 
     return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'model_markup',
-        description => 'model markup for intraday index',
+        name        => 'commission_markup',
+        description => 'commission markup for intraday index',
         set_by      => __PACKAGE__,
         base_amount => 0.05,
+    });
+}
+
+sub _build_risk_markup {
+    my $self = shift;
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'risk_markup',
+        description => 'risk markup for intraday index',
+        set_by      => __PACKAGE__,
+        base_amount => 0,
     });
 }
 
