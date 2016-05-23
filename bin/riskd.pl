@@ -30,13 +30,9 @@ sub daemon_run {
     my $self = shift;
 
     while (1) {
-        $self->info('Starting marked-to-model calculation.');
         BOM::RiskReporting::MarkedToModel->new->generate;
-        $self->info('Completed marked-to-model calculation.');
         $self->rest;
-        $self->info('Starting risk report generation.');
         BOM::RiskReporting::Dashboard->new->generate;
-        $self->info('Completed risk report generation.');
         $self->rest;
     }
 
@@ -47,9 +43,7 @@ sub rest {
     my $self     = shift;
     my $how_long = $self->rest_period;
 
-    $self->info('Checking for config changes.');
     BOM::Platform::Runtime->instance->app_config->check_for_update;    # We're a long-running process. See if config changed underneath us.
-    $self->info('Resting for ' . $how_long->as_string . '...');
     sleep($how_long->seconds);
 
     return;
@@ -57,7 +51,7 @@ sub rest {
 
 sub handle_shutdown {
     my $self = shift;
-    $self->warning('Shutting down.');
+    warn('Shutting down.');
     return 0;
 }
 
