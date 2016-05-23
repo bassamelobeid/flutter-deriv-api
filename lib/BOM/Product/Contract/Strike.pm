@@ -65,22 +65,6 @@ has adjustment => (
     predicate => 'has_adjustments',
 );
 
-has original_barrier => (
-    is         => 'rw',
-    lazy_build => 1,
-
-);
-
-sub _build_original_barrier {
-    my $self   = shift;
-    my $strike = $self;
-    while ($strike->has_adjustments) {
-        $strike = $strike->adjustment->{prev_obj};
-    }
-    return $strike;
-
-}
-
 sub _build_supplied_type {
     my $self = shift;
 
@@ -207,8 +191,9 @@ sub _build_for_shortcode {
     # We'll reapply them on rebuild.
     my $strike = $self;
 
-    if ($strike->has_adjustments) {
-        $strike = $self->original_barrier;
+    while ($strike->has_adjustments) {
+        # Keep on down the rabbit hole until we find the bottom which is unadjusted.
+        $strike = $strike->adjustment->{prev_obj};
     }
 
     return $strike->as_relative if ($strike->supplied_type eq 'relative' or $strike->supplied_type eq 'difference');
@@ -243,8 +228,9 @@ sub _build_display_text {
 
     # We don't have the display text to change as well for immutable longcode's sake.
     my $strike = $self;
-    if ($strike->has_adjustments) {
-        $strike = $self->original_barrier;
+    while ($strike->has_adjustments) {
+        # Keep on down the rabbit hole until we find the bottom which is unadjusted.
+        $strike = $strike->adjustment->{prev_obj};
     }
 
     if ($barrier_type eq 'absolute') {
