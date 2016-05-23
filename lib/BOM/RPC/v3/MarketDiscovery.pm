@@ -18,7 +18,6 @@ use Sereal::Encoder;
 use BOM::Platform::Runtime;
 
 my %name_mapper = (
-    DVD_CASH   => localize('Cash Dividend'),
     DVD_STOCK  => localize('Stock Dividend'),
     STOCK_SPLT => localize('Stock Split'),
 );
