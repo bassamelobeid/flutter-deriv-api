@@ -8,11 +8,6 @@ use BOM::Platform::Context qw(localize);
 use List::Util qw(max);
 use Scalar::Util::Numeric qw(isint);
 
-has original_barrier => (
-    is  => 'rw',
-    isa => 'Maybe[BOM::Product::Contract::Strike]',
-);
-
 sub make_barrier {
     my ($self, $supplied, $extra_params) = @_;
 
@@ -46,27 +41,23 @@ sub make_barrier {
         %$extra_params,,
     );
 
-    my @corporate_actions = @{$self->corporate_actions};
-
-    if (@corporate_actions) {
-        $self->original_barrier($barrier);
-        foreach my $action (@corporate_actions) {
-            try {
-                $barrier = $barrier->adjust({
-                    modifier => $action->{modifier},
-                    amount   => $action->{value},
-                    reason   => $action->{type} . ': ' . $action->{description} . '(' . $action->{effective_date} . ')',
-                });
-            }
-            catch {
-                $self->add_error({
-                    severity          => 100,
-                    message           => "Could not apply corporate action [error: $_]",
-                    message_to_client => localize('System problems prevent proper settlement at this time.'),
-                });
-            };
+    foreach my $action (@{$self->corporate_actions}) {
+        try {
+            $barrier = $barrier->adjust({
+                modifier => $action->{modifier},
+                amount   => $action->{value},
+                reason   => $action->{type} . ': ' . $action->{description} . '(' . $action->{effective_date} . ')',
+            });
         }
+        catch {
+            $self->add_error({
+                severity          => 100,
+                message           => "Could not apply corporate action [error: $_]",
+                message_to_client => localize('System problems prevent proper settlement at this time.'),
+            });
+        };
     }
+
     return $barrier;
 }
 
