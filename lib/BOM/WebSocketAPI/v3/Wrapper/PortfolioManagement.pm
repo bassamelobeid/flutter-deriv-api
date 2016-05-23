@@ -148,7 +148,7 @@ sub proposal_open_contract {
 }
 
 sub send_proposal {
-    my ($c, $id, $args) = @_;
+    my ($c, $id, $args, $type) = @_;
 
     my $details         = {%$args};
     my $contract_id     = delete $details->{contract_id};
@@ -169,11 +169,11 @@ sub send_proposal {
             if ($response) {
                 if (exists $response->{error}) {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
+                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $type);
                     return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
                 } elsif (exists $response->{is_expired} and $response->{is_expired} eq '1') {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
+                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $type);
                     $id = undef;
                 }
 
@@ -190,7 +190,7 @@ sub send_proposal {
                     }};
             } else {
                 BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $type);
             }
         },
         {
