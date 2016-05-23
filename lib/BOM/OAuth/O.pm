@@ -76,7 +76,7 @@ sub authorize {
     if ($app_id !~ /^\d+$/ and exists $id_map->{$app_id}) {
         $app_id = $id_map->{$app_id};
     }
-    die "Invalid app_id [$app_id]" if ($app_id !~ /^\d+$/);
+    return $c->__bad_request('the request was missing valid app_id') if ($app_id !~ /^\d+$/);
 
     my $oauth_model = __oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
