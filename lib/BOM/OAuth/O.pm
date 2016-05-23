@@ -124,7 +124,6 @@ sub authorize {
             layout => 'default',
 
             app       => $app,
-            l         => \&localize,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
@@ -166,7 +165,6 @@ sub authorize {
             app       => $app,
             client    => $client,
             scopes    => \@scopes,
-            l         => \&localize,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
@@ -247,7 +245,6 @@ sub __login {
 
             app       => $app,
             error     => $err,
-            l         => \&localize,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
