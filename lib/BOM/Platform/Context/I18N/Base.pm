@@ -1,4 +1,4 @@
-package BOM::Platform::Context::Base::I18N::Base;
+package BOM::Platform::Context::I18N::Base;
 
 use strict;
 use warnings;
@@ -6,11 +6,11 @@ use parent 'Locale::Maketext';
 
 =head1 NAME
 
-BOM::Platform::Context::Base::I18N
+BOM::Platform::Context::I18N::Base
 
 =head1 SYNOPSIS
 
-    use BOM::Platform::Context::Base::I18N;
+    use BOM::Platform::Context::I18N::Base;
     my $lh = BOM::Platform::Context::Base::I18N->get_handle('en');
     $lh->maketext("Hello");
 
