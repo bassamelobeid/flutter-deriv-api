@@ -983,7 +983,7 @@ sub _build_ask_probability {
     my $base_amount = BOM::Product::Contract::Helper::calculate_ask_probability({
         theo_probability      => $self->theo_probability->amount,
         risk_markup           => $self->risk_markup->amount,
-        base_commission       => $self->base_commission,
+        commission_markup     => $self->commission_markup->amount,
         market_supplement     => $self->theo_probability->peek_amount('market_supplement') // 0,
         bs_probability        => $self->bs_probability->amount,
         probability_threshold => $self->market->deep_otm_threshold,
