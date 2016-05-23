@@ -15,7 +15,7 @@ use BOM::Platform::Locale;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Context;
 use BOM::System::AuditLog;
-use BOM::View::Controller::Bet;
+use BOM::ContractInfo;
 use BOM::Platform::Static::Config;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -249,7 +249,7 @@ BOM::Platform::Context::template->process(
         currency                => $client->currency,
         loginid                 => $client->loginid,
         depositswithdrawalsonly => request()->param('depositswithdrawalsonly'),
-        contract_details        => \&BOM::View::Controller::Bet::get_info,
+        contract_details        => \&BOM::ContractInfo::get_info,
     },
 ) || die BOM::Platform::Context::template->error();
 
