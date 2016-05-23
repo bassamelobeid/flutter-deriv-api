@@ -49,7 +49,7 @@ has _supported_types => (
     },
 );
 
-has [qw(model_markup bs_probability probability d2)] => (
+has [qw(bs_probability probability d2)] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
@@ -138,35 +138,6 @@ sub _build_d2 {
     });
 
     return $d2_ret;
-}
-
-=head2 model_markup
-
-The commission from model we should apply for this bet.
-
-=cut
-
-sub _build_model_markup {
-    my $self = shift;
-
-    my $model = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'model_markup',
-        description => 'The markup calculated by this engine.',
-        set_by      => 'BOM::Product::Pricing::Engine',
-        minimum     => 0,
-        maximum     => 100,
-        base_amount => 0,
-    });
-    my $standard = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'standard_rate',
-        description => 'Our standard markup',
-        set_by      => 'BOM::Product::Pricing::Engine',
-        base_amount => 0.10,
-    });
-
-    $model->include_adjustment('add', $standard);
-
-    return $model;
 }
 
 =head2 probability

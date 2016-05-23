@@ -29,7 +29,7 @@ use BOM::Platform::Static::Config;
 =cut
 
 has [
-    qw(model_markup smile_uncertainty_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup commission_markup digital_spread_markup forward_starting_markup economic_events_markup eod_market_risk_markup economic_events_spot_risk_markup)
+    qw(smile_uncertainty_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup commission_markup digital_spread_markup forward_starting_markup economic_events_markup eod_market_risk_markup economic_events_spot_risk_markup)
     ] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
@@ -47,27 +47,6 @@ has _volatility_seasonality_step_size => (
     isa     => 'Num',
     default => 100,
 );
-
-=head2 model_markup
-
-This sub builds up the bid ask spread. This section will eventually be used to build BOM spreads and then we will be adding an extra commission on top of it.
-
-=cut
-
-sub _build_model_markup {
-    my $self = shift;
-
-    my $model_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'model_markup',
-        description => 'Standard markup',
-        set_by      => __PACKAGE__,
-    });
-
-    $model_markup->include_adjustment('reset', $self->commission_markup);
-    $model_markup->include_adjustment('add',   $self->risk_markup);
-
-    return $model_markup;
-}
 
 sub _build_eod_market_risk_markup {
     my $self = shift;

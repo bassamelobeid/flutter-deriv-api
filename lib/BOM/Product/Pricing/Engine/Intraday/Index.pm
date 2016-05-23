@@ -11,10 +11,6 @@ use BOM::Platform::Context qw(localize);
 probability for Intraday Index is hard-coded to 55%.
 There's no model in this price calculation yet.
 
-=head2 model_markup
-
-Model markup of zero for Intraday Index
-
 =cut
 
 has [qw(pricing_vol probability risk_markup commission_markup)] => (
@@ -40,6 +36,7 @@ has _supported_types => (
 sub _build_probability {
     my $self = shift;
 
+    # This has zero risk_markup
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'theoretical_probability',
         description => 'theoretical probability for intraday index',
@@ -58,17 +55,6 @@ sub _build_commission_markup {
         description => 'commission markup for intraday index',
         set_by      => __PACKAGE__,
         base_amount => 0.05,
-    });
-}
-
-sub _build_risk_markup {
-    my $self = shift;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'risk_markup',
-        description => 'risk markup for intraday index',
-        set_by      => __PACKAGE__,
-        base_amount => 0,
     });
 }
 

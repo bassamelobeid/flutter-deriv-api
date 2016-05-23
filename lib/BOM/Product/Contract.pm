@@ -409,7 +409,6 @@ has [qw(volsurface)] => (
 # discounted_probability - The discounted total probability, given the time value of the money at stake.
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
 has [qw(
-        model_markup
         total_markup
         ask_probability
         theo_probability
@@ -960,12 +959,11 @@ sub _build_total_markup {
         name        => 'total_markup',
         description => 'Our total markup over theoretical value',
         set_by      => 'BOM::Product::Contract',
-        base_amount => 0,
+        base_amount => $self->commission_markup->amount,
         %min,
         %max,
     });
 
-    $total_markup->include_adjustment('reset', $self->model_markup);
     my $commission_adjustment_cv = Math::Util::CalculatedValue::Validatable->new({
         name        => 'global_commission_adjustment',
         description => 'global commission scaling factory',
@@ -1207,20 +1205,6 @@ sub _build_commission_markup {
             BOM::Product::Contract::Helper::commission_multiplier($self->payout, $self->theo_probability->amount),
         %min,
     });
-}
-
-sub _build_model_markup {
-    my $self = shift;
-
-    my $model_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'model_markup',
-        description => 'Risk and commission markup for a pricing model',
-        set_by      => $self->pricing_engine_name,
-    });
-    $model_markup->include_adjustment('reset', $self->risk_markup);
-    $model_markup->include_adjustment('add',   $self->commission_markup);
-
-    return $model_markup;
 }
 
 sub _build_theo_price {

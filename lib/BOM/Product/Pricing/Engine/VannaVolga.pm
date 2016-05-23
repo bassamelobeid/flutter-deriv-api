@@ -172,6 +172,7 @@ sub _build_probability {
     } else {
         $ctv->include_adjustment('reset', $self->bs_probability);
         $ctv->include_adjustment('add',   $self->market_supplement);
+        $ctv->include_adjustment('add',   $self->risk_markup);
     }
 
     return $ctv;

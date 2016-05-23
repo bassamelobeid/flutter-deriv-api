@@ -84,7 +84,6 @@ sub commission {
     die 'Stake or payout is required to calculate commission.';
 }
 
-#A multiplicative factor which adjusts the model_markup.  This scale factor must be in the range [0.01, 5].
 sub global_commission_adjustment {
     my $self = shift;
 

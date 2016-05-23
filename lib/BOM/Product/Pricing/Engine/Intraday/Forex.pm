@@ -106,6 +106,7 @@ sub _build_probability {
 
     $ifx_prob->include_adjustment('add', $self->intraday_delta_correction);
     $ifx_prob->include_adjustment('add', $self->intraday_vega_correction);
+    $ifx_prob->include_adjustment('add', $self->risk_markup);
 
     return $ifx_prob;
 }
