@@ -88,9 +88,9 @@ sub commission {
 sub global_commission_adjustment {
     my $self = shift;
 
-    my $minimum        = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100,
-        my $maximum    = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100,
-        my $adjustment = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
+    my $minimum    = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100;
+    my $maximum    = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100;
+    my $adjustment = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
 
     return min(max($adjustment, $minimum), $maximum);
 }
