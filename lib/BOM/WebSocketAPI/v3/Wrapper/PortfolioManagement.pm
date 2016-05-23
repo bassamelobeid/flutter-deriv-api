@@ -118,15 +118,14 @@ sub proposal_open_contract {
                                 # need underlying to cancel streaming when manual sell occurs
                                 $details->{underlying} = $response->{$contract_id}->{underlying};
 
-                                $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
-                                    $c, 'subscribe',
-                                    $response->{$contract_id}->{underlying},
-                                    'proposal_open_contract:' . JSON::to_json(\%type_args), $details
-                                );
+                                my $typekey = JSON::to_json(\%type_args);
+                                $id =
+                                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'subscribe', $response->{$contract_id}->{underlying},
+                                    $typekey, $details);
 
                                 # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
                                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $details->{account_id},
-                                    $contract_id, $details, \%type_args)
+                                    $typekey, $details)
                                     if $id;
                             }
                             my $res = {$id ? (id => $id) : (), %{$response->{$contract_id}}};

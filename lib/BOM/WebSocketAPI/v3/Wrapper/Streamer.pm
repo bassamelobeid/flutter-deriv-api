@@ -269,7 +269,7 @@ sub process_realtime_events {
             } else {
                 return;
             }
-        } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
+        } elsif ($type =~ /proposal_open_contract/ and $m[0] eq $symbol) {
             BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
                 if $c->tx;
         } elsif ($m[0] eq $symbol) {
@@ -348,7 +348,7 @@ sub _feed_channel {
         delete $feed_channel_cache->{"$symbol;$type"};
 
         # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
-        _transaction_channel($c, 'unsubscribe', $args->{account_id}, $args->{contract_id}) if $type =~ /^proposal_open_contract:/;
+        _transaction_channel($c, 'unsubscribe', $args->{account_id}, $type) if $type =~ /proposal_open_contract/;
 
         if ($feed_channel->{$symbol} <= 0) {
             my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
@@ -364,7 +364,7 @@ sub _feed_channel {
 }
 
 sub _transaction_channel {
-    my ($c, $action, $account_id, $type, $args, $type_args) = @_;
+    my ($c, $action, $account_id, $type, $args) = @_;
     my $uuid;
 
     my $redis              = $c->stash('redis');
@@ -376,10 +376,10 @@ sub _transaction_channel {
         if ($action eq 'subscribe' and not $already_subscribed) {
             $uuid = Data::UUID->new->create_str();
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
-            $channel->{$type}->{args}      = $args      if $args;
-            $channel->{$type}->{type_args} = $type_args if $type_args;
-            $channel->{$type}->{uuid}      = $uuid;
-            $channel->{$type}->{account_id} = $account_id;
+            $channel->{$type}->{args}        = $args;
+            $channel->{$type}->{uuid}        = $uuid;
+            $channel->{$type}->{account_id}  = $account_id;
+            $channel->{$type}->{contract_id} = $args->{contract_id};
             $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
             delete $channel->{$type};
@@ -465,17 +465,15 @@ sub process_transaction_updates {
                             $details->{$type}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
                             $c->send({json => $details});
                         }
-                    } elsif ($type =~ /^[0-9]+$/
+                    } elsif ($type =~ /proposal_open_contract/
                         and $payload->{action_type} eq 'sell'
                         and exists $payload->{financial_market_bet_id}
-                        and $payload->{financial_market_bet_id} eq $type)
+                        and $payload->{financial_market_bet_id} eq $channel->{$type}->{contract_id})
                     {
                         # cancel proposal open contract streaming, transaction subscription and mark is_sold as 1
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
-                            $c, 'unsubscribe',
-                            delete $args->{underlying},
-                            'proposal_open_contract:' . JSON::to_json($channel->{$type}->{type_args}), $args
-                        ) if $args->{underlying};
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', delete $args->{underlying}, $type, $args)
+                            if $args->{underlying};
+
                         _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
 
                         $args->{is_sold}    = 1;
