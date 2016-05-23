@@ -32,7 +32,10 @@ sub get_corporate_actions {
 
     my ($start_date, $end_date);
 
-    my $response = {};
+    my $response = {
+        actions => [],
+        count   => 0
+    };
 
     if (not $end) {
         $end_date = Date::Utility->new;
@@ -66,21 +69,26 @@ sub get_corporate_actions {
             });
         }
 
-        my $count = 0;
-
+        my @corporate_actions;
         foreach my $action (@actions) {
             my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
 
-            $response->{$count} = {
+            my $struct = {
                 display_date => $display_date,
                 type         => $name_mapper{$action->{type}},
                 value        => $action->{value},
                 modifier     => $action->{modifier},
             };
 
-            $count++;
+            push @corporate_actions, $struct;
         }
 
+        if (scalar(@corporate_actions)) {
+            $response = {
+                actions => [@corporate_actions],
+                count   => scalar @corporate_actions,
+            };
+        }
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({

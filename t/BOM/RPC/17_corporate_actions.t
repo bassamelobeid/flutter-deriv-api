@@ -117,20 +117,20 @@ subtest 'get_corporate_actions' => sub {
 
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
-    my @expected_two_keys = (qw(0 1));
+    my $count = $result->{count};
 
-    is_deeply([sort keys %{$result}], [sort @expected_two_keys]);
+    cmp_ok $count, '==', 2, 'count of corporate actions';
 
-    my $value = $result->{0}->{value};
+    my $value = $result->{actions}[0]{value};
 
     cmp_ok $value, '==', 2.25, 'value for this  corporate action';
 
-    my $modifier = $result->{0}->{modifier};
+    my $modifier = $result->{actions}[0]{modifier};
 
     cmp_ok $modifier, 'eq', 'divide', 'modifier for this  corporate action';
 
     #Check value for the second corporate action.
-    $value = $result->{1}->{value};
+    $value = $result->{actions}[1]{value};
 
     cmp_ok $value, '==', 1.25, 'value for the second corporate action';
 
