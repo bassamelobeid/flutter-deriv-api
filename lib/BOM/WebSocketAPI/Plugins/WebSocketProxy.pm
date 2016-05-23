@@ -13,8 +13,9 @@ sub register {
     }
 
     if (exists $conf->{forward} && ref $conf->{forward} eq 'HASH') {
-        while (my ($name, $action) = each %{$conf->{forward}}) {
-            BOM::WebSocketAPI::Dispatcher::add_route($self, $name, $action);
+        my @actions = @{$conf->{forward}};
+        for (my $i; i < @actions; $i++) {
+            BOM::WebSocketAPI::Dispatcher::add_route($self, $action, $i);
         }
     } else {
         Carp::confess 'No actions found!';

@@ -9,6 +9,17 @@ use Try::Tiny;
 use BOM::WebSocketAPI::Websocket_v3();
 use BOM::WebSocketAPI::CallingEngine();
 
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
+use BOM::WebSocketAPI::v3::Wrapper::Transaction;
+use BOM::WebSocketAPI::v3::Wrapper::Authorize;
+use BOM::WebSocketAPI::v3::Wrapper::System;
+use BOM::WebSocketAPI::v3::Wrapper::Accounts;
+use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
+use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
+use BOM::WebSocketAPI::v3::Wrapper::Cashier;
+use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
+use BOM::WebSocketAPI::v3::Wrapper::Pricer;
+
 sub apply_usergroup {
     my ($cf, $log) = @_;
 
@@ -111,19 +122,44 @@ sub startup {
     $app->plugin('ClientIP');
     $app->plugin('BOM::WebSocketAPI::Plugins::Helpers');
 
-    # $app->plugin('BOM::WebSocketAPI::Plugins::WebSocketProxy' => {
-    #     forward => {
-    #         'trading_times' => {require_auth => 0},
-    #     },
-    #     base_path => '/websockets/v3',
-    # });
+    $app->plugin('BOM::WebSocketAPI::Plugins::WebSocketProxy' => {
+        forward => [
+            ['authorize']
+            [
+                'logout',
+                {
+                    stash_params => [qw/ token token_type email client_ip country_code user_agent /],
+                    success      => \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
+                },
+            ],
+            ['trading_times'],
+            [
+                'asset_index',
+                {
+                    before_forward => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
+                    success        => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
+                }
+            ],
+            ['active_symbols', {stash_params => [qw/ token /]}],
 
-    my $r = $app->routes;
+            ['profit_table', {require_auth => 'read'}],
+            ['get_account_status', {require_auth => 'read'}],
+            ['change_password', {require_auth => 'admin', stash_params => [qw/ token_type client_ip /]}],
+            ['get_settings', {require_auth => 'read'}],
+            ['set_settings', {require_auth => 'admin', stash_params => [qw/ server_name client_ip user_agent /]}],
+            ['get_self_exclusion', {require_auth => 'read'}],
+            ['set_self_exclusion', {require_auth => 'admin', response     => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion_response_handler}],
+            ['cashier_password', {require_auth => 'payments', stash_params => [qw/ client_ip /]}],
+        ],
+        base_path => '/websockets/v3',
+    });
 
-    for ($r->under('/websockets/v3')) {
-        $_->to('Websocket_v3#ok');
-        $_->websocket('/')->to('#entry_point');
-    }
+    # my $r = $app->routes;
+
+    # for ($r->under('/websockets/v3')) {
+    #     $_->to('Websocket_v3#ok');
+    #     $_->websocket('/')->to('#entry_point');
+    # }
 
     # my $r = $app->routes;
 
