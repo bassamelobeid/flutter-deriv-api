@@ -30,9 +30,7 @@ sub daemon_run {
 
             if (defined($data_structure_reference)) {    # children are not forced to send anything
                 my ($count, $first, $last) = @$data_structure_reference;
-                unless ($count) {
-                    warn('No back-fill aggregations for ' . $ident_symbol);
-                }
+                warn('No back-fill aggregations for ' . $ident_symbol) unless $count;
             } else {
                 warn('Error in loading of ' . $ident_symbol . ' exit code: ' . $exit_code);
             }
