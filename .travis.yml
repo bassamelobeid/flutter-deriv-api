@@ -2,7 +2,7 @@ language: perl
 perl:
     - "5.14.2"
 env:
-    - PERL5LIB=/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/cpan/local/lib/perl5:/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi:/home/git/regentmarkets/bom-utility/lib:/home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib
+    - PERL5LIB=/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/cpan/local/lib/perl5:/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi:/home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib
 addons:
     postgresql: "9.3"
 services:
@@ -19,7 +19,6 @@ before_install:
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
@@ -34,7 +33,7 @@ install:
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
     - /tmp/travis-scripts/setup_clientdb.sh
-    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/git/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5432" --username=postgres --database=regentmarkets --dbset=collector'
+    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-platform/lib -I/home/git/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5432" --username=postgres --database=regentmarkets --dbset=collector'
     - /tmp/travis-scripts/setup_feeddb.sh
     - /tmp/travis-scripts/setup_chronicledb.sh
     - export PAYMENTAPI_LOG_FILE=/tmp/paymentapi.log
