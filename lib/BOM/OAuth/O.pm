@@ -183,7 +183,7 @@ sub authorize {
         $i++;
     }
 
-    $uri .= '#' . join('&', @accts);
+    $uri .= '?' . join('&', @accts);
     $uri .= '&state=' . $state if defined $state;
 
     ## clear session
