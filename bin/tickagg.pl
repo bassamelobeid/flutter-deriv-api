@@ -30,18 +30,11 @@ sub daemon_run {
 
             if (defined($data_structure_reference)) {    # children are not forced to send anything
                 my ($count, $first, $last) = @$data_structure_reference;
-                if ($count) {
-                    $self->info('Filled '
-                            . $count
-                            . ' aggregations for '
-                            . $ident_symbol . ' for '
-                            . $first->datetime_iso8601 . ' to '
-                            . $last->datetime_iso8601);
-                } else {
-                    $self->warning('No back-fill aggregations for ' . $ident_symbol);
+                unless ($count) {
+                    warn('No back-fill aggregations for ' . $ident_symbol);
                 }
             } else {
-                $self->warning('Error in loading of ' . $ident_symbol . ' exit code: ' . $exit_code);
+                warn('Error in loading of ' . $ident_symbol . ' exit code: ' . $exit_code);
             }
         });
 
@@ -54,7 +47,6 @@ sub daemon_run {
     }
     $pm->wait_all_children;
     undef $pm;
-    $self->notice('Back-fill complete; resuming normal operation.');
 
     my $now        = int time;
     my $hold_time  = 1;                                          # Wait 1 second for ticks to make it into the cache;
@@ -79,7 +71,7 @@ sub daemon_run {
 
 sub handle_shutdown {
     my $self = shift;
-    $self->warning('Shutting down; may cause incorrect short-term pricing.');
+    warn('Shutting down; may cause incorrect short-term pricing.');
     return 0;
 }
 
