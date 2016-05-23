@@ -61,7 +61,7 @@ sub daemon_run {
 sub _daemon_run {
     my $self = shift;
 
-    $self->warn("Starting as PID $$.");
+    warn("Starting as PID $$.");
     my $redis = Cache::RedisDB->redis;
     while (1) {
         my $now = time;
@@ -73,7 +73,7 @@ sub _daemon_run {
                 my $contract_id = $info->{contract_id};
                 my $client = BOM::Platform::Client->new({loginid => $info->{held_by}});
                 if ($info->{in_currency} ne $client->currency) {
-                    $self->warn('Skip on currency mismatch for contract '
+                    warn('Skip on currency mismatch for contract '
                             . $contract_id
                             . '. Expected: '
                             . $info->{in_currency}
@@ -106,7 +106,7 @@ sub handle_shutdown {
     my $self = shift;
     return if $self->shutting_down;
     $self->shutting_down(1);
-    $self->warn("PID $$ is shutting down.");
+    warn("PID $$ is shutting down.");
     kill TERM => @{$self->pids}; # for children this list is empty
     return 0;
 }
