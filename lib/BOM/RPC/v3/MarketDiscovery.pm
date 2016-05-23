@@ -66,14 +66,19 @@ sub get_corporate_actions {
             });
         }
 
+        my $count = 0;
+
         foreach my $action (@actions) {
             my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
 
-            $response->{$display_date} = {
-                type     => $name_mapper{$action->{type}},
-                value    => $action->{value},
-                modifier => $action->{modifier},
+            $response->{$count} = {
+                display_date => $display_date,
+                type         => $name_mapper{$action->{type}},
+                value        => $action->{value},
+                modifier     => $action->{modifier},
             };
+
+            $count++;
         }
 
     }

@@ -107,15 +107,15 @@ subtest 'get_corporate_actions_one_action' => sub {
 
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
-    my @expected_keys = (qw(28-Mar-2013));
+    my @expected_keys = (qw(0));
 
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
 
-    my $value = $result->{'28-Mar-2013'}->{value};
+    my $value = $result->{0}->{value};
 
     cmp_ok $value, '==', 1.25, 'value for this  corporate action';
 
-    my $modifier = $result->{'28-Mar-2013'}->{modifier};
+    my $modifier = $result->{0}->{modifier};
 
     cmp_ok $modifier, 'eq', 'divide', 'modifier for this  corporate action';
 
