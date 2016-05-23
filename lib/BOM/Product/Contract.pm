@@ -980,74 +980,24 @@ sub _build_total_markup {
 sub _build_ask_probability {
     my $self = shift;
 
-    return $self->default_probabilities->{ask_probability} if $self->primary_validation_error;
+    my $base_amount = BOM::Product::Contract::Helper::calculate_ask_probability({
+        theo_probability      => $self->theo_probability->amount,
+        risk_markup           => $self->risk_markup->amount,
+        base_commission       => $self->base_commission,
+        market_supplement     => $self->theo_probability->peek_amount('market_supplement') // 0,
+        bs_probability        => $self->bs_probability->amount,
+        probability_threshold => $self->market->deep_otm_threshold,
+        pricing_engine_name   => $self->pricing_engine_name,
+    });
 
-    # Eventually we'll return the actual object.
-    # And start from an actual object.
-    my $minimum;
-    if ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
-        $minimum = 0.4;
-    } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
-        $minimum = 0.5 + $self->model_markup->amount;
-    } else {
-        $minimum = $self->theo_probability->amount;
-    }
-
-    # The above is a pretty unacceptable way to acheive this result. You do that stuff at the
-    # Engine level.. or work it into your markup.  This is nonsense.
-
-    my $marked_up = Math::Util::CalculatedValue::Validatable->new({
+    my $ask_probability = Math::Util::CalculatedValue::Validatable->new({
         name        => 'ask_probability',
         description => 'The price we request for this contract.',
         set_by      => 'BOM::Product::Contract',
-        minimum     => $minimum,
-        maximum     => 1,
+        base_amount => $base_amount,
     });
 
-    $marked_up->include_adjustment('reset', $self->theo_probability);
-
-    $marked_up->include_adjustment('add', $self->total_markup);
-
-    my $min_allowed_ask_prob = $self->market->deep_otm_threshold;
-
-    if ($marked_up->amount < $min_allowed_ask_prob) {
-        my $deep_otm_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'deep_otm_markup',
-            description => 'Additional markup for deep OTM contracts',
-            set_by      => 'BOM::Product::Contract',
-            minimum     => 0,
-            maximum     => $min_allowed_ask_prob,
-            base_amount => $min_allowed_ask_prob - $marked_up->amount,
-        });
-        $marked_up->include_adjustment('add', $deep_otm_markup);
-    }
-    my $max_allowed_ask_prob = 1 - $min_allowed_ask_prob;
-    if ($marked_up->amount > $max_allowed_ask_prob) {
-        my $max_prob_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'max_prob_markup',
-            description => 'Additional markup for contracts with prob higher that max allowed probability',
-            set_by      => __PACKAGE__,
-            base_amount => $min_allowed_ask_prob,
-        });
-        $marked_up->include_adjustment('add', $max_prob_markup);
-    }
-    # If BS is very high, we don't want that business, even if it makes sense.
-    # Also, if the market supplement would absolutely drive us out of [0,1]
-    # Then it is nonsense to be ignored.
-    if (   $self->bs_probability->amount >= 0.999
-        || abs($self->theo_probability->peek_amount('market_supplement') // 0) >= 1
-        || ($self->theo_probability->peek_amount('market_supplement') // 0) <= -0.5)
-    {
-        my $no_business = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'too_high_bs_prob',
-            description => 'Marked up to drive price to 1 when BS is very high',
-            set_by      => __PACKAGE__,
-            base_amount => 1,
-        });
-        $marked_up->include_adjustment('add', $no_business);
-    }
-
-    return $marked_up;
+    return $ask_probability;
 }
 
 sub is_valid_to_buy {
