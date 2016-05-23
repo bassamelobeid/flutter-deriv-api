@@ -31,7 +31,7 @@ sub commission_multiplier {
 sub commission {
     my $args = shift;
 
-    die "you need to provide theo_probability and risk_markup and base_commission to calculate commission."
+    die "you need to provide theo_probability  and base_commission to calculate commission."
         if not(exists $args->{theo_probability} and exists $args->{base_commission});
 
     if (defined $args->{payout}) {
@@ -39,9 +39,7 @@ sub commission {
     }
 
     if (defined $args->{stake}) {
-        die 'you need to provide risk_markup to calculate commission from stake' if not exists $args->{risk_markup};
-
-        my ($theo_prob, $risk_markup, $base_commission, $ask_price) = @{$args}{'theo_probability', 'risk_markup', 'base_commission', 'stake'};
+        my ($theo_prob, $base_commission, $ask_price) = @{$args}{'theo_probability', 'base_commission', 'stake'};
 
         delete $args->{base_commission};
         $args->{commission} = $base_commission;
@@ -62,7 +60,7 @@ sub commission {
         }
 
         my $a = $base_commission * $commission_slope * sqrt($theo_prob * (1 - $theo_prob));
-        my $b = $theo_prob + $risk_markup + $base_commission - $base_commission * $commission_min_std * $commission_slope;
+        my $b = $theo_prob + $base_commission - $base_commission * $commission_min_std * $commission_slope;
         my $c = -$ask_price;
 
         # sets it to zero first.
@@ -97,14 +95,14 @@ sub global_commission_adjustment {
 sub calculate_payout {
     my $args = shift;
 
-    return $args->{stake} / ($args->{theo_probability} + ($args->{risk_markup} + $args->{commission}) * global_commission_adjustment());
+    return $args->{stake} / ($args->{theo_probability} + $args->{commission} * global_commission_adjustment());
 }
 
 sub calculate_ask_probability {
     my $args = shift;
 
-    my ($theo_probability, $risk_markup, $commission_markup, $market_supplement, $bs_probability, $probability_threshold, $pricing_engine_name) =
-        @{$args}{qw(theo_probability risk_markup commission_markup market_supplement bs_probability probability_threshold pricing_engine_name)};
+    my ($theo_probability, $commission_markup, $market_supplement, $bs_probability, $probability_threshold, $pricing_engine_name) =
+        @{$args}{qw(theo_probability commission_markup market_supplement bs_probability probability_threshold pricing_engine_name)};
 
     # The below is a pretty unacceptable way to acheive this result. You do that stuff at the
     # Engine level.. or work it into your markup.  This is nonsense.
@@ -112,13 +110,13 @@ sub calculate_ask_probability {
     if ($pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         $minimum = 0.4;
     } elsif ($pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
-        $minimum = 0.5 + $risk_markup + $commission_markup;
+        $minimum = 0.5 + $commission_markup;
     } else {
         $minimum = $theo_probability;
     }
 
     my $maximum         = 1;
-    my $ask_probability = $theo_probability + ($risk_markup + $commission_markup) * global_commission_adjustment();
+    my $ask_probability = $theo_probability + $commission_markup * global_commission_adjustment();
     my $min_threshold   = $probability_threshold;
     my $max_threshold   = 1 - $probability_threshold;
 

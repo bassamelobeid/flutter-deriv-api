@@ -980,7 +980,6 @@ sub _build_ask_probability {
 
     my $base_amount = BOM::Product::Contract::Helper::calculate_ask_probability({
         theo_probability      => $self->theo_probability->amount,
-        risk_markup           => $self->risk_markup->amount,
         commission_markup     => $self->commission_markup->amount,
         market_supplement     => $self->theo_probability->peek_amount('market_supplement') // 0,
         bs_probability        => $self->bs_probability->amount,
@@ -1105,18 +1104,16 @@ sub _build_payout {
     my $self = shift;
 
     my $theo_prob       = $self->theo_probability->amount;
-    my $risk_markup     = $self->risk_markup->amount;
     my $base_commission = $self->base_commission;
     my $ask_price       = $self->ask_price;
 
     my $commission = BOM::Product::Contract::Helper::commission({
         theo_probability => $theo_prob,
         stake            => $ask_price,
-        risk_markup      => $risk_markup,
         base_commission  => $base_commission,
     });
 
-    my $payout = $ask_price / ($theo_prob + ($risk_markup + $commission) * BOM::Product::Contract::Helper::global_commission_adjustment());
+    my $payout = $ask_price / ($theo_prob + $commission * BOM::Product::Contract::Helper::global_commission_adjustment());
     $payout = max($ask_price, $payout);
     return roundnear(0.01, $payout);
 }
@@ -1175,16 +1172,15 @@ has [qw(risk_markup commission_markup base_commission)] => (
 sub _build_risk_markup {
     my $self = shift;
 
-    if ($self->new_interface_engine) {
-        return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup',
-            description => 'Risk markup for a pricing model',
-            set_by      => $self->pricing_engine_name,
-            base_amount => $self->pricing_engine->risk_markup,
-        });
-    }
+    my $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->ask_probability->peek_amount('risk_markup');
+    $base_amount = 0 unless defined $base_amount;
 
-    return $self->pricing_engine->risk_markup;
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'risk_markup',
+        description => 'Risk markup for a pricing model',
+        set_by      => $self->pricing_engine_name,
+        base_amount => $base_amount,
+    });
 }
 
 sub _build_base_commission {
