@@ -39,7 +39,7 @@ sub _initialize {
     $self->{params} = {@{JSON::XS::decode_json($self->{data})}};
 
     my $pickup_time = gettimeofday;
-    DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.price.pickup_delay', $pickup_time - $self->{request_time});
+    DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.price.pickup_delay', $pickup_time - $self->{params}->{request_time});
     delete $self->{request_time};
 
     my $r = BOM::Platform::Context::Request->new({language => $self->{params}->{language}});
@@ -51,7 +51,7 @@ sub _initialize {
 sub price {
     my $self = shift;
 
-    my $t = gettimeofday;
+    my $t = [gettimeofday];
     my $response = BOM::RPC::v3::Contract::send_ask({args => $self->{params}});
     $response->{pricing_time} = tv_interval($t);
 
