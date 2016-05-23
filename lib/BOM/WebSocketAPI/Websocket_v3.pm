@@ -23,6 +23,7 @@ use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use BOM::Database::Rose::DB;
+use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 
 sub ok {
     my $c = shift;
