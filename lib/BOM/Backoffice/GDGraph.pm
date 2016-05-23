@@ -37,10 +37,6 @@ Firstly we can keep on adding "general purpose" subroutines in here, and the
 number of such subroutines can increase greatly. I propose that we keep
 the number of subs in this module to not more than I<seven>.
 
-If you notice that two or more subroutines are similar, in that they perform a
-task related to a specific domain, its best to move them out into their own
-BOM::Utility::{Class} module.
-
 Subroutines in here should only depend on CPAN, and not on any application
 specific modules.
 
@@ -50,7 +46,7 @@ specific modules.
 
 Generates a graph and outputs it to a file. The filename is returned.
 
-    my $filename = BOM::Utility::generate_line_graph({
+    my $filename = BOM::Backoffice::generate_line_graph({
             title  => "Plot comparison for $term day smile",
             x_axis => \@x_axis,
             charts => {
