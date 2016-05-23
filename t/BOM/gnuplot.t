@@ -11,8 +11,8 @@ $ENV{'REMOTE_ADDR'} = defined($ENV{'REMOTE_ADDR'}) ? $ENV{'REMOTE_ADDR'} : '127.
 
 my $object1 = BOM::Backoffice::GNUPlot->new();
 
-is(defined $object1,                       1, 'BOM::Utility:GNUPlot->new() should return an object');
-is($object1->isa('BOM::Backoffice::GNUPlot'), 1, 'object returned is of class BOM::Utility:GNUPlot');
+is(defined $object1,                       1, 'BOM::Backoffice:GNUPlot->new() should return an object');
+is($object1->isa('BOM::Backoffice::GNUPlot'), 1, 'object returned is of class BOM::Backoffice:GNUPlot');
 
 is($object1->is_valid_graph_type(),          undef, 'is_valid_graph_type method returns null if passed nothing');
 is($object1->is_valid_graph_type(),          undef, 'it returns null if passed nothing');
