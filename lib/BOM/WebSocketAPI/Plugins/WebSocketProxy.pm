@@ -4,7 +4,7 @@ use Mojo::Base 'Mojolicious::Plugin';
 use BOM::WebSocketAPI::Dispatcher;
 
 sub register {
-    my ( $self, $app, $conf ) = @_;
+    my ($self, $app, $conf) = @_;
 
     my $r = $app->routes;
     for ($r->under('/websockets/v3')) {
@@ -12,12 +12,11 @@ sub register {
         $_->websocket('/')->to('Dispatcher#connect', namespace => 'BOM::WebSocketAPI');
     }
 
-    if ( exists $conf->{forward} && ref $conf->{forward} eq 'HASH' ) {
-        while ( my ( $name, $action ) = each %{ $conf->{forward} } ) {
+    if (exists $conf->{forward} && ref $conf->{forward} eq 'HASH') {
+        while (my ($name, $action) = each %{$conf->{forward}}) {
             BOM::WebSocketAPI::Dispatcher::add_route($self, $name, $action);
         }
-    }
-    else {
+    } else {
         Carp::confess 'No actions found!';
     }
     return;

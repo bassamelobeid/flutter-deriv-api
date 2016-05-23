@@ -20,7 +20,7 @@ sub connect {
     Mojo::IOLoop->singleton->max_connections(100000);
     # /TODO
 
-    $c->on( json => \&forward );
+    $c->on(json => \&forward);
 
     return;
 }
