@@ -8,7 +8,7 @@ use BOM::Platform::Context qw(localize);
 use List::Util qw(max);
 use Scalar::Util::Numeric qw(isint);
 
-has original_barrier => (
+has initial_barrier => (
     is  => 'rw',
     isa => 'Maybe[BOM::Product::Contract::Strike]',
 );
@@ -48,7 +48,7 @@ sub make_barrier {
 
     my @corporate_actions = @{$self->corporate_actions};
     if (@corporate_actions) {
-        $self->original_barrier($barrier);
+        $self->initial_barrier($barrier) ;
         foreach my $action (@corporate_actions) {
             try {
                 $barrier = $barrier->adjust({
