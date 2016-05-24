@@ -1130,6 +1130,8 @@ sub _build_bs_price {
     return $self->_price_from_prob('bs_probability');
 }
 
+# base_commission can be overridden on contract type level.
+# When this happens, underlying base_commission is ignored.
 has [qw(risk_markup commission_markup base_commission)] => (
     is         => 'ro',
     lazy_build => 1,
@@ -1152,7 +1154,7 @@ sub _build_risk_markup {
 sub _build_base_commission {
     my $self = shift;
 
-    return $self->new_interface_engine ? $self->pricing_engine->commission_markup : $self->pricing_engine->commission_markup->amount;
+    return $self->underlying->base_commission;
 }
 
 sub _build_commission_markup {

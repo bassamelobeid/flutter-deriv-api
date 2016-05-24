@@ -13,7 +13,7 @@ There's no model in this price calculation yet.
 
 =cut
 
-has [qw(pricing_vol probability risk_markup commission_markup)] => (
+has [qw(pricing_vol probability risk_markup)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -44,17 +44,6 @@ sub _build_probability {
         minimum     => 0.5,                                            # we don't go lower than 0.5
         maximum     => 1,
         base_amount => $self->formula->($self->_formula_args),
-    });
-}
-
-sub _build_commission_markup {
-    my $self = shift;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_markup',
-        description => 'commission markup for intraday index',
-        set_by      => __PACKAGE__,
-        base_amount => 0.05,
     });
 }
 

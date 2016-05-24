@@ -36,22 +36,6 @@ sub _build_probability {
     return $p;
 }
 
-has [qw(commission_markup)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_commission_markup {
-    my $self = shift;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_markup',
-        description => 'equivalent to tick trades',
-        set_by      => __PACKAGE__,
-        base_amount => 0.015,
-    });
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;

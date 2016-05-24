@@ -79,22 +79,6 @@ override bs_probability => sub {
     });
 };
 
-has [qw(commission_markup)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_commission_markup {
-    my $self = shift;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_markup',
-        description => 'equivalent to tick trades',
-        set_by      => __PACKAGE__,
-        base_amount => 0.01,
-    });
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
