@@ -17,7 +17,7 @@ sub register {
     BOM::WebSocketAPI::Dispatcher::init($self, $config);
 
     if (ref $routes eq 'ARRAY') {
-        for (my $i; $i < @$routes; $i++) {
+        for (my $i = 0; $i < @$routes; $i++) {
             BOM::WebSocketAPI::Dispatcher::add_route($self, $routes->[$i], $i);
         }
     } else {

@@ -6,6 +6,7 @@ use Mojo::IOLoop;
 
 use Try::Tiny;
 use Data::UUID;
+use RateLimitations qw(within_rate_limits);
 
 # pre-load controlleres to have more shared code among workers (COW)
 use BOM::WebSocketAPI::Websocket_v3();
@@ -242,6 +243,70 @@ sub log_call_timing_sent {
     return;
 }
 
+my %rate_limit_map = (
+    ping_real                      => '',
+    time_real                      => '',
+    portfolio_real                 => 'websocket_call_expensive',
+    statement_real                 => 'websocket_call_expensive',
+    profit_table_real              => 'websocket_call_expensive',
+    proposal_real                  => 'websocket_real_pricing',
+    pricing_table_real             => 'websocket_real_pricing',
+    proposal_open_contract_real    => 'websocket_real_pricing',
+    verify_email_real              => 'websocket_call_email',
+    buy_real                       => 'websocket_real_pricing',
+    sell_real                      => 'websocket_real_pricing',
+    reality_check_real             => 'websocket_call_expensive',
+    ping_virtual                   => '',
+    time_virtual                   => '',
+    portfolio_virtual              => 'websocket_call_expensive',
+    statement_virtual              => 'websocket_call_expensive',
+    profit_table_virtual           => 'websocket_call_expensive',
+    proposal_virtual               => 'websocket_call_pricing',
+    pricing_table_virtual          => 'websocket_call_pricing',
+    proposal_open_contract_virtual => 'websocket_call_pricing',
+    verify_email_virtual           => 'websocket_call_email',
+);
+
+sub reached_limit_check {
+    my ($c, $req) = @_;
+
+    # For authorized calls that are heavier we will limit based on loginid
+    # For unauthorized calls that are less heavy we will use connection id.
+    # None are much helpful in a well prepared DDoS.
+    my $consumer         = $c->stash('loginid') || $c->stash('connection_id');
+    my $category         = $req->{name};
+    my $is_real          = $c->stash('loginid') && !$c->stash('is_virtual');
+    my $limiting_service = $rate_limit_map{
+        $category . '_'
+            . (
+            ($is_real)
+            ? 'real'
+            : 'virtual'
+            )} // 'websocket_call';
+    if (
+        $limiting_service
+        and not within_rate_limits({
+                service  => $limiting_service,
+                consumer => $consumer,
+            }))
+    {
+        return $c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category));
+    }
+    return;
+}
+
+# Set JSON Schema default values for fields which are missing and have default.
+sub _set_defaults {
+    my ($validator, $args) = @_;
+
+    my $properties = $validator->{in_validator}->schema->{properties};
+
+    foreach my $k (keys %$properties) {
+        $args->{$k} = $properties->{$k}->{default} if not exists $args->{$k} and $properties->{$k}->{default};
+    }
+    return;
+}
+
 sub before_forward {
     my ($c, $p1, $req) = @_;
 
@@ -251,20 +316,8 @@ sub before_forward {
 
     $req->{handle_t0} = [Time::HiRes::gettimeofday];
 
-    my $tag = 'origin:';
-    if (my $origin = $c->req->headers->header("Origin")) {
-        if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
-            $tag = "origin:$1";
-        }
-    }
-
-    # For authorized calls that are heavier we will limit based on loginid
-    # For unauthorized calls that are less heavy we will use connection id.
-    # None are much helpful in a well prepared DDoS.
-    my $consumer = $c->stash('loginid') || $c->stash('connection_id');
-
-    if (_reached_limit_check($consumer, $req->{name}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
-        return $c->new_error($req->{name}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $req->{name}));
+    if (my $reached = reached_limit_check($c, $req)) {
+        return $reached;
     }
 
     my $input_validation_result = $req->{in_validator}->validate($p1);
@@ -282,6 +335,13 @@ sub before_forward {
     }
 
     _set_defaults($req, $p1);
+
+    my $tag = 'origin:';
+    if (my $origin = $c->req->headers->header("Origin")) {
+        if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
+            $tag = "origin:$1";
+        }
+    }
 
     DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $req->{name}, {tags => [$tag]});
     DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req->{name}"]});

@@ -57,7 +57,7 @@ sub connect {
     $c->redis_pricer;
     # /TODO
 
-    $c->on(json => \&forward);
+    $c->on(json => \&on_message);
 
     # stop all recurring
     $c->on(
@@ -143,8 +143,9 @@ sub before_forward {
 
     my $i = 0;
     while (!$result && $i < @$before_forward_hooks) {
-        next unless $before_forward_hooks->[$i];
-        $result = $before_forward_hooks->[$i++]->($c, $p1, $req);
+        my $hook = $before_forward_hooks->[$i++];
+        next unless $hook;
+        $result = $hook->($c, $p1, $req);
     }
 
     return $result;
@@ -236,18 +237,6 @@ sub check_sanity {
     return;
 }
 
-# Set JSON Schema default values for fields which are missing and have default.
-sub _set_defaults {
-    my ($validator, $args) = @_;
-
-    my $properties = $validator->{in_validator}->schema->{properties};
-
-    foreach my $k (keys %$properties) {
-        $args->{$k} = $properties->{$k}->{default} if not exists $args->{$k} and $properties->{$k}->{default};
-    }
-    return;
-}
-
 sub _failed_key_value {
     my ($key, $value) = @_;
 
@@ -267,52 +256,6 @@ sub _failed_key_value {
         or ($value and $value !~ /^[\p{Script=Common}\p{L}\s\w\@_:!-~]{0,300}$/))
     {
         return ($key, $value);
-    }
-    return;
-}
-
-my %rate_limit_map = (
-    ping_real                      => '',
-    time_real                      => '',
-    portfolio_real                 => 'websocket_call_expensive',
-    statement_real                 => 'websocket_call_expensive',
-    profit_table_real              => 'websocket_call_expensive',
-    proposal_real                  => 'websocket_real_pricing',
-    pricing_table_real             => 'websocket_real_pricing',
-    proposal_open_contract_real    => 'websocket_real_pricing',
-    verify_email_real              => 'websocket_call_email',
-    buy_real                       => 'websocket_real_pricing',
-    sell_real                      => 'websocket_real_pricing',
-    reality_check_real             => 'websocket_call_expensive',
-    ping_virtual                   => '',
-    time_virtual                   => '',
-    portfolio_virtual              => 'websocket_call_expensive',
-    statement_virtual              => 'websocket_call_expensive',
-    profit_table_virtual           => 'websocket_call_expensive',
-    proposal_virtual               => 'websocket_call_pricing',
-    pricing_table_virtual          => 'websocket_call_pricing',
-    proposal_open_contract_virtual => 'websocket_call_pricing',
-    verify_email_virtual           => 'websocket_call_email',
-);
-
-sub _reached_limit_check {
-    my ($connection_id, $category, $is_real) = @_;
-
-    my $limiting_service = $rate_limit_map{
-        $category . '_'
-            . (
-            ($is_real)
-            ? 'real'
-            : 'virtual'
-            )} // 'websocket_call';
-    if (
-        $limiting_service
-        and not within_rate_limits({
-                service  => $limiting_service,
-                consumer => $connection_id,
-            }))
-    {
-        return 1;
     }
     return;
 }
