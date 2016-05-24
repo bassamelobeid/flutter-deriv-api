@@ -212,6 +212,7 @@ subtest 'one action' => sub {
         my $bet = produce_contract($bet_params);
         ok @{$bet->corporate_actions}, 'bet is affected by corporate action';
         cmp_ok $bet->barrier->as_absolute, '==', 80.00, 'original quote adjusted by corporate action';
+        cmp_ok $bet->original_barrier->as_absolute, '==', 100.00, 'original quote without corporate action adjustment';
         my $expiry = $bet->date_expiry->truncate_to_day;
         BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
             underlying => 'FPFP',
@@ -240,6 +241,7 @@ subtest 'one action' => sub {
         my $bet = produce_contract($bet_params);
         ok @{$bet->corporate_actions}, 'bet is affected by corporate action';
         cmp_ok $bet->barrier->as_absolute, '==', 79.20, 'original quote adjusted by corporate action';
+        cmp_ok $bet->original_barrier->as_absolute, '==', 99.00, 'original quote without corporate action';
         is $bet->is_expired, 0, 'bet does not expire when dividend stock takes place';
         is $bet->value,      0, 'zero payout because barrier is adjusted';
     }
@@ -261,6 +263,9 @@ subtest 'one action' => sub {
         my $bet = produce_contract($bet_params);
         cmp_ok $bet->high_barrier->as_absolute, '==', 81.60, 'upper barrier adjusted by corporate action';
         cmp_ok $bet->low_barrier->as_absolute,  '==', 78.40, 'lower barrier adjusted by corporate action';
+        cmp_ok $bet->original_high_barrier->as_absolute, '==', 102.00, 'upper barrier without corporate action adjustment';
+        cmp_ok $bet->original_low_barrier->as_absolute,  '==', 98.00, 'lower barrier without corporate action adjustment';
+ 
     }
     'one action on double barrier bet';
 };
@@ -311,7 +316,9 @@ subtest 'two actions' => sub {
             date_pricing => $date_pricing,
         };
         my $bet = produce_contract($bet_params);
-        cmp_ok $bet->barrier->as_absolute, '==', 55.17, 'original quote adjusted by corporate action';
+       cmp_ok $bet->barrier->as_absolute, '==', 55.17, 'original quote adjusted by corporate action';
+       cmp_ok $bet->original_barrier->as_absolute, '==', 100.00, 'original quote without corporate action adjustment';
+
     }
     'two actions on single barrier bet';
 
@@ -331,6 +338,10 @@ subtest 'two actions' => sub {
         my $bet = produce_contract($bet_params);
         cmp_ok $bet->high_barrier->as_absolute, '==', 56.28, 'upper barrier adjusted by corporate action';
         cmp_ok $bet->low_barrier->as_absolute,  '==', 54.07, 'lower barrier adjusted by corporate action';
+        cmp_ok $bet->original_high_barrier->as_absolute, '==', 102.00, 'upper barrier without corporate action adjustment';
+        cmp_ok $bet->original_low_barrier->as_absolute,  '==', 98.00, 'lower barrier without corporate action adjustment';
+
+
     }
     'two actions on double barrier bet';
 };
