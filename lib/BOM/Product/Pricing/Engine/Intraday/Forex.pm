@@ -71,7 +71,7 @@ has _supported_types => (
 );
 
 has [
-    qw(base_probability probability intraday_delta_correction short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta commission_markup risk_markup)
+    qw(base_probability probability intraday_delta_correction short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta risk_markup)
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -419,95 +419,6 @@ sub _build_intraday_vanilla_delta {
     });
 }
 
-=head1 commission_markup
-
-Fixed commission for the bet
-
-=cut
-
-sub _build_commission_markup {
-    my $self = shift;
-
-    my $bet = $self->bet;
-
-    my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_scaling_factor',
-        description => 'A scaling factor to control commission',
-        set_by      => __PACKAGE__,
-        base_amount => 1,
-    });
-
-    my $comm_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_markup',
-        description => 'fixed commission markup',
-        set_by      => __PACKAGE__,
-    });
-
-    my $fixed_comm = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'intraday_historical_fixed',
-        description => 'fixed commission markup for Intraday::Forex pricer',
-        set_by      => __PACKAGE__,
-        base_amount => BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_fixed},
-    });
-
-    $comm_markup->include_adjustment('info',  $comm_scale);
-    $comm_markup->include_adjustment('reset', $fixed_comm);
-
-    my $stitch = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'stitching_adjustment',
-        description => 'to smooth transitions when we change engines',
-        set_by      => __PACKAGE__,
-        minimum     => 0,
-        base_amount => 0,
-    });
-    my $standard         = $self->digital_spread_markup;
-    my $spread_to_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'spread_to_markup',
-        description => 'Apply half of spread to each side',
-        set_by      => __PACKAGE__,
-        base_amount => 2,
-    });
-
-    $stitch->include_adjustment('reset',    $standard);
-    $stitch->include_adjustment('divide',   $spread_to_markup);
-    $stitch->include_adjustment('subtract', $fixed_comm);
-    my $duration_factor = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'Factor to adjust for bet duration',
-        description => 'to smooth transition',
-        set_by      => __PACKAGE__,
-        base_amount => $bet->remaining_time->minutes / 400,
-    });
-
-    $stitch->include_adjustment('multiply', $duration_factor);
-
-    $comm_markup->include_adjustment('add', $stitch);
-
-    my $open_at_start = $bet->underlying->calendar->is_open_at($bet->date_start);
-
-    if ($open_at_start and $bet->underlying->is_in_quiet_period) {
-        my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'quiet_period_markup',
-            description => 'Intraday::Forex markup factor for underlyings in the quiet period',
-            set_by      => __PACKAGE__,
-            base_amount => 0.01,
-        });
-        $comm_markup->include_adjustment('add', $quiet_period_markup);
-    }
-    if ($bet->is_path_dependent) {
-        my $path_dependent_markup_factor = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'path_dependent_markup',
-            description => 'Intraday::Forex markup factor for path dependent contracts',
-            set_by      => __PACKAGE__,
-            base_amount => 2,
-        });
-        $comm_markup->include_adjustment('multiply', $path_dependent_markup_factor);
-    }
-
-    $comm_markup->include_adjustment('multiply', $comm_scale);
-
-    return $comm_markup;
-}
-
 my $iv_risk_interpolator = Math::Function::Interpolator->new(
     points => {
         0.05 => 0.15,
@@ -544,6 +455,18 @@ sub _build_risk_markup {
         });
         $risk_markup->include_adjustment('add', $iv_risk);
     }
+    my $open_at_start = $bet->underlying->calendar->is_open_at($bet->date_start);
+
+    if ($open_at_start and $bet->underlying->is_in_quiet_period) {
+        my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'quiet_period_markup',
+            description => 'Intraday::Forex markup factor for underlyings in the quiet period',
+            set_by      => __PACKAGE__,
+            base_amount => 0.01,
+        });
+        $risk_markup->include_adjustment('add', $quiet_period_markup);
+    }
+
     if ($bet->market->name eq 'commodities') {
         my $illiquid_market_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'illiquid_market_markup',
