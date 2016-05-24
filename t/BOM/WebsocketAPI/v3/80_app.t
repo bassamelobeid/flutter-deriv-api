@@ -22,7 +22,7 @@ my $oauth = BOM::Database::Model::OAuth->new;
 my $dbh   = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
-$dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
+$dbh->do("DELETE FROM oauth.apps");
 
 my $email     = 'abc@binary.com';
 my $password  = 'jskjd8292922';
