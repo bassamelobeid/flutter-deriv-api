@@ -71,7 +71,7 @@ has _supported_types => (
 );
 
 has [
-    qw(probability intraday_delta_correction short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta commission_markup risk_markup)
+    qw(base_probability probability intraday_delta_correction short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta commission_markup risk_markup)
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -82,6 +82,17 @@ has [qw(_delta_formula _vega_formula)] => (
     is         => 'ro',
     lazy_build => 1,
 );
+
+sub _build_base_probability {
+    my $self = shift;
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'base_probability',
+        description => 'BS pricing based on realized vols',
+        set_by      => __PACKAGE__,
+        base_amount => $self->formula->($self->_formula_args),
+    });
+}
 
 =head1 probability
 
@@ -101,12 +112,12 @@ sub _build_probability {
         set_by      => __PACKAGE__,
         minimum     => 0.1,                                           # anything lower than 0.1, we will just sell you at 0.1.
         maximum     => 1,
-        base_amount => $self->formula->($self->_formula_args),
     });
 
-    $ifx_prob->include_adjustment('add', $self->intraday_delta_correction);
-    $ifx_prob->include_adjustment('add', $self->intraday_vega_correction);
-    $ifx_prob->include_adjustment('add', $self->risk_markup);
+    $ifx_prob->include_adjustment('reset', $self->base_probability);
+    $ifx_prob->include_adjustment('add',   $self->intraday_delta_correction);
+    $ifx_prob->include_adjustment('add',   $self->intraday_vega_correction);
+    $ifx_prob->include_adjustment('add',   $self->risk_markup);
 
     return $ifx_prob;
 }
@@ -593,11 +604,12 @@ sub _build_economic_events_volatility_risk_markup {
     my $markup_base_amount = 0;
     # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
     if ($self->pricing_vol != $self->news_adjusted_pricing_vol) {
-        my $tv_without_news = $self->probability->amount;
-        my $tv_with_news    = $self->clone({
-                pricing_vol    => $self->news_adjusted_pricing_vol,
-                intraday_trend => $self->intraday_trend,
-            })->probability->amount;
+        my $tv_without_news = $self->base_probability->amount + $self->intraday_delta_correction->amount + $self->intraday_vega_correction->amount;
+        my $cloned          = $self->clone({
+            pricing_vol    => $self->news_adjusted_pricing_vol,
+            intraday_trend => $self->intraday_trend,
+        });
+        my $tv_with_news = $cloned->base_probability->amount + $cloned->intraday_delta_correction->amount + $cloned->intraday_vega_correction->amount;
         $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
     }
 
