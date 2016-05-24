@@ -61,7 +61,7 @@ sub daemon_run {
 sub _daemon_run {
     my $self = shift;
 
-    $self->warn("Starting as PID $$.");
+    warn("Starting as PID $$.");
     my $redis = Cache::RedisDB->redis;
     while (1) {
         my $now = time;
@@ -73,7 +73,7 @@ sub _daemon_run {
                 my $contract_id = $info->{contract_id};
                 my $client = BOM::Platform::Client->new({loginid => $info->{held_by}});
                 if ($info->{in_currency} ne $client->currency) {
-                    $self->warn('Skip on currency mismatch for contract '
+                    warn('Skip on currency mismatch for contract '
                             . $contract_id
                             . '. Expected: '
                             . $info->{in_currency}
@@ -85,7 +85,7 @@ sub _daemon_run {
                 # but for now we will ignore it.
                 my $is_sold = BOM::Product::Transaction::sell_expired_contracts({
                         client       => $client,
-                        source       => 1063,            # Third party application 'binaryexpiryd'
+                        source       => 2,             # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
                         contract_ids => [$contract_id]});
 
                 if (not $is_sold or $is_sold->{number_of_sold_bets} == 0) {
@@ -106,7 +106,7 @@ sub handle_shutdown {
     my $self = shift;
     return if $self->shutting_down;
     $self->shutting_down(1);
-    $self->warn("PID $$ is shutting down.");
+    warn("PID $$ is shutting down.");
     kill TERM => @{$self->pids}; # for children this list is empty
     return 0;
 }

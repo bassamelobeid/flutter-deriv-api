@@ -19,8 +19,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Client;
 use BOM::System::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use BOM::Utility::CurrencyConverter qw(in_USD amount_from_to_currency);
-use BOM::Utility::ErrorStrings qw( normalize_error_string );
+use BOM::Platform::CurrencyConverter qw(in_USD amount_from_to_currency);
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -139,7 +138,7 @@ has contract_class => (
 
 has source => (
     is  => 'ro',
-    isa => 'Int',
+    isa => 'Maybe[Int]',
 );
 
 has transaction_parameters => (
@@ -231,7 +230,11 @@ sub _normalize_error {
         }
     }
 
-    return normalize_error_string($error);
+    $error =~ s/(?<=[^A-Z])([A-Z])/ $1/g;    # camelCase to words
+    $error =~ s/\[[^\]]+\]//g;               # Bits between [] should be dynamic
+    $error = join('_', split /\s+/, lc $error);
+
+    return $error;
 }
 
 sub stats_stop {
@@ -1137,11 +1140,7 @@ sub _validate_sell_pricing_adjustment {
     my $move              = $recomputed - $requested;
     my $commission_markup = 0;
     if (not $contract->is_expired) {
-        if ($contract->new_interface_engine) {
-            $commission_markup = $contract->pricing_engine->commission_markup;
-        } else {
-            $commission_markup = $contract->bid_probability->peek_amount('commission_markup') || 0;
-        }
+        $commission_markup = $contract->bid_probability->peek_amount('commission_markup') || 0;
     }
     my $allowed_move = $commission_markup * 0.8;
     $allowed_move = 0 if $recomputed == 1;
@@ -1206,11 +1205,7 @@ sub _validate_trade_pricing_adjustment {
     my $move              = $requested - $recomputed;
     my $commission_markup = 0;
     if (not $contract->is_expired) {
-        if ($contract->new_interface_engine) {
-            $commission_markup = $contract->pricing_engine->commission_markup;
-        } else {
-            $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
-        }
+        $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
     }
     my $allowed_move = ($self->contract->category->code eq 'digits') ? $commission_markup : ($commission_markup * 0.5);
     $allowed_move = 0 if $recomputed == 1;
@@ -1437,7 +1432,7 @@ sub _validate_stake_limit {
     my $stake_limit =
         $landing_company->short eq 'maltainvest'
         ? BOM::Platform::Static::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{$currency}
-        : $contract->staking_limits->{stake}->{min};
+        : $contract->staking_limits->{min};    # minimum is always a stake check
 
     if ($contract->ask_price < $stake_limit) {
         return Error::Base->cuss(
@@ -1609,7 +1604,7 @@ Returns: HashRef, with:
 =cut
 
 my %source_to_sell_type = (
-    1063 => 'expiryd',    # app_id for `binaryexpiryd`, see `expiryd.pl`
+    2 => 'expiryd',    # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
 );
 
 sub sell_expired_contracts {

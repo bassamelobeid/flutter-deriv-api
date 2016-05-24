@@ -10,7 +10,6 @@ use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
-use BOM::Utility::ErrorStrings qw( format_error_string );
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
@@ -32,7 +31,7 @@ has coefficients => (
     default => sub { $coefficient },
 );
 
-has [qw(average_tick_count long_term_prediction)] => (
+has [qw(long_term_prediction)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -44,10 +43,6 @@ has [qw(pricing_vol news_adjusted_pricing_vol)] => (
 
 sub _build_news_adjusted_pricing_vol {
     return shift->bet->pricing_args->{iv_with_news};
-}
-
-sub _build_average_tick_count {
-    return shift->bet->pricing_args->{average_tick_count};
 }
 
 sub _build_long_term_prediction {
@@ -104,7 +99,7 @@ sub _build_probability {
         name        => lc($bet->code) . '_theoretical_probability',
         description => 'BS pricing based on realized vols',
         set_by      => __PACKAGE__,
-        minimum     => 0,
+        minimum     => 0.1,                                           # anything lower than 0.1, we will just sell you at 0.1.
         maximum     => 1,
         base_amount => $self->formula->($self->_formula_args),
     });
@@ -112,19 +107,6 @@ sub _build_probability {
     $ifx_prob->include_adjustment('add',  $self->intraday_delta_correction);
     $ifx_prob->include_adjustment('add',  $self->intraday_vega_correction);
     $ifx_prob->include_adjustment('info', $self->intraday_vanilla_delta);
-
-    my $min_prob = 0.1;
-    if ($ifx_prob->amount < $min_prob) {
-        $ifx_prob->add_errors({
-                message => format_error_string(
-                    'Theo probability below the minimum acceptable',
-                    probability => $ifx_prob->amount,
-                    min         => $min_prob
-                ),
-                ,
-                message_to_client => localize('Barrier outside acceptable range.'),
-            });
-    }
 
     return $ifx_prob;
 }
@@ -228,6 +210,8 @@ sub _build_ticks_for_trend {
 
 =head1 intraday_trend
 
+ASSUMPTIONS: If there's no ticks to calculate trend, we will assume there's no trend. But we will not sell since volatility calculation (which uses the same set of ticks), will fail.
+
 The current observed trend in the market movements.  Math::Util::CalculatedValue::Validatable
 
 =cut
@@ -246,12 +230,6 @@ sub _build_intraday_trend {
         set_by      => __PACKAGE__,
         base_amount => $average,
     });
-    if (!@ticks) {
-        $avg_spot->add_errors({
-            message           => 'No ticks retrieved to determine trend.',
-            message_to_client => localize('Missing market data.'),
-        });
-    }
 
     my $trend            = (($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($duration_in_secs);
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
@@ -495,20 +473,6 @@ sub _build_commission_markup {
 
     my $open_at_start = $bet->underlying->calendar->is_open_at($bet->date_start);
 
-    if (    $open_at_start
-        and defined $self->average_tick_count
-        and $self->average_tick_count < 4)
-    {
-        my $extra_uncertainty = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_uncertainty_markup',
-            description => 'Factor to apply when backtesting was uncertain',
-            set_by      => __PACKAGE__,
-            base_amount => 2,
-        });
-        $extra_uncertainty->include_adjustment('info', $self->long_term_vol);
-
-        $comm_markup->include_adjustment('multiply', $extra_uncertainty);
-    }
     if ($open_at_start and $bet->underlying->is_in_quiet_period) {
         my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'quiet_period_markup',
@@ -558,7 +522,7 @@ sub _build_risk_markup {
     });
 
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
-    $risk_markup->include_adjustment('add', $self->eod_market_risk_markup);
+    $risk_markup->include_adjustment('add', $self->eod_market_risk_markup) if not $bet->is_atm_bet;
 
     if ($bet->is_path_dependent) {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
