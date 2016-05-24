@@ -1,5 +1,6 @@
 ---
 commodities:
+    base_commission: 0.05
     display_current_spot: 1
     volatility_surface_type: "delta"
     suspicious_move: 0.05
@@ -113,6 +114,7 @@ futures:
             ONETOUCH: 40
             NOTOUCH: 40
 indices:
+    base_commission: 0.025
     volatility_surface_type: "moneyness"
     suspicious_move: 0.07
     outlier_tick: 0.10
@@ -152,6 +154,7 @@ indices:
             ONETOUCH: 6
             NOTOUCH: 6
 stocks:
+    base_commission: 0.05
     suspicious_move: 0.25
     outlier_tick: 0.10
     display_name: "OTC Stocks"
@@ -194,6 +197,7 @@ stocks:
             ONETOUCH: 40
             NOTOUCH: 40
 volidx:
+    base_commission: 0.015
     display_current_spot: 1
     suspicious_move: 0.5
     outlier_tick: 0.10

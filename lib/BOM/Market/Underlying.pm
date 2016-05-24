@@ -2176,6 +2176,17 @@ sub _build_always_available {
     return $self->submarket->always_available;
 }
 
+has base_commission => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_base_commission {
+    my $self = shift;
+
+    return $self->submarket->base_commission;
+}
+
 no Moose;
 
 __PACKAGE__->meta->make_immutable(

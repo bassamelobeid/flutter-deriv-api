@@ -218,6 +218,17 @@ has always_available => (
     default => 0,
 );
 
+has base_commission => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_base_commission {
+    my $self = shift;
+
+    return $self->market->base_commission;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
