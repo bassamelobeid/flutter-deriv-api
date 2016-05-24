@@ -109,6 +109,7 @@ sub authorize {
         my $r           = $c->stash('request');
         my $referer     = $c->req->headers->header('Referer') // '';
         my $domain_name = $r->domain_name;
+        $domain_name =~ s/^oauth//;
         if (index($referer, $domain_name) > -1) {
             $c->session('__is_app_approved' => 1);
         } else {
@@ -124,7 +125,6 @@ sub authorize {
             layout => 'default',
 
             app       => $app,
-            l         => \&localize,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
@@ -166,7 +166,6 @@ sub authorize {
             app       => $app,
             client    => $client,
             scopes    => \@scopes,
-            l         => \&localize,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
@@ -247,7 +246,6 @@ sub __login {
 
             app       => $app,
             error     => $err,
-            l         => \&localize,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
