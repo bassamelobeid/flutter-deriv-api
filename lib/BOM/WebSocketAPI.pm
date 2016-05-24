@@ -122,51 +122,175 @@ sub startup {
     $app->plugin('ClientIP');
     $app->plugin('BOM::WebSocketAPI::Plugins::Helpers');
 
-    $app->plugin('BOM::WebSocketAPI::Plugins::WebSocketProxy' => {
-        forward => [
-            ['authorize']
-            [
-                'logout',
-                {
-                    stash_params => [qw/ token token_type email client_ip country_code user_agent /],
-                    success      => \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
-                },
+    $app->plugin(
+        'BOM::WebSocketAPI::Plugins::WebSocketProxy' => {
+            forward => [
+                ['authorize'][
+                    'logout',
+                    {
+                        stash_params => [qw/ token token_type email client_ip country_code user_agent /],
+                        success      => \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
+                    },
+                ],
+                ['trading_times'],
+                [
+                    'asset_index',
+                    {
+                        before_forward => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
+                        success        => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
+                    }
+                ],
+                ['active_symbols', {stash_params => [qw/ token /]}],
+
+                ['profit_table',       {require_auth => 'read'}],
+                ['get_account_status', {require_auth => 'read'}],
+                [
+                    'change_password',
+                    {
+                        require_auth => 'admin',
+                        stash_params => [qw/ token_type client_ip /]}
+                ],
+                ['get_settings', {require_auth => 'read'}],
+                [
+                    'set_settings',
+                    {
+                        require_auth => 'admin',
+                        stash_params => [qw/ server_name client_ip user_agent /]}
+                ],
+                ['get_self_exclusion', {require_auth => 'read'}],
+                [
+                    'set_self_exclusion',
+                    {
+                        require_auth => 'admin',
+                        response     => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion_response_handler
+                    }
+                ],
+                [
+                    'cashier_password',
+                    {
+                        require_auth => 'payments',
+                        stash_params => [qw/ client_ip /]}
+                ],
             ],
-            ['trading_times'],
-            [
-                'asset_index',
-                {
-                    before_forward => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
-                    success        => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
-                }
-            ],
-            ['active_symbols', {stash_params => [qw/ token /]}],
+            base_path                => '/websockets/v3',
+            before_forward           => [\&before_forward],
+            before_call              => [\&start_timing],
+            before_get_rpc_response  => [\&log_call_timing],
+            after_got_rpc_response   => [\&log_call_timing_connection],
+            before_send_api_response => [\&add_debug_time, \&start_timing],
+            after_sent_api_response  => [\&log_call_timing_sent],
+        });
 
-            ['profit_table', {require_auth => 'read'}],
-            ['get_account_status', {require_auth => 'read'}],
-            ['change_password', {require_auth => 'admin', stash_params => [qw/ token_type client_ip /]}],
-            ['get_settings', {require_auth => 'read'}],
-            ['set_settings', {require_auth => 'admin', stash_params => [qw/ server_name client_ip user_agent /]}],
-            ['get_self_exclusion', {require_auth => 'read'}],
-            ['set_self_exclusion', {require_auth => 'admin', response     => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion_response_handler}],
-            ['cashier_password', {require_auth => 'payments', stash_params => [qw/ client_ip /]}],
-        ],
-        base_path => '/websockets/v3',
-    });
+    return;
+}
 
-    # my $r = $app->routes;
+sub start_timing {
+    my ($c, $params) = @_;
+    $params->{tv} = [Time::HiRes::gettimeofday];
+    return;
+}
 
-    # for ($r->under('/websockets/v3')) {
-    #     $_->to('Websocket_v3#ok');
-    #     $_->websocket('/')->to('#entry_point');
-    # }
+sub log_call_timing {
+    my ($c, $params) = @_;
+    DataDog::DogStatsd::Helper::stats_timing(
+        'bom_websocket_api.v_3.rpc.call.timing',
+        1000 * Time::HiRes::tv_interval($params->{tv}),
+        {tags => ["rpc:$params->{method}"]});
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$params->{method}"]});
+    return;
+}
 
-    # my $r = $app->routes;
+sub log_call_timing_connection {
+    my ($c, $params, $rpc_response) = @_;
+    if (ref($rpc_response->result) eq "HASH"
+        && (my $rpc_time = delete $rpc_response->result->{rpc_time}))
+    {
+        DataDog::DogStatsd::Helper::stats_timing(
+            'bom_websocket_api.v_3.rpc.call.timing.connection',
+            1000 * Time::HiRes::tv_interval($params->{tv}) - $rpc_time,
+            {tags => ["rpc:$params->{method}"]});
+    }
+    return;
+}
 
-    # for ($r->under('/websockets/v3')) {
-    #     $_->to('Dispatcher#ok', namespace => 'BOM::WebSocketAPI');
-    #     $_->websocket('/')->to('Dispatcher#forward', namespace => 'BOM::WebSocketAPI');
-    # }
+sub add_debug_time {
+    my ($c, $params, $api_response) = @_;
+    if ($c->stash('debug')) {
+        $api_response->{debug} = {
+            time   => 1000 * Time::HiRes::tv_interval($params->{tv}),
+            method => $params->{method},
+        };
+    }
+    return;
+}
+
+sub log_call_timing_sent {
+    my ($c, $params) = @_;
+    DataDog::DogStatsd::Helper::stats_timing(
+        'bom_websocket_api.v_3.rpc.call.timing.sent',
+        1000 * Time::HiRes::tv_interval($params->{tv}),
+        {tags => ["rpc:$params->{method}"]});
+    return;
+}
+
+sub before_forward {
+    my ($c, $p1, $req) = @_;
+
+    if (not $c->stash('connection_id')) {
+        $c->stash('connection_id' => Data::UUID->new()->create_str());
+    }
+
+    $req->{handle_t0} = [Time::HiRes::gettimeofday];
+
+    my $tag = 'origin:';
+    if (my $origin = $c->req->headers->header("Origin")) {
+        if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
+            $tag = "origin:$1";
+        }
+    }
+
+    # For authorized calls that are heavier we will limit based on loginid
+    # For unauthorized calls that are less heavy we will use connection id.
+    # None are much helpful in a well prepared DDoS.
+    my $consumer = $c->stash('loginid') || $c->stash('connection_id');
+
+    if (_reached_limit_check($consumer, $req->{name}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
+        return $c->new_error($req->{name}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $req->{name}));
+    }
+
+    my $input_validation_result = $req->{in_validator}->validate($p1);
+    if (not $input_validation_result) {
+        my ($details, @general);
+        foreach my $err ($input_validation_result->errors) {
+            if ($err->property =~ /\$\.(.+)$/) {
+                $details->{$1} = $err->message;
+            } else {
+                push @general, $err->message;
+            }
+        }
+        my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
+        return $c->new_error($req->{name}, 'InputValidationFailed', $message, $details);
+    }
+
+    _set_defaults($req, $p1);
+
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $req->{name}, {tags => [$tag]});
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req->{name}"]});
+
+    my $loginid = $c->stash('loginid');
+    if ($req->{require_auth} and not $loginid) {
+        return $c->new_error($req->{name}, 'AuthorizationRequired', $c->l('Please log in.'));
+    }
+
+    if ($req->{require_auth} and not(grep { $_ eq $req->{require_auth} } @{$c->stash('scopes') || []})) {
+        return $c->new_error($req->{name}, 'PermissionDenied', $c->l('Permission denied, requiring [_1]', $req->{require_auth}));
+    }
+
+    if ($loginid) {
+        my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
+        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
+            {tags => [$tag, $req->{name}, "account_type:$account_type"]});
+    }
 
     return;
 }

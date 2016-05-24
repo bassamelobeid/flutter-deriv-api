@@ -7,6 +7,7 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 use Data::UUID;
 
 my $routes;
+my $config;
 
 sub ok {
     my $c      = shift;
@@ -15,9 +16,15 @@ sub ok {
     return 1;
 }
 
+sub init {
+    my ($c, $in_config) = @_;
+
+    %$config = %$in_config;
+}
+
 sub add_route {
     my ($c, $action, $order) = @_;
-    my $name = $action->[0];
+    my $name    = $action->[0];
     my $options = $action->[1];
 
     $routes->{$name} ||= $options;
@@ -28,7 +35,7 @@ sub add_route {
     my $in_validator  = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")), format => \%JSON::Schema::FORMATS);
     my $out_validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")), format => \%JSON::Schema::FORMATS);
 
-    $routes->{$name}->{in_validator} = $in_validator;
+    $routes->{$name}->{in_validator}  = $in_validator;
     $routes->{$name}->{out_validator} = $out_validator;
 }
 
@@ -69,14 +76,29 @@ sub on_message {
 
     my $result;
     timeout 15 => sub {
-        my $req = {}; # TODO request storage
+        my $req = {};    # TODO request storage
         $result = $c->parse_req($p1);
-        if (! $result
-            && my $route = $c->dispatch($p1)
-        ) {
+        if (!$result
+            && my $route = $c->dispatch($p1))
+        {
             %$req = %$route;
-            $result = $c->before_forward($p1, $req)
-                   || $c->forward($p1, $req); # Don't forward call to RPC if before_forward hook returns anything
+
+            for my $hook (qw/ before_call before_get_rpc_response after_got_rpc_response before_send_api_response after_sent_api_response /) {
+                $req->{$hook} = [
+                    grep { $_ } (
+                        ref $config->{$hook} eq 'ARRAY' ? @{$config->{$hook}} : $config->{$hook};
+                    },
+                    grep {
+                        $_
+                        } (
+                        ref $config->{$hook} eq 'ARRAY' ? @{route->{$hook}} : route->{$hook};
+                    }
+                    ,
+                ];
+                }
+
+                $result = $c->before_forward($p1, $req)
+                || $c->forward($p1, $req);    # Don't forward call to RPC if before_forward hook returns anything
         }
         elsif (!$result) {
             $log->debug("unrecognised request: " . $c->dumper($p1));
@@ -113,72 +135,27 @@ sub on_message {
 
     $c->send({json => $result}) if $result;
 
-    BOM::Database::Rose::DB->db_cache->finish_request_cycle; # TODO
+    BOM::Database::Rose::DB->db_cache->finish_request_cycle;    # TODO
     return;
 }
 
 sub before_forward {
     my ($c, $p1, $req) = @_;
 
-    if (not $c->stash('connection_id')) {
-        $c->stash('connection_id' => Data::UUID->new()->create_str());
-    }
-    $req->{handle_t0} = [Time::HiRes::gettimeofday];
-
-    my $tag = 'origin:';
-    if (my $origin = $c->req->headers->header("Origin")) {
-        if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
-            $tag = "origin:$1";
-        }
-    }
-
-    # For authorized calls that are heavier we will limit based on loginid
-    # For unauthorized calls that are less heavy we will use connection id.
-    # None are much helpful in a well prepared DDoS.
-    my $consumer = $c->stash('loginid') || $c->stash('connection_id');
-
-    if (_reached_limit_check($consumer, $req->{name}, $c->stash('loginid') && !$c->stash('is_virtual'))) {
-        return $c->new_error($req->{name}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $req->{name}));
-    }
-
-    my $input_validation_result = $req->{in_validator}->validate($p1);
-    if (not $input_validation_result) {
-        my ($details, @general);
-        foreach my $err ($input_validation_result->errors) {
-            if ($err->property =~ /\$\.(.+)$/) {
-                $details->{$1} = $err->message;
-            } else {
-                push @general, $err->message;
-            }
-        }
-        my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
-        return $c->new_error($req->{name}, 'InputValidationFailed', $message, $details);
-    }
-
-    _set_defaults($req, $p1);
-
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $req->{name}, {tags => [$tag]});
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req->{name}"]});
-
-    my $loginid = $c->stash('loginid');
-    if ($req->{require_auth} and not $loginid) {
-        return $c->new_error($req->{name}, 'AuthorizationRequired', $c->l('Please log in.'));
-    }
-
-    if ($req->{require_auth} and not(grep { $_ eq $req->{require_auth} } @{$c->stash('scopes') || []})) {
-        return $c->new_error($req->{name}, 'PermissionDenied',
-            $c->l('Permission denied, requiring [_1]', $req->{require_auth}));
-    }
-
-    if ($loginid) {
-        my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
-        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
-            {tags => [$tag, $req->{name}, "account_type:$account_type"]});
-    }
-
     my $result;
-    my $before_forward = delete $route->{before_forward};
-    $result = $before_forward->($c, $p1, $req) if $before_forward;
+
+    # Should first call global hooks
+    my $action my $before_forward_hooks = [
+        ref($config->{before_forward}) eq 'ARRAY'       ? @{$config->{before_forward}}            : $config->{before_forward},
+        ref($route->{action_before_forward}) eq 'ARRAY' ? @{delete $req->{action_before_forward}} : delete $req->{action_before_forward},
+    ];
+
+    my $i = 0;
+    while (!$result && $i < @$before_forward_hooks) {
+        next unless $before_forward_hooks->[$i];
+        $result = $before_forward_hooks->[$i++]->($c, $p1, $req);
+    }
+
     return $result;
 }
 
@@ -219,7 +196,7 @@ sub parse_req {
     my ($c, $p1) = @_;
 
     my $result;
-    if ( ref $p1 ne 'HASH' ) {
+    if (ref $p1 ne 'HASH') {
         # for invalid call, eg: not json
         $result = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
         $result->{echo_req} = {};

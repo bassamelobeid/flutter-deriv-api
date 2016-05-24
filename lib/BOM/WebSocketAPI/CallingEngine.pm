@@ -11,15 +11,13 @@ use Data::UUID;
 sub forward {
     my ($c, $url, $rpc_method, $args, $params) = @_;
 
-    $params->{url} = ($url . $rpc_method);
+    $params->{url}    = ($url . $rpc_method);
     $params->{method} = $rpc_method;
     $params->{msg_type} ||= $rpc_method;
     $params->{rpc_response_cb} = get_rpc_response_cb($c, $args, $params);
     $params->{call_params} = make_call_params($c, $args, $params);
 
-    return call_rpc(
-        $c,
-        $params);
+    return call_rpc($c, $params);
 }
 
 sub make_call_params {
