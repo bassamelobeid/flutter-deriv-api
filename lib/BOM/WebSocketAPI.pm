@@ -146,12 +146,36 @@ sub startup {
                 ],
                 ['active_symbols', {stash_params => [qw/ token /]}],
 
-                ['app_register', {require_auth => 'admin'}],
-                ['app_list',     {require_auth => 'admin'}],
-                ['app_get',      {require_auth => 'admin'}],
-                ['app_delete',   {require_auth => 'admin'}],
-                ['oauth_apps',   {require_auth => 'admin'}],
+                # ['ticks'],
+                # ['ticks_history'],
+                # ['proposal'],
+                # ['price_stream'],
+                # ['pricing_table'],
+                ['forget',     {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget}],
+                ['forget_all', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all}],
+                ['ping',       {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::ping}],
+                ['time',       {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::server_time}],
 
+                ['website_status', {stash_params => [qw/ country_code /]}],
+                ['contracts_for'],
+                ['residence_list'],
+                ['states_list'],
+                ['payout_currencies', {stash_params => [qw/ token /]}],
+                ['landing_company'],
+                ['landing_company_details'],
+                ['get_corporate_actions'],
+
+                [
+                    'balance',
+                    {
+                        require_auth   => 'read',
+                        before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::subscribe_transaction_channel,
+                        error          => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance_error_handler,
+                        success        => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
+                    }
+                ],
+
+                ['statement',          {require_auth => 'read'}],
                 ['profit_table',       {require_auth => 'read'}],
                 ['get_account_status', {require_auth => 'read'}],
                 [
@@ -181,6 +205,118 @@ sub startup {
                         require_auth => 'payments',
                         stash_params => [qw/ client_ip /]}
                 ],
+
+                [
+                    'api_token',
+                    {
+                        require_auth => 'admin',
+                        stash_params => [qw/ account_id /]}
+                ],
+                ['tnc_approval', {require_auth => 'admin'}],
+                [
+                    'login_history',
+                    {
+                        require_auth => 'read',
+                        response     => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::login_history_response_handler
+                    }
+                ],
+                [
+                    'set_account_currency',
+                    {
+                        require_auth     => 'admin',
+                        make_call_params => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler
+                    }
+                ],
+                ['set_financial_assessment', {require_auth => 'admin'}],
+                ['get_financial_assessment', {require_auth => 'admin'}],
+                ['reality_check',            {require_auth => 'read'}],
+
+                [
+                    'verify_email',
+                    {
+                        before_call  => [\&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email_get_type_code],
+                        stash_params => [qw/ server_name /],
+                    }
+                ],
+                ['new_account_virtual'],
+                ['reset_password'],
+
+                # authenticated calls
+                ['sell', {require_auth => 'trade'}],
+                [
+                    'buy',
+                    {
+                        require_auth   => 'trade',
+                        before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
+                    }
+                ],
+                [
+                    'transaction',
+                    {
+                        require_auth   => 'read',
+                        before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction
+                    }
+                ],
+                [
+                    'portfolio',
+                    {
+                        require_auth => 'read',
+                    }
+                ],
+                [
+                    'proposal_open_contract',
+                    {
+                        require_auth    => 'read',
+                        rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
+                    }
+                ],
+                [
+                    'sell_expired',
+                    {
+                        require_auth => 'trade',
+                    }
+                ],
+
+                ['app_register', {require_auth => 'admin'}],
+                ['app_list',     {require_auth => 'admin'}],
+                ['app_get',      {require_auth => 'admin'}],
+                ['app_delete',   {require_auth => 'admin'}],
+                ['oauth_apps',   {require_auth => 'admin'}],
+
+                ['topup_virtual',     {require_auth => 'trade'}],
+                ['get_limits',        {require_auth => 'read'}],
+                ['paymentagent_list', {stash_params => [qw/ token /]}],
+                [
+                    'paymentagent_withdraw',
+                    {
+                        require_auth => 'payments',
+                        error        => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
+                        response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_withdraw'),
+                        stash_params => [qw/ server_name /],
+                    }
+                ],
+                [
+                    'paymentagent_transfer',
+                    {
+                        require_auth => 'payments',
+                        error        => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
+                        response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_transfer'),
+                        stash_params => [qw/ server_name /],
+                    }
+                ],
+                [
+                    'transfer_between_accounts',
+                    {
+                        require_auth => 'payments',
+                        error        => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
+                        response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
+                    }
+                ],
+                ['cashier',                 {require_auth => 'payments'}],
+                ['new_account_real',        {require_auth => 'admin'}],
+                ['new_account_japan',       {require_auth => 'admin'}],
+                ['new_account_maltainvest', {require_auth => 'admin'}],
+                ['jp_knowledge_test',       {require_auth => 'admin'}],
             ],
             base_path                => '/websockets/v3',
             before_forward           => [\&before_forward],

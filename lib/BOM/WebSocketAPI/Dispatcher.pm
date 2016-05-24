@@ -92,12 +92,12 @@ sub on_message {
 
             $result = $c->before_forward($p1, $req)
                 || $c->forward($p1, $req);    # Don't forward call to RPC if before_forward hook returns anything
+
+            $result = $c->_run_hooks($config->{after_forward} || [], $p1, $result, $req) if $result;
         } elsif (!$result) {
             $c->app->log->debug("unrecognised request: " . $c->dumper($p1));
             $result = $c->new_error('error', 'UnrecognisedRequest', $c->l('Unrecognised request.'));
         }
-
-        $result = $c->_run_hooks($config->{after_forward} || [], $p1, $result, $req);
     };
     if ($@) {
         $c->app->log->info("$$ timeout for " . JSON::to_json($p1));
