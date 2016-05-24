@@ -23,6 +23,12 @@ sub startup {
     $app->secrets([BOM::System::Config::aes_keys->{web_secret}{1}]);
 
     $app->helper(
+        l => sub {
+            my $c = shift;
+            return BOM::Platform::Context::localize(@_);
+        });
+
+    $app->helper(
         throw_error => sub {
             my ($c, $error_code, $error_description) = @_;
 
