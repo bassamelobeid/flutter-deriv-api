@@ -1354,13 +1354,14 @@ subtest 'zero payout' => sub {
     'does not die if payout is zero';
 };
 
+my $now       = Date::Utility->new;
+my $fake_tick = BOM::Market::Data::Tick->new({
+    underlying => 'R_100',
+    epoch      => $now->epoch,
+    quote      => 100,
+});
+
 subtest 'sellback tick expiry contracts' => sub {
-    my $now       = Date::Utility->new;
-    my $fake_tick = BOM::Market::Data::Tick->new({
-        underlying => 'R_100',
-        epoch      => $now->epoch,
-        quote      => 100,
-    });
     my $params = {
         bet_type     => 'CALL',
         barrier      => 'S0P',
@@ -1385,6 +1386,25 @@ subtest 'sellback tick expiry contracts' => sub {
     $c = produce_contract($params);
     ok $c->is_expired,       'expired';
     ok $c->is_valid_to_sell, 'valid to sell';
+};
+
+subtest 'invalid digits barrier' => sub {
+    my $params = {
+        bet_type     => 'DIGITOVER',
+        underlying   => 'R_100',
+        duration     => '10t',
+        currency     => 'USD',
+        current_tick => $fake_tick,
+        entry_tick   => $fake_tick,
+        barrier      => 'S0P',
+        payout       => 10,
+    };
+    my $c = produce_contract($params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like($c->primary_validation_error->{message}, qr/invalid supplied barrier format for digits/, 'throws error');
+    $params->{barrier} = 0;
+    $c = produce_contract($params);
+    ok $c->is_valid_to_buy, 'valid to buy';
 };
 
 # Let's not surprise anyone else
