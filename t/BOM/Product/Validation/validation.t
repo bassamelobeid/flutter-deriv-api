@@ -334,35 +334,18 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     $bet_params->{duration} = '15m';
     $bet_params->{barrier}  = 'S8500P';
 
+    # Between setting up aggregated ticks and mocking objects, I chose the latter.
+    # We are not checking volatility and trend calculation here.
+    my $mocked_contract = Test::MockModule->new('BOM::Product::Contract::Call');
+    $mocked_contract->mock('pricing_vol', sub {0.1});
+    $mocked_contract->mock('news_adjusted_pricing_vol', sub {0.1});
+    my $mocked_engine = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+    $mocked_engine->mock('ticks_for_trend', sub {[]});
     $bet = produce_contract($bet_params);
-
-    $expected_reasons = [qr/Theo probability.*below the minimum acceptable/];
-
-    my $lookback_time = Date::Utility->new($starting - $bet->timeinyears->amount * 86400 * 365);
-    my $date          = DateTime->new(
-        year   => $lookback_time->year,
-        month  => $lookback_time->month,
-        day    => $lookback_time->day_of_month,
-        hour   => $lookback_time->hour,
-        minute => $lookback_time->minute,
-        second => $lookback_time->second
-    );
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch => $date->epoch,
-        quote => 100.012,
-        bid   => 100.015,
-        ask   => 100.021
-    });
-
-    test_error_list('buy', $bet, $expected_reasons);
-
-    $bet_params->{barrier} = $bet->current_spot;
-
-    $bet = produce_contract($bet_params);
-
-    $expected_reasons = [qr/few period.*vol/];
-    test_error_list('buy', $bet, $expected_reasons);
-    # This can't be corrected by changing parameters, so that's it.
+    ok $bet->is_valid_to_buy, 'valid to buy';
+    is $bet->theo_probability->amount, 0.1, 'theo floored at 0.1';
+    $mocked_engine->unmock_all;
+    $mocked_contract->unmock_all;
 
     $bet_params->{duration} = '11d';
     $bet_params->{barrier}  = 'S-2P';
