@@ -85,22 +85,14 @@ sub on_message {
 
             for my $hook (qw/ before_call before_get_rpc_response after_got_rpc_response before_send_api_response after_sent_api_response /) {
                 $req->{$hook} = [
-                    grep { $_ } (
-                        ref $config->{$hook} eq 'ARRAY' ? @{$config->{$hook}} : $config->{$hook};
-                    },
-                    grep {
-                        $_
-                        } (
-                        ref $config->{$hook} eq 'ARRAY' ? @{route->{$hook}} : route->{$hook};
-                    }
-                    ,
+                    grep { $_ } (ref $config->{$hook} eq 'ARRAY' ? @{$config->{$hook}} : $config->{$hook}),
+                    grep { $_ } (ref $config->{$hook} eq 'ARRAY' ? @{route->{$hook}}   : route->{$hook}),
                 ];
-                }
+            }
 
-                $result = $c->before_forward($p1, $req)
+            $result = $c->before_forward($p1, $req)
                 || $c->forward($p1, $req);    # Don't forward call to RPC if before_forward hook returns anything
-        }
-        elsif (!$result) {
+        } elsif (!$result) {
             $log->debug("unrecognised request: " . $c->dumper($p1));
             $result = $c->new_error('error', 'UnrecognisedRequest', $c->l('Unrecognised request.'));
         }
@@ -128,8 +120,8 @@ sub on_message {
 
         $result->{req_id} = $p1->{req_id} if $result && exists $p1->{req_id};
         # /TODO
-    };
-    if ($@) {
+        }
+        if ($@) {
         $c->app->log->info("$$ timeout for " . JSON::to_json($p1));
     }
 
@@ -145,7 +137,7 @@ sub before_forward {
     my $result;
 
     # Should first call global hooks
-    my $action my $before_forward_hooks = [
+    my $before_forward_hooks = [
         ref($config->{before_forward}) eq 'ARRAY'       ? @{$config->{before_forward}}            : $config->{before_forward},
         ref($route->{action_before_forward}) eq 'ARRAY' ? @{delete $req->{action_before_forward}} : delete $req->{action_before_forward},
     ];
