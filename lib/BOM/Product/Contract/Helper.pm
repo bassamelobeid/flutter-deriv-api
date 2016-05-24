@@ -101,20 +101,10 @@ sub calculate_payout {
 sub calculate_ask_probability {
     my $args = shift;
 
-    my ($theo_probability, $commission_markup, $market_supplement, $bs_probability, $probability_threshold, $pricing_engine_name) =
-        @{$args}{qw(theo_probability commission_markup market_supplement bs_probability probability_threshold pricing_engine_name)};
+    my ($theo_probability, $commission_markup, $probability_threshold) =
+        @{$args}{qw(theo_probability commission_markup probability_threshold)};
 
-    # The below is a pretty unacceptable way to acheive this result. You do that stuff at the
-    # Engine level.. or work it into your markup.  This is nonsense.
-    my $minimum;
-    if ($pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
-        $minimum = 0.4;
-    } elsif ($pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
-        $minimum = 0.5 + $commission_markup;
-    } else {
-        $minimum = $theo_probability;
-    }
-
+    my $minimum         = $theo_probability;
     my $maximum         = 1;
     my $ask_probability = $theo_probability + $commission_markup * global_commission_adjustment();
     my $min_threshold   = $probability_threshold;

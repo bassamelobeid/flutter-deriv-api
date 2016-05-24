@@ -981,10 +981,7 @@ sub _build_ask_probability {
     my $base_amount = BOM::Product::Contract::Helper::calculate_ask_probability({
         theo_probability      => $self->theo_probability->amount,
         commission_markup     => $self->commission_markup->amount,
-        market_supplement     => $self->theo_probability->peek_amount('market_supplement') // 0,
-        bs_probability        => $self->bs_probability->amount,
         probability_threshold => $self->market->deep_otm_threshold,
-        pricing_engine_name   => $self->pricing_engine_name,
     });
 
     my $ask_probability = Math::Util::CalculatedValue::Validatable->new({
@@ -1130,7 +1127,7 @@ sub _build_theo_probability {
             set_by      => $self->pricing_engine_name,
             minimum     => 0,
             maximum     => 1,
-            base_amount => $self->pricing_engine->theo_probability,
+            base_amount => $self->pricing_engine->probability,
         });
     } else {
         $theo = $self->pricing_engine->probability;

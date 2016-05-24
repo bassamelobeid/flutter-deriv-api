@@ -41,7 +41,7 @@ sub _build_probability {
         name        => 'theoretical_probability',
         description => 'theoretical probability for intraday index',
         set_by      => __PACKAGE__,
-        minimum     => 0,
+        minimum     => 0.5,                                            # we don't go lower than 0.5
         maximum     => 1,
         base_amount => $self->formula->($self->_formula_args),
     });
