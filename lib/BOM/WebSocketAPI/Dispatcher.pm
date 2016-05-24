@@ -20,6 +20,7 @@ sub init {
     my ($c, $in_config) = @_;
 
     %$config = %$in_config;
+    return;
 }
 
 sub add_route {
@@ -37,9 +38,10 @@ sub add_route {
 
     $routes->{$name}->{in_validator}  = $in_validator;
     $routes->{$name}->{out_validator} = $out_validator;
+    return;
 }
 
-sub connect {
+sub set_connection {
     my ($c) = @_;
 
     # TODO
@@ -122,15 +124,16 @@ sub before_forward {
 }
 
 sub _run_hooks {
-    my $c     = shift;
-    my $hooks = shift;
+    my @hook_params = @_;
+    my $c           = shift @hook_params;
+    my $hooks       = shift @hook_params;
 
     my $i = 0;
     my $result;
     while (!$result && $i < @$hooks) {
         my $hook = $hooks->[$i++];
         next unless $hook;
-        $result = $hook->($c, @_);
+        $result = $hook->($c, @hook_params);
     }
 
     return $result;

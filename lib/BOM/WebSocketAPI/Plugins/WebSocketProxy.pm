@@ -9,7 +9,7 @@ sub register {
     my $r = $app->routes;
     for ($r->under('/websockets/v3')) {
         $_->to('Dispatcher#ok', namespace => 'BOM::WebSocketAPI');
-        $_->websocket('/')->to('Dispatcher#connect', namespace => 'BOM::WebSocketAPI');
+        $_->websocket('/')->to('Dispatcher#set_connection', namespace => 'BOM::WebSocketAPI');
     }
 
     my $routes = delete $config->{forward};
