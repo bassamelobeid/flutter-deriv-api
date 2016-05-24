@@ -16,7 +16,7 @@ has barrier => (
 
 has original_barrier => (
     is  => 'rw',
-    isa     => 'Maybe[BOM::Product::Contract::Strike]',
+    isa => 'Maybe[BOM::Product::Contract::Strike]',
 );
 
 sub _build_barrier {
