@@ -168,7 +168,6 @@ sub dispatch {
 sub forward {
     my ($c, $p1, $req) = @_;
 
-    # TODO New dispatcher plugin has to do this
     my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
     if (BOM::System::Config::env eq 'production') {
         if (BOM::System::Config::node->{node}->{www2}) {

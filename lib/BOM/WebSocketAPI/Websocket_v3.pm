@@ -1,18 +1,18 @@
 # TODO DELETE
 package BOM::WebSocketAPI::Websocket_v3;
 
-use Mojo::Base 'Mojolicious::Controller';
-use MojoX::JSON::RPC::Client;
-use DataDog::DogStatsd::Helper;
-use JSON::Schema;
-use File::Slurp;
-use JSON;
-use Time::HiRes;
-use Data::UUID;
-use Time::Out qw(timeout);
-use Guard;
-use feature "state";
-use RateLimitations qw(within_rate_limits);
+# use Mojo::Base 'Mojolicious::Controller';
+# use MojoX::JSON::RPC::Client;
+# use DataDog::DogStatsd::Helper;
+# use JSON::Schema;
+# use File::Slurp;
+# use JSON;
+# use Time::HiRes;
+# use Data::UUID;
+# use Time::Out qw(timeout);
+# use Guard;
+# use feature "state";
+# use RateLimitations qw(within_rate_limits);
 
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::Transaction;
@@ -23,7 +23,7 @@ use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
-use BOM::Database::Rose::DB;
+# use BOM::Database::Rose::DB;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 
 # [param key, sub, require auth]
