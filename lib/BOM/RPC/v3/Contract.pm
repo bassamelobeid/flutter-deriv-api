@@ -164,10 +164,11 @@ sub get_bid {
             payout              => $contract->payout,
             contract_type       => $contract->code
         };
-
-        my @corporate_actions = @{$contract->corporate_actions};
+        my @corporate_actions;
 
         if (not $contract->is_spread) {
+            @corporate_actions = @{$contract->corporate_actions};
+
             my $contract_affected_by_missing_market_data =
                 (not $contract->may_settle_automatically and not @corporate_actions and $contract->missing_market_data) ? 1 : 0;
             if ($contract_affected_by_missing_market_data) {
@@ -235,7 +236,7 @@ sub get_bid {
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
             message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
-            code              => "GetProposalFailure"
+            code              => "GetProposalFailure $_"
         });
     };
 
