@@ -409,7 +409,6 @@ has [qw(volsurface)] => (
 # discounted_probability - The discounted total probability, given the time value of the money at stake.
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
 has [qw(
-        total_markup
         ask_probability
         theo_probability
         bid_probability
@@ -945,36 +944,6 @@ sub _build_bid_price {
     return $self->_price_from_prob('bid_probability');
 }
 
-sub _build_total_markup {
-    my $self = shift;
-
-    my %max =
-          ($self->priced_with_intraday_model and not $self->is_atm_bet)
-        ? ()
-        : (maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100);
-
-    my %min = $self->pricing_engine_name !~ /TickExpiry/ ? (minimum => 0) : ();
-
-    my $total_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'total_markup',
-        description => 'Our total markup over theoretical value',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => $self->commission_markup->amount,
-        %min,
-        %max,
-    });
-
-    my $commission_adjustment_cv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'global_commission_adjustment',
-        description => 'global commission scaling factory',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => BOM::Product::Contract::Helper::global_commission_adjustment(),
-    });
-    $total_markup->include_adjustment('multiply', $commission_adjustment_cv);
-
-    return $total_markup;
-}
-
 sub _build_ask_probability {
     my $self = shift;
 
@@ -1169,7 +1138,7 @@ has [qw(risk_markup commission_markup base_commission)] => (
 sub _build_risk_markup {
     my $self = shift;
 
-    my $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->ask_probability->peek_amount('risk_markup');
+    my $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->theo_probability->peek_amount('risk_markup');
     $base_amount = 0 unless defined $base_amount;
 
     return Math::Util::CalculatedValue::Validatable->new({
@@ -1196,6 +1165,7 @@ sub _build_commission_markup {
         set_by      => $self->pricing_engine_name,
         base_amount => $self->base_commission *
             BOM::Product::Contract::Helper::commission_multiplier($self->payout, $self->theo_probability->amount),
+        maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100,
         %min,
     });
 }
