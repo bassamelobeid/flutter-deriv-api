@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::v3::Wrapper::System;
 use strict;
 use warnings;
 
+use Scalar::Util qw(looks_like_number);
+
 use BOM::RPC::v3::Utility;
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
@@ -130,10 +132,13 @@ sub _forget_feed_subscription {
             my $fsymbol = $1;
             my $ftype   = $2;
             # . 's' while we are still using tickS in this calls. backward compatibility that must be removed
-            if ($typeoruuid eq 'candles') {
+            if ($typeoruuid eq 'candles' and looks_like_number($ftype)) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
-            } elsif (($ftype . 's') =~ /^$typeoruuid/ or $ftype =~ /proposal_open_contract/ or $typeoruuid eq $subscription->{$channel}->{uuid}) {
+            } elsif (($ftype . 's') =~ /^$typeoruuid/
+                or ($typeoruuid =~ /proposal_open_contract/ and $ftype =~ /proposal_open_contract/)
+                or $typeoruuid eq $subscription->{$channel}->{uuid})
+            {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
             }
