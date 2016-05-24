@@ -79,7 +79,7 @@ subtest 'new commission structure' => sub {
             },
             {
                 stake => 27000,
-                payout => 49122.88,
+                payout => 49123.23,
             },
             {
                 stake => 28000,
@@ -93,11 +93,11 @@ subtest 'new commission structure' => sub {
             },
             {
                 stake => 1000,
-                payout => 1281.977,
+                payout => 1281.99,
             },
             {
                 stake => 46000,
-                payout => 57505.82,
+                payout => 57525.35,
             },
             {
                 stake => 47000,
