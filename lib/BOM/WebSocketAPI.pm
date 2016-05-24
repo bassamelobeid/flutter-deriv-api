@@ -184,6 +184,7 @@ sub startup {
             ],
             base_path                => '/websockets/v3',
             before_forward           => [\&before_forward],
+            after_forward            => [\&after_forward],
             before_call              => [\&start_timing],
             before_get_rpc_response  => [\&log_call_timing],
             after_got_rpc_response   => [\&log_call_timing_connection],
@@ -362,6 +363,36 @@ sub before_forward {
     }
 
     return;
+}
+
+sub after_forward {
+    my ($c, $p1, $result, $req) = @_;
+
+    return unless $result;
+
+    if ($result) {
+        my $output_validation_result = $req->{out_validator}->validate($result);
+        if (not $output_validation_result) {
+            my $error = join(" - ", $output_validation_result->errors);
+            $c->app->log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
+            $result = $c->new_error($req->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error);
+        }
+    }
+    if (ref($result) && $c->stash('debug')) {
+        $result->{debug} = {
+            time   => 1000 * Time::HiRes::tv_interval($req->{hadle_t0}),
+            method => $req->{category},
+        };
+    }
+    my $l = length JSON::to_json($result || {});
+    if ($l > 328000) {
+        $result = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
+        $result->{echo_req} = $p1;
+    }
+
+    $result->{req_id} = $p1->{req_id} if exists $p1->{req_id};
+
+    return $result;
 }
 
 1;

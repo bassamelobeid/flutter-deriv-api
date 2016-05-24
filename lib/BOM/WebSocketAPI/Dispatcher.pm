@@ -97,28 +97,7 @@ sub on_message {
             $result = $c->new_error('error', 'UnrecognisedRequest', $c->l('Unrecognised request.'));
         }
 
-        # TODO move out
-        if ($result) {
-            my $output_validation_result = $req->{out_validator}->validate($result);
-            if (not $output_validation_result) {
-                my $error = join(" - ", $output_validation_result->errors);
-                $c->app->log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
-                $result = $c->new_error($req->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error);
-            }
-        }
-        if (ref($result) && $c->stash('debug')) {
-            $result->{debug} = {
-                time   => 1000 * Time::HiRes::tv_interval($req->{hadle_t0}),
-                method => $req->{category},
-            };
-        }
-        my $l = length JSON::to_json($result || {});
-        if ($l > 328000) {
-            $result = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
-            $result->{echo_req} = $p1;
-        }
-
-        $result->{req_id} = $p1->{req_id} if $result && exists $p1->{req_id};
+        $result = $c->_run_hooks($config->{after_forward} || [], $p1, $result, $req);
     };
     if ($@) {
         $c->app->log->info("$$ timeout for " . JSON::to_json($p1));
@@ -133,19 +112,25 @@ sub on_message {
 sub before_forward {
     my ($c, $p1, $req) = @_;
 
-    my $result;
-
     # Should first call global hooks
     my $before_forward_hooks = [
         ref($config->{before_forward}) eq 'ARRAY'     ? @{$config->{before_forward}}            : $config->{before_forward},
         ref($req->{action_before_forward}) eq 'ARRAY' ? @{delete $req->{action_before_forward}} : delete $req->{action_before_forward},
     ];
 
+    return $c->_run_hooks($before_forward_hooks, $p1, $req);
+}
+
+sub _run_hooks {
+    my $c     = shift;
+    my $hooks = shift;
+
     my $i = 0;
-    while (!$result && $i < @$before_forward_hooks) {
-        my $hook = $before_forward_hooks->[$i++];
+    my $result;
+    while (!$result && $i < @$hooks) {
+        my $hook = $hooks->[$i++];
         next unless $hook;
-        $result = $hook->($c, $p1, $req);
+        $result = $hook->($c, @_);
     }
 
     return $result;
