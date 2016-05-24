@@ -16,9 +16,9 @@ sub register {
 
     BOM::WebSocketAPI::Dispatcher::init($self, $config);
 
-    if (ref $routes eq 'HASH') {
-        for (my $i; i < @routes; $i++) {
-            BOM::WebSocketAPI::Dispatcher::add_route($self, $action, $i);
+    if (ref $routes eq 'ARRAY') {
+        for (my $i; $i < @$routes; $i++) {
+            BOM::WebSocketAPI::Dispatcher::add_route($self, $routes->[$i], $i);
         }
     } else {
         Carp::confess 'No actions found!';

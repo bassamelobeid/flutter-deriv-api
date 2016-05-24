@@ -4,7 +4,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use BOM::WebSocketAPI::CallingEngine;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 
-use Data::UUID;
+use Time::Out qw(timeout);
 
 my $routes;
 my $config;
@@ -79,37 +79,37 @@ sub on_message {
         my $req = {};    # TODO request storage
         $result = $c->parse_req($p1);
         if (!$result
-            && my $route = $c->dispatch($p1))
+            && (my $route = $c->dispatch($p1)))
         {
             %$req = %$route;
 
             for my $hook (qw/ before_call before_get_rpc_response after_got_rpc_response before_send_api_response after_sent_api_response /) {
                 $req->{$hook} = [
                     grep { $_ } (ref $config->{$hook} eq 'ARRAY' ? @{$config->{$hook}} : $config->{$hook}),
-                    grep { $_ } (ref $config->{$hook} eq 'ARRAY' ? @{route->{$hook}}   : route->{$hook}),
+                    grep { $_ } (ref $config->{$hook} eq 'ARRAY' ? @{$route->{$hook}}  : $route->{$hook}),
                 ];
             }
 
             $result = $c->before_forward($p1, $req)
                 || $c->forward($p1, $req);    # Don't forward call to RPC if before_forward hook returns anything
         } elsif (!$result) {
-            $log->debug("unrecognised request: " . $c->dumper($p1));
+            $c->app->log->debug("unrecognised request: " . $c->dumper($p1));
             $result = $c->new_error('error', 'UnrecognisedRequest', $c->l('Unrecognised request.'));
         }
 
         # TODO move out
         if ($result) {
-            my $output_validation_result = $descriptor->{out_validator}->validate($result);
+            my $output_validation_result = $req->{out_validator}->validate($result);
             if (not $output_validation_result) {
                 my $error = join(" - ", $output_validation_result->errors);
-                $log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
-                $result = $c->new_error($descriptor->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error);
+                $c->app->log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
+                $result = $c->new_error($req->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error);
             }
         }
         if (ref($result) && $c->stash('debug')) {
             $result->{debug} = {
                 time   => 1000 * Time::HiRes::tv_interval($req->{hadle_t0}),
-                method => $descriptor->{category},
+                method => $req->{category},
             };
         }
         my $l = length JSON::to_json($result || {});
@@ -137,8 +137,8 @@ sub before_forward {
 
     # Should first call global hooks
     my $before_forward_hooks = [
-        ref($config->{before_forward}) eq 'ARRAY'       ? @{$config->{before_forward}}            : $config->{before_forward},
-        ref($route->{action_before_forward}) eq 'ARRAY' ? @{delete $req->{action_before_forward}} : delete $req->{action_before_forward},
+        ref($config->{before_forward}) eq 'ARRAY'     ? @{$config->{before_forward}}            : $config->{before_forward},
+        ref($req->{action_before_forward}) eq 'ARRAY' ? @{delete $req->{action_before_forward}} : delete $req->{action_before_forward},
     ];
 
     my $i = 0;

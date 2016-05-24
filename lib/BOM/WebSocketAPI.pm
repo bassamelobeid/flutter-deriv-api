@@ -3,7 +3,9 @@ package BOM::WebSocketAPI;
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
+
 use Try::Tiny;
+use Data::UUID;
 
 # pre-load controlleres to have more shared code among workers (COW)
 use BOM::WebSocketAPI::Websocket_v3();
@@ -125,7 +127,8 @@ sub startup {
     $app->plugin(
         'BOM::WebSocketAPI::Plugins::WebSocketProxy' => {
             forward => [
-                ['authorize'][
+                ['authorize'],
+                [
                     'logout',
                     {
                         stash_params => [qw/ token token_type email client_ip country_code user_agent /],
@@ -141,6 +144,12 @@ sub startup {
                     }
                 ],
                 ['active_symbols', {stash_params => [qw/ token /]}],
+
+                ['app_register', {require_auth => 'admin'}],
+                ['app_list',     {require_auth => 'admin'}],
+                ['app_get',      {require_auth => 'admin'}],
+                ['app_delete',   {require_auth => 'admin'}],
+                ['oauth_apps',   {require_auth => 'admin'}],
 
                 ['profit_table',       {require_auth => 'read'}],
                 ['get_account_status', {require_auth => 'read'}],
