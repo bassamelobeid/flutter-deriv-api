@@ -119,9 +119,8 @@ sub on_message {
         }
 
         $result->{req_id} = $p1->{req_id} if $result && exists $p1->{req_id};
-        # /TODO
-        }
-        if ($@) {
+    };
+    if ($@) {
         $c->app->log->info("$$ timeout for " . JSON::to_json($p1));
     }
 
