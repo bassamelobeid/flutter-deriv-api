@@ -35,8 +35,7 @@ sub _build_greek_engine {
 
 sub _build_barrier {
     my $self = shift;
-    my $supp = $self->supplied_barrier + 0;    # make numeric
-    return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => $supp);
+    return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => $self->supplied_barrier);
 }
 
 sub check_expiry_conditions {
@@ -54,6 +53,8 @@ sub check_expiry_conditions {
 
 sub _validate_barrier {
     my $self = shift;
+
+    return $self->barrier->primary_validation_error unless ($self->barrier->confirm_validity);
 
     # check for barrier validity here.
     my $barrier        = $self->barrier->as_absolute;
