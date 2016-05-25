@@ -186,7 +186,6 @@ subtest 'get_ask' => sub {
         "symbol"        => "R_50",
     };
     my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-    $DB::single=1;
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
