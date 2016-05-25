@@ -98,7 +98,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol        => 'RDBULL',
-        recorded_date => $an_hour_earlier,
+        recorded_date => $an_hour_earlier->minus_time_interval('3d'),
+        date          => Date::Utility->new
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'randomindex',
+    {
+        symbol        => 'R_100',
+        recorded_date => $an_hour_earlier->minus_time_interval('3d'),
         date          => Date::Utility->new
     });
 
