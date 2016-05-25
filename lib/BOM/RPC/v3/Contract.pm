@@ -236,7 +236,7 @@ sub get_bid {
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
             message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
-            code              => "GetProposalFailure $_"
+            code              => "GetProposalFailure"
         });
     };
 
