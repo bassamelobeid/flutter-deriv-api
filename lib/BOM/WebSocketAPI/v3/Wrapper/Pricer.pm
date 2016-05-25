@@ -22,7 +22,7 @@ sub price_stream {
         return $c->new_error('price_stream', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
     } else {
         my $id;
-        if ($args->{subscribe} == 1 and not $id = _pricing_channel($c, 'subscribe', $args)) {
+        if ($args->{subscribe} and $args->{subscribe} == 1 and not $id = _pricing_channel($c, 'subscribe', $args)) {
             return $c->new_error('price_stream',
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
