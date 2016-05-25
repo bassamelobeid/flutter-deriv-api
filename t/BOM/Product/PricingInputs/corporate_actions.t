@@ -196,22 +196,29 @@ subtest 'not valid to buy due to outdated dividend' => sub {
             actions          => $action
         });
 
-    lives_ok {
-        my $bet_params = {
-            underlying   => BOM::Market::Underlying->new('UKBARC'),
-            bet_type     => 'PUT',
-            currency     => 'USD',
-            payout       => 100,
-            date_start   => $starting,
-            duration     => '1d',
-            barrier      => 'S0P',
-            entry_tick   => $entry_tick_2,
-            date_pricing => $starting,
-        };
-        my $bet = produce_contract($bet_params);
-        ok !$bet->is_valid_to_buy, 'not valid to buy';
-        like($bet->primary_validation_error->message, qr/Dividend is not updated/, 'throws error');
-    }
+    my $bet_params = {
+        underlying   => BOM::Market::Underlying->new('UKBARC'),
+        bet_type     => 'PUT',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $starting,
+        duration     => '1d',
+        barrier      => 'S0P',
+        entry_tick   => $entry_tick_2,
+        date_pricing => $starting,
+    };
+    my $bet = produce_contract($bet_params);
+    ok !$bet->is_valid_to_buy, 'not valid to buy';
+    like($bet->primary_validation_error->message, qr/Dividend is not updated/, 'throws error');
+    print $bet->primary_validation_error->message;
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'index',
+        {
+            symbol        => 'UKBARC',
+            recorded_date => Date::Utility->new('2013-03-27'),
+        });
+    ok $bet->is_valid_to_buy, 'valid to buy';
 };
 
 subtest 'intraday bet' => sub {
