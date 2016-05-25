@@ -107,10 +107,10 @@ foreach my $ref (@$open_contracts) {
     $bet_params->{date_pricing} = $datetime;
     my $contract = produce_contract($bet_params);
 
-    $ref->{mtm_price}     = $contract->is_valid_to_sell ? $contract->bid_price : '';
+    $ref->{mtm_price}     = $contract->bid_price;
     $ref->{entry_spot}    = $contract->entry_tick ? $contract->entry_tick->quote : '';
     $ref->{current_spot}  = $contract->current_spot;
-    $ref->{unrealized_pl} = ($ref->{mtm_price}) ? $ref->{mtm_price} - $ref->{buy_price} : '';
+    $ref->{unrealized_pl} = $ref->{mtm_price} - $ref->{buy_price};
 }
 
 my @fields = qw(
