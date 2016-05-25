@@ -134,8 +134,8 @@ $t = $t->send_ok({
             proposal_open_contract => 1,
             contract_id            => 1
         }})->message_ok;
-is $call_params->{token},       $token;
-is $call_params->{contract_id}, 1;
+is $call_params->{token}, $token;
+is $call_params->{args}->{contract_id}, 1;
 $rpc_caller->unmock_all;
 
 $t->finish_ok;

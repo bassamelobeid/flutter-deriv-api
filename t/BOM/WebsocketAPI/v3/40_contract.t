@@ -51,6 +51,15 @@ ok $proposal->{proposal}->{ask_price};
 test_schema('proposal', $proposal);
 
 sleep 1;
+$t = $t->send_ok({
+        json => {
+            buy   => 1,
+            price => 1,
+        }})->message_ok;
+my $buy_error = decode_json($t->message->[1]);
+is $buy_error->{msg_type}, 'buy';
+is $buy_error->{error}->{code}, 'InvalidContractProposal';
+
 my $ask_price = $proposal->{proposal}->{ask_price};
 $t = $t->send_ok({
         json => {
