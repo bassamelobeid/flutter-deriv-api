@@ -232,8 +232,7 @@ subtest $method => sub {
         'This account is unavailable.',
         'check authorization'
     );
-    is($c->tcall($method, {token => $token_21})->{count}, 100, 'have 100 statements');
-    is($c->tcall($method, {token => $token1})->{count},   0,   'have 0 statements if no default account');
+    is($c->tcall($method, {token => $token1})->{count}, 0, 'have 0 statements if no default account');
 
     my $contract_expired = produce_contract({
         underlying   => $underlying,
@@ -261,6 +260,7 @@ subtest $method => sub {
 
     my $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
+    is($result->{count},                        3,      "have 3 statements");
     $result = $c->tcall(
         $method,
         {
@@ -482,17 +482,45 @@ subtest $method => sub {
         'check authorization'
     );
 
-    is_deeply($c->tcall($method, {token => $token1}), {status => []}, 'status empty');
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status              => [],
+            risk_classification => ''
+        },
+        'status empty'
+    );
     $test_client->set_status('tnc_approval', 'test staff', 1);
     $test_client->save();
-    is_deeply($c->tcall($method, {token => $token1}), {status => []}, 'tnc_approval is excluded, still status is empty');
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status              => [],
+            risk_classification => ''
+        },
+        'tnc_approval is excluded, still status is empty'
+    );
     $test_client->set_status('ok', 'test staff', 1);
     $test_client->save();
-    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok)]}, 'ok status');
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status              => [qw(ok)],
+            risk_classification => ''
+        },
+        'ok status'
+    );
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
-    is_deeply($c->tcall($method, {token => $token1}), {status => [qw(ok authenticated)]}, 'ok, authenticated');
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status              => [qw(ok authenticated)],
+            risk_classification => ''
+        },
+        'ok, authenticated'
+    );
 };
 
 $method = 'change_password';

@@ -40,6 +40,9 @@ sub ticks_history {
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
 
+    # default to 60 if not defined or send as 0 for candles
+    $args->{granularity} = $args->{granularity} || 60 if $style eq 'candles';
+
     $response = _validate_start_end({%$args, ul => $ul});    ## no critic
     if ($response and exists $response->{error}) {
         return $response;
@@ -79,8 +82,8 @@ sub ticks_history {
     return {
         type    => $type,
         data    => $result,
-        publish => $publish
-    };
+        publish => $publish,
+        ($args->{granularity}) ? (granularity => $args->{granularity}) : ()};
 }
 
 sub _ticks {
@@ -106,7 +109,7 @@ sub _candles {
     my $ul          = $args->{ul};
     my $start_time  = $args->{start};
     my $end_time    = $args->{end};
-    my $granularity = $args->{granularity} // 60;
+    my $granularity = $args->{granularity};
     my $count       = $args->{count};
 
     my @all_ohlc;
@@ -225,12 +228,12 @@ sub _validate_start_end {
         }
     }
     if ($args->{adjust_start_time}) {
-        unless ($ul->exchange->is_open_at($end)) {
-            my $shift_back = $ul->exchange->seconds_since_close_at($end);
+        unless ($ul->calendar->is_open_at($end)) {
+            my $shift_back = $ul->calendar->seconds_since_close_at($end);
             unless (defined $shift_back) {
-                my $last_day = $ul->exchange->trade_date_before(Date::Utility->new($end));
+                my $last_day = $ul->calendar->trade_date_before(Date::Utility->new($end));
                 if ($last_day) {
-                    my $closes = $ul->exchange->closing_on($last_day)->epoch;
+                    my $closes = $ul->calendar->closing_on($last_day)->epoch;
                     $shift_back = $end - $closes;
                 }
             }

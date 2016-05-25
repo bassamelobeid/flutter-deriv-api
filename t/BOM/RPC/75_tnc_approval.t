@@ -9,6 +9,7 @@ use BOM::Platform::Runtime;
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Static;
 
 ## TRICKY but works
 my $version    = 1;
@@ -23,33 +24,17 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 my $test_loginid = $test_client->loginid;
 
-my $res = BOM::RPC::v3::Utility::website_status('');
+my $res = BOM::RPC::v3::Static::website_status({country_code => ''});
 is $res->{terms_conditions_version}, 'version 1', 'version 1';
 
 # cleanup
 BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
 
-my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
-# need to mock it as to access api token we need token beforehand
-$mock_utility->mock('get_token_details', sub { return {loginid => $test_loginid} });
-
-# create new api token
-$res = BOM::RPC::v3::Accounts::api_token({
-        token => 'Abc123',
-        args  => {
-            api_token => 1,
-            new_token => 'Sample1'
-        }});
-is scalar(@{$res->{tokens}}), 1, "token created succesfully";
-my $token = $res->{tokens}->[0]->{token};
-
-$mock_utility->unmock('get_token_details');
-
-$res = BOM::RPC::v3::Accounts::tnc_approval({token => $token});
+$res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
 is_deeply $res, {status => 1};
 
 $res = BOM::RPC::v3::Accounts::get_settings({
-    token    => $token,
+    client   => $test_client,
     language => 'EN'
 });
 is $res->{client_tnc_status}, 'version 1', 'version 1';
@@ -57,24 +42,16 @@ is $res->{client_tnc_status}, 'version 1', 'version 1';
 # switch to version 2
 $version = 2;
 
-$res = BOM::RPC::v3::Utility::website_status('');
+$res = BOM::RPC::v3::Static::website_status({country_code => ''});
 is $res->{terms_conditions_version}, 'version 2', 'version 2';
 
-$res = BOM::RPC::v3::Accounts::tnc_approval({token => $token});
+$res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
 is_deeply $res, {status => 1};
 
 $res = BOM::RPC::v3::Accounts::get_settings({
-    token    => $token,
+    client   => $test_client,
     language => 'EN'
 });
 is $res->{client_tnc_status}, 'version 2', 'version 2';
-
-$res = BOM::RPC::v3::Accounts::api_token({
-        token => $token,
-        args  => {
-            api_token    => 1,
-            delete_token => $token
-        }});
-is scalar(@{$res->{tokens}}), 0, "token deleted successfully";
 
 done_testing();

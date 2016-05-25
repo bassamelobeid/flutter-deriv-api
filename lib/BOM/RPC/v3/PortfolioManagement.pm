@@ -11,20 +11,13 @@ use BOM::RPC::v3::Contract;
 use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
-use BOM::Platform::Client;
 use BOM::Platform::Context qw (request localize);
 use BOM::Product::Transaction;
 
 sub portfolio {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless $token_details->{loginid};
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
 
     my $portfolio = {contracts => []};
     return $portfolio unless $client;
@@ -71,14 +64,7 @@ sub __get_open_contracts {
 sub sell_expired {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
-
+    my $client = $params->{client};
     return _sell_expired_contracts($client, $params->{source});
 }
 
@@ -106,18 +92,12 @@ sub _sell_expired_contracts {
 sub proposal_open_contract {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
 
     my @fmbs = ();
 
-    if ($params->{contract_id}) {
-        @fmbs = @{__get_contract_details_by_id($client, $params->{contract_id})};
+    if (my $contract_id = $params->{args}->{contract_id}) {
+        @fmbs = @{__get_contract_details_by_id($client, $contract_id)};
         if (scalar @fmbs and $fmbs[0]->{account_id} ne $client->default_account->id) {
             @fmbs = ();
         }

@@ -20,7 +20,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
 use BOM::Platform::Static::Config;
-use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
+use BOM::Platform::CurrencyConverter qw(amount_from_to_currency in_USD);
 use BOM::Platform::Transaction;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
@@ -39,14 +39,8 @@ use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 sub cashier {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client_loginid = $token_details->{loginid};
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client         = $params->{client};
+    my $client_loginid = $client->loginid;
 
     if ($client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
@@ -190,7 +184,7 @@ sub cashier {
     my $sportsbook = get_sportsbook($broker, $currency);
 
     # hit DF's CreateCustomer API
-    my $ua = LWP::UserAgent->new(timeout => 60);
+    my $ua = LWP::UserAgent->new(timeout => 20);
     $ua->ssl_opts(
         verify_hostname => 0,
         SSL_verify_mode => SSL_VERIFY_NONE
@@ -277,14 +271,8 @@ sub cashier {
 sub get_limits {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client_loginid = $token_details->{loginid};
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client         = $params->{client};
+    my $client_loginid = $client->loginid;
 
     if ($client->get_status('cashier_locked') or $client->documents_expired or $client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
@@ -355,10 +343,10 @@ sub paymentagent_list {
     my $params = shift;
     my ($language, $args) = @{$params}{qw/language args/};
 
+    my $token_details = $params->{token_details};
     my $client;
-    if ($params->{token}) {
-        my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-        $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}}) if ($token_details and exists $token_details->{loginid});
+    if ($token_details and exists $token_details->{loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
     }
 
     my $broker_code = $client ? $client->broker_code : 'CR';
@@ -407,15 +395,9 @@ sub paymentagent_list {
 sub paymentagent_transfer {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $loginid_fm = $token_details->{loginid};
-    my $client_fm = BOM::Platform::Client->new({loginid => $loginid_fm});
-
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client_fm)) {
-        return $auth_error;
-    }
+    my $source     = $params->{source};
+    my $client_fm  = $params->{client};
+    my $loginid_fm = $client_fm->loginid;
 
     my $payment_agent = $client_fm->payment_agent;
     my ($website_name, $args) = @{$params}{qw/website_name args/};
@@ -592,6 +574,7 @@ sub paymentagent_transfer {
             fmStaff  => $loginid_fm,
             toStaff  => $loginid_to,
             remark   => $comment,
+            source   => $source,
         );
     }
     catch {
@@ -637,14 +620,9 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
 sub paymentagent_withdraw {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client_loginid = $token_details->{loginid};
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $source         = $params->{source};
+    my $client         = $params->{client};
+    my $client_loginid = $client->loginid;
 
     my ($website_name, $args) = @{$params}{qw/website_name args/};
 
@@ -852,6 +830,7 @@ sub paymentagent_withdraw {
             fmStaff  => $client_loginid,
             toStaff  => $paymentagent_loginid,
             toClient => $pa_client,
+            source   => $source,
         );
     }
     catch {
@@ -946,10 +925,10 @@ sub __client_withdrawal_notes {
     if ($error =~ /exceeds client balance/) {
         return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
     } elsif ($error =~ /exceeds withdrawal limit \[(.+)\]/) {
-        # if limit = 0, we show: Your withdrawal amount USD 100.00 exceeds withdrawal limit.
+        # if limit <= 0, we show: Your withdrawal amount USD 100.00 exceeds withdrawal limit.
         # if limit > 0, we show: Your withdrawal amount USD 100.00 exceeds withdrawal limit USD 20.00.
         my $limit = " $1";
-        if ($limit =~ /\s+0\.00$/) {
+        if ($limit =~ /\s+0\.00$/ or $limit =~ /\s+-\d+\.\d+$/) {
             $limit = '';
         }
 
@@ -983,13 +962,8 @@ sub __client_withdrawal_notes {
 sub transfer_between_accounts {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
+    my $source = $params->{source};
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -1178,6 +1152,7 @@ sub transfer_between_accounts {
             toStaff           => $client_to->loginid,
             remark            => 'Account transfer from ' . $client_from->loginid . ' to ' . $client_to->loginid,
             inter_db_transfer => 1,
+            source            => $source,
         );
     }
     catch {
@@ -1203,13 +1178,8 @@ sub transfer_between_accounts {
 sub topup_virtual {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
+    my $source = $params->{source};
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -1235,7 +1205,7 @@ sub topup_virtual {
     }
 
     # CREDIT HIM WITH THE MONEY
-    my ($curr, $amount, $trx) = $client->deposit_virtual_funds;
+    my ($curr, $amount, $trx) = $client->deposit_virtual_funds($source);
 
     return {
         amount   => $amount,

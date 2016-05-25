@@ -31,7 +31,7 @@ my $token = BOM::Platform::SessionCookie->new(
     email   => $email
 )->token;
 
-#Create_doc for symbol FPFP
+#Create_doc for symbol USAAPL
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -41,32 +41,32 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'FPFP',
+        symbol => 'USAAPL',
         date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'FPFP',
+        symbol        => 'USAAPL',
         recorded_date => Date::Utility->new,
     });
 
 my $date       = Date::Utility->new('2013-03-27');
-my $opening    = BOM::Market::Underlying->new('FPFP')->exchange->opening_on($date);
-my $underlying = BOM::Market::Underlying->new('FPFP');
-my $starting   = $underlying->exchange->opening_on(Date::Utility->new('2013-03-27'))->plus_time_interval('50m');
+my $opening    = BOM::Market::Underlying->new('USAAPL')->calendar->opening_on($date);
+my $underlying = BOM::Market::Underlying->new('USAAPL');
+my $starting   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-27'))->plus_time_interval('50m');
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
+    underlying => 'USAAPL',
     epoch      => $starting->epoch,
     quote      => 100
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
+    underlying => 'USAAPL',
     epoch      => $starting->epoch + 30,
     quote      => 111
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
+    underlying => 'USAAPL',
     epoch      => $starting->epoch + 90,
     quote      => 80
 });
@@ -74,15 +74,35 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {}));
 
-subtest 'get_corporate_actions_one_action' => sub {
+subtest 'get_corporate_actions' => sub {
 
-    #Create corporate actions
-    my $one_action = {
-        11223344 => {
+    my $closing_time = $starting->plus_time_interval('1d')->truncate_to_day->plus_time_interval('23h59m59s');
+
+    my $purchase_date = $date->epoch;
+
+    my $params = {};
+
+    $params->{args}{symbol} = 'USAAPL';
+    $params->{args}{start}  = $opening->date_ddmmmyyyy;
+    $params->{args}{end}    = $closing_time->date_ddmmmyyyy;
+
+    #Create two corporate actions with same effective date.
+    my $two_actions = {
+        11223345 => {
             description    => 'Test corp act 1',
-            flag           => 'U',
+            action_code    => 3001,
+            flag           => 'N',
             modifier       => 'divide',
             value          => 1.25,
+            effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
+            type           => 'STOCK_SPLT',
+        },
+        11223346 => {
+            description    => 'Test corp act 2',
+            action_code    => 2000,
+            flag           => 'N',
+            modifier       => 'divide',
+            value          => 2.25,
             effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
             type           => 'DVD_STOCK',
         }};
@@ -92,32 +112,27 @@ subtest 'get_corporate_actions_one_action' => sub {
         {
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-            actions          => $one_action,
+            actions          => $two_actions,
         });
-
-    my $closing_time = $starting->plus_time_interval('1d')->truncate_to_day->plus_time_interval('23h59m59s');
-
-    my $purchase_date = $date->epoch;
-
-    my $params = {
-        symbol => 'FPFP',
-        start  => $opening->date_ddmmmyyyy,
-        end    => $closing_time->date_ddmmmyyyy,
-    };
 
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
-    my @expected_keys = (qw(28-Mar-2013));
+    my $value = $result->{actions}[0]{value};
 
-    is_deeply([sort keys %{$result}], [sort @expected_keys]);
+    cmp_ok $value, '==', 2.25, 'value for this  corporate action';
 
-    my $value = $result->{'28-Mar-2013'}->{value};
+    my $modifier = $result->{actions}[0]{modifier};
 
-    cmp_ok $value, '==', 1.25, 'value for this  corporate action';
+    cmp_ok $modifier, 'eq', 'divide', 'modifier for this  corporate action';
+
+    #Check value for the second corporate action.
+    $value = $result->{actions}[1]{value};
+
+    cmp_ok $value, '==', 1.25, 'value for the second corporate action';
 
     #Test for error case.
     my $params_err = {
-        symbol => 'FPFP',
+        symbol => 'USAAPL',
         start  => $closing_time->date_ddmmmyyyy,
         end    => $opening->date_ddmmmyyyy,
     };

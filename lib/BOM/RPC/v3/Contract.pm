@@ -217,12 +217,16 @@ sub get_bid {
                 $response->{tick_count} = $contract->tick_count;
             }
 
-            if ($contract->two_barriers) {
-                $response->{high_barrier} = $contract->high_barrier->as_absolute;
-                $response->{low_barrier}  = $contract->low_barrier->as_absolute;
-            } elsif ($contract->barrier) {
-                $response->{barrier} = $contract->barrier->as_absolute;
+            if ($contract->entry_tick) {
+                if ($contract->two_barriers) {
+                    $response->{high_barrier} = $contract->high_barrier->as_absolute;
+                    $response->{low_barrier}  = $contract->low_barrier->as_absolute;
+                } elsif ($contract->barrier) {
+                    $response->{barrier} = $contract->barrier->as_absolute;
+                }
             }
+
+            $response->{has_corporate_actions} = (not @{$contract->corporate_actions}) ? 0 : 1;
         }
 
         my $pen = $contract->pricing_engine_name;
@@ -264,13 +268,7 @@ sub send_ask {
 sub get_contract_details {
     my $params = shift;
 
-    my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-
-    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    my $client = $params->{client};
 
     my $response;
     try {

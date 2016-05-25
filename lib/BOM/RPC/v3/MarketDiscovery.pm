@@ -11,7 +11,6 @@ use BOM::RPC::v3::Utility;
 use BOM::Market::Underlying;
 use BOM::Platform::Client;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::System::RedisReplicated;
@@ -19,18 +18,23 @@ use Sereal::Encoder;
 use BOM::Platform::Runtime;
 
 my %name_mapper = (
-    DVD_CASH   => localize('Cash Dividend'),
     DVD_STOCK  => localize('Stock Dividend'),
     STOCK_SPLT => localize('Stock Split'),
 );
 
 sub get_corporate_actions {
     my $params = shift;
-    my ($symbol, $start, $end) = @{$params}{qw/symbol start end/};
+
+    my $symbol = $params->{args}->{symbol};
+    my $start  = $params->{args}->{start};
+    my $end    = $params->{args}->{end};
 
     my ($start_date, $end_date);
 
-    my $response;
+    my $response = {
+        actions => [],
+        count   => 0
+    };
 
     if (not $end) {
         $end_date = Date::Utility->new;
@@ -64,15 +68,25 @@ sub get_corporate_actions {
             });
         }
 
+        my @corporate_actions;
         foreach my $action (@actions) {
             my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
 
-            $response->{$display_date} = {
-                type  => $name_mapper{$action->{type}},
-                value => $action->{value},
+            my $struct = {
+                display_date => $display_date,
+                type         => $name_mapper{$action->{type}},
+                value        => $action->{value},
+                modifier     => $action->{modifier},
             };
+
+            push @corporate_actions, $struct;
         }
 
+        if (scalar(@corporate_actions)) {
+            $response = {
+                actions => \@corporate_actions,
+            };
+        }
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
@@ -218,7 +232,8 @@ sub active_symbols {
 
     my $landing_company_name = $params->{args}->{landing_company} || 'costarica';
 
-    if ($params->{token} and my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token})) {
+    my $token_details = $params->{token_details};
+    if ($token_details and exists $token_details->{loginid}) {
         my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
         $landing_company_name = $client->landing_company->short if $client;
     }
@@ -250,7 +265,7 @@ sub _description {
     my $ul     = BOM::Market::Underlying->new($symbol) || return;
     my $iim    = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
     # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
-    my $exchange_is_open = eval { $ul->exchange } ? $ul->exchange->is_open_at(time) : '';
+    my $exchange_is_open = eval { $ul->calendar } ? $ul->calendar->is_open_at(time) : '';
     my ($spot, $spot_time, $spot_age) = ('', '', '');
     if ($spot = eval { $ul->spot }) {
         $spot_time = $ul->spot_time;
