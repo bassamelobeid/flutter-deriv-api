@@ -1282,21 +1282,21 @@ expected_result:
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
     FTSE:
             CALL:
-                barrier: 6688.86
+                barrier: 6689
                 spot: 6685.31
                 duration: 8d
-                ask_prob: 0.5589
-                theo_prob: 0.5261
+                ask_prob: 0.5587
+                theo_prob: 0.5258
                 total_markup: 0.0328
                 commission_markup: 0.0251
                 risk_markup: 0.0077
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
             NOTOUCH:
-                barrier: 6776.72
+                barrier: 6777
                 spot: 6685.31
                 duration: 4d
-                ask_prob: 0.8688
-                theo_prob: 0.7218
+                ask_prob: 0.8705
+                theo_prob: 0.7236
                 total_markup: 0.147
                 commission_markup: 0.0417
                 risk_markup: 0.1053
@@ -1313,11 +1313,11 @@ expected_result:
                 risk_markup: 0
                 price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             EXPIRYRANGE:
-                barrier: 7163.43
-                barrier2: 6069.76
+                barrier: 7163
+                barrier2: 6069
                 spot: 6688.93
                 duration: 120d
-                ask_prob: 0.7825
+                ask_prob: 0.7824
                 theo_prob: 0.7544
                 total_markup: 0.0281
                 commission_markup: 0.02
@@ -1325,7 +1325,7 @@ expected_result:
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
     GDAXI:
             CALL:
-                barrier: 9516.05
+                barrier: 9516
                 spot: 9518.2
                 duration: 12d
                 ask_prob: 0.484
@@ -1335,11 +1335,11 @@ expected_result:
                 risk_markup: 0.0014
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
             NOTOUCH:
-                barrier: 9736.84
+                barrier: 9737
                 spot: 9518.2
                 duration: 17d
-                ask_prob: 0.6437
-                theo_prob: 0.5711
+                ask_prob: 0.6441
+                theo_prob: 0.5715
                 total_markup: 0.0726
                 commission_markup: 0.0316
                 risk_markup: 0.041
@@ -1356,12 +1356,12 @@ expected_result:
                 risk_markup: 0.0064
                 price_engine:  BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             EXPIRYRANGE:
-                barrier: 10705.54
-                barrier2: 8642.2
+                barrier: 10705
+                barrier2: 8642
                 spot: 9518.2
                 duration: 120d
                 ask_prob: 0.7654
-                theo_prob: 0.7405
+                theo_prob: 0.7406
                 total_markup: 0.0249
                 commission_markup: 0.02
                 risk_markup: 0.0049
