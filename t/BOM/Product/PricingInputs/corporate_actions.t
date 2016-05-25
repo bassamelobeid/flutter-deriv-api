@@ -348,21 +348,21 @@ subtest 'two actions' => sub {
     my $two_actions = {
         11223344 => {
             description    => 'Test corp act 1',
-            flag           => 'N',
+            flag           => 'U',
             modifier       => 'divide',
             value          => 1.25,
             effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
-            type           => 'DVD_SPLT',
-            action_code    => '3000'
+            type           => 'DVD_STOCK',
+            action_code    => '2000'
         },
         11223355 => {
             description    => 'Test corp act 2',
-            flag           => 'N',
+            flag           => 'U',
             modifier       => 'divide',
             value          => 1.45,
             effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
             type           => 'DVD_STOCK',
-            action_code    => '2002'
+            action_code    => '2001'
         },
     };
 
@@ -390,7 +390,7 @@ subtest 'two actions' => sub {
         my $bet = produce_contract($bet_params);
         is $bet->shortcode, 'CALL_USAAPL_100_1364394000_1364673600_S0P_0', 'Can get bet shortcode';
         is $bet->longcode, 'USD 100.00 payout if Apple Inc is strictly higher than entry spot at close on 2013-03-30.', 'Can get bet longcode';
-        cmp_ok $bet->barrier->as_absolute,          '==', 55.18,  'original quote adjusted by corporate action';
+        cmp_ok $bet->barrier->as_absolute,          '==', 55.17,  'original quote adjusted by corporate action';
         cmp_ok $bet->original_barrier->as_absolute, '==', 100.00, 'original quote without corporate action adjustment';
 
     }
@@ -410,7 +410,7 @@ subtest 'two actions' => sub {
             date_pricing => $date_pricing,
         };
         my $bet = produce_contract($bet_params);
-        cmp_ok $bet->high_barrier->as_absolute,          '==', 56.27,  'upper barrier adjusted by corporate action';
+        cmp_ok $bet->high_barrier->as_absolute,          '==', 56.28,  'upper barrier adjusted by corporate action';
         cmp_ok $bet->low_barrier->as_absolute,           '==', 54.07,  'lower barrier adjusted by corporate action';
         cmp_ok $bet->original_high_barrier->as_absolute, '==', 102.00, 'upper barrier without corporate action adjustment';
         cmp_ok $bet->original_low_barrier->as_absolute,  '==', 98.00,  'lower barrier without corporate action adjustment';
