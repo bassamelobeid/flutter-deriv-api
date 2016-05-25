@@ -6,6 +6,7 @@ use Test::More;
 use Test::Mojo;
 
 use JSON::Schema;
+use JSON;
 use File::Slurp;
 use Data::Dumper;
 
@@ -17,9 +18,13 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::System::Password;
 use BOM::Platform::User;
 
+use Test::MockModule;
+use Test::MockObject;
+use MojoX::JSON::RPC::Client;
+
 use base 'Exporter';
 use vars qw/@EXPORT_OK/;
-@EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data create_test_user/;
+@EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data create_test_user call_mocked_client/;
 
 my ($version) = (__FILE__ =~ m{/(v\d+)/});
 die 'unknown version' unless $version;
@@ -88,6 +93,23 @@ sub create_test_user {
     $user->save;
 
     return $cr_1;
+}
+
+sub call_mocked_client {
+    my ($t, $json) = @_;
+    my $call_params;
+    my $fake_rpc_client = Test::MockObject->new();
+    my $real_rpc_client = MojoX::JSON::RPC::Client->new();
+    $fake_rpc_client->mock('call', sub { shift; $call_params = $_[1]->{params}; return $real_rpc_client->call(@_) });
+
+    my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
+    $module->mock('new', sub { return $fake_rpc_client });
+
+    $t = $t->send_ok({json => $json})->message_ok;
+    my $res = decode_json($t->message->[1]);
+
+    $module->unmock_all;
+    return ($res, $call_params);
 }
 
 1;

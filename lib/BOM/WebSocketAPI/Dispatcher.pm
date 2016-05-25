@@ -1,44 +1,17 @@
 package BOM::WebSocketAPI::Dispatcher;
 
 use Mojo::Base 'Mojolicious::Controller';
+use BOM::WebSocketAPI::Dispatcher::Config;
 use BOM::WebSocketAPI::CallingEngine;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 
 use Time::Out qw(timeout);
-
-my $routes;
-my $config;
 
 sub ok {
     my $c      = shift;
     my $source = 1;       # check http origin here
     $c->stash(source => $source);
     return 1;
-}
-
-sub init {
-    my ($c, $in_config) = @_;
-
-    %$config = %$in_config;
-    return;
-}
-
-sub add_route {
-    my ($c, $action, $order) = @_;
-    my $name    = $action->[0];
-    my $options = $action->[1];
-
-    $routes->{$name} ||= $options;
-    $routes->{$name}->{order} = $order;
-    $routes->{$name}->{name}  = $name;
-
-    my $f             = '/home/git/regentmarkets/bom-websocket-api/config/v3/' . $name;
-    my $in_validator  = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")), format => \%JSON::Schema::FORMATS);
-    my $out_validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")), format => \%JSON::Schema::FORMATS);
-
-    $routes->{$name}->{in_validator}  = $in_validator;
-    $routes->{$name}->{out_validator} = $out_validator;
-    return;
 }
 
 sub set_connection {
@@ -76,24 +49,21 @@ sub set_connection {
 sub on_message {
     my ($c, $p1) = @_;
 
+    my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
+
     my $result;
     timeout 15 => sub {
         my $req = {};    # TODO request storage
         $result = $c->parse_req($p1);
         if (!$result
-            && (my $route = $c->dispatch($p1)))
+            && (my $action = $c->dispatch($p1)))
         {
-            %$req = %$route;
-
-            for my $hook (qw/ before_call before_get_rpc_response after_got_rpc_response before_send_api_response after_sent_api_response /) {
-                $req->{$hook} = [
-                    grep { $_ } (ref $config->{$hook} eq 'ARRAY' ? @{$config->{$hook}} : $config->{$hook}),
-                    grep { $_ } (ref $config->{$hook} eq 'ARRAY' ? @{$route->{$hook}}  : $route->{$hook}),
-                ];
-            }
-
+            %$req = %$action;
             $result = $c->before_forward($p1, $req)
-                || $c->forward($p1, $req);    # Don't forward call to RPC if before_forward hook returns anything
+                || $c->forward($p1, $req);    # Don't forward call to RPC if before_forward hook returns response
+
+            # Do not answer if rpc called manually
+            undef $result if $result && $result eq 'not_forward';
 
             $result = $c->_run_hooks($config->{after_forward} || [], $p1, $result, $req);
         } elsif (!$result) {
@@ -114,6 +84,8 @@ sub on_message {
 
 sub before_forward {
     my ($c, $p1, $req) = @_;
+
+    my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
 
     # Should first call global hooks
     my $before_forward_hooks = [
@@ -146,16 +118,18 @@ sub dispatch {
     my $log = $c->app->log;
     $log->debug("websocket got json " . $c->dumper($p1));
 
-    my ($route) =
+    my ($action) =
         sort { $a->{order} <=> $b->{order} }
         grep { defined }
-        map  { $routes->{$_} } keys %$p1;
+        map  { BOM::WebSocketAPI::Dispatcher::Config->new->{actions}->{$_} } keys %$p1;
 
-    return $route;
+    return $action;
 }
 
 sub forward {
     my ($c, $p1, $req) = @_;
+
+    my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
 
     my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
     if (BOM::System::Config::env eq 'production') {
@@ -167,8 +141,15 @@ sub forward {
     }
 
     $req->{url}    = $url;
-    $req->{method} = $req->{name};
+    $req->{method} ||= $req->{name};
     $req->{args}   = $p1;
+
+    for my $hook (qw/ before_call before_get_rpc_response after_got_rpc_response before_send_api_response after_sent_api_response /) {
+        $req->{$hook} = [
+            grep { $_ } (ref $config->{$hook} eq 'ARRAY' ? @{$config->{$hook}} : $config->{$hook}),
+            grep { $_ } (ref $req->{$hook} eq 'ARRAY'    ? @{$req->{$hook}}    : $req->{$hook}),
+        ];
+    }
 
     BOM::WebSocketAPI::CallingEngine::call_rpc($c, $req);
     return;

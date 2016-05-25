@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
+use TestHelper qw/test_schema build_mojo_test build_test_R_50_data call_mocked_client/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 
@@ -110,10 +110,8 @@ $t = $t->send_ok({
 my $corporate_actions = decode_json($t->message->[1]);
 is $corporate_actions->{msg_type}, 'get_corporate_actions';
 
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({json => {portfolio => 1}})->message_ok;
+(undef, $call_params) = call_mocked_client($t, {portfolio => 1});
 is $call_params->{token}, $token;
-$rpc_caller->unmock_all;
 
 $t = $t->send_ok({json => {portfolio => 1}})->message_ok;
 my $portfolio = decode_json($t->message->[1]);
@@ -136,15 +134,11 @@ if (exists $res->{proposal_open_contract}) {
 }
 
 sleep 1;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({
-        json => {
+(undef, $call_params) = call_mocked_client($t, {
             buy        => 1,
             price      => $ask_price || 0,
             parameters => \%contractParameters,
-        },
-    })->message_ok;
+        });
 is $call_params->{token}, $token;
 ok $call_params->{contract_parameters};
 $rpc_caller->unmock_all;

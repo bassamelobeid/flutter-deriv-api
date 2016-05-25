@@ -126,7 +126,7 @@ sub startup {
 
     $app->plugin(
         'BOM::WebSocketAPI::Plugins::WebSocketProxy' => {
-            forward => [
+            actions => [
                 ['authorize'],
                 [
                     'logout',
@@ -147,7 +147,7 @@ sub startup {
 
                 # ['ticks'],
                 # ['ticks_history'],
-                # ['proposal'],
+                ['proposal', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal}],
                 # ['price_stream'],
                 # ['pricing_table'],
                 ['forget',     {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget}],

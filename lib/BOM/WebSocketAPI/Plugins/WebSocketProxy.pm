@@ -1,6 +1,7 @@
 package BOM::WebSocketAPI::Plugins::WebSocketProxy;
 
 use Mojo::Base 'Mojolicious::Plugin';
+use BOM::WebSocketAPI::Dispatcher::Config;
 use BOM::WebSocketAPI::Dispatcher;
 
 sub register {
@@ -12,21 +13,24 @@ sub register {
         $_->websocket('/')->to('Dispatcher#set_connection', namespace => 'BOM::WebSocketAPI');
     }
 
-    my $routes = delete $config->{forward};
+    my $actions = delete $config->{actions};
 
-    BOM::WebSocketAPI::Dispatcher::init($self, $config);
+    my $dispatcher_config = BOM::WebSocketAPI::Dispatcher::Config->new;
+    $dispatcher_config->init($config);
 
-    if (ref $routes eq 'ARRAY') {
-        for (my $i = 0; $i < @$routes; $i++) {
-            BOM::WebSocketAPI::Dispatcher::add_route($self, $routes->[$i], $i);
+    if (ref $actions eq 'ARRAY') {
+        for (my $i = 0; $i < @$actions; $i++) {
+            $dispatcher_config->add_action($actions->[$i], $i);
         }
     } else {
         Carp::confess 'No actions found!';
     }
 
-    # $app->helper(
-    #     call_rpc => sub {
-    #         my $c = shift;
+    $app->helper(
+        call_rpc => sub {
+            my ($c, $p, $req) = @_;
+            return $c->forward($p, $req);
+        });
 
     return;
 }

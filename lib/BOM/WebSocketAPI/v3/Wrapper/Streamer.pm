@@ -170,7 +170,7 @@ sub proposal {
         }
         send_ask($c, $id, $args);
     }
-    return;
+    return 'not_forward';
 }
 
 sub pricing_table {
@@ -198,24 +198,27 @@ sub pricing_table {
 sub send_ask {
     my ($c, $id, $args) = @_;
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'send_ask',
-        sub {
-            my $response = shift;
-            if ($response and exists $response->{error}) {
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-                my $err = $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
-                $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
-                return $err;
+    $c->call_rpc(
+        $args,
+        {
+            id       => $id,
+            method   => 'send_ask',
+            msg_type => 'proposal',
+            error    => sub {
+                my ($c, $rpc_response, $req) = @_;
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req->{id});
+            },
+            response => sub {
+                my ($rpc_response, $api_response, $req) = @_;
+
+                if ($api_response->{error}) {
+                    $api_response->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
+                } else {
+                    $api_response->{proposal}->{id} = $req->{id} if $req->{id};
+                }
+                return $api_response;
             }
-            return {
-                msg_type => 'proposal',
-                proposal => {($id ? (id => $id) : ()), %$response}};
-        },
-        {args => $args},
-        'proposal'
-    );
+        });
     return;
 }
 
