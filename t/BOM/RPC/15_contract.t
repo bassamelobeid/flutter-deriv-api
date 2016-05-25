@@ -610,12 +610,12 @@ sub create_contract {
     my $purchase_date = $now->epoch - 101;
     my $contract_data = {
         underlying   => $underlying,
-        bet_type     => $args{bet_type} ? $args{bet_type} : 'FLASHU',
+        bet_type     => $args{bet_type} // 'FLASHU',
         currency     => 'USD',
-        current_tick => $args{current_tick} ? $args{current_tick} : $tick,
+        current_tick => $args{current_tick} // $tick,
         stake        => 100,
-        date_start   => $args{date_start} ? $args{date_start} : $date_start,
-        date_expiry  => $args{date_expiry} ? $args{date_expiry} : $date_expiry,
+        date_start   => $args{date_start} // $date_start,
+        date_expiry  => $args{date_expiry} // $date_expiry,
         barrier      => 'S0P',
     };
     if ($args{date_pricing}) { $contract_data->{date_pricing} = $args{date_pricing}; }
