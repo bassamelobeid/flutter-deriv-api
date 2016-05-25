@@ -7,62 +7,18 @@ use warnings;
 use JSON;
 use List::Util qw(first);
 
-use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
-sub buy {
-    my ($c, $args) = @_;
+sub buy_get_contract_params {
+    my ($c, $args, $params) = @_;
 
     # 1. Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
     # 2. Calling forget_buy_proposal instead of forget_one as we need args for contract proposal
-
-    my $contract_parameters =
+    $params->{call_params}->{contract_parameters} =
            $args->{parameters}
         || BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $args->{buy})
         || return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c, 'buy',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('buy', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type => 'buy',
-                    buy      => $response,
-                };
-            }
-        },
-        {
-            args                => $args,
-            token               => $c->stash('token'),
-            contract_parameters => $contract_parameters
-        });
-
-    return;
-}
-
-sub sell {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c, 'sell',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('sell', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type => 'sell',
-                    sell     => $response,
-                };
-            }
-        },
-        {
-            args  => $args,
-            token => $c->stash('token')});
     return;
 }
 
