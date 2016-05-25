@@ -47,8 +47,7 @@ sub run {
         return;
     }
 
-    my @symbols_to_update;
-    @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market            => ['stocks', 'indices'],
         contract_category => 'ANY',
         exclude_disabled  => 1,
