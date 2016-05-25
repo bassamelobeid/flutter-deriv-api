@@ -115,19 +115,22 @@ sub _get_ask {
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
 
             $response = {
-                longcode              => $contract->longcode,
-                payout                => $contract->payout,
-                ask_price             => $ask_price,
-                display_value         => $display_value,
-                spot_time             => $contract->current_tick->epoch,
-                date_start            => $contract->date_start->epoch,
-                theo_probability      => $contract->theo_probability->amount,
-                base_commission       => $contract->base_commission,
-                probability_threshold => $contract->market->deep_otm_threshold,
-                minimum_stake         => $contract->staking_limits->{min},
-                maximum_payout        => $contract->staking_limits->{max},
-
+                longcode      => $contract->longcode,
+                payout        => $contract->payout,
+                ask_price     => $ask_price,
+                display_value => $display_value,
+                spot_time     => $contract->current_tick->epoch,
+                date_start    => $contract->date_start->epoch,
             };
+
+            if ($p2->{from_pricer_daemon}) {
+                $response->{theo_probability}      = $contract->theo_probability->amount;
+                $response->{base_commission}       = $contract->base_commission;
+                $response->{probability_threshold} = $contract->market->deep_otm_threshold;
+                $response->{minimum_stake}         = $contract->staking_limits->{min};
+                $response->{maximum_payout}        = $contract->staking_limits->{max};
+            }
+
             if ($contract->underlying->feed_license eq 'realtime') {
                 $response->{spot} = $contract->current_spot;
             }
@@ -245,15 +248,16 @@ sub get_bid {
 }
 
 sub send_ask {
-    my $params = shift;
-    my $args   = $params->{args};
+    my $params             = shift;
+    my $args               = $params->{args};
+    my $from_pricer_daemon = shift;
 
     my $tv = [Time::HiRes::gettimeofday];
 
     my %details = %{$args};
     my $response;
     try {
-        $response = _get_ask(prepare_ask(\%details));
+        $response = _get_ask(prepare_ask({%details, from_pricer_daemon => $from_pricer_daemon}));
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
