@@ -2078,73 +2078,12 @@ sub _validate_feed {
     return;
 }
 
-sub _validate_payout {
+sub _validate_price {
     my $self = shift;
 
     # Extant contracts can have whatever payouts were OK then.
     return if $self->for_sale;
-
-    my $ref             = $self->staking_limits;
-    my $bet_payout      = $self->payout;
-    my $payout_currency = $self->currency;
-    my $payout_max      = $ref->{max};
-
-    if ($bet_payout > $payout_max) {
-        return {
-            message           => 'payout amount outside acceptable range ' . "[given: " . $bet_payout . "] " . "[max: " . $payout_max . "]",
-            message_to_client => $ref->{message_to_client},
-        };
-    }
-
-    my $payout_as_string = "" . $bet_payout;    #Just to be sure we're deailing with a string.
-    $payout_as_string =~ s/[\.0]+$//;           # Strip trailing zeroes and decimal points to be more friendly.
-
-    if ($bet_payout =~ /\.[0-9]{3,}/) {
-        # We did the best we could to clean up looks like still too many decimals
-        return {
-            message           => 'payout amount has too many decimal places ' . "[permitted: 2] " . "[payout: " . $bet_payout . "]",
-            message_to_client => localize('Payout may not have more than two decimal places.',),
-        };
-    }
-
-    return;
-}
-
-sub _validate_stake {
-    my $self = shift;
-
-    my $contract_stake = $self->ask_price;
-
-    return ($self->ask_probability->all_errors)[0] if (not $self->ask_probability->confirm_validity);
-
-    my $ref             = $self->staking_limits;
-    my $contract_payout = $self->payout;
-    my $stake_minimum   = $ref->{min};
-
-    if (not $contract_stake) {
-        return {
-            message           => "Empty or zero stake [stake: " . $contract_stake . "]",
-            message_to_client => localize("Invalid stake"),
-        };
-    }
-
-    if ($contract_stake < $stake_minimum) {
-        return {
-            message           => 'stake is not within limits ' . "[stake: " . $contract_stake . "] " . "[min: " . $stake_minimum . "] ",
-            message_to_client => $ref->{message_to_client},
-        };
-    }
-
-    # Compared as strings of maximum visible client currency width to avoid floating-point issues.
-    if (sprintf("%.2f", $contract_stake) eq sprintf("%.2f", $contract_payout)) {
-        my $message = ($self->for_sale) ? localize('Current market price is 0.') : localize('This contract offers no return.');
-        return {
-            message           => 'stake same as payout',
-            message_to_client => $message,
-        };
-    }
-
-    return;
+    return BOM::Product::Contract::Helper::validate_price($self->ask_price, $self->payout);
 }
 
 sub _validate_input_parameters {
@@ -2570,7 +2509,7 @@ sub confirm_validity {
     # Looking them up can be too slow for pricing speed constraints.
     # This is the default list of validations.
     my @validation_methods =
-        qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed _validate_stake _validate_payout);
+        qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed _validate_price);
 
     push @validation_methods, '_validate_volsurface' if (not $self->volsurface->type eq 'flat');
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) if not $self->underlying->always_available;
