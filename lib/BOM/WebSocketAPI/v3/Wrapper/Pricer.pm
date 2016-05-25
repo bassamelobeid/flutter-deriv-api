@@ -192,10 +192,10 @@ sub _price_stream_results_adjustment {
 
     if (
         my $error = BOM::RPC::v3::Contract::validate_price({
-                ask_price      => $results->{ask_price},
-                payout         => $results->{payout},
-                minimum_stake  => $results->{minimum_stake},
-                maximum_payout => $results->{maximum_payout}}))
+                ask_price         => $results->{ask_price},
+                payout            => $results->{payout},
+                minimum_ask_price => $results->{minimum_stake},
+                maximum_payout    => $results->{maximum_payout}}))
     {
         return {
             error => {
