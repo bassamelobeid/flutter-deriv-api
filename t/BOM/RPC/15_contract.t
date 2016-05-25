@@ -373,6 +373,101 @@ subtest 'get_bid' => sub {
 
 };
 
+my $method = 'get_contract_details';
+subtest $method => sub {
+    my $params = {token => '12345'};
+
+    $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
+    $client->set_status('disabled', 1, 'test');
+    $client->save;
+    $params->{token} = $token;
+    $c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
+    $client->clr_status('disabled');
+    $client->save;
+
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'will report error if no short_code and currency');
+
+    my $contract = create_contract(
+        client => $client,
+        spread => 0
+    );
+    $params->{short_code} = $contract->shortcode;
+    $params->{currency}   = 'USD';
+    $c->call_ok($method, $params)->has_no_error->result_is_deeply({
+            'symbol'       => 'R_50',
+            'longcode'     => "USD 194.22 payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
+            'display_name' => 'Volatility 50 Index',
+            'date_expiry'  => $now->epoch - 50,
+        },
+        'result is ok'
+    );
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 899,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9936
+    });
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 501,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9938
+    });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch - 499,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9939
+    });
+
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        underlying => 'frxAUDCAD',
+        quote      => 0.9935
+    });
+
+    $contract = create_contract(
+        client        => $client,
+        spread        => 0,
+        current_tick  => $tick,
+        underlying    => 'frxAUDCAD',
+        date_start    => $now->epoch - 900,
+        date_expiry   => $now->epoch - 500,
+        purchase_date => $now->epoch - 901,
+        date_pricing  => $now->epoch,
+    );
+    $params = {
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => 'USD',
+        is_sold     => 1,
+    };
+    my $res = $c->call_ok('get_bid', $params)->result;
+    my $expected_result = {
+        'ask_price'       => '208.18',
+        'barrier'         => '0.99360',
+        'bid_price'       => '208.18',
+        'contract_id'     => 10,
+        'currency'        => 'USD',
+        'date_expiry'     => 1127287060,
+        'date_settlement' => 1127287060,
+        'date_start'      => 1127286660,
+        'entry_spot'      => '0.99360',
+        'entry_tick'      => '0.99360',
+        'entry_tick_time' => 1127286661,
+        'exit_tick'       => '0.99380',
+        'exit_tick_time'  => 1127287059,
+        'longcode'        => 'USD 208.18 payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
+        'shortcode'       => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
+        'underlying'      => 'frxAUDCAD',
+    };
+
+    foreach my $key (keys %$expected_result) {
+        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
+    }
+
+};
+
 subtest 'get_bid_affected_by_corporate_action' => sub {
     my $opening    = BOM::Market::Underlying->new('USAAPL')->calendar->opening_on($now);
     my $closing    = BOM::Market::Underlying->new('USAAPL')->calendar->closing_on($now);
@@ -481,101 +576,6 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
 
     foreach my $key (keys %$expected_result) {
         cmp_ok $result->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
-    }
-
-};
-
-my $method = 'get_contract_details';
-subtest $method => sub {
-    my $params = {token => '12345'};
-
-    $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
-    $client->set_status('disabled', 1, 'test');
-    $client->save;
-    $params->{token} = $token;
-    $c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
-    $client->clr_status('disabled');
-    $client->save;
-
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is('Sorry, an error occurred while processing your request.', 'will report error if no short_code and currency');
-
-    my $contract = create_contract(
-        client => $client,
-        spread => 0
-    );
-    $params->{short_code} = $contract->shortcode;
-    $params->{currency}   = 'USD';
-    $c->call_ok($method, $params)->has_no_error->result_is_deeply({
-            'symbol'       => 'R_50',
-            'longcode'     => "USD 194.22 payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
-            'display_name' => 'Volatility 50 Index',
-            'date_expiry'  => $now->epoch - 50,
-        },
-        'result is ok'
-    );
-
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 899,
-        underlying => 'frxAUDCAD',
-        quote      => 0.9936
-    });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 501,
-        underlying => 'frxAUDCAD',
-        quote      => 0.9938
-    });
-
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch - 499,
-        underlying => 'frxAUDCAD',
-        quote      => 0.9939
-    });
-
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch,
-        underlying => 'frxAUDCAD',
-        quote      => 0.9935
-    });
-
-    $contract = create_contract(
-        client        => $client,
-        spread        => 0,
-        current_tick  => $tick,
-        underlying    => 'frxAUDCAD',
-        date_start    => $now->epoch - 900,
-        date_expiry   => $now->epoch - 500,
-        purchase_date => $now->epoch - 901,
-        date_pricing  => $now->epoch,
-    );
-    $params = {
-        short_code  => $contract->shortcode,
-        contract_id => $contract->id,
-        currency    => 'USD',
-        is_sold     => 1,
-    };
-    my $res = $c->call_ok('get_bid', $params)->result;
-    my $expected_result = {
-        'ask_price'       => '208.18',
-        'barrier'         => '0.99360',
-        'bid_price'       => '208.18',
-        'contract_id'     => 10,
-        'currency'        => 'USD',
-        'date_expiry'     => 1127287060,
-        'date_settlement' => 1127287060,
-        'date_start'      => 1127286660,
-        'entry_spot'      => '0.99360',
-        'entry_tick'      => '0.99360',
-        'entry_tick_time' => 1127286661,
-        'exit_tick'       => '0.99380',
-        'exit_tick_time'  => 1127287059,
-        'longcode'        => 'USD 208.18 payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
-        'underlying'      => 'frxAUDCAD',
-    };
-
-    foreach my $key (keys %$expected_result) {
-        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
     }
 
 };
