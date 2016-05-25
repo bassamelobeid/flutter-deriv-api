@@ -446,7 +446,9 @@ RDBEAR: &4
         euro_atm:
           max: 1d
           min: 15s
-        euro_non_atm: *5
+        euro_non_atm:
+          max: 1d
+          min: 15s
     tick:
       spot:
         euro_atm:
@@ -503,7 +505,9 @@ R_100: &6
         euro_atm:
           max: 1d
           min: 15s
-        euro_non_atm: *8
+        euro_non_atm:
+          max: 1d
+          min: 15s
     tick:
       spot:
         euro_atm:
