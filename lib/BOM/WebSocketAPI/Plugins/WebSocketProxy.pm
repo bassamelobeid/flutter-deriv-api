@@ -28,7 +28,6 @@ sub register {
     #     call_rpc => sub {
     #         my $c = shift;
 
-
     return;
 }
 

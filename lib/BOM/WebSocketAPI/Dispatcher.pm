@@ -117,8 +117,8 @@ sub before_forward {
 
     # Should first call global hooks
     my $before_forward_hooks = [
-        ref($config->{before_forward}) eq 'ARRAY'     ? @{$config->{before_forward}}            : $config->{before_forward},
-        ref($req->{before_forward}) eq 'ARRAY' ? @{delete $req->{before_forward}} : delete $req->{before_forward},
+        ref($config->{before_forward}) eq 'ARRAY' ? @{$config->{before_forward}}     : $config->{before_forward},
+        ref($req->{before_forward}) eq 'ARRAY'    ? @{delete $req->{before_forward}} : delete $req->{before_forward},
     ];
 
     return $c->_run_hooks($before_forward_hooks, $p1, $req);
@@ -166,9 +166,9 @@ sub forward {
         }
     }
 
-    $req->{url} = $url;
+    $req->{url}    = $url;
     $req->{method} = $req->{name};
-    $req->{args} = $p1;
+    $req->{args}   = $p1;
 
     BOM::WebSocketAPI::CallingEngine::call_rpc($c, $req);
     return;

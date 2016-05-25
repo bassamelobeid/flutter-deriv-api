@@ -122,11 +122,11 @@ sub call_rpc {
 
     my $method      = $params->{method};
     my $msg_type    = $params->{msg_type} ||= $params->{method};
-    my $url         = ($params->{url}. $params->{method});
+    my $url         = ($params->{url} . $params->{method});
     my $call_params = $params->{call_params} ||= {};
 
     # TODO It should be object attributes
-    my $rpc_response_cb   = get_rpc_response_cb($c, $params);
+    my $rpc_response_cb = get_rpc_response_cb($c, $params);
     my $max_response_size = $params->{max_response_size};
 
     # TODO It'll be hooks
