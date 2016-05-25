@@ -134,22 +134,17 @@ subtest 'legal allowed underlyings' => sub {
         USAMZN
         USCT
         USFB
-        USGE
         USGOOG
-        USKO
         USMSFT
-        USPFE
         USXOM
         UKBARC
         UKBATS
-        UKGSK
         UKHSBA
         UKVOD
         DEALV
         DEBAYER
         DEDAI
         DESIE
-        DEVOWGEN
         AUANZ
         AUBHP
         AUCBA
@@ -189,7 +184,7 @@ subtest 'legal allowed underlyings' => sub {
         frxGBPUSD
         WLDGBP
         DJI
-	FCHI
+	    FCHI
         frxGBPNZD
         frxXAGUSD
         frxAUDCHF
