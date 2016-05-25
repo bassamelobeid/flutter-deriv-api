@@ -51,9 +51,7 @@ sub _initialize {
 sub price {
     my $self = shift;
 
-    my $t = [gettimeofday];
     my $response = BOM::RPC::v3::Contract::send_ask({args => $self->{params}}, 1);
-    $response->{pricing_time} = 1000 * tv_interval($t);
 
     delete $response->{longcode};
 
