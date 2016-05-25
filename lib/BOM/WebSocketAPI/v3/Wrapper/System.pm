@@ -6,7 +6,6 @@ use warnings;
 use Scalar::Util qw(looks_like_number);
 
 use BOM::RPC::v3::Utility;
-use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub forget {
