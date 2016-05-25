@@ -1,6 +1,7 @@
 #!/usr/bin/perl
+ut
 
-use strict;
+    use strict;
 use warnings;
 
 use Test::More (tests => 7);
@@ -36,10 +37,30 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_delta',
+    'volsurface_moneyness',
     {
         symbol        => 'FPFP',
         recorded_date => Date::Utility->new,
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => Date::Utility->new('2013-03-27'),
+    }) for qw(GBP USD);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => 'UKBARC',
+        recorded_date => Date::Utility->new('2013-03-26'),
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol         => 'UKBARC',
+        spot_reference => 100,
+        recorded_date  => Date::Utility->new('2013-03-27'),
     });
 
 my $date       = Date::Utility->new('2013-03-27');
@@ -51,16 +72,22 @@ my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $starting->epoch,
     quote      => 100
 });
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
-    epoch      => $starting->epoch + 30,
-    quote      => 111
+my $entry_tick_2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'UKBARC',
+    epoch      => $starting->epoch,
+    quote      => 100
 });
+
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
-    epoch      => $starting->epoch + 90,
-    quote      => 80
-});
+        underlying => $_,
+        epoch      => $starting->epoch + 30,
+        quote      => 111
+    }) for qw(FPFP UKBARC);
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => $_,
+        epoch      => $starting->epoch + 90,
+        quote      => 80
+    }) for qw(FPFP UKBARC);
 
 subtest 'invalid operation' => sub {
     plan tests => 3;
@@ -144,6 +171,46 @@ subtest 'valid action during bet pricing' => sub {
         cmp_ok($new_bet->date_pricing->epoch, ">", $effective_date->epoch, 'corporate action\'s effective date is after date_pricing');
         isa_ok($new_bet->corporate_actions, 'ARRAY');
         is(scalar @{$new_bet->corporate_actions}, 1, 'one action found');
+    }
+};
+
+subtest 'not valid to buy due to outdated dividend' => sub {
+    plan tests => 4;
+    my $action = {
+        11223344 => {
+            description    => 'STOCK split ',
+            flag           => 'U',
+            symbol         => 'UKBARC',
+            modifier       => 'divide',
+            action_code    => '3000',
+            value          => 1.25,
+            effective_date => $opening->date_ddmmmyy,
+            type           => 'STOCK_SPLT',
+        }};
+
+    Quant::Framework::Utils::Test::create_doc(
+        'corporate_action',
+        {
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            actions          => $action
+        });
+
+    lives_ok {
+        my $bet_params = {
+            underlying   => BOM::Market::Underlying->new('UKBARC'),
+            bet_type     => 'PUT',
+            currency     => 'USD',
+            payout       => 100,
+            date_start   => $starting,
+            duration     => '1d',
+            barrier      => 'S0P',
+            entry_tick   => $entry_tick_2,
+            date_pricing => $starting,
+        };
+        my $bet = produce_contract($bet_params);
+        ok !$bet->is_valid_to_buy, 'not valid to buy';
+        like($bet->primary_validation_error->message, qr/Dividend is not updated/, 'throws error');
     }
 };
 
