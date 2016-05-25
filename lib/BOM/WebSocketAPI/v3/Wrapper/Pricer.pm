@@ -139,14 +139,21 @@ sub process_pricing_events {
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
-            $results = {
-                msg_type     => 'price_stream',
-                price_stream => $response,
-            };
+            my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
 
-            $results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $results, $amount);
-
-            $results->{price_stream}->{id} = $pricing_channel->{$serialized_args}->{$amount}->{uuid};
+            if (my $ref = $adjusted_results->{error}) {
+                my $err = $c->new_error('price_stream', $ref->{code}, $ref->{message_to_client});
+                $err->{error}->{details} = $ref->{details} if exists $ref->{details};
+                $results = $err;
+            } else {
+                $results = {
+                    msg_type     => 'price_stream',
+                    price_stream => {
+                        id => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
+                        %$adjusted_results,
+                    },
+                };
+            }
         }
 
         $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
@@ -159,14 +166,55 @@ sub _price_stream_results_adjustment {
     my $orig_args = shift;
     my $results   = shift;
     my $amount    = shift;
-    # For non spread
-    if ($orig_args->{basis}) {
-        $results->{price_stream}->{ask_price} *= $amount / 1000;
-        $results->{price_stream}->{ask_price} = roundnear(0.01, $results->{price_stream}->{ask_price});
 
-        $results->{price_stream}->{display_value} *= $amount / 1000;
-        $results->{price_stream}->{display_value} = roundnear(0.01, $results->{price_stream}->{display_value});
+    # For non spread
+    if ($orig_args->{basis} eq 'payout') {
+        my $commission_markup = BOM::Product::Contract::Helper::commission({
+            theo_probability => $results->{theo_probability},
+            base_commission  => $results->{base_commission},
+            payout => $amount,
+        });
+        my $ask_probability = BOM::Product::Contract::Helper::calculate_ask_probability({
+            theo_probability      => $results->{theo_probability},
+            commission_markup     => $commission_markup,
+            probability_threshold => $results->{probability_threshold},
+        });
+        my $ask_price = roundnear(0.01, $amount * $ask_probability);
+        $results->{ask_price} = $ask_price;
+        $results->{display_value} = $ask_price;
+        $results->{payout} = $amount;
+    } elsif ($orig_args->{basis} eq 'stake') {
+        my $commission_markup = BOM::Product::Contract::Helper::commission({
+            theo_probability => $results->{theo_probability},
+            base_commission  => $results->{base_commission},
+            stake => $amount,
+        });
+        my $payout = BOM::Product::Contract::Helper::calculate_payout({
+            theo_probability => $results->{theo_probability},
+            commission => $commission_markup,
+            stake => $amount,
+        });
+        $results->{ask_price} = $amount;
+        $results->{display_value} = $amount;
+        $results->{payout} = $payout;
     }
+
+    if (my $error = BOM::Product::Contract::Helper::validate_price({ask_price => $results->{ask_price}, payout => $results->{payout}, minimum_stake => $results->{minimum_stake}, maximum_payout => $results->{maximum_payout}})) {
+        return {
+            error => {
+                message_to_client => $error->{message_to_client},
+                code              => 'ContractBuyValidationError',
+                details           => {
+                    longcode      => $results->{longcode},
+                    display_value => $results->{display_value},
+                },
+            }
+        };
+    }
+
+    # cleans up the response.
+    delete $args->{$_} for qw(theo_probability base_commission probability_threshold minimum_stake maximum_payout);
+
     return $results;
 }
 
