@@ -13,10 +13,6 @@
       "title": "Get corporate actions response",
       "description": "Corporate actions for an equity symbol",
       "properties": {
-        "count":{
-            "type":"number",
-            "description":"Number of corporate actions returned in this call"
-        },
         "actions": {
           "type": "array",
           "description": "Array of the corporate actions.",
