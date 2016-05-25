@@ -91,19 +91,21 @@ sub _get_ask {
         my $contract = produce_contract({%$p2});
 
         if (!$contract->is_valid_to_buy) {
+            my ($message_to_client, $code);
+
             if (my $pve = $contract->primary_validation_error) {
-                $response = BOM::RPC::v3::Utility::create_error({
-                        message_to_client => $pve->message_to_client,
-                        code              => "ContractBuyValidationError",
-                        details           => {
-                            longcode      => $contract->longcode,
-                            display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price))}});
+                $message_to_client = $pve->message_to_client;
+                $code = "ContractBuyValidationError";
             } else {
-                $response = BOM::RPC::v3::Utility::create_error({
-                    message_to_client => localize("Cannot validate contract"),
-                    code              => "ContractValidationError"
-                });
+                $message_to_client = localize("Cannot validate contract");
+                $code = "ContractValidationError";
             }
+            $response = BOM::RPC::v3::Utility::create_error({
+                    message_to_client => $message_to_client,
+                    code              => $code,
+                    details           => {
+                        longcode      => $contract->longcode,
+                        display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price))},});
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
