@@ -186,6 +186,7 @@ subtest 'get_ask' => sub {
         "symbol"        => "R_50",
     };
     my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    $DB::single=1;
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
@@ -193,7 +194,12 @@ subtest 'get_ask' => sub {
         'ask_price'     => '51.49',
         'longcode'      => 'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
         'spot'          => '963.3054',
-        'payout'        => '100'
+        'payout'        => '100',
+        'base_commission' => 0.015,
+        'maximum_payout' => 50000,
+        'minimum_stake' => 0.35,
+        'probability_threshold' => 0.025,
+        'theo_probability' => 0.499862404631018,
     };
     is_deeply($result, $expected, 'the left values are all right');
 
@@ -231,7 +237,7 @@ subtest 'send_ask' => sub {
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
-    my $expected_keys = [sort (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout))];
+    my $expected_keys = [sort (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout base_commission theo_probability probability_threshold minimum_stake maximum_payout))];
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
@@ -444,9 +450,9 @@ subtest $method => sub {
     };
     my $res = $c->call_ok('get_bid', $params)->result;
     my $expected_result = {
-        'ask_price'       => '208.18',
+        'ask_price'       => '208.81',
         'barrier'         => '0.99360',
-        'bid_price'       => '208.18',
+        'bid_price'       => '208.81',
         'contract_id'     => 10,
         'currency'        => 'USD',
         'date_expiry'     => 1127287060,
@@ -457,8 +463,8 @@ subtest $method => sub {
         'entry_tick_time' => 1127286661,
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287059,
-        'longcode'        => 'USD 208.18 payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_208.18_1127286660_1127287060_S0P_0',
+        'longcode'        => 'USD 208.81 payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
+        'shortcode'       => 'CALL_FRXAUDCAD_208.81_1127286660_1127287060_S0P_0',
         'underlying'      => 'frxAUDCAD',
     };
 
