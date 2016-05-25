@@ -893,7 +893,6 @@ sub _build_dividend_adjustment {
 
 
     my $dividend_recorded_date = $dividend_adjustment->{recorded_date};
-    my @corporate_actions      = @{$self->corporate_actions};
 
     if (scalar @corporate_actions and (first { Date::Utility->new($_->{effective_date})->is_after($dividend_recorded_date) } @corporate_actions)) {
 
