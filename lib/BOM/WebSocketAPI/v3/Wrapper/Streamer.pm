@@ -77,8 +77,6 @@ sub ticks_history {
                 method          => 'ticks_history',
                 rpc_response_cb => sub {
                     my ($c, $args, $rpc_response) = @_;
-
-                    my $rpc_response = shift;
                     if (exists $rpc_response->{error}) {
                         # cancel subscription if response has error
                         _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args);
