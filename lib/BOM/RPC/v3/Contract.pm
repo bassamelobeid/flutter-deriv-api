@@ -116,7 +116,13 @@ sub _get_ask {
                 ask_price     => $ask_price,
                 display_value => $display_value,
                 spot_time     => $contract->current_tick->epoch,
-                date_start    => $contract->date_start->epoch
+                date_start    => $contract->date_start->epoch,
+                theo_probability => $contract->theo_probability->amount,
+                base_commission => $contract->base_commission,
+                probability_threshold => $contract->market->deep_otm_markup,
+                minimum_stake => $contract->staking_limits->{min},
+                maximum_payout => $contract->staking_limits->{max},
+
             };
             if ($contract->underlying->feed_license eq 'realtime') {
                 $response->{spot} = $contract->current_spot;
