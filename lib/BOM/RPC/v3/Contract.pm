@@ -12,6 +12,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Helper;
+use Format::Util::Numbers qw(roundnear);
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing);
 
