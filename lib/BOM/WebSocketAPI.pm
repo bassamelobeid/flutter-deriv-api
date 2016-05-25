@@ -9,7 +9,6 @@ use Data::UUID;
 use RateLimitations qw(within_rate_limits);
 
 # pre-load controlleres to have more shared code among workers (COW)
-use BOM::WebSocketAPI::Websocket_v3();
 use BOM::WebSocketAPI::CallingEngine();
 
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
@@ -153,7 +152,8 @@ sub startup {
                 # ['pricing_table'],
                 ['forget',     {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget}],
                 ['forget_all', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all}],
-                ['ping',       {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::ping}],
+                # ['ping',       {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::ping}],
+                ['ping',       {before_forward => [\&BOM::WebSocketAPI::v3::Wrapper::System::ping, sub {return {pong => 1}}]}],
                 ['time',       {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::server_time}],
 
                 ['website_status', {stash_params => [qw/ country_code /]}],
@@ -326,6 +326,7 @@ sub startup {
             after_got_rpc_response   => [\&log_call_timing_connection],
             before_send_api_response => [\&add_debug_time, \&start_timing],
             after_sent_api_response  => [\&log_call_timing_sent],
+            after_dispatch           => [\&clear_db_cache],
         });
 
     return;
@@ -529,6 +530,11 @@ sub after_forward {
     $result->{req_id} = $p1->{req_id} if exists $p1->{req_id};
 
     return $result;
+}
+
+sub clear_db_cache {
+    BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+    return;
 }
 
 1;

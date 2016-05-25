@@ -95,7 +95,7 @@ sub on_message {
             $result = $c->before_forward($p1, $req)
                 || $c->forward($p1, $req);    # Don't forward call to RPC if before_forward hook returns anything
 
-            $result = $c->_run_hooks($config->{after_forward} || [], $p1, $result, $req) if $result;
+            $result = $c->_run_hooks($config->{after_forward} || [], $p1, $result, $req);
         } elsif (!$result) {
             $c->app->log->debug("unrecognised request: " . $c->dumper($p1));
             $result = $c->new_error('error', 'UnrecognisedRequest', $c->l('Unrecognised request.'));
@@ -107,7 +107,8 @@ sub on_message {
 
     $c->send({json => $result}) if $result;
 
-    BOM::Database::Rose::DB->db_cache->finish_request_cycle;    # TODO
+    $c->_run_hooks($config->{after_dispatch} || []);
+
     return;
 }
 
@@ -117,7 +118,7 @@ sub before_forward {
     # Should first call global hooks
     my $before_forward_hooks = [
         ref($config->{before_forward}) eq 'ARRAY'     ? @{$config->{before_forward}}            : $config->{before_forward},
-        ref($req->{action_before_forward}) eq 'ARRAY' ? @{delete $req->{action_before_forward}} : delete $req->{action_before_forward},
+        ref($req->{before_forward}) eq 'ARRAY' ? @{delete $req->{before_forward}} : delete $req->{before_forward},
     ];
 
     return $c->_run_hooks($before_forward_hooks, $p1, $req);
@@ -165,9 +166,11 @@ sub forward {
         }
     }
 
-    my $name = $req->{name};
-    BOM::WebSocketAPI::CallingEngine::forward($c, $url, $name, $p1, $req);
+    $req->{url} = $url;
+    $req->{method} = $req->{name};
+    $req->{args} = $p1;
 
+    BOM::WebSocketAPI::CallingEngine::call_rpc($c, $req);
     return;
 }
 
@@ -181,12 +184,12 @@ sub parse_req {
         $result->{echo_req} = {};
     }
 
-    $result = $c->check_sanity($p1) unless $result;
+    $result = $c->_check_sanity($p1) unless $result;
 
     return $result;
 }
 
-sub check_sanity {
+sub _check_sanity {
     my ($c, $p1) = @_;
 
     my @failed;

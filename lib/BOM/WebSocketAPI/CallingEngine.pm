@@ -8,26 +8,15 @@ use Guard;
 use JSON;
 use Data::UUID;
 
-sub forward {
-    my ($c, $url, $rpc_method, $args, $params) = @_;
-
-    $params->{url}    = ($url . $rpc_method);
-    $params->{method} = $rpc_method;
-    $params->{msg_type} ||= $rpc_method;
-    $params->{rpc_response_cb} = get_rpc_response_cb($c, $args, $params);
-    $params->{call_params} = make_call_params($c, $args, $params);
-
-    return call_rpc($c, $params);
-}
-
 sub make_call_params {
-    my ($c, $args, $params) = @_;
+    my ($c, $params) = @_;
 
+    my $args           = $params->{args};
     my $stash_params   = $params->{stash_params};
     my $require_auth   = $params->{require_auth};
     my $call_params_cb = delete $params->{make_call_params};
 
-    my $call_params = $params->{call_params} ||= {};
+    my $call_params = $params->{call_params};
     $call_params->{args}     = $args;
     $call_params->{language} = $c->stash('language');
     $call_params->{country}  = $c->stash('country') || $c->country_code;
@@ -48,7 +37,7 @@ sub make_call_params {
 }
 
 sub get_rpc_response_cb {
-    my ($c, $args, $params) = @_;
+    my ($c, $params) = @_;
 
     my $success_handler = delete $params->{success};
     my $error_handler   = delete $params->{error};
@@ -57,7 +46,7 @@ sub get_rpc_response_cb {
     if (my $rpc_response_cb = delete $params->{rpc_response_cb}) {
         return sub {
             my $rpc_response = shift;
-            return $rpc_response_cb->($c, $args, $rpc_response);
+            return $rpc_response_cb->($c, $params->{args}, $rpc_response);
         };
     } else {
         return sub {
@@ -132,12 +121,12 @@ sub call_rpc {
     my $params = shift;
 
     my $method      = $params->{method};
-    my $msg_type    = $params->{msg_type};
-    my $url         = $params->{url};
-    my $call_params = $params->{call_params};
+    my $msg_type    = $params->{msg_type} ||= $params->{method};
+    my $url         = ($params->{url}. $params->{method});
+    my $call_params = $params->{call_params} ||= {};
 
     # TODO It should be object attributes
-    my $rpc_response_cb   = delete $params->{rpc_response_cb};
+    my $rpc_response_cb   = get_rpc_response_cb($c, $params);
     my $max_response_size = $params->{max_response_size};
 
     # TODO It'll be hooks
@@ -151,7 +140,7 @@ sub call_rpc {
     my $callobj = {
         id     => Data::UUID->new()->create_str(),
         method => $method,
-        params => $call_params,
+        params => make_call_params($c, $params),
     };
 
     $_->($c, $params) for @$before_call_hook;

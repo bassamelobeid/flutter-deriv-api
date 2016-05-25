@@ -24,6 +24,11 @@ sub register {
         Carp::confess 'No actions found!';
     }
 
+    # $app->helper(
+    #     call_rpc => sub {
+    #         my $c = shift;
+
+
     return;
 }
 
