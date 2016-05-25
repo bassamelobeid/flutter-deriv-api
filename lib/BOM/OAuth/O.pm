@@ -72,7 +72,11 @@ sub authorize {
         'id-EmcupPkdLUKfScM8vsM6Hc4httJrL' => 44,
         'id-yfBPXh3678sX8W1q6xDvr71pk1VJK' => 45,
     };
-    $app_id = $id_map->{$app_id} if ($id_map->{$app_id});
+
+    if ($app_id !~ /^\d+$/ and exists $id_map->{$app_id}) {
+        $app_id = $id_map->{$app_id};
+    }
+    return $c->__bad_request('the request was missing valid app_id') if ($app_id !~ /^\d+$/);
 
     my $oauth_model = __oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
@@ -109,6 +113,7 @@ sub authorize {
         my $r           = $c->stash('request');
         my $referer     = $c->req->headers->header('Referer') // '';
         my $domain_name = $r->domain_name;
+        $domain_name =~ s/^oauth//;
         if (index($referer, $domain_name) > -1) {
             $c->session('__is_app_approved' => 1);
         } else {
@@ -124,7 +129,6 @@ sub authorize {
             layout => 'default',
 
             app       => $app,
-            l         => \&localize,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
@@ -166,7 +170,6 @@ sub authorize {
             app       => $app,
             client    => $client,
             scopes    => \@scopes,
-            l         => \&localize,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
@@ -247,7 +250,6 @@ sub __login {
 
             app       => $app,
             error     => $err,
-            l         => \&localize,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
