@@ -13,16 +13,17 @@ sub forward {
 
     $params->{msg_type} ||= $rpc_method;
 
-    make_call_params($c, $args, $params);
+    my $rpc_response_cb = get_rpc_response_cb($c, $args, $params);
+
+    $params->{call_params} = make_call_params($c, $args, $params);
 
     return call_rpc(
         $c,
         {
-            %$params,
             url             => ($url . $rpc_method),
             method          => $rpc_method,
-            msg_type        => $rpc_method // $params->{msg_type},
-            rpc_response_cb => rpc_response_cb($c, $args, $params),
+            rpc_response_cb => $rpc_response_cb,
+            %$params,
         });
 }
 
@@ -30,8 +31,8 @@ sub make_call_params {
     my ($c, $args, $params) = @_;
 
     my $stash_params   = $params->{stash_params};
-    my $call_params_cb = $params->{make_call_params};
     my $require_auth   = $params->{require_auth};
+    my $call_params_cb = delete $params->{make_call_params};
 
     my $call_params = $params->{call_params} ||= {};
     $call_params->{args}     = $args;
@@ -50,28 +51,36 @@ sub make_call_params {
         $call_params->{$_} = $cb_params->{$_} for keys %$cb_params;
     }
 
-    return;
+    return $call_params;
 }
 
-sub rpc_response_cb {
+sub get_rpc_response_cb {
     my ($c, $args, $params) = @_;
 
-    my $success_handler = $params->{success};
-    my $error_handler   = $params->{error};
+    my $success_handler = delete $params->{success};
+    my $error_handler   = delete $params->{error};
     my $msg_type        = $params->{msg_type};
 
-    return sub {
-        my $rpc_response = shift;
-        if (ref($rpc_response) eq 'HASH' and exists $rpc_response->{error}) {
-            $error_handler->($c, $args, $rpc_response) if defined $error_handler;
-            return error_api_response($c, $rpc_response, $params);
-        } else {
-            $success_handler->($c, $args, $rpc_response) if defined $success_handler;
-            store_response($c, $rpc_response);
-            return success_api_response($c, $rpc_response, $params);
-        }
-        return;
-    };
+    if (my $rpc_response_cb = delete $params->{rpc_response_cb}) {
+        return sub {
+            my $rpc_response = shift;
+            return $rpc_response_cb->($c, $args, $rpc_response);
+        };
+    } else {
+        return sub {
+            my $rpc_response = shift;
+            if (ref($rpc_response) eq 'HASH' and exists $rpc_response->{error}) {
+                $error_handler->($c, $rpc_response, $params) if defined $error_handler;
+                return error_api_response($c, $rpc_response, $params);
+            } else {
+                $success_handler->($c, $rpc_response, $params) if defined $success_handler;
+                store_response($c, $rpc_response);
+                return success_api_response($c, $rpc_response, $params);
+            }
+            return;
+        };
+    }
+    return;
 }
 
 sub store_response {
@@ -103,7 +112,7 @@ sub success_api_response {
     # TODO Should be removed after RPC's answers will be standardized
     my $custom_response;
     if ($rpc_response_handler) {
-        return $rpc_response_handler->($rpc_response, $api_response);
+        return $rpc_response_handler->($rpc_response, $api_response, $params);
     }
 
     return $api_response;
@@ -119,7 +128,7 @@ sub error_api_response {
     # TODO Should be removed after RPC's answers will be standardized
     my $custom_response;
     if ($rpc_response_handler) {
-        return $rpc_response_handler->($rpc_response, $api_response);
+        return $rpc_response_handler->($rpc_response, $api_response, $params);
     }
 
     return $api_response;
@@ -134,16 +143,16 @@ sub call_rpc {
     my $url         = $params->{url};
     my $call_params = $params->{call_params};
 
-    # TODO It should be ibject attributes
-    my $rpc_response_cb   = $params->{rpc_response_cb};
+    # TODO It should be object attributes
+    my $rpc_response_cb   = delete $params->{rpc_response_cb};
     my $max_response_size = $params->{max_response_size};
 
     # TODO It'll be hooks
-    my $before_get_rpc_response_hook  = $params->{before_get_rpc_response}  || [];
-    my $after_got_rpc_response_hook   = $params->{after_got_rpc_response}   || [];
-    my $before_send_api_response_hook = $params->{before_send_api_response} || [];
-    my $after_sent_api_response_hook  = $params->{after_sent_api_response}  || [];
-    my $before_call_hook              = delete $params->{before_call}       || [];
+    my $before_get_rpc_response_hook  = delete($params->{before_get_rpc_response})  || [];
+    my $after_got_rpc_response_hook   = delete($params->{after_got_rpc_response})   || [];
+    my $before_send_api_response_hook = delete($params->{before_send_api_response}) || [];
+    my $after_sent_api_response_hook  = delete($params->{after_sent_api_response})  || [];
+    my $before_call_hook              = delete($params->{before_call})              || [];
 
     my $client  = MojoX::JSON::RPC::Client->new;
     my $callobj = {

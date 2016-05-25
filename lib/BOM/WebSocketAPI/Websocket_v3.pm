@@ -171,31 +171,47 @@ my @dispatch = (
             success      => \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
         },
     ],
-    ['trading_times',  \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,  0],
-    ['asset_index',    \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,    0],
-    ['active_symbols', \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::active_symbols, 0],
-    ['ticks',          \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks,                 0],
-    ['ticks_history',  \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history,         0],
-    ['proposal',       \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,              0],
-    ['price_stream',   \&BOM::WebSocketAPI::v3::Wrapper::Pricer::price_stream,            0],
-    ['pricing_table',  \&BOM::WebSocketAPI::v3::Wrapper::Streamer::pricing_table,         0],
-    ['forget',         \&BOM::WebSocketAPI::v3::Wrapper::System::forget,                  0],
-    ['forget_all',     \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,              0],
-    ['ping',           \&BOM::WebSocketAPI::v3::Wrapper::System::ping,                    0],
-    ['time',           \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,             0],
-    ['website_status',          '', 0, '', {stash_params => [qw/ country_code /]}],
-    ['contracts_for',           '', 0],
-    ['residence_list',          '', 0],
-    ['states_list',             '', 0],
-    ['payout_currencies',       '', 0, '', {stash_params => [qw/ token /]}],
-    ['landing_company',         '', 0],
-    ['landing_company_details', '', 0],
-    ['get_corporate_actions', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::get_corporate_actions, 0],
+    ['trading_times', '', 0],
+    [
+        'asset_index',
+        '', 0, '',
+        {
+            before_forward => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index_cached,
+            success        => \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::cache_asset_index,
+        }
+    ],
+    ['active_symbols',          '',                                                        0, '', {stash_params => [qw/ token /]}],
+    ['ticks',                   \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks,         0],
+    ['ticks_history',           \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history, 0],
+    ['proposal',                \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,      0],
+    ['price_stream',            \&BOM::WebSocketAPI::v3::Wrapper::Streamer::price_stream,  0],
+    ['pricing_table',           \&BOM::WebSocketAPI::v3::Wrapper::Streamer::pricing_table, 0],
+    ['forget',                  \&BOM::WebSocketAPI::v3::Wrapper::System::forget,          0],
+    ['forget_all',              \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,      0],
+    ['ping',                    \&BOM::WebSocketAPI::v3::Wrapper::System::ping,            0],
+    ['time',                    \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,     0],
+    ['website_status',          '',                                                        0, '', {stash_params => [qw/ country_code /]}],
+    ['contracts_for',           '',                                                        0],
+    ['residence_list',          '',                                                        0],
+    ['states_list',             '',                                                        0],
+    ['payout_currencies',       '',                                                        0, '', {stash_params => [qw/ token /]}],
+    ['landing_company',         '',                                                        0],
+    ['landing_company_details', '',                                                        0],
+    ['get_corporate_actions',   '',                                                        0],
 
-    ['balance',            \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance, 1, 'read'],
-    ['statement',          '',                                                  1, 'read'],
-    ['profit_table',       '',                                                  1, 'read'],
-    ['get_account_status', '',                                                  1, 'read'],
+    [
+        'balance',
+        '', 1, 'read',
+        {
+            before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::subscribe_transaction_channel,
+            error          => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance_error_handler,
+            success        => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
+        }
+    ],
+
+    ['statement',          '', 1, 'read'],
+    ['profit_table',       '', 1, 'read'],
+    ['get_account_status', '', 1, 'read'],
     ['change_password',    '', 1, 'admin',    {stash_params => [qw/ token_type client_ip /]}],
     ['get_settings',       '', 1, 'read'],
     ['set_settings',       '', 1, 'admin',    {stash_params => [qw/ server_name client_ip user_agent /]}],
@@ -223,12 +239,23 @@ my @dispatch = (
     ['reset_password',      '', 0],
 
     # authenticated calls
-    ['sell',                   \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,                           1, 'trade'],
-    ['buy',                    \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,                            1, 'trade'],
-    ['transaction',            \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction,                    1, 'read'],
-    ['portfolio',              \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio,              1, 'read'],
-    ['proposal_open_contract', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract, 1, 'read'],
-    ['sell_expired',           \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired,           1, 'trade'],
+    ['sell', '', 1, 'trade'],
+    [
+        'buy', '', 1, 'trade',
+        {
+            before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
+        }
+    ],
+    ['transaction', '', 1, 'read', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction}],
+    ['portfolio',   '', 1, 'read'],
+    [
+        'proposal_open_contract',
+        '', 1, 'read',
+        {
+            rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
+        }
+    ],
+    ['sell_expired', '', 1, 'trade'],
 
     ['app_register', '', 1, 'admin'],
     ['app_list',     '', 1, 'admin'],
@@ -236,17 +263,43 @@ my @dispatch = (
     ['app_delete',   '', 1, 'admin'],
     ['oauth_apps',   '', 1, 'admin'],
 
-    ['topup_virtual',             \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual,             1, 'trade'],
-    ['get_limits',                \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                1, 'read'],
-    ['paymentagent_list',         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,         0],
-    ['paymentagent_withdraw',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,     1, 'payments'],
-    ['paymentagent_transfer',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer,     1, 'payments'],
-    ['transfer_between_accounts', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::transfer_between_accounts, 1, 'payments'],
-    ['cashier',                   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::cforward,                  1, 'payments'],
-    ['new_account_real',          '',                                                                   1, 'admin'],
-    ['new_account_japan',         '',                                                                   1, 'admin'],
-    ['new_account_maltainvest',   '',                                                                   1, 'admin'],
-    ['jp_knowledge_test',         '',                                                                   1, 'admin'],
+    ['topup_virtual', '', 1, 'trade'],
+    ['get_limits',    '', 1, 'read'],
+    ['paymentagent_list', '', 0, '', {stash_params => [qw/ token /]}],
+    [
+        'paymentagent_withdraw',
+        '', 1,
+        'payments',
+        {
+            error        => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
+            response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_withdraw'),
+            stash_params => [qw/ server_name /],
+        }
+    ],
+    [
+        'paymentagent_transfer',
+        '', 1,
+        'payments',
+        {
+            error        => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
+            response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_transfer'),
+            stash_params => [qw/ server_name /],
+        }
+    ],
+    [
+        'transfer_between_accounts',
+        '', 1,
+        'payments',
+        {
+            error    => \&BOM::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
+            response => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
+        }
+    ],
+    ['cashier',                 '', 1, 'payments'],
+    ['new_account_real',        '', 1, 'admin'],
+    ['new_account_japan',       '', 1, 'admin'],
+    ['new_account_maltainvest', '', 1, 'admin'],
+    ['jp_knowledge_test',       '', 1, 'admin'],
 );
 
 # key: category, value:  hashref (descriptor) with fields
@@ -401,36 +454,41 @@ sub __handle {
         if (my $handler = $descriptor->{handler}) {
             $result = $handler->($c, $p1, {require_auth => $descriptor->{require_auth}});
         } else {
-            # TODO New dispatcher plugin has to do this
-            my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
-            if (BOM::System::Config::env eq 'production') {
-                if (BOM::System::Config::node->{node}->{www2}) {
-                    $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
-                } else {
-                    $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
-                }
-            }
-
-            my $method = $descriptor->{category};
-
             my %forward_params;
             if (ref $descriptor->{forward_params} eq 'HASH') {
                 %forward_params = %{$descriptor->{forward_params}};
             }
 
-            $forward_params{before_call}              = [@{$forward_params{before_call}              || []}, \&start_timing];
-            $forward_params{before_get_rpc_response}  = [@{$forward_params{before_get_rpc_response}  || []}, \&log_call_timing];
-            $forward_params{after_got_rpc_response}   = [@{$forward_params{after_got_rpc_response}   || []}, \&log_call_timing_connection];
-            $forward_params{before_send_api_response} = [@{$forward_params{before_send_api_response} || []}, \&add_debug_time, \&start_timing];
-            $forward_params{after_sent_api_response}  = [@{$forward_params{after_sent_api_response}  || []}, \&log_call_timing_sent];
+            # Don't forward call to RPC if there is result
+            my $before_forward = delete $forward_params{before_forward};
+            $result = $before_forward->($c, $p1, \%forward_params) if $before_forward;
 
-            # No need return result because always do async response
-            BOM::WebSocketAPI::CallingEngine::forward(
-                $c, $url, $method, $p1,
-                {
-                    require_auth => $descriptor->{require_auth},
-                    %forward_params,
-                });
+            unless ($result) {
+                # TODO New dispatcher plugin has to do this
+                my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
+                if (BOM::System::Config::env eq 'production') {
+                    if (BOM::System::Config::node->{node}->{www2}) {
+                        $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
+                    } else {
+                        $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
+                    }
+                }
+
+                $forward_params{before_call}              = [@{$forward_params{before_call}              || []}, \&start_timing];
+                $forward_params{before_get_rpc_response}  = [@{$forward_params{before_get_rpc_response}  || []}, \&log_call_timing];
+                $forward_params{after_got_rpc_response}   = [@{$forward_params{after_got_rpc_response}   || []}, \&log_call_timing_connection];
+                $forward_params{before_send_api_response} = [@{$forward_params{before_send_api_response} || []}, \&add_debug_time, \&start_timing];
+                $forward_params{after_sent_api_response}  = [@{$forward_params{after_sent_api_response}  || []}, \&log_call_timing_sent];
+
+                # No need return result because always do async response
+                my $method = $descriptor->{category};
+                BOM::WebSocketAPI::CallingEngine::forward(
+                    $c, $url, $method, $p1,
+                    {
+                        require_auth => $descriptor->{require_auth},
+                        %forward_params,
+                    });
+            }
         }
 
         if ($result) {

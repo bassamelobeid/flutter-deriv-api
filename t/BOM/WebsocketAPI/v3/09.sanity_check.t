@@ -21,7 +21,6 @@ test_schema('ping', $res);
 # undefs are fine for some values
 $t = $t->send_ok({json => {ping => {key => undef}}})->message_ok;
 
-
 $t->finish_ok;
 
 done_testing();
