@@ -209,7 +209,7 @@ sub _price_stream_results_adjustment {
     }
 
     # cleans up the response.
-    delete $args->{$_} for qw(theo_probability base_commission probability_threshold minimum_stake maximum_payout);
+    delete $results->{$_} for qw(theo_probability base_commission probability_threshold minimum_stake maximum_payout);
 
     return $results;
 }
