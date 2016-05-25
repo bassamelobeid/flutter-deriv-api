@@ -32,20 +32,18 @@ sub proposal_open_contract {
                             contract_id      => $contract_id,
                             validation_error => $response->{$contract_id}->{error}->{message_to_client}});
                 } else {
-                    # need to do this as args are passed back to client as response echo_req
-                    my $details = {%$args};
-                    # as req_id and passthrough can change so we should not send them in type else
-                    # client can subscribe to multiple proposal_open_contract as feed channel type will change
-                    my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
-                    # we don't want to leak account_id to client
-                    $details->{account_id} = delete $response->{$contract_id}->{account_id};
-
                     my $id;
                     if (    exists $args->{subscribe}
                         and $args->{subscribe} eq '1'
                         and not $response->{$contract_id}->{is_expired}
                         and not $response->{$contract_id}->{is_sold})
                     {
+                        # need to do this as args are passed back to client as response echo_req
+                        my $details = {%$args};
+
+                        # we don't want to leak account_id to client
+                        $details->{account_id} = delete $response->{$contract_id}->{account_id};
+
                         # these keys needs to be deleted from args (check send_proposal)
                         # populating here cos we stash them in redis channel
                         $details->{short_code}      = $response->{$contract_id}->{shortcode};
@@ -57,6 +55,10 @@ sub proposal_open_contract {
                         $details->{purchase_time}   = $response->{$contract_id}->{purchase_time};
                         $details->{is_sold}         = $response->{$contract_id}->{is_sold};
                         $details->{transaction_ids} = $response->{$contract_id}->{transaction_ids};
+
+                        # as req_id and passthrough can change so we should not send them in type else
+                        # client can subscribe to multiple proposal_open_contract as feed channel type will change
+                        my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
 
                         # pass account_id, transaction_id so that we can categorize it based on type, can't use contract_id
                         # as we send contract_id also, we want both request to stream i.e one with contract_id
