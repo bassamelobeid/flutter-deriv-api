@@ -171,22 +171,27 @@ sub _price_stream_results_adjustment {
 
     # For non spread
     if ($orig_args->{basis} eq 'payout') {
-        my $ask_price = BOM::RPC::v3::Contract::calculate_ask_price({
-            theo_probability      => $results->{theo_probability},
-            base_commission       => $results->{base_commission},
-            probability_threshold => $results->{probability_threshold},
-            amount                => $amount,
-        });
+        my $ask_price = roundnear(
+            0.01,
+            BOM::RPC::v3::Contract::calculate_ask_price({
+                    theo_probability      => $results->{theo_probability},
+                    base_commission       => $results->{base_commission},
+                    probability_threshold => $results->{probability_threshold},
+                    amount                => $amount,
+                }));
         $results->{ask_price}     = $ask_price;
         $results->{display_value} = $ask_price;
-        $results->{payout}        = $amount;
+        $results->{payout}        = roundnear(0.01, $amount);
     } elsif ($orig_args->{basis} eq 'stake') {
         my $commission_markup = BOM::Product::Contract::Helper::commission({});
-        my $payout            = BOM::RPC::v3::Contract::calculate_payout({
-            theo_probability => $results->{theo_probability},
-            base_commission  => $results->{base_commission},
-            amount           => $amount,
-        });
+        my $payout            = roundnear(
+            0.01,
+            BOM::RPC::v3::Contract::calculate_payout({
+                    theo_probability => $results->{theo_probability},
+                    base_commission  => $results->{base_commission},
+                    amount           => $amount,
+                }));
+        $amount = roundnear(0.01, $amount);
         $results->{ask_price}     = $amount;
         $results->{display_value} = $amount;
         $results->{payout}        = $payout;
