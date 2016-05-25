@@ -33,8 +33,8 @@ sub _build_greek_engine {
 }
 
 sub _build_barrier {
-    my $self = shift;
-    return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => $self->supplied_barrier);
+    # essentially no barrier, and not used in settlement
+    return;
 }
 
 sub check_expiry_conditions {
@@ -52,7 +52,6 @@ sub check_expiry_conditions {
 sub _validate_barrier {
     my $self = shift;
 
-    return $self->barrier->primary_validation_error unless ($self->barrier->confirm_validity);
     return;    # override barrier validation
 }
 
