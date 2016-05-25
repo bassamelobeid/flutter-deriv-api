@@ -121,7 +121,7 @@ sub _get_ask {
                 date_start            => $contract->date_start->epoch,
                 theo_probability      => $contract->theo_probability->amount,
                 base_commission       => $contract->base_commission,
-                probability_threshold => $contract->market->deep_otm_markup,
+                probability_threshold => $contract->market->deep_otm_threshold,
                 minimum_stake         => $contract->staking_limits->{min},
                 maximum_payout        => $contract->staking_limits->{max},
 
