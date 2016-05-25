@@ -169,30 +169,21 @@ sub _price_stream_results_adjustment {
 
     # For non spread
     if ($orig_args->{basis} eq 'payout') {
-        my $commission_markup = BOM::Product::Contract::Helper::commission({
-            theo_probability => $results->{theo_probability},
-            base_commission  => $results->{base_commission},
-            payout           => $amount,
-        });
-        my $ask_probability = BOM::Product::Contract::Helper::calculate_ask_probability({
+        my $ask_price = BOM::RPC::v3::Contract::calculate_ask_price({
             theo_probability      => $results->{theo_probability},
-            commission_markup     => $commission_markup,
+            base_commission       => $results->{base_commission},
             probability_threshold => $results->{probability_threshold},
+            amount                => $amount,
         });
-        my $ask_price = roundnear(0.01, $amount * $ask_probability);
         $results->{ask_price}     = $ask_price;
         $results->{display_value} = $ask_price;
         $results->{payout}        = $amount;
     } elsif ($orig_args->{basis} eq 'stake') {
-        my $commission_markup = BOM::Product::Contract::Helper::commission({
+        my $commission_markup = BOM::Product::Contract::Helper::commission({});
+        my $payout            = BOM::RPC::v3::Contract::calculate_payout({
             theo_probability => $results->{theo_probability},
             base_commission  => $results->{base_commission},
-            stake            => $amount,
-        });
-        my $payout = BOM::Product::Contract::Helper::calculate_payout({
-            theo_probability => $results->{theo_probability},
-            commission       => $commission_markup,
-            stake            => $amount,
+            amount           => $amount,
         });
         $results->{ask_price}     = $amount;
         $results->{display_value} = $amount;
@@ -200,7 +191,7 @@ sub _price_stream_results_adjustment {
     }
 
     if (
-        my $error = BOM::Product::Contract::Helper::validate_price({
+        my $error = BOM::RPC::v3::Contract::validate_price({
                 ask_price      => $results->{ask_price},
                 payout         => $results->{payout},
                 minimum_stake  => $results->{minimum_stake},
