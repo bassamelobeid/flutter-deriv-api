@@ -343,7 +343,6 @@ subtest 'get_bid' => sub {
             current_spot_time
             contract_id
             underlying
-            has_corporate_actions
             is_expired
             is_valid_to_sell
             is_forward_starting
