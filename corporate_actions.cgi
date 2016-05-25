@@ -5,7 +5,7 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-my $now = Date::Utility->new;
+use Date::Utility;
 use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
 use BOM::Platform::Runtime;
