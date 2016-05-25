@@ -95,33 +95,35 @@ sub _get_ask {
 
             if (my $pve = $contract->primary_validation_error) {
                 $message_to_client = $pve->message_to_client;
-                $code = "ContractBuyValidationError";
+                $code              = "ContractBuyValidationError";
             } else {
                 $message_to_client = localize("Cannot validate contract");
-                $code = "ContractValidationError";
+                $code              = "ContractValidationError";
             }
             $response = BOM::RPC::v3::Utility::create_error({
                     message_to_client => $message_to_client,
                     code              => $code,
                     details           => {
                         longcode      => $contract->longcode,
-                        display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price))},});
+                        display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price))
+                    },
+                });
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
 
             $response = {
-                longcode      => $contract->longcode,
-                payout        => $contract->payout,
-                ask_price     => $ask_price,
-                display_value => $display_value,
-                spot_time     => $contract->current_tick->epoch,
-                date_start    => $contract->date_start->epoch,
-                theo_probability => $contract->theo_probability->amount,
-                base_commission => $contract->base_commission,
+                longcode              => $contract->longcode,
+                payout                => $contract->payout,
+                ask_price             => $ask_price,
+                display_value         => $display_value,
+                spot_time             => $contract->current_tick->epoch,
+                date_start            => $contract->date_start->epoch,
+                theo_probability      => $contract->theo_probability->amount,
+                base_commission       => $contract->base_commission,
                 probability_threshold => $contract->market->deep_otm_markup,
-                minimum_stake => $contract->staking_limits->{min},
-                maximum_payout => $contract->staking_limits->{max},
+                minimum_stake         => $contract->staking_limits->{min},
+                maximum_payout        => $contract->staking_limits->{max},
 
             };
             if ($contract->underlying->feed_license eq 'realtime') {
