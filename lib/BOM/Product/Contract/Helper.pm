@@ -137,7 +137,7 @@ sub validate_price {
     my $limit_message = localize(
         'Minimum stake of [_1] and maximum payout of [_2]',
         to_monetary_number_format($minimum_ask_price),
-        to_monetary_n umber_format($maximum_payout));
+        to_monetary_number_format($maximum_payout));
     if ($ask_price < $minimum_ask_price) {
         return {
             message           => 'stake is not within limits ' . "[stake: " . $ask_price . "] " . "[min: " . $minimum_ask_price . "] ",

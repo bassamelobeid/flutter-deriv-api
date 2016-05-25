@@ -2083,7 +2083,11 @@ sub _validate_price {
 
     # Extant contracts can have whatever payouts were OK then.
     return if $self->for_sale;
-    return BOM::Product::Contract::Helper::validate_price($self->ask_price, $self->payout);
+    return BOM::Product::Contract::Helper::validate_price({
+            ask_price         => $self->ask_price,
+            payout            => $self->payout,
+            minimum_ask_price => $self->staking_limits->{min},
+            maximum_payout    => $self->staking_limits->{max}});
 }
 
 sub _validate_input_parameters {
