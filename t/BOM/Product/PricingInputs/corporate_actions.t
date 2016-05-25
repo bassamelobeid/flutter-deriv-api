@@ -248,7 +248,7 @@ subtest 'intraday bet' => sub {
 };
 
 subtest 'one action' => sub {
-    plan tests => 13;
+    plan tests => 17;
 
     my $one_action = {
         11223344 => {
@@ -343,7 +343,7 @@ subtest 'one action' => sub {
 };
 
 subtest 'two actions' => sub {
-    plan tests => 5;
+    plan tests => 10;
 
     my $two_actions = {
         11223344 => {
@@ -388,8 +388,8 @@ subtest 'two actions' => sub {
             date_pricing => $date_pricing,
         };
         my $bet = produce_contract($bet_params);
-        is $bet->shortcode, 'CALL_FPFP_100_1364374200_1364657400_S0P_0', 'Can get bet shortcode';
-        is $bet->longcode, 'USD 100.00 payout if TOTAL is strictly higher than entry spot at close on 2013-03-30.', 'Can get bet longcode';
+        is $bet->shortcode, 'CALL_USAAPL_100_1364394000_1364673600_S0P_0', 'Can get bet shortcode';
+        is $bet->longcode, 'USD 100.00 payout if Apple Inc is strictly higher than entry spot at close on 2013-03-30.', 'Can get bet longcode';
         cmp_ok $bet->barrier->as_absolute,          '==', 55.18,  'original quote adjusted by corporate action';
         cmp_ok $bet->original_barrier->as_absolute, '==', 100.00, 'original quote without corporate action adjustment';
 
