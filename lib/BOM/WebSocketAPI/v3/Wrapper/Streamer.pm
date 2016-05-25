@@ -269,7 +269,7 @@ sub process_realtime_events {
             } else {
                 return;
             }
-        } elsif ($type =~ /proposal_open_contract/ and $m[0] eq $symbol) {
+        } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
             BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, $feed_channels_type->{$channel}->{uuid}, $arguments, $type)
                 if $c->tx;
         } elsif ($m[0] eq $symbol) {
@@ -343,12 +343,13 @@ sub _feed_channel {
     if ($subs eq 'unsubscribe') {
         $feed_channel->{$symbol} -= 1;
         my $args = $feed_channel_type->{"$symbol;$type"}->{args};
+        $uuid = $feed_channel_type->{"$symbol;$type"}->{uuid};
         delete $feed_channel_type->{"$symbol;$type"};
         # delete cache on unsubscribe
         delete $feed_channel_cache->{"$symbol;$type"};
 
         # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
-        _transaction_channel($c, 'unsubscribe', $args->{account_id}, $type) if $type =~ /proposal_open_contract/;
+        _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
 
         if ($feed_channel->{$symbol} <= 0) {
             my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
@@ -465,14 +466,13 @@ sub process_transaction_updates {
                             $details->{$type}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
                             $c->send({json => $details});
                         }
-                    } elsif ($type =~ /proposal_open_contract/
+                    } elsif ($type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/
                         and $payload->{action_type} eq 'sell'
                         and exists $payload->{financial_market_bet_id}
                         and $payload->{financial_market_bet_id} eq $channel->{$type}->{contract_id})
                     {
                         # cancel proposal open contract streaming, transaction subscription and mark is_sold as 1
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', delete $args->{underlying}, $type, $args)
-                            if $args->{underlying};
+                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
 
                         _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
 

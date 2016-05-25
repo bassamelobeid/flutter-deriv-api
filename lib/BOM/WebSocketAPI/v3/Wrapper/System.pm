@@ -135,10 +135,7 @@ sub _forget_feed_subscription {
             if ($typeoruuid eq 'candles' and looks_like_number($ftype)) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
-            } elsif (($ftype . 's') =~ /^$typeoruuid/
-                or ($typeoruuid =~ /proposal_open_contract/ and $ftype =~ /proposal_open_contract/)
-                or $typeoruuid eq $subscription->{$channel}->{uuid})
-            {
+            } elsif (($ftype . 's') =~ /^$typeoruuid/ or $typeoruuid eq $subscription->{$channel}->{uuid}) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
             }
