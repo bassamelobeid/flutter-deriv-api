@@ -117,10 +117,6 @@ subtest 'get_corporate_actions' => sub {
 
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
-    my $count = $result->{count};
-
-    cmp_ok $count, '==', 2, 'count of corporate actions';
-
     my $value = $result->{actions}[0]{value};
 
     cmp_ok $value, '==', 2.25, 'value for this  corporate action';

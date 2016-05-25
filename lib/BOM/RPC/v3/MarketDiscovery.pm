@@ -84,8 +84,7 @@ sub get_corporate_actions {
 
         if (scalar(@corporate_actions)) {
             $response = {
-                actions => [@corporate_actions],
-                count   => scalar @corporate_actions,
+                actions => \@corporate_actions,
             };
         }
     }
