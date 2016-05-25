@@ -176,29 +176,30 @@ subtest 'prepare_ask' => sub {
 
 subtest 'get_ask' => sub {
     my $params = {
-        "proposal"      => 1,
-        "amount"        => "100",
-        "basis"         => "payout",
-        "contract_type" => "CALL",
-        "currency"      => "USD",
-        "duration"      => "60",
-        "duration_unit" => "s",
-        "symbol"        => "R_50",
+        "proposal"         => 1,
+        "amount"           => "100",
+        "basis"            => "payout",
+        "contract_type"    => "CALL",
+        "currency"         => "USD",
+        "duration"         => "60",
+        "duration_unit"    => "s",
+        "symbol"           => "R_50",
+        from_pricer_daemon => 1,
     };
     my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value' => '51.49',
-        'ask_price'     => '51.49',
-        'longcode'      => 'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
-        'spot'          => '963.3054',
-        'payout'        => '100',
+        'display_value'   => '51.49',
+        'ask_price'       => '51.49',
+        'longcode'        => 'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'spot'            => '963.3054',
+        'payout'          => '100',
         'base_commission' => 0.015,
-        'maximum_payout' => 50000,
-        'minimum_stake' => 0.35,
+        'maximum_payout'  => 50000,
+        'minimum_stake'   => 0.35,
         'probability_threshold' => 0.025,
-        'theo_probability' => 0.499862404631018,
+        'theo_probability'      => 0.499862404631018,
     };
     is_deeply($result, $expected, 'the left values are all right');
 
@@ -225,18 +226,22 @@ subtest 'send_ask' => sub {
     my $params = {
         client_ip => '127.0.0.1',
         args      => {
-            "proposal"      => 1,
-            "amount"        => "100",
-            "basis"         => "payout",
-            "contract_type" => "CALL",
-            "currency"      => "USD",
-            "duration"      => "60",
-            "duration_unit" => "s",
-            "symbol"        => "R_50",
+            "proposal"         => 1,
+            "amount"           => "100",
+            "basis"            => "payout",
+            "contract_type"    => "CALL",
+            "currency"         => "USD",
+            "duration"         => "60",
+            "duration_unit"    => "s",
+            "symbol"           => "R_50",
+            from_pricer_daemon => 1,
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
-    my $expected_keys = [sort (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout base_commission theo_probability probability_threshold minimum_stake maximum_payout))];
+    my $expected_keys = [
+        sort (
+            qw(longcode spot display_value ask_price spot_time date_start rpc_time payout base_commission theo_probability probability_threshold minimum_stake maximum_payout)
+        )];
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
@@ -304,7 +309,7 @@ subtest 'get_bid' => sub {
     };
 
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    
+
     my @expected_keys = (
         qw(ask_price
             bid_price
@@ -327,7 +332,7 @@ subtest 'get_bid' => sub {
             display_name
             ));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
-    
+
     $contract = create_contract(
         client => $client,
         spread => 0

@@ -257,7 +257,11 @@ sub send_ask {
     my %details = %{$args};
     my $response;
     try {
-        $response = _get_ask(prepare_ask({%details, from_pricer_daemon => $from_pricer_daemon}));
+        my $arguments = {
+            from_pricer_daemon => $from_pricer_daemon,
+            %details,
+        };
+        $response = _get_ask(prepare_ask($arguments));
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
