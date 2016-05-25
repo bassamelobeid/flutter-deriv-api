@@ -8,18 +8,24 @@ use JSON qw(decode_json);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::MarketData::VolSurface::Utils;
 use BOM::Market::Underlying;
+use Date::Utility;
+use BOM::MarketData::VolSurface::Delta;
+use BOM::MarketData::VolSurface::Moneyness;
 
+my $date = Date::Utility->new('2016-05-25');
 subtest "default_bloomberg_cutoff" => sub {
     plan tests => 3;
     my $forex = BOM::Market::Underlying->new('frxUSDJPY');
-    my $util  = BOM::MarketData::VolSurface::Utils->new();
-    is($util->default_bloomberg_cutoff($forex), 'New York 10:00', 'Gets New York 10:00 for forex market');
-
-    my $commodity = BOM::Market::Underlying->new('frxBROUSD');
-    is($util->default_bloomberg_cutoff($commodity), 'New York 10:00', 'Default cutoff for a commodity.');
+    my $volsurface = BOM::MarketData::VolSurface::Delta->new({underlying => $forex, _new_surface => 1});
+    is($volsurface->cutoff->code, 'New York 10:00', 'Gets New York 10:00 for forex market');
+    
+    my $commodity = BOM::Market::Underlying->new('frxXAUUSD');
+    $volsurface = BOM::MarketData::VolSurface::Delta->new({underlying => $commodity, _new_surface => 1});
+    is($volsurface->cutoff->code, 'New York 10:00', 'Default cutoff for a commodity.');
 
     my $indices = BOM::Market::Underlying->new('SPC');
-    isnt($util->default_bloomberg_cutoff($indices), 'New York 10:00', 'Anything other than New York 10:00 for indices');
+    $volsurface = BOM::MarketData::VolSurface::Moneyness->new({underlying => $indices, _new_surface => 1});
+    isnt($volsurface->cutoff->code, 'New York 10:00', 'Anything other than New York 10:00 for indices');
 };
 
 subtest "NY1700_rollover_date_on" => sub {
@@ -50,8 +56,9 @@ subtest default_bloomberg_cutoff => sub {
         set_absolute_time(Date::Utility->new($date_str . ' 10:00:00')->epoch);
 
         my $AS51 = BOM::Market::Underlying->new('AS51');
+        my $volsurface = BOM::MarketData::VolSurface::Moneyness->new({underlying => $AS51, _new_surface => 1});
 
-        is($util->default_bloomberg_cutoff($AS51), 'UTC 06:00', 'Cutoff on Saturday before a DST spring forward.');
+        is($volsurface->cutoff->code, 'UTC 06:00', 'Cutoff on Saturday before a DST spring forward.');
     }
 };
 
