@@ -26,38 +26,38 @@ initialize_realtime_ticks_db();
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => 'EUR',
+        symbol => 'USD',
         date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'FPFP',
+        symbol => 'USAAPL',
         date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'FPFP',
+        symbol        => 'USAAPL',
         recorded_date => Date::Utility->new,
     });
 
 my $date       = Date::Utility->new('2013-03-27');
-my $opening    = BOM::Market::Underlying->new('FPFP')->calendar->opening_on($date);
-my $underlying = BOM::Market::Underlying->new('FPFP');
+my $opening    = BOM::Market::Underlying->new('USAAPL')->calendar->opening_on($date);
+my $underlying = BOM::Market::Underlying->new('USAAPL');
 my $starting   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-27'))->plus_time_interval('50m');
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
+    underlying => 'USAAPL',
     epoch      => $starting->epoch,
     quote      => 100
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
+    underlying => 'USAAPL',
     epoch      => $starting->epoch + 30,
     quote      => 111
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
+    underlying => 'USAAPL',
     epoch      => $starting->epoch + 90,
     quote      => 80
 });
@@ -214,7 +214,7 @@ subtest 'one action' => sub {
         cmp_ok $bet->barrier->as_absolute, '==', 80.00, 'original quote adjusted by corporate action';
         my $expiry = $bet->date_expiry->truncate_to_day;
         BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-            underlying => 'FPFP',
+            underlying => 'USAAPL',
             epoch      => $expiry->epoch,
             close      => 79,
             high       => 79
