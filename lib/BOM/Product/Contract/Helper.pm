@@ -134,7 +134,10 @@ sub validate_price {
         };
     }
 
-    my $limit_message = localize('Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($minimum_ask_price), to_monetary_n    umber_format($maximum_payout));
+    my $limit_message = localize(
+        'Minimum stake of [_1] and maximum payout of [_2]',
+        to_monetary_number_format($minimum_ask_price),
+        to_monetary_n umber_format($maximum_payout));
     if ($ask_price < $minimum_ask_price) {
         return {
             message           => 'stake is not within limits ' . "[stake: " . $ask_price . "] " . "[min: " . $minimum_ask_price . "] ",
@@ -148,7 +151,7 @@ sub validate_price {
     }
 
     my $payout_as_string = "" . $payout;    #Just to be sure we're deailing with a string.
-    $payout_as_string =~ s/[\.0]+$//;           # Strip trailing zeroes and decimal points to be more friendly.
+    $payout_as_string =~ s/[\.0]+$//;       # Strip trailing zeroes and decimal points to be more friendly.
 
     if ($payout =~ /\.[0-9]{3,}/) {
         # We did the best we could to clean up looks like still too many decimals
