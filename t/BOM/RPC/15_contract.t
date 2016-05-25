@@ -299,7 +299,7 @@ subtest 'get_bid' => sub {
     };
 
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-
+    
     my @expected_keys = (
         qw(ask_price
             bid_price
@@ -322,7 +322,7 @@ subtest 'get_bid' => sub {
             display_name
             ));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
-
+    
     $contract = create_contract(
         client => $client,
         spread => 0
@@ -336,6 +336,29 @@ subtest 'get_bid' => sub {
     };
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+
+    @expected_keys = (
+        qw(ask_price
+            bid_price
+            current_spot_time
+            contract_id
+            underlying
+            has_corporate_actions
+            is_expired
+            is_valid_to_sell
+            is_forward_starting
+            is_path_dependent
+            is_intraday
+            date_start
+            date_expiry
+            date_settlement
+            currency
+            longcode
+            shortcode
+            payout
+            contract_type
+            display_name
+            ));
 
     push @expected_keys, qw(
         barrier

@@ -74,26 +74,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {}));
 
-subtest 'get_corporate_actions_one_action' => sub {
-
-    #Create corporate actions
-    my $one_action = {
-        11223344 => {
-            description    => 'Test corp act 1',
-            flag           => 'U',
-            modifier       => 'divide',
-            value          => 1.25,
-            effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
-            type           => 'DVD_STOCK',
-        }};
-
-    Quant::Framework::Utils::Test::create_doc(
-        'corporate_action',
-        {
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-            actions          => $one_action,
-        });
+subtest 'get_corporate_actions' => sub {
 
     my $closing_time = $starting->plus_time_interval('1d')->truncate_to_day->plus_time_interval('23h59m59s');
 
@@ -105,15 +86,49 @@ subtest 'get_corporate_actions_one_action' => sub {
     $params->{args}{start}  = $opening->date_ddmmmyyyy;
     $params->{args}{end}    = $closing_time->date_ddmmmyyyy;
 
+    #Create two corporate actions with same effective date.
+    my $two_actions = {
+        11223345 => {
+            description    => 'Test corp act 1',
+            action_code    => 3001,
+            flag           => 'N',
+            modifier       => 'divide',
+            value          => 1.25,
+            effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
+            type           => 'STOCK_SPLT',
+        },
+        11223346 => {
+            description    => 'Test corp act 2',
+            action_code    => 2000,
+            flag           => 'N',
+            modifier       => 'divide',
+            value          => 2.25,
+            effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
+            type           => 'DVD_STOCK',
+        }};
+
+    Quant::Framework::Utils::Test::create_doc(
+        'corporate_action',
+        {
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            actions          => $two_actions,
+        });
+
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
-    my @expected_keys = (qw(28-Mar-2013));
+    my $value = $result->{actions}[0]{value};
 
-    is_deeply([sort keys %{$result}], [sort @expected_keys]);
+    cmp_ok $value, '==', 2.25, 'value for this  corporate action';
 
-    my $value = $result->{'28-Mar-2013'}->{value};
+    my $modifier = $result->{actions}[0]{modifier};
 
-    cmp_ok $value, '==', 1.25, 'value for this  corporate action';
+    cmp_ok $modifier, 'eq', 'divide', 'modifier for this  corporate action';
+
+    #Check value for the second corporate action.
+    $value = $result->{actions}[1]{value};
+
+    cmp_ok $value, '==', 1.25, 'value for the second corporate action';
 
     #Test for error case.
     my $params_err = {
