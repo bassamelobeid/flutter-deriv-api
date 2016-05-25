@@ -1,10 +1,8 @@
 #!/usr/bin/perl
-ut
-
-    use strict;
+use strict;
 use warnings;
 
-use Test::More (tests => 7);
+use Test::More (tests => 8);
 use Test::Exception;
 use Test::NoWarnings;
 use Test::MockModule;
@@ -27,19 +25,19 @@ initialize_realtime_ticks_db();
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => 'EUR',
+        symbol => 'USD',
         date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'FPFP',
+        symbol => 'USAAPL',
         date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'FPFP',
+        symbol        => 'USAAPL',
         recorded_date => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -52,28 +50,28 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol        => 'UKBARC',
+        symbol        => 'USGOOG',
         recorded_date => Date::Utility->new('2013-03-26'),
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol         => 'UKBARC',
+        symbol         => 'USGOOG',
         spot_reference => 100,
         recorded_date  => Date::Utility->new('2013-03-27'),
     });
 
 my $date       = Date::Utility->new('2013-03-27');
-my $opening    = BOM::Market::Underlying->new('FPFP')->calendar->opening_on($date);
-my $underlying = BOM::Market::Underlying->new('FPFP');
+my $opening    = BOM::Market::Underlying->new('USAAPL')->calendar->opening_on($date);
+my $underlying = BOM::Market::Underlying->new('USAAPL');
 my $starting   = $underlying->calendar->opening_on(Date::Utility->new('2013-03-27'))->plus_time_interval('50m');
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'FPFP',
+    underlying => 'USAAPL',
     epoch      => $starting->epoch,
     quote      => 100
 });
 my $entry_tick_2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'UKBARC',
+    underlying => 'USGOOG',
     epoch      => $starting->epoch,
     quote      => 100
 });
@@ -82,12 +80,12 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => $_,
         epoch      => $starting->epoch + 30,
         quote      => 111
-    }) for qw(FPFP UKBARC);
+    }) for qw(USAAPL USGOOG);
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => $_,
         epoch      => $starting->epoch + 90,
         quote      => 80
-    }) for qw(FPFP UKBARC);
+    }) for qw(USAAPL USGOOG);
 
 subtest 'invalid operation' => sub {
     plan tests => 3;
@@ -175,12 +173,11 @@ subtest 'valid action during bet pricing' => sub {
 };
 
 subtest 'not valid to buy due to outdated dividend' => sub {
-    plan tests => 4;
+    plan tests => 3;
     my $action = {
         11223344 => {
             description    => 'STOCK split ',
             flag           => 'U',
-            symbol         => 'UKBARC',
             modifier       => 'divide',
             action_code    => '3000',
             value          => 1.25,
@@ -191,18 +188,19 @@ subtest 'not valid to buy due to outdated dividend' => sub {
     Quant::Framework::Utils::Test::create_doc(
         'corporate_action',
         {
+            symbol           => 'USGOOG',
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             actions          => $action
         });
 
     my $bet_params = {
-        underlying   => BOM::Market::Underlying->new('UKBARC'),
+        underlying   => BOM::Market::Underlying->new('USGOOG'),
         bet_type     => 'PUT',
         currency     => 'USD',
         payout       => 100,
         date_start   => $starting,
-        duration     => '1d',
+        duration     => '2d',
         barrier      => 'S0P',
         entry_tick   => $entry_tick_2,
         date_pricing => $starting,
@@ -210,14 +208,14 @@ subtest 'not valid to buy due to outdated dividend' => sub {
     my $bet = produce_contract($bet_params);
     ok !$bet->is_valid_to_buy, 'not valid to buy';
     like($bet->primary_validation_error->message, qr/Dividend is not updated/, 'throws error');
-    print $bet->primary_validation_error->message;
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'UKBARC',
+            symbol        => 'USGOOG',
             recorded_date => Date::Utility->new('2013-03-27'),
         });
+    $bet = produce_contract($bet_params);
     ok $bet->is_valid_to_buy, 'valid to buy';
 };
 
@@ -289,7 +287,7 @@ subtest 'one action' => sub {
         cmp_ok $bet->original_barrier->as_absolute, '==', 100.00, 'original quote without corporate action adjustment';
         my $expiry = $bet->date_expiry->truncate_to_day;
         BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-            underlying => 'FPFP',
+            underlying => 'USAAPL',
             epoch      => $expiry->epoch,
             close      => 79,
             high       => 79
@@ -392,7 +390,7 @@ subtest 'two actions' => sub {
         my $bet = produce_contract($bet_params);
         is $bet->shortcode, 'CALL_FPFP_100_1364374200_1364657400_S0P_0', 'Can get bet shortcode';
         is $bet->longcode, 'USD 100.00 payout if TOTAL is strictly higher than entry spot at close on 2013-03-30.', 'Can get bet longcode';
-        cmp_ok $bet->barrier->as_absolute,          '==', 55.17,  'original quote adjusted by corporate action';
+        cmp_ok $bet->barrier->as_absolute,          '==', 55.18,  'original quote adjusted by corporate action';
         cmp_ok $bet->original_barrier->as_absolute, '==', 100.00, 'original quote without corporate action adjustment';
 
     }
@@ -412,7 +410,7 @@ subtest 'two actions' => sub {
             date_pricing => $date_pricing,
         };
         my $bet = produce_contract($bet_params);
-        cmp_ok $bet->high_barrier->as_absolute,          '==', 56.28,  'upper barrier adjusted by corporate action';
+        cmp_ok $bet->high_barrier->as_absolute,          '==', 56.27,  'upper barrier adjusted by corporate action';
         cmp_ok $bet->low_barrier->as_absolute,           '==', 54.07,  'lower barrier adjusted by corporate action';
         cmp_ok $bet->original_high_barrier->as_absolute, '==', 102.00, 'upper barrier without corporate action adjustment';
         cmp_ok $bet->original_low_barrier->as_absolute,  '==', 98.00,  'lower barrier without corporate action adjustment';

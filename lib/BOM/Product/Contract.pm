@@ -886,6 +886,12 @@ sub _build_dividend_adjustment {
         end   => $self->date_expiry,
     });
 
+    my @corporate_actions = $$self->underlying->get_applicable_corporate_actions_for_period({
+                start => $self->date_pricing->truncate_to_day,
+                end   => Date::Utility->new,
+            });
+
+
     my $dividend_recorded_date = $dividend_adjustment->{recorded_date};
     my @corporate_actions      = @{$self->corporate_actions};
 
