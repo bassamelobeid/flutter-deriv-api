@@ -42,6 +42,8 @@ use BOM::Platform::Static::Config;
 use Quant::Framework::Asset;
 use Quant::Framework::Currency;
 use Quant::Framework::ExpiryConventions;
+use Quant::Framework::Utils::UnderlyingConfig;
+use Quant::Framework::Utils::Builder;
 use BOM::System::Chronicle;
 use BOM::Market::SubMarket::Registry;
 use BOM::Market;
@@ -229,6 +231,89 @@ has [qw(
     isa     => 'Bool',
     default => 0,
     );
+
+has 'config' => (
+    is         => 'ro',
+    isa        => 'Quant::Framework::Utils::UnderlyingConfig',
+    lazy_build => 1
+);
+
+sub _build_config {
+    my $self = shift;
+
+    my $asset_class =
+          $self->submarket->asset_type eq 'currency'
+        ? $self->submarket->asset_type
+        : $self->market->asset_type;
+
+    my %zero_rate = (
+        smart_fx  => 1,
+        smart_opi => 1,
+    );
+
+    my $default_dividend_rate = undef;
+
+    $default_dividend_rate = 0 if $zero_rate{$self->submarket->name};
+
+    if ($self->market->name eq 'volidx') {
+        my $div = Quant::Framework::Dividend->new({
+            symbol           => $self->symbol,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        });
+        my @rates = values %{$div->rates};
+        $default_dividend_rate = pop @rates;
+    }
+
+    my $default_interest_rate = undef;
+
+    # list of markets that have zero rate
+    my %zero_irate = (
+        volidx => 1,
+    );
+
+    $default_interest_rate = 0 if $zero_irate{$self->market->name};
+
+    return Quant::Framework::Utils::UnderlyingConfig->new({
+        symbol                                => $self->symbol,
+        system_symbol                         => $self->system_symbol,
+        market_name                           => $self->market->name,
+        market_prefer_discrete_dividend       => $self->market->prefer_discrete_dividend,
+        quanto_only                           => $self->quanto_only,
+        submarket_name                        => $self->submarket->name,
+        rate_to_imply_from                    => $self->rate_to_imply_from,
+        volatility_surface_type               => $self->volatility_surface_type,
+        exchange_name                         => $self->exchange_name,
+        locale                                => BOM::Platform::Context::request()->language,
+        uses_implied_rate_for_asset           => $self->uses_implied_rate($self->asset_symbol) // '',
+        uses_implied_rate_for_quoted_currency => $self->uses_implied_rate($self->quoted_currency_symbol) // '',
+        spot                                  => $self->spot,
+        asset_symbol                          => $self->asset_symbol,
+        quoted_currency_symbol                => $self->quoted_currency_symbol,
+        extra_vol_diff_by_delta               => BOM::Platform::Static::Config::quants->{market_data}->{extra_vol_diff_by_delta},
+        market_convention                     => $self->market_convention,
+        asset_class                           => $asset_class,
+        default_interest_rate                 => $default_interest_rate,
+        default_dividend_rate                 => $default_dividend_rate,
+    });
+}
+
+has '_builder' => (
+    is         => 'ro',
+    isa        => 'Quant::Framework::Utils::Builder',
+    lazy_build => 1
+);
+
+sub _build__builder {
+    my $self = shift;
+
+    return Quant::Framework::Utils::Builder->new({
+        for_date          => $self->for_date,
+        chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+        chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
+        underlying_config => $self->config
+    });
+}
 
 has contracts => (
     is         => 'ro',
@@ -1050,35 +1135,6 @@ sub _build_rate_to_imply_from {
         : $self->quoted_currency_symbol;
 }
 
-=head2 interest_rate_for
-
-Get the interest rate for this underlying over a given time period (expressed in timeinyears.)
-
-=cut
-
-sub interest_rate_for {
-    my ($self, $tiy) = @_;
-
-    # timeinyears cannot be undef
-    $tiy ||= 0;
-
-    # list of markets that have zero rate
-    my %zero_rate = (
-        volidx => 1,
-    );
-
-    my $rate;
-    if ($zero_rate{$self->market->name}) {
-        $rate = 0;
-    } elsif ($self->uses_implied_rate($self->quoted_currency_symbol)) {
-        $rate = $self->quoted_currency->rate_implied_from($self->rate_to_imply_from, $tiy);
-    } else {
-        $rate = $self->quoted_currency->rate_for($tiy);
-    }
-
-    return $rate;
-}
-
 =head2 dividend_rate_for
 
 Get the dividend rate for this underlying over a given time period (expressed in timeinyears.)
@@ -1088,36 +1144,31 @@ Get the dividend rate for this underlying over a given time period (expressed in
 sub dividend_rate_for {
     my ($self, $tiy) = @_;
 
-    die 'Attempting to get interest rate on an undefined currency for ' . $self->symbol
-        unless (defined $self->asset_symbol);
+    return $self->_builder->dividend_rate_for($tiy);
+}
 
-    my %zero_rate = (
-        smart_fx  => 1,
-        smart_opi => 1,
-    );
+=head2 interest_rate_for
 
-    my $rate;
+Get the interest rate for this underlying over a given time period (expressed in timeinyears.)
 
-    if ($self->market->name eq 'volidx') {
-        my $div = Quant::Framework::Dividend->new({
-            symbol           => $self->symbol,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-        });
-        my @rates = values %{$div->rates};
-        $rate = pop @rates;
-    } elsif ($zero_rate{$self->submarket->name}) {
-        $rate = 0;
-    } else {
-        # timeinyears cannot be undef
-        $tiy ||= 0;
-        if ($self->uses_implied_rate($self->asset_symbol)) {
-            $rate = $self->asset->rate_implied_from($self->rate_to_imply_from, $tiy);
-        } else {
-            $rate = $self->asset->rate_for($tiy);
-        }
-    }
-    return $rate;
+=cut
+
+sub interest_rate_for {
+    my ($self, $tiy) = @_;
+
+    return $self->_builder->interest_rate_for($tiy);
+}
+
+sub get_discrete_dividend_for_period {
+    my ($self, $args) = @_;
+
+    return $self->_builder->get_discrete_dividend_for_period($args);
+}
+
+sub dividend_adjustments_for_period {
+    my ($self, $args) = @_;
+
+    return $self->_builder->dividend_adjustments_for_period($args);
 }
 
 sub uses_implied_rate {
@@ -1128,69 +1179,6 @@ sub uses_implied_rate {
     return unless $self->forward_feed;
     return unless $self->market->name eq 'forex';    # only forex for now
     return $self->rate_to_imply eq $which ? 1 : 0;
-}
-
-sub get_discrete_dividend_for_period {
-    my ($self, $args) = @_;
-
-    my ($start, $end) =
-        map { Date::Utility->new($_) } @{$args}{'start', 'end'};
-
-    my %valid_dividends;
-    my $discrete_points = Quant::Framework::Dividend->new(
-        symbol           => $self->asset->symbol,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-    )->discrete_points;
-
-    if ($discrete_points and %$discrete_points) {
-        my @sorted_dates =
-            sort { $a->epoch <=> $b->epoch }
-            map  { Date::Utility->new($_) } keys %$discrete_points;
-
-        foreach my $dividend_date (@sorted_dates) {
-            if (    not $dividend_date->is_before($start)
-                and not $dividend_date->is_after($end))
-            {
-                my $date = $dividend_date->date_yyyymmdd;
-                $valid_dividends{$date} = $discrete_points->{$date};
-            }
-        }
-    }
-
-    return \%valid_dividends;
-}
-
-sub dividend_adjustments_for_period {
-    my ($self, $args) = @_;
-
-    my $applicable_dividends =
-        ($self->market->prefer_discrete_dividend)
-        ? $self->get_discrete_dividend_for_period($args)
-        : {};
-
-    my ($start, $end) = @{$args}{'start', 'end'};
-    my $duration_in_sec = $end->epoch - $start->epoch;
-
-    my ($dS, $dK) = (0, 0);
-    foreach my $date (keys %$applicable_dividends) {
-        my $adjustment           = $applicable_dividends->{$date};
-        my $effective_date       = Date::Utility->new($date);
-        my $sec_away_from_action = ($effective_date->epoch - $start->epoch);
-        my $duration_in_year     = $sec_away_from_action / (86400 * 365);
-        my $r_rate               = $self->interest_rate_for($duration_in_year);
-
-        my $adj_present_value = $adjustment * exp(-$r_rate * $duration_in_year);
-        my $s_adj = ($duration_in_sec - $sec_away_from_action) / ($duration_in_sec) * $adj_present_value;
-        $dS -= $s_adj;
-        my $k_adj = $sec_away_from_action / ($duration_in_sec) * $adj_present_value;
-        $dK += $k_adj;
-    }
-
-    return {
-        barrier => $dK,
-        spot    => $dS,
-    };
 }
 
 =head2 deny_purchase_during
