@@ -471,10 +471,8 @@ sub process_transaction_updates {
                         and exists $payload->{financial_market_bet_id}
                         and $payload->{financial_market_bet_id} eq $channel->{$type}->{contract_id})
                     {
-                        # cancel proposal open contract streaming, transaction subscription and mark is_sold as 1
-                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-
-                        _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
+                        # cancel proposal open contract streaming which will cancel transaction subscription also
+                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $type);
 
                         $args->{is_sold}    = 1;
                         $args->{sell_price} = $payload->{amount};

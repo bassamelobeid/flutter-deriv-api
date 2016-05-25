@@ -3,7 +3,7 @@ package BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use strict;
 use warnings;
 
-use JSON;
+use Digest::MD5 qw(md5_hex);
 
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
@@ -66,10 +66,12 @@ sub proposal_open_contract {
                         $type_args{account_id}     = $details->{account_id};
                         $type_args{transaction_id} = $response->{$contract_id}->{transaction_ids}->{buy};
 
+                        my $keystr = join("", map { $_ . ":" . $type_args{$_} } sort keys %type_args);
+
                         $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                             $c, 'subscribe',
                             $response->{$contract_id}->{underlying},
-                            'proposal_open_contract:' . JSON::to_json(\%type_args), $details
+                            'proposal_open_contract:' . md5_hex($keystr), $details
                         );
 
                         # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
