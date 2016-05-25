@@ -140,9 +140,9 @@ sub forward {
         }
     }
 
-    $req->{url}    = $url;
+    $req->{url} = $url;
     $req->{method} ||= $req->{name};
-    $req->{args}   = $p1;
+    $req->{args} = $p1;
 
     for my $hook (qw/ before_call before_get_rpc_response after_got_rpc_response before_send_api_response after_sent_api_response /) {
         $req->{$hook} = [

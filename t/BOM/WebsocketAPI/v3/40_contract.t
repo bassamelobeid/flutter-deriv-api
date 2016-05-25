@@ -134,11 +134,13 @@ if (exists $res->{proposal_open_contract}) {
 }
 
 sleep 1;
-(undef, $call_params) = call_mocked_client($t, {
-            buy        => 1,
-            price      => $ask_price || 0,
-            parameters => \%contractParameters,
-        });
+(undef, $call_params) = call_mocked_client(
+    $t,
+    {
+        buy        => 1,
+        price      => $ask_price || 0,
+        parameters => \%contractParameters,
+    });
 is $call_params->{token}, $token;
 ok $call_params->{contract_parameters};
 $rpc_caller->unmock_all;

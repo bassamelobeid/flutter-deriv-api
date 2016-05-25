@@ -5,7 +5,6 @@ use warnings;
 
 use JSON;
 
-use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 
@@ -96,48 +95,48 @@ sub send_proposal {
 
     delete $details->{underlying};
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'get_bid',
-        sub {
-            my $response = shift;
-            if ($response) {
-                if (exists $response->{error}) {
-                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
-                    return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
-                } elsif (exists $response->{is_expired} and $response->{is_expired} eq '1') {
-                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
-                    $id = undef;
-                }
-
-                return {
-                    msg_type               => 'proposal_open_contract',
-                    proposal_open_contract => {
-                        $id ? (id => $id) : (),
-                        buy_price       => $buy_price,
-                        purchase_time   => $purchase_time,
-                        transaction_ids => $transaction_ids,
-                        (defined $sell_price) ? (sell_price => sprintf('%.2f', $sell_price)) : (),
-                        (defined $sell_time) ? (sell_time => $sell_time) : (),
-                        %$response
-                    }};
-            } else {
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
-            }
-        },
+    $c->call_rpc(
+        $details,
         {
-            short_code  => delete $details->{short_code},
-            contract_id => $contract_id,
-            currency    => delete $details->{currency},
-            is_sold     => delete $details->{is_sold},
-            sell_time   => $sell_time,
-            args        => $details
-        },
-        'proposal_open_contract'
-    );
+            method      => 'get_bid',
+            msg_type    => 'proposal_open_contract',
+            call_params => {
+                short_code  => delete $details->{short_code},
+                contract_id => $contract_id,
+                currency    => delete $details->{currency},
+                is_sold     => delete $details->{is_sold},
+                sell_time   => $sell_time,
+            },
+            rpc_response_cb => sub {
+                my ($c, $args, $rpc_response) = @_;
+                if ($rpc_response) {
+                    if (exists $rpc_response->{error}) {
+                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
+                        return $c->new_error('proposal_open_contract', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
+                    } elsif (exists $rpc_response->{is_expired} and $rpc_response->{is_expired} eq '1') {
+                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
+                        $id = undef;
+                    }
+
+                    return {
+                        msg_type               => 'proposal_open_contract',
+                        proposal_open_contract => {
+                            $id ? (id => $id) : (),
+                            buy_price       => $buy_price,
+                            purchase_time   => $purchase_time,
+                            transaction_ids => $transaction_ids,
+                            (defined $sell_price) ? (sell_price => sprintf('%.2f', $sell_price)) : (),
+                            (defined $sell_time) ? (sell_time => $sell_time) : (),
+                            %$rpc_response
+                        }};
+                } else {
+                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
+                }
+            }
+        });
     return;
 }
 

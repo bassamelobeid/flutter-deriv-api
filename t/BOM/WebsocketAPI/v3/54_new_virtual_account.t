@@ -47,10 +47,12 @@ subtest 'verify_email' => sub {
 
     my $old_token = _get_token();
 
-    my (undef, $call_params) = call_mocked_client($t, {
-                verify_email => $email,
-                type         => 'account_opening'
-            });
+    my (undef, $call_params) = call_mocked_client(
+        $t,
+        {
+            verify_email => $email,
+            type         => 'account_opening'
+        });
     is $call_params->{email}, $email;
     ok $call_params->{server_name};
     ok $call_params->{code};
