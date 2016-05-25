@@ -88,7 +88,7 @@ sub proposal_open_contract {
 }
 
 sub send_proposal {
-    my ($c, $id, $args, $type) = @_;
+    my ($c, $id, $args) = @_;
 
     my $details         = {%$args};
     my $contract_id     = delete $details->{contract_id};
@@ -106,13 +106,17 @@ sub send_proposal {
             my $response = shift;
             if ($response) {
                 if (exists $response->{error}) {
-                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $type);
+                    if ($id) {
+                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+                    }
                     return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
                 } elsif (exists $response->{is_expired} and $response->{is_expired} eq '1') {
-                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $type);
-                    $id = undef;
+                    if ($id) {
+                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+                        $id = undef;
+                    }
                 }
 
                 return {
@@ -127,8 +131,10 @@ sub send_proposal {
                         %$response
                     }};
             } else {
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $type);
+                if ($id) {
+                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+                }
             }
         },
         {
