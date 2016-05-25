@@ -216,9 +216,9 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         is(roundnear(1e-4, $ask->amount), $expectations->{ask_prob}, 'Ask probability is correct.');
         my $theo = $bet->theo_probability;
         is(roundnear(1e-4, $theo->amount),                          $expectations->{theo_prob},         'Theo probability is correct.');
-        is(roundnear(1e-4, $ask->peek_amount('total_markup')),      $expectations->{total_markup},      'Total markup is correct.');
-        is(roundnear(1e-4, $ask->peek_amount('commission_markup')), $expectations->{commission_markup}, 'Commission markup is correct.');
-        is(roundnear(1e-4, $ask->peek_amount('risk_markup')),       $expectations->{risk_markup},       'Risk markup is correct.');
+        is(roundnear(1e-4, $bet->total_markup->amount),      $expectations->{total_markup},      'Total markup is correct.');
+        is(roundnear(1e-4, $bet->commission_markup->amount), $expectations->{commission_markup}, 'Commission markup is correct.');
+        is(roundnear(1e-4, $bet->risk_markup->amount),       $expectations->{risk_markup},       'Risk markup is correct.');
         $date_pricing++;
         $date_start++;
     }
