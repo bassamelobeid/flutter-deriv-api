@@ -4,6 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
+use BOM::Platform::Context qw(localize);
 use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
@@ -34,8 +35,7 @@ sub _build_greek_engine {
 
 sub _build_barrier {
     my $self = shift;
-    my $supp = $self->supplied_barrier + 0;    # make numeric
-    return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => $supp);
+    return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => $self->supplied_barrier);
 }
 
 sub check_expiry_conditions {
@@ -52,6 +52,23 @@ sub check_expiry_conditions {
 }
 
 sub _validate_barrier {
+    my $self = shift;
+
+    return $self->barrier->primary_validation_error unless ($self->barrier->confirm_validity);
+
+    # check for barrier validity here.
+    my $barrier        = $self->barrier->as_absolute;
+    my @barrier_range  = (0 .. 8);
+    my %valid_barriers = map { $_ => 1 } @barrier_range;
+
+    if (not $valid_barriers{$barrier}) {
+        return {
+            severity          => 100,
+            message           => 'No winning digits ' . "[code: " . $self->code . "] " . "[selection: " . $barrier . "]",
+            message_to_client => localize('Digit must be in the range of [_1] to [_2].', $barrier_range[0], $barrier_range[-1]),
+        };
+    }
+
     return;    # override barrier validation
 }
 
