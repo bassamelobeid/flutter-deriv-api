@@ -38,10 +38,24 @@ subtest 'construction' => sub {
     );
     is($strike->underlying->symbol, 'R_100', 'Underlying supplied is different than basis tick does not blow up and uses given value.');
 
-    throws_ok { BOM::Product::Contract::Strike::Digit->new(basis_tick => $basis_tick, supplied_barrier => 10) } qr/1 digit/,
-        'Multi-digit barriers are not permitted.';
-    throws_ok { BOM::Product::Contract::Strike::Digit->new(basis_tick => $basis_tick, supplied_barrier => 'P') } qr/1 digit/,
-        'Nor non-digit characters.';
+    lives_ok {
+        my $strike = BOM::Product::Contract::Strike::Digit->new(
+            basis_tick       => $basis_tick,
+            supplied_barrier => 10
+        );
+        ok !$strike->confirm_validity, 'not a valid barrier';
+        like($strike->primary_validation_error->{message}, qr/invalid supplied barrier format for digits/, 'throws error');
+    }
+    'multi-digit barrier';
+    lives_ok {
+        my $strike = BOM::Product::Contract::Strike::Digit->new(
+            basis_tick       => $basis_tick,
+            supplied_barrier => 'P'
+        );
+        ok !$strike->confirm_validity, 'not a valid barrier';
+        like($strike->primary_validation_error->{message}, qr/invalid supplied barrier format for digits/, 'throws error');
+    }
+    'non digit barrier';
 
 };
 
