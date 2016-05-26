@@ -99,7 +99,7 @@ sub _build_probability {
         name        => lc($bet->code) . '_theoretical_probability',
         description => 'BS pricing based on realized vols',
         set_by      => __PACKAGE__,
-        minimum     => 0,
+        minimum     => 0.1,                                           # anything lower than 0.1, we will just sell you at 0.1.
         maximum     => 1,
         base_amount => $self->formula->($self->_formula_args),
     });
@@ -107,18 +107,6 @@ sub _build_probability {
     $ifx_prob->include_adjustment('add',  $self->intraday_delta_correction);
     $ifx_prob->include_adjustment('add',  $self->intraday_vega_correction);
     $ifx_prob->include_adjustment('info', $self->intraday_vanilla_delta);
-
-    my $min_prob = 0.1;
-    if ($ifx_prob->amount < $min_prob) {
-        $ifx_prob->add_errors({
-            message => 'Theo probability below the minimum acceptable '
-                . "[probability: "
-                . $ifx_prob->amount . "] "
-                . "[min: "
-                . $min_prob . "]",
-            message_to_client => localize('Barrier outside acceptable range.'),
-        });
-    }
 
     return $ifx_prob;
 }
@@ -222,6 +210,8 @@ sub _build_ticks_for_trend {
 
 =head1 intraday_trend
 
+ASSUMPTIONS: If there's no ticks to calculate trend, we will assume there's no trend. But we will not sell since volatility calculation (which uses the same set of ticks), will fail.
+
 The current observed trend in the market movements.  Math::Util::CalculatedValue::Validatable
 
 =cut
@@ -240,12 +230,6 @@ sub _build_intraday_trend {
         set_by      => __PACKAGE__,
         base_amount => $average,
     });
-    if (!@ticks) {
-        $avg_spot->add_errors({
-            message           => 'No ticks retrieved to determine trend.',
-            message_to_client => localize('Missing market data.'),
-        });
-    }
 
     my $trend            = (($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($duration_in_secs);
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
