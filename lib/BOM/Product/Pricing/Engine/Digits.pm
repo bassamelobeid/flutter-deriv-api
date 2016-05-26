@@ -56,7 +56,7 @@ sub _build_winning_digits {
 
     my $contract  = $self->bet;
     my $sentiment = $contract->sentiment;
-    my $digit     = $contract->barrier->as_absolute;
+    my $digit     = $contract->barrier ? $contract->barrier->as_absolute : undef;
 
     return
           ($sentiment eq 'match')  ? 1
