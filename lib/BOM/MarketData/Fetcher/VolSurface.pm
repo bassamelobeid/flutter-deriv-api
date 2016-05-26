@@ -1,15 +1,15 @@
 package BOM::MarketData::Fetcher::VolSurface;
 
 use Moose;
-use BOM::MarketData::VolSurface::Cutoff;
-use BOM::MarketData::VolSurface::Delta;
-use BOM::MarketData::VolSurface::Empirical;
-use BOM::MarketData::VolSurface::Flat;
-use BOM::MarketData::VolSurface::Moneyness;
+use Quant::Framework::VolSurface::Cutoff;
+use Quant::Framework::VolSurface::Delta;
+use Quant::Framework::VolSurface::Empirical;
+use Quant::Framework::VolSurface::Flat;
+use Quant::Framework::VolSurface::Moneyness;
 
 =head1 fetch_surface
 
-Like a factory for BOM::MarketData::VolSurface, will give you an instance of
+Like a factory for Quant::Framework::VolSurface, will give you an instance of
 the relevant sub-class for the underlying you give. The instances themselves
 are automatically associated with a corresponding document in the DB, so
 asking the instance for data has the effect of loading from DB.
