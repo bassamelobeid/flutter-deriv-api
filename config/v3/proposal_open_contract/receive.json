@@ -41,7 +41,10 @@
           "type": "number",
           "description": "Original barrier of the contract (if any corporate action). Example: 83.246"
         },
- 
+        "barrier_count": {
+          "type": "number",
+          "description": "The number of barriers a contract has. Example: 2"
+        },
         "bid_price": {
           "type": "number",
           "description": "Price at which the contract could be sold back to Binary.com. Example: 5.14"
