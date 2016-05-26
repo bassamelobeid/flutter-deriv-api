@@ -24,17 +24,18 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'shuwnyuan@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR0021';
 
-my ($rpc_caller, $rpc_method, $call_params, $res, $rpc_response);
+my ($rpc_caller, $call_params, $res, $rpc_response);
 $rpc_response = {ok => 1};
-$rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-$rpc_caller->mock(
-    'call_rpc',
-    sub {
-        my ($c, $params) = @_;
-        my $rpc_response_cb;
-        ($rpc_method, $rpc_response_cb, $call_params) = ($params->{method}, $params->{rpc_response_cb}, $params->{call_params});
-        $c->send({json => $rpc_response_cb->($rpc_response)});
-    });
+
+my $fake_res = Test::MockObject->new();
+$fake_res->mock('result', sub { $rpc_response });
+$fake_res->mock('is_error', sub { '' });
+
+my $fake_rpc_client = Test::MockObject->new();
+$fake_rpc_client->mock('call', sub { shift; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
+
+my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
+$module->mock('new', sub { return $fake_rpc_client });
 
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
@@ -265,16 +266,6 @@ is($call_params->{currency},     'EUR');
 
 # Test error messages
 $rpc_response = {error => {code => 'error'}};
-$rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-$rpc_caller->mock(
-    'call_rpc',
-    sub {
-        my ($c, $params) = @_;
-        my $rpc_response_cb;
-        ($rpc_method, $rpc_response_cb, $call_params) = ($params->{method}, $params->{rpc_response_cb}, $params->{call_params});
-        $c->send({json => $rpc_response_cb->($rpc_response)});
-    });
-
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'payout_currencies');
