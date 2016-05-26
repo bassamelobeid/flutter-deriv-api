@@ -100,7 +100,7 @@ sub logout {
     }
 
     # Invalidates token, but we can only do this if we have a session token
-    if ($params->{token_type} eq 'session_token') {
+    if ($params->{token_type} && $params->{token_type} eq 'session_token') {
         my $session = BOM::Platform::SessionCookie->new({token => $params->{token}});
         $session->end_session if $session;
     }
