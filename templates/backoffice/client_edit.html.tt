@@ -211,10 +211,19 @@ table#client_edit td{
             ]
         %]
         <td id="verification">:
-                Current methods:(
-                    [% IF  client.get_authentication('ID_DOCUMENT').status == 'pass' %]Authenticated with scans,[% END %]
-                    [% IF  client.get_authentication('ID_NOTARIZED').status == 'pass' %]Authenticated with Notarized docs[% END %]
-                ) <br>
+            [%
+                text;
+                IF client.get_authentication('ID_DOCUMENT').status == 'pass';
+                    text = 'Authenticated with scans,';
+                END;
+                IF client.get_authentication('ID_NOTARIZED').status == 'pass';
+                    text = 'Authenticated with Notarized docs';
+                END;
+                IF not text;
+                    text = 'Not authenticated';
+                END;
+            %]
+            Current methods: [% text %]
             <select name="client_authentication">
                 [% FOREACH authentication = authentication_options %]
                     [% IF  authentication.value == '' %]
