@@ -12,7 +12,7 @@ my $test_user_id = 999;
 ## clear
 $m->dbh->do("DELETE FROM oauth.access_token");
 $m->dbh->do("DELETE FROM oauth.user_scope_confirm");
-$m->dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
+$m->dbh->do("DELETE FROM oauth.apps");
 
 my $app1 = $m->create_app({
     name         => 'App 1',
