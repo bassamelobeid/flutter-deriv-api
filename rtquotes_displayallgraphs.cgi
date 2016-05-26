@@ -511,7 +511,7 @@ else {
 
     foreach my $forexitem (
         BOM::Market::UnderlyingDB->instance->get_symbols_for(
-            market       => $market,
+            market            => $market,
             contract_category => 'ANY',
         ))
     {

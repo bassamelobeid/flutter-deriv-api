@@ -20,7 +20,7 @@ if ($email_list = request()->param('email')) {
         Bar("$email Login History");
 
         print '<pre>';
-        my $user = BOM::Platform::User->new({ email => $email });
+        my $user = BOM::Platform::User->new({email => $email});
         if (not $user) {
             print "<p>User [$email] not exist</p>";
         } else {
@@ -51,7 +51,7 @@ if ($email_list = request()->param('email')) {
         if ($loginID =~ /^\D+\d+$/) {
             Bar("$loginID Login History");
 
-            my $client = BOM::Platform::Client->new({ loginid => $loginID });
+            my $client = BOM::Platform::Client->new({loginid => $loginID});
             my $login_history_result = $client->find_login_history(
                 sort_by => 'login_date desc',
                 limit   => 100
