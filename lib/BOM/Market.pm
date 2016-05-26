@@ -440,6 +440,11 @@ sub risk_profile {
         }};
 }
 
+has base_commission => (
+    is      => 'ro',
+    default => 0.05,
+);
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
