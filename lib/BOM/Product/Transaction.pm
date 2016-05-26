@@ -428,8 +428,7 @@ sub prepare_bet_data_for_buy {
         }
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_DIGIT_BET) {
         $bet_params->{prediction} = $contract->sentiment;
-        # digits odd/even doesn't have a barrier defined.
-        $bet_params->{last_digit} = $contract->barrier->supplied_barrier if $contract->barrier;
+        $bet_params->{last_digit} = $contract->barrier->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_RANGE_BET) {
         $bet_params->{$contract->high_barrier->barrier_type . '_higher_barrier'} = $contract->high_barrier->supplied_barrier;
         $bet_params->{$contract->low_barrier->barrier_type . '_lower_barrier'}   = $contract->low_barrier->supplied_barrier;

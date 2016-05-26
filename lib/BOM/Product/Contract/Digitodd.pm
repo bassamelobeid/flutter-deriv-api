@@ -33,8 +33,9 @@ sub _build_greek_engine {
 }
 
 sub _build_barrier {
-    # essentially no barrier, and not used in settlement
-    return;
+    # We don't use this barrier for settlement. But it is needed because of database constraint.
+    # Setting it to zero.
+    return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => 0);
 }
 
 sub check_expiry_conditions {
@@ -50,8 +51,6 @@ sub check_expiry_conditions {
 }
 
 sub _validate_barrier {
-    my $self = shift;
-
     return;    # override barrier validation
 }
 
