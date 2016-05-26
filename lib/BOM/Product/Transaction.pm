@@ -298,7 +298,7 @@ sub calculate_limits {
 
     if ($contract->is_spread) {
         $self->limits->{spread_bet_profit_limit} =
-            BOM::Platform::Static::Config::quants->{risk_profile}{$app_config->spreads_turnonver_limit_profile}{turnover}{$currency};
+            BOM::Platform::Static::Config::quants->{risk_profile}{$app_config->spreads_turnover_limit_profile}{turnover}{$currency};
     } else {
         push @{$self->limits->{specific_turnover_limits}}, @{$contract->turnover_limit_parameters};
 
