@@ -22,8 +22,8 @@ my %template = DailyTurnOverReport($args);
 BOM::Platform::Context::template->process(
     'backoffice/daily_turnover_report.html.tt',
     {
-        dtr     => \%template,
-        commas => \&commas,
+        dtr        => \%template,
+        commas     => \&commas,
         this_month => $args->{month},
     });
 

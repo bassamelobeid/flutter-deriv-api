@@ -28,19 +28,15 @@ my @approved = grep { /_promo$/ && $input{$_} eq 'A' } keys %input;
 my @rejected = grep { /_promo$/ && $input{$_} eq 'R' } keys %input;
 s/_promo$// for (@approved, @rejected);
 
-my $tac_url = request()->url_for(
-    '/terms-and-conditions',
-    {
-        selected_tab => 'promo-tac-tab'
-    });
+my $tac_url = request()->url_for('/terms-and-conditions', {selected_tab => 'promo-tac-tab'});
 
 CLIENT:
 foreach my $loginid (@approved, @rejected) {
 
-    my $client        = BOM::Platform::Client->new({loginid => $loginid}) || die "bad loginid $loginid";
-    my $approved      = $input{"${loginid}_promo"} eq 'A';
-    my $client_name   = ucfirst join(' ', (BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name));
-    my $website       = BOM::Platform::Runtime->instance->website_list->get_by_broker_code($client->broker);
+    my $client      = BOM::Platform::Client->new({loginid => $loginid}) || die "bad loginid $loginid";
+    my $approved    = $input{"${loginid}_promo"} eq 'A';
+    my $client_name = ucfirst join(' ', (BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name));
+    my $website     = BOM::Platform::Runtime->instance->website_list->get_by_broker_code($client->broker);
     my $email_subject = localize("Your bonus request - [_1]", $loginid);
     my $email_content;
 

@@ -16,10 +16,10 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 
-my $cgi               = CGI->new;
-my $server_ip         = $cgi->param('server');
-my $frequency         = $cgi->param('frequency');
-my $type              = $cgi->param('type');
+my $cgi       = CGI->new;
+my $server_ip = $cgi->param('server');
+my $frequency = $cgi->param('frequency');
+my $type      = $cgi->param('type');
 
 Bar("BBDL RequestFiles Upload $server_ip");
 
