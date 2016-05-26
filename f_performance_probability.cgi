@@ -14,6 +14,8 @@ use BOM::Market::Registry;
 use BOM::Product::CustomClientLimits;
 use BOM::View::Controller::Bet;
 
+use Performance::Probability;
+
 use f_brokerincludeall;
 BOM::Platform::Sysinit::init();
 
