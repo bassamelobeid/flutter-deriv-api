@@ -42,7 +42,7 @@ subtest 'Market builds or configs test' => sub {
         ok !$config->reduced_display_decimals, 'Reduced Display Decimals';
         is $config->asset_type,         'asset';
         is $config->deep_otm_threshold, 0.10;
-        ok !$config->markups->digital_spread,              'Digital Spread';
+        is $config->base_commission, 0.05,              'base commission default to 0.05';
         ok !$config->markups->apply_butterfly_markup,      'Butterfly Markup';
         ok !$config->markups->apply_traded_markets_markup, 'Market Markup';
         is $config->vol_cut_off, 'Default', 'Vol cut off';
@@ -71,27 +71,7 @@ subtest 'Market builds or configs test' => sub {
         is $forex->asset_type,         'currency';
         is $forex->deep_otm_threshold, 0.05;
 
-        cmp_deeply(
-            $forex->markups->digital_spread,
-            {
-                'ASIAND'       => 3.5,
-                'ASIANU'       => 3.5,
-                'CALL'         => 3.5,
-                'DIGITDIFF'    => 3.5,
-                'DIGITMATCH'   => 3.5,
-                'EXPIRYMISSE'  => 3.5,
-                'EXPIRYRANGEE' => 3.5,
-                'EXPIRYMISS'   => 3.5,
-                'EXPIRYRANGE'  => 3.5,
-                'NOTOUCH'      => 4,
-                'ONETOUCH'     => 4,
-                'PUT'          => 3.5,
-                'PUTE'         => 3.5,
-                'CALLE'        => 3.5,
-                'RANGE'        => 5,
-                'UPORDOWN'     => 5,
-            },
-        );
+        is $forex->base_commission, 0.05, 'base commission of 0.05';
         ok $forex->markups->apply_butterfly_markup,      'Butterfly Markup';
         ok $forex->markups->apply_traded_markets_markup, 'Market Markup';
         is $forex->vol_cut_off, 'NY1000', 'Vol cut off';
@@ -119,28 +99,7 @@ subtest 'Market builds or configs test' => sub {
         ok $commodities->reduced_display_decimals;
         is $commodities->deep_otm_threshold, 0.10;
         is $commodities->asset_type,         'currency';
-
-        cmp_deeply(
-            $commodities->markups->digital_spread,
-            {
-                'ASIAND'       => 4,
-                'ASIANU'       => 4,
-                'CALL'         => 4,
-                'CALLE'        => 4,
-                'PUTE'         => 4,
-                'DIGITDIFF'    => 4,
-                'DIGITMATCH'   => 4,
-                'EXPIRYMISSE'  => 4,
-                'EXPIRYRANGEE' => 4,
-                'EXPIRYMISS'   => 4,
-                'EXPIRYRANGE'  => 4,
-                'NOTOUCH'      => 7,
-                'ONETOUCH'     => 7,
-                'PUT'          => 4,
-                'RANGE'        => 10,
-                'UPORDOWN'     => 10,
-            },
-        );
+        is $commodities->base_commission, 0.05, 'base commission of 0.05';
 
         ok !$commodities->markups->apply_butterfly_markup, 'Butterfly Markup';
         ok $commodities->markups->apply_traded_markets_markup, 'Market Markup';
@@ -170,27 +129,7 @@ subtest 'Market builds or configs test' => sub {
         is $indices->deep_otm_threshold, 0.10;
         is $indices->asset_type,         'index';
 
-        cmp_deeply(
-            $indices->markups->digital_spread,
-            {
-                'ASIAND'       => 4,
-                'ASIANU'       => 4,
-                'CALL'         => 4,
-                'CALLE'        => 4,
-                'PUTE'         => 4,
-                'DIGITDIFF'    => 4,
-                'DIGITMATCH'   => 4,
-                'EXPIRYMISSE'  => 4,
-                'EXPIRYRANGEE' => 4,
-                'EXPIRYMISS'   => 4,
-                'EXPIRYRANGE'  => 4,
-                'NOTOUCH'      => 6,
-                'ONETOUCH'     => 6,
-                'PUT'          => 4,
-                'RANGE'        => 8,
-                'UPORDOWN'     => 8,
-            },
-        );
+        is $indices->base_commission, 0.025, 'base commission of 0.025';
 
         ok !$indices->markups->apply_butterfly_markup, 'Butterfly Markup';
         ok $indices->markups->apply_traded_markets_markup, 'Market Markup';
@@ -219,28 +158,7 @@ subtest 'Market builds or configs test' => sub {
         ok $random->reduced_display_decimals;
         is $random->deep_otm_threshold, 0.025;
         is $random->asset_type,         'synthetic';
-
-        cmp_deeply(
-            $random->markups->digital_spread,
-            {
-                'ASIAND'       => 3,
-                'ASIANU'       => 3,
-                'CALL'         => 3,
-                'CALLE'        => 3,
-                'PUTE'         => 3,
-                'DIGITDIFF'    => 3,
-                'DIGITMATCH'   => 3,
-                'EXPIRYMISSE'  => 3,
-                'EXPIRYRANGEE' => 3,
-                'EXPIRYMISS'   => 3,
-                'EXPIRYRANGE'  => 3,
-                'NOTOUCH'      => 3,
-                'ONETOUCH'     => 3,
-                'PUT'          => 3,
-                'RANGE'        => 3,
-                'UPORDOWN'     => 3,
-            },
-        );
+        is $random->base_commission, 0.015, 'base commission of 0.015';
         ok !$random->markups->apply_butterfly_markup,      'Butterfly Markup';
         ok !$random->markups->apply_traded_markets_markup, 'Market Markup';
         is $random->vol_cut_off, 'Default', 'Vol cut off';
