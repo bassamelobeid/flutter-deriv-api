@@ -22,7 +22,7 @@ sub price_stream {
         return $c->new_error('price_stream', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
     } else {
         my $id;
-        if ($args->{subscribe} == 1 and not $id = _pricing_channel($c, 'subscribe', $args)) {
+        if ($args->{subscribe} and $args->{subscribe} == 1 and not $id = _pricing_channel($c, 'subscribe', $args)) {
             return $c->new_error('price_stream',
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
@@ -50,7 +50,6 @@ sub _pricing_channel {
         $args_hash{basis}  = 'payout';
     }
 
-    $args_hash{request_time} = gettimeofday;
     delete $args_hash{passthrough};
     delete $args_hash{req_id};
 
@@ -82,6 +81,10 @@ sub _pricing_channel {
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
         $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
+
+        my $request_time = gettimeofday;
+        BOM::System::RedisReplicated::redis_pricer->set($rp->_processed_channel, $request_time);
+        BOM::System::RedisReplicated::redis_pricer->expire($rp->_processed_channel, 60);
 
         $c->stash('pricing_channel' => $pricing_channel);
     }
@@ -125,7 +128,7 @@ sub process_pricing_events {
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
 
     if (not $c->stash->{last_pricer_expiry_update} or time - $c->stash->{last_pricer_expiry_update} > 30) {
-        BOM::System::RedisReplicated::redis_write->expire($response->{key}, 60);
+        BOM::System::RedisReplicated::redis_pricer->expire($response->{key}, 60);
         $c->stash->{last_pricer_expiry_update} = time;
     }
 
@@ -141,14 +144,21 @@ sub process_pricing_events {
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
-            $results = {
-                msg_type     => 'price_stream',
-                price_stream => $response,
-            };
+            my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
 
-            $results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $results, $amount);
-
-            $results->{price_stream}->{id} = $pricing_channel->{$serialized_args}->{$amount}->{uuid};
+            if (my $ref = $adjusted_results->{error}) {
+                my $err = $c->new_error('price_stream', $ref->{code}, $ref->{message_to_client});
+                $err->{error}->{details} = $ref->{details} if exists $ref->{details};
+                $results = $err;
+            } else {
+                $results = {
+                    msg_type     => 'price_stream',
+                    price_stream => {
+                        id => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
+                        %$adjusted_results,
+                    },
+                };
+            }
         }
 
         $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
@@ -161,14 +171,54 @@ sub _price_stream_results_adjustment {
     my $orig_args = shift;
     my $results   = shift;
     my $amount    = shift;
-    # For non spread
-    if ($orig_args->{basis}) {
-        $results->{price_stream}->{ask_price} *= $amount / 1000;
-        $results->{price_stream}->{ask_price} = roundnear(0.01, $results->{price_stream}->{ask_price});
 
-        $results->{price_stream}->{display_value} *= $amount / 1000;
-        $results->{price_stream}->{display_value} = roundnear(0.01, $results->{price_stream}->{display_value});
+    # For non spread
+    if ($orig_args->{basis} eq 'payout') {
+        my $ask_price = BOM::RPC::v3::Contract::calculate_ask_price({
+            theo_probability      => $results->{theo_probability},
+            base_commission       => $results->{base_commission},
+            probability_threshold => $results->{probability_threshold},
+            amount                => $amount,
+        });
+        $results->{ask_price}     = roundnear(0.01, $ask_price);
+        $results->{display_value} = roundnear(0.01, $ask_price);
+        $results->{payout}        = roundnear(0.01, $amount);
+    } elsif ($orig_args->{basis} eq 'stake') {
+        my $commission_markup = BOM::Product::Contract::Helper::commission({});
+        my $payout            = roundnear(
+            0.01,
+            BOM::RPC::v3::Contract::calculate_payout({
+                    theo_probability => $results->{theo_probability},
+                    base_commission  => $results->{base_commission},
+                    amount           => $amount,
+                }));
+        $amount                   = roundnear(0.01, $amount);
+        $results->{ask_price}     = roundnear(0.01, $amount);
+        $results->{display_value} = roundnear(0.01, $amount);
+        $results->{payout}        = roundnear(0.01, $payout);
     }
+
+    if (
+        my $error = BOM::RPC::v3::Contract::validate_price({
+                ask_price         => $results->{ask_price},
+                payout            => $results->{payout},
+                minimum_ask_price => $results->{minimum_stake},
+                maximum_payout    => $results->{maximum_payout}}))
+    {
+        return {
+            error => {
+                message_to_client => $error->{message_to_client},
+                code              => 'ContractBuyValidationError',
+                details           => {
+                    longcode      => $results->{longcode},
+                    display_value => $results->{display_value},
+                },
+            }};
+    }
+
+    # cleans up the response.
+    delete $results->{$_} for qw(theo_probability base_commission probability_threshold minimum_stake maximum_payout);
+
     return $results;
 }
 
