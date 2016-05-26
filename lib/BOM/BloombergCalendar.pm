@@ -20,8 +20,8 @@ sub save_calendar {
     my $updated;
     if ($calendar_type eq 'exchange_holiday' or $calendar_type eq 'country_holiday') {
         $updated = Quant::Framework::Holiday->new(
-            recorded_date => $recorded_date,
-            calendar      => $calendar,
+            recorded_date    => $recorded_date,
+            calendar         => $calendar,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         )->save;
@@ -29,9 +29,9 @@ sub save_calendar {
         $updated = Quant::Framework::PartialTrading->new(
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-            recorded_date => $recorded_date,
-            type          => $calendar_type,
-            calendar      => $calendar,
+            recorded_date    => $recorded_date,
+            type             => $calendar_type,
+            calendar         => $calendar,
         )->save;
     }
 

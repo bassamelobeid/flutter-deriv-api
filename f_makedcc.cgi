@@ -20,9 +20,9 @@ my $clerk = BOM::Platform::Context::request()->bo_cookie->clerk;
 
 Bar("Make dual control code");
 
-my $now   = Date::Utility->new;
+my $now               = Date::Utility->new;
 my $current_timestamp = $now->datetime_ddmmmyy_hhmmss;
-my $input = request()->params;
+my $input             = request()->params;
 
 my ($client, $message);
 if ($input->{'dcctype'} ne 'file_content') {
@@ -69,7 +69,9 @@ if ($input->{'dcctype'} eq 'file_content') {
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
     $message =
-        "The dual control code created by $clerk for " . $input->{'purpose'} . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
+          "The dual control code created by $clerk for "
+        . $input->{'purpose'}
+        . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
 
     print $message;
 
