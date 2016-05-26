@@ -47,6 +47,12 @@ sub run {
         return;
     }
 
+    my @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market            => ['stocks', 'indices'],
+        contract_category => 'ANY',
+        exclude_disabled  => 1,
+    );
+
     foreach my $file (@files) {
         my @bloomberg_result_lines = read_file($file);
 
@@ -73,9 +79,11 @@ sub run {
             my $underlying = BOM::Market::Underlying->new($bom_underlying_symbol);
             my $now        = Date::Utility->new;
 
-            next if ($underlying->has_holiday_on($now));
+            next if (not $underlying->trades_on($now));
 
-            if (my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol)) {
+            if (grep { $_ eq $bom_underlying_symbol } @symbols_to_update
+                and my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol))
+            {
                 $report->{$bom_underlying_symbol} = {
                     success => 0,
                     reason  => $validation_error,
