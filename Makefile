@@ -11,3 +11,8 @@ tidy:
 
 unit_test:
 	prove --timer -l -I./t -r t/
+
+data_js:
+	rm -f statics/javascript/data/*
+	if [ ! -d "statics/javascript/data" ]; then mkdir -p statics/javascript/data; fi;
+	perl -I ./lib -I ./bin -MGenerateStaticData -e "GenerateStaticData->from('statics/javascript/')->generate_data_files()"
