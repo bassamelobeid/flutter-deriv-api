@@ -59,13 +59,14 @@ sub on_message {
             && (my $action = $c->dispatch($p1)))
         {
             %$req = %$action;
+            $req->{method} = $req->{name};
             $result = $c->before_forward($p1, $req)
                 || $c->forward($p1, $req);    # Don't forward call to RPC if before_forward hook returns response
 
             # Do not answer if rpc called manually
             undef $result if $result && $result eq 'not_forward';
 
-            $result = $c->_run_hooks($config->{after_forward} || [], $p1, $result, $req);
+            $result = $c->after_forward($p1, $result, $req);
         } elsif (!$result) {
             $c->app->log->debug("unrecognised request: " . $c->dumper($p1));
             $result = $c->new_error('error', 'UnrecognisedRequest', $c->l('Unrecognised request.'));
@@ -94,6 +95,13 @@ sub before_forward {
     ];
 
     return $c->_run_hooks($before_forward_hooks, $p1, $req);
+}
+
+sub after_forward {
+    my ($c, $p1, $result, $req) = @_;
+
+    my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
+    return $c->_run_hooks($config->{after_forward} || [], $p1, $result, $req);
 }
 
 sub _run_hooks {
@@ -141,7 +149,6 @@ sub forward {
     }
 
     $req->{url} = $url;
-    $req->{method} ||= $req->{name};
     $req->{args} = $p1;
 
     for my $hook (qw/ before_call before_get_rpc_response after_got_rpc_response before_send_api_response after_sent_api_response /) {

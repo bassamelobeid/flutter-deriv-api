@@ -152,8 +152,7 @@ sub startup {
                 # ['pricing_table'],
                 ['forget',     {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget}],
                 ['forget_all', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all}],
-                # ['ping',       {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::ping}],
-                ['ping', {before_forward => [\&BOM::WebSocketAPI::v3::Wrapper::System::ping, sub { return {pong => 1} }]}],
+                ['ping', {before_forward => [\&BOM::WebSocketAPI::v3::Wrapper::System::ping]}],
                 ['time', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::server_time}],
 
                 ['website_status', {stash_params => [qw/ country_code /]}],
@@ -319,12 +318,11 @@ sub startup {
                 ['jp_knowledge_test',       {require_auth => 'admin'}],
             ],
             base_path                => '/websockets/v3',
-            before_forward           => [\&before_forward],
+            before_forward           => [\&before_forward, \&start_timing],
             after_forward            => [\&after_forward],
-            before_call              => [\&start_timing],
             before_get_rpc_response  => [\&log_call_timing],
             after_got_rpc_response   => [\&log_call_timing_connection],
-            before_send_api_response => [\&add_debug_time, \&start_timing],
+            before_send_api_response => [\&add_rpc_call_debug, \&start_timing],
             after_sent_api_response  => [\&log_call_timing_sent],
             after_dispatch           => [\&clear_db_cache],
         });
@@ -361,7 +359,7 @@ sub log_call_timing_connection {
     return;
 }
 
-sub add_debug_time {
+sub add_rpc_call_debug {
     my ($c, $params, $api_response) = @_;
     if ($c->stash('debug')) {
         $api_response->{debug} = {
@@ -518,7 +516,7 @@ sub after_forward {
     if (ref($result) && $c->stash('debug')) {
         $result->{debug} = {
             time   => 1000 * Time::HiRes::tv_interval($req->{hadle_t0}),
-            method => $req->{category},
+            method => $req->{method},
         };
     }
     my $l = length JSON::to_json($result || {});
@@ -528,7 +526,6 @@ sub after_forward {
     }
 
     $result->{req_id} = $p1->{req_id} if exists $p1->{req_id};
-
     return $result;
 }
 
