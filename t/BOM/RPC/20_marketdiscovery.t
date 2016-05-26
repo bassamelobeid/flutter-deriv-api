@@ -68,7 +68,6 @@ subtest $method => sub {
     $params->{args}{active_symbols} = 'full';
     push @$expected_keys, qw(exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time spot_age);
     $result = $c->call_ok($method, $params)->has_no_system_error->result;
-    $DB::single = 1;
     ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
     is($indices->{market_display_name},    'Indices',       'the market_display_name is translated');
