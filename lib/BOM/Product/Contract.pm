@@ -409,8 +409,6 @@ has [qw(volsurface)] => (
 # discounted_probability - The discounted total probability, given the time value of the money at stake.
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
 has [qw(
-        model_markup
-        total_markup
         ask_probability
         theo_probability
         bid_probability
@@ -970,108 +968,23 @@ sub _build_bid_price {
     return $self->_price_from_prob('bid_probability');
 }
 
-sub _build_total_markup {
-    my $self = shift;
-
-    my %max =
-          ($self->priced_with_intraday_model and not $self->is_atm_bet)
-        ? ()
-        : (maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100);
-
-    my %min = $self->pricing_engine_name !~ /TickExpiry/ ? (minimum => 0) : ();
-
-    my $total_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'total_markup',
-        description => 'Our total markup over theoretical value',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 0,
-        %min,
-        %max,
-    });
-
-    $total_markup->include_adjustment('reset', $self->model_markup);
-    my $commission_adjustment_cv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'global_commission_adjustment',
-        description => 'global commission scaling factory',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => BOM::Product::Contract::Helper::global_commission_adjustment(),
-    });
-    $total_markup->include_adjustment('multiply', $commission_adjustment_cv);
-
-    return $total_markup;
-}
-
 sub _build_ask_probability {
     my $self = shift;
 
-    return $self->default_probabilities->{ask_probability} if $self->primary_validation_error;
+    my $base_amount = BOM::Product::Contract::Helper::calculate_ask_probability({
+        theo_probability      => $self->theo_probability->amount,
+        commission_markup     => $self->commission_markup->amount,
+        probability_threshold => $self->market->deep_otm_threshold,
+    });
 
-    # Eventually we'll return the actual object.
-    # And start from an actual object.
-    my $minimum;
-    if ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
-        $minimum = 0.4;
-    } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
-        $minimum = 0.5 + $self->model_markup->amount;
-    } else {
-        $minimum = $self->theo_probability->amount;
-    }
-
-    # The above is a pretty unacceptable way to acheive this result. You do that stuff at the
-    # Engine level.. or work it into your markup.  This is nonsense.
-
-    my $marked_up = Math::Util::CalculatedValue::Validatable->new({
+    my $ask_probability = Math::Util::CalculatedValue::Validatable->new({
         name        => 'ask_probability',
         description => 'The price we request for this contract.',
         set_by      => 'BOM::Product::Contract',
-        minimum     => $minimum,
-        maximum     => 1,
+        base_amount => $base_amount,
     });
 
-    $marked_up->include_adjustment('reset', $self->theo_probability);
-
-    $marked_up->include_adjustment('add', $self->total_markup);
-
-    my $min_allowed_ask_prob = $self->market->deep_otm_threshold;
-
-    if ($marked_up->amount < $min_allowed_ask_prob) {
-        my $deep_otm_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'deep_otm_markup',
-            description => 'Additional markup for deep OTM contracts',
-            set_by      => 'BOM::Product::Contract',
-            minimum     => 0,
-            maximum     => $min_allowed_ask_prob,
-            base_amount => $min_allowed_ask_prob - $marked_up->amount,
-        });
-        $marked_up->include_adjustment('add', $deep_otm_markup);
-    }
-    my $max_allowed_ask_prob = 1 - $min_allowed_ask_prob;
-    if ($marked_up->amount > $max_allowed_ask_prob) {
-        my $max_prob_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'max_prob_markup',
-            description => 'Additional markup for contracts with prob higher that max allowed probability',
-            set_by      => __PACKAGE__,
-            base_amount => $min_allowed_ask_prob,
-        });
-        $marked_up->include_adjustment('add', $max_prob_markup);
-    }
-    # If BS is very high, we don't want that business, even if it makes sense.
-    # Also, if the market supplement would absolutely drive us out of [0,1]
-    # Then it is nonsense to be ignored.
-    if (   $self->bs_probability->amount >= 0.999
-        || abs($self->theo_probability->peek_amount('market_supplement') // 0) >= 1
-        || ($self->theo_probability->peek_amount('market_supplement') // 0) <= -0.5)
-    {
-        my $no_business = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'too_high_bs_prob',
-            description => 'Marked up to drive price to 1 when BS is very high',
-            set_by      => __PACKAGE__,
-            base_amount => 1,
-        });
-        $marked_up->include_adjustment('add', $no_business);
-    }
-
-    return $marked_up;
+    return $ask_probability;
 }
 
 sub is_valid_to_buy {
@@ -1181,18 +1094,16 @@ sub _build_payout {
     my $self = shift;
 
     my $theo_prob       = $self->theo_probability->amount;
-    my $risk_markup     = $self->risk_markup->amount;
     my $base_commission = $self->base_commission;
     my $ask_price       = $self->ask_price;
 
     my $commission = BOM::Product::Contract::Helper::commission({
         theo_probability => $theo_prob,
         stake            => $ask_price,
-        risk_markup      => $risk_markup,
         base_commission  => $base_commission,
     });
 
-    my $payout = $ask_price / ($theo_prob + ($risk_markup + $commission) * BOM::Product::Contract::Helper::global_commission_adjustment());
+    my $payout = $ask_price / ($theo_prob + $commission * BOM::Product::Contract::Helper::global_commission_adjustment());
     $payout = max($ask_price, $payout);
     return roundnear(0.01, $payout);
 }
@@ -1209,7 +1120,7 @@ sub _build_theo_probability {
             set_by      => $self->pricing_engine_name,
             minimum     => 0,
             maximum     => 1,
-            base_amount => $self->pricing_engine->theo_probability,
+            base_amount => $self->pricing_engine->probability,
         });
     } else {
         $theo = $self->pricing_engine->probability;
@@ -1243,6 +1154,8 @@ sub _build_bs_price {
     return $self->_price_from_prob('bs_probability');
 }
 
+# base_commission can be overridden on contract type level.
+# When this happens, underlying base_commission is ignored.
 has [qw(risk_markup commission_markup base_commission)] => (
     is         => 'ro',
     lazy_build => 1,
@@ -1251,22 +1164,21 @@ has [qw(risk_markup commission_markup base_commission)] => (
 sub _build_risk_markup {
     my $self = shift;
 
-    if ($self->new_interface_engine) {
-        return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup',
-            description => 'Risk markup for a pricing model',
-            set_by      => $self->pricing_engine_name,
-            base_amount => $self->pricing_engine->risk_markup,
-        });
-    }
+    my $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->theo_probability->peek_amount('risk_markup');
+    $base_amount = 0 unless defined $base_amount;
 
-    return $self->pricing_engine->risk_markup;
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'risk_markup',
+        description => 'Risk markup for a pricing model',
+        set_by      => $self->pricing_engine_name,
+        base_amount => $base_amount,
+    });
 }
 
 sub _build_base_commission {
     my $self = shift;
 
-    return $self->new_interface_engine ? $self->pricing_engine->commission_markup : $self->pricing_engine->commission_markup->amount;
+    return $self->underlying->base_commission;
 }
 
 sub _build_commission_markup {
@@ -1279,22 +1191,9 @@ sub _build_commission_markup {
         set_by      => $self->pricing_engine_name,
         base_amount => $self->base_commission *
             BOM::Product::Contract::Helper::commission_multiplier($self->payout, $self->theo_probability->amount),
+        maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100,
         %min,
     });
-}
-
-sub _build_model_markup {
-    my $self = shift;
-
-    my $model_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'model_markup',
-        description => 'Risk and commission markup for a pricing model',
-        set_by      => $self->pricing_engine_name,
-    });
-    $model_markup->include_adjustment('reset', $self->risk_markup);
-    $model_markup->include_adjustment('add',   $self->commission_markup);
-
-    return $model_markup;
 }
 
 sub _build_theo_price {
@@ -2203,73 +2102,16 @@ sub _validate_feed {
     return;
 }
 
-sub _validate_payout {
+sub _validate_price {
     my $self = shift;
 
     # Extant contracts can have whatever payouts were OK then.
     return if $self->for_sale;
-
-    my $ref             = $self->staking_limits;
-    my $bet_payout      = $self->payout;
-    my $payout_currency = $self->currency;
-    my $payout_max      = $ref->{max};
-
-    if ($bet_payout > $payout_max) {
-        return {
-            message           => 'payout amount outside acceptable range ' . "[given: " . $bet_payout . "] " . "[max: " . $payout_max . "]",
-            message_to_client => $ref->{message_to_client},
-        };
-    }
-
-    my $payout_as_string = "" . $bet_payout;    #Just to be sure we're deailing with a string.
-    $payout_as_string =~ s/[\.0]+$//;           # Strip trailing zeroes and decimal points to be more friendly.
-
-    if ($bet_payout =~ /\.[0-9]{3,}/) {
-        # We did the best we could to clean up looks like still too many decimals
-        return {
-            message           => 'payout amount has too many decimal places ' . "[permitted: 2] " . "[payout: " . $bet_payout . "]",
-            message_to_client => localize('Payout may not have more than two decimal places.',),
-        };
-    }
-
-    return;
-}
-
-sub _validate_stake {
-    my $self = shift;
-
-    my $contract_stake = $self->ask_price;
-
-    return ($self->ask_probability->all_errors)[0] if (not $self->ask_probability->confirm_validity);
-
-    my $ref             = $self->staking_limits;
-    my $contract_payout = $self->payout;
-    my $stake_minimum   = $ref->{min};
-
-    if (not $contract_stake) {
-        return {
-            message           => "Empty or zero stake [stake: " . $contract_stake . "]",
-            message_to_client => localize("Invalid stake"),
-        };
-    }
-
-    if ($contract_stake < $stake_minimum) {
-        return {
-            message           => 'stake is not within limits ' . "[stake: " . $contract_stake . "] " . "[min: " . $stake_minimum . "] ",
-            message_to_client => $ref->{message_to_client},
-        };
-    }
-
-    # Compared as strings of maximum visible client currency width to avoid floating-point issues.
-    if (sprintf("%.2f", $contract_stake) eq sprintf("%.2f", $contract_payout)) {
-        my $message = ($self->for_sale) ? localize('Current market price is 0.') : localize('This contract offers no return.');
-        return {
-            message           => 'stake same as payout',
-            message_to_client => $message,
-        };
-    }
-
-    return;
+    return BOM::Product::Contract::Helper::validate_price({
+            ask_price         => $self->ask_price,
+            payout            => $self->payout,
+            minimum_ask_price => $self->staking_limits->{min},
+            maximum_payout    => $self->staking_limits->{max}});
 }
 
 sub _validate_input_parameters {
@@ -2694,8 +2536,7 @@ sub confirm_validity {
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     # This is the default list of validations.
-    my @validation_methods =
-        qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed _validate_stake _validate_payout);
+    my @validation_methods = qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed _validate_price);
 
     push @validation_methods, '_validate_volsurface' if (not $self->volsurface->type eq 'flat');
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) if not $self->underlying->always_available;
