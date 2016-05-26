@@ -10,7 +10,6 @@ use SuperDerivatives::UnderlyingConfig;
 use Quant::Framework::Dividend;
 use BOM::System::Chronicle;
 
-
 sub process_dividend {
     my ($fh, $vendor) = @_;
 
@@ -30,8 +29,8 @@ sub save_dividends {
     my ($data) = @_;
 
     my %otc_indices = map { $_ => 1 } BOM::Market::UnderlyingDB->get_symbols_for(
-        market    => 'indices',
-        submarket => 'otc_index',
+        market            => 'indices',
+        submarket         => 'otc_index',
         contract_category => 'ANY'
     );
 
@@ -50,19 +49,19 @@ sub save_dividends {
         }
         try {
             my $dividends = Quant::Framework::Dividend->new(
-                symbol          => $symbol,
-                rates           => $rates,
-                discrete_points => $discrete_points,
-                recorded_date   => Date::Utility->new,
+                symbol           => $symbol,
+                rates            => $rates,
+                discrete_points  => $discrete_points,
+                recorded_date    => Date::Utility->new,
                 chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             );
             if (exists $otc_indices{'OTC_' . $symbol}) {
                 my $otc_dividend = Quant::Framework::Dividend->new(
-                    symbol          => 'OTC_' . $symbol,
-                    rates           => $rates,
-                    discrete_points => $discrete_points,
-                    recorded_date   => Date::Utility->new,
+                    symbol           => 'OTC_' . $symbol,
+                    rates            => $rates,
+                    discrete_points  => $discrete_points,
+                    recorded_date    => Date::Utility->new,
                     chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
                     chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
                 );
@@ -153,7 +152,7 @@ sub read_discrete_forecasted_dividend_from_excel_files {
                     $ex_div = Date::Utility->new($year . '-' . sprintf('%02d', $1) . '-' . sprintf('%02d', $2));
                 } elsif ($ex_date =~ /(\w{3})\s+(\d{1,2})\s+(\d{4})\s?$/) {
                     $ex_div = Date::Utility->new(sprintf('%02d', $2) . '-' . $1 . '-' . sprintf('%02d', $3));
-                }elsif ($ex_date =~ /(\d{1,2})\-(\w{3})\-(\d{4})/){
+                } elsif ($ex_date =~ /(\d{1,2})\-(\w{3})\-(\d{4})/) {
                     $ex_div = Date::Utility->new($ex_date);
                 }
 

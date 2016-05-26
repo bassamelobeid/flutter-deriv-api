@@ -30,8 +30,8 @@ my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid})
 my $broker = $client->broker;
 
 my $self_exclusion_form = BOM::Backoffice::Form::get_self_exclusion_form({
-    client           => $client,
-    lang             => request()->language,
+    client => $client,
+    lang   => request()->language,
 });
 
 my $page =
