@@ -277,6 +277,10 @@ sub _build_config {
 
     $default_interest_rate = 0 if $zero_irate{$self->market->name};
 
+    state $vol = LoadFile('/home/git/regentmarkets/bom-market/config/files/flat_volatility.yml');
+    my $flat_vol = undef;
+    $flat_vol = $vol->{$self->symbol} if exists $vol->{$self->symbol};
+
     return Quant::Framework::Utils::UnderlyingConfig->new({
         symbol                                => $self->symbol,
         system_symbol                         => $self->system_symbol,
@@ -299,6 +303,7 @@ sub _build_config {
         default_interest_rate                 => $default_interest_rate,
         default_dividend_rate                 => $default_dividend_rate,
         default_volatility_duration           => $default_vol_duration,
+        default_volatility                    => $flat_vol,
     });
 }
 
