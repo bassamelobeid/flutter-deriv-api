@@ -11,6 +11,8 @@ use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::Contract::Helper;
+use Format::Util::Numbers qw(roundnear);
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing);
 
@@ -91,19 +93,23 @@ sub _get_ask {
         my $contract = produce_contract({%$p2});
 
         if (!$contract->is_valid_to_buy) {
+            my ($message_to_client, $code);
+
             if (my $pve = $contract->primary_validation_error) {
-                $response = BOM::RPC::v3::Utility::create_error({
-                        message_to_client => $pve->message_to_client,
-                        code              => "ContractBuyValidationError",
-                        details           => {
-                            longcode      => $contract->longcode,
-                            display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price))}});
+                $message_to_client = $pve->message_to_client;
+                $code              = "ContractBuyValidationError";
             } else {
-                $response = BOM::RPC::v3::Utility::create_error({
-                    message_to_client => localize("Cannot validate contract"),
-                    code              => "ContractValidationError"
-                });
+                $message_to_client = localize("Cannot validate contract");
+                $code              = "ContractValidationError";
             }
+            $response = BOM::RPC::v3::Utility::create_error({
+                    message_to_client => $message_to_client,
+                    code              => $code,
+                    details           => {
+                        longcode      => $contract->longcode,
+                        display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price))
+                    },
+                });
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
@@ -114,8 +120,17 @@ sub _get_ask {
                 ask_price     => $ask_price,
                 display_value => $display_value,
                 spot_time     => $contract->current_tick->epoch,
-                date_start    => $contract->date_start->epoch
+                date_start    => $contract->date_start->epoch,
             };
+
+            if ($p2->{from_pricer_daemon}) {
+                $response->{theo_probability}      = $contract->theo_probability->amount;
+                $response->{base_commission}       = $contract->base_commission;
+                $response->{probability_threshold} = $contract->market->deep_otm_threshold;
+                $response->{minimum_stake}         = $contract->staking_limits->{min};
+                $response->{maximum_payout}        = $contract->staking_limits->{max};
+            }
+
             if ($contract->underlying->feed_license eq 'realtime') {
                 $response->{spot} = $contract->current_spot;
             }
@@ -234,15 +249,20 @@ sub get_bid {
 }
 
 sub send_ask {
-    my $params = shift;
-    my $args   = $params->{args};
+    my $params             = shift;
+    my $args               = $params->{args};
+    my $from_pricer_daemon = shift;
 
     my $tv = [Time::HiRes::gettimeofday];
 
     my %details = %{$args};
     my $response;
     try {
-        $response = _get_ask(prepare_ask(\%details));
+        my $arguments = {
+            from_pricer_daemon => $from_pricer_daemon,
+            %details,
+        };
+        $response = _get_ask(prepare_ask($arguments));
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
@@ -277,6 +297,46 @@ sub get_contract_details {
         });
     };
     return $response;
+}
+
+sub validate_price {
+    my $params = shift;
+
+    return BOM::Product::Contract::Helper::validate_price($params);
+}
+
+sub calculate_ask_price {
+    my $params = shift;
+
+    my $commission_markup = BOM::Product::Contract::Helper::commission({
+        theo_probability => $params->{theo_probability},
+        base_commission  => $params->{base_commission},
+        payout           => $params->{amount},
+    });
+    my $ask_probability = BOM::Product::Contract::Helper::calculate_ask_probability({
+        theo_probability      => $params->{theo_probability},
+        commission_markup     => $commission_markup,
+        probability_threshold => $params->{probability_threshold},
+    });
+
+    return roundnear(0.01, $ask_probability * $params->{amount});
+}
+
+sub calculate_payout {
+    my $params = shift;
+
+    my $commission_markup = BOM::Product::Contract::Helper::commission({
+        theo_probability => $params->{theo_probability},
+        base_commission  => $params->{base_commission},
+        stake            => $params->{amount},
+    });
+    my $payout = BOM::Product::Contract::Helper::calculate_payout({
+        theo_probability => $params->{theo_probability},
+        commission       => $commission_markup,
+        stake            => $params->{amount},
+    });
+
+    return roundnear(0.01, $payout);
 }
 
 1;
