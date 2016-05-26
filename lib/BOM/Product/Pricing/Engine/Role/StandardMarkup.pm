@@ -29,14 +29,14 @@ use BOM::Platform::Static::Config;
 =cut
 
 has [
-    qw(smile_uncertainty_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup commission_markup digital_spread_markup forward_starting_markup economic_events_markup eod_market_risk_markup economic_events_spot_risk_markup)
+    qw(smile_uncertainty_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup  forward_starting_markup economic_events_markup eod_market_risk_markup economic_events_spot_risk_markup)
     ] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
     );
 
-has [qw( commission_level uses_dst_shifted_seasonality)] => (
+has [qw(uses_dst_shifted_seasonality)] => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
@@ -329,106 +329,6 @@ sub _build_risk_markup {
     $risk_markup->include_adjustment('divide', $spread_to_markup);
 
     return $risk_markup;
-}
-
-=head2 commission_markup
-
-Fixed commission for the bet
-
-=cut
-
-sub _build_commission_markup {
-    my $self = shift;
-
-    my $bet = $self->bet;
-
-    my $comm_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_markup',
-        description => 'Fixed commission markup',
-        set_by      => __PACKAGE__,
-    });
-
-    my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_scaling_factor',
-        description => 'A scaling factor to control commission',
-        set_by      => __PACKAGE__,
-        base_amount => 1,
-    });
-
-    my $spread_to_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'spread_to_markup',
-        description => 'Apply half of spread to each side',
-        set_by      => __PACKAGE__,
-        base_amount => 2,
-    });
-
-    $comm_markup->include_adjustment('reset',    $comm_scale);
-    $comm_markup->include_adjustment('multiply', $self->digital_spread_markup);
-    $comm_markup->include_adjustment('divide',   $spread_to_markup);
-
-    return $comm_markup;
-}
-
-sub _build_digital_spread_markup {
-    my $self = shift;
-
-    my $bet = $self->bet;
-
-    my $dsm = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'digital_spread_markup',
-        description => 'Intrinsic option spread',
-        set_by      => __PACKAGE__,
-        base_amount => 0,
-    });
-
-    my $bet_type   = $bet->code;
-    my $level      = $self->commission_level;
-    my $dsp_amount = $self->bet->underlying->market->markups->digital_spread->{$bet_type} / 100;
-    # this is added so that we match the commission of tick trades
-    $dsp_amount /= 2 if $bet->timeinyears->amount * 86400 * 365 <= 20 and $bet->is_atm_bet;
-
-    my $dsp = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'digital_spread_percentage',
-        description => 'Base digital spread',
-        set_by      => 'BOM::Market',
-        base_amount => $dsp_amount,
-    });
-
-    my $level_multiplier = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_level_multiplier',
-        description => 'Multiplier for the underlying-specific risk level',
-        set_by      => 'quants.commission.digital_spread.level_multiplier',
-        base_amount => BOM::Platform::Static::Config::quants->{commission}->{digital_spread}->{level_multiplier}**($self->commission_level - 1),
-    });
-
-    $dsp->include_adjustment('multiply', $level_multiplier);
-
-    $dsm->include_adjustment('reset', $dsp);
-
-    my $dsp_scaling = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'dsp_scaling',
-            description => 'Scaling factor based on bet duration',
-            set_by      => __PACKAGE__,
-            base_amount => ($bet->market->name eq 'volidx')
-            ? 1
-            : $dsp_interp->linear($bet->timeindays->amount),
-        });
-
-    $dsm->include_adjustment('multiply', $dsp_scaling);
-
-    return $dsm;
-}
-
-=head2 commission_level
-
-Which commission level applies?
-
-=cut
-
-sub _build_commission_level {
-    my $self = shift;
-
-    return $self->bet->underlying->commission_level;
 }
 
 sub _build_forward_starting_markup {
