@@ -79,7 +79,7 @@ subtest 'new commission structure' => sub {
             },
             {
                 stake => 27000,
-                payout => 49122.88,
+                payout => 49123.23,
             },
             {
                 stake => 28000,
@@ -93,11 +93,11 @@ subtest 'new commission structure' => sub {
             },
             {
                 stake => 1000,
-                payout => 1281.977,
+                payout => 1281.99,
             },
             {
                 stake => 46000,
-                payout => 57505.82,
+                payout => 57525.35,
             },
             {
                 stake => 47000,
@@ -111,7 +111,7 @@ subtest 'new commission structure' => sub {
             name        => 'theo_probability',
             description => 'test theo',
             set_by      => 'test',
-            base_amount => $theo,
+            base_amount => $theo + $fake_risk->amount,
         });
         foreach my $data (@{$test_cases{$theo}}) {
             my $stake = $data->{stake};
@@ -124,7 +124,6 @@ subtest 'new commission structure' => sub {
                 amount_type => 'stake',
                 amount      => $stake,
                 base_commission => $base_commission,
-                risk_markup => $fake_risk,
                 theo_probability => $fake_theo,
             });
             is $c->payout, roundnear(0.01,$data->{payout}), 'correct payout amount';
