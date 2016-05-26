@@ -80,7 +80,6 @@ BOM::Platform::Context::template->process(
     'backoffice/account/performance_probability.html.tt',
     {
         sold_contracts   => $sold_contracts,
-        open_contracts   => $open_contracts,
         limits           => $limits,
         markets          => [BOM::Market::Registry->instance->display_markets],
         email            => $client->email,
