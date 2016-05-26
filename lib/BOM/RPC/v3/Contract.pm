@@ -188,6 +188,7 @@ sub get_bid {
             $response->{exit_tick_time}  = $contract->exit_tick->epoch                                         if $contract->exit_tick;
             $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
             $response->{entry_spot} = $contract->underlying->pipsized_value($contract->entry_spot) if $contract->entry_spot;
+            $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
 
             # sell_spot and sell_spot_time are updated if the contract is sold
             # or when the contract is expired.
