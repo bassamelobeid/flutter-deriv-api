@@ -50,7 +50,6 @@ sub _pricing_channel {
         $args_hash{basis}  = 'payout';
     }
 
-    $args_hash{request_time} = gettimeofday;
     delete $args_hash{passthrough};
     delete $args_hash{req_id};
 
@@ -82,6 +81,10 @@ sub _pricing_channel {
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
         $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
+
+        my $request_time = gettimeofday;
+        BOM::System::RedisReplicated::redis_pricer->set($rp->_processed_channel, $request_time);
+        BOM::System::RedisReplicated::redis_pricer->expire($rp->_processed_channel, 60);
 
         $c->stash('pricing_channel' => $pricing_channel);
     }
