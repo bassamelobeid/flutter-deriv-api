@@ -249,6 +249,12 @@ sub get_app_id_by_token {
     return $result[0];
 }
 
+sub delete_token {
+    my ($self, $token) = @_;
+    $self->dbh->do("DELETE FROM oauth.access_token WHERE access_token = ?", undef, $token);
+    return 1;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
