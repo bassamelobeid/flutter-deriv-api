@@ -108,13 +108,15 @@ foreach my $key (@{$tokens}) {
     my $client_b_balance    = $client->default_account->balance;
     my $pa_client_b_balance = $pa_client->default_account->balance;
 
-    ($res, $call_params) = call_mocked_client($t, {
-                paymentagent_withdraw => 1,
-                paymentagent_loginid  => $pa_client->loginid,
-                currency              => 'USD',
-                amount                => 100,
-                verification_code     => $code
-            });
+    ($res, $call_params) = call_mocked_client(
+        $t,
+        {
+            paymentagent_withdraw => 1,
+            paymentagent_loginid  => $pa_client->loginid,
+            currency              => 'USD',
+            amount                => 100,
+            verification_code     => $code
+        });
     ok $call_params->{server_name};
     ok $call_params->{token};
     is $res->{msg_type}, 'paymentagent_withdraw';
@@ -267,12 +269,14 @@ foreach my $key (@{$tokens}) {
     my $pa_client_b_balance = $pa_client->default_account->balance;
 
     # from client to pa_client is not allowed
-    ($res, $call_params) = call_mocked_client($t, {
-                paymentagent_transfer => 1,
-                transfer_to           => $pa_client->loginid,
-                currency              => 'USD',
-                amount                => 100
-            });
+    ($res, $call_params) = call_mocked_client(
+        $t,
+        {
+            paymentagent_transfer => 1,
+            transfer_to           => $pa_client->loginid,
+            currency              => 'USD',
+            amount                => 100
+        });
     ok $call_params->{server_name};
     ok $call_params->{token};
     is $res->{msg_type}, 'paymentagent_transfer';

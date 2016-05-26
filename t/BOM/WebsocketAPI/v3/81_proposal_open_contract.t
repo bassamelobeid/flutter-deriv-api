@@ -121,10 +121,12 @@ $module->unmock_all;
 
 $t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok;
 
-my ($res, $call_params) = call_mocked_client($t, {
-            proposal_open_contract => 1,
-            contract_id            => 1
-        });
+my ($res, $call_params) = call_mocked_client(
+    $t,
+    {
+        proposal_open_contract => 1,
+        contract_id            => 1
+    });
 is $call_params->{token}, $token;
 is $call_params->{args}->{contract_id}, 1;
 

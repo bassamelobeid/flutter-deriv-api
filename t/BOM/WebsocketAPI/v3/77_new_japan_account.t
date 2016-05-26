@@ -81,7 +81,7 @@ subtest 'new JP real account' => sub {
     subtest 'create JP account' => sub {
         my ($res, $call_params) = call_mocked_client($t, \%client_details);
         is $call_params->{token}, $token;
-        is $res->{msg_type}, 'new_account_japan';
+        is $res->{msg_type},      'new_account_japan';
         ok($res->{new_account_japan});
         test_schema('new_account_japan', $res);
 
@@ -90,13 +90,15 @@ subtest 'new JP real account' => sub {
     };
 
     subtest 'jp_knowledge_test' => sub {
-        my ($res, $call_params) = call_mocked_client($t, {
-                    "jp_knowledge_test" => 1,
-                    "score"             => 12,
-                    "status"            => "pass"
-                });
+        my ($res, $call_params) = call_mocked_client(
+            $t,
+            {
+                "jp_knowledge_test" => 1,
+                "score"             => 12,
+                "status"            => "pass"
+            });
         is $call_params->{token}, $token;
-        is $res->{msg_type}, 'jp_knowledge_test';
+        is $res->{msg_type},      'jp_knowledge_test';
         ok $res->{jp_knowledge_test};
     };
 

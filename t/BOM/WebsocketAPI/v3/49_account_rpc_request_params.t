@@ -28,7 +28,7 @@ my ($rpc_caller, $call_params, $res, $rpc_response);
 $rpc_response = {ok => 1};
 
 my $fake_res = Test::MockObject->new();
-$fake_res->mock('result', sub { $rpc_response });
+$fake_res->mock('result',   sub { $rpc_response });
 $fake_res->mock('is_error', sub { '' });
 
 my $fake_rpc_client = Test::MockObject->new();

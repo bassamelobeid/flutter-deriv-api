@@ -43,10 +43,12 @@ $response = decode_json($t->message->[1]);
 is $response->{error}->{code}, 'InputValidationFailed';
 
 my $call_params;
-($response, $call_params) = call_mocked_client($t, {
-            sell_expired => 1,
-            req_id       => 123,
-        });
+($response, $call_params) = call_mocked_client(
+    $t,
+    {
+        sell_expired => 1,
+        req_id       => 123,
+    });
 is $call_params->{token}, $token;
 is $response->{msg_type}, 'sell_expired';
 is $response->{echo_req}->{sell_expired}, 1;
