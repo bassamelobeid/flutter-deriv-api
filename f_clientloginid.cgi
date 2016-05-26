@@ -75,6 +75,12 @@ print '<form action="' . request()->url_for('backoffice/client_email.cgi') . '" 
 print '<input type=text size=30 name="email">';
 print '&nbsp;&nbsp;<input type="submit" value="View / Edit"></b>' . '</form>';
 
+Bar("IMPERSONATE CLIENT");
+print '<form action="' . request()->url_for('backoffice/client_impersonate.cgi') . '" method="post">';
+print '<b>Enter client loginid: </b>';
+print '<input type=text size=30 name="impersonate_loginid"><br>';
+print '<input type="submit" value="Impersonate"></b></form>';
+
 Bar("MAKE DUAL CONTROL CODE");
 print
     "To update client details we require 2 staff members to authorise. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when updating the details.<br><br>";
