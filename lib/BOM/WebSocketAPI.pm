@@ -148,7 +148,7 @@ sub startup {
                 # ['ticks'],
                 # ['ticks_history'],
                 ['proposal', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal}],
-                # ['price_stream'],
+                # ['price_stream'], # \&BOM::WebSocketAPI::v3::Wrapper::Pricer::price_stream
                 # ['pricing_table'],
                 ['forget',     {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget}],
                 ['forget_all', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all}],
