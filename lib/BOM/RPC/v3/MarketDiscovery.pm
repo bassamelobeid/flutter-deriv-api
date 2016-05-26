@@ -18,7 +18,6 @@ use Sereal::Encoder;
 use BOM::Platform::Runtime;
 
 my %name_mapper = (
-    DVD_CASH   => localize('Cash Dividend'),
     DVD_STOCK  => localize('Stock Dividend'),
     STOCK_SPLT => localize('Stock Split'),
 );
@@ -32,7 +31,10 @@ sub get_corporate_actions {
 
     my ($start_date, $end_date);
 
-    my $response = {};
+    my $response = {
+        actions => [],
+        count   => 0
+    };
 
     if (not $end) {
         $end_date = Date::Utility->new;
@@ -66,15 +68,25 @@ sub get_corporate_actions {
             });
         }
 
+        my @corporate_actions;
         foreach my $action (@actions) {
             my $display_date = Date::Utility->new($action->{effective_date})->date_ddmmmyyyy;
 
-            $response->{$display_date} = {
-                type  => $name_mapper{$action->{type}},
-                value => $action->{value},
+            my $struct = {
+                display_date => $display_date,
+                type         => $name_mapper{$action->{type}},
+                value        => $action->{value},
+                modifier     => $action->{modifier},
             };
+
+            push @corporate_actions, $struct;
         }
 
+        if (scalar(@corporate_actions)) {
+            $response = {
+                actions => \@corporate_actions,
+            };
+        }
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
