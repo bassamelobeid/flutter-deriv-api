@@ -241,16 +241,47 @@ has 'config' => (
 sub _build_config {
     my $self = shift;
 
+    my $asset_class =
+          $self->submarket->asset_type eq 'currency'
+        ? $self->submarket->asset_type
+        : $self->market->asset_type;
+
+    my %zero_rate = (
+        smart_fx  => 1,
+        smart_opi => 1,
+    );
+
+    my $default_dividend_rate = undef;
+
+    $default_dividend_rate = 0 if $zero_rate{$self->submarket->name};
+
+    if ($self->market->name eq 'volidx') {
+        my $div = Quant::Framework::Dividend->new({
+            symbol           => $self->symbol,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        });
+        my @rates = values %{$div->rates};
+        $default_dividend_rate = pop @rates;
+    }
+
+    my $default_interest_rate = undef;
+
+    # list of markets that have zero rate
+    my %zero_irate = (
+        volidx => 1,
+    );
+
+    $default_interest_rate = 0 if $zero_irate{$self->market->name};
+
     return Quant::Framework::Utils::UnderlyingConfig->new({
         symbol                                => $self->symbol,
         system_symbol                         => $self->system_symbol,
         market_name                           => $self->market->name,
-        market_asset_type                     => $self->market->asset_type,
         market_prefer_discrete_dividend       => $self->market->prefer_discrete_dividend,
         quanto_only                           => $self->quanto_only,
         submarket_name                        => $self->submarket->name,
         rate_to_imply_from                    => $self->rate_to_imply_from,
-        submarket_asset_type                  => $self->submarket->asset_type,
         volatility_surface_type               => $self->volatility_surface_type,
         exchange_name                         => $self->exchange_name,
         locale                                => BOM::Platform::Context::request()->language,
@@ -261,6 +292,9 @@ sub _build_config {
         quoted_currency_symbol                => $self->quoted_currency_symbol,
         extra_vol_diff_by_delta               => BOM::Platform::Static::Config::quants->{market_data}->{extra_vol_diff_by_delta},
         market_convention                     => $self->market_convention,
+        asset_class                           => $asset_class,
+        default_interest_rate                 => $default_interest_rate,
+        default_dividend_rate                 => $default_dividend_rate,
     });
 }
 
@@ -2128,6 +2162,17 @@ has always_available => (
 sub _build_always_available {
     my $self = shift;
     return $self->submarket->always_available;
+}
+
+has base_commission => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_base_commission {
+    my $self = shift;
+
+    return $self->submarket->base_commission;
 }
 
 no Moose;
