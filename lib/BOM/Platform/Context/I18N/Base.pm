@@ -6,12 +6,12 @@ use parent 'Locale::Maketext';
 
 =head1 NAME
 
-BOM::Utility::I18N
+BOM::Platform::Context::I18N::Base
 
 =head1 SYNOPSIS
 
-    use BOM::Utility::I18N;
-    my $lh = BOM::Utility::I18N->get_handle('en');
+    use BOM::Platform::Context::I18N::Base;
+    my $lh = BOM::Platform::Context::Base::I18N->get_handle('en');
     $lh->maketext("Hello");
 
 =head1 DESCRIPTION
