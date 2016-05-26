@@ -93,9 +93,10 @@ sub _pricing_channel {
 }
 
 sub _send_ask {
-    my ($c, $id) = @_;
+    my ($c, $id, $req) = @_;
 
     $c->call_rpc({
+            args     => $req,
             id       => $id,
             method   => 'send_ask',
             msg_type => 'price_stream',

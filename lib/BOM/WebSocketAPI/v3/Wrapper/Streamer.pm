@@ -200,9 +200,10 @@ sub pricing_table {
 }
 
 sub send_ask {
-    my ($c, $id) = @_;
+    my ($c, $id, $req) = @_;
 
     $c->call_rpc({
+            args     => $req,
             id       => $id,
             method   => 'send_ask',
             msg_type => 'proposal',
