@@ -28,9 +28,9 @@ PrintContentType();
 BrokerPresentation("Client's Email Details");
 Bar("View / Edit Client's Email");
 
-my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
-my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
-my $now    = Date::Utility->new;
+my $staff = BOM::Backoffice::Auth0::can_access(['CS']);
+my $clerk = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $now   = Date::Utility->new;
 
 my %input = %{request()->params};
 my $email = trim(lc defang($input{email}));
@@ -44,21 +44,21 @@ if ($input{new_email}) {
     }
 }
 
-my $user = BOM::Platform::User->new({ email => $email });
+my $user = BOM::Platform::User->new({email => $email});
 if (not $user) {
     my $self_href = request()->url_for('backoffice/client_email.cgi');
     print "<p>ERROR: Clients with email <b>$email</b> not found.</p>";
     code_exit_BO();
-};
+}
 
 if (not $input{email_edit}) {
     # list loginids with email
     BOM::Platform::Context::template->process(
         'backoffice/client_email.html.tt',
         {
-            list        => 1,
-            email       => $email,
-            loginids    => [$user->loginid],
+            list     => 1,
+            email    => $email,
+            loginids => [$user->loginid],
         },
     ) || die BOM::Platform::Context::template->error();
 
@@ -69,14 +69,16 @@ unless ($input{transtype}) {
     print "Please select transaction type";
     code_exit_BO();
 }
-my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $input{transtype}})->validate_client_control_code($input{DCcode}, $new_email);
+my $error = BOM::DualControl->new({
+        staff           => $clerk,
+        transactiontype => $input{transtype}})->validate_client_control_code($input{DCcode}, $new_email);
 if ($error) {
     print $error->get_mesg();
     code_exit_BO();
 }
 
 if ($email ne $new_email) {
-    if (BOM::Platform::User->new({ email => $new_email })) {
+    if (BOM::Platform::User->new({email => $new_email})) {
         print "Email update not allowed, as same email [$new_email] already exists in system";
         code_exit_BO();
     }
@@ -85,25 +87,31 @@ if ($email ne $new_email) {
         $user->email($new_email);
         $user->save;
 
-        foreach my $client_obj ($user->clients(disabled_ok=>1)) {
+        foreach my $client_obj ($user->clients(disabled_ok => 1)) {
             $client_obj->email($new_email);
             $client_obj->save;
         }
-    } catch {
+    }
+    catch {
         print "Update email for user $email failed, reason: [$_]";
         code_exit_BO();
     };
 
-    my $msg = $now->datetime . " " . $input{transtype} .  " updated user $email to $new_email by clerk=$clerk (DCcode=" . $input{DCcode} . ") $ENV{REMOTE_ADDR}";
+    my $msg =
+          $now->datetime . " "
+        . $input{transtype}
+        . " updated user $email to $new_email by clerk=$clerk (DCcode="
+        . $input{DCcode}
+        . ") $ENV{REMOTE_ADDR}";
     BOM::System::AuditLog::log($msg, $new_email, $clerk);
 
     BOM::Platform::Context::template->process(
         'backoffice/client_email.html.tt',
         {
-            updated     => 1,
-            old_email   => $email,
-            new_email   => $new_email,
-            loginids    => [$user->loginid],
+            updated   => 1,
+            old_email => $email,
+            new_email => $new_email,
+            loginids  => [$user->loginid],
         },
     ) || die BOM::Platform::Context::template->error();
 } else {

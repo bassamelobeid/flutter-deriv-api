@@ -28,7 +28,7 @@ Bar('Manually Settle Contracts');
 
 my $rt = BOM::Platform::Runtime->instance;
 
-my $staff  = BOM::Backoffice::Auth0::can_access(['Quants']);
+my $staff = BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $broker_db = BOM::Database::ClientDB->new({
         broker_code => request()->param('broker'),

@@ -6,9 +6,9 @@ use BOM::Platform::Context;
 use BOM::System::Config;
 
 sub login {
-    my $self   = shift;
-    my $bet    = shift;
-    my $params = {};
+    my $self     = shift;
+    my $bet      = shift;
+    my $params   = {};
     my $clientId = BOM::System::Config::third_party->{auth0}->{client_id};
 
     $params->{submit}   = BOM::Platform::Context::request()->url_for('backoffice/second_step_auth.cgi');

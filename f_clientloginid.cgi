@@ -71,15 +71,13 @@ print '&nbsp;&nbsp;<input type="submit" value="Send Account recovery email to cl
 print '</td></tr></table>';
 
 Bar("VIEW/EDIT CLIENT'S Email");
-print '<form action="'
-    . request()->url_for('backoffice/client_email.cgi')
-    . '" method="post">'
-    . '<b>Client\'s Email : </b>';
+print '<form action="' . request()->url_for('backoffice/client_email.cgi') . '" method="post">' . '<b>Client\'s Email : </b>';
 print '<input type=text size=30 name="email">';
 print '&nbsp;&nbsp;<input type="submit" value="View / Edit"></b>' . '</form>';
 
 Bar("MAKE DUAL CONTROL CODE");
-print "To update client details we require 2 staff members to authorise. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when updating the details.<br><br>";
+print
+    "To update client details we require 2 staff members to authorise. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when updating the details.<br><br>";
 print "<form id='clientdetailsDCC' action='"
     . request()->url_for('backoffice/f_makeclientdcc.cgi')
     . "' method='post' class='bo_ajax_form'>"
@@ -297,7 +295,6 @@ print "<br /><br /><form action=\""
     . "<br /><input type=submit value='Monitor Clients on this list'>"
     . "</form>";
 
-
 # Locked accounts
 Bar("List of locked accounts");
 print "<a href='"
@@ -351,7 +348,6 @@ print "<input name=enddate type=text size=10 value='" . Date::Utility->today()->
 print "</table>";
 print "<input type=\"submit\" value=\"Submit\">";
 print "</form>";
-
 
 Bar('Client Desk.com cases');
 print "<form action=\"" . request()->url_for('backoffice/f_client_deskcom.cgi') . "\" method=post>";

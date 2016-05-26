@@ -107,7 +107,10 @@ if ($filen eq 'editvol') {
     );
     my $existing_surface_args = {
         underlying => $underlying,
-        ($underlying->market->name eq 'forex' or $underlying->market->name eq 'commodities') ? (cutoff => 'New York 10:00') : (),
+        (
+                   $underlying->market->name eq 'forex'
+                or $underlying->market->name eq 'commodities'
+        ) ? (cutoff => 'New York 10:00') : (),
     };
     my $surface = $model->new(%surface_args);
 
@@ -172,15 +175,14 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
             $rates->{$tenor} = $rate;
         }
     }
-    
 
     my $class = 'Quant::Framework::InterestRate';
     $class = 'Quant::Framework::ImpliedRate' if $symbol =~ /-/;
 
     my $rates_obj = $class->new(
-        symbol => $symbol,
-        rates  => $rates,
-        date   => Date::Utility->new,
+        symbol           => $symbol,
+        rates            => $rates,
+        date             => Date::Utility->new,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );

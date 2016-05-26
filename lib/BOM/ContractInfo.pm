@@ -7,7 +7,6 @@ use Try::Tiny;
 use BOM::Product::ContractFactory qw( simple_contract_info produce_contract );
 use BOM::Platform::Context;
 
-
 # Get:
 #    description - typical description printed on statement/profit_table.
 #    longcode - longcode of the contract.

@@ -34,8 +34,8 @@ sub generate_correlations_upload_form {
     BOM::Platform::Context::template->process(
         'backoffice/correlations_upload_form.html.tt',
         {
-           broker     => $args->{broker},
-           upload_url => $args->{upload_url},
+            broker     => $args->{broker},
+            upload_url => $args->{upload_url},
         },
         \$form
     );

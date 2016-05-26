@@ -28,10 +28,8 @@ my $passwd = request()->param('pass');
 
 if (request()->param('sig_response')) {
     my $email = Auth::DuoWeb::verify_response(
-        BOM::System::Config::third_party->{duosecurity}->{ikey},
-        BOM::System::Config::third_party->{duosecurity}->{skey},
-        BOM::System::Config::third_party->{duosecurity}->{akey},
-        request()->param('sig_response'),
+        BOM::System::Config::third_party->{duosecurity}->{ikey}, BOM::System::Config::third_party->{duosecurity}->{skey},
+        BOM::System::Config::third_party->{duosecurity}->{akey}, request()->param('sig_response'),
     );
 
     $try_to_login = ($email eq request()->param('email'));
@@ -46,7 +44,7 @@ if ($try_to_login and my $staff = BOM::Backoffice::Auth0::login(request()->param
     });
     PrintContentType({'cookies' => $mycookie});
 } elsif (request()->param('whattodo') eq 'logout') {
-     BOM::Platform::Context::request()->bo_cookie->end_session;
+    BOM::Platform::Context::request()->bo_cookie->end_session;
     BOM::Backoffice::Auth0::loggout();
     print '<script>window.location = "' . request()->url_for('backoffice/login.cgi') . '"</script>';
     code_exit_BO();

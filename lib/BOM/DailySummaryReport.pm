@@ -112,8 +112,7 @@ sub generate_report {
                             return 0;
                         }
                         catch {
-                            warn(
-                                "theo price error[$_], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
+                            warn("theo price error[$_], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
                             return 1;
                         } and next;
 
