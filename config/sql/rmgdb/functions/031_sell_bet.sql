@@ -118,3 +118,4 @@ END
 $def$ LANGUAGE plpgsql VOLATILE;
 
 COMMIT;
+
