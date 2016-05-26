@@ -1,5 +1,6 @@
 ---
 commodities:
+    base_commission: 0.05
     display_current_spot: 1
     volatility_surface_type: "delta"
     suspicious_move: 0.05
@@ -23,24 +24,8 @@ commodities:
     intradays_must_be_same_day: 1
     markups:
         apply_traded_markets_markup: 1
-        digital_spread:
-            CALLE: 4
-            PUTE: 4
-            CALL: 4
-            PUT: 4
-            EXPIRYMISS: 4
-            EXPIRYRANGE: 4
-            EXPIRYMISSE: 4
-            EXPIRYRANGEE: 4
-            DIGITMATCH: 4
-            DIGITDIFF: 4
-            ASIANU: 4
-            ASIAND: 4
-            RANGE: 10
-            UPORDOWN: 10
-            ONETOUCH: 7
-            NOTOUCH: 7
 forex:
+    base_commission: 0.05
     volatility_surface_type: "delta"
     display_current_spot: 1
     suspicious_move: 0.05
@@ -64,23 +49,6 @@ forex:
     markups:
         apply_traded_markets_markup: 1
         apply_butterfly_markup: 1
-        digital_spread:
-            CALLE: 3.5
-            PUTE: 3.5
-            CALL: 3.5
-            PUT: 3.5
-            EXPIRYMISSE: 3.5
-            EXPIRYRANGEE: 3.5
-            EXPIRYMISS: 3.5
-            EXPIRYRANGE: 3.5
-            DIGITMATCH: 3.5
-            DIGITDIFF: 3.5
-            ASIANU: 3.5
-            ASIAND: 3.5
-            RANGE: 5
-            UPORDOWN: 5
-            ONETOUCH: 4
-            NOTOUCH: 4
 futures:
     suspicious_move: 0.07
     outlier_tick: 0.10
@@ -95,24 +63,8 @@ futures:
     intradays_must_be_same_day: 1
     markups:
         apply_traded_markets_markup: 1
-        digital_spread:
-            CALLE: 4
-            PUTE: 4
-            CALL: 4
-            PUT: 4
-            EXPIRYMISSE: 4
-            EXPIRYRANGEE: 4
-            EXPIRYMISS: 4
-            EXPIRYRANGE: 4
-            DIGITMATCH: 4
-            DIGITDIFF: 4
-            ASIANU: 4
-            ASIAND: 4
-            RANGE: 40
-            UPORDOWN: 40
-            ONETOUCH: 40
-            NOTOUCH: 40
 indices:
+    base_commission: 0.025
     volatility_surface_type: "moneyness"
     suspicious_move: 0.07
     outlier_tick: 0.10
@@ -134,24 +86,8 @@ indices:
         - 'tenfore'
     markups:
         apply_traded_markets_markup: 1
-        digital_spread:
-            CALLE: 4
-            PUTE: 4
-            CALL: 4
-            PUT: 4
-            EXPIRYMISSE: 4
-            EXPIRYRANGEE: 4
-            EXPIRYMISS: 4
-            EXPIRYRANGE: 4
-            DIGITMATCH: 4
-            DIGITDIFF: 4
-            ASIANU: 4
-            ASIAND: 4
-            RANGE: 8
-            UPORDOWN: 8
-            ONETOUCH: 6
-            NOTOUCH: 6
 stocks:
+    base_commission: 0.05
     suspicious_move: 0.25
     outlier_tick: 0.10
     display_name: "OTC Stocks"
@@ -176,24 +112,8 @@ stocks:
     intradays_must_be_same_day: 1
     markups:
         apply_traded_markets_markup: 1
-        digital_spread:
-            CALLE: 4
-            PUTE: 4
-            CALL: 4
-            PUT: 4
-            EXPIRYMISSE: 4
-            EXPIRYRANGEE: 4
-            EXPIRYMISS: 4
-            EXPIRYRANGE: 4
-            DIGITMATCH: 4
-            DIGITDIFF: 4
-            ASIANU: 4
-            ASIAND: 4
-            RANGE: 40
-            UPORDOWN: 40
-            ONETOUCH: 40
-            NOTOUCH: 40
 volidx:
+    base_commission: 0.015
     display_current_spot: 1
     suspicious_move: 0.5
     outlier_tick: 0.10
@@ -209,24 +129,7 @@ volidx:
     license: "realtime"
     providers:
         - 'random'
-    markups:
-        digital_spread:
-            CALLE: 3
-            PUTE: 3
-            CALL: 3
-            PUT: 3
-            EXPIRYMISSE: 3
-            EXPIRYRANGEE: 3
-            EXPIRYMISS: 3
-            EXPIRYRANGE: 3
-            DIGITMATCH: 3
-            DIGITDIFF: 3
-            ASIANU: 3
-            ASIAND: 3
-            RANGE: 3
-            UPORDOWN: 3
-            ONETOUCH: 3
-            NOTOUCH: 3
+    markups: {}
 synthetic:
     volatility_surface_type: "flat"
     suspicious_move: 0.07
