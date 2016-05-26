@@ -4,6 +4,7 @@ use warnings;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
+use Test::FailWarnings;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
@@ -66,19 +67,9 @@ subtest $method => sub {
         email       => $email,
         created_for => 'account_opening'
     )->token;
-    {
-        #suppress warning because we want to test this error
-        local $SIG{__WARN__} = sub {
-            my $msg = shift;
-            if ($msg !~ /Use of uninitialized value \$country in hash element/) {
-                print STDERR $msg;
-            }
-
-        };
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('invalid', 'If could not be created account it should return error')
-            ->error_message_is('Sorry, account opening is unavailable.', 'If could not be created account it should return error_message');
-    }
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('invalid', 'If could not be created account it should return error')
+        ->error_message_is('Sorry, account opening is unavailable.', 'If could not be created account it should return error_message');
 
     $params->{args}->{verification_code} = BOM::Platform::Token::Verification->new(
         email       => $email,
