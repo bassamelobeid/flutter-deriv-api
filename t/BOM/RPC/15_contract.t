@@ -368,8 +368,9 @@ subtest 'get_bid' => sub {
         entry_tick_time
         current_spot
         entry_spot
+        barrier_count
     );
-    is_deeply([sort keys %{$result}], [sort @expected_keys], 'keys of result is correct');
+    cmp_bag([sort keys %{$result}], [sort @expected_keys], 'keys of result is correct');
 
 };
 
