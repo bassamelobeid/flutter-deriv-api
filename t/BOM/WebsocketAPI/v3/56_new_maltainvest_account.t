@@ -88,12 +88,9 @@ subtest 'MLT upgrade to MF account' => sub {
     };
 
     subtest 'upgrade to MF' => sub {
-        my (undef, $call_params) = call_mocked_client($t, $mf_details);
+        my ($res, $call_params) = call_mocked_client($t, $mf_details);
         $t = $t->send_ok({json => $mf_details})->message_ok;
         is $call_params->{token}, $token;
-
-        $t = $t->send_ok({json => $mf_details})->message_ok;
-        my $res = decode_json($t->message->[1]);
         is($res->{msg_type}, 'new_account_maltainvest');
         ok($res->{new_account_maltainvest});
         test_schema('new_account_maltainvest', $res);
