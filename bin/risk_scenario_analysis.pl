@@ -20,9 +20,7 @@ with 'App::Base::Script';
 sub script_run {
     my $self = shift;
 
-    $self->info('Starting scenario analysis generation.');
     BOM::RiskReporting::ScenarioAnalysis->new->generate;
-    $self->info('Completed scenario analysis generation.');
 
     return 0;
 }

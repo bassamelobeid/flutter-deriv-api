@@ -11,8 +11,8 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Market::Registry;
-use BOM::View::Controller::Bet;
 use BOM::QuantsWatchList;
+use BOM::ContractInfo;
 
 use f_brokerincludeall;
 BOM::Platform::Sysinit::init();
@@ -83,7 +83,7 @@ BOM::Platform::Context::template->process(
         posted_enddate   => $enddate,
         currency         => $client->currency,
         residence        => $client->residence,
-        contract_details => \&BOM::View::Controller::Bet::get_info,
+        contract_details => \&BOM::ContractInfo::get_info,
     }) || die BOM::Platform::Context::template->error();
 
 code_exit_BO();

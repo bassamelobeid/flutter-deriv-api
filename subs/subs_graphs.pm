@@ -9,7 +9,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Market::Data::DatabaseAPI;
 use BOM::Market::Underlying;
-use BOM::View::Charting;
+use BOM::Charting;
 
 use String::UTF8::MD5;
 
@@ -258,7 +258,7 @@ sub doPlot {
 
     # we don't store provider specific ticks in OTN. So temporarily for provider specific feed, read from fullfeed files
     if (not $override_findfullfeed) {
-        my $feed_hash_ref = BOM::View::Charting::getFeedsFromHistoryServer({
+        my $feed_hash_ref = BOM::Charting::getFeedsFromHistoryServer({
             stock     => $underlying_symbol,
             interval  => $interval,
             beginTime => Date::Utility->new($daytochart)->epoch,
