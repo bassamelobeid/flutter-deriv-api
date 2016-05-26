@@ -152,8 +152,8 @@ sub startup {
                 # ['pricing_table'],
                 ['forget',     {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget}],
                 ['forget_all', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all}],
-                ['ping', {before_forward => [\&BOM::WebSocketAPI::v3::Wrapper::System::ping]}],
-                ['time', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::server_time}],
+                ['ping',       {before_forward => [\&BOM::WebSocketAPI::v3::Wrapper::System::ping]}],
+                ['time',       {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::server_time}],
 
                 ['website_status', {stash_params => [qw/ country_code /]}],
                 ['contracts_for'],

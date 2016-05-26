@@ -58,9 +58,9 @@ sub on_message {
         if (!$result
             && (my $action = $c->dispatch($p1)))
         {
-            %$req = %$action;
+            %$req          = %$action;
             $req->{method} = $req->{name};
-            $result = $c->before_forward($p1, $req)
+            $result        = $c->before_forward($p1, $req)
                 || $c->forward($p1, $req);    # Don't forward call to RPC if before_forward hook returns response
 
             # Do not answer if rpc called manually
@@ -148,7 +148,7 @@ sub forward {
         }
     }
 
-    $req->{url} = $url;
+    $req->{url}  = $url;
     $req->{args} = $p1;
 
     for my $hook (qw/ before_call before_get_rpc_response after_got_rpc_response before_send_api_response after_sent_api_response /) {
