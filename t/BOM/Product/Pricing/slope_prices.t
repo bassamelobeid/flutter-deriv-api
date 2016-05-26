@@ -7,6 +7,7 @@ use Test::More tests => 709;
 use Test::Exception;
 use Test::NoWarnings;
 
+use Format::Util::Numbers qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
@@ -89,7 +90,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         }
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
-                        is $c->theo_probability->amount, $expectation->{$code}, 'theo probability matches [' . $c->shortcode . ']';
+                        is roundnear(0.00001,$c->theo_probability->amount), roundnear(0.00001,$expectation->{$code} + $c->risk_markup->amount), 'theo probability matches [' . $c->shortcode . ']';
                     }
                     'survived';
                 }

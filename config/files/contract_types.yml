@@ -44,6 +44,7 @@ DIGITDIFF:
   payouttime: end
   pricing_code: DIGITDIFF
   sentiment: differ
+  base_commission: 0.01
 DIGITEVEN:
   id: 260
   category: digits
@@ -53,6 +54,7 @@ DIGITEVEN:
   payouttime: end
   pricing_code: DIGITEVEN
   sentiment: even
+  base_commission: 0.01
 DIGITMATCH:
   id: 210
   category: digits
@@ -62,6 +64,7 @@ DIGITMATCH:
   payouttime: end
   pricing_code: DIGITMATCH
   sentiment: match
+  base_commission: 0.01
 DIGITODD:
   id: 250
   category: digits
@@ -71,6 +74,7 @@ DIGITODD:
   payouttime: end
   pricing_code: DIGITODD
   sentiment: odd
+  base_commission: 0.01
 DIGITOVER:
   id: 270
   category: digits
@@ -80,6 +84,7 @@ DIGITOVER:
   payouttime: end
   pricing_code: DIGITOVER
   sentiment: over
+  base_commission: 0.01
 DIGITUNDER:
   id: 280
   category: digits
@@ -89,6 +94,7 @@ DIGITUNDER:
   payouttime: end
   pricing_code: DIGITUNDER
   sentiment: under
+  base_commission: 0.01
 EXPIRYMISS:
   id: 180
   category: endsinout
