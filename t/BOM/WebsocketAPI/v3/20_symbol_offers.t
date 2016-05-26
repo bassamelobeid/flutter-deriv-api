@@ -12,7 +12,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use Test::MockModule;
 
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 
 initialize_realtime_ticks_db();
 use Finance::Asset;
@@ -40,12 +40,8 @@ ok(grep { $_ eq 'USD' } @{$payout_currencies->{payout_currencies}});
 test_schema('payout_currencies', $payout_currencies);
 
 # test active_symbols
-my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-my $call_params;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({json => {active_symbols => 'full'}})->message_ok;
+my (undef, $call_params) = call_mocked_client($t, {active_symbols => 'full'});
 ok exists $call_params->{token};
-$rpc_caller->unmock_all;
 
 $t = $t->send_ok({json => {active_symbols => 'full'}})->message_ok;
 my $active_symbols = decode_json($t->message->[1]);
@@ -87,11 +83,8 @@ ok($trading_times->{trading_times}->{markets});
 test_schema('trading_times', $trading_times);
 
 Cache::RedisDB->flushall;
-$rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({json => {asset_index => 1}})->message_ok;
+(undef, $call_params) = call_mocked_client($t, {asset_index => 1});
 is $call_params->{language}, 'EN';
-$rpc_caller->unmock_all;
 
 $t = $t->send_ok({json => {asset_index => 1}})->message_ok;
 my $asset_index = decode_json($t->message->[1]);
@@ -100,10 +93,8 @@ ok($asset_index->{asset_index});
 my $got_asset_index = $asset_index->{asset_index};
 test_schema('asset_index', $asset_index);
 
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({json => {asset_index => 1}})->message_ok;
+(undef, $call_params) = call_mocked_client($t, {asset_index => 1});
 is_deeply $got_asset_index, $asset_index->{asset_index}, 'Should use cache';
-$rpc_caller->unmock_all;
 
 $t->finish_ok;
 

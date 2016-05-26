@@ -61,7 +61,7 @@ sub on_message {
             %$req          = %$action;
             $req->{method} = $req->{name};
             $result        = $c->before_forward($p1, $req)
-                || $c->forward($p1, $req);    # Don't forward call to RPC if before_forward hook returns response
+                || $c->forward($p1, $req);    # Don't forward call to RPC if any before_forward hook returns response
 
             # Do not answer if rpc called manually
             undef $result if $result && $result eq 'not_forward';

@@ -87,18 +87,15 @@ my $forget = decode_json($t->message->[1]);
 note explain $forget;
 is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
-my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-my $call_params;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({
-        json => {
-            get_corporate_actions => 1,
-            symbol                => "FPFP",
-            start                 => "2013-03-27",
-            end                   => "2013-03-30",
-        }})->message_ok;
+my (undef, $call_params) = call_mocked_client(
+    $t,
+    {
+        get_corporate_actions => 1,
+        symbol                => "FPFP",
+        start                 => "2013-03-27",
+        end                   => "2013-03-30",
+    });
 ok !$call_params->{token};
-$rpc_caller->unmock_all;
 
 $t = $t->send_ok({
         json => {
@@ -143,7 +140,6 @@ sleep 1;
     });
 is $call_params->{token}, $token;
 ok $call_params->{contract_parameters};
-$rpc_caller->unmock_all;
 
 $t = $t->send_ok({
         json => {
@@ -170,16 +166,13 @@ while (1) {
     last;
 }
 
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({
-        json => {
-            sell       => 1,
-            price      => $ask_price || 0,
-            parameters => \%contractParameters,
-        },
-    })->message_ok;
+(undef, $call_params) = call_mocked_client(
+    $t,
+    {
+        sell  => 1,
+        price => $ask_price || 0,
+    });
 is $call_params->{token}, $token;
-$rpc_caller->unmock_all;
 
 $t->finish_ok;
 
