@@ -62,6 +62,7 @@ $t->send_ok({
             start         => $start->epoch,
             subscribe     => 1
         }});
+sleep 1;
 $t->send_ok({
         json => {
             ticks_history => 'frxUSDJPY',

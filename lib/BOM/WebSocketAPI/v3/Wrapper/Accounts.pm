@@ -18,9 +18,10 @@ sub set_self_exclusion_response_handler {
 }
 
 sub subscribe_transaction_channel {
-    my ($c, $args, $params) = @_;
+    my ($c, $req) = @_;
 
     my $id;
+    my $args       = $req->{args};
     my $account_id = $c->stash('account_id');
     if (    $account_id
         and exists $args->{subscribe}
@@ -30,7 +31,7 @@ sub subscribe_transaction_channel {
         return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
     }
 
-    $params->{transaction_channel_id} = $id if $id;
+    $req->{transaction_channel_id} = $id if $id;
     return;
 }
 

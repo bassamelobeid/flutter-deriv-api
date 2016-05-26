@@ -20,8 +20,9 @@ use Time::HiRes qw(gettimeofday);
 use utf8;
 
 sub ticks {
-    my ($c, $args) = @_;
+    my ($c, $req) = @_;
 
+    my $args       = $req->{args};
     my $send_error = sub {
         my ($code, $message) = @_;
         $c->send({
@@ -53,8 +54,9 @@ sub ticks {
 # then call rpc, we cache the ticks from feed channel and when rpc response
 # comes then we merge cache data with rpc response
 sub ticks_history {
-    my ($c, $args) = @_;
+    my ($c, $req) = @_;
 
+    my $args = $req->{args};
     if ($args->{granularity} and not grep { $_ == $args->{granularity} } qw(60 120 180 300 600 900 1800 3600 7200 14400 28800 86400)) {
         return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'));
     }
@@ -71,9 +73,8 @@ sub ticks_history {
     }
 
     my $callback = sub {
-        $c->call_rpc(
-            $args,
-            {
+        $c->call_rpc({
+                args            => $args,
                 method          => 'ticks_history',
                 rpc_response_cb => sub {
                     my ($c, $args, $rpc_response) = @_;
@@ -157,8 +158,9 @@ sub ticks_history {
 }
 
 sub proposal {
-    my ($c, $args) = @_;
+    my ($c, $req) = @_;
 
+    my $args     = $req->{args};
     my $symbol   = $args->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
@@ -171,12 +173,13 @@ sub proposal {
         }
         send_ask($c, $id, $args);
     }
-    return 'not_forward';
+    return;
 }
 
 sub pricing_table {
-    my ($c, $args) = @_;
+    my ($c, $req) = @_;
 
+    my $args     = $req->{args};
     my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args);
 
     if ($response and exists $response->{error}) {
@@ -197,11 +200,9 @@ sub pricing_table {
 }
 
 sub send_ask {
-    my ($c, $id, $args) = @_;
+    my ($c, $id) = @_;
 
-    $c->call_rpc(
-        $args,
-        {
+    $c->call_rpc({
             id       => $id,
             method   => 'send_ask',
             msg_type => 'proposal',
@@ -433,9 +434,8 @@ sub process_transaction_updates {
                                 ? Date::Utility->new($payload->{sell_time})->epoch
                                 : Date::Utility->new($payload->{purchase_time})->epoch;
 
-                            $c->call_rpc(
-                                $args,
-                                {
+                            $c->call_rpc({
+                                    args        => $args,
                                     method      => 'get_contract_details',
                                     call_params => {
                                         token      => $c->stash('token'),

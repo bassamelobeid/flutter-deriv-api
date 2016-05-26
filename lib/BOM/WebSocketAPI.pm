@@ -145,15 +145,15 @@ sub startup {
                 ],
                 ['active_symbols', {stash_params => [qw/ token /]}],
 
-                # ['ticks'],
-                # ['ticks_history'],
-                ['proposal', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal}],
-                # ['price_stream'], # \&BOM::WebSocketAPI::v3::Wrapper::Pricer::price_stream
-                # ['pricing_table'],
-                ['forget',     {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget}],
-                ['forget_all', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all}],
-                ['ping',       {before_forward => [\&BOM::WebSocketAPI::v3::Wrapper::System::ping]}],
-                ['time',       {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::server_time}],
+                ['ticks',         {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks}],
+                ['ticks_history', {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history}],
+                ['proposal',      {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal}],
+                ['price_stream',  {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::price_stream}],
+                ['pricing_table', {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::pricing_table}],
+                ['forget',        {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget}],
+                ['forget_all',    {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all}],
+                ['ping',          {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::ping}],
+                ['time',          {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::server_time}],
 
                 ['website_status', {stash_params => [qw/ country_code /]}],
                 ['contracts_for'],
@@ -444,8 +444,9 @@ sub _set_defaults {
 }
 
 sub before_forward {
-    my ($c, $p1, $req) = @_;
+    my ($c, $req) = @_;
 
+    my $p1 = $req->{args};
     if (not $c->stash('connection_id')) {
         $c->stash('connection_id' => Data::UUID->new()->create_str());
     }

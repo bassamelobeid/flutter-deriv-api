@@ -28,8 +28,8 @@ sub register {
 
     $app->helper(
         call_rpc => sub {
-            my ($c, $p, $req) = @_;
-            return $c->forward($p, $req);
+            my ($c, $req) = @_;
+            return $c->forward($req);
         });
 
     return;

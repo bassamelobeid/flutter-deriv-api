@@ -11,11 +11,12 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub buy_get_contract_params {
-    my ($c, $args, $params) = @_;
+    my ($c, $req) = @_;
 
+    my $args = $req->{args};
     # 1. Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
     # 2. Calling forget_buy_proposal instead of forget_one as we need args for contract proposal
-    $params->{call_params}->{contract_parameters} =
+    $req->{call_params}->{contract_parameters} =
            $args->{parameters}
         || BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $args->{buy})
         || return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
@@ -23,9 +24,10 @@ sub buy_get_contract_params {
 }
 
 sub transaction {
-    my ($c, $args) = @_;
+    my ($c, $req) = @_;
 
     my $id;
+    my $args       = $req->{args};
     my $account_id = $c->stash('account_id');
     if ($account_id) {
         if (    exists $args->{subscribe}

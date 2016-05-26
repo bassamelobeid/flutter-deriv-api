@@ -59,12 +59,17 @@ sub on_message {
             && (my $action = $c->dispatch($p1)))
         {
             %$req          = %$action;
+            $req->{args}   = $p1;
             $req->{method} = $req->{name};
-            $result        = $c->before_forward($p1, $req)
-                || $c->forward($p1, $req);    # Don't forward call to RPC if any before_forward hook returns response
+            $result        = $c->before_forward($req);
 
-            # Do not answer if rpc called manually
-            undef $result if $result && $result eq 'not_forward';
+            # Don't forward call to RPC if any before_forward hook returns response
+            unless ($result) {
+                $result =
+                      $req->{instead_of_forward}
+                    ? $req->{instead_of_forward}->($c, $req)
+                    : $c->forward($req);
+            }
 
             $result = $c->after_forward($p1, $result, $req);
         } elsif (!$result) {
@@ -84,7 +89,7 @@ sub on_message {
 }
 
 sub before_forward {
-    my ($c, $p1, $req) = @_;
+    my ($c, $req) = @_;
 
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
 
@@ -94,7 +99,7 @@ sub before_forward {
         ref($req->{before_forward}) eq 'ARRAY'    ? @{delete $req->{before_forward}} : delete $req->{before_forward},
     ];
 
-    return $c->_run_hooks($before_forward_hooks, $p1, $req);
+    return $c->_run_hooks($before_forward_hooks, $req);
 }
 
 sub after_forward {
@@ -135,7 +140,7 @@ sub dispatch {
 }
 
 sub forward {
-    my ($c, $p1, $req) = @_;
+    my ($c, $req) = @_;
 
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
 
@@ -147,9 +152,7 @@ sub forward {
             $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
         }
     }
-
-    $req->{url}  = $url;
-    $req->{args} = $p1;
+    $req->{url} = $url;
 
     for my $hook (qw/ before_call before_get_rpc_response after_got_rpc_response before_send_api_response after_sent_api_response /) {
         $req->{$hook} = [

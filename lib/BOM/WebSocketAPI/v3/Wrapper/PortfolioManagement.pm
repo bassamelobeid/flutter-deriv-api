@@ -95,9 +95,8 @@ sub send_proposal {
 
     delete $details->{underlying};
 
-    $c->call_rpc(
-        $details,
-        {
+    $c->call_rpc({
+            args        => $details,
             method      => 'get_bid',
             msg_type    => 'proposal_open_contract',
             call_params => {

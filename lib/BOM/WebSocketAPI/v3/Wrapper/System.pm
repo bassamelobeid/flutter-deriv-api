@@ -7,19 +7,19 @@ use BOM::RPC::v3::Utility;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub forget {
-    my ($c, $args) = @_;
+    my ($c, $req) = @_;
 
     return {
         msg_type => 'forget',
-        forget => forget_one($c, $args->{forget}) ? 1 : 0,
+        forget => forget_one($c, $req->{args}->{forget}) ? 1 : 0,
     };
 }
 
 sub forget_all {
-    my ($c, $args) = @_;
+    my ($c, $req) = @_;
 
     my $removed_ids = [];
-    if (my $type = $args->{forget_all}) {
+    if (my $type = $req->{args}->{forget_all}) {
         if ($type eq 'balance' or $type eq 'transaction') {
             $removed_ids = _forget_transaction_subscription($c, $type);
         } elsif ($type eq 'price_stream') {
@@ -49,7 +49,7 @@ sub forget_one {
 }
 
 sub ping {
-    my ($c, $args) = @_;
+    my ($c, $req) = @_;
 
     return {
         msg_type => 'ping',
@@ -57,7 +57,7 @@ sub ping {
 }
 
 sub server_time {
-    my ($c, $args) = @_;
+    my ($c, $req) = @_;
 
     return {
         msg_type => 'time',

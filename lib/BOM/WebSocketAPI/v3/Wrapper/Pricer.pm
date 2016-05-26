@@ -14,8 +14,9 @@ use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub price_stream {
-    my ($c, $args) = @_;
+    my ($c, $req) = @_;
 
+    my $args     = $req->{args};
     my $symbol   = $args->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
@@ -92,11 +93,9 @@ sub _pricing_channel {
 }
 
 sub _send_ask {
-    my ($c, $id, $args) = @_;
+    my ($c, $id) = @_;
 
-    $c->call_rpc(
-        $args,
-        {
+    $c->call_rpc({
             id       => $id,
             method   => 'send_ask',
             msg_type => 'price_stream',
