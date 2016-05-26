@@ -299,7 +299,7 @@ subtest 'get_bid' => sub {
     };
 
     my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    
+
     my @expected_keys = (
         qw(ask_price
             bid_price
@@ -322,7 +322,7 @@ subtest 'get_bid' => sub {
             display_name
             ));
     is_deeply([sort keys %{$result}], [sort @expected_keys]);
-    
+
     $contract = create_contract(
         client => $client,
         spread => 0
