@@ -13,13 +13,29 @@ GetOptions ("workers=i" => \$workers,) ;
 
 my $pm = new Parallel::ForkManager($workers);
 
+sub _redis_read {
+    my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml');
+    return RedisDB->new(
+        host    => $config->{read}->{host},
+        port    => $config->{read}->{port},
+        ($config->{read}->{password} ? ('password', $config->{read}->{password}) : ()));
+}
+
+sub _redis_pricer {
+        my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml');
+        return RedisDB->new(
+            host    => $config->{write}->{host},
+            port    => $config->{write}->{port},
+            ($config->{write}->{password} ? ('password', $config->{write}->{password}) : ()));
+}
+
 while (1) {
     my $pid = $pm->start and next;
 
     my $rp = Mojo::Redis::Processor->new(
-        'read_conn'   => BOM::System::RedisReplicated::redis_pricer,
-        'write_conn'  => BOM::System::RedisReplicated::redis_pricer,
-        'daemon_conn' => BOM::System::RedisReplicated::redis_read,
+        'read_conn'   => _redis_pricer,
+        'write_conn'  => _redis_pricer,
+        'daemon_conn' => _redis_read,
     );
 
     my $next = $rp->next;
