@@ -50,7 +50,6 @@ sub _pricing_channel {
         $args_hash{basis}  = 'payout';
     }
 
-    $args_hash{request_time} = gettimeofday;
     delete $args_hash{passthrough};
     delete $args_hash{req_id};
 
@@ -82,6 +81,10 @@ sub _pricing_channel {
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
         $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
+
+        my $request_time = gettimeofday;
+        BOM::System::RedisReplicated::redis_pricer->set($rp->_processed_channel, $request_time);
+        BOM::System::RedisReplicated::redis_pricer->expire($rp->_processed_channel, 60);
 
         $c->stash('pricing_channel' => $pricing_channel);
     }
@@ -125,7 +128,7 @@ sub process_pricing_events {
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
 
     if (not $c->stash->{last_pricer_expiry_update} or time - $c->stash->{last_pricer_expiry_update} > 30) {
-        BOM::System::RedisReplicated::redis_write->expire($response->{key}, 60);
+        BOM::System::RedisReplicated::redis_pricer->expire($response->{key}, 60);
         $c->stash->{last_pricer_expiry_update} = time;
     }
 
