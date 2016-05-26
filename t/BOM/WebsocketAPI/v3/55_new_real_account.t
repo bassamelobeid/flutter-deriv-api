@@ -53,9 +53,6 @@ subtest 'new CR real account' => sub {
     subtest 'create CR account' => sub {
         my ($res, $call_params) = call_mocked_client($t, \%client_details);
         is $call_params->{token}, $token;
-
-        $t = $t->send_ok({json => \%client_details})->message_ok;
-        my $res = decode_json($t->message->[1]);
         ok($res->{msg_type}, 'new_account_real');
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
