@@ -51,7 +51,7 @@ if (request()->param('deleteit') eq 'yes') {
             if ($doc) {
                 if ($doc->delete) {
                     $msg = "SUCCESS - $path is deleted!";
-                    rename $full_path, $full_path.'.'.time.'.deleted' ;
+                    rename $full_path, $full_path . '.' . time . '.deleted';
                 } else {
                     $msg = "ERROR: did not remove $path record from db";
                 }
@@ -67,7 +67,6 @@ if (request()->param('deleteit') eq 'yes') {
     print "<p>$msg</p>";
     code_exit_BO();
 }
-
 
 if (my ($type) = $path =~ /\.(tif|txt|csv|xls|doc|gif|png|bmp|jpg|jpeg|pdf|zip)$/i) {
     if (-f -r $full_path) {

@@ -43,8 +43,7 @@ my $qty      = request()->param('qty');
 my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
-my $to = BOM::Platform::Runtime->instance->app_config->system->alerts->quants . ','
-    . BOM::Platform::Static::Config::get_customer_support_email();
+my $to = BOM::Platform::Runtime->instance->app_config->system->alerts->quants . ',' . BOM::Platform::Static::Config::get_customer_support_email();
 
 # Make transaction on client account
 if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') eq 'closeatzero') {

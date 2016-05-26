@@ -14,7 +14,7 @@ my $accounts_dir = BOM::Platform::Runtime->instance->app_config->system->directo
 
 for my $broker (BOM::Platform::Runtime->instance->broker_codes->all_codes) {
     next unless $broker =~ /^(CR|MX|MLT)$/;
-    my $dir = "$accounts_dir/$broker/192com_authentication";
+    my $dir     = "$accounts_dir/$broker/192com_authentication";
     my $xml_dir = "$dir/xml";
     my $pdf_dir = "$dir/pdf";
     File::Find::Rule->new->file->exec(sub { -M $_ < 30 })->exec(sub { !-e "$pdf_dir/$_.pdf" })->exec(
@@ -32,8 +32,7 @@ for my $broker (BOM::Platform::Runtime->instance->broker_codes->all_codes) {
                 result_as_xml => $result_as_xml,
                 search_option => $search_option
                 )->save_pdf_result
-                ||
-                warn("Failed to save $search_option result for $client");
+                || warn("Failed to save $search_option result for $client");
 
         })->in($xml_dir);
 }

@@ -11,6 +11,7 @@ BOM::System::Script::RiskScenarioAnalysis
 Determine a value for our curent open positions at risk.
 
 =cut
+
 use Moose;
 use BOM::Platform::Runtime;
 use lib qw(/home/git/regentmarkets/bom-backoffice/lib/ /home/git/regentmarkets/bom-market/lib/);

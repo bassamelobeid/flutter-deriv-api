@@ -56,7 +56,10 @@ if ($confirm) {
     $control_code = $cgi->param('DCcode');
     $transtype    = $cgi->param('transtype');
 
-    my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $transtype})->validate_batch_payment_control_code($control_code, scalar @payment_lines);
+    my $error = BOM::DualControl->new({
+            staff           => $clerk,
+            transactiontype => $transtype
+        })->validate_batch_payment_control_code($control_code, scalar @payment_lines);
     if ($error) {
         print $error->get_mesg();
         code_exit_BO();
@@ -246,7 +249,6 @@ if ($preview and @invalid_lines == 0) {
 } elsif (not $preview and $confirm and scalar(keys %client_to_be_processed) > 0) {
     my @clients_has_been_processed = values %client_to_be_processed;
     unshift @clients_has_been_processed, 'These clients have been debited/credited using the backoffice batch debit/credit tool by ' . $clerk;
-
 
     my $msg = $now->datetime . " $transtype batch transactions done by clerk=$clerk (DCcode=$control_code) $ENV{REMOTE_ADDR}";
     BOM::System::AuditLog::log($msg, '', $clerk);

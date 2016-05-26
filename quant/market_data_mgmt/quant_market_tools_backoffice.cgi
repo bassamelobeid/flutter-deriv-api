@@ -60,11 +60,11 @@ if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
     local $CGI::DISABLE_UPLOADS = 0;                 # enable uploads
     my ($data, @to_print) = upload_and_process_correlations($filetoupload);
     my $correlation_matrix = Quant::Framework::CorrelationMatrix->new({
-        symbol        => 'indices',
+        symbol           => 'indices',
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-        chronicle_write => 1,
-        recorded_date => Date::Utility->new
+        chronicle_write  => 1,
+        recorded_date    => Date::Utility->new
     });
     $correlation_matrix->correlations($data);
     $correlation_matrix->save;

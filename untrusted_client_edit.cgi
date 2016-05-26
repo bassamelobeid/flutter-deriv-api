@@ -70,7 +70,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
             $client->set_status('disabled', $clerk, $reason);
             $printline = $client->save ? $insert_success_msg : $insert_error_msg;
             my @tokens = BOM::System::RedisReplicated::redis_read->keys('LOGIN_SESSION::*');
-            for my $token (@tokens){
+            for my $token (@tokens) {
                 my $cookie = BOM::Platform::SessionCookie->new({token => $token});
                 $cookie->end_session if $cookie->loginid eq $client->loginid;
             }
