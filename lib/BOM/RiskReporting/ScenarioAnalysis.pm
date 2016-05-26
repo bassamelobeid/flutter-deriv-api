@@ -82,7 +82,7 @@ sub generate {
         $bet_params->{underlying} = $cached_underlyings{$underlying_symbol}
             if ($cached_underlyings{$underlying_symbol});
         my $bet = produce_contract($bet_params);
-        if ($bet->is_spread) { next ;}
+        if ($bet->is_spread) { next; }
         $cached_underlyings{$underlying_symbol} ||= $bet->underlying;
 
         if (   not $bet->underlying->spot
@@ -209,8 +209,8 @@ sub _calculate_grid_for_max_exposure {
                 produce_contract(
                     +{
                         %params,
-                        pricing_vol   => $vol,
-                        current_spot  => $spot
+                        pricing_vol  => $vol,
+                        current_spot => $spot
                     }
                     )->bid_price,
                 $bet->currency

@@ -56,6 +56,6 @@ foreach my $currency (@all_currencies) {
             1;
         } or do {
             warn("Unsuccess to update; [$broker] ERROR: [" . $@ . "]");
-        }
+            }
     }
 }

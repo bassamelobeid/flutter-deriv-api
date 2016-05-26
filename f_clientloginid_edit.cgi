@@ -68,9 +68,9 @@ if ($input{whattodo} eq 'sync_to_DF') {
         BOM::Platform::Context::template->process(
             'backoffice/client_edit_msg.tt',
             {
-                message     => 'ERROR: Client never deposited before, no sync to Doughflow is allowed !!',
-                error       => 1,
-                self_url    => $self_href,
+                message  => 'ERROR: Client never deposited before, no sync to Doughflow is allowed !!',
+                error    => 1,
+                self_url => $self_href,
             },
         ) || die BOM::Platform::Context::template->error();
         code_exit_BO();
@@ -78,8 +78,8 @@ if ($input{whattodo} eq 'sync_to_DF') {
 
     # create handoff token
     my $client_db = BOM::Database::ClientDB->new({
-        client_loginid => $loginid,
-    })->db;
+            client_loginid => $loginid,
+        })->db;
 
     my $handoff_token = BOM::Database::Model::HandoffToken->new(
         db                 => $client_db,
@@ -114,23 +114,32 @@ if ($input{whattodo} eq 'sync_to_DF') {
         BOM::Platform::Context::template->process(
             'backoffice/client_edit_msg.tt',
             {
-                message     => "FAILED syncing client authentication status to Doughflow, ERROR: $result->{_content}",
-                error       => 1,
-                self_url    => $self_href,
+                message  => "FAILED syncing client authentication status to Doughflow, ERROR: $result->{_content}",
+                error    => 1,
+                self_url => $self_href,
             },
         ) || die BOM::Platform::Context::template->error();
         code_exit_BO();
     }
 
-    my $msg = Date::Utility->new->datetime . " sync client authentication status to Doughflow by clerk=$clerk $ENV{REMOTE_ADDR}, " .
-            'loginid: '.$df_client->loginid.', Email: '.$df_client->Email.', Name: '.$df_client->CustName.', Profile: '.$df_client->Profile;
+    my $msg =
+          Date::Utility->new->datetime
+        . " sync client authentication status to Doughflow by clerk=$clerk $ENV{REMOTE_ADDR}, "
+        . 'loginid: '
+        . $df_client->loginid
+        . ', Email: '
+        . $df_client->Email
+        . ', Name: '
+        . $df_client->CustName
+        . ', Profile: '
+        . $df_client->Profile;
     BOM::System::AuditLog::log($msg, $loginid, $clerk);
 
     BOM::Platform::Context::template->process(
         'backoffice/client_edit_msg.tt',
         {
-            message     => "Successfully syncing client authentication status to Doughflow",
-            self_url    => $self_href,
+            message  => "Successfully syncing client authentication status to Doughflow",
+            self_url => $self_href,
         },
     ) || die BOM::Platform::Context::template->error();
     code_exit_BO();
@@ -142,30 +151,29 @@ if ($input{whattodo} eq 'uploadID') {
     local $CGI::POST_MAX        = 1024 * 100 * 4;    # max 400K posts
     local $CGI::DISABLE_UPLOADS = 0;                 # enable uploads
 
-    my $cgi          = new CGI;
-    my $doctype      = $cgi->param('doctype');
-    my $filetoupload = $cgi->param('FILE');
-    my $docformat    = $cgi->param('docformat');
+    my $cgi             = new CGI;
+    my $doctype         = $cgi->param('doctype');
+    my $filetoupload    = $cgi->param('FILE');
+    my $docformat       = $cgi->param('docformat');
     my $expiration_date = $cgi->param('expiration_date');
-    my $broker_code  = $cgi->param('broker');
-
+    my $broker_code     = $cgi->param('broker');
 
     if (not $filetoupload) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />";
         code_exit_BO();
     }
 
-    if ($doctype =~ /passport|proofid|driverslicense/ && $expiration_date !~/\d{4}-\d{2}-\d{2}/) {
+    if ($doctype =~ /passport|proofid|driverslicense/ && $expiration_date !~ /\d{4}-\d{2}-\d{2}/) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered - </p><br />";
         code_exit_BO();
     }
 
-   if ($expiration_date ne '') {
+    if ($expiration_date ne '') {
         my ($current_date, $submitted_date);
-        $current_date=Date::Utility->new();
+        $current_date   = Date::Utility->new();
         $submitted_date = Date::Utility->new($expiration_date);
 
-        if($submitted_date->is_before($current_date)||$submitted_date->is_same_as($current_date)){
+        if ($submitted_date->is_before($current_date) || $submitted_date->is_same_as($current_date)) {
             print "<br /><p style=\"color:red; font-weight:bold;\">Error: Expiration date should be greater than current date </p><br />";
             code_exit_BO();
         }
@@ -181,7 +189,7 @@ if ($input{whattodo} eq 'uploadID') {
     copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
     my $filesize = (stat $newfilename)[7];
 
-    my $upload_submission={
+    my $upload_submission = {
         document_type              => $doctype,
         document_format            => $docformat,
         document_path              => $newfilename,
@@ -190,7 +198,7 @@ if ($input{whattodo} eq 'uploadID') {
     };
 
     #needed because CR based submissions don't return a result when an empty string is submitted in expiration_date;
-    if ($expiration_date eq ''){
+    if ($expiration_date eq '') {
         delete $upload_submission->{'expiration_date'};
     }
 
@@ -400,7 +408,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 }
             }
         }
-        if ($key eq 'myaffiliates_token'){
+        if ($key eq 'myaffiliates_token') {
             # $client->myaffiliates_token_registered(1);
             $client->myaffiliates_token($input{$key}) if $input{$key};
         }
@@ -558,10 +566,10 @@ if ($link_acc) {
     print $link_acc;
 }
 
-my $user = BOM::Platform::User->new({ email => $client->email });
+my $user = BOM::Platform::User->new({email => $client->email});
 
 # show all loginids for user, include disabled acc
-my @siblings = $user->clients(disabled_ok=>1);
+my @siblings = $user->clients(disabled_ok => 1);
 
 if (@siblings > 1) {
     print "<p>Corresponding accounts: </p><ul>";
@@ -651,7 +659,7 @@ print qq{
 my $financial_assessment = $client->financial_assessment();
 if ($financial_assessment) {
     my $user_data_json = $financial_assessment->data;
-    my $is_professional = $financial_assessment->is_professional ? 'yes': 'no';
+    my $is_professional = $financial_assessment->is_professional ? 'yes' : 'no';
     Bar("Financial Assessment");
     print qq{<table class="collapsed">
         <tr><td>User Data</td><td><textarea rows=10 cols=150>$user_data_json</textarea></td></tr>
@@ -663,7 +671,7 @@ if ($financial_assessment) {
 
 Bar($user->email . " Login history");
 print '<div><br/>';
-my $limit = 200;
+my $limit         = 200;
 my $login_history = $user->find_login_history(
     sort_by => 'history_date desc',
     limit   => $limit

@@ -38,11 +38,11 @@ my $end      = Date::Utility->new(request()->param('end'));
 
 my ($barrier, $barrier2);
 if ($bet->two_barriers) {
-    $barrier = $bet->high_barrier->as_absolute;
+    $barrier  = $bet->high_barrier->as_absolute;
     $barrier2 = $bet->low_barrier->as_absolute;
 } else {
     $barrier = ($bet->category->code eq 'digits') ? $bet->current_spot : (defined $bet->barrier) ? $bet->barrier->as_absolute : undef;
-    $barrier2 = $barrier; # No idea how this might be changed by digit two barriers.
+    $barrier2 = $barrier;    # No idea how this might be changed by digit two barriers.
 }
 
 my $vs_date = $bet->volsurface->recorded_date->datetime_iso8601;

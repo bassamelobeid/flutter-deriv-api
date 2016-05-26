@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use Date::Utility;
 
-
 sub DOB_YearList {
     my ($selyear) = @_;
 

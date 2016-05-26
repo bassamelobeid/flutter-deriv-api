@@ -36,9 +36,9 @@ $report->{link_to_pnl} = sub {
             enddate   => Date::Utility->new->plus_time_interval('1d')->datetime,
         });
 };
-$report->{monify}  = \&to_monetary_number_format;
+$report->{monify} = \&to_monetary_number_format;
 $report->{commas} = \&commas;
-$report->{titlfy}  = sub {
+$report->{titlfy} = sub {
     my $href  = shift;
     my $title = $href->{name};
 

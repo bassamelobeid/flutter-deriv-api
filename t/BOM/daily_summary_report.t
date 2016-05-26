@@ -70,7 +70,8 @@ subtest 'skip if it dies' => sub {
                 broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
                 save_file   => 0,
             )->generate_report;
-        } [qr/^theo price error/], "Expected warning is thrown";
+        }
+        [qr/^theo price error/], "Expected warning is thrown";
         cmp_ok $total_pl->{CR}->{USD}, '==', 0;
     }
     'skip if it dies';
@@ -126,7 +127,8 @@ subtest 'successful run' => sub {
                 broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
                 save_file   => 0,
             )->generate_report;
-        } [qr/^theo price error/], "Expected warning is thrown";
+        }
+        [qr/^theo price error/], "Expected warning is thrown";
         my @brokers = keys %$total_pl;
         ok @brokers, 'has element';
         cmp_ok scalar @brokers, '==', 1;

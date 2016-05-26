@@ -86,7 +86,9 @@ $dbh->{RaiseError} = 1;
 
 my $u_db;
 my $prefix;
-foreach my $table (qw(client client_status client_promo_code client_authentication_method client_authentication_document self_exclusion financial_assessment)) {
+foreach my $table (
+    qw(client client_status client_promo_code client_authentication_method client_authentication_document self_exclusion financial_assessment))
+{
     $prefix = ($table eq 'client') ? '' : 'client_';
     $u_db = $dbh->selectall_hashref(
         "SELECT * FROM audit.$table WHERE "
@@ -239,8 +241,9 @@ sub _get_desk_com_entries {
     # add desk.com cases not deleted
     my $curl_url =
           BOM::Platform::Runtime->instance->app_config->system->desk_com->desk_url
-        . "cases/search?q=custom_loginid:$loginid+created:" . _get_desk_created_string($startdate, $enddate);
-    if($status) {
+        . "cases/search?q=custom_loginid:$loginid+created:"
+        . _get_desk_created_string($startdate, $enddate);
+    if ($status) {
         $curl_url .= "+status:$status";
         $color = 'red';
     }
@@ -249,7 +252,7 @@ sub _get_desk_com_entries {
         . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_password
         . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
 
-    my $response = `curl $curl_url`;
+    my $response     = `curl $curl_url`;
     my @desk_entries = ();
     try {
         $response = decode_json $response;
@@ -259,7 +262,13 @@ sub _get_desk_com_entries {
             {
                 my $stamp = Date::Utility->new($_->{created_at})->datetime;
                 my $case =
-                    $stamp . ' <strong>Desk.com Id</strong>: ' . $_->{id} . ' <strong>description</strong>: ' . $_->{blurb} . ' <strong>status</strong>: ' . $_->{status};
+                      $stamp
+                    . ' <strong>Desk.com Id</strong>: '
+                    . $_->{id}
+                    . ' <strong>description</strong>: '
+                    . $_->{blurb}
+                    . ' <strong>status</strong>: '
+                    . $_->{status};
                 $case .= ' <strong>updated at</strong>: ' . Date::Utility->new($_->{updated_at})->datetime   if $_->{updated_at};
                 $case .= ' <strong>resolved at</strong>: ' . Date::Utility->new($_->{resolved_at})->datetime if $_->{resolved_at};
                 $case .= ' <strong>type</strong>: ' . $_->{type}                                             if $_->{type};

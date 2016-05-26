@@ -35,12 +35,11 @@ foreach my $symbol (keys %date_string) {
     my @dates = @{$date_string{$symbol}};
     foreach my $date (@dates) {
         $date = Date::Utility->new($date);
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick(
-            {
-                underlying => $symbol,
-                epoch      => $date->epoch,
-                quote      => 100
-            });
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => $symbol,
+            epoch      => $date->epoch,
+            quote      => 100
+        });
     }
 }
 
@@ -57,9 +56,9 @@ subtest 'realtime report generation' => sub {
     my $USDaccount = $client->set_default_account('USD');
 
     $client->payment_free_gift(
-        currency    => 'USD',
-        amount      => 5000,
-        remark      => 'free gift',
+        currency => 'USD',
+        amount   => 5000,
+        remark   => 'free gift',
     );
 
     my $start_time  = $minus5mins;
