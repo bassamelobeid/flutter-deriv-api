@@ -270,11 +270,11 @@ table#client_edit td{
     <tr>
         <td class="label">Age Verified</td>
         <td>:
-                [% IF client.get_status('age_verification') || client.has_valid_documents %]
+            [% IF client.get_status('age_verification') %]
                 YES
-                [% ELSE %]
+            [% ELSE %]
                 NO
-                [% END %]
+            [% END %]
         </td>
     </tr>
     <tr>
