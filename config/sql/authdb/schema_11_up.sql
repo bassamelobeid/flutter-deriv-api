@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE oauth.apps ADD COLUMN markup INT DEFAULT 0;
+
+COMMIT;
