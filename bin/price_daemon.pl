@@ -7,6 +7,8 @@ use JSON;
 use BOM::System::RedisReplicated;
 use BOM::RPC::PricerDaemon;
 use Getopt::Long;
+use DataDog::DogStatsd::Helper;
+
 
 my $workers = 4;
 GetOptions ("workers=i" => \$workers,) ;
@@ -31,17 +33,19 @@ sub _redis_pricer {
 
 while (1) {
     my $pid = $pm->start and next;
-
+    DataDog::DogStatsd::Helper::count('pricer_daemon.forks.count', 1);
+    DataDog::DogStatsd::Helper::count('pricer_daemon.forks.idle.count', 1);
     my $rp = Mojo::Redis::Processor->new(
         'read_conn'   => _redis_pricer,
         'write_conn'  => _redis_pricer,
         'daemon_conn' => _redis_read,
         'usleep'      => 20,
-        'rety'        => 100,
+        'retry'       => 100,
     );
 
     my $next = $rp->next;
     if ($next) {
+        DataDog::DogStatsd::Helper::count('pricer_daemon.forks.idle.count', -1);
         print "next [$next]\n";
         my $p = BOM::RPC::PricerDaemon->new(data=>$rp->{data}, key=>$rp->_processed_channel);
 
@@ -55,8 +59,10 @@ while (1) {
             });
     } else {
         print "no job found\n";
-        sleep rand(120);
+        sleep (5);
+        DataDog::DogStatsd::Helper::count('pricer_daemon.forks.idle.count', -1);
     }
     print "Ending the child\n";
+    DataDog::DogStatsd::Helper::count('pricer_daemon.forks.count', -1);
     $pm->finish;
 }
