@@ -1,6 +1,6 @@
 <div id="topbar-binary"></div>
 <div id="header-binary">
-    <a href="/<%= $r->language %>/home.html">
+    <a href="https://www.binary.com/<%= lc($r->language) %>/home.html">
         <img id="symbol-logo" src="/oauth2/images/binary-symbol-logo.svg" alt="" />
         <img id="type-logo" src="/oauth2/images/binary-type-logo.svg" alt="Binary.com" />
     </a>
@@ -21,8 +21,8 @@
             </form>
         </div>
         <p class="links">
-            <a class="pjaxload" id="lost-password" href="https://www.binary.com/<%= $r->language %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a> |
-            <a class="pjaxload" id="create-account" href="https://www.binary.com/<%= $r->language %>/home.html"><%= l('Open an Account') %></a>
+            <a class="pjaxload" id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a> |
+            <a class="pjaxload" id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Open an Account') %></a>
         </p>
     </fieldset>
 </div>
