@@ -164,7 +164,7 @@ sub _build_butterfly_markup {
     if ($butterfly_cutoff_breached == 1) {
 
         # theo probability, priced at the current value
-        my $actual_theoretical_value_amount = $bet->theo_probability->amount;
+        my $actual_theoretical_value_amount = $bet->pricing_engine->base_probability->amount;
         my $actual_theoretical_value        = Math::Util::CalculatedValue::Validatable->new({
             name        => 'actual_theoretical_value',
             description => 'The theoretical value with the actual butterfly',
@@ -214,7 +214,6 @@ modified to reflect an ON butterfly equal to a specified butterfly_cutoff.
 =cut
 
 sub butterfly_cutoff_theoretical_value_amount {
-
     my ($self, $butterfly_cutoff) = @_;
     my $bet = $self->bet;
 
@@ -239,7 +238,7 @@ sub butterfly_cutoff_theoretical_value_amount {
     $surface_modified->surface->{$first_tenor}{smile}{75} = $c75_modified;
     my $butterfly_cutoff_bet = BOM::Product::ContractFactory::make_similar_contract($bet, {volsurface => $surface_modified});
 
-    return $butterfly_cutoff_bet->theo_probability->amount;
+    return $butterfly_cutoff_bet->pricing_engine->base_probability->amount;
 }
 
 sub _build_spot_spread_markup {
