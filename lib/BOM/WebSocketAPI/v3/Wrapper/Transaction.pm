@@ -19,8 +19,9 @@ sub buy_get_contract_params {
         $params->{call_params}->{contract_parameters} = $args->{parameters};
     } elsif (my $p = BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $args->{buy})) {
         $params->{call_params}->{contract_parameters} = $p;
-    } elsif ($p = BOM::WebSocketAPI::v3::Wrapper::System::_forget_pricing_subscription($c, $args->{buy}) and scalar @{$p} > 0) {
-        $params->{call_params}->{contract_parameters} = $p->[0];
+    } elsif ($c->stash('pricing_channel') and $c->stash('pricing_channel')->{uuid} and $c->stash('pricing_channel')->{uuid}->{$args->{buy}}) {
+        $params->{call_params}->{contract_parameters} = $c->stash('pricing_channel')->{uuid}->{$args->{buy}}->{args};
+        BOM::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $args->{buy}));
     } else {
         return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
     }
