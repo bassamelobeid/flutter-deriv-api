@@ -184,8 +184,8 @@ sub get_bid {
         if (not $contract->is_spread) {
             @corporate_actions = @{$contract->corporate_actions};
 
-            my $contract_affected_by_missing_market_data =
-                (not $contract->may_settle_automatically and not @corporate_actions and $contract->missing_market_data) ? 1 : 0;
+            my $contract_affected_by_missing_market_data  = 0 | 1 if 
+                (not $contract->may_settle_automatically and $contract->missing_market_data);
             if ($contract_affected_by_missing_market_data) {
                 $response = BOM::RPC::v3::Utility::create_error({
                         code              => "GetProposalFailure",
