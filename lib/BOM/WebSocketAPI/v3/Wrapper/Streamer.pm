@@ -501,11 +501,13 @@ sub process_transaction_updates {
 }
 
 sub send_pricing_table {
-    my $c         = shift;
-    my $id        = shift;
-    my $arguments = shift;
-    my $message   = shift;
-    my $table     = JSON::from_json($message);
+    my $c            = shift;
+    my $id           = shift;
+    my $arguments    = shift;
+    my $message      = shift;
+    my $params_table = JSON::from_json($message);
+    my $table        = BOM::RPC::v3::Japan::Contract::update_table($arguments, $params_table);
+
     $c->send({
             json => {
                 msg_type => 'pricing_table',
