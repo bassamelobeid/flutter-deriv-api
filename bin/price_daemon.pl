@@ -40,7 +40,7 @@ while (1) {
         'write_conn'  => _redis_pricer,
         'daemon_conn' => _redis_read,
         'usleep'      => 20,
-        'rety'        => 100,
+        'retry'       => 100,
     );
 
     my $next = $rp->next;
