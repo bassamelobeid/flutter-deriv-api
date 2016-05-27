@@ -284,7 +284,6 @@ subtest 'get_bid' => sub {
         date_expiry   => $now->epoch - 500,
         purchase_date => $now->epoch - 901
     );
-
     my $params = {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
@@ -570,19 +569,19 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
         'contract_type'         => 'PUT',
         'is_expired'            => '0',
         'is_valid_to_sell'      => '0',
-        'shortcode'             => 'PUT_USAAPL_1215.29_1127312400_1127592000_S0P_0',
+        'shortcode'             => 'PUT_USAAPL_1333.33_1127312400_1127592000_S0P_0',
         'is_forward_starting'   => '0',
         'bid_price'             => '0.00',
-        'longcode'              => 'USD 1,215.29 payout if Apple Inc is strictly lower than entry spot at close on 2005-09-24.',
+        'longcode'              => 'USD 1,333.33 payout if Apple Inc is strictly lower than entry spot at close on 2005-09-24.',
         'date_expiry'           => '1127592000',
         'is_path_dependent'     => '0',
         'display_name'          => 'Apple Inc',
-        'ask_price'             => '121.53',
+        'ask_price'             => '133.33',
         'entry_tick_time'       => '1127312430',
         'entry_spot'            => '111.00',
         'has_corporate_actions' => '1',
         'current_spot_time'     => '1127312490',
-        'payout'                => '1215.29'
+        'payout'                => '1333.33'
     };
 
     foreach my $key (keys %$expected_result) {
