@@ -81,6 +81,9 @@ sub _pricing_channel {
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
         $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
         $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
+        $pricing_channel->{uuid}->{$uuid}->{serialized_args}            = $serialized_args;
+        $pricing_channel->{uuid}->{$uuid}->{amount}                     = $args->{amount};
+        $pricing_channel->{uuid}->{$uuid}->{args}                       = $args;
 
         my $request_time = gettimeofday;
         BOM::System::RedisReplicated::redis_pricer->set($rp->_processed_channel, $request_time);
