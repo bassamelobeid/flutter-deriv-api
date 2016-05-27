@@ -2,31 +2,6 @@ package BOM::Market::Markups;
 
 use Moose;
 
-=head1 NAME
-
-BOM::Market::Markups
-
-=head1 DESCRIPTION
-
-Used in conjunction with I<BOM::Market>, to represent ll the markups that can be applied to the market.
-
-=head1 ATTRIBUTES
-
-=head2 digital_spread
-
-A hash of the digital spread markup.
-{
-    european => ...
-    single_barrier => ...
-    double_barrier => ...
-}
-
-=cut
-
-has 'digital_spread' => (
-    is => 'ro',
-);
-
 =head2 market
 
 Should we apply market specific markups like news_corrections.
