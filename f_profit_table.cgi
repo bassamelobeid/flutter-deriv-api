@@ -76,8 +76,6 @@ foreach my $contract (@{$open_contracts}) {
     $contract->{purchase_date} = Date::Utility->new($contract->{purchase_time});
 }
 
-# Add modified sharpe ratio functionality here.
-
 BOM::Platform::Context::template->process(
     'backoffice/account/profit_table.html.tt',
     {
