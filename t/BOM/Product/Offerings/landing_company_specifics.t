@@ -140,16 +140,39 @@ subtest 'legal allowed underlyings' => sub {
         UKBARC
         UKBATS
         UKHSBA
-        UKVOD
         DEALV
-        DEBAYER
         DEDAI
         DESIE
-        AUANZ
-        AUBHP
-        AUCBA
-        AUMQG
-        AUQAN
+        USCAT
+        USGLDSCH 
+        USMCDON 
+        USMA
+        USBRKSHR
+        USBNG 
+        USIBM 
+        USALIBA 
+        USPEP 
+        USEA 
+        USJNJ 
+        USAMX 
+        USPG 
+        UKBP 
+        UKRIO 
+        UKBT 
+        UKSTAN 
+        UKLLOY 
+        UKTSCO 
+        DEBMW 
+        DENOT 
+        DESAP 
+        DEDBK 
+        DEAIR 
+        DEEOAN 
+        INMARUTI 
+        INRIL 
+        INTATAMOTORS 
+        INTATASTEEL 
+        INBHARTIARTL
         OTC_IXIC
         OTC_BSESENSEX30
         OTC_BIST100
@@ -184,7 +207,7 @@ subtest 'legal allowed underlyings' => sub {
         frxGBPUSD
         WLDGBP
         DJI
-	    FCHI
+	FCHI
         frxGBPNZD
         frxXAGUSD
         frxAUDCHF
