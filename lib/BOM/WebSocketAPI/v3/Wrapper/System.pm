@@ -110,14 +110,29 @@ sub _forget_pricing_subscription {
 }
 
 sub _forget_all_pricing_subscriptions {
-    my ($c)             = @_;
+    my ($c, $uuid) = @_;
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
-        foreach my $channel (keys %{$pricing_channel}) {
-            $c->stash('redis')->unsubscribe([$pricing_channel->{$channel}->{channel_name}]);
-            delete $pricing_channel->{$channel};
+        if ($uuid) {
+            return if not exists $pricing_channel->{uuid}->{$uuid};
+            my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
+            my $amount          = $pricing_channel->{uuid}->{$uuid}->{amount};
+            delete $pricing_channel->{uuid}->{$uuid};
+            delete $pricing_channel->{$serialized_args}->{$amount};
+            if (scalar keys %{$pricing_channel->{$serialized_args}} == 0) {
+                $c->stash('redis')->unsubscribe([$pricing_channel->{$serialized_args}->{channel_name}]);
+                delete $pricing_channel->{$serialized_args};
+            }
+            push @$removed_ids, $uuid;
+            $c->stash('pricing_channel' => $pricing_channel);
+            return $removed_ids;
         }
+        foreach my $serialized_args (keys %{$pricing_channel}) {
+            $c->stash('redis')->unsubscribe([$pricing_channel->{$serialized_args}->{channel_name}]);
+            delete $pricing_channel->{$serialized_args};
+        }
+        delete $pricing_channel->{uuid};
         $c->stash('pricing_channel' => $pricing_channel);
     }
     return $removed_ids;
