@@ -68,7 +68,8 @@ while (1) {
 $t = $t->send_ok({
         json => {
             proposal_open_contract => 1,
-            subscribe              => 1
+            subscribe              => 1,
+            req_id                 => 123
         }});
 
 $t   = $t->message_ok;
@@ -83,6 +84,31 @@ SKIP: {
 test_schema('proposal_open_contract', $res);
 
 is $res->{proposal_open_contract}->{contract_id}, $contract_id, 'got correct contract from proposal open contracts';
+
+$t = $t->send_ok({
+        json => {
+            proposal_open_contract => 1,
+            subscribe              => 1,
+            req_id                 => 456
+        }});
+
+$t   = $t->message_ok;
+$res = decode_json($t->message->[1]);
+
+is $res->{proposal_open_contract}->{id}, undef, 'different req_id should not allow multiple proposal_open_contract subscription';
+
+$t = $t->send_ok({
+        json => {
+            proposal_open_contract => 1,
+            subscribe              => 1,
+            req_id                 => 123,
+            passthrough            => 'sample'
+        }});
+
+$t   = $t->message_ok;
+$res = decode_json($t->message->[1]);
+
+is $res->{proposal_open_contract}->{id}, undef, 'passthrough should not allow multiple proposal_open_contract subscription';
 
 # It is hack to emulate contract selling and test subcribtion
 my ($url, $call_params);

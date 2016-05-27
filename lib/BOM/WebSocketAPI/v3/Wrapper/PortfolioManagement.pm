@@ -3,7 +3,7 @@ package BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use strict;
 use warnings;
 
-use JSON;
+use Digest::MD5 qw(md5_hex);
 
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
@@ -31,16 +31,18 @@ sub proposal_open_contract {
                             contract_id      => $contract_id,
                             validation_error => $response->{$contract_id}->{error}->{message_to_client}});
                 } else {
-                    # need to do this as args are passed back to client as response echo_req
-                    my $details = {%$args};
-                    # we don't want to leak account_id to client
-                    $details->{account_id} = delete $response->{$contract_id}->{account_id};
                     my $id;
                     if (    exists $args->{subscribe}
                         and $args->{subscribe} eq '1'
                         and not $response->{$contract_id}->{is_expired}
                         and not $response->{$contract_id}->{is_sold})
                     {
+                        # need to do this as args are passed back to client as response echo_req
+                        my $details = {%$args};
+
+                        # we don't want to leak account_id to client
+                        $details->{account_id} = delete $response->{$contract_id}->{account_id};
+
                         # these keys needs to be deleted from args (check send_proposal)
                         # populating here cos we stash them in redis channel
                         $details->{short_code}      = $response->{$contract_id}->{shortcode};
@@ -53,19 +55,26 @@ sub proposal_open_contract {
                         $details->{is_sold}         = $response->{$contract_id}->{is_sold};
                         $details->{transaction_ids} = $response->{$contract_id}->{transaction_ids};
 
-                        # need underlying to cancel streaming when manual sell occurs
-                        $details->{underlying} = $response->{$contract_id}->{underlying};
+                        # as req_id and passthrough can change so we should not send them in type else
+                        # client can subscribe to multiple proposal_open_contract as feed channel type will change
+                        my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
 
-                        # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $details->{account_id},
-                            $contract_id, $details);
+                        # pass account_id, transaction_id so that we can categorize it based on type, can't use contract_id
+                        # as we send contract_id also, we want both request to stream i.e one with contract_id
+                        # and one for all contracts
+                        $type_args{account_id}     = $details->{account_id};
+                        $type_args{transaction_id} = $response->{$contract_id}->{transaction_ids}->{buy};
+
+                        my $keystr = join("", map { $_ . ":" . $type_args{$_} } sort keys %type_args);
 
                         $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                             $c, 'subscribe',
                             $response->{$contract_id}->{underlying},
-                            'proposal_open_contract:' . JSON::to_json($details), $details
+                            'proposal_open_contract:' . md5_hex($keystr), $details
                         );
 
+                        # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $details->{account_id}, $id, $details) if $id;
                     }
                     my $res = {$id ? (id => $id) : (), %{$response->{$contract_id}}};
                     $send_details->($res);
@@ -93,8 +102,6 @@ sub send_proposal {
     my $sell_price      = delete $details->{sell_price};
     my $transaction_ids = delete $details->{transaction_ids};
 
-    delete $details->{underlying};
-
     $c->call_rpc({
             args        => $details,
             method      => 'get_bid',
@@ -110,15 +117,19 @@ sub send_proposal {
                 my ($c, $args, $rpc_response) = @_;
                 if ($rpc_response) {
                     if (exists $rpc_response->{error}) {
-                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
+                        if ($id) {
+                            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                            BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+                        }
                         return $c->new_error('proposal_open_contract', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                     } elsif (exists $rpc_response->{is_expired} and $rpc_response->{is_expired} eq '1') {
-                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
-                        $id = undef;
+                        if ($id) {
+                            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                            BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+                            $id = undef;
+                        }
                     }
-
+    
                     return {
                         msg_type               => 'proposal_open_contract',
                         proposal_open_contract => {
@@ -131,8 +142,10 @@ sub send_proposal {
                             %$rpc_response
                         }};
                 } else {
-                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
+                    if ($id) {
+                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+                    }
                 }
             }
         });

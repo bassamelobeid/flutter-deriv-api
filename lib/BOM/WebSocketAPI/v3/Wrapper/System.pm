@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::v3::Wrapper::System;
 use strict;
 use warnings;
 
+use Scalar::Util qw(looks_like_number);
+
 use BOM::RPC::v3::Utility;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
@@ -40,8 +42,10 @@ sub forget_one {
 
     my $removed_ids = [];
     if ($id =~ /-/) {
-        $removed_ids = _forget_transaction_subscription($c, $id) unless (scalar @$removed_ids);
+        # need to keep feed subscription first as in case of proposal_open_contract subscribes to transaction
+        # channel and forgets transaction channel internally when we forget it
         $removed_ids = _forget_feed_subscription($c, $id) unless (scalar @$removed_ids);
+        $removed_ids = _forget_transaction_subscription($c, $id) unless (scalar @$removed_ids);
         $removed_ids = _forget_pricing_subscription($c, $id) unless (scalar @$removed_ids);
     }
 
@@ -106,14 +110,29 @@ sub _forget_pricing_subscription {
 }
 
 sub _forget_all_pricing_subscriptions {
-    my ($c)             = @_;
+    my ($c, $uuid) = @_;
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
-        foreach my $channel (keys %{$pricing_channel}) {
-            $c->stash('redis')->unsubscribe([$pricing_channel->{$channel}->{channel_name}]);
-            delete $pricing_channel->{$channel};
+        if ($uuid) {
+            return if not exists $pricing_channel->{uuid}->{$uuid};
+            my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
+            my $amount          = $pricing_channel->{uuid}->{$uuid}->{amount};
+            delete $pricing_channel->{uuid}->{$uuid};
+            delete $pricing_channel->{$serialized_args}->{$amount};
+            if (scalar keys %{$pricing_channel->{$serialized_args}} == 0) {
+                $c->stash('redis')->unsubscribe([$pricing_channel->{$serialized_args}->{channel_name}]);
+                delete $pricing_channel->{$serialized_args};
+            }
+            push @$removed_ids, $uuid;
+            $c->stash('pricing_channel' => $pricing_channel);
+            return $removed_ids;
         }
+        foreach my $serialized_args (keys %{$pricing_channel}) {
+            $c->stash('redis')->unsubscribe([$pricing_channel->{$serialized_args}->{channel_name}]);
+            delete $pricing_channel->{$serialized_args};
+        }
+        delete $pricing_channel->{uuid};
         $c->stash('pricing_channel' => $pricing_channel);
     }
     return $removed_ids;
@@ -129,10 +148,10 @@ sub _forget_feed_subscription {
             my $fsymbol = $1;
             my $ftype   = $2;
             # . 's' while we are still using tickS in this calls. backward compatibility that must be removed
-            if ($typeoruuid eq 'candles') {
+            if ($typeoruuid eq 'candles' and looks_like_number($ftype)) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
-            } elsif ((($ftype . 's') =~ /^$typeoruuid/) or ($typeoruuid eq $subscription->{$channel}->{uuid})) {
+            } elsif (($ftype . 's') =~ /^$typeoruuid/ or $typeoruuid eq $subscription->{$channel}->{uuid}) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
             }
