@@ -414,34 +414,28 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
     subtest 'do not allow move if recomputed is 1' => sub {
         $mock_contract->mock('ask_price', sub { 100 });
-        my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_markup',
-            description => 'fake model markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
+        $mock_contract->mock('commission_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0.01,
+            });
         });
-        my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'fake commission markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0.01,
+        $mock_contract->mock('risk_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'risk_markup',
+                description => 'fake risk markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0,
+            });
         });
-        my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup',
-            description => 'fake risk markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
-        });
-        $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
-        $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
-        $mock_contract->mock('model_markup', sub { $fake_model_markup });
         my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
             description => 'fake ask prov',
             set_by      => 'BOM::Product::Contract',
             base_amount => 1
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         my $allowed_move = 0.01 * 0.50;
 
@@ -478,34 +472,28 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
     subtest 'check price move' => sub {
         $mock_contract->mock('ask_price', sub { 10 });
-        my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_markup',
-            description => 'fake model markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
+        $mock_contract->mock('commission_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0.01,
+            });
         });
-        my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'fake commission markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0.01,
+        $mock_contract->mock('risk_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'risk_markup',
+                description => 'fake risk markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0,
+            });
         });
-        my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup',
-            description => 'fake risk markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
-        });
-        $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
-        $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
-        $mock_contract->mock('model_markup', sub { $fake_model_markup });
         my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
             description => 'fake ask prov',
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
 
         my $allowed_move = 0.01 * 0.50;
@@ -567,27 +555,22 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
     subtest 'check payout move' => sub {
         $mock_contract->mock('payout', sub { 100 });
-        my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_markup',
-            description => 'fake model markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
+        $mock_contract->mock('commission_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0.01,
+            });
         });
-        my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'fake commission markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0.01,
+        $mock_contract->mock('risk_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'risk_markup',
+                description => 'fake risk markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0,
+            });
         });
-        my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup',
-            description => 'fake risk markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
-        });
-        $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
-        $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
-        $mock_contract->mock('model_markup', sub { $fake_model_markup });
         my $allowed_move = 0.01 * 0.50;
         my $ask_cv       = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
@@ -595,7 +578,6 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 + $allowed_move + 0.001,
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
@@ -633,7 +615,6 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 + $allowed_move - 0.001,
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
@@ -656,7 +637,6 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 - $allowed_move + 0.001,
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
@@ -679,7 +659,6 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 - $allowed_move - 0.001,
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('payout', sub { roundnear(0.001, 10 / $ask_cv->amount) });
 
@@ -706,34 +685,28 @@ subtest 'SELL - sell pricing adjustment' => sub {
 
     subtest 'do not allow move if recomputed is 0' => sub {
         $mock_contract->mock('bid_price', sub { 100 });
-        my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_markup',
-            description => 'fake model markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
+        $mock_contract->mock('commission_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0.01,
+            });
         });
-        my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'fake commission markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0.01,
+        $mock_contract->mock('risk_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'risk_markup',
+                description => 'fake risk markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0,
+            });
         });
-        my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup',
-            description => 'fake risk markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
-        });
-        $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
-        $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
-        $mock_contract->mock('model_markup', sub { $fake_model_markup });
         my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'bid_probability',
             description => 'fake ask prov',
             set_by      => 'BOM::Product::Contract',
             base_amount => 1
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('bid_probability', sub { $ask_cv });
         my $allowed_move = 0.01 * 0.80;
 
@@ -763,34 +736,28 @@ subtest 'SELL - sell pricing adjustment' => sub {
 
     subtest 'check price move' => sub {
         $mock_contract->mock('bid_price', sub { 10 });
-        my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_markup',
-            description => 'fake model markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
+        $mock_contract->mock('commission_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0.01,
+            });
         });
-        my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'fake commission markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0.01,
+        $mock_contract->mock('risk_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'risk_markup',
+                description => 'fake risk markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0,
+            });
         });
-        my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup',
-            description => 'fake risk markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
-        });
-        $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
-        $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
-        $mock_contract->mock('model_markup', sub { $fake_model_markup });
         my $bid_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'bid_probability',
             description => 'fake ask prov',
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1
         });
-        $bid_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('bid_probability', sub { $bid_cv });
 
         my $allowed_move = 0.01 * 0.80;

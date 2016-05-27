@@ -1202,7 +1202,7 @@ expected_result:
                 ask_prob: 0.5281
                 theo_prob: 0.4993
                 total_markup: 0.0288
-                commission_markup: 0.0228
+                commission_markup: 0.025
                 risk_markup: 0.0061
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
             NOTOUCH:
@@ -1212,7 +1212,7 @@ expected_result:
                 ask_prob: 0.3544
                 theo_prob: 0.3119
                 total_markup: 0.0425
-                commission_markup: 0.0228
+                commission_markup: 0.025
                 risk_markup: 0.0197
                 price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             RANGE:
@@ -1223,7 +1223,7 @@ expected_result:
                 ask_prob: 0.2724
                 theo_prob: 0.194
                 total_markup: 0.0784
-                commission_markup: 0.0317
+                commission_markup: 0.025
                 risk_markup: 0.0467
                 price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             EXPIRYRANGE:
@@ -1234,7 +1234,7 @@ expected_result:
                 ask_prob: 0.577
                 theo_prob: 0.5282
                 total_markup: 0.0489
-                commission_markup: 0.0216
+                commission_markup: 0.025
                 risk_markup: 0.0273
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
     frxEURUSD:
@@ -1245,7 +1245,7 @@ expected_result:
                 ask_prob: 0.4455
                 theo_prob: 0.4164
                 total_markup: 0.0291
-                commission_markup: 0.0216
+                commission_markup: 0.025
                 risk_markup: 0.0075
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
             NOTOUCH:
@@ -1255,7 +1255,7 @@ expected_result:
                 ask_prob: 0.8633
                 theo_prob: 0.7424
                 total_markup: 0.121
-                commission_markup: 0.0273
+                commission_markup: 0.025
                 risk_markup: 0.0936
                 price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             RANGE:
@@ -1277,7 +1277,7 @@ expected_result:
                 ask_prob: 0.8056
                 theo_prob: 0.7772
                 total_markup: 0.0284
-                commission_markup: 0.0175
+                commission_markup: 0.025
                 risk_markup: 0.0109
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
     FTSE:
@@ -1288,7 +1288,7 @@ expected_result:
                 ask_prob: 0.5587
                 theo_prob: 0.5258
                 total_markup: 0.0328
-                commission_markup: 0.0251
+                commission_markup: 0.025
                 risk_markup: 0.0077
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
             NOTOUCH:
@@ -1296,9 +1296,9 @@ expected_result:
                 spot: 6685.31
                 duration: 4d
                 ask_prob: 0.8705
-                theo_prob: 0.7236
+                theo_prob: 0.7235
                 total_markup: 0.147
-                commission_markup: 0.0417
+                commission_markup: 0.025
                 risk_markup: 0.1053
                 price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             RANGE:
@@ -1309,7 +1309,7 @@ expected_result:
                 ask_prob: 0.1
                 theo_prob: 0
                 total_markup: 0.04
-                commission_markup: 0.04
+                commission_markup: 0.025
                 risk_markup: 0
                 price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             EXPIRYRANGE:
@@ -1318,9 +1318,9 @@ expected_result:
                 spot: 6688.93
                 duration: 120d
                 ask_prob: 0.7824
-                theo_prob: 0.7544
+                theo_prob: 0.7543
                 total_markup: 0.0281
-                commission_markup: 0.02
+                commission_markup: 0.025
                 risk_markup: 0.0081
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
     GDAXI:
@@ -1329,9 +1329,9 @@ expected_result:
                 spot: 9518.2
                 duration: 12d
                 ask_prob: 0.484
-                theo_prob: 0.4595
+                theo_prob: 0.4596
                 total_markup: 0.0245
-                commission_markup: 0.0231
+                commission_markup: 0.025
                 risk_markup: 0.0014
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
             NOTOUCH:
@@ -1341,7 +1341,7 @@ expected_result:
                 ask_prob: 0.6441
                 theo_prob: 0.5715
                 total_markup: 0.0726
-                commission_markup: 0.0316
+                commission_markup: 0.025
                 risk_markup: 0.041
                 price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             RANGE:
@@ -1352,7 +1352,7 @@ expected_result:
                 ask_prob: 0.457
                 theo_prob: 0.4106
                 total_markup: 0.0464
-                commission_markup: 0.04
+                commission_markup: 0.025
                 risk_markup: 0.0064
                 price_engine:  BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             EXPIRYRANGE:
@@ -1361,9 +1361,9 @@ expected_result:
                 spot: 9518.2
                 duration: 120d
                 ask_prob: 0.7654
-                theo_prob: 0.7406
+                theo_prob: 0.7405
                 total_markup: 0.0249
-                commission_markup: 0.02
+                commission_markup: 0.025
                 risk_markup: 0.0049
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
             DIGITMATCH:
