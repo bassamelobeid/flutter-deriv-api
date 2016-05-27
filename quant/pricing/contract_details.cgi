@@ -26,7 +26,7 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
 my ($pricing_parameters, @contract_details, $start);
 
-my $broker = request()->broker->code;
+my $broker = $params{broker} // request()->broker->code ;
 my $id = $params{id} ? $params{id} : '';
 
 if ($broker and $id) {
@@ -146,10 +146,14 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $ask_probability   = $contract->ask_probability;
     my $debug_information = $contract->pricing_engine->debug_information;
     my $pricing_parameters;
-    my $contract_type = $contract->pricing_engine->contract_type;
+    my $contract_type     = $contract->pricing_engine->contract_type;
+    my $theo_probability  = $contract->theo_probability->amount - $contract->risk_markup->amount;
+    my $risk_markup       = $contract->risk_markup->amount;
+    my $commission_markup = $contract->commission_markup->amount;
     $pricing_parameters->{ask_probability} = {
-        theoretical_probability => $ask_probability->peek_amount('theo_probability'),
-        map { $_ => $ask_probability->peek_amount($_) } qw(risk_markup commission_markup),
+        theoretical_probability => $theo_probability,
+        risk_markup             => $risk_markup,
+        commission_markup       => $commission_markup,
     };
 
     $pricing_parameters->{commission_markup} = {digital_spread_percentage => 0.035};
@@ -193,6 +197,7 @@ sub _get_bs_probability_parameters {
 BOM::Platform::Context::template->process(
     'backoffice/contract_details.html.tt',
     {
+        broker             => $broker,
         id                 => $id,
         contract_details   => {@contract_details},
         start              => $start ? $start->datetime : '',

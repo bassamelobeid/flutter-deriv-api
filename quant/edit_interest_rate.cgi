@@ -13,9 +13,9 @@ BOM::Platform::Sysinit::init();
 PrintContentType();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
-my $currency_symbol = request()->param('symbol');
+my $currency_symbol        = request()->param('symbol');
 my $existing_interest_rate = Quant::Framework::InterestRate->new({
-        symbol => $currency_symbol,
+        symbol           => $currency_symbol,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     })->rates;

@@ -82,16 +82,16 @@ push @markets, split /\s+/, $markets if $markets;
 if ($update_including_intraday_double) {
     push @markets,
         BOM::Market::UnderlyingDB->instance->get_symbols_for(
-        market       => \@update_markets,
+        market            => \@update_markets,
         contract_category => 'ANY',
-        broker       => 'VRT',
+        broker            => 'VRT',
         );
 } else {
     push @markets,
         BOM::Market::UnderlyingDB->instance->get_symbols_for(
-        market       => \@update_markets,
+        market            => \@update_markets,
         contract_category => 'IV',
-        broker       => $broker,
+        broker            => $broker,
         );
 }
 
@@ -105,9 +105,7 @@ foreach my $market (@markets) {
     # when we are updating surface, fetch New York 10 for FX
     my $args = {
         underlying => $underlying,
-        $underlying->market->name eq 'forex'
-       ||$underlying->market->name eq 'commodities'
-       ? (cutoff => 'New York 10:00') : (),
+        $underlying->market->name eq 'forex' || $underlying->market->name eq 'commodities' ? (cutoff => 'New York 10:00') : (),
     };
     my $volsurface = $dm->fetch_surface($args);
     my $existing_surface = eval { $volsurface->surface };

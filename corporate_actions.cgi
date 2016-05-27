@@ -21,10 +21,10 @@ my $enable  = $cgi->param('enable');
 
 my $response;
 try {
-    my $corp = Quant::Framework::CorporateAction->new(symbol => $symbol,
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer()
-    );
+    my $corp = Quant::Framework::CorporateAction->new(
+        symbol           => $symbol,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
     my $action_to_update = $corp->actions->{$id};
     $action_to_update->{comment} = $comment;
     if ($enable) {

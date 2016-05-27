@@ -16,8 +16,7 @@ my $broker = request()->broker->code;
 BOM::Backoffice::Auth0::can_access();
 
 my $datetime = request()->param('datetime');
-my $loginid = request()->param('loginid');
-
+my $loginid  = request()->param('loginid');
 
 my $sql = qq{
 SELECT
@@ -83,7 +82,6 @@ WHERE
     ##LOGINID_ONLY##
 ORDER BY t.transaction_time
 };
-
 
 my @params = ($datetime, $datetime);
 
