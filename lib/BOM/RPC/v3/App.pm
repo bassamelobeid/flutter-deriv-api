@@ -94,7 +94,7 @@ sub update {
             if $oauth->is_name_taken($user_id, $name);
     }
 
-    my $app = $oauth->update_app(
+    $app = $oauth->update_app(
         $app_id,
         {
             name         => $name,
