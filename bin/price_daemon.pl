@@ -36,6 +36,8 @@ while (1) {
         'read_conn'   => _redis_pricer,
         'write_conn'  => _redis_pricer,
         'daemon_conn' => _redis_read,
+        'usleep'      => 20,
+        'rety'        => 100,
     );
 
     my $next = $rp->next;
@@ -53,7 +55,7 @@ while (1) {
             });
     } else {
         print "no job found\n";
-        sleep 3;
+        sleep rand(120);
     }
     print "Ending the child\n";
     $pm->finish;
