@@ -26,7 +26,7 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
 my ($pricing_parameters, @contract_details, $start);
 
-my $broker = request()->broker->code;
+my $broker = $params{broker} // request()->broker->code ;
 my $id = $params{id} ? $params{id} : '';
 
 if ($broker and $id) {
@@ -197,6 +197,7 @@ sub _get_bs_probability_parameters {
 BOM::Platform::Context::template->process(
     'backoffice/contract_details.html.tt',
     {
+        broker             => $broker,
         id                 => $id,
         contract_details   => {@contract_details},
         start              => $start ? $start->datetime : '',
