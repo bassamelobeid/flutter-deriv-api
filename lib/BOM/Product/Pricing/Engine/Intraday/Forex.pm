@@ -86,12 +86,17 @@ has [qw(_delta_formula _vega_formula)] => (
 sub _build_base_probability {
     my $self = shift;
 
-    return Math::Util::CalculatedValue::Validatable->new({
+    my $base_probability = Math::Util::CalculatedValue::Validatable->new({
         name        => 'base_probability',
         description => 'BS pricing based on realized vols',
         set_by      => __PACKAGE__,
         base_amount => $self->formula->($self->_formula_args),
     });
+
+    $base_probability->include_adjustment('add', $self->intraday_delta_correction);
+    $base_probability->include_adjustment('add', $self->intraday_vega_correction);
+
+    return $base_probability;
 }
 
 =head1 probability
@@ -115,8 +120,6 @@ sub _build_probability {
     });
 
     $ifx_prob->include_adjustment('reset', $self->base_probability);
-    $ifx_prob->include_adjustment('add',   $self->intraday_delta_correction);
-    $ifx_prob->include_adjustment('add',   $self->intraday_vega_correction);
     $ifx_prob->include_adjustment('add',   $self->risk_markup);
 
     return $ifx_prob;
@@ -527,12 +530,11 @@ sub _build_economic_events_volatility_risk_markup {
     my $markup_base_amount = 0;
     # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
     if ($self->pricing_vol != $self->news_adjusted_pricing_vol) {
-        my $tv_without_news = $self->base_probability->amount + $self->intraday_delta_correction->amount + $self->intraday_vega_correction->amount;
-        my $cloned          = $self->clone({
-            pricing_vol    => $self->news_adjusted_pricing_vol,
-            intraday_trend => $self->intraday_trend,
-        });
-        my $tv_with_news = $cloned->base_probability->amount + $cloned->intraday_delta_correction->amount + $cloned->intraday_vega_correction->amount;
+        my $tv_without_news = $self->base_probability->amount;
+        my $tv_with_news    = $self->clone({
+                pricing_vol    => $self->news_adjusted_pricing_vol,
+                intraday_trend => $self->intraday_trend,
+            })->base_probability->amount;
         $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
     }
 
