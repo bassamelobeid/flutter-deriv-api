@@ -129,7 +129,7 @@ sub send_proposal {
                             $id = undef;
                         }
                     }
-    
+
                     return {
                         msg_type               => 'proposal_open_contract',
                         proposal_open_contract => {
