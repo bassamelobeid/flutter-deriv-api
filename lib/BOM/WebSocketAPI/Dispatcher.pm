@@ -43,16 +43,16 @@ sub on_message {
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
 
     my $result;
+    my $req_storage = {};
+    $req_storage->{args} = $args;
     timeout 15 => sub {
-        my $req_storage = {};
-        $result = $c->parse_req($args);
+        $result = $c->parse_req($req_storage);
         if (!$result
             && (my $action = $c->dispatch($args)))
         {
-            %$req_storage          = %$action;
-            $req_storage->{args}   = $args;
+            %$req_storage = (%$req_storage, %$action);
             $req_storage->{method} = $req_storage->{name};
-            $result                = $c->before_forward($req_storage);
+            $result = $c->before_forward($req_storage);
 
             # Don't forward call to RPC if any before_forward hook returns response
             unless ($result) {
@@ -72,7 +72,7 @@ sub on_message {
         $c->app->log->info("$$ timeout for " . JSON::to_json($args));
     }
 
-    $c->send({json => $result}) if $result;
+    $c->send_api_response($req_storage, $result) if $result;
 
     $c->_run_hooks($config->{after_dispatch} || []);
 
@@ -149,14 +149,26 @@ sub forward {
     return;
 }
 
+sub send_api_response {
+    my ($c, $req_storage, $result) = @_;
+
+    my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
+    for my $hook (qw/ before_send_api_response after_sent_api_response /) {
+        $req_storage->{$hook} ||= [grep { $_ } (ref $config->{$hook} eq 'ARRAY' ? @{$config->{$hook}} : $config->{$hook})];
+    }
+    BOM::WebSocketAPI::CallingEngine::send_api_response($c, $req_storage, $result);
+    return;
+}
+
 sub parse_req {
-    my ($c, $args) = @_;
+    my ($c, $req_storage) = @_;
 
     my $result;
+    my $args = $req_storage->{args};
     if (ref $args ne 'HASH') {
         # for invalid call, eg: not json
+        $req_storage->{args} = {};
         $result = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
-        $result->{echo_req} = {};
     }
 
     $result = $c->_check_sanity($args) unless $result;

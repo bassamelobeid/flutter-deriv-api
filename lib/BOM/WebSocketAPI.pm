@@ -319,11 +319,11 @@ sub startup {
             ],
 
             # action hooks
-            before_forward          => [\&before_forward, \&get_rpc_url, \&start_timing],
-            after_forward           => [\&after_forward],
-            before_get_rpc_response => [\&log_call_timing],
-            after_got_rpc_response  => [\&log_call_timing_connection],
-            before_send_api_response => [\&add_rpc_call_debug, \&start_timing],
+            before_forward           => [\&before_forward, \&get_rpc_url,  \&start_timing],
+            after_forward            => [\&after_forward],
+            before_get_rpc_response  => [\&log_call_timing],
+            after_got_rpc_response   => [\&log_call_timing_connection],
+            before_send_api_response => [\&add_call_debug, \&add_req_data, \&start_timing],
             after_sent_api_response  => [\&log_call_timing_sent],
             after_dispatch           => [\&clear_db_cache],
 
@@ -370,7 +370,14 @@ sub log_call_timing_connection {
     return;
 }
 
-sub add_rpc_call_debug {
+sub add_req_data {
+    my ($c, $req_storage, $api_response) = @_;
+    $api_response->{echo_req} = $req_storage->{args};
+    $api_response->{req_id} = $req_storage->{args}->{req_id} if $req_storage->{args}->{req_id};
+    return;
+}
+
+sub add_call_debug {
     my ($c, $req_storage, $api_response) = @_;
     if ($c->stash('debug')) {
         $api_response->{debug} = {
@@ -383,10 +390,12 @@ sub add_rpc_call_debug {
 
 sub log_call_timing_sent {
     my ($c, $req_storage) = @_;
-    DataDog::DogStatsd::Helper::stats_timing(
-        'bom_websocket_api.v_3.rpc.call.timing.sent',
-        1000 * Time::HiRes::tv_interval($req_storage->{tv}),
-        {tags => ["rpc:$req_storage->{method}"]});
+    if ($req_storage->{tv} && $req_storage->{method}) {
+        DataDog::DogStatsd::Helper::stats_timing(
+            'bom_websocket_api.v_3.rpc.call.timing.sent',
+            1000 * Time::HiRes::tv_interval($req_storage->{tv}),
+            {tags => ["rpc:$req_storage->{method}"]});
+    }
     return;
 }
 

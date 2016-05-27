@@ -128,11 +128,9 @@ sub call_rpc {
     my $rpc_response_cb = get_rpc_response_cb($c, $req_storage);
     my $max_response_size = $req_storage->{max_response_size};
 
-    my $before_get_rpc_response_hook  = delete($req_storage->{before_get_rpc_response})  || [];
-    my $after_got_rpc_response_hook   = delete($req_storage->{after_got_rpc_response})   || [];
-    my $before_send_api_response_hook = delete($req_storage->{before_send_api_response}) || [];
-    my $after_sent_api_response_hook  = delete($req_storage->{after_sent_api_response})  || [];
-    my $before_call_hook              = delete($req_storage->{before_call})              || [];
+    my $before_get_rpc_response_hook = delete($req_storage->{before_get_rpc_response}) || [];
+    my $after_got_rpc_response_hook  = delete($req_storage->{after_got_rpc_response})  || [];
+    my $before_call_hook             = delete($req_storage->{before_call})             || [];
 
     my $client  = MojoX::JSON::RPC::Client->new;
     my $callobj = {
@@ -156,14 +154,9 @@ sub call_rpc {
             my $client_guard = guard { undef $client };
 
             my $api_response;
-            my %binding = (
-                echo_req => $call_params->{args},
-                $call_params->{args}->{req_id} ? (req_id => $call_params->{args}->{req_id}) : (),
-            );
-
             if (!$res) {
                 $api_response = $c->new_error($msg_type, 'WrongResponse', $c->l('Sorry, an error occurred while processing your request.'));
-                $c->send({json => {%binding, %$api_response}});
+                send_api_response($c, $req_storage, $api_response);
                 return;
             }
 
@@ -172,7 +165,7 @@ sub call_rpc {
             if ($res->is_error) {
                 warn $res->error_message;
                 $api_response = $c->new_error($msg_type, 'CallError', $c->l('Sorry, an error occurred while processing your request.'));
-                $c->send({json => {%binding, %$api_response}});
+                send_api_response($c, $req_storage, $api_response);
                 return;
             }
 
@@ -184,13 +177,21 @@ sub call_rpc {
                 $api_response = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
             }
 
-            $api_response = {%binding, %$api_response};
-            $_->($c, $req_storage, $api_response) for @$before_send_api_response_hook;
-            $c->send({json => $api_response});
-            $_->($c, $req_storage) for @$after_sent_api_response_hook;
-
+            send_api_response($c, $req_storage, $api_response);
             return;
         });
+    return;
+}
+
+sub send_api_response {
+    my ($c, $req_storage, $api_response) = @_;
+
+    my $before_send_api_response_hook = delete($req_storage->{before_send_api_response}) || [];
+    my $after_sent_api_response_hook  = delete($req_storage->{after_sent_api_response})  || [];
+
+    $_->($c, $req_storage, $api_response) for @$before_send_api_response_hook;
+    $c->send({json => $api_response});
+    $_->($c, $req_storage) for @$after_sent_api_response_hook;
     return;
 }
 
