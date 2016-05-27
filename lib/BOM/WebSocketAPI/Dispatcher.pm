@@ -14,34 +14,25 @@ sub ok {
     return 1;
 }
 
-sub set_connection {
+sub open_connection {
     my ($c) = @_;
 
-    # TODO
     my $log = $c->app->log;
     $log->debug("opening a websocket for " . $c->tx->remote_address);
 
     # enable permessage-deflate
     $c->tx->with_compression;
 
-    # Increase inactivity timeout for connection a bit
-    Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(120);
-    Mojo::IOLoop->singleton->max_connections(100000);
+    my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
 
-    $c->redis;
-    $c->redis_pricer;
-    # /TODO
+    # Increase inactivity timeout for connection a bit
+    Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout($config->{stream_timeout}) if $config->{stream_timeout};
+    Mojo::IOLoop->singleton->max_connections($config->{max_connections}) if $config->{max_connections};
+
+    $config->{opened_connection}->($c) if $config->{opened_connection} and ref($config->{opened_connection}) eq 'CODE';
 
     $c->on(json => \&on_message);
-
-    # stop all recurring
-    $c->on(
-        finish => sub {
-            my $c = shift;
-            BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {forget_all => 1});
-            delete $c->stash->{redis};
-            delete $c->stash->{redis_pricer};
-        });
+    $c->on(finish => $config->{finish_connection}) if $config->{finish_connection} and ref($config->{opened_connection}) eq 'CODE';
 
     return;
 }

@@ -317,14 +317,22 @@ sub startup {
                 ['new_account_maltainvest', {require_auth => 'admin'}],
                 ['jp_knowledge_test',       {require_auth => 'admin'}],
             ],
-            base_path                => '/websockets/v3',
-            before_forward           => [\&before_forward, \&start_timing],
+
+            # action hooks
+            before_forward           => [\&before_forward,     \&start_timing],
             after_forward            => [\&after_forward],
             before_get_rpc_response  => [\&log_call_timing],
             after_got_rpc_response   => [\&log_call_timing_connection],
             before_send_api_response => [\&add_rpc_call_debug, \&start_timing],
             after_sent_api_response  => [\&log_call_timing_sent],
             after_dispatch           => [\&clear_db_cache],
+
+            # main config
+            base_path         => '/websockets/v3',
+            stream_timeout    => 120,
+            max_connections   => 100000,
+            opened_connection => \&init_redis_connections,
+            finish_connection => \&forget_all,
         });
 
     return;
@@ -528,6 +536,22 @@ sub after_forward {
 
     $result->{req_id} = $args->{req_id} if exists $args->{req_id};
     return $result;
+}
+
+sub init_redis_connections {
+    my $c = shift;
+    $c->redis;
+    $c->redis_pricer;
+    return;
+}
+
+sub forget_all {
+    my $c = shift;
+    # stop all recurring
+    BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {forget_all => 1});
+    delete $c->stash->{redis};
+    delete $c->stash->{redis_pricer};
+    return;
 }
 
 sub clear_db_cache {
