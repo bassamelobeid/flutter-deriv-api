@@ -9,7 +9,7 @@ use Data::UUID;
 use RateLimitations qw(within_rate_limits);
 
 # pre-load controlleres to have more shared code among workers (COW)
-use BOM::WebSocketAPI::CallingEngine();
+use BOM::WebSocketAPI::CallingEngine;
 
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::Transaction;
@@ -319,10 +319,10 @@ sub startup {
             ],
 
             # action hooks
-            before_forward           => [\&before_forward,     \&start_timing],
-            after_forward            => [\&after_forward],
-            before_get_rpc_response  => [\&log_call_timing],
-            after_got_rpc_response   => [\&log_call_timing_connection],
+            before_forward          => [\&before_forward, \&get_rpc_url, \&start_timing],
+            after_forward           => [\&after_forward],
+            before_get_rpc_response => [\&log_call_timing],
+            after_got_rpc_response  => [\&log_call_timing_connection],
             before_send_api_response => [\&add_rpc_call_debug, \&start_timing],
             after_sent_api_response  => [\&log_call_timing_sent],
             after_dispatch           => [\&clear_db_cache],
@@ -333,6 +333,9 @@ sub startup {
             max_connections   => 100000,
             opened_connection => \&init_redis_connections,
             finish_connection => \&forget_all,
+
+            # helper config
+            url => \&get_rpc_url,    # make url for non-forward actions
         });
 
     return;
@@ -509,11 +512,29 @@ sub before_forward {
     return;
 }
 
+sub get_rpc_url {
+    my ($c, $req_storage) = @_;
+
+    my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
+    if (BOM::System::Config::env eq 'production') {
+        if (BOM::System::Config::node->{node}->{www2}) {
+            $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
+        } else {
+            $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
+        }
+    }
+
+    $req_storage->{url} = $url;
+
+    return;
+}
+
 sub after_forward {
-    my ($c, $args, $result, $req_storage) = @_;
+    my ($c, $result, $req_storage) = @_;
 
     return unless $result;
 
+    my $args = $req_storage->{args};
     if ($result) {
         my $output_validation_result = $req_storage->{out_validator}->validate($result);
         if (not $output_validation_result) {

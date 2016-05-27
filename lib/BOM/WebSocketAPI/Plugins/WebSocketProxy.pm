@@ -7,14 +7,22 @@ use BOM::WebSocketAPI::Dispatcher;
 sub register {
     my ($self, $app, $config) = @_;
 
+    my $url_getter;
+    $url_getter = delete $config->{url} if $config->{url} and ref($config->{url}) eq 'CODE';
+    $app->helper(
+        call_rpc => sub {
+            my ($c, $req_storage) = @_;
+            $url_getter->($c, $req_storage) if $url_getter && !$req_storage->{url};
+            return $c->forward($req_storage);
+        });
+
     my $r = $app->routes;
-    for ($r->under('/websockets/v3')) {
+    for ($r->under($config->{base_path})) {
         $_->to('Dispatcher#ok', namespace => 'BOM::WebSocketAPI');
         $_->websocket('/')->to('Dispatcher#open_connection', namespace => 'BOM::WebSocketAPI');
     }
 
-    my $actions = delete $config->{actions};
-
+    my $actions           = delete $config->{actions};
     my $dispatcher_config = BOM::WebSocketAPI::Dispatcher::Config->new;
     $dispatcher_config->init($config);
 
@@ -25,12 +33,6 @@ sub register {
     } else {
         Carp::confess 'No actions found!';
     }
-
-    $app->helper(
-        call_rpc => sub {
-            my ($c, $req_storage) = @_;
-            return $c->forward($req_storage);
-        });
 
     return;
 }

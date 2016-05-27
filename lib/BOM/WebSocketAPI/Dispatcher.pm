@@ -62,7 +62,7 @@ sub on_message {
                     : $c->forward($req_storage);
             }
 
-            $result = $c->after_forward($args, $result, $req_storage);
+            $result = $c->after_forward($result, $req_storage);
         } elsif (!$result) {
             $c->app->log->debug("unrecognised request: " . $c->dumper($args));
             $result = $c->new_error('error', 'UnrecognisedRequest', $c->l('Unrecognised request.'));
@@ -94,10 +94,10 @@ sub before_forward {
 }
 
 sub after_forward {
-    my ($c, $args, $result, $req_storage) = @_;
+    my ($c, $result, $req_storage) = @_;
 
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
-    return $c->_run_hooks($config->{after_forward} || [], $args, $result, $req_storage);
+    return $c->_run_hooks($config->{after_forward} || [], $result, $req_storage);
 }
 
 sub _run_hooks {
@@ -135,15 +135,8 @@ sub forward {
 
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
 
-    my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
-    if (BOM::System::Config::env eq 'production') {
-        if (BOM::System::Config::node->{node}->{www2}) {
-            $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
-        } else {
-            $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
-        }
-    }
-    $req_storage->{url} = $url;
+    $req_storage->{url} ||= $config->{url};
+    die 'No url found' unless $req_storage->{url};
 
     for my $hook (qw/ before_call before_get_rpc_response after_got_rpc_response before_send_api_response after_sent_api_response /) {
         $req_storage->{$hook} = [
