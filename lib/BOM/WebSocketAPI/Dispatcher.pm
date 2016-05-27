@@ -20,7 +20,7 @@ sub open_connection {
     my $log = $c->app->log;
     $log->debug("opening a websocket for " . $c->tx->remote_address);
 
-    # enable permessage-deflate
+    # Enable permessage-deflate
     $c->tx->with_compression;
 
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
