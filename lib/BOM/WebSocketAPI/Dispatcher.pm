@@ -53,25 +53,25 @@ sub on_message {
 
     my $result;
     timeout 15 => sub {
-        my $req = {};    # TODO request storage
+        my $req_storage = {};
         $result = $c->parse_req($args);
         if (!$result
             && (my $action = $c->dispatch($args)))
         {
-            %$req          = %$action;
-            $req->{args}   = $args;
-            $req->{method} = $req->{name};
-            $result        = $c->before_forward($req);
+            %$req_storage          = %$action;
+            $req_storage->{args}   = $args;
+            $req_storage->{method} = $req_storage->{name};
+            $result                = $c->before_forward($req_storage);
 
             # Don't forward call to RPC if any before_forward hook returns response
             unless ($result) {
                 $result =
-                      $req->{instead_of_forward}
-                    ? $req->{instead_of_forward}->($c, $req)
-                    : $c->forward($req);
+                      $req_storage->{instead_of_forward}
+                    ? $req_storage->{instead_of_forward}->($c, $req_storage)
+                    : $c->forward($req_storage);
             }
 
-            $result = $c->after_forward($args, $result, $req);
+            $result = $c->after_forward($args, $result, $req_storage);
         } elsif (!$result) {
             $c->app->log->debug("unrecognised request: " . $c->dumper($args));
             $result = $c->new_error('error', 'UnrecognisedRequest', $c->l('Unrecognised request.'));
@@ -89,24 +89,24 @@ sub on_message {
 }
 
 sub before_forward {
-    my ($c, $req) = @_;
+    my ($c, $req_storage) = @_;
 
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
 
     # Should first call global hooks
     my $before_forward_hooks = [
-        ref($config->{before_forward}) eq 'ARRAY' ? @{$config->{before_forward}}     : $config->{before_forward},
-        ref($req->{before_forward}) eq 'ARRAY'    ? @{delete $req->{before_forward}} : delete $req->{before_forward},
+        ref($config->{before_forward}) eq 'ARRAY'      ? @{$config->{before_forward}}             : $config->{before_forward},
+        ref($req_storage->{before_forward}) eq 'ARRAY' ? @{delete $req_storage->{before_forward}} : delete $req_storage->{before_forward},
     ];
 
-    return $c->_run_hooks($before_forward_hooks, $req);
+    return $c->_run_hooks($before_forward_hooks, $req_storage);
 }
 
 sub after_forward {
-    my ($c, $args, $result, $req) = @_;
+    my ($c, $args, $result, $req_storage) = @_;
 
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
-    return $c->_run_hooks($config->{after_forward} || [], $args, $result, $req);
+    return $c->_run_hooks($config->{after_forward} || [], $args, $result, $req_storage);
 }
 
 sub _run_hooks {
@@ -140,7 +140,7 @@ sub dispatch {
 }
 
 sub forward {
-    my ($c, $req) = @_;
+    my ($c, $req_storage) = @_;
 
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
 
@@ -152,16 +152,16 @@ sub forward {
             $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
         }
     }
-    $req->{url} = $url;
+    $req_storage->{url} = $url;
 
     for my $hook (qw/ before_call before_get_rpc_response after_got_rpc_response before_send_api_response after_sent_api_response /) {
-        $req->{$hook} = [
-            grep { $_ } (ref $config->{$hook} eq 'ARRAY' ? @{$config->{$hook}} : $config->{$hook}),
-            grep { $_ } (ref $req->{$hook} eq 'ARRAY'    ? @{$req->{$hook}}    : $req->{$hook}),
+        $req_storage->{$hook} = [
+            grep { $_ } (ref $config->{$hook} eq 'ARRAY'      ? @{$config->{$hook}}      : $config->{$hook}),
+            grep { $_ } (ref $req_storage->{$hook} eq 'ARRAY' ? @{$req_storage->{$hook}} : $req_storage->{$hook}),
         ];
     }
 
-    BOM::WebSocketAPI::CallingEngine::call_rpc($c, $req);
+    BOM::WebSocketAPI::CallingEngine::call_rpc($c, $req_storage);
     return;
 }
 

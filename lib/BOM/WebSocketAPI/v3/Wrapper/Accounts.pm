@@ -18,10 +18,10 @@ sub set_self_exclusion_response_handler {
 }
 
 sub subscribe_transaction_channel {
-    my ($c, $req) = @_;
+    my ($c, $req_storage) = @_;
 
     my $id;
-    my $args       = $req->{args};
+    my $args       = $req_storage->{args};
     my $account_id = $c->stash('account_id');
     if (    $account_id
         and exists $args->{subscribe}
@@ -31,19 +31,19 @@ sub subscribe_transaction_channel {
         return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
     }
 
-    $req->{transaction_channel_id} = $id if $id;
+    $req_storage->{transaction_channel_id} = $id if $id;
     return;
 }
 
 sub balance_error_handler {
-    my ($c, $rpc_response, $params) = @_;
-    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $params->{transaction_channel_id}) if $params->{transaction_channel_id};
+    my ($c, $rpc_response, $req_storage) = @_;
+    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req_storage->{transaction_channel_id}) if $req_storage->{transaction_channel_id};
     return;
 }
 
 sub balance_success_handler {
-    my ($c, $rpc_response, $params) = @_;
-    $rpc_response->{id} = $params->{transaction_channel_id} if $params->{transaction_channel_id};
+    my ($c, $rpc_response, $req_storage) = @_;
+    $rpc_response->{id} = $req_storage->{transaction_channel_id} if $req_storage->{transaction_channel_id};
     return;
 }
 

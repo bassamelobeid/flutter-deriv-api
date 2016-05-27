@@ -13,7 +13,7 @@ my $t = build_mojo_test({
     debug    => 1,
     language => 'RU'
 });
-my ($req, $res, $start, $end);
+my ($req_storage, $res, $start, $end);
 
 my $datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
 my $params  = [];

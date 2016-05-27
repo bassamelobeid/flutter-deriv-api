@@ -331,51 +331,51 @@ sub startup {
 }
 
 sub start_timing {
-    my ($c, $params) = @_;
-    $params->{tv} = [Time::HiRes::gettimeofday];
+    my ($c, $req_storage) = @_;
+    $req_storage->{tv} = [Time::HiRes::gettimeofday];
     return;
 }
 
 sub log_call_timing {
-    my ($c, $params) = @_;
+    my ($c, $req_storage) = @_;
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing',
-        1000 * Time::HiRes::tv_interval($params->{tv}),
-        {tags => ["rpc:$params->{method}"]});
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$params->{method}"]});
+        1000 * Time::HiRes::tv_interval($req_storage->{tv}),
+        {tags => ["rpc:$req_storage->{method}"]});
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$req_storage->{method}"]});
     return;
 }
 
 sub log_call_timing_connection {
-    my ($c, $params, $rpc_response) = @_;
+    my ($c, $req_storage, $rpc_response) = @_;
     if (ref($rpc_response->result) eq "HASH"
         && (my $rpc_time = delete $rpc_response->result->{rpc_time}))
     {
         DataDog::DogStatsd::Helper::stats_timing(
             'bom_websocket_api.v_3.rpc.call.timing.connection',
-            1000 * Time::HiRes::tv_interval($params->{tv}) - $rpc_time,
-            {tags => ["rpc:$params->{method}"]});
+            1000 * Time::HiRes::tv_interval($req_storage->{tv}) - $rpc_time,
+            {tags => ["rpc:$req_storage->{method}"]});
     }
     return;
 }
 
 sub add_rpc_call_debug {
-    my ($c, $params, $api_response) = @_;
+    my ($c, $req_storage, $api_response) = @_;
     if ($c->stash('debug')) {
         $api_response->{debug} = {
-            time   => 1000 * Time::HiRes::tv_interval($params->{tv}),
-            method => $params->{method},
+            time   => 1000 * Time::HiRes::tv_interval($req_storage->{tv}),
+            method => $req_storage->{method},
         };
     }
     return;
 }
 
 sub log_call_timing_sent {
-    my ($c, $params) = @_;
+    my ($c, $req_storage) = @_;
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing.sent',
-        1000 * Time::HiRes::tv_interval($params->{tv}),
-        {tags => ["rpc:$params->{method}"]});
+        1000 * Time::HiRes::tv_interval($req_storage->{tv}),
+        {tags => ["rpc:$req_storage->{method}"]});
     return;
 }
 
@@ -404,13 +404,13 @@ my %rate_limit_map = (
 );
 
 sub reached_limit_check {
-    my ($c, $req) = @_;
+    my ($c, $req_storage) = @_;
 
     # For authorized calls that are heavier we will limit based on loginid
     # For unauthorized calls that are less heavy we will use connection id.
     # None are much helpful in a well prepared DDoS.
     my $consumer         = $c->stash('loginid') || $c->stash('connection_id');
-    my $category         = $req->{name};
+    my $category         = $req_storage->{name};
     my $is_real          = $c->stash('loginid') && !$c->stash('is_virtual');
     my $limiting_service = $rate_limit_map{
         $category . '_'
@@ -444,20 +444,20 @@ sub _set_defaults {
 }
 
 sub before_forward {
-    my ($c, $req) = @_;
+    my ($c, $req_storage) = @_;
 
-    my $args = $req->{args};
+    my $args = $req_storage->{args};
     if (not $c->stash('connection_id')) {
         $c->stash('connection_id' => Data::UUID->new()->create_str());
     }
 
-    $req->{handle_t0} = [Time::HiRes::gettimeofday];
+    $req_storage->{handle_t0} = [Time::HiRes::gettimeofday];
 
-    if (my $reached = reached_limit_check($c, $req)) {
+    if (my $reached = reached_limit_check($c, $req_storage)) {
         return $reached;
     }
 
-    my $input_validation_result = $req->{in_validator}->validate($args);
+    my $input_validation_result = $req_storage->{in_validator}->validate($args);
     if (not $input_validation_result) {
         my ($details, @general);
         foreach my $err ($input_validation_result->errors) {
@@ -468,10 +468,10 @@ sub before_forward {
             }
         }
         my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
-        return $c->new_error($req->{name}, 'InputValidationFailed', $message, $details);
+        return $c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $details);
     }
 
-    _set_defaults($req, $args);
+    _set_defaults($req_storage, $args);
 
     my $tag = 'origin:';
     if (my $origin = $c->req->headers->header("Origin")) {
@@ -480,44 +480,44 @@ sub before_forward {
         }
     }
 
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $req->{name}, {tags => [$tag]});
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req->{name}"]});
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $req_storage->{name}, {tags => [$tag]});
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req_storage->{name}"]});
 
     my $loginid = $c->stash('loginid');
-    if ($req->{require_auth} and not $loginid) {
-        return $c->new_error($req->{name}, 'AuthorizationRequired', $c->l('Please log in.'));
+    if ($req_storage->{require_auth} and not $loginid) {
+        return $c->new_error($req_storage->{name}, 'AuthorizationRequired', $c->l('Please log in.'));
     }
 
-    if ($req->{require_auth} and not(grep { $_ eq $req->{require_auth} } @{$c->stash('scopes') || []})) {
-        return $c->new_error($req->{name}, 'PermissionDenied', $c->l('Permission denied, requiring [_1]', $req->{require_auth}));
+    if ($req_storage->{require_auth} and not(grep { $_ eq $req_storage->{require_auth} } @{$c->stash('scopes') || []})) {
+        return $c->new_error($req_storage->{name}, 'PermissionDenied', $c->l('Permission denied, requiring [_1]', $req_storage->{require_auth}));
     }
 
     if ($loginid) {
         my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
         DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
-            {tags => [$tag, $req->{name}, "account_type:$account_type"]});
+            {tags => [$tag, $req_storage->{name}, "account_type:$account_type"]});
     }
 
     return;
 }
 
 sub after_forward {
-    my ($c, $args, $result, $req) = @_;
+    my ($c, $args, $result, $req_storage) = @_;
 
     return unless $result;
 
     if ($result) {
-        my $output_validation_result = $req->{out_validator}->validate($result);
+        my $output_validation_result = $req_storage->{out_validator}->validate($result);
         if (not $output_validation_result) {
             my $error = join(" - ", $output_validation_result->errors);
             $c->app->log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
-            $result = $c->new_error($req->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error);
+            $result = $c->new_error($req_storage->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error);
         }
     }
     if (ref($result) && $c->stash('debug')) {
         $result->{debug} = {
-            time   => 1000 * Time::HiRes::tv_interval($req->{hadle_t0}),
-            method => $req->{method},
+            time   => 1000 * Time::HiRes::tv_interval($req_storage->{hadle_t0}),
+            method => $req_storage->{method},
         };
     }
     my $l = length JSON::to_json($result || {});

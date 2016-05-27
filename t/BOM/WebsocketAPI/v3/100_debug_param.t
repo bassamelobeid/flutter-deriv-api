@@ -12,7 +12,7 @@ my $t = build_mojo_test({
     debug    => 1,
     language => 'RU'
 });
-my ($req, $res, $start, $end);
+my ($req_storage, $res, $start, $end);
 
 $t->send_ok({json => {authorize => 'test'}})->message_ok;
 $res = decode_json($t->message->[1]);

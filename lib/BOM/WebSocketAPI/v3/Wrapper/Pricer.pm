@@ -14,9 +14,9 @@ use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub price_stream {
-    my ($c, $req) = @_;
+    my ($c, $req_storage) = @_;
 
-    my $args     = $req->{args};
+    my $args     = $req_storage->{args};
     my $symbol   = $args->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
@@ -94,24 +94,24 @@ sub _pricing_channel {
 }
 
 sub _send_ask {
-    my ($c, $id, $req) = @_;
+    my ($c, $id, $req_storage) = @_;
 
     $c->call_rpc({
-            args     => $req,
+            args     => $req_storage,
             id       => $id,
             method   => 'send_ask',
             msg_type => 'price_stream',
             error    => sub {
-                my ($c, $rpc_response, $req) = @_;
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req->{id});
+                my ($c, $rpc_response, $req_storage) = @_;
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req_storage->{id});
             },
             response => sub {
-                my ($rpc_response, $api_response, $req) = @_;
+                my ($rpc_response, $api_response, $req_storage) = @_;
 
                 if ($api_response->{error}) {
                     $api_response->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
                 } else {
-                    $api_response->{proposal}->{id} = $req->{id} if $req->{id};
+                    $api_response->{proposal}->{id} = $req_storage->{id} if $req_storage->{id};
                 }
                 return $api_response;
             }
