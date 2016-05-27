@@ -21,8 +21,8 @@
             </form>
         </div>
         <p class="links">
-            <a class="pjaxload" id="lost-password" href="/<%= $r->language %>/user/lost_passwordws.html') %>"><%= l('Lost Password?') %></a> |
-            <a class="pjaxload" id="create-account" href="/<%= $r->language %>/home.html"><%= l('Open an Account') %></a>
+            <a class="pjaxload" id="lost-password" href="https://www.binary.com/<%= $r->language %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a> |
+            <a class="pjaxload" id="create-account" href="https://www.binary.com/<%= $r->language %>/home.html"><%= l('Open an Account') %></a>
         </p>
     </fieldset>
 </div>
