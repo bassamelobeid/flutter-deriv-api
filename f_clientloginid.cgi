@@ -79,6 +79,7 @@ Bar("IMPERSONATE CLIENT");
 print '<form action="' . request()->url_for('backoffice/client_impersonate.cgi') . '" method="post">';
 print '<b>Enter client loginid: </b>';
 print '<input type=text size=30 name="impersonate_loginid"><br>';
+print "<input type='hidden' name='broker' value='$broker'>";
 print '<input type="submit" value="Impersonate"></b></form>';
 
 Bar("MAKE DUAL CONTROL CODE");

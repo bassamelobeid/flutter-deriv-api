@@ -19,11 +19,11 @@ BOM::Backoffice::Auth0::can_access(['CS']);
 
 Bar('Client Impersonate');
 
-my $login  = request()->param('impersonate_loginid');
-my $broker = request()->broker->code;
+my $login = request()->param('impersonate_loginid');
+my $broker = request()->param('broker') // request()->broker->code;
 
 if ($login !~ /^$broker\d+$/) {
-    print 'Error: Wrong loginid ' . $login;
+    print "Error: Wrong loginid $login, please select correct broker code";
     code_exit_BO();
 }
 
