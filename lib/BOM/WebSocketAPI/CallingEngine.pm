@@ -125,11 +125,9 @@ sub call_rpc {
     my $url         = ($req_storage->{url} . $req_storage->{method});
     my $call_params = $req_storage->{call_params} ||= {};
 
-    # TODO It should be object attributes
     my $rpc_response_cb = get_rpc_response_cb($c, $req_storage);
     my $max_response_size = $req_storage->{max_response_size};
 
-    # TODO It'll be hooks
     my $before_get_rpc_response_hook  = delete($req_storage->{before_get_rpc_response})  || [];
     my $after_got_rpc_response_hook   = delete($req_storage->{after_got_rpc_response})   || [];
     my $before_send_api_response_hook = delete($req_storage->{before_send_api_response}) || [];
