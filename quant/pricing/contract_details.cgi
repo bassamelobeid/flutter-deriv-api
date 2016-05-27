@@ -26,8 +26,9 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
 my ($pricing_parameters, @contract_details, $start);
 
-my $broker = request()->broker->code // $params{broker} ;
+my $broker = $params{broker} // request()->broker->code ;
 my $id = $params{id} ? $params{id} : '';
+
 if ($broker and $id) {
 
     my $details = BOM::Database::DataMapper::Transaction->new({
