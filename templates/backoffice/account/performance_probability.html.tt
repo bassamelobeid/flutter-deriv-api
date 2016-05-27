@@ -109,7 +109,7 @@
 <div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
 <p><b>[% full_name %]</b>, [% email %] from [% runtime.countries.country_from_code(residence) %]</p>
 </div>
-[% navigator %]
+
 [% IF sold_contracts.size == 0 %]
         <p>[% l('There are no contracts during this period') %]</p>
 [% END %]
