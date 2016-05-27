@@ -56,7 +56,7 @@ $t = $t->send_ok({
         json => {
             app_register => 1,
             name         => 'App 1',
-            scopes       => ['read', 'admin'],
+            scopes       => ['read', 'trade'],
             redirect_uri => 'https://www.example.com/',
         }})->message_ok;
 my $res = decode_json($t->message->[1]);
@@ -64,6 +64,22 @@ is $res->{msg_type}, 'app_register';
 test_schema('app_register', $res);
 my $app1   = $res->{app_register};
 my $app_id = $app1->{app_id};
+is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
+is $app1->{redirect_uri}, 'https://www.example.com/', 'redirect_uri is right';
+
+$t = $t->send_ok({
+        json => {
+            app_update   => $app_id,
+            name         => 'App 1',
+            scopes       => ['read', 'admin', 'trade'],
+            redirect_uri => 'https://www.example.com/callback',
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'app_update';
+test_schema('app_update', $res);
+$app1 = $res->{app_update};
+is_deeply([sort @{$app1->{scopes}}], ['admin', 'read', 'trade'], 'scopes are updated');
+is $app1->{redirect_uri}, 'https://www.example.com/callback', 'redirect_uri is updated';
 
 $t = $t->send_ok({
         json => {
@@ -163,7 +179,7 @@ test_schema('oauth_apps', $res);
 my $used_apps = $res->{oauth_apps};
 is scalar(@{$used_apps}), 1;
 is $used_apps->[0]->{app_id}, $test_appid, 'app_id 1';
-is_deeply([sort @{$used_apps->[0]->{scopes}}], ['admin', 'read'], 'scopes are right');
+is_deeply([sort @{$used_apps->[0]->{scopes}}], ['admin', 'read', 'trade'], 'scopes are right');
 ok $used_apps->[0]->{last_used}, 'last_used ok';
 
 my $is_confirmed = BOM::Database::Model::OAuth->new->is_scope_confirmed($test_appid, $cr_1);
