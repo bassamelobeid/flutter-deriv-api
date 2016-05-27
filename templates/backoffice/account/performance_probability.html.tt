@@ -104,8 +104,7 @@
         <INPUT type=hidden name="loginID" value="[% loginid %]" />
         <INPUT type=hidden name="broker" value="[% request.broker.code %]" />
         <INPUT type=hidden name="l" value="EN" />
-        <INPUT type=checkbox name="all">All (No pagination) </INPUT>
-        <INPUT type="submit" value="Update" />
+        <INPUT type="submit" value="Calculate" />
 </FORM>
 <div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
 <p><b>[% full_name %]</b>, [% email %] from [% runtime.countries.country_from_code(residence) %]</p>
@@ -113,33 +112,6 @@
 [% navigator %]
 [% IF sold_contracts.size == 0 %]
         <p>[% l('There are no contracts during this period') %]</p>
-[% ELSE %]
-<div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
-
-    <form action="[% request.url_for('backoffice/f_quant_query.cgi') %]" method="post">
-        [% FOREACH contract IN sold_contracts %]
-            [%
-                    display_contract(contract);
-            %]
-        [% END %]
-        <input type="hidden" name="loginID" value="[% loginid %]"/>
-        <input type=hidden name="broker" value="[% request.broker.code %]" />
-        <input type="submit" name="QQ" value="Quant Query" class="investigate">
-    </form>
-    [% navigator %]
 [% END %]
 
-<div>
-<div class="grd-parent grd-grid-12 table-header grd-row-padding">
-        <b>Client Limits</b>
-</div>
-<div class="grd-parent grd-grid-12 table-header grd-row-padding">
-    <table id="limit_entry">
-    <caption>Leave <strong>comment</strong> blank to remove a single line. Leave <strong>maxpayout</strong> blank to watch but not impose a limit.</caption>
-    <tr><th>Market</th><th>Contracts</th><th>MaxPayout</th><th>Comment</th><th>Action</th></tr>
-    [% FOREACH limit IN limits %]
-        <tr>[% display_limit(limit) %]</tr>
-    [% END %]
-        <tr>[% display_limit() %]</tr>
-    </table>
-</div>
+
