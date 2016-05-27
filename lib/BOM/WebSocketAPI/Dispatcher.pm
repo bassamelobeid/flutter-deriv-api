@@ -25,7 +25,6 @@ sub open_connection {
 
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
 
-    # Increase inactivity timeout for connection a bit
     Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout($config->{stream_timeout}) if $config->{stream_timeout};
     Mojo::IOLoop->singleton->max_connections($config->{max_connections}) if $config->{max_connections};
 
@@ -216,7 +215,7 @@ sub _check_sanity {
 sub _failed_key_value {
     my ($key, $value) = @_;
 
-    if ($key =~ /password/) { # TODO review carefully
+    if ($key =~ /password/) {    # TODO review carefully
         return;
     } elsif (
         $key !~ /^[A-Za-z0-9_-]{1,50}$/
