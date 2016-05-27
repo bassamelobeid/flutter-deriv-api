@@ -33,8 +33,8 @@ sub _redis_pricer {
 
 while (1) {
     my $pid = $pm->start and next;
-    DataDog::DogStatsd::Helper::count('pricer_daemon.forks.count', 1);
-    DataDog::DogStatsd::Helper::count('pricer_daemon.forks.idle.count', 1);
+    DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.count', 1);
+    DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.idle.count', 1);
     my $rp = Mojo::Redis::Processor->new(
         'read_conn'   => _redis_pricer,
         'write_conn'  => _redis_pricer,
@@ -45,7 +45,7 @@ while (1) {
 
     my $next = $rp->next;
     if ($next) {
-        DataDog::DogStatsd::Helper::count('pricer_daemon.forks.idle.count', -1);
+        DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.idle.count', -1);
         print "next [$next]\n";
         my $p = BOM::RPC::PricerDaemon->new(data=>$rp->{data}, key=>$rp->_processed_channel);
 
@@ -60,9 +60,9 @@ while (1) {
     } else {
         print "no job found\n";
         sleep (5);
-        DataDog::DogStatsd::Helper::count('pricer_daemon.forks.idle.count', -1);
+        DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.idle.count', -1);
     }
     print "Ending the child\n";
-    DataDog::DogStatsd::Helper::count('pricer_daemon.forks.count', -1);
+    DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.count', -1);
     $pm->finish;
 }
