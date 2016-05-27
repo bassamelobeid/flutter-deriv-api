@@ -36,18 +36,6 @@ if (not $client) {
     code_exit_BO();
 }
 
-if (request()->param('update_limitlist')) {
-    my $limitlist = BOM::Product::CustomClientLimits->new;
-    $limitlist->update({
-        loginid       => $loginID,
-        market        => request()->param('market'),
-        contract_kind => request()->param('contract_kind'),
-        payout_limit  => request()->param('payout_limit'),
-        comment       => request()->param('limitlist_comment'),
-        staff         => BOM::Backoffice::Auth0::from_cookie()->{nickname},
-    });
-}
-
 my $startdate = request()->param('startdate');
 my $enddate   = request()->param('enddate');
 
