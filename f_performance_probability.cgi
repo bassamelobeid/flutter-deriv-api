@@ -73,8 +73,39 @@ my $sold_contracts = $fmb_dm->get_sold({
     limit  => (request()->param('all') ? 99999 : 50),
 });
 
+# Add modified sharpe ratio functionality related codes here.
 
-# Add modified sharpe ratio functionality here.
+my @buy_price;
+my @payout_price;
+my @start_time;
+my @sell_time;
+my @underlying_symbol;
+my @bet_type;
+
+my $cumulative_pnl = 0;
+
+foreach my $contract (@{$sold_contracts}) {
+    push @start_time,        $contract->{start_time};
+    push @sell_time,         $contract->{sell_time};
+    push @buy_price,         $contract->{buy_price};
+    push @payout_price,      $contract->{payout_price};
+    push @bet_type,          $contract->{bet_type};
+    push @underlying_symbol, $contract->{underlying_symbol};
+
+    $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy-price});
+}
+
+my $performance_probability_obj = Performance::Probability->new({
+    payout       => \@payout_price,
+    bought_price => \@buy_price,
+    pnl          => $cumulative_pnl,
+    type         => \@bet_type,
+    underlying   => \@underlying_symbol,
+    start_time   => \@start_time,
+    sell_time    => \@sell_time,
+});
+
+my $performance_probability = $performance_probability_obj->get_performance_probability();
 
 BOM::Platform::Context::template->process(
     'backoffice/account/performance_probability.html.tt',
