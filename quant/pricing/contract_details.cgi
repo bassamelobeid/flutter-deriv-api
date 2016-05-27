@@ -146,10 +146,14 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $ask_probability   = $contract->ask_probability;
     my $debug_information = $contract->pricing_engine->debug_information;
     my $pricing_parameters;
-    my $contract_type = $contract->pricing_engine->contract_type;
+    my $contract_type     = $contract->pricing_engine->contract_type;
+    my $theo_probability  = $contract->theo_probability->amount - $contract->risk_markup->amount;
+    my $risk_markup       = $contract->risk_markup->amount;
+    my $commission_markup = $contract->commission_markup->amount;
     $pricing_parameters->{ask_probability} = {
-        theoretical_probability => $ask_probability->peek_amount('theo_probability'),
-        map { $_ => $ask_probability->peek_amount($_) } qw(risk_markup commission_markup),
+        theoretical_probability => $theo_probability,
+        risk_markup             => $risk_markup,
+        commission_markup       => $commission_markup,
     };
 
     $pricing_parameters->{commission_markup} = {digital_spread_percentage => 0.035};
