@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "App Update Send",
+  "description":"Update a new OAuth application",
+  "properties": {
+    "app_update": {
+      "type":"integer",
+      "pattern": "^\\d{1,20}$",
+      "required": "1",
+      "description": "Application app_id"
+    },
+    "name":{
+      "type": "string",
+      "pattern": "^[\\w\\s-]{1,48}$",
+      "description": "Application name",
+      "required": "1"
+    },
+    "scopes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(read|trade|payments|admin)$"
+      },
+      "required": "1"
+    },
+    "homepage":{
+      "type": ["string", "null"],
+      "pattern": "^.{0,255}$",
+      "description": "Application's homepage"
+    },
+    "github":{
+      "type": ["string", "null"],
+      "pattern": "^.{0,255}$",
+      "description": "Application's GitHub page (for open-source projects)"
+    },
+    "appstore":{
+      "type": ["string", "null"],
+      "pattern": "^.{0,255}$",
+      "description": "Application's App Store URL (if applicable)"
+    },
+    "googleplay":{
+      "type": ["string", "null"],
+      "pattern": "^.{0,255}$",
+      "description": "Application's Google Play URL (if applicable)"
+    },
+    "redirect_uri": {
+      "type": "string",
+      "pattern": "^(https?:\/\/)?([\\da-z\\.-]+)\\.([a-z\\.]{2,8})([\\/\\w \\.-]*)*\\/?$",
+      "description":"Application redirect_uri"
+    },
+    "passthrough": {
+      "type": "object",
+      "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+    },
+    "req_id": {
+      "type": "integer",
+      "description": "Optional field to map request to response"
+    }
+  },
+  "additionalProperties": false
+}
