@@ -162,6 +162,14 @@ sub process_pricing_events {
         }
 
         $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
+
+        if ($c->stash('debug')) {
+            $results->{debug} = {
+                time   => 1000 * $results->{price_stream}->{rpc_time},
+                method => 'price_stream',
+            };
+        }
+
         $c->send({json => $results});
     }
     return;
