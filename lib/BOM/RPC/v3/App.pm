@@ -80,14 +80,14 @@ sub update {
         });
     };
 
-    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
-        return $error_sub->($err);
-    }
-
     my $oauth = BOM::Database::Model::OAuth->new;
 
     my $app = $oauth->get_app($user_id, $app_id);
     return $error_sub->(localize('Not Found')) unless $app;
+
+    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
+        return $error_sub->($err);
+    }
 
     if ($app->{name} ne $name) {
         return $error_sub->(localize('The name is taken.'))
