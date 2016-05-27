@@ -47,19 +47,19 @@ sub set_connection {
 }
 
 sub on_message {
-    my ($c, $p1) = @_;
+    my ($c, $args) = @_;
 
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
 
     my $result;
     timeout 15 => sub {
         my $req = {};    # TODO request storage
-        $result = $c->parse_req($p1);
+        $result = $c->parse_req($args);
         if (!$result
-            && (my $action = $c->dispatch($p1)))
+            && (my $action = $c->dispatch($args)))
         {
             %$req          = %$action;
-            $req->{args}   = $p1;
+            $req->{args}   = $args;
             $req->{method} = $req->{name};
             $result        = $c->before_forward($req);
 
@@ -71,14 +71,14 @@ sub on_message {
                     : $c->forward($req);
             }
 
-            $result = $c->after_forward($p1, $result, $req);
+            $result = $c->after_forward($args, $result, $req);
         } elsif (!$result) {
-            $c->app->log->debug("unrecognised request: " . $c->dumper($p1));
+            $c->app->log->debug("unrecognised request: " . $c->dumper($args));
             $result = $c->new_error('error', 'UnrecognisedRequest', $c->l('Unrecognised request.'));
         }
     };
     if ($@) {
-        $c->app->log->info("$$ timeout for " . JSON::to_json($p1));
+        $c->app->log->info("$$ timeout for " . JSON::to_json($args));
     }
 
     $c->send({json => $result}) if $result;
@@ -103,10 +103,10 @@ sub before_forward {
 }
 
 sub after_forward {
-    my ($c, $p1, $result, $req) = @_;
+    my ($c, $args, $result, $req) = @_;
 
     my $config = BOM::WebSocketAPI::Dispatcher::Config->new->{config};
-    return $c->_run_hooks($config->{after_forward} || [], $p1, $result, $req);
+    return $c->_run_hooks($config->{after_forward} || [], $args, $result, $req);
 }
 
 sub _run_hooks {
@@ -126,15 +126,15 @@ sub _run_hooks {
 }
 
 sub dispatch {
-    my ($c, $p1) = @_;
+    my ($c, $args) = @_;
 
     my $log = $c->app->log;
-    $log->debug("websocket got json " . $c->dumper($p1));
+    $log->debug("websocket got json " . $c->dumper($args));
 
     my ($action) =
         sort { $a->{order} <=> $b->{order} }
         grep { defined }
-        map  { BOM::WebSocketAPI::Dispatcher::Config->new->{actions}->{$_} } keys %$p1;
+        map  { BOM::WebSocketAPI::Dispatcher::Config->new->{actions}->{$_} } keys %$args;
 
     return $action;
 }
@@ -166,37 +166,37 @@ sub forward {
 }
 
 sub parse_req {
-    my ($c, $p1) = @_;
+    my ($c, $args) = @_;
 
     my $result;
-    if (ref $p1 ne 'HASH') {
+    if (ref $args ne 'HASH') {
         # for invalid call, eg: not json
         $result = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
         $result->{echo_req} = {};
     }
 
-    $result = $c->_check_sanity($p1) unless $result;
+    $result = $c->_check_sanity($args) unless $result;
 
     return $result;
 }
 
 sub _check_sanity {
-    my ($c, $p1) = @_;
+    my ($c, $args) = @_;
 
     my @failed;
 
     OUTER:
-    foreach my $k (keys %$p1) {
-        if (not ref $p1->{$k}) {
-            last OUTER if (@failed = _failed_key_value($k, $p1->{$k}));
+    foreach my $k (keys %$args) {
+        if (not ref $args->{$k}) {
+            last OUTER if (@failed = _failed_key_value($k, $args->{$k}));
         } else {
-            if (ref $p1->{$k} eq 'HASH') {
-                foreach my $l (keys %{$p1->{$k}}) {
+            if (ref $args->{$k} eq 'HASH') {
+                foreach my $l (keys %{$args->{$k}}) {
                     last OUTER
-                        if (@failed = _failed_key_value($l, $p1->{$k}->{$l}));
+                        if (@failed = _failed_key_value($l, $args->{$k}->{$l}));
                 }
-            } elsif (ref $p1->{$k} eq 'ARRAY') {
-                foreach my $l (@{$p1->{$k}}) {
+            } elsif (ref $args->{$k} eq 'ARRAY') {
+                foreach my $l (@{$args->{$k}}) {
                     last OUTER if (@failed = _failed_key_value($k, $l));
                 }
             }
@@ -211,7 +211,7 @@ sub _check_sanity {
         {
             $result->{echo_req} = {};
         } else {
-            $result->{echo_req} = $p1;
+            $result->{echo_req} = $args;
         }
         return $result;
     }

@@ -446,7 +446,7 @@ sub _set_defaults {
 sub before_forward {
     my ($c, $req) = @_;
 
-    my $p1 = $req->{args};
+    my $args = $req->{args};
     if (not $c->stash('connection_id')) {
         $c->stash('connection_id' => Data::UUID->new()->create_str());
     }
@@ -457,7 +457,7 @@ sub before_forward {
         return $reached;
     }
 
-    my $input_validation_result = $req->{in_validator}->validate($p1);
+    my $input_validation_result = $req->{in_validator}->validate($args);
     if (not $input_validation_result) {
         my ($details, @general);
         foreach my $err ($input_validation_result->errors) {
@@ -471,7 +471,7 @@ sub before_forward {
         return $c->new_error($req->{name}, 'InputValidationFailed', $message, $details);
     }
 
-    _set_defaults($req, $p1);
+    _set_defaults($req, $args);
 
     my $tag = 'origin:';
     if (my $origin = $c->req->headers->header("Origin")) {
@@ -502,7 +502,7 @@ sub before_forward {
 }
 
 sub after_forward {
-    my ($c, $p1, $result, $req) = @_;
+    my ($c, $args, $result, $req) = @_;
 
     return unless $result;
 
@@ -523,10 +523,10 @@ sub after_forward {
     my $l = length JSON::to_json($result || {});
     if ($l > 328000) {
         $result = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
-        $result->{echo_req} = $p1;
+        $result->{echo_req} = $args;
     }
 
-    $result->{req_id} = $p1->{req_id} if exists $p1->{req_id};
+    $result->{req_id} = $args->{req_id} if exists $args->{req_id};
     return $result;
 }
 
