@@ -1,6 +1,6 @@
 <div id="topbar-binary"></div>
 <div id="header-binary">
-    <a href="/<%= $r->language %>/home.html">
+    <a href="https://www.binary.com/<%= $r->language %>/home.html">
         <img id="symbol-logo" src="/oauth2/images/binary-symbol-logo.svg" alt="" />
         <img id="type-logo" src="/oauth2/images/binary-type-logo.svg" alt="Binary.com" />
     </a>
