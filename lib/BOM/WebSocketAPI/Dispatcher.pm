@@ -171,15 +171,16 @@ sub parse_req {
         $result = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
     }
 
-    $result = $c->_check_sanity($args) unless $result;
+    $result = $c->_check_sanity($req_storage) unless $result;
 
     return $result;
 }
 
 sub _check_sanity {
-    my ($c, $args) = @_;
+    my ($c, $req_storage) = @_;
 
     my @failed;
+    my $args = $req_storage->{args};
 
     OUTER:
     foreach my $k (keys %$args) {
@@ -205,9 +206,7 @@ sub _check_sanity {
         if (    $result->{error}
             and $result->{error}->{code} eq 'SanityCheckFailed')
         {
-            $result->{echo_req} = {};
-        } else {
-            $result->{echo_req} = $args;
+            $req_storage->{args} = {};
         }
         return $result;
     }
@@ -217,9 +216,7 @@ sub _check_sanity {
 sub _failed_key_value {
     my ($key, $value) = @_;
 
-    state $pwd_field = {map { $_ => 1 } qw( client_password old_password new_password unlock_password lock_password )};
-
-    if ($pwd_field->{$key}) {
+    if ($key =~ /password/) { # TODO review carefully
         return;
     } elsif (
         $key !~ /^[A-Za-z0-9_-]{1,50}$/
