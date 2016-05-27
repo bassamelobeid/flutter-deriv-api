@@ -57,7 +57,7 @@ my $spot = 79.08;
 
 # Strategy: Test that the butterfly_markup is correctly computed only for surfaces where the ON BF is greater than the butterfly_cutoff,
 subtest 'ON 25D BF > 1.' => sub {
-    plan tests => 9;
+    plan tests => 15;
 
     my $surface = _sample_surface(
         25 => 0.10,
@@ -93,8 +93,24 @@ subtest 'ON 25D BF > 1.' => sub {
         my $pe = $shortterm_bet->pricing_engine;
         ok $pe->risk_markup, 'call risk_markup';
         ok exists $pe->debug_information->{risk_markup}{parameters}{butterfly_markup}, 'apply butterfly markup';
+        ok $pe->probability, 'probability returns fine';
         ok $pe->debug_information->{risk_markup}{parameters}{butterfly_markup} > 0, 'butterfly markup > 0';
-    }
+    } 'CALL';
+
+    my $shortterm_pd = _sample_bet(
+        date_expiry => $shortterm_expiry->epoch,
+        volsurface  => $surface,
+        barrier     => 'S30P',
+        bet_type    => 'ONETOUCH',
+    );
+
+    lives_ok {
+        my $pe = $shortterm_pd->pricing_engine;
+        ok $pe->risk_markup, 'call risk_markup';
+        ok $pe->risk_markup->peek_amount('butterfly_markup'), 'apply butterfly markup';
+        ok $pe->probability, 'probability returns fine';
+        ok $pe->risk_markup->peek_amount('butterfly_markup') > 0 , 'butterfly markup > 0';
+    } 'ONETOUCH';
 
     my $surface_original  = $shortterm_bet->volsurface;
     my $surface_copy_data = $surface_original->surface;
