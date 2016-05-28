@@ -63,31 +63,32 @@ sub _pricing_channel {
     }
 
     my $uuid = Data::UUID->new->create_str();
-    # We don't stream but still return the UUID to keep it unifom.
-    if (BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args)) {
-        return $uuid;
-    }
 
-    if (not $pricing_channel->{$serialized_args}) {
-        my $rp = Mojo::Redis::Processor->new({
-            'write_conn' => BOM::System::RedisReplicated::redis_pricer,
-            'read_conn'  => BOM::System::RedisReplicated::redis_pricer,
-            data         => $serialized_args,
-            trigger      => 'FEED::' . $args->{symbol},
-        });
+    my $rp = Mojo::Redis::Processor->new({
+        'write_conn' => BOM::System::RedisReplicated::redis_pricer,
+        'read_conn'  => BOM::System::RedisReplicated::redis_pricer,
+        data         => $serialized_args,
+        trigger      => 'FEED::' . $args->{symbol},
+    });
+
+    # subscribe if it is not already subscribed
+    if (not $pricing_channel->{$serialized_args} and not BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args)) {
         $rp->send();
         $c->stash('redis_pricer')->subscribe([$rp->_processed_channel], sub { });
-
-        $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
-        $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
-        $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
 
         my $request_time = gettimeofday;
         BOM::System::RedisReplicated::redis_pricer->set($rp->_processed_channel, $request_time);
         BOM::System::RedisReplicated::redis_pricer->expire($rp->_processed_channel, 60);
-
-        $c->stash('pricing_channel' => $pricing_channel);
     }
+
+    $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
+    $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
+    $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
+    $pricing_channel->{uuid}->{$uuid}->{serialized_args}            = $serialized_args;
+    $pricing_channel->{uuid}->{$uuid}->{amount}                     = $args->{amount};
+    $pricing_channel->{uuid}->{$uuid}->{args}                       = $args;
+
+    $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
 }
 
