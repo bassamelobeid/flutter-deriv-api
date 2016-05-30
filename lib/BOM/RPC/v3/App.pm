@@ -24,7 +24,6 @@ sub register {
     my $googleplay   = $args->{googleplay} // '';
     my $redirect_uri = $args->{redirect_uri} // '';
 
-    ## do some validation
     my $error_sub = sub {
         my ($error) = @_;
         return BOM::RPC::v3::Utility::create_error({
@@ -33,18 +32,9 @@ sub register {
         });
     };
 
-    return $error_sub->(localize('Invalid URI for homepage.'))
-        if length($homepage)
-        and $homepage !~ m{^https?://};
-    return $error_sub->(localize('Invalid URI for github.'))
-        if length($github)
-        and $github !~ m{^https?://(www\.)?github\.com/\S+$};
-    return $error_sub->(localize('Invalid URI for appstore.'))
-        if length($appstore)
-        and $appstore !~ m{^https?://itunes\.apple\.com/\S+$};
-    return $error_sub->(localize('Invalid URI for googleplay.'))
-        if length($googleplay)
-        and $googleplay !~ m{^https?://play\.google\.com/\S+$};
+    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
+        return $error_sub->($err);
+    }
 
     my $oauth = BOM::Database::Model::OAuth->new;
     return $error_sub->(localize('The name is taken.'))
@@ -62,6 +52,80 @@ sub register {
     });
 
     return $app;
+}
+
+sub update {
+    my $params = shift;
+
+    my $client  = $params->{client};
+    my $user    = BOM::Platform::User->new({email => $client->email});
+    my $user_id = $user->id;
+
+    my $args         = $params->{args};
+    my $app_id       = $args->{app_update};
+    my $name         = $args->{name};
+    my $scopes       = $args->{scopes};
+    my $homepage     = $args->{homepage} // '';
+    my $github       = $args->{github} // '';
+    my $appstore     = $args->{appstore} // '';
+    my $googleplay   = $args->{googleplay} // '';
+    my $redirect_uri = $args->{redirect_uri} // '';
+
+    ## do some validation
+    my $error_sub = sub {
+        my ($error) = @_;
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'AppUpdate',
+            message_to_client => $error,
+        });
+    };
+
+    my $oauth = BOM::Database::Model::OAuth->new;
+
+    my $app = $oauth->get_app($user_id, $app_id);
+    return $error_sub->(localize('Not Found')) unless $app;
+
+    if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay)) {
+        return $error_sub->($err);
+    }
+
+    if ($app->{name} ne $name) {
+        return $error_sub->(localize('The name is taken.'))
+            if $oauth->is_name_taken($user_id, $name);
+    }
+
+    $app = $oauth->update_app(
+        $app_id,
+        {
+            name         => $name,
+            scopes       => $scopes,
+            homepage     => $homepage,
+            github       => $github,
+            appstore     => $appstore,
+            googleplay   => $googleplay,
+            redirect_uri => $redirect_uri,
+        });
+
+    return $app;
+}
+
+sub __validate_app_links {
+    my ($homepage, $github, $appstore, $googleplay) = @_;
+
+    return localize('Invalid URI for homepage.')
+        if length($homepage)
+        and $homepage !~ m{^https?://};
+    return localize('Invalid URI for github.')
+        if length($github)
+        and $github !~ m{^https?://(www\.)?github\.com/\S+$};
+    return localize('Invalid URI for appstore.')
+        if length($appstore)
+        and $appstore !~ m{^https?://itunes\.apple\.com/\S+$};
+    return localize('Invalid URI for googleplay.')
+        if length($googleplay)
+        and $googleplay !~ m{^https?://play\.google\.com/\S+$};
+
+    return;
 }
 
 sub list {
@@ -88,7 +152,7 @@ sub get {
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'AppGet',
-            message_to_client => 'Not Found',
+            message_to_client => localize('Not Found'),
         }) unless $app;
 
     return $app;
