@@ -137,18 +137,20 @@ sub create_app {
 
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.apps
-            (name, scopes, homepage, github, appstore, googleplay, redirect_uri, binary_user_id)
+            (name, scopes, homepage, github, appstore, googleplay, redirect_uri, markup, binary_user_id)
         VALUES
             (?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
     ");
     $sth->execute(
-        $app->{name}, $app->{scopes},
+        $app->{name},
+        $app->{scopes},
         $app->{homepage}     || '',
         $app->{github}       || '',
         $app->{appstore}     || '',
         $app->{googleplay}   || '',
         $app->{redirect_uri} || '',
+        $app->{markup}       || 0,
         $app->{user_id});
 
     my @result = $sth->fetchrow_array();
@@ -167,16 +169,19 @@ sub update_app {
     my $sth = $self->dbh->prepare("
         UPDATE oauth.apps SET
             name = ?, scopes = ?, homepage = ?, github = ?,
-            appstore = ?, googleplay = ?, redirect_uri = ?
+            appstore = ?, googleplay = ?, redirect_uri = ?, markup = ?
         WHERE id = ?
     ");
     $sth->execute(
-        $app->{name}, $app->{scopes},
+        $app->{name},
+        $app->{scopes},
         $app->{homepage}     || '',
         $app->{github}       || '',
         $app->{appstore}     || '',
         $app->{googleplay}   || '',
-        $app->{redirect_uri} || '', $app_id
+        $app->{redirect_uri} || '',
+        $app->{markup}       || 0,
+        $app_id
     );
 
     return {
