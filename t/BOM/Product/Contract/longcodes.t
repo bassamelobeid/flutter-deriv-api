@@ -49,7 +49,7 @@ subtest 'Proper form' => sub {
     plan tests => 2 * scalar @shortcodes * scalar @currencies;
 
     foreach my $currency (@currencies) {
-        my $expected_standard_form = qr/$currency (?:\d*\.?\d+) payout if .*\.$/;    # Simplified standard form to which all should adhere.
+        my $expected_standard_form = qr/Win payout if .*\.$/;    # Simplified standard form to which all should adhere.
                                                                                      # Can this be improved further?
         my $params;
         foreach my $shortcode (@shortcodes) {
