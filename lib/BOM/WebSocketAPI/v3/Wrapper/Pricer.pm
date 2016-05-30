@@ -106,9 +106,9 @@ sub _send_ask {
                 $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
                 return $err;
             }
+            my $pricing_channel = $c->stash('pricing_channel');
             # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
             if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
-                my $pricing_channel = $c->stash('pricing_channel');
                 my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
                 $pricing_channel->{$serialized_args}->{$args->{amount}}->{longcode} = $response->{longcode};
                 $c->stash('pricing_channel' => $pricing_channel);
