@@ -3,8 +3,6 @@ package BOM::WebSocketAPI::v3::Wrapper::Authorize;
 use strict;
 use warnings;
 
-use BOM::WebSocketAPI::CallingEngine;
-
 sub logout_success {
     my ($c, $rpc_response) = @_;
     my %stash;
