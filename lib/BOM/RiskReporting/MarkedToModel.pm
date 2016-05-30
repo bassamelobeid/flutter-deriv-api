@@ -101,8 +101,6 @@ sub generate {
 
                 $cached_underlyings{$symbol} ||= $bet->underlying;
 
-                die 'Missing spot.' if (not $bet->underlying->spot);
-
                 my $is_expired    = $bet->is_expired;
                 my $current_value = $bet->is_spread ? $bet->bid_price : $bet->theo_price;
                 my $value         = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
