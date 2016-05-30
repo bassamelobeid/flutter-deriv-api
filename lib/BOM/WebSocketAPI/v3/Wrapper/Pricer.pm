@@ -206,7 +206,7 @@ sub _price_stream_results_adjustment {
         $results->{display_value} = roundnear(0.01, $ask_price);
         $results->{payout}        = roundnear(0.01, $amount);
     } elsif ($orig_args->{basis} eq 'stake') {
-        my $payout            = roundnear(
+        my $payout = roundnear(
             0.01,
             BOM::RPC::v3::Contract::calculate_payout({
                     theo_probability => $results->{theo_probability},
