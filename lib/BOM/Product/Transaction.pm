@@ -72,6 +72,11 @@ has limits => (
     default => sub { +{} },
 );
 
+has risk_profile_specific => (
+    is      => 'rw',
+    default => sub { +{} },
+);
+
 has payout => (
     is         => 'rw',
     isa        => 'Num',
@@ -267,8 +272,7 @@ sub stats_stop {
 sub calculate_limits {
     my $self = shift;
 
-    my $app_config    = BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-    my $static_config = BOM::Platform::Static::Config::quants->{client_limits};
+    my $static_config = BOM::Platform::Static::Config::quants;
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
@@ -277,9 +281,10 @@ sub calculate_limits {
     $self->limits->{max_balance} = $client->get_limit_for_account_balance;
 
     if (not $contract->tick_expiry) {
-        $self->limits->{max_open_bets}                      = $client->get_limit_for_open_positions;
-        $self->limits->{max_payout_open_bets}               = $client->get_limit_for_payout;
-        $self->limits->{max_payout_per_symbol_and_bet_type} = $static_config->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
+        $self->limits->{max_open_bets}        = $client->get_limit_for_open_positions;
+        $self->limits->{max_payout_open_bets} = $client->get_limit_for_payout;
+        $self->limits->{max_payout_per_symbol_and_bet_type} =
+            $static_config->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
     }
 
     my $lim;
@@ -297,11 +302,27 @@ sub calculate_limits {
     $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
 
     if ($contract->is_spread) {
-        $self->limits->{spread_bet_profit_limit} =
-            BOM::Platform::Static::Config::quants->{risk_profile}{$app_config->spreads_turnover_limit_profile}{turnover}{$currency};
+        my $spreads_limit_profit = BOM::Platform::Runtime->instance->app_config->quants->spreads_daily_profit_limit;
+        $self->limits->{spread_bet_profit_limit} = $static_config->{risk_profile}{$spreads_limit_profit}{turnover}{$currency};
     } else {
-        push @{$self->limits->{specific_turnover_limits}}, @{$contract->turnover_limit_parameters};
+        push @{$self->limits->{specific_turnover_limits}}, @{$self->risk_profile_specifics->{turnover_limits}};
+    }
 
+    return;
+}
+
+sub get_risk_profile_specifics {
+    my $self = shift;
+
+    my $risk_profile = BOM::Product::RiskProfile->new(
+        contract       => $self->contract,
+        client_loginid => $self->client->loginid
+    );
+    $self->risk_profile_specifics->{turnover_limits} = $risk_profile->get_turnover_limit_parameters;
+
+    if ($risk_profile->has_custom_client_limit) {
+        $self->risk_profile_specifics->{per_contract_payout_limit} =
+            BOM::Platform::Static::Config::quants->{risk_profile}{$risk_profile->get_risk_profile}{payout}{$self->contract->currency};
     }
 
     return;
@@ -432,6 +453,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
             _validate_currency/
             );
 
+        $self->get_risk_profile_specifics;
         $self->calculate_limits;
 
         $self->comment(
@@ -1379,6 +1401,33 @@ sub _validate_stake_limit {
                 to_monetary_number_format($contract->ask_price),
                 $landing_company->name,
                 to_monetary_number_format($stake_limit)
+            ),
+        );
+    }
+    return;
+}
+
+=head2 $self->_validate_payout_limit
+
+Validate if payout is not over the client limits
+
+=cut
+
+sub _validate_payout_limit {
+    my $self = shift;
+
+    my $client = $self->client;
+    my $payout = $self->payout;
+
+    my $custom_limit = $self->risk_profile_specifics->{per_contract_payout_limit};
+    if (defined $custom_limit and $payout > $custom_limit) {
+        return Error::Base->cuss(
+            -type              => 'PayoutLimitExceeded',
+            -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
+            -message_to_client => ($custom_limit == 0)
+            ? BOM::Platform::Context::localize('This contract is unavailable on this account.')
+            : BOM::Platform::Context::localize(
+                'This contract is limited to ' . to_monetary_number_format($custom_limit) . ' payout on this account.'
             ),
         );
     }

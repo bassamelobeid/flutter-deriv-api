@@ -9,8 +9,9 @@ use BOM::Market::Underlying;
 
 use JSON qw(from_json);
 use List::Util qw(first);
+use List::MoreUtils qw(all);
 
-has contract_info => (
+has contract => (
     is       => 'ro',
     required => 1,
 );
@@ -20,18 +21,47 @@ has client_loginid => (
     default => undef,
 );
 
-has known_keys => (
+has has_custom_client_limit => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0,
+);
+
+has [qw(contract_info currency)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_contract_info {
+    my $self = shift;
+
+    my $c = $self->contract;
+
+    return {
+        underlying_symbol => $c->underlying->symbol,
+        market            => $c->market->name,
+        submarket         => $c->underlying->submarket->name,
+        contract_category => $c->category_code,
+        expiry_type       => $c->expiry_type,
+        start_type        => $c->start_type,
+    };
+}
+
+sub _build_currency {
+    return shift->contract->currency;
+}
+
+has limits => (
     is      => 'ro',
     default => sub {
-        {
-            contract_category => 1,
-            market            => 1,
-            submarket         => 1,
-            underlying_symbol => 1,
-            expiry_type       => 1,
-            start_type        => 1,
-            barrier_category  => 1,
-        };
+        return BOM::Platform::Static::Config::quants->{risk_profile};
+    },
+);
+
+has app_config => (
+    is      => 'ro',
+    default => sub {
+        return BOM::Platform::Runtime->instance->app_config->quants;
     },
 );
 
@@ -40,7 +70,7 @@ has risk_profiles => (
     default => sub { [qw(no_business extreme_risk high_risk medium_risk low_risk)] },
 );
 
-sub get_product_risk_profile {
+sub get_risk_profile {
     my $self = shift;
 
     foreach my $p (@{$self->risk_profiles}) {
@@ -53,15 +83,15 @@ sub get_product_risk_profile {
     return $self->risk_profiles->[0];
 }
 
-sub get_turnover_parameters {
+sub get_turnover_limit_parameters {
     my $self = shift;
 
-    my $limit_ref = BOM::Platform::Static::Config::quants->{risk_profile};
     my @turnover_params;
+
     foreach my $profile (@{$self->applicable_profiles}) {
         my $params = {
             name  => $profile->{name},
-            limit => $limit_ref->{$profile->{risk_type}}->{$self->contract_info->{currency}},
+            limit => $self->limits->{$profile->{risk_profile}}{turnover}{$self->currency},
         };
         $params->{tick_expiry} = 1 if $profile->{tick_expiry};
         if ($profile->{market}) {
@@ -90,39 +120,45 @@ has applicable_profiles => (
 sub _build_applicable_profiles {
     my $self = shift;
 
-    my $config                  = BOM::Platform::Runtime->instance->app_config->quants;
-    my $custom_product_profiles = from_json($config->custom_product_profiles);
+    my $custom_product_profiles = from_json($self->app_config->custom_product_profiles);
 
-    my @applicable_profiles;
+    my @custom_profiles;
     foreach my $p (@$custom_product_profiles) {
         if ($self->_match_conditions($p)) {
-            push @applicable_profiles, $p;
+            push @custom_profiles, $p;
         }
     }
 
-    if (my $id = $self->client_loginid) {
-        my $custom_client_profiles = from_json($config->custom_client_profiles)->{$id};
+    my $ul           = $self->contract->underlying;
+    my $risk_profile = $ul->risk_profile;
+    my $setter       = $ul->risk_profile_setter;
+    # default market level profile
+    push @custom_profiles,
+        +{
+        risk_profile => $risk_profile,
+        name         => $self->contract_info->{$setter} . '_turnover_limit',
+        $setter      => $self->contract_info->{$setter},
+        };
+
+    if ($self->client_loginid) {
+        my $custom_client_profiles = from_json($self->app_config->custom_client_profiles)->{$self->client_loginid};
         foreach my $p (@$custom_client_profiles) {
             if ($self->_match_conditions($p)) {
-                push @applicable_profiles, $p;
+                push @custom_profiles, $p;
+                $self->has_custom_client_limit(1);
             }
         }
     }
 
-    # default market level profile
-    push @applicable_profiles,
-        +{
-        underlying_symbol => BOM::Market::Underlying->new($self->contract_info->{underlying_symbol})->risk_profile,
-        name              => 'underlying_symbol_turnover_limit',
-        };
-
-    return \@applicable_profiles;
+    return \@custom_profiles;
 }
 
 sub _match_conditions {
     my ($self, $custom) = @_;
 
-    my %reversed = reverse %$custom;
+    my %copy = %$custom;
+    delete $copy{$_} for qw(name risk_profile);
+    my %reversed = reverse %copy;
     if (all { $reversed{$self->contract_info->{$_}} } values %reversed) {
         return $custom;
     }
