@@ -43,22 +43,40 @@ sub BUILD {
 
 has [qw(supplied_high_barrier supplied_low_barrier)] => (is => 'ro');
 
-has [qw(high_barrier low_barrier)] => (
-    is         => 'rw',
-    isa        => 'Maybe[BOM::Product::Contract::Strike]',
-    lazy_build => 1,
+has [qw(original_high_barrier original_low_barrier)] => (
+    is  => 'rw',
+    isa => 'Maybe[BOM::Product::Contract::Strike]'
+);
+
+has high_barrier => (
+    is      => 'rw',
+    isa     => 'Maybe[BOM::Product::Contract::Strike]',
+    lazy    => 1,
+    builder => '_build_high_barrier',
 );
 
 sub _build_high_barrier {
     my $self = shift;
-    return $self->make_barrier($self->supplied_high_barrier);
+
+    my $high_barrier = $self->make_barrier($self->supplied_high_barrier);
+    $self->original_high_barrier($self->initial_barrier) if defined $self->initial_barrier;
+    return $high_barrier;
 }
+
+has low_barrier => (
+    is      => 'rw',
+    isa     => 'Maybe[BOM::Product::Contract::Strike]',
+    lazy    => 1,
+    builder => '_build_low_barrier',
+);
 
 sub _build_low_barrier {
     my $self = shift;
-    return $self->make_barrier($self->supplied_low_barrier);
-}
 
+    my $low_barrier = $self->make_barrier($self->supplied_low_barrier);
+    $self->original_low_barrier($self->initial_barrier) if defined $self->initial_barrier;
+    return $low_barrier;
+}
 has barriers_for_pricing => (
     is      => 'ro',
     lazy    => 1,
