@@ -8,12 +8,38 @@ use BOM::System::RedisReplicated;
 use BOM::RPC::PricerDaemon;
 use Getopt::Long;
 use DataDog::DogStatsd::Helper;
-
+use sigtrap qw/handler signal_handler normal-signals/;
 
 my $workers = 4;
 GetOptions ("workers=i" => \$workers,) ;
 
 my $pm = new Parallel::ForkManager($workers);
+
+my @running_forks;
+
+$pm->run_on_start(
+    sub {
+        my $pid = shift;
+        push @running_forks, $pid;
+    }
+);
+
+$pm->run_on_finish(
+    sub {
+        my ($pid, $exit_code) = @_;
+
+        @running_forks = grep {$_ != $pid } @running_forks;
+    }
+);
+
+sub signal_handler {
+    foreach my $pid (@running_forks) {
+        `kill -9 $pid`, "\n";
+    }
+
+    exit 0;
+}
+
 
 sub _redis_read {
     my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml');
