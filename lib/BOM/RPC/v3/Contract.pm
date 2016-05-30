@@ -180,9 +180,12 @@ sub get_bid {
             payout              => $contract->payout,
             contract_type       => $contract->code
         };
+        my @corporate_actions;
+
         if (not $contract->is_spread) {
-            my $contract_affected_by_missing_market_data =
-                (not $contract->may_settle_automatically and not @{$contract->corporate_actions} and $contract->missing_market_data) ? 1 : 0;
+            @corporate_actions = @{$contract->corporate_actions};
+
+            my $contract_affected_by_missing_market_data = (not $contract->may_settle_automatically and $contract->missing_market_data) ? 1 : 0;
             if ($contract_affected_by_missing_market_data) {
                 $response = BOM::RPC::v3::Utility::create_error({
                         code              => "GetProposalFailure",
@@ -225,14 +228,20 @@ sub get_bid {
 
             if ($contract->entry_tick) {
                 if ($contract->two_barriers) {
-                    $response->{high_barrier} = $contract->high_barrier->as_absolute;
-                    $response->{low_barrier}  = $contract->low_barrier->as_absolute;
+                    $response->{high_barrier}          = $contract->high_barrier->as_absolute;
+                    $response->{low_barrier}           = $contract->low_barrier->as_absolute;
+                    $response->{original_high_barrier} = $contract->original_high_barrier->as_absolute if defined $contract->original_high_barrier;
+                    $response->{original_low_barrier}  = $contract->original_low_barrier->as_absolute if defined $contract->original_low_barrier;
+
                 } elsif ($contract->barrier) {
                     $response->{barrier} = $contract->barrier->as_absolute;
+                    $response->{original_barrier} = $contract->original_barrier->as_absolute if defined $contract->original_barrier;
+
                 }
             }
 
-            $response->{has_corporate_actions} = (not @{$contract->corporate_actions}) ? 0 : 1;
+            $response->{has_corporate_actions} = 1 if @corporate_actions;
+
         }
 
         my $pen = $contract->pricing_engine_name;
