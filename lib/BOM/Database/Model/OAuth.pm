@@ -209,7 +209,7 @@ sub get_apps_by_user_id {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            id as app_id, name, redirect_uri, scopes
+            id as app_id, name, redirect_uri, scopes, markup
         FROM oauth.apps WHERE binary_user_id = ? AND active ORDER BY name
     ", {Slice => {}}, $user_id);
     return [] unless $apps;
@@ -244,7 +244,7 @@ sub get_used_apps_by_loginid {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            u.app_id, name, a.scopes
+            u.app_id, name, a.scopes, a.markup
         FROM oauth.apps a JOIN oauth.user_scope_confirm u ON a.id=u.app_id
         WHERE loginid = ? AND a.active ORDER BY a.name
     ", {Slice => {}}, $loginid);
