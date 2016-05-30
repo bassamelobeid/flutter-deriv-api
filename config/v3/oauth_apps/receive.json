@@ -31,6 +31,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "markup": {
+            "type": "integer",
+            "description": "Application markup"
           }
         }
       }
