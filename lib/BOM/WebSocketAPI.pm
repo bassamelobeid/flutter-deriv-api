@@ -279,6 +279,7 @@ sub startup {
                 ['app_register', {require_auth => 'admin'}],
                 ['app_list',     {require_auth => 'admin'}],
                 ['app_get',      {require_auth => 'admin'}],
+                ['app_update',   {require_auth => 'admin'}],
                 ['app_delete',   {require_auth => 'admin'}],
                 ['oauth_apps',   {require_auth => 'admin'}],
 

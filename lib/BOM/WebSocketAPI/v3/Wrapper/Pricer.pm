@@ -22,12 +22,13 @@ sub price_stream {
     if ($response and exists $response->{error}) {
         return $c->new_error('price_stream', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
     } else {
-        my $id;
-        if ($args->{subscribe} and $args->{subscribe} == 1 and not $id = _pricing_channel($c, 'subscribe', $args)) {
+        my $uuid;
+        if ($args->{subscribe} and $args->{subscribe} == 1 and not $uuid = _pricing_channel($c, 'subscribe', $args)) {
             return $c->new_error('price_stream',
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
-        _send_ask($c, $id, $args);
+        $req_storage->{uuid} = $uuid;
+        _send_ask($c, $req_storage);
     }
     return;
 }
@@ -59,7 +60,9 @@ sub _pricing_channel {
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
-    if ($pricing_channel->{$serialized_args} and $pricing_channel->{$serialized_args}->{$args->{amount}}) {
+    my $amount = $args_hash{amount_per_point} || $args_hash{amount};
+
+    if ($pricing_channel->{$serialized_args} and $pricing_channel->{$serialized_args}->{$amount}) {
         return;
     }
 
@@ -82,28 +85,41 @@ sub _pricing_channel {
         BOM::System::RedisReplicated::redis_pricer->expire($rp->_processed_channel, 60);
     }
 
-    $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
-    $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
-    $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
-    $pricing_channel->{uuid}->{$uuid}->{serialized_args}            = $serialized_args;
-    $pricing_channel->{uuid}->{$uuid}->{amount}                     = $args->{amount};
-    $pricing_channel->{uuid}->{$uuid}->{args}                       = $args;
+    $pricing_channel->{$serialized_args}->{$amount}->{uuid} = $uuid;
+    $pricing_channel->{$serialized_args}->{$amount}->{args} = $args;
+    $pricing_channel->{$serialized_args}->{channel_name}    = $rp->_processed_channel;
+    $pricing_channel->{uuid}->{$uuid}->{serialized_args}    = $serialized_args;
+    $pricing_channel->{uuid}->{$uuid}->{amount}             = $amount;
+    $pricing_channel->{uuid}->{$uuid}->{args}               = $args;
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
 }
 
 sub _send_ask {
-    my ($c, $id, $req_storage) = @_;
+    my ($c, $req_storage) = @_;
 
     $c->call_rpc({
-            args     => $req_storage,
-            id       => $id,
+            args     => $req_storage->{args},
+            uuid     => $req_storage->{uuid},
             method   => 'send_ask',
             msg_type => 'price_stream',
+            success  => sub {
+                my ($c, $rpc_response, $req_storage) = @_;
+                my $pricing_channel = $c->stash('pricing_channel');
+                my $uuid = $req_storage->{uuid};
+                # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
+                if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
+                    my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
+                    $pricing_channel->{$serialized_args}->{$args->{amount}}->{longcode} = $rpc_response->{longcode};
+                    $c->stash('pricing_channel' => $pricing_channel);
+                }  
+                return;
+            },
             error    => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req_storage->{id});
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req_storage->{uuid});
+                return;
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
@@ -111,7 +127,7 @@ sub _send_ask {
                 if ($api_response->{error}) {
                     $api_response->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
                 } else {
-                    $api_response->{proposal}->{id} = $req_storage->{id} if $req_storage->{id};
+                    $api_response->{proposal}->{id} = $req_storage->{uuid} if $req_storage->{uuid};
                 }
                 return $api_response;
             }
@@ -157,7 +173,8 @@ sub process_pricing_events {
                 $results = {
                     msg_type     => 'price_stream',
                     price_stream => {
-                        id => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
+                        id       => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
+                        longcode => $pricing_channel->{$serialized_args}->{$amount}->{longcode},
                         %$adjusted_results,
                     },
                 };
@@ -165,6 +182,12 @@ sub process_pricing_events {
         }
 
         $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
+        if (my $passthrough = delete $pricing_channel->{$serialized_args}->{$amount}->{args}->{passthrough}) {
+            $results->{passthrough} = $passthrough;
+        }
+        if (my $req_id = delete $pricing_channel->{$serialized_args}->{$amount}->{args}->{req_id}) {
+            $results->{req_id} = $req_id;
+        }
 
         if ($c->stash('debug')) {
             $results->{debug} = {
@@ -195,8 +218,7 @@ sub _price_stream_results_adjustment {
         $results->{display_value} = roundnear(0.01, $ask_price);
         $results->{payout}        = roundnear(0.01, $amount);
     } elsif ($orig_args->{basis} eq 'stake') {
-        my $commission_markup = BOM::Product::Contract::Helper::commission({});
-        my $payout            = roundnear(
+        my $payout = roundnear(
             0.01,
             BOM::RPC::v3::Contract::calculate_payout({
                     theo_probability => $results->{theo_probability},
