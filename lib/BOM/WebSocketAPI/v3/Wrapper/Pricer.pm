@@ -161,7 +161,8 @@ sub process_pricing_events {
                 $results = {
                     msg_type     => 'price_stream',
                     price_stream => {
-                        id => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
+                        id       => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
+                        longcode => $pricing_channel->{$serialized_args}->{$amount}->{longcode},
                         %$adjusted_results,
                     },
                 };
