@@ -4,7 +4,6 @@ use Mojo::Base 'Mojolicious::Controller';
 use BOM::WebSocketAPI::Dispatcher::Parser;    # TODO
 use BOM::WebSocketAPI::Dispatcher::Config;
 use BOM::WebSocketAPI::CallingEngine;
-use BOM::WebSocketAPI::v3::Wrapper::System;
 
 use Time::Out qw(timeout);
 
