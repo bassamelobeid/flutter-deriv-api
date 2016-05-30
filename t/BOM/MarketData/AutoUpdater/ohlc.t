@@ -57,16 +57,22 @@ subtest everything => sub {
     }
 
 };
+set_absolute_time(Date::Utility->new('2014-01-10 08:00:00')->epoch);
 
 subtest 'valid index' => sub {
     my $updater = BOM::MarketData::AutoUpdater::OHLC->new(
-        is_a_weekend      => 0,
         file              => [$data_path . '/valid.csv'],
         directory_to_save => tempdir,
     );
-    $updater = Test::MockObject::Extends->new($updater);
-    $updater->mock('_passes_sanity_check', sub { '' });
     lives_ok {
+
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'HSI',
+            epoch      => 1389340800,
+            quote      => 10192.45,
+            bid        => 10192.45,
+            ask        => 10192.45
+        });
         $updater->run();
         ok($updater->report->{HSI}->{success}, 'HSI is updated');
     }
@@ -76,12 +82,9 @@ subtest 'valid index' => sub {
 
 subtest 'valid stocks' => sub {
     my $updater = BOM::MarketData::AutoUpdater::OHLC->new(
-        is_a_weekend      => 0,
         file              => [$data_path . '/stocks.csv'],
         directory_to_save => tempdir,
     );
-    $updater = Test::MockObject::Extends->new($updater);
-    $updater->mock('_passes_sanity_check', sub { '' });
     lives_ok {
         $updater->run();
         ok($updater->report->{FPFP}->{success}, 'FPFP is updated');
@@ -89,6 +92,7 @@ subtest 'valid stocks' => sub {
     'ohlc for FPFP updated successfully';
 };
 
+restore_time();
 subtest 'valid close' => sub {
     my $updater = BOM::MarketData::AutoUpdater::OHLC->new(
         is_a_weekend      => 0,
@@ -100,16 +104,13 @@ subtest 'valid close' => sub {
 
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'HSI',
-            epoch      => 1456272000,
-            open       => 19282.34,
-            high       => 19360.80,
-            low        => 19060.16,
-            close      => 19192.45,
+            epoch      => 1456300800,
+            quote      => 19192.45,
+            bid        => 19192.45,
+            ask        => 19192.45
         });
-
         set_absolute_time(Date::Utility->new('2016-02-24')->epoch);
         $updater->run();
-
         ok !$updater->report->{HSI}->{success}, 'HSI failed to be updated due to close >=5%';
         like($updater->report->{HSI}->{reason}, qr/OHLC big difference/i, 'sanity check for close');
     }
