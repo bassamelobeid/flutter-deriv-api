@@ -1,5 +1,6 @@
 ---
 commodities:
+    risk_profile: 'high_risk'
     base_commission: 0.05
     display_current_spot: 1
     volatility_surface_type: "delta"
@@ -25,6 +26,7 @@ commodities:
     markups:
         apply_traded_markets_markup: 1
 forex:
+    risk_profile: 'medium_risk'
     base_commission: 0.05
     volatility_surface_type: "delta"
     display_current_spot: 1
@@ -64,6 +66,7 @@ futures:
     markups:
         apply_traded_markets_markup: 1
 indices:
+    risk_profile: 'medium_risk'
     base_commission: 0.025
     volatility_surface_type: "moneyness"
     suspicious_move: 0.07
@@ -87,6 +90,7 @@ indices:
     markups:
         apply_traded_markets_markup: 1
 stocks:
+    risk_profile: 'extreme_risk'
     base_commission: 0.05
     suspicious_move: 0.25
     outlier_tick: 0.10
@@ -113,6 +117,7 @@ stocks:
     markups:
         apply_traded_markets_markup: 1
 volidx:
+    risk_profile: 'low_risk'
     base_commission: 0.015
     display_current_spot: 1
     suspicious_move: 0.5

@@ -2149,7 +2149,12 @@ sub _build_resets_at_open {
     return $self->submarket->resets_at_open;
 }
 
-has always_available => (
+has risk_profile_setter => (
+    is      => 'rw',
+    default => 'underlying_symbol',
+);
+
+has [qw(always_available risk_profile base_commission)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -2159,23 +2164,20 @@ sub _build_always_available {
     return $self->submarket->always_available;
 }
 
-# Since we want the flexibility to change risk type of
-# a particular underlying, we will not have this in the yaml file!
-sub risk_profile {
+sub _build_risk_profile {
     my $self = shift;
 
-    my $limits = from_json(BOM::Platform::Runtime->instance->app_config->quants->client_limits->underlying_limits);
+    my $rp;
+    if ($self->submarket->risk_profile) {
+        $rp = $self->submarket->risk_profile;
+        $self->risk_profile_setter('submarket');
+    } else {
+        $rp = $self->market->risk_profile;
+        $self->risk_profile_setter('market');
+    }
 
-    return {
-        risk_type => $limits->{$self->symbol},
-        args      => {name => $self->symbol . '_turnover_limit'}} if exists $limits->{$self->symbol};
-    return $self->submarket->risk_profile;
+    return $rp;
 }
-
-has base_commission => (
-    is         => 'ro',
-    lazy_build => 1,
-);
 
 sub _build_base_commission {
     my $self = shift;

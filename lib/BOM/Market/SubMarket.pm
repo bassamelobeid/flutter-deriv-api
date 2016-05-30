@@ -219,24 +219,12 @@ has always_available => (
     default => 0,
 );
 
-# Since we want the flexibility to change risk type of
-# a particular submarket, we will not have this in the yaml file!
-sub risk_profile {
-    my $self = shift;
+has risk_profile => (
+    is      => 'ro',
+    default => undef,
+);
 
-    my $limits = from_json(BOM::Platform::Runtime->instance->app_config->quants->client_limits->submarket_limits);
-
-    return {
-        risk_type => $limits->{$self->name},
-        args      => {
-            name      => $self->name . '_turnover_limit',
-            submarket => $self->name
-        }}
-        if exists $limits->{$self->name};
-    return $self->market->risk_profile;
-}
-
-has base_commission => (
+has [qw(base_commission)] => (
     is         => 'ro',
     lazy_build => 1,
 );

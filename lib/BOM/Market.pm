@@ -423,22 +423,11 @@ has spread_divisor => (
     default => 1,
 );
 
-# Since we want the flexibility to change risk type of
-# a particular forex, we will not have this in the yaml file!
-# Defaults to extreme_risk.
-sub risk_profile {
-    my $self = shift;
-
-    my $limits = from_json(BOM::Platform::Runtime->instance->app_config->quants->client_limits->financial_market_limits);
-    my $risk_type = $limits->{$self->name} || 'extreme_risk';
-
-    return {
-        risk_type => $risk_type,
-        args      => {
-            name   => $self->name . '_turnover_limit',
-            market => $self->name
-        }};
-}
+# if you did not define this, I assume you don't offer it.
+has risk_profile => (
+    is      => 'ro',
+    default => 'no_business',
+);
 
 has base_commission => (
     is      => 'ro',
