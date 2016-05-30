@@ -124,7 +124,7 @@ sub _get_ask {
             };
 
             # only required for non-spead contracts
-            if ($p2->{from_pricer_daemon} and $p2->{basis}) {
+            if ($p2->{from_pricer_daemon} and $p2->{amount_type}) {
                 $response->{theo_probability}      = $contract->theo_probability->amount;
                 $response->{base_commission}       = $contract->base_commission;
                 $response->{probability_threshold} = $contract->market->deep_otm_threshold;
