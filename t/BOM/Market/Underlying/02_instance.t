@@ -589,11 +589,16 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $today = Date::Utility->today;
     foreach my $ul ($AS51, $EURUSD) {
         my $prev_weight = 0;
+        my $builder = Quant::Framework::Utils::Builder->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            underlying_config => Quant::Framework::Utils::Test::create_underlying_config($ul->symbol),
+          });
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
-            my $day_weight    = $ul->weight_on($test_day);
-            my $period_weight = $ul->weighted_days_in_period($today, $test_day);
-            cmp_ok($day_weight, '>=', $ul->closed_weight,
+            my $day_weight    = $builder->weight_on($test_day);
+            my $period_weight = $builder->weighted_days_in_period($today, $test_day);
+            cmp_ok($day_weight, '>=', $builder->closed_weight,
                 $ul->display_name . ' weight for ' . $test_day->date . ' is at least as big as the closed weight');
             cmp_ok($day_weight, '<=', 1, 'And no larger than 1');
             cmp_ok(
