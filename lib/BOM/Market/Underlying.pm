@@ -287,7 +287,6 @@ sub _build_config {
         market_name                           => $self->market->name,
         market_prefer_discrete_dividend       => $self->market->prefer_discrete_dividend,
         quanto_only                           => $self->quanto_only,
-        submarket_name                        => $self->submarket->name,
         rate_to_imply_from                    => $self->rate_to_imply_from,
         volatility_surface_type               => $self->volatility_surface_type,
         exchange_name                         => $self->exchange_name,

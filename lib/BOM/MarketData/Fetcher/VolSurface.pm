@@ -27,6 +27,8 @@ sub fetch_surface {
     }
     my $surface_args = {
         underlying_config => $args->{underlying}->config,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($args->{for_date} // $udnerlying->for_date),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         $args->{for_date} ? (for_date => $args->{for_date}) : ($underlying->for_date) ? (for_date => $underlying->for_date) : (),
         $args->{cutoff} ? (cutoff => $args->{cutoff}) : (),
     };
