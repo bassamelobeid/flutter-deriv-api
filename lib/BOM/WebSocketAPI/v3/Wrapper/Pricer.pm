@@ -99,8 +99,9 @@ sub _pricing_channel {
 sub _send_ask {
     my ($c, $req_storage) = @_;
 
+    my $args = $req_storage->{args};
     $c->call_rpc({
-            args     => $req_storage->{args},
+            args     => $args,
             uuid     => $req_storage->{uuid},
             method   => 'send_ask',
             msg_type => 'price_stream',
