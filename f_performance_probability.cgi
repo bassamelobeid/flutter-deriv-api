@@ -99,17 +99,12 @@ BOM::Platform::Context::template->process(
     'backoffice/account/performance_probability.html.tt',
     {
         performance_probability => $performance_probability,
-        sold_contracts          => $sold_contracts,
-        limits                  => $limits,
-        markets                 => [BOM::Market::Registry->instance->display_markets],
         email                   => $client->email,
         full_name               => $client->full_name,
         loginid                 => $client->loginid,
         posted_startdate        => $startdate,
         posted_enddate          => $enddate,
         currency                => $client->currency,
-        residence               => $client->residence,
-        contract_details        => \&BOM::View::Controller::Bet::get_info,
     }) || die BOM::Platform::Context::template->error();
 
 code_exit_BO();
