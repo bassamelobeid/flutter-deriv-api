@@ -139,7 +139,7 @@ sub create_app {
         INSERT INTO oauth.apps
             (name, scopes, homepage, github, appstore, googleplay, redirect_uri, markup, binary_user_id)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?)
+            (?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
     ");
     $sth->execute(
