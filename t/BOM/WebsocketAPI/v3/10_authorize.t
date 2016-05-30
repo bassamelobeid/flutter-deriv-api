@@ -64,6 +64,7 @@ ok $stash->{account_id},           'Should store to account_id stash';
 ok $stash->{country},              'Should store country to stash';
 ok $stash->{currency},             'Should store currency to stash';
 ok $stash->{landing_company_name}, 'Should store landing_company_name to stash';
+ok $stash->{markup},               'Should store markup to stash';
 ok exists $stash->{is_virtual}, 'Should store is_virtual to stash';
 ok !$authorize->{authorize}->{account_id}, 'Shouldnt return account_id';
 ok !$authorize->{authorize}->{country},    'Shouldnt return country';
