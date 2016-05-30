@@ -123,6 +123,7 @@ sub _get_ask {
                 date_start    => $contract->date_start->epoch,
             };
 
+            # only required for non-spead contracts
             if ($p2->{from_pricer_daemon} and $p2->{basis}) {
                 $response->{theo_probability}      = $contract->theo_probability->amount;
                 $response->{base_commission}       = $contract->base_commission;
