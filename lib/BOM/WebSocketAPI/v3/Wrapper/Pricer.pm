@@ -58,7 +58,7 @@ sub _pricing_channel {
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
-    my $amount = $args_hash{amount_per_point} || $args_hash{amount};
+    my $amount = $args->{amount_per_point} || $args->{amount};
 
     if ($pricing_channel->{$serialized_args} and $pricing_channel->{$serialized_args}->{$amount}) {
         return;
