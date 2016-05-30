@@ -80,6 +80,7 @@ major_pairs:
     is_OTC: 1
     explanation: 'The most widely traded and liquid forex pairs.'
     base_commission: 0.025
+    risk_profile: 'medium_risk'
 minor_pairs:
     name: minor_pairs
     display_name: "Minor Pairs"

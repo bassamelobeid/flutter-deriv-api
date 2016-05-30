@@ -810,11 +810,11 @@ subtest 'weekend outlier tick' => sub {
 };
 
 subtest 'risk type' => sub {
-    is (BOM::Market::Underlying->new('frxUSDJPY')->risk_profile->{risk_type}, 'medium_risk', 'USDJPY is medium risk');
-    is (BOM::Market::Underlying->new('frxAUDCAD')->risk_profile->{risk_type}, 'high_risk', 'AUDCAD is high risk');
-    is (BOM::Market::Underlying->new('AEX')->risk_profile->{risk_type}, 'medium_risk', 'AEX is medium risk');
-    is (BOM::Market::Underlying->new('frxXAUUSD')->risk_profile->{risk_type}, 'high_risk', 'XAUUSD is high risk');
-    is (BOM::Market::Underlying->new('R_100')->risk_profile->{risk_type}, 'low_risk', 'R_100 is low risk');
+    is (BOM::Market::Underlying->new('frxUSDJPY')->risk_profile, 'medium_risk', 'USDJPY is medium risk');
+    is (BOM::Market::Underlying->new('frxAUDCAD')->risk_profile, 'high_risk', 'AUDCAD is high risk');
+    is (BOM::Market::Underlying->new('AEX')->risk_profile, 'medium_risk', 'AEX is medium risk');
+    is (BOM::Market::Underlying->new('frxXAUUSD')->risk_profile, 'high_risk', 'XAUUSD is high risk');
+    is (BOM::Market::Underlying->new('R_100')->risk_profile, 'low_risk', 'R_100 is low risk');
 };
 
 done_testing;
