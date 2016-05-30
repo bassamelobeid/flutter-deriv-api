@@ -224,7 +224,6 @@ sub _price_stream_results_adjustment {
         return $results;
     }
 
-
     if (
         my $error = BOM::RPC::v3::Contract::validate_price({
                 ask_price         => $results->{ask_price},
