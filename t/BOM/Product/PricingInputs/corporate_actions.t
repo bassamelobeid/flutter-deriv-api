@@ -1,9 +1,8 @@
 #!/usr/bin/perl
-
 use strict;
 use warnings;
 
-use Test::More (tests => 7);
+use Test::More (tests => 8);
 use Test::Exception;
 use Test::NoWarnings;
 use Test::MockModule;
@@ -30,7 +29,8 @@ my $storage_accessor = Quant::Framework::StorageAccessor->new(
 );
 my $date       = Date::Utility->new('2013-03-27');
 
-my $corp = Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $date);
+my $corp_apple = Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $date);
+my $corp_google = Quant::Framework::CorporateAction::create($storage_accessor, 'USGOOG', $date);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -39,10 +39,24 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_delta',
+    'volsurface_moneyness',
     {
         symbol        => 'USAAPL',
         recorded_date => Date::Utility->new,
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => Date::Utility->new('2013-03-27'),
+    }) for qw(GBP USD);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol         => 'USGOOG',
+        spot_reference => 100,
+        recorded_date  => Date::Utility->new('2013-03-27'),
     });
 
 my $opening    = BOM::Market::Underlying->new('USAAPL')->calendar->opening_on($date);
@@ -53,16 +67,22 @@ my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $starting->epoch,
     quote      => 100
 });
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'USAAPL',
-    epoch      => $starting->epoch + 30,
-    quote      => 111
+my $entry_tick_2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'USGOOG',
+    epoch      => $starting->epoch,
+    quote      => 100
 });
+
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'USAAPL',
-    epoch      => $starting->epoch + 90,
-    quote      => 80
-});
+        underlying => $_,
+        epoch      => $starting->epoch + 30,
+        quote      => 111
+    }) for qw(USAAPL USGOOG);
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => $_,
+        epoch      => $starting->epoch + 90,
+        quote      => 80
+    }) for qw(USAAPL USGOOG);
 
 subtest 'invalid operation' => sub {
     plan tests => 3;
@@ -76,7 +96,7 @@ subtest 'invalid operation' => sub {
             type           => 'DVD_STOCK',
         }};
 
-    $corp->update($invalid_action, $starting->plus_time_interval('12h'))->save;
+    $corp_apple->update($invalid_action, $starting->plus_time_interval('12h'))->save;
 
     lives_ok {
         my $date_pricing = $starting->plus_time_interval('1d');
@@ -111,7 +131,7 @@ subtest 'valid action during bet pricing' => sub {
             type           => 'DVD_STOCK',
         }};
 
-    $corp->update($invalid_action, $starting->plus_time_interval('13h'))->save;
+    $corp_apple->update($invalid_action, $starting->plus_time_interval('13h'))->save;
 
     lives_ok {
         my $date_pricing = $starting->plus_time_interval('1d');
@@ -137,6 +157,42 @@ subtest 'valid action during bet pricing' => sub {
     }
 };
 
+subtest 'not valid to buy due to outdated dividend' => sub {
+    plan tests => 3;
+    my $action = {
+        11223344 => {
+            description    => 'STOCK split ',
+            flag           => 'U',
+            modifier       => 'divide',
+            action_code    => '3000',
+            value          => 1.25,
+            effective_date => $opening->date_ddmmmyy,
+            type           => 'STOCK_SPLT',
+        }};
+
+    $corp_google->update($action, $starting->plus_time_interval('24h'))->save;
+
+    my $bet_params = {
+        underlying   => BOM::Market::Underlying->new('USGOOG'),
+        bet_type     => 'PUT',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $starting,
+        duration     => '2d',
+        barrier      => 'S0P',
+        entry_tick   => $entry_tick_2,
+        date_pricing => $starting,
+    };
+    my $bet = produce_contract($bet_params);
+    ok !$bet->is_valid_to_buy, 'not valid to buy';
+    like($bet->primary_validation_error->message, qr/Dividend is not updated/, 'throws error');
+
+    $corp_google->update($action, $starting->minus_time_interval('24h'))->save;
+
+    $bet = produce_contract($bet_params);
+    ok $bet->is_valid_to_buy, 'valid to buy';
+};
+
 subtest 'intraday bet' => sub {
     my $effective_date = $opening;
     lives_ok {
@@ -157,7 +213,7 @@ subtest 'intraday bet' => sub {
 };
 
 subtest 'one action' => sub {
-    plan tests => 13;
+    plan tests => 17;
 
     my $one_action = {
         11223344 => {
@@ -169,7 +225,7 @@ subtest 'one action' => sub {
             type           => 'DVD_STOCK',
         }};
 
-    $corp->update($one_action, $starting->plus_time_interval('14h'))->save;
+    $corp_apple->update($one_action, $starting->plus_time_interval('14h'))->save;
 
     lives_ok {
         my $closing_time = $starting->plus_time_interval('1d')->truncate_to_day->plus_time_interval('23h59m59s');
@@ -186,7 +242,8 @@ subtest 'one action' => sub {
         };
         my $bet = produce_contract($bet_params);
         ok @{$bet->corporate_actions}, 'bet is affected by corporate action';
-        cmp_ok $bet->barrier->as_absolute, '==', 80.00, 'original quote adjusted by corporate action';
+        cmp_ok $bet->barrier->as_absolute,          '==', 80.00,  'original quote adjusted by corporate action';
+        cmp_ok $bet->original_barrier->as_absolute, '==', 100.00, 'original quote without corporate action adjustment';
         my $expiry = $bet->date_expiry->truncate_to_day;
         BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
             underlying => 'USAAPL',
@@ -214,7 +271,8 @@ subtest 'one action' => sub {
         };
         my $bet = produce_contract($bet_params);
         ok @{$bet->corporate_actions}, 'bet is affected by corporate action';
-        cmp_ok $bet->barrier->as_absolute, '==', 79.20, 'original quote adjusted by corporate action';
+        cmp_ok $bet->barrier->as_absolute,          '==', 79.20, 'original quote adjusted by corporate action';
+        cmp_ok $bet->original_barrier->as_absolute, '==', 99.00, 'original quote without corporate action';
         is $bet->is_expired, 0, 'bet does not expire when dividend stock takes place';
         is $bet->value,      0, 'zero payout because barrier is adjusted';
     }
@@ -234,37 +292,40 @@ subtest 'one action' => sub {
             date_pricing => $date_pricing,
         };
         my $bet = produce_contract($bet_params);
-        cmp_ok $bet->high_barrier->as_absolute, '==', 81.60, 'upper barrier adjusted by corporate action';
-        cmp_ok $bet->low_barrier->as_absolute,  '==', 78.40, 'lower barrier adjusted by corporate action';
+        cmp_ok $bet->high_barrier->as_absolute,          '==', 81.60,  'upper barrier adjusted by corporate action';
+        cmp_ok $bet->low_barrier->as_absolute,           '==', 78.40,  'lower barrier adjusted by corporate action';
+        cmp_ok $bet->original_high_barrier->as_absolute, '==', 102.00, 'upper barrier without corporate action adjustment';
+        cmp_ok $bet->original_low_barrier->as_absolute,  '==', 98.00,  'lower barrier without corporate action adjustment';
+
     }
     'one action on double barrier bet';
 };
 
 subtest 'two actions' => sub {
-    plan tests => 5;
+    plan tests => 10;
 
     my $two_actions = {
         11223344 => {
             description    => 'Test corp act 1',
-            flag           => 'N',
+            flag           => 'U',
             modifier       => 'divide',
             value          => 1.25,
             effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
             type           => 'DVD_STOCK',
-            action_code    => '2002'
+            action_code    => '2000'
         },
         11223355 => {
             description    => 'Test corp act 2',
-            flag           => 'N',
+            flag           => 'U',
             modifier       => 'divide',
             value          => 1.45,
-            effective_date => $opening->plus_time_interval('2d')->date_ddmmmyy,
+            effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
             type           => 'DVD_STOCK',
-            action_code    => '2000'
+            action_code    => '2001'
         },
     };
 
-    $corp->update($two_actions, $starting->plus_time_interval('15h'))->save;
+    $corp_apple->update($two_actions, $starting->plus_time_interval('15h'))->save;
 
     my $date_pricing = $starting->plus_time_interval('2d');
     lives_ok {
@@ -280,7 +341,11 @@ subtest 'two actions' => sub {
             date_pricing => $date_pricing,
         };
         my $bet = produce_contract($bet_params);
-        cmp_ok $bet->barrier->as_absolute, '==', 55.17, 'original quote adjusted by corporate action';
+        is $bet->shortcode, 'CALL_USAAPL_100_1364394000_1364673600_S0P_0', 'Can get bet shortcode';
+        is $bet->longcode, 'Win payout if Apple Inc is strictly higher than entry spot at close on 2013-03-30.', 'Can get bet longcode';
+        cmp_ok $bet->barrier->as_absolute,          '==', 55.17,  'original quote adjusted by corporate action';
+        cmp_ok $bet->original_barrier->as_absolute, '==', 100.00, 'original quote without corporate action adjustment';
+
     }
     'two actions on single barrier bet';
 
@@ -298,8 +363,11 @@ subtest 'two actions' => sub {
             date_pricing => $date_pricing,
         };
         my $bet = produce_contract($bet_params);
-        cmp_ok $bet->high_barrier->as_absolute, '==', 56.28, 'upper barrier adjusted by corporate action';
-        cmp_ok $bet->low_barrier->as_absolute,  '==', 54.07, 'lower barrier adjusted by corporate action';
+        cmp_ok $bet->high_barrier->as_absolute,          '==', 56.28,  'upper barrier adjusted by corporate action';
+        cmp_ok $bet->low_barrier->as_absolute,           '==', 54.07,  'lower barrier adjusted by corporate action';
+        cmp_ok $bet->original_high_barrier->as_absolute, '==', 102.00, 'upper barrier without corporate action adjustment';
+        cmp_ok $bet->original_low_barrier->as_absolute,  '==', 98.00,  'lower barrier without corporate action adjustment';
+
     }
     'two actions on double barrier bet';
 };
