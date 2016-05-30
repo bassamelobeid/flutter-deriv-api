@@ -1,5 +1,6 @@
 use Test::MockTime qw( restore_time set_absolute_time );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db update_combined_realtime);
 use Test::Most;
 use Test::FailWarnings;
 use File::Spec::Functions qw(rel2abs splitpath);
@@ -12,7 +13,7 @@ my $abspath   = rel2abs((splitpath(__FILE__))[1]);
 my $data_path = $abspath . '/../../../data/bbdl/ohlc';
 my $module    = Test::MockModule->new('BOM::Market::Underlying');
 $module->mock('has_holiday_on', sub { 0 });
-
+initialize_realtime_ticks_db();
 subtest everything => sub {
 
     my $updater = BOM::MarketData::AutoUpdater::OHLC->new(
@@ -65,14 +66,12 @@ subtest 'valid index' => sub {
         directory_to_save => tempdir,
     );
     lives_ok {
+        update_combined_realtime(
+            underlying_symbol => 'HSI',
+            datetime          => Date::Utility->new,
+            tick              => {quote => 10192.45},
+        );
 
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'HSI',
-            epoch      => 1389340800,
-            quote      => 10192.45,
-            bid        => 10192.45,
-            ask        => 10192.45
-        });
         $updater->run();
         ok($updater->report->{HSI}->{success}, 'HSI is updated');
     }
@@ -86,6 +85,12 @@ subtest 'valid stocks' => sub {
         directory_to_save => tempdir,
     );
     lives_ok {
+        update_combined_realtime(
+            underlying_symbol => 'FPFP',
+            datetime          => Date::Utility->new,
+            tick              => {quote => 33},
+        );
+
         $updater->run();
         ok($updater->report->{FPFP}->{success}, 'FPFP is updated');
     }
@@ -102,14 +107,13 @@ subtest 'valid close' => sub {
 
     lives_ok {
 
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'HSI',
-            epoch      => 1456300800,
-            quote      => 19192.45,
-            bid        => 19192.45,
-            ask        => 19192.45
-        });
         set_absolute_time(Date::Utility->new('2016-02-24')->epoch);
+        update_combined_realtime(
+            underlying_symbol => 'HSI',
+            datetime          => Date::Utility->new,
+            tick              => {quote => 19192.45},
+        );
+
         $updater->run();
         ok !$updater->report->{HSI}->{success}, 'HSI failed to be updated due to close >=5%';
         like($updater->report->{HSI}->{reason}, qr/OHLC big difference/i, 'sanity check for close');
