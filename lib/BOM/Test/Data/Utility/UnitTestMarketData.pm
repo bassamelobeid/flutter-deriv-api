@@ -24,8 +24,8 @@ use BOM::Platform::Runtime;
 use Carp qw( croak );
 use YAML::XS;
 
-use BOM::MarketData::VolSurface::Delta;
-use BOM::MarketData::VolSurface::Moneyness;
+use Quant::Framework::VolSurface::Delta;
+use Quant::Framework::VolSurface::Moneyness;
 use BOM::System::Chronicle;
 use BOM::System::RedisReplicated;
 use Quant::Framework::Utils::Test;
