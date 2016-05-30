@@ -151,7 +151,7 @@ sub get_app {
     my ($self, $user_id, $app_id) = @_;
 
     my $app = $self->dbh->selectrow_hashref("
-        SELECT id as app_id, name, redirect_uri, scopes FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
+        SELECT id as app_id, name, redirect_uri, scopes, markup FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
     ", undef, $app_id, $user_id);
     return unless $app;
 
