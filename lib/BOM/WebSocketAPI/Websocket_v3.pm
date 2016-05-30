@@ -260,6 +260,7 @@ my @dispatch = (
     ['app_register', '', 1, 'admin'],
     ['app_list',     '', 1, 'admin'],
     ['app_get',      '', 1, 'admin'],
+    ['app_update',   '', 1, 'admin'],
     ['app_delete',   '', 1, 'admin'],
     ['oauth_apps',   '', 1, 'admin'],
 
