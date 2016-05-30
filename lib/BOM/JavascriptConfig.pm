@@ -1,4 +1,4 @@
-package BOM::View::JavascriptConfig;
+package BOM::JavascriptConfig;
 
 use MooseX::Singleton;
 use Mojo::URL;

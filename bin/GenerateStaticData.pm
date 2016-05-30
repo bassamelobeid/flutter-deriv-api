@@ -11,7 +11,7 @@ use Digest::MD5;
 use File::Slurp;
 use YAML::XS qw(LoadFile);
 
-extends 'BOM::View::JavascriptConfig';
+extends 'BOM::JavascriptConfig';
 
 use BOM::Market::Registry;
 use BOM::Market::SubMarket::Registry;
