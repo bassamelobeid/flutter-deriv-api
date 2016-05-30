@@ -50,6 +50,10 @@
       "description":"Application redirect_uri",
       "required": "1"
     },
+    "markup": {
+      "type": "integer",
+      "description": "Application markup"
+    },
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
