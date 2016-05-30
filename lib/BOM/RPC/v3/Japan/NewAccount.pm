@@ -1,4 +1,4 @@
-package BOM::RPC::v3::NewAccount::Japan;
+package BOM::RPC::v3::Japan::NewAccount;
 
 use strict;
 use warnings;
