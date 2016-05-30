@@ -119,7 +119,7 @@ sub startup {
     $app->plugin('BOM::WebSocketAPI::Plugins::Helpers');
 
     $app->plugin(
-        'BOM::WebSocketAPI::Plugins::WebSocketProxy' => {
+        'Mojolicious::Plugin::WebSocketProxy' => {
             actions => [
                 ['authorize'],
                 [
