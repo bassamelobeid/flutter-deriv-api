@@ -188,6 +188,7 @@ sub startup {
         ['app_register', \&BOM::RPC::v3::App::register,   1],
         ['app_list',     \&BOM::RPC::v3::App::list,       1],
         ['app_get',      \&BOM::RPC::v3::App::get,        1],
+        ['app_update',   \&BOM::RPC::v3::App::update,     1],
         ['app_delete',   \&BOM::RPC::v3::App::delete,     1],
         ['oauth_apps',   \&BOM::RPC::v3::App::oauth_apps, 1],
 
