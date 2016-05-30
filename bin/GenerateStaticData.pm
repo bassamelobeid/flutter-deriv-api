@@ -658,6 +658,15 @@ sub _texts {
         push @texts, $self->localize('Contract ID');
         push @texts, $self->localize('Reference ID');
         push @texts, $self->localize('Remaining Time');
+        push @texts, $self->localize('This contract was affected by a Corporate Action event.');
+        push @texts, $self->localize('Barrier Change');
+        push @texts, $self->localize('Original Barrier');
+        push @texts, $self->localize('Original High Barrier');
+        push @texts, $self->localize('Original Low Barrier');
+        push @texts, $self->localize('Adjusted Barrier');
+        push @texts, $self->localize('Adjusted High Barrier');
+        push @texts, $self->localize('Adjusted Low Barrier');
+        push @texts, $self->localize('Corporate Action');
 
         # strings for financial assessment
         push @texts, $self->localize('Financial Assessment');
