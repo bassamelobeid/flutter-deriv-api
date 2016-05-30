@@ -106,7 +106,6 @@ sub _send_ask {
                 $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
                 return $err;
             }
-            delete $response->{longcode};
             return {
                 msg_type => 'price_stream',
                 price_stream => {($id ? (id => $id) : ()), %$response}};
