@@ -187,7 +187,7 @@ subtest 'not valid to buy due to outdated dividend' => sub {
     ok !$bet->is_valid_to_buy, 'not valid to buy';
     like($bet->primary_validation_error->message, qr/Dividend is not updated/, 'throws error');
 
-    $corp_google->update($action, $starting->minus_time_interval('24h'))->save;
+    $corp_google->update($action, Date::Utility->new('2013-03-27'))->save;
 
     $bet = produce_contract($bet_params);
     ok $bet->is_valid_to_buy, 'valid to buy';
