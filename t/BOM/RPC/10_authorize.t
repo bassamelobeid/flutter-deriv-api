@@ -62,7 +62,8 @@ subtest $method => sub {
             'account_id'           => '',
             'currency'             => '',
             'landing_company_name' => 'costarica',
-            'is_virtual'           => '0'
+            'is_virtual'           => '0',
+            'markup'               => '0'
         },
         'currency'             => '',
         'email'                => 'dummy@binary.com',
