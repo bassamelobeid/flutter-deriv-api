@@ -8,9 +8,9 @@ sub code { return 'EXPIRYMISSE'; }
 
 sub localizable_description {
     return +{
-        daily                 => '[_1] [_2] payout if [_3] ends on or outside [_7] to [_6] at [_5].',
-        intraday              => '[_1] [_2] payout if [_3] ends on or outside [_7] to [_6] at [_5] after [_4].',
-        intraday_fixed_expiry => '[_1] [_2] payout if [_3] ends on or outside [_7] to [_6] at [_5].',
+        daily                 => 'Win payout if [_3] ends on or outside [_7] to [_6] at [_5].',
+        intraday              => 'Win payout if [_3] ends on or outside [_7] to [_6] at [_5] after [_4].',
+        intraday_fixed_expiry => 'Win payout if [_3] ends on or outside [_7] to [_6] at [_5].',
     };
 }
 

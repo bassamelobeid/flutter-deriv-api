@@ -193,7 +193,7 @@ sub _build_for_shortcode {
 
     while ($strike->has_adjustments) {
         # Keep on down the rabbit hole until we find the bottom which is unadjusted.
-        $strike = $self->adjustment->{prev_obj};
+        $strike = $strike->adjustment->{prev_obj};
     }
 
     return $strike->as_relative if ($strike->supplied_type eq 'relative' or $strike->supplied_type eq 'difference');
@@ -230,7 +230,7 @@ sub _build_display_text {
     my $strike = $self;
     while ($strike->has_adjustments) {
         # Keep on down the rabbit hole until we find the bottom which is unadjusted.
-        $strike = $self->adjustment->{prev_obj};
+        $strike = $strike->adjustment->{prev_obj};
     }
 
     if ($barrier_type eq 'absolute') {
