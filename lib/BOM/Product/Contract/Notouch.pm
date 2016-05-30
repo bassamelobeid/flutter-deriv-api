@@ -8,9 +8,9 @@ sub code { return 'NOTOUCH'; }
 
 sub localizable_description {
     return +{
-        daily                 => '[_1] [_2] payout if [_3] does not touch [_6] through [_5].',
-        intraday              => '[_1] [_2] payout if [_3] does not touch [_6] through [_5] after [_4].',
-        intraday_fixed_expiry => '[_1] [_2] payout if [_3] does not touch [_6] through [_5].',
+        daily                 => 'Win payout if [_3] does not touch [_6] through [_5].',
+        intraday              => 'Win payout if [_3] does not touch [_6] through [_5] after [_4].',
+        intraday_fixed_expiry => 'Win payout if [_3] does not touch [_6] through [_5].',
     };
 }
 
