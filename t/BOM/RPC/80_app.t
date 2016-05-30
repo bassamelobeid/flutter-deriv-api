@@ -53,6 +53,22 @@ my $app1 = $c->call_ok(
             redirect_uri => 'https://www.example.com/',
         },
     })->has_no_system_error->has_no_error->result;
+is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
+is $app1->{redirect_uri}, 'https://www.example.com/', 'redirect_uri is right';
+
+$app1 = $c->call_ok(
+    'app_update',
+    {
+        token => $token,
+        args  => {
+            app_update   => $app1->{app_id},
+            name         => 'App 1',
+            scopes       => ['read', 'trade', 'admin'],
+            redirect_uri => 'https://www.example.com/callback',
+        },
+    })->has_no_system_error->has_no_error->result;
+is_deeply([sort @{$app1->{scopes}}], ['admin', 'read', 'trade'], 'scopes are updated');
+is $app1->{redirect_uri}, 'https://www.example.com/callback', 'redirect_uri is updated';
 
 my $get_app = $c->call_ok(
     'app_get',
@@ -144,7 +160,7 @@ my $used_apps = $c->call_ok(
     })->has_no_system_error->result;
 is scalar(@{$used_apps}), 1;
 is $used_apps->[0]->{app_id}, $test_appid, 'app_id 1';
-is_deeply([sort @{$used_apps->[0]->{scopes}}], ['read', 'trade'], 'scopes are right');
+is_deeply([sort @{$used_apps->[0]->{scopes}}], ['admin', 'read', 'trade'], 'scopes are right');
 ok $used_apps->[0]->{last_used}, 'last_used ok';
 
 $oauth = BOM::Database::Model::OAuth->new;    # re-connect db
