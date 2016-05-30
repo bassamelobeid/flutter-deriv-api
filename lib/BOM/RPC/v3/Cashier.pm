@@ -1224,34 +1224,24 @@ sub _get_market_limit_profile {
 
     my $currency        = $client->currency;
     my $landing_company = $client->landing_company->short;
-    my @markets         = get_offerings_with_filter('market', {landing_company => $landing_company});
+    my @markets         = map { BOM::Market::Registry->get($_) } get_offerings_with_filter('market', {landing_company => $landing_company});
 
-    my $risk_profile = BOM::Platform::Static::Config::quants->{risk_profile};
-    # If we have submarket limit set, we should mention here.
-    # Note that we are not showing underlying limit even if they are set.
-    my $submarket_str = BOM::Platform::Runtime->instance->app_config->quants->client_limits->submarket_limits;
-    my $submarket_limit = $submarket_str ? from_json($submarket_str) : {};
+    my $limit_ref = BOM::Platform::Static::Config::quants->{risk_profile};
 
     my %limits;
     foreach my $market (@markets) {
-        my @submarket_list = get_offerings_with_filter('submarket', {market => $market});
-        if (my @limited_submarkets = grep { $submarket_limit->{$_} } @submarket_list) {
-            foreach my $submarket (@limited_submarkets) {
-                my $display_name = BOM::Market::SubMarket::Registry->get($submarket)->display_name;
-                my $limit        = $risk_profile->{$submarket_limit->{$submarket}};
-                push @{$limits{$market}},
-                    +{
-                    name           => $display_name,
-                    turnover_limit => $limit->{turnover}{$currency},
-                    payout_limit   => $limit->{payout}{$currency}};
-            }
+        my @submarket_list =
+            grep { $_->risk_profile }
+            map { BOM::Market::SubMarket::Registry->get($_) } get_offerings_with_filter('submarket', {market => $market->name});
+        if (@submarket_list) {
+            my @list = map { {name => $_->display_name, turnover_limit => $limit_ref->{$_->risk_profile}{turnover}{$currency},} } @submarket_list;
+            push @{$limits{$market->name}}, @list;
         } else {
-            my $market_obj = BOM::Market::Registry->get($market);
-            my $limit      = $risk_profile->{$market_obj->risk_profile->{risk_type}};
-            $limits{$market} = {
-                name           => $market_obj->display_name,
-                turnover_limit => $limit->{turnover}{$currency},
-                payout_limit   => $limit->{payout}{$currency}};
+            push @{$limits{$market->name}},
+                +{
+                name           => $market->display_name,
+                turnover_limit => $limit_ref->{$market->risk_profile}{turnover}{$currency},
+                };
         }
     }
 
