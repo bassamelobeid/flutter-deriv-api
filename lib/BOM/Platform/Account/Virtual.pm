@@ -6,7 +6,6 @@ use warnings;
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
-use BOM::Utility::Log4perl qw(get_logger);
 use BOM::System::Password;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context::Request;
@@ -25,6 +24,7 @@ sub create_account {
     my $email     = lc $details->{email};
     my $password  = BOM::System::Password::hashpw($details->{client_password});
     my $residence = $details->{residence};
+    my $source    = $details->{source};
 
     # TODO: to be removed later
     BOM::Platform::Account::invalid_japan_access_check($residence, $email);
@@ -60,7 +60,7 @@ sub create_account {
             secret_answer      => '',
             myaffiliates_token_registered => 0,
             checked_affiliate_exposures   => 0,
-            source                        => $details->{source} // '',
+            source                        => $source,
             latest_environment            => $details->{latest_environment} // '',
         });
     }
@@ -68,7 +68,7 @@ sub create_account {
         $error = $_;
     };
     if ($error) {
-        get_logger()->warn("Virtual: register_and_return_new_client err [$error]");
+        warn("Virtual: register_and_return_new_client err [$error]");
         return {error => 'invalid'};
     }
 
@@ -78,21 +78,16 @@ sub create_account {
         ($email_verified) ? (email_verified => 1) : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
-    $client->deposit_virtual_funds;
+    $client->deposit_virtual_funds($source);
 
     unless ($email_verified) {
-        my $link = request()->url_for(
-            '/user/validate_link',
-            {
-                verify_token => BOM::Platform::Token::Verification->new({
-                        email       => $email,
-                        expires_in  => 3600,
-                        created_for => 'verify_email'
-                    }
-                )->token,
-            });
+        my $token = verify_token => BOM::Platform::Token::Verification->new({
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'verify_email'
+            })->token;
         my $email_content;
-        BOM::Platform::Context::template->process('email/resend_verification.html.tt', {link => $link}, \$email_content)
+        BOM::Platform::Context::template->process('email/resend_verification.html.tt', {token => $token}, \$email_content)
             || die BOM::Platform::Context::template->error();
 
         send_email({

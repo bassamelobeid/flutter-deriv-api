@@ -99,22 +99,38 @@ copy across the system's execution environment.
 
 =cut
 
+my $instance;
+
+BEGIN {
+    $instance = __PACKAGE__->new;
+}
+
 sub instance {
     my ($class, $new) = @_;
-    state $instance;
     $instance = $new if (defined $new);
-    $instance ||= $class->new;
 
     return $instance;
 }
 
+my $countries;
+
+BEGIN {
+    $countries = Locale::Country::Extra->new();
+}
+
 sub _build_countries {
     my $self = shift;
-    return Locale::Country::Extra->new();
+    return $countries;
+}
+
+my $countries_list;
+
+BEGIN {
+    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
 }
 
 sub _build_countries_list {
-    return YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+    return $countries_list;
 }
 
 sub financial_company_for_country {
@@ -150,7 +166,7 @@ sub restricted_country {
     return ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'none');
 }
 
-sub random_restricted_country {
+sub volidx_restricted_country {
     my ($self, $country) = @_;
     my $config = $self->countries_list->{$country};
     return 1 unless ($config);
@@ -163,19 +179,32 @@ sub _build_app_config {
     return BOM::Platform::Runtime::AppConfig->new();
 }
 
+my $websites;
+
+BEGIN {
+    $websites = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml');
+}
+
 sub _build_website_list {
     my $self = shift;
     return BOM::Platform::Runtime::Website::List->new(
         broker_codes => $self->broker_codes,
-        definitions  => YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml'),
+        definitions  => $websites
     );
+}
+
+my $broker_codes;
+
+BEGIN {
+    $broker_codes = YAML::XS::LoadFile('/etc/rmg/broker_codes.yml');
 }
 
 sub _build_broker_codes {
     my $self = shift;
     return BOM::Platform::Runtime::Broker::Codes->new(
         landing_companies  => $self->landing_companies,
-        broker_definitions => YAML::XS::LoadFile('/etc/rmg/broker_codes.yml'));
+        broker_definitions => $broker_codes
+    );
 }
 
 sub _build_landing_companies {

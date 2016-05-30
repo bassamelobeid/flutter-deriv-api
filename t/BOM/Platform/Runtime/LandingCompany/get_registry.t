@@ -8,7 +8,6 @@ use BOM::Platform::Runtime::LandingCompany::Registry;
 my $registry;
 lives_ok {
     $registry = BOM::Platform::Runtime::LandingCompany::Registry->new();
-    $registry->keys;
 }
 'Initialized Registry';
 
@@ -22,8 +21,4 @@ is $cr_lc2->short, 'costarica', 'Got the right short code';
 
 is $cr_lc, $cr_lc2, 'We get the same thing, we are sane';
 
-throws_ok { $registry->get_landing_company(nama => 'Binary (U.K.) Ltd.'); } qr/Unable to search landing company by nama/,
-    'dies if no company name or short specified';
-
-##Test Choose LCs
-##Test Initialize LCs
+is_deeply([sort $registry->all_currencies],[qw(AUD EUR GBP JPY USD)], 'Can get all currencies');

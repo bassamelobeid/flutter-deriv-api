@@ -9,7 +9,6 @@ use Plack::App::CGIBin::Streaming;
 use Time::HiRes ();
 use File::Copy  ();
 use File::Path  ();
-use BOM::Utility::Log4perl qw/get_logger/;
 
 BEGIN {
     $ENV{ERROR_LOG} ||= 'error_log';
@@ -58,8 +57,6 @@ sub app {    ## no critic
     );
     my $app_sub = $app->to_app;
 
-    get_logger()->info("precompiled " . (keys %{$app->{_compiled}}) . " scripts");
-
     return builder {
         enable 'AccessLog::Timed' => (
             format => '%h %l %u %t "%r" %>s %b %D',
@@ -75,7 +72,6 @@ use strict;
 use warnings;
 use parent 'Plack::App::CGIBin::Streaming';
 
-use BOM::Utility::Log4perl qw/get_logger/;
 use Try::Tiny;
 
 # The control flow is a bit difficult to understand here. Hence, ...
@@ -110,7 +106,7 @@ sub mkapp {
             # overloads '""', like Mojo::Exception. In that case the
             # exception could also be handled in an intermediate stack
             # frame as if it were a normal string.
-            get_logger->error($_) unless ref;
+            warn($_) unless ref;
 
             # in many cases the HTTP status seen by the client cannot
             # be changed anymore. But we still can set it for our own

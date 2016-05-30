@@ -14,8 +14,7 @@ use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use BOM::Platform::Runtime::Website;
 use BOM::Platform::SessionCookie;
-use BOM::Utility::Log4perl qw( get_logger );
-use BOM::Utility::Untaint;
+use BOM::Platform::Untaint;
 
 use Plack::App::CGIBin::Streaming::Request;
 
@@ -280,7 +279,7 @@ sub _build_params {
 
 sub _build_untainter {
     my $self = shift;
-    return CGI::Untaint->new({INCLUDE_PATH => 'BOM::Utility::Untaint'}, %{$self->params});
+    return CGI::Untaint->new({INCLUDE_PATH => 'BOM::Platform::Untaint'}, %{$self->params});
 }
 
 sub _build_http_method {
@@ -558,7 +557,7 @@ sub is_from_office {
 sub BUILD {
     my $self = shift;
     if ($self->http_method and not grep { $_ eq $self->http_method } qw/GET POST HEAD OPTIONS/) {
-        get_logger()->logcroak($self->http_method . " is not an accepted request method");
+        die($self->http_method . " is not an accepted request method");
     }
     return;
 }

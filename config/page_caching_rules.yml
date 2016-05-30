@@ -1,83 +1,57 @@
 "/contact":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/trade.cgi":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/trading":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"trade_get.cgi":
-  header:
-    Cache-Control: "private, max-age=240"
 "/cashier":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/partners":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/trade/bet_explanation":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/terms-and-conditions":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/affiliate/signup":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
-"/user/logintrouble":
+"/supported-browsers":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/cashier/payment_agent_list":
   header:
     Cache-Control: "public, max-age=1000"
-"trade_livechart.cgi":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/legal/us_patents":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/about-us":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/careers":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/smart-indices":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/open-source-projects":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/group-history":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/group-information":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
-"/charting":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/country":
   header:
     Cache-Control: "private, max-age=604800"
-  exclude_appcache: true
 "/get-started":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -96,7 +70,7 @@
 "/get-started/how-to-trade-binaries":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/get-started/random-markets":
+"/get-started/volidx-markets":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/get-started/types-of-trades":
@@ -111,32 +85,24 @@
 "/home":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/resources":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/responsible-trading":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/robots.txt":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/tour":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/why-us":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/white-labels":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/payment-agent":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/cashier/payment_methods":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -176,6 +142,9 @@
 "/cashier/limitsws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/cashier/authenticatews":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/new_account/realws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -200,15 +169,12 @@
 "/open-positions":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/open-positions/job-details":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/user-testing":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/new_account/japanws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -240,5 +206,17 @@
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/get-started-jp":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/cashier/forwardws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/logged_inws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/user/authorised_appsws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/applications":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"

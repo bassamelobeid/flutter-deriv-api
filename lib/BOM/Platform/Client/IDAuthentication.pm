@@ -5,9 +5,8 @@ use Moose;
 use namespace::autoclean;
 
 use BOM::Platform::Email qw(send_email);
-use BOM::Database::Model::Constants;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(localize request);
+use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
 use BOM::Platform::ProveID;
 use BOM::Platform::Static::Config;
@@ -23,40 +22,11 @@ has force_recheck => (
     default => 0
 );
 
-sub _landing_company_country {
-    my $self = shift;
-    return $self->client->landing_company->country;
-}
-
-sub _needs_proveid {
-    my $self = shift;
-
-    my $landing_company_country = $self->_landing_company_country;
-
-    # All MX clients needs authentication
-    if ($landing_company_country eq 'Isle of Man') {
-        return 1;
-    }
-    return;
-}
-
-sub _needs_checkid {
-    my $self   = shift;
-    my $client = $self->client;
-    return unless $self->_landing_company_country eq 'Malta';
-    return BOM::Platform::ProveID->valid_country($client->residence);
-}
-
-sub _requires_age_verified {
-    my $self = shift;
-
-    return if $self->client->is_virtual;
-    return $self->_landing_company_country ne 'Costa Rica';
-}
-
 sub run_authentication {
     my $self   = shift;
     my $client = $self->client;
+
+    return if $client->is_virtual;
 
     # Binary Investment clients should already be fully_authenticated by the time this code runs following an intial deposit.
     # Binary Investment accounts are set to "unwelcome" when they are first created.  Document
@@ -69,21 +39,13 @@ sub run_authentication {
 
     my $envelope;
 
-    if ($self->_needs_proveid) {
-
-        $envelope = $self->_do_proveid
-
-    } elsif ($self->_needs_checkid) {
-
-        $envelope = $self->_do_checkid
-
-    } elsif ($self->_requires_age_verified
+    if ($client->landing_company->country eq 'Isle of Man') {
+        $envelope = $self->_do_proveid;
+    } elsif ($client->landing_company->country ne 'Costa Rica'
         && !$client->get_status('age_verification')
         && !$client->has_valid_documents)
     {
-
-        $envelope = $self->_request_id_authentication
-
+        $envelope = $self->_request_id_authentication;
     }
 
     send_email($envelope) if $envelope;
@@ -96,89 +58,57 @@ sub _do_proveid {
 
     my $prove_id_result = $self->_fetch_proveid || {};
 
+    my $set_status = sub {
+        my ($status, $reason, $description) = @_;
+        $self->_notify($reason, $description);
+        $client->set_status($status, 'system', $reason);
+        $client->save;
+    };
+
+    # deceased or fraud => disable the client
     if ($prove_id_result->{deceased} or $prove_id_result->{fraud}) {
-
-        my $reason = $prove_id_result->{deceased} ? "deceased" : "fraud";
-
-        my $note_subject = '192 PROVE ID INDICATES ' . uc($reason) . '!';
-        my $note_message = 'Please note that client [' . $client->loginid . "] was flagged as $reason by Experian Prove ID check";
-
-        $self->_notify($note_subject, $note_message);
-
-    } elsif ($prove_id_result->{deny}
+        my $key = $prove_id_result->{deceased} ? "deceased" : "fraud";
+        $set_status->('disabled', 'PROVE ID INDICATES ' . uc($key), "Client was flagged as $key by Experian Prove ID check");
+    }
+    # we have a match, but result is DENY
+    elsif ( $prove_id_result->{deny}
         and defined $prove_id_result->{matches}
         and (scalar @{$prove_id_result->{matches}} > 0))
     {
-        if (grep { /PEP/ } @{$prove_id_result->{matches}}
-            && $prove_id_result->{num_verifications} >= 2)
-        {
-
-            # Set age verfied
-            $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-            $client->save;
-
-            $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION [PEP]',
-                'PEP match. Could only get enough score for age verification.');
-        } elsif (
-            grep {
-                /Directors/
-            } @{$prove_id_result->{matches}}
-            && $prove_id_result->{num_verifications} >= 2
-            )
-        {
-
-            # Set age verfied
-            $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-            $client->save;
-
-            $self->_notify(
-                'EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION [Director]',
-                'Director match. Could only get enough score for age verification.'
-            );
-        } else {
-
-            $client->set_status('unwelcome', 'system', 'Failed identity test via Experian');
-            $client->save();
-
-            $self->_notify('EXPERIAN PROVE ID KYC CLIENT FLAGGED! ', 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
+        my $type;
+        # Office of Foreign Assets Control, HM Treasury => disable the client
+        if (($type) = grep { /(OFAC|BOE)/ } @{$prove_id_result->{matches}}) {
+            $set_status->('disabled', "$type match", "$type match");
         }
-    } elsif ($prove_id_result->{fully_authenticated}) {
-
-        # Set age verfied
-        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-
-        $client->set_authentication('ID_192')->status('pass');
-        $client->save;
-
-        $self->_notify('EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT', 'passed PROVE ID KYC on first deposit and is fully authenticated.');
-
-    } elsif ($prove_id_result->{age_verified}) {
-
-        # Set age verfied
-        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-        $client->save;
-
-        $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION', 'could only get enough score for age verification.');
-    } else {
-        $self->_notify('192_PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
+        # Director or Politically Exposed => unwelcome client
+        elsif ((($type) = grep { /(PEP|Directors)/ } @{$prove_id_result->{matches}})) {
+            $set_status->('unwelcome', "$type match", "$type match");
+        } else {
+            $set_status->('unwelcome', 'EXPERIAN PROVE ID RETURNED DENY', join(', ', @{$prove_id_result->{matches}}));
+        }
+    }
+    # County Court Judgement => unwelcome client
+    elsif ($prove_id_result->{CCJ}) {
+        $set_status->('unwelcome', 'PROVE ID INDICATES CCJ', 'Client was flagged as CCJ by Experian Prove ID check');
+    }
+    # result is FULLY AUTHENTICATED => age verified as IOM GSC no longer accept Experian to authenticate clients
+    elsif ($prove_id_result->{fully_authenticated}) {
+        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT', 'passed PROVE ID KYC and is age verified');
+    }
+    # result is AGE VERIFIED ONLY
+    elsif ($prove_id_result->{age_verified}) {
+        $set_status->('age_verification', 'EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION', 'could only get enough score for age verification.');
+    }
+    # no verifications => unwelcome client
+    elsif (exists $prove_id_result->{num_verifications} and $prove_id_result->{num_verifications} eq 0) {
+        $set_status->('unwelcome', 'PROVE ID INDICATES NO VERIFICATIONS', 'proveid indicates no verifications');
+    }
+    # failed to authenticate
+    else {
+        $set_status->('unwelcome', 'PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
         return $self->_request_id_authentication;
     }
 
-    return;
-}
-
-sub _do_checkid {
-    my $self   = shift;
-    my $client = $self->client;
-
-    if ($self->_fetch_checkid) {
-        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian CHECK ID');
-        $client->save;
-        $self->_notify('EXPERIAN CHECK ID PASSED ON FIRST DEPOSIT', 'passed CHECK ID on first deposit.');
-    } else {
-        $self->_notify('192_CHECKID_AUTH_FAILED', 'failed to authenticate via CHECK ID through Experian');
-        return $self->_request_id_authentication;
-    }
     return;
 }
 
@@ -198,7 +128,7 @@ sub _request_id_authentication {
     my $ce_body       = localize(<<'EOM', $client_name, $support_email);
 Dear [_1],
 
-I am writing to you regarding your account with Binary.com.
+We are writing to you regarding your account with Binary.com.
 
 We are legally required to verify that clients are over the age of 18, and so we request that you forward scanned copies of one of the following to [_2]:
 
@@ -206,7 +136,7 @@ We are legally required to verify that clients are over the age of 18, and so we
 
 In order to comply with licencing regulations, you will be unable to make further deposits or withdrawals or to trade on the account until we receive this document.
 
-I look forward to hearing from you soon.
+We look forward to hearing from you soon.
 
 Kind regards,
 
@@ -232,37 +162,20 @@ sub _notify {
     return;
 }
 
-sub _premise {
-    my $self    = shift;
-    my $premise = $self->client->address_1;
-    if ($premise =~ /^(\d+)/) {
-        $premise = $1;
-    }
-    return $premise;
-}
-
 sub _fetch_proveid {
     my $self = shift;
 
     return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
 
+    my $premise = $self->client->address_1;
+    if ($premise =~ /^(\d+)/) {
+        $premise = $1;
+    }
+
     return BOM::Platform::ProveID->new(
         client        => $self->client,
         search_option => 'ProveID_KYC',
-        premise       => $self->_premise,
-        force_recheck => $self->force_recheck
-    )->get_result;
-}
-
-sub _fetch_checkid {
-    my $self = shift;
-
-    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
-
-    return BOM::Platform::ProveID->new(
-        client        => $self->client,
-        search_option => 'CheckID',
-        premise       => $self->_premise,
+        premise       => $premise,
         force_recheck => $self->force_recheck
     )->get_result;
 }

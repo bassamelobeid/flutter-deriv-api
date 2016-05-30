@@ -18,7 +18,7 @@
       - indices
       - stocks
       - smarties
-      - random
+      - volidx
     legal_allowed_contract_categories:
       - asian
       - callput
@@ -63,7 +63,7 @@
       - EUR
       - GBP
     legal_allowed_markets:
-      - random
+      - volidx
     legal_allowed_contract_categories:
       - asian
       - callput
@@ -155,7 +155,7 @@
       - indices
       - stocks
       - smarties
-      - random
+      - volidx
     legal_allowed_contract_categories:
       - asian
       - callput
@@ -198,7 +198,7 @@
       - indices
       - stocks
       - smarties
-      - random
+      - volidx
     legal_allowed_contract_categories:
       - asian
       - callput

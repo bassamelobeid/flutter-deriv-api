@@ -37,8 +37,22 @@ sub redis_read {
     return $redis_read;
 }
 
+state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml');
+
 sub _config {
-    return YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml');
+    return $config;
+}
+
+sub redis_pricer {
+    state $redis_pricer = do {
+        my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml');
+        RedisDB->new(
+            timeout => 10,
+            host    => $config->{write}->{host},
+            port    => $config->{write}->{port},
+            ($config->{write}->{password} ? ('password', $config->{write}->{password}) : ()));
+    };
+    return $redis_pricer;
 }
 
 1;
