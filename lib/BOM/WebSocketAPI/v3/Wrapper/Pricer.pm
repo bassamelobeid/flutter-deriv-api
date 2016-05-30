@@ -113,7 +113,7 @@ sub _send_ask {
                 if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
                     my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
                     my $amount = $args->{amount_per_point} || $args->{amount};
-                    $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $response->{longcode};
+                    $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $rpc_response->{longcode};
                     $c->stash('pricing_channel' => $pricing_channel);
                 }
                 return;
