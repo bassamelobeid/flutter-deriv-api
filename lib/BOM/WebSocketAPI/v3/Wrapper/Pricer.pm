@@ -206,7 +206,6 @@ sub _price_stream_results_adjustment {
         $results->{display_value} = roundnear(0.01, $ask_price);
         $results->{payout}        = roundnear(0.01, $amount);
     } elsif ($orig_args->{basis} eq 'stake') {
-        my $commission_markup = BOM::Product::Contract::Helper::commission({});
         my $payout            = roundnear(
             0.01,
             BOM::RPC::v3::Contract::calculate_payout({
