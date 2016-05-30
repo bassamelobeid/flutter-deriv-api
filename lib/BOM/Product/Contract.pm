@@ -652,8 +652,8 @@ sub _build_timeindays {
     # If market is Forex, We go with integer days as per the market convention
     if ($self->market->integer_number_of_day and not $self->priced_with_intraday_model) {
         my $utils        = BOM::MarketData::VolSurface::Utils->new;
-        my $days_between = $self->date_expiry->days_between($self->date_start);
-        $atid = $utils->is_before_rollover($self->date_start) ? ($days_between + 1) : $days_between;
+        my $days_between = $self->date_expiry->days_between($start_date);
+        $atid = ($utils->is_before_rollover($start_date) and $start_date->day_of_week != 5) ? ($days_between + 1) : $days_between;
     }
     # If intraday or not FX, then use the exact duration with fractions of a day.
     $atid ||= $self->get_time_to_expiry({
