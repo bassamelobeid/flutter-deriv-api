@@ -77,6 +77,19 @@ client_limits:
       GBP: 100000
       JPY: 10000000
 risk_profile:
+  no_business:
+      turnover:
+          USD: 0
+          EUR: 0
+          AUD: 0
+          GBP: 0
+          JPY: 0
+      payout:
+          USD: 0
+          EUR: 0
+          AUD: 0
+          GBP: 0
+          JPY: 0
   extreme_risk:
       turnover:
           USD: 10000

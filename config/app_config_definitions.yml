@@ -308,40 +308,21 @@ quants:
           global: 1
           isa: ArrayRef
           default: []
-    client_limits:
-      description: "Per client limits on turnover and payout"
-      isa: section
-      contains:
-        financial_market_limits:
-          description: "Financial market risk type definition"
-          isa: json_string
-          global: 1
-          default: '{"forex": "medium_risk", "indices": "medium_risk", "commodities": "high_risk", "stocks": "extreme_risk", "volidx": "low_risk"}'
-        submarket_limits:
-          description: "Submarket risk type definition. If not defined it is take financial market limits"
-          isa: json_string
-          global: 1
-          default: '{"minor_pairs": "high_risk", "smart_fx": "high_risk"}'
-        underlying_limits:
-          description: "Underlying risk type definition. If not defined it is take submarket limits"
-          isa: json_string
-          global: 1
-          default: '{}'
-        custom_limits:
-          description: "Custom limits specification. Available conditions[expiry_type|start_type|market_name|underlying_symbol|category_code|barrier_category]"
-          isa: json_string
-          global: 1
-          default: '[{"expiry_type": "tick","start_type": "spot","category_code": "callput","market_name":"forex","risk_type": "high_risk","name": "tick_expiry_engine_turnover_limit"},{"expiry_type": "intraday","start_type": "spot","market_name": "indices","category_code": "callput","risk_type": "high_risk","name": "intraday_spot_index_turnover_limit"},{"expiry_type": "tick", "category_code": "asian","risk_type": "high_risk","name": "asian_turnover_limit"}]'
-        spreads_turnover_limit_profile:
-          description: "spreads daily profit limit"
-          isa: Str
-          global: 1
-          default: 'extreme_risk'
-    custom_suspend_trading_conditions:
-      description: "Disable trading on the specified contract conditions. Available conditions[expiry_type|start_type|market_name|underlying_symbol|category_code|barrier_category]"
+    spreads_daily_profit_limit:
+      description: "Limit of daily profit for spreads"
+      isa: Str
+      global: 1
+      default: 'extreme_risk'
+    custom_client_profiles:
+      description: "Custom client limits specification. Available conditions[expiry_type|start_type|market|underlying_symbol|contract_category|barrier_category]"
       isa: json_string
       global: 1
-      default: '[]'
+      default: '{}'
+    custom_product_profiles:
+      description: "Custom limits specification. Available conditions[expiry_type|start_type|market|underlying_symbol|contract_category|barrier_category]"
+      isa: json_string
+      global: 1
+      default: '[{"expiry_type": "tick","start_type": "spot","contract_category": "callput","market":"forex","risk_profile": "high_risk","name": "tick_expiry_engine_turnover_limit"},{"expiry_type": "intraday","start_type": "spot","market": "indices","contract_category": "callput","risk_profile": "high_risk","name": "intraday_spot_index_turnover_limit"},{"expiry_type": "tick", "contract_category": "asian","risk_profile": "high_risk","name": "asian_turnover_limit"}]'
 system:
   description: "Various parameters determining core application functionality"
   isa: section
