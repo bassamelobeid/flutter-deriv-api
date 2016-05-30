@@ -14,7 +14,7 @@ sub code { return 'DIGITDIFF'; }
 
 sub localizable_description {
     return +{
-        tick => '[_1] [_2] payout if the last digit of [_3] is not [_6] after [plural,_5,%d tick,%d ticks].',
+        tick => 'Win payout if the last digit of [_3] is not [_6] after [plural,_5,%d tick,%d ticks].',
     };
 }
 

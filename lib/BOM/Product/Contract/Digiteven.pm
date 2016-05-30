@@ -12,7 +12,7 @@ sub code { return 'DIGITEVEN'; }
 
 sub localizable_description {
     return +{
-        tick => '[_1] [_2] payout if the last digit of [_3] is even after [_5] ticks.',
+        tick => 'Win payout if the last digit of [_3] is even after [_5] ticks.',
     };
 }
 
