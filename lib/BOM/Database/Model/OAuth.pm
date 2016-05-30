@@ -189,7 +189,7 @@ sub update_app {
         name         => $app->{name},
         scopes       => $app->{scopes},
         redirect_uri => $app->{redirect_uri},
-    };
+        markup       => $app->{markup}};
 }
 
 sub get_app {
