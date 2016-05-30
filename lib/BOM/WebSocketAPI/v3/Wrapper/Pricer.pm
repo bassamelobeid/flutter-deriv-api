@@ -219,7 +219,11 @@ sub _price_stream_results_adjustment {
         $results->{ask_price}     = roundnear(0.01, $amount);
         $results->{display_value} = roundnear(0.01, $amount);
         $results->{payout}        = roundnear(0.01, $payout);
+    } else {
+        # in case that it is a spread
+        return $results;
     }
+
 
     if (
         my $error = BOM::RPC::v3::Contract::validate_price({
