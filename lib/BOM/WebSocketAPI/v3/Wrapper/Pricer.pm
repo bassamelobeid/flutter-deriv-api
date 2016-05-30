@@ -58,7 +58,9 @@ sub _pricing_channel {
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
-    if ($pricing_channel->{$serialized_args} and $pricing_channel->{$serialized_args}->{$args->{amount}}) {
+    my $amount = $args_hash{amount_per_point} || $args_hash{amount};
+
+    if ($pricing_channel->{$serialized_args} and $pricing_channel->{$serialized_args}->{$amount}) {
         return;
     }
 
@@ -81,11 +83,11 @@ sub _pricing_channel {
         BOM::System::RedisReplicated::redis_pricer->expire($rp->_processed_channel, 60);
     }
 
-    $pricing_channel->{$serialized_args}->{$args->{amount}}->{uuid} = $uuid;
-    $pricing_channel->{$serialized_args}->{$args->{amount}}->{args} = $args;
+    $pricing_channel->{$serialized_args}->{$amount}->{uuid} = $uuid;
+    $pricing_channel->{$serialized_args}->{$amount}->{args} = $args;
     $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
     $pricing_channel->{uuid}->{$uuid}->{serialized_args}            = $serialized_args;
-    $pricing_channel->{uuid}->{$uuid}->{amount}                     = $args->{amount};
+    $pricing_channel->{uuid}->{$uuid}->{amount}                     = $amount;
     $pricing_channel->{uuid}->{$uuid}->{args}                       = $args;
 
     $c->stash('pricing_channel' => $pricing_channel);
