@@ -7,6 +7,8 @@ use JSON;
 use BOM::System::RedisReplicated;
 use BOM::RPC::PricerDaemon;
 use Getopt::Long;
+use DataDog::DogStatsd::Helper;
+
 
 my $workers = 4;
 GetOptions ("workers=i" => \$workers,) ;
@@ -16,7 +18,6 @@ my $pm = new Parallel::ForkManager($workers);
 sub _redis_read {
     my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml');
     return RedisDB->new(
-        timeout => 10,
         host    => $config->{read}->{host},
         port    => $config->{read}->{port},
         ($config->{read}->{password} ? ('password', $config->{read}->{password}) : ()));
@@ -25,7 +26,6 @@ sub _redis_read {
 sub _redis_pricer {
         my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml');
         return RedisDB->new(
-            timeout => 10,
             host    => $config->{write}->{host},
             port    => $config->{write}->{port},
             ($config->{write}->{password} ? ('password', $config->{write}->{password}) : ()));
@@ -33,15 +33,19 @@ sub _redis_pricer {
 
 while (1) {
     my $pid = $pm->start and next;
-
+    DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.count', 1);
+    DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.idle.count', 1);
     my $rp = Mojo::Redis::Processor->new(
         'read_conn'   => _redis_pricer,
         'write_conn'  => _redis_pricer,
         'daemon_conn' => _redis_read,
+        'usleep'      => 20,
+        'retry'       => 100,
     );
 
     my $next = $rp->next;
     if ($next) {
+        DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.idle.count', -1);
         print "next [$next]\n";
         my $p = BOM::RPC::PricerDaemon->new(data=>$rp->{data}, key=>$rp->_processed_channel);
 
@@ -55,8 +59,10 @@ while (1) {
             });
     } else {
         print "no job found\n";
-        sleep 3;
+        sleep (5);
+        DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.idle.count', -1);
     }
     print "Ending the child\n";
+    DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.count', -1);
     $pm->finish;
 }

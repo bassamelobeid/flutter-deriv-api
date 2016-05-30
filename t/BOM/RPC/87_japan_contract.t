@@ -16,6 +16,7 @@ subtest validate_table_props => sub {
                 date_expiry       => 1459406383,
                 date_start        => 1459405383,
                 contract_category => 'callput',
+                payout            => 100,
             }
         ),
         undef,
@@ -28,6 +29,7 @@ subtest validate_table_props => sub {
                 date_expiry       => 1459406383,
                 date_start        => 1459405383,
                 contract_category => 'callput',
+                payout            => 100,
             }
         ),
         {
@@ -46,6 +48,7 @@ subtest validate_table_props => sub {
                 date_expiry       => 'test',
                 date_start        => 1459405383,
                 contract_category => 'callput',
+                payout            => 100,
             }
         ),
         {
@@ -67,6 +70,7 @@ subtest get_channel_name => sub {
                 date_expiry       => 1459406383,
                 date_start        => 1459405383,
                 contract_category => 'callput',
+                payout            => 100,
             }
         ),
         'PricingTable::frxEURUSD::callput::1459405383::1459406383',
