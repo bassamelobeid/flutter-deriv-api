@@ -137,8 +137,9 @@ sub before_forward {
     # None are much helpful in a well prepared DDoS.
     my $consumer = $c->stash('loginid') || $c->stash('connection_id');
     my $is_real = $c->stash('loginid') && !$c->stash('is_virtual');
-    if (reached_limit_check($consumer, $req_storage->{name}, $is_real)) {
-        return $c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $req_storage->{name}));
+    my $category = $req_storage->{name};
+    if (reached_limit_check($consumer, $category, $is_real)) {
+        return $c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category));
     }
 
     my $input_validation_result = $req_storage->{in_validator}->validate($args);
