@@ -107,16 +107,16 @@ sub _send_ask {
             success  => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $pricing_channel = $c->stash('pricing_channel');
-                my $uuid = $req_storage->{uuid};
+                my $uuid            = $req_storage->{uuid};
                 # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
                 if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
                     my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
                     $pricing_channel->{$serialized_args}->{$args->{amount}}->{longcode} = $rpc_response->{longcode};
                     $c->stash('pricing_channel' => $pricing_channel);
-                }  
+                }
                 return;
             },
-            error    => sub {
+            error => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req_storage->{uuid});
                 return;
