@@ -21,12 +21,12 @@ sub price_stream {
     if ($response and exists $response->{error}) {
         return $c->new_error('price_stream', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
     } else {
-        my $id;
-        if ($args->{subscribe} and $args->{subscribe} == 1 and not $id = _pricing_channel($c, 'subscribe', $args)) {
+        my $uuid;
+        if ($args->{subscribe} and $args->{subscribe} == 1 and not $uuid = _pricing_channel($c, 'subscribe', $args)) {
             return $c->new_error('price_stream',
                 'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
-        _send_ask($c, $id, $args);
+        _send_ask($c, $id, $args, $uuid);
     }
     return;
 }
@@ -93,7 +93,7 @@ sub _pricing_channel {
 }
 
 sub _send_ask {
-    my ($c, $id, $args) = @_;
+    my ($c, $id, $args, $uuid) = @_;
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
@@ -105,6 +105,13 @@ sub _send_ask {
                 my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
                 $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
                 return $err;
+            }
+            # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
+            if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
+                my $pricing_channel = $c->stash('pricing_channel');
+                my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
+                $pricing_channel->{$serialized_args}->{$args->{amount}}->{longcode} = $response->{longcode};
+                $c->stash('pricing_channel' => $pricing_channel);
             }
             return {
                 msg_type => 'price_stream',
