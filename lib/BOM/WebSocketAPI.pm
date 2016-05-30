@@ -4,13 +4,7 @@ use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
 
-use Try::Tiny;
-use Data::UUID;
-use RateLimitations qw(within_rate_limits);
-
-# pre-load controlleres to have more shared code among workers (COW)
-use BOM::WebSocketAPI::CallingEngine;
-
+use BOM::WebSocketAPI::Hooks;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::Transaction;
 use BOM::WebSocketAPI::v3::Wrapper::Authorize;
@@ -320,273 +314,27 @@ sub startup {
             ],
 
             # action hooks
-            before_forward           => [\&before_forward, \&get_rpc_url,  \&start_timing],
-            after_forward            => [\&after_forward],
-            before_get_rpc_response  => [\&log_call_timing],
-            after_got_rpc_response   => [\&log_call_timing_connection],
-            before_send_api_response => [\&add_call_debug, \&add_req_data, \&start_timing],
-            after_sent_api_response  => [\&log_call_timing_sent],
-            after_dispatch           => [\&clear_db_cache],
+            before_forward =>
+                [\&BOM::WebSocketAPI::Hooks::before_forward, \&BOM::WebSocketAPI::Hooks::get_rpc_url, \&BOM::WebSocketAPI::Hooks::start_timing],
+            after_forward           => [\&BOM::WebSocketAPI::Hooks::after_forward],
+            before_get_rpc_response => [\&BOM::WebSocketAPI::Hooks::log_call_timing],
+            after_got_rpc_response  => [\&BOM::WebSocketAPI::Hooks::log_call_timing_connection],
+            before_send_api_response =>
+                [\&BOM::WebSocketAPI::Hooks::add_call_debug, \&BOM::WebSocketAPI::Hooks::add_req_data, \&BOM::WebSocketAPI::Hooks::start_timing],
+            after_sent_api_response => [\&BOM::WebSocketAPI::Hooks::log_call_timing_sent],
+            after_dispatch          => [\&BOM::WebSocketAPI::Hooks::clear_db_cache],
 
             # main config
             base_path         => '/websockets/v3',
             stream_timeout    => 120,
             max_connections   => 100000,
-            opened_connection => \&init_redis_connections,
-            finish_connection => \&forget_all,
+            opened_connection => \&BOM::WebSocketAPI::Hooks::init_redis_connections,
+            finish_connection => \&BOM::WebSocketAPI::Hooks::forget_all,
 
             # helper config
-            url => \&get_rpc_url,    # make url for non-forward actions
+            url => \&BOM::WebSocketAPI::Hooks::get_rpc_url,    # make url for manually called actions
         });
 
-    return;
-}
-
-sub start_timing {
-    my ($c, $req_storage) = @_;
-    $req_storage->{tv} = [Time::HiRes::gettimeofday];
-    return;
-}
-
-sub log_call_timing {
-    my ($c, $req_storage) = @_;
-    DataDog::DogStatsd::Helper::stats_timing(
-        'bom_websocket_api.v_3.rpc.call.timing',
-        1000 * Time::HiRes::tv_interval($req_storage->{tv}),
-        {tags => ["rpc:$req_storage->{method}"]});
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$req_storage->{method}"]});
-    return;
-}
-
-sub log_call_timing_connection {
-    my ($c, $req_storage, $rpc_response) = @_;
-    if (ref($rpc_response->result) eq "HASH"
-        && (my $rpc_time = delete $rpc_response->result->{rpc_time}))
-    {
-        DataDog::DogStatsd::Helper::stats_timing(
-            'bom_websocket_api.v_3.rpc.call.timing.connection',
-            1000 * Time::HiRes::tv_interval($req_storage->{tv}) - $rpc_time,
-            {tags => ["rpc:$req_storage->{method}"]});
-    }
-    return;
-}
-
-sub add_req_data {
-    my ($c, $req_storage, $api_response) = @_;
-    $api_response->{echo_req} = $req_storage->{args};
-    $api_response->{req_id} = $req_storage->{args}->{req_id} if $req_storage->{args}->{req_id};
-    return;
-}
-
-sub add_call_debug {
-    my ($c, $req_storage, $api_response) = @_;
-    if ($c->stash('debug')) {
-        $api_response->{debug} = {
-            time   => 1000 * Time::HiRes::tv_interval($req_storage->{tv}),
-            method => $req_storage->{method},
-        };
-    }
-    return;
-}
-
-sub log_call_timing_sent {
-    my ($c, $req_storage) = @_;
-    if ($req_storage->{tv} && $req_storage->{method}) {
-        DataDog::DogStatsd::Helper::stats_timing(
-            'bom_websocket_api.v_3.rpc.call.timing.sent',
-            1000 * Time::HiRes::tv_interval($req_storage->{tv}),
-            {tags => ["rpc:$req_storage->{method}"]});
-    }
-    return;
-}
-
-my %rate_limit_map = (
-    ping_real                      => '',
-    time_real                      => '',
-    portfolio_real                 => 'websocket_call_expensive',
-    statement_real                 => 'websocket_call_expensive',
-    profit_table_real              => 'websocket_call_expensive',
-    proposal_real                  => 'websocket_real_pricing',
-    pricing_table_real             => 'websocket_real_pricing',
-    proposal_open_contract_real    => 'websocket_real_pricing',
-    verify_email_real              => 'websocket_call_email',
-    buy_real                       => 'websocket_real_pricing',
-    sell_real                      => 'websocket_real_pricing',
-    reality_check_real             => 'websocket_call_expensive',
-    ping_virtual                   => '',
-    time_virtual                   => '',
-    portfolio_virtual              => 'websocket_call_expensive',
-    statement_virtual              => 'websocket_call_expensive',
-    profit_table_virtual           => 'websocket_call_expensive',
-    proposal_virtual               => 'websocket_call_pricing',
-    pricing_table_virtual          => 'websocket_call_pricing',
-    proposal_open_contract_virtual => 'websocket_call_pricing',
-    verify_email_virtual           => 'websocket_call_email',
-);
-
-sub reached_limit_check {
-    my ($c, $req_storage) = @_;
-
-    # For authorized calls that are heavier we will limit based on loginid
-    # For unauthorized calls that are less heavy we will use connection id.
-    # None are much helpful in a well prepared DDoS.
-    my $consumer         = $c->stash('loginid') || $c->stash('connection_id');
-    my $category         = $req_storage->{name};
-    my $is_real          = $c->stash('loginid') && !$c->stash('is_virtual');
-    my $limiting_service = $rate_limit_map{
-        $category . '_'
-            . (
-            ($is_real)
-            ? 'real'
-            : 'virtual'
-            )} // 'websocket_call';
-    if (
-        $limiting_service
-        and not within_rate_limits({
-                service  => $limiting_service,
-                consumer => $consumer,
-            }))
-    {
-        return $c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category));
-    }
-    return;
-}
-
-# Set JSON Schema default values for fields which are missing and have default.
-sub _set_defaults {
-    my ($validator, $args) = @_;
-
-    my $properties = $validator->{in_validator}->schema->{properties};
-
-    foreach my $k (keys %$properties) {
-        $args->{$k} = $properties->{$k}->{default} if not exists $args->{$k} and $properties->{$k}->{default};
-    }
-    return;
-}
-
-sub before_forward {
-    my ($c, $req_storage) = @_;
-
-    my $args = $req_storage->{args};
-    if (not $c->stash('connection_id')) {
-        $c->stash('connection_id' => Data::UUID->new()->create_str());
-    }
-
-    $req_storage->{handle_t0} = [Time::HiRes::gettimeofday];
-
-    if (my $reached = reached_limit_check($c, $req_storage)) {
-        return $reached;
-    }
-
-    my $input_validation_result = $req_storage->{in_validator}->validate($args);
-    if (not $input_validation_result) {
-        my ($details, @general);
-        foreach my $err ($input_validation_result->errors) {
-            if ($err->property =~ /\$\.(.+)$/) {
-                $details->{$1} = $err->message;
-            } else {
-                push @general, $err->message;
-            }
-        }
-        my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
-        return $c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $details);
-    }
-
-    _set_defaults($req_storage, $args);
-
-    my $tag = 'origin:';
-    if (my $origin = $c->req->headers->header("Origin")) {
-        if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
-            $tag = "origin:$1";
-        }
-    }
-
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $req_storage->{name}, {tags => [$tag]});
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req_storage->{name}"]});
-
-    my $loginid = $c->stash('loginid');
-    if ($req_storage->{require_auth} and not $loginid) {
-        return $c->new_error($req_storage->{name}, 'AuthorizationRequired', $c->l('Please log in.'));
-    }
-
-    if ($req_storage->{require_auth} and not(grep { $_ eq $req_storage->{require_auth} } @{$c->stash('scopes') || []})) {
-        return $c->new_error($req_storage->{name}, 'PermissionDenied', $c->l('Permission denied, requiring [_1]', $req_storage->{require_auth}));
-    }
-
-    if ($loginid) {
-        my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
-        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
-            {tags => [$tag, $req_storage->{name}, "account_type:$account_type"]});
-    }
-
-    return;
-}
-
-sub get_rpc_url {
-    my ($c, $req_storage) = @_;
-
-    my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
-    if (BOM::System::Config::env eq 'production') {
-        if (BOM::System::Config::node->{node}->{www2}) {
-            $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
-        } else {
-            $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
-        }
-    }
-
-    $req_storage->{url} = $url;
-
-    return;
-}
-
-sub after_forward {
-    my ($c, $result, $req_storage) = @_;
-
-    return unless $result;
-
-    my $args = $req_storage->{args};
-    if ($result) {
-        my $output_validation_result = $req_storage->{out_validator}->validate($result);
-        if (not $output_validation_result) {
-            my $error = join(" - ", $output_validation_result->errors);
-            $c->app->log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
-            $result = $c->new_error($req_storage->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error);
-        }
-    }
-    if (ref($result) && $c->stash('debug')) {
-        $result->{debug} = {
-            time   => 1000 * Time::HiRes::tv_interval($req_storage->{hadle_t0}),
-            method => $req_storage->{method},
-        };
-    }
-    my $l = length JSON::to_json($result || {});
-    if ($l > 328000) {
-        $result = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
-        $result->{echo_req} = $args;
-    }
-
-    $result->{req_id} = $args->{req_id} if exists $args->{req_id};
-    return $result;
-}
-
-sub init_redis_connections {
-    my $c = shift;
-    $c->redis;
-    $c->redis_pricer;
-    return;
-}
-
-sub forget_all {
-    my $c = shift;
-    # stop all recurring
-    BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {forget_all => 1});
-    delete $c->stash->{redis};
-    delete $c->stash->{redis_pricer};
-    return;
-}
-
-sub clear_db_cache {
-    BOM::Database::Rose::DB->db_cache->finish_request_cycle;
     return;
 }
 

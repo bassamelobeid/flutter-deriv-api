@@ -1,5 +1,8 @@
 package BOM::WebSocketAPI::Dispatcher::Parser;
 
+use strict;
+use warnings;
+
 sub parse_req {
     my ($c, $req_storage) = @_;
 
