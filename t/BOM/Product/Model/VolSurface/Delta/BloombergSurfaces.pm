@@ -13,7 +13,7 @@ use Text::CSV;
 use BOM::Market::Underlying;
 use Date::Utility;
 
-use BOM::MarketData::VolSurface::Cutoff;
+use Quant::Framework::VolSurface::Cutoff;
 
 sub get {
     my ($self, $symbol, $timestamp, $cutoff) = @_;
@@ -105,7 +105,7 @@ sub _get_surfaces_from_file {
         next ROW if (not $symbol);
 
         my $underlying = BOM::Market::Underlying->new($symbol);
-        my $cutoff = $row->[4] ? BOM::MarketData::VolSurface::Cutoff->new($row->[4]) : undef;
+        my $cutoff = $row->[4] ? Quant::Framework::VolSurface::Cutoff->new($row->[4]) : undef;
 
         # skip past the two "config" lines; they don't tell
         # us anything we don't already know.
@@ -138,20 +138,22 @@ sub _get_surfaces_from_file {
         }
 
         my $args = {
-            underlying      => $underlying,
-            recorded_date   => $surface_date,
-            print_precision => undef,
-            deltas          => [25, 50, 75],
-            surface         => $surface_data,
-            market_points   => {
+            underlying_config => $underlying->config,
+            recorded_date     => $surface_date,
+            print_precision   => undef,
+            deltas            => [25, 50, 75],
+            surface           => $surface_data,
+            market_points     => {
                 smile      => ['ON', 7, 14, 21, 30, 60, 90, 120, 150, 180, 270, 365],
                 vol_spread => ['ON', 7, 14, 21, 30, 60, 90, 120, 150, 180, 270, 365],
             },
+            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
         };
 
         $args->{cutoff} = $cutoff if $cutoff;
 
-        push @surfaces, BOM::MarketData::VolSurface::Delta->new($args);
+        push @surfaces, Quant::Framework::VolSurface::Delta->new($args);
     }
 
     return @surfaces;

@@ -19,7 +19,7 @@ use Moose;
 
 use Date::Utility;
 use BOM::Market::Underlying;
-use BOM::MarketData::VolSurface::Delta;
+use Quant::Framework::VolSurface::Delta;
 
 has _underlying => (
     is      => 'ro',
@@ -35,9 +35,11 @@ has _underlying => (
 sub get {
     my $self = shift;
 
-    return BOM::MarketData::VolSurface::Delta->new(
-        underlying    => $self->_underlying,
+    return Quant::Framework::VolSurface::Delta->new(
+        underlying_config    => $self->_underlying->config,
         recorded_date => Date::Utility->new('2012-01-13 00:00:00'),
+        chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
         market_points => {
             smile      => [3, 7, 14, 21, 28],
             vol_spread => [3, 7, 14, 21, 28],

@@ -23,10 +23,10 @@ use Quant::Framework::CorrelationMatrix;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise;
 use BOM::Product::Types;
-use BOM::MarketData::VolSurface::Utils;
+use Quant::Framework::VolSurface::Utils;
 use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
-use BOM::MarketData::Fetcher::VolSurface;
+use Quant::Framework::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Platform::Static::Config;
@@ -402,7 +402,7 @@ has empirical_volsurface => (
 
 has [qw(volsurface)] => (
     is         => 'rw',
-    isa        => 'BOM::MarketData::VolSurface',
+    isa        => 'Quant::Framework::VolSurface',
     lazy_build => 1,
 );
 
@@ -651,7 +651,7 @@ sub _build_timeindays {
     my $atid;
     # If market is Forex, We go with integer days as per the market convention
     if ($self->market->integer_number_of_day and not $self->priced_with_intraday_model) {
-        my $utils        = BOM::MarketData::VolSurface::Utils->new;
+        my $utils        = Quant::Framework::VolSurface::Utils->new;
         my $days_between = $self->date_expiry->days_between($self->date_start);
         $atid = $utils->is_before_rollover($self->date_start) ? ($days_between + 1) : $days_between;
     }
@@ -754,7 +754,7 @@ sub _build_volsurface {
         major_pairs => 1,
         minor_pairs => 1
     );
-    my $vol_utils = BOM::MarketData::VolSurface::Utils->new;
+    my $vol_utils = Quant::Framework::VolSurface::Utils->new;
     my $cutoff_str;
     if ($submarkets{$self->underlying->submarket->name}) {
         my $calendar       = $self->calendar;
@@ -1596,12 +1596,12 @@ sub _market_convention {
     return {
         calculate_expiry => sub {
             my ($start, $expiry) = @_;
-            my $utils = BOM::MarketData::VolSurface::Utils->new;
+            my $utils = Quant::Framework::VolSurface::Utils->new;
             return $utils->effective_date_for($expiry)->days_between($utils->effective_date_for($start));
         },
         get_rollover_time => sub {
             my $when = shift;
-            return BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($when);
+            return Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($when);
         },
     };
 }
@@ -2263,7 +2263,7 @@ sub _build_date_start_blackouts {
 
     # Due to uncertainty in volsurface rollover time, we will stay out.
     if ($self->market->name eq 'forex' and not $self->is_atm_bet and $self->timeindays->amount <= 3) {
-        my $rollover_date = BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start);
+        my $rollover_date = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start);
         push @periods, [$rollover_date->minus_time_interval('1h')->epoch, $rollover_date->plus_time_interval('1h')->epoch];
     }
 
