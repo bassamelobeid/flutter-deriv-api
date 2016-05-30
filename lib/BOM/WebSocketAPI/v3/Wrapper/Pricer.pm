@@ -161,9 +161,13 @@ sub process_pricing_events {
             }
         }
 
-        $results->{echo_req}    = $pricing_channel->{$serialized_args}->{$amount}->{args};
-        $results->{passthrough} = $passthrough if my $passthrough = delete $pricing_channel->{$serialized_args}->{$amount}->{args}->{passthrough};
-        $results->{req_id}      = $req_id; if my $req_id = delete $pricing_channel->{$serialized_args}->{$amount}->{args}->{req_id};
+        $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
+        if (my $passthrough = delete $pricing_channel->{$serialized_args}->{$amount}->{args}->{passthrough}) {
+            $results->{passthrough} = $passthrough;
+        }
+        if (my $req_id = delete $pricing_channel->{$serialized_args}->{$amount}->{args}->{req_id}) {
+            $results->{req_id} = $req_id;
+        }
 
         if ($c->stash('debug')) {
             $results->{debug} = {
