@@ -193,7 +193,7 @@ subtest 'get_ask' => sub {
     my $expected = {
         'display_value'   => '51.49',
         'ask_price'       => '51.49',
-        'longcode'        => 'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'longcode'        => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
         'spot'            => '963.3054',
         'payout'          => '100',
         'base_commission' => 0.015,
@@ -246,7 +246,7 @@ subtest 'send_ask' => sub {
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
         'long code  is correct'
     );
     {
@@ -406,7 +406,7 @@ subtest $method => sub {
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
-            'longcode'     => "USD 194.22 payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
+            'longcode'     => "Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
         },
@@ -467,7 +467,7 @@ subtest $method => sub {
         'entry_tick_time' => 1127286661,
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287059,
-        'longcode'        => 'USD 208.81 payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
+        'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
         'shortcode'       => 'CALL_FRXAUDCAD_208.81_1127286660_1127287060_S0P_0',
         'underlying'      => 'frxAUDCAD',
     };
