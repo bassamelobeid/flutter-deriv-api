@@ -160,6 +160,7 @@ sub create_app {
         name         => $app->{name},
         scopes       => $app->{scopes},
         redirect_uri => $app->{redirect_uri},
+        markup       => $app->{markup} || 0
     };
 }
 
@@ -189,7 +190,8 @@ sub update_app {
         name         => $app->{name},
         scopes       => $app->{scopes},
         redirect_uri => $app->{redirect_uri},
-        markup       => $app->{markup}};
+        markup       => $app->{markup} || 0
+    };
 }
 
 sub get_app {
