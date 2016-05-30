@@ -190,14 +190,14 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'   => '51.49',
-        'ask_price'       => '51.49',
-        'longcode'        => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
-        'spot'            => '963.3054',
-        'payout'          => '100',
-        'base_commission' => 0.015,
-        'maximum_payout'  => 50000,
-        'minimum_stake'   => 0.35,
+        'display_value'         => '51.49',
+        'ask_price'             => '51.49',
+        'longcode'              => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'spot'                  => '963.3054',
+        'payout'                => '100',
+        'base_commission'       => 0.015,
+        'maximum_payout'        => 50000,
+        'minimum_stake'         => 0.35,
         'probability_threshold' => 0.025,
         'theo_probability'      => 0.499862404631018,
     };

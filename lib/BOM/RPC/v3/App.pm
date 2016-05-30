@@ -23,6 +23,7 @@ sub register {
     my $appstore     = $args->{appstore} // '';
     my $googleplay   = $args->{googleplay} // '';
     my $redirect_uri = $args->{redirect_uri} // '';
+    my $markup       = $args->{markup} // 0;
 
     my $error_sub = sub {
         my ($error) = @_;
@@ -49,6 +50,7 @@ sub register {
         appstore     => $appstore,
         googleplay   => $googleplay,
         redirect_uri => $redirect_uri,
+        markup       => $markup
     });
 
     return $app;
@@ -70,6 +72,7 @@ sub update {
     my $appstore     = $args->{appstore} // '';
     my $googleplay   = $args->{googleplay} // '';
     my $redirect_uri = $args->{redirect_uri} // '';
+    my $markup       = $args->{markup} // 0;
 
     ## do some validation
     my $error_sub = sub {
@@ -104,6 +107,7 @@ sub update {
             appstore     => $appstore,
             googleplay   => $googleplay,
             redirect_uri => $redirect_uri,
+            markup       => $markup
         });
 
     return $app;
