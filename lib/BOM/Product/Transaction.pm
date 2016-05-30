@@ -72,7 +72,7 @@ has limits => (
     default => sub { +{} },
 );
 
-has risk_profile_specific => (
+has risk_profile_specifics => (
     is      => 'rw',
     default => sub { +{} },
 );
