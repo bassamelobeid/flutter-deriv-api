@@ -112,6 +112,20 @@ sub get_scopes_by_access_token {
     return @$scopes;
 }
 
+sub get_app_details_by_access_token {
+    my ($self, $access_token) = @_;
+
+    my $app = $self->dbh->selectrow_hashref("
+        SELECT app.id as app_id, app.name, app.redirect_uri, app.scopes, app.markup FROM oauth.access_token at
+        JOIN oauth.apps app ON app.id=at.app_id
+        WHERE access_token = ?
+    ", undef, $access_token);
+    return unless $app;
+
+    $app->{scopes} = __parse_array($app->{scopes});
+    return $app;
+}
+
 sub is_name_taken {
     my ($self, $user_id, $name) = @_;
 
