@@ -1246,7 +1246,7 @@ frxAUDJPY_JPY_5_BOJ_Press_Conference:
 frxAUDJPY_JPY_5_Monetary_Policy_Statement:
   bias: '0.050000'
   duration: '240.000000'
-  magnitude: '5.160758'
+  magnitude: '20'
 frxAUDJPY_JPY_5_default:
   bias: '0.000000'
   duration: '60.000000'
@@ -12150,7 +12150,7 @@ frxEURJPY_JPY_5_BOJ_Press_Conference:
 frxEURJPY_JPY_5_Monetary_Policy_Statement:
   bias: '0.050000'
   duration: '480.000000'
-  magnitude: '7.568144'
+  magnitude: '20'
 frxEURJPY_JPY_5_default:
   bias: '0.000000'
   duration: '60.000000'
@@ -17658,7 +17658,7 @@ frxGBPJPY_JPY_5_BOJ_Press_Conference:
 frxGBPJPY_JPY_5_Monetary_Policy_Statement:
   bias: '0.050000'
   duration: '540.000000'
-  magnitude: '8.270710'
+  magnitude: '20'
 frxGBPJPY_JPY_5_default:
   bias: '0.000000'
   duration: '60.000000'
@@ -24922,7 +24922,7 @@ frxUSDJPY_JPY_5_BOJ_Press_Conference:
 frxUSDJPY_JPY_5_Monetary_Policy_Statement:
   bias: '0.050000'
   duration: '540.000000'
-  magnitude: '9.423031'
+  magnitude: '20'
 frxUSDJPY_JPY_5_default:
   bias: '0.000000'
   duration: '60.000000'
