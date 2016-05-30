@@ -50,7 +50,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => $_,
         recorded_date => Date::Utility->new('2013-03-27'),
     }) for qw(GBP USD);
-
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => 'USGOOG',
+        recorded_date => Date::Utility->new('2013-03-26'),
+    });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
