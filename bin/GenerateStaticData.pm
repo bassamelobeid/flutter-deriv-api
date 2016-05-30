@@ -11,8 +11,6 @@ use Digest::MD5;
 use File::Slurp;
 use YAML::XS qw(LoadFile);
 
-extends 'BOM::JavascriptConfig';
-
 use BOM::Market::Registry;
 use BOM::Market::SubMarket::Registry;
 use BOM::Market::UnderlyingDB;
@@ -27,11 +25,11 @@ my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/co
 
 sub generate_data_files {
     my $self = shift;
+    my $js_path = shift;
 
-    my $website_path = $self->_js_dir_path;
-    $self->_make_nobody_dir("$website_path/data/");
-    print "\tGenerating $website_path/data/texts.js\n";
-    File::Slurp::write_file("$website_path/data/texts.js", {binmode => ':utf8'}, $self->_texts);
+    $self->_make_nobody_dir($js_path);
+    print "\tGenerating $js_path/texts.js\n";
+    File::Slurp::write_file("$js_path/texts.js", {binmode => ':utf8'}, $self->_texts);
 
     return;
 }

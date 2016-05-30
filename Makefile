@@ -15,7 +15,7 @@ unit_test:
 data_js:
 	rm -f statics/javascript/data/*
 	if [ ! -d "statics/javascript/data" ]; then mkdir -p statics/javascript/data; fi;
-	perl -I ./lib -I ./bin -MGenerateStaticData -e "GenerateStaticData->from('statics/javascript/')->generate_data_files()"
+	perl -I ./lib -I ./bin -MGenerateStaticData -e "GenerateStaticData->generate_data_files('statics/javascript/data')"
 
 i18n:
 	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 \
