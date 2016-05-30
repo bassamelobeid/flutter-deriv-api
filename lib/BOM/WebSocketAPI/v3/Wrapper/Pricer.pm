@@ -85,10 +85,10 @@ sub _pricing_channel {
 
     $pricing_channel->{$serialized_args}->{$amount}->{uuid} = $uuid;
     $pricing_channel->{$serialized_args}->{$amount}->{args} = $args;
-    $pricing_channel->{$serialized_args}->{channel_name}            = $rp->_processed_channel;
-    $pricing_channel->{uuid}->{$uuid}->{serialized_args}            = $serialized_args;
-    $pricing_channel->{uuid}->{$uuid}->{amount}                     = $amount;
-    $pricing_channel->{uuid}->{$uuid}->{args}                       = $args;
+    $pricing_channel->{$serialized_args}->{channel_name}    = $rp->_processed_channel;
+    $pricing_channel->{uuid}->{$uuid}->{serialized_args}    = $serialized_args;
+    $pricing_channel->{uuid}->{$uuid}->{amount}             = $amount;
+    $pricing_channel->{uuid}->{$uuid}->{args}               = $args;
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
