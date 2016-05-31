@@ -272,7 +272,7 @@ subtest 'date start blackouts' => sub {
 
     Cache::RedisDB->flushall;
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
-    my $rollover    = BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on(Date::Utility->new($weekday));
+    my $rollover    = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on(Date::Utility->new($weekday));
     my $date_start  = $rollover->minus_time_interval('59m59s');
     my $valid_start = $rollover->minus_time_interval('1h1s');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
