@@ -144,6 +144,7 @@ sub process_pricing_events {
 
     delete $response->{data};
     delete $response->{key};
+    my $hostname = delete $response->{hostname};
 
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
         next if $amount eq 'channel_name';
@@ -181,9 +182,11 @@ sub process_pricing_events {
         }
 
         if ($c->stash('debug')) {
+            $hostname =~ /^wwwpool(\d+)\./;
             $results->{debug} = {
                 time   => 1000 * $results->{price_stream}->{rpc_time},
                 method => 'price_stream',
+                host   => $1,
             };
         }
 
