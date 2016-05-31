@@ -159,11 +159,11 @@ sub run {
         next if $underlying->volatility_surface_type eq 'flat';
         my $raw_volsurface = $surfaces_from_file->{$symbol};
         my $volsurface     = Quant::Framework::VolSurface::Delta->new({
-            underlying_config       => $underlying->config,
-            recorded_date    => $raw_volsurface->{recorded_date},
-            surface          => $raw_volsurface->{surface},
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            underlying_config => $underlying->config,
+            recorded_date     => $raw_volsurface->{recorded_date},
+            surface           => $raw_volsurface->{surface},
+            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
         });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
