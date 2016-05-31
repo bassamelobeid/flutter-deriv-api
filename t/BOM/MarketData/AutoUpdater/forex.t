@@ -45,10 +45,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }
         },
     });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+Quant::Framework::Utils::Test::create_doc(
     'volsurface_delta',
     {
         underlying_config        => BOM::Market::Underlying->new($_)->config,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
         recorded_date => Date::Utility->new,
     }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
 
