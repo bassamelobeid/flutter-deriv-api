@@ -31,7 +31,6 @@ my $broker = $params{broker} // request()->broker->code ;
 my $id = $params{id} ? $params{id} : '';
 
 if ($broker and $id) {
-    my $global_commission_adjustment = global_commission_adjustment();
     my $details = BOM::Database::DataMapper::Transaction->new({
             broker_code => $broker,
             operation   => 'backoffice_replica',
@@ -151,14 +150,13 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $theo_probability  = $contract->theo_probability->amount - $contract->risk_markup->amount;
     my $risk_markup       = $contract->risk_markup->amount;
     my $commission_markup = $contract->commission_markup->amount ;
+    my $global_commission_adjustment = BOM::Product::Contract::Helper::global_commission_adjustment();
+
     $pricing_parameters->{ask_probability} = {
         theoretical_probability => $theo_probability,
         risk_markup             => $risk_markup,
         commission_markup       => $commission_markup * $global_commission_adjustment,
     };
-
-     $pricing_parameters->{commission_markup} = {digital_spread_percentage => $commission_markup, dsp_scaling => $global_commission_adjustment};
-
 
     my $theo_param = $debug_information->{$contract_type}{theo_probability}{parameters};
 
