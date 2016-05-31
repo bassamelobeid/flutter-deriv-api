@@ -145,6 +145,10 @@ sub create_doc {
           if ( exists($data_mod->{symbol}) and not exists($data_mod->{underlying_config}) ) {
             $data_mod->{underlying_config} = BOM::Market::Underlying->new($data_mod->{symbol})->config;
             delete $data_mod->{symbol};
+          } 
+          elsif ( exists($data_mod->{underlying}) and not exists($data_mod->{underlying_config}) ) {
+            $data_mod->{underlying_config} = $data_mod->{underlying}->config;
+            delete $data_mod->{underlying};
           }
         }
 
