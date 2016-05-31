@@ -506,7 +506,7 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => [qw(ok authenticated)],
+            status              => [ 'authenticated' ],
             risk_classification => ''
         },
         'ok, authenticated'
