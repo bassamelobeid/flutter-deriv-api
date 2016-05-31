@@ -579,12 +579,14 @@ subtest 'all methods on a selection of underlyings' => sub {
         ok($worm->is_in_quiet_period, $worm->symbol . ' is quiet after New York closes');
     }
 
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => 'frxEURUSD',
-            recorded_date => Date::Utility->new,
-        });
+    Quant::Framework::Utils::Test::create_doc(
+      'volsurface_delta',
+      {
+        underlying_config        => BOM::Market::Underlying->new('frxEURUSD')->config,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        recorded_date => Date::Utility->new,
+      });
 
     my $today = Date::Utility->today;
     foreach my $ul ($AS51, $EURUSD) {
