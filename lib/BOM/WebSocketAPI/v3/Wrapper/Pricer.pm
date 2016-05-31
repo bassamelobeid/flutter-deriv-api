@@ -129,7 +129,7 @@ sub _send_ask {
 sub process_pricing_events {
     my ($c, $message, $chan) = @_;
 
-    return if not $message;
+    return if not $message or not $c->tx;
 
     my $response        = decode_json($message);
     my $serialized_args = $response->{data};
