@@ -210,30 +210,6 @@ payments:
               description: 'for Japan accounts in JPY'
               isa: Int
               default: 1000000
-price_streamer:
-  description: "Configuration for price streaming daemon"
-  isa: section
-  contains:
-    max_clients:
-      description: 'Maximum number of simultaneous clients per worker'
-      isa: Int
-      default: 8
-    workers:
-      description: 'Number of worker processes'
-      isa: Int
-      default: 36
-tick_streamer:
-  description: "Configuration for tick streaming daemon"
-  isa: section
-  contains:
-    max_clients:
-      description: 'Maximum number of clients per process'
-      isa: Int
-      default: 200
-    workers:
-      description: 'Number of worker processes'
-      isa: Int
-      default: 30
 
 quants:
   description: "Various quants' parameters"
