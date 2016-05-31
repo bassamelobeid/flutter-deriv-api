@@ -153,13 +153,13 @@ has markup => (
     default => 0
 );
 
-has app_commission => (
+has app_markup => (
     is         => 'ro',
     isa        => 'Maybe[Num]',
     lazy_build => 1
 );
 
-sub _build_app_commission {
+sub _build_app_markup {
     my $self = shift;
 
     return 0 if $self->contract->is_spread;
@@ -474,7 +474,7 @@ sub prepare_bet_data_for_buy {
             transaction_data => {
                 staff_loginid => $self->staff,
                 source        => $self->source,
-                markup        => $self->app_commission
+                markup        => $self->app_markup
             },
             bet_data     => $bet_params,
             account_data => {
