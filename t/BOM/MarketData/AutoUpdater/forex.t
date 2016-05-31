@@ -48,7 +48,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => $_,
+        underlying_config        => BOM::Market::Underlying->new($_)->config,
         recorded_date => Date::Utility->new,
     }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
 

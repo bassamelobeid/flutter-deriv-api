@@ -29,7 +29,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 my $test_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'TOP40',
+        underlying_config        => BOM::Market::Underlying->new('TOP40')->config,
         recorded_date => Date::Utility->new,
     });
 
@@ -60,7 +60,7 @@ subtest 'surface has not change' => sub {
     my $existing_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'TOP40',
+          underlying_config        => BOM::Market::Underlying->new('TOP40')->config,
             recorded_date => Date::Utility->new(Date::Utility->new - 18000),
         });
     my $au = BOM::MarketData::AutoUpdater::Indices->new(

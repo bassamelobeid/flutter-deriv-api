@@ -243,7 +243,7 @@ subtest 'all attributes on a variety of underlyings' => sub {
         is((scalar grep { exists $underlying->market_convention->{$_} } qw(delta_style delta_premium_adjusted)),
             2, ' with at least the minimal key set');
 
-        ok(looks_like_number($underlying->closed_weight), 'Closed weight is numeric');
+        ok(looks_like_number($underlying->_builder->closed_weight), 'Closed weight is numeric');
         cmp_ok($underlying->closed_weight, '>=', 0, ' nonnegative');
         cmp_ok($underlying->closed_weight, '<',  1, ' and smaller than 1');
 
