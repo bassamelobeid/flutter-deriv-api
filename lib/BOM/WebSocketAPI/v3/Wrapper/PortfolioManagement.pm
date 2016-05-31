@@ -147,6 +147,7 @@ sub send_proposal {
             currency    => delete $details->{currency},
             is_sold     => delete $details->{is_sold},
             sell_time   => $sell_time,
+            markup      => $c->stash('markup'),
             args        => $details
         },
         'proposal_open_contract'

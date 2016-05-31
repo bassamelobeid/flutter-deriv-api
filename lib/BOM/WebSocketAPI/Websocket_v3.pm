@@ -253,7 +253,7 @@ my @dispatch = (
         '', 1, 'read',
         {
             rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
-        }
+            stash_params    => [qw/ markup /]}
     ],
     ['sell_expired', '', 1, 'trade'],
 
