@@ -244,7 +244,7 @@ my @dispatch = (
         'buy', '', 1, 'trade',
         {
             before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
-        }
+            stash_params   => [qw/ markup /]}
     ],
     ['transaction', '', 1, 'read', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction}],
     ['portfolio',   '', 1, 'read'],
