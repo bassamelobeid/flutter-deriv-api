@@ -18,6 +18,7 @@ use f_brokerincludeall;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
+use BOM::Product::Contract::Helper qw( global_commission_adjustment);
 use BOM::Database::DataMapper::Transaction;
 use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
 use BOM::Platform::Sysinit ();
@@ -30,7 +31,7 @@ my $broker = $params{broker} // request()->broker->code ;
 my $id = $params{id} ? $params{id} : '';
 
 if ($broker and $id) {
-
+    my $global_commission_adjustment = global_commission_adjustment();
     my $details = BOM::Database::DataMapper::Transaction->new({
             broker_code => $broker,
             operation   => 'backoffice_replica',
@@ -149,14 +150,15 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $contract_type     = $contract->pricing_engine->contract_type;
     my $theo_probability  = $contract->theo_probability->amount - $contract->risk_markup->amount;
     my $risk_markup       = $contract->risk_markup->amount;
-    my $commission_markup = $contract->commission_markup->amount;
+    my $commission_markup = $contract->commission_markup->amount ;
     $pricing_parameters->{ask_probability} = {
         theoretical_probability => $theo_probability,
         risk_markup             => $risk_markup,
-        commission_markup       => $commission_markup,
+        commission_markup       => $commission_markup * $global_commission_adjustment,
     };
 
-    $pricing_parameters->{commission_markup} = {digital_spread_percentage => 0.035};
+     $pricing_parameters->{commission_markup} = {digital_spread_percentage => $commission_markup, fxd_scaling => $global_commission_adjustment};
+
 
     my $theo_param = $debug_information->{$contract_type}{theo_probability}{parameters};
 
