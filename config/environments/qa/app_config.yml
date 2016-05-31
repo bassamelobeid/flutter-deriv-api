@@ -7,12 +7,8 @@ system:
     quants: qa-alerts@regentmarkets.com
     sysadmins: qa-alerts@regentmarkets.com
   send_email_to_clients: 0
-price_streamer:
-  workers: 2
 cgi:
   cookie_secret: Qo5HRXtlp5R3uAWs5qCDkQHyEbazUhBUvEY2YC6tHt4wsLXui9aZFiEnpPUXwmP1
-tick_streamer:
-  workers: 2
 marketing:
   email: qa-alerts@regentmarkets.com
   myaffiliates_email: qa-alerts@regentmarkets.com
