@@ -140,7 +140,8 @@ sub _send_ask {
 sub process_pricing_events {
     my ($c, $message, $chan) = @_;
 
-    return if not $message;
+    # in case that it is a spread
+    return if not $message or not $c->tx;
 
     my $response        = decode_json($message);
     my $serialized_args = $response->{data};
@@ -148,8 +149,8 @@ sub process_pricing_events {
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
 
-    if (not $c->stash->{last_pricer_expiry_update} or time - $c->stash->{last_pricer_expiry_update} > 30) {
-        BOM::System::RedisReplicated::redis_pricer->expire($response->{key}, 60);
+    if (not $c->stash->{last_pricer_expiry_update} or time - $c->stash->{last_pricer_expiry_update} > 20) {
+        BOM::System::RedisReplicated::redis_pricer->expire($response->{key}, 90);
         $c->stash->{last_pricer_expiry_update} = time;
     }
 
@@ -208,6 +209,8 @@ sub _price_stream_results_adjustment {
     my $results   = shift;
     my $amount    = shift;
 
+    return $results if not $orig_args->{basis};
+
     # For non spread
     if ($orig_args->{basis} eq 'payout') {
         my $ask_price = BOM::RPC::v3::Contract::calculate_ask_price({
@@ -230,9 +233,6 @@ sub _price_stream_results_adjustment {
         $results->{ask_price}     = roundnear(0.01, $amount);
         $results->{display_value} = roundnear(0.01, $amount);
         $results->{payout}        = roundnear(0.01, $payout);
-    } else {
-        # in case that it is a spread
-        return $results;
     }
 
     if (
