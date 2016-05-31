@@ -658,6 +658,9 @@ sub _build_timeindays {
         if ($recorded_date->day_of_week >= 5 or ($recorded_date->day_of_week == 4 and not $utils->is_before_rollover($recorded_date))) {
             $atid -= 1;
         }
+        # On contract starting on Thursday expiring on Friday,
+        # this algorithm will be zero. We are flooring it at 1 day.
+        $atid = max(1, $atid);
     }
     # If intraday or not FX, then use the exact duration with fractions of a day.
     $atid ||= $self->get_time_to_expiry({
