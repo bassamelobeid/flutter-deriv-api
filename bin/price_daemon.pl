@@ -65,7 +65,7 @@ while (1) {
         'read_conn'   => _redis_pricer,
         'write_conn'  => _redis_pricer,
         'daemon_conn' => _redis_read,
-        'usleep'      => 20,
+        'usleep'      => 100000,
         'retry'       => 100,
     );
 
@@ -85,7 +85,7 @@ while (1) {
             });
     } else {
         print "no job found\n";
-        sleep (60);
+        sleep (30);
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.idle.count', -1);
     }
     print "Ending the child\n";
