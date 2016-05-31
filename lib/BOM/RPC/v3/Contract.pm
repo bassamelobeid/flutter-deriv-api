@@ -153,14 +153,19 @@ sub _get_ask {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $sell_time) = @{$params}{qw/short_code contract_id currency is_sold sell_time/};
+    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $markup) =
+        @{$params}{qw/short_code contract_id currency is_sold sell_time markup/};
 
     my $response;
     try {
         my $tv = [Time::HiRes::gettimeofday];
         my $contract = produce_contract($short_code, $currency, $is_sold);
+
+        my $ask_price = $contract->ask_price;
+        $ask_price = $ask_price + ((($markup // 0) / 100) * $contract->payout);
+
         $response = {
-            ask_price           => sprintf('%.2f', $contract->ask_price),
+            ask_price           => sprintf('%.2f', $ask_price),
             bid_price           => sprintf('%.2f', $contract->bid_price),
             current_spot_time   => $contract->current_tick->epoch,
             contract_id         => $contract_id,
