@@ -314,10 +314,14 @@ sub calculate_limits {
 sub get_risk_profile_specifics {
     my $self = shift;
 
+    # spread has a total different structure.
+    return if $self->contract->is_spread;
+
     my $risk_profile = BOM::Product::RiskProfile->new(
         contract       => $self->contract,
         client_loginid => $self->client->loginid
     );
+
     $self->risk_profile_specifics->{turnover_limits} = $risk_profile->get_turnover_limit_parameters;
 
     if ($risk_profile->has_custom_client_limit) {
