@@ -13,7 +13,7 @@ sub code { return 'DIGITOVER'; }
 
 sub localizable_description {
     return +{
-        tick => '[_1] [_2] payout if the last digit of [_3] is strictly higher than [_6] after [_5] ticks.',
+        tick => 'Win payout if the last digit of [_3] is strictly higher than [_6] after [_5] ticks.',
     };
 }
 
