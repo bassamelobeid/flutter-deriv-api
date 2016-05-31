@@ -66,7 +66,7 @@ while (1) {
         'write_conn'  => _redis_pricer,
         'daemon_conn' => _redis_read,
         'usleep'      => 100_000,
-        'retry'       => 100,
+        'retry'       => 10000,
     );
 
     my $next = $rp->next;
@@ -85,7 +85,7 @@ while (1) {
             });
     } else {
         print "no job found\n";
-        sleep (2);
+        sleep (1);
     }
     DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.end');
     print "Ending the child\n";
