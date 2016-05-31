@@ -266,7 +266,7 @@ sub _build_config {
     }
 
     my $default_vol_duration = undef;
-    $default_vol_duration = 2 / 86400 if $self->submarket_name eq 'random_daily';
+    $default_vol_duration = 2 / 86400 if $self->submarket->name eq 'random_daily';
 
     my $default_interest_rate = undef;
 
