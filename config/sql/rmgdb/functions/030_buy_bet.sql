@@ -24,7 +24,7 @@ CREATE OR REPLACE FUNCTION bet_v1.buy_bet(  a_loginid           VARCHAR(12),    
                                             t_staff_loginid     VARCHAR(24),    -- 19
                                             t_remark            VARCHAR(800),   -- 20
                                             t_source            BIGINT,         -- 21
-                                            t_markup            INT,            -- 22
+                                            t_markup            NUMERIC(1,2),   -- 22
                                             -- quants_bets_variables
                                             q_qv                JSON,           -- 23
                                             p_limits            JSON,           -- 24
@@ -165,7 +165,7 @@ CREATE OR REPLACE FUNCTION bet_v1.buy_bet_nofail(   a_loginid           VARCHAR(
                                                     t_staff_loginid     VARCHAR(24),    -- 19
                                                     t_remark            VARCHAR(800),   -- 20
                                                     t_source            BIGINT,         -- 21
-                                                    t_markup            INT,            -- 22
+                                                    t_markup            NUMERIC(1,2),   -- 22
                                                     -- quants_bets_variables
                                                     q_qv                JSON,           -- 23
                                                     p_limits            JSON,           -- 24
