@@ -66,7 +66,7 @@ while (1) {
         'write_conn'  => _redis_pricer,
         'daemon_conn' => _redis_read,
         'usleep'      => 100_000,
-        'retry'       => 10_000,
+        'retry'       => 100_000,
     );
 
     my $next = $rp->next;
