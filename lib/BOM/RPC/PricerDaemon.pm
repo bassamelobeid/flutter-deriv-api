@@ -11,6 +11,7 @@ use DataDog::DogStatsd::Helper;
 use Time::HiRes qw(gettimeofday tv_interval);
 use utf8;
 use BOM::System::RedisReplicated;
+use Sys::Hostname;
 
 sub new {
     my ($class, @args) = @_;
@@ -61,6 +62,8 @@ sub price {
 
     $response->{data} = $self->{data};
     $response->{key}  = $self->{key};
+
+    $response->{hostname}  = Sys::Hostname::hostname;
     return encode_json($response);
 }
 
