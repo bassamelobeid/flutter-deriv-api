@@ -61,6 +61,7 @@ sub price {
 
     $response->{data} = $self->{data};
     $response->{key}  = $self->{key};
+
     return encode_json($response);
 }
 
