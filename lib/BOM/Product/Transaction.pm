@@ -147,6 +147,12 @@ has transaction_parameters => (
     default => sub { {}; },
 );
 
+has markup => (
+    is      => 'ro',
+    isa     => 'Int',
+    default => 0
+);
+
 sub BUILDARGS {
     my ($class, $args) = @_;
 
@@ -455,6 +461,7 @@ sub prepare_bet_data_for_buy {
             transaction_data => {
                 staff_loginid => $self->staff,
                 source        => $self->source,
+                markup        => $self->markup
             },
             bet_data     => $bet_params,
             account_data => {
