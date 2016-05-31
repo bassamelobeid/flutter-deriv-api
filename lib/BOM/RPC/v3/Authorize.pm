@@ -19,7 +19,7 @@ sub authorize {
     my $token_details = $params->{token_details};
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    my ($loginid, $scopes, $markup) = @{$token_details}{qw/loginid scopes markup/};
+    my ($loginid, $scopes, $markup_percentage) = @{$token_details}{qw/loginid scopes markup_percentage/};
 
     my $client = BOM::Platform::Client->new({loginid => $loginid});
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
@@ -63,7 +63,7 @@ sub authorize {
             token                => $token,
             token_type           => $token_type,
             scopes               => $scopes,
-            markup               => $markup,
+            markup_percentage    => $markup_percentage,
             account_id           => ($account ? $account->id : ''),
             country              => $client->residence,
             currency             => ($account ? $account->currency_code : ''),

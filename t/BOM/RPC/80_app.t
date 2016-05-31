@@ -95,27 +95,27 @@ my $app2 = $c->call_ok(
     {
         token => $token,
         args  => {
-            name         => 'App 2',
-            scopes       => ['read', 'admin'],
-            redirect_uri => 'https://www.example2.com/',
-            markup       => 2
+            name              => 'App 2',
+            scopes            => ['read', 'admin'],
+            redirect_uri      => 'https://www.example2.com/',
+            markup_percentage => 2
         },
     })->has_no_system_error->has_no_error->result;
-is $app2->{markup}, 2, 'markup is right';
+is $app2->{markup_percentage}, 2, 'markup_percentage is right';
 
 $app2 = $c->call_ok(
     'app_update',
     {
         token => $token,
         args  => {
-            app_update   => $app2->{app_id},
-            name         => 'App 2',
-            scopes       => ['read', 'admin'],
-            redirect_uri => 'https://www.example2.com/',
-            markup       => 4
+            app_update        => $app2->{app_id},
+            name              => 'App 2',
+            scopes            => ['read', 'admin'],
+            redirect_uri      => 'https://www.example2.com/',
+            markup_percentage => 4
         },
     })->has_no_system_error->has_no_error->result;
-is $app2->{markup}, 4, 'markup is updated';
+is $app2->{markup_percentage}, 4, 'markup_percentage is updated';
 
 my $get_apps = $c->call_ok(
     'app_list',
