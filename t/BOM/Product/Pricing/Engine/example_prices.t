@@ -184,6 +184,7 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
             epoch      => $date_pricing,
             quote      => $expectations->{spot},
         });
+        $underlying->config->spot = $expectations->{spot};
 
         my %barriers =
             $expectations->{barrier2}
