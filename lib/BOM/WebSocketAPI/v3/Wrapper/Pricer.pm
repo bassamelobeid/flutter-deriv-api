@@ -129,6 +129,7 @@ sub _send_ask {
 sub process_pricing_events {
     my ($c, $message, $chan) = @_;
 
+    # in case that it is a spread
     return if not $message or not $c->tx;
 
     my $response        = decode_json($message);
@@ -154,9 +155,7 @@ sub process_pricing_events {
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
-            my $adjusted_results = {};
-            $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount)
-                if $orig_args->{basis};
+            my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
 
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('price_stream', $ref->{code}, $ref->{message_to_client});
@@ -199,6 +198,8 @@ sub _price_stream_results_adjustment {
     my $results   = shift;
     my $amount    = shift;
 
+    return $results if not $orig_args->{basis};
+
     # For non spread
     if ($orig_args->{basis} eq 'payout') {
         my $ask_price = BOM::RPC::v3::Contract::calculate_ask_price({
@@ -221,9 +222,6 @@ sub _price_stream_results_adjustment {
         $results->{ask_price}     = roundnear(0.01, $amount);
         $results->{display_value} = roundnear(0.01, $amount);
         $results->{payout}        = roundnear(0.01, $payout);
-    } else {
-        # in case that it is a spread
-        return $results;
     }
 
     if (
