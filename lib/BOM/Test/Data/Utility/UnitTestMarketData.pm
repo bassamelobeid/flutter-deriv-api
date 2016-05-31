@@ -141,6 +141,13 @@ sub create_doc {
         $data_mod->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader();
         $data_mod->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();
 
+        if ( $yaml_db eq 'volsurface_delta' or $yaml_db eq 'volsurface_moneyness' ) {
+          if ( exists($data_mod->{symbol}) and not exists($data_mod->{underlying_config}) ) {
+            $data_mod->{underlying_config} = BOM::Market::Underlying->new($data_mod->{symbol})->config;
+            delete $data_mod->{symbol};
+          }
+        }
+
         return Quant::Framework::Utils::Test::create_doc($yaml_db, $data_mod);
     }
 
