@@ -157,7 +157,7 @@ sub _get_pricing_parameter_from_slope_pricer {
         commission_markup       => $commission_markup * $global_commission_adjustment,
     };
 
-     $pricing_parameters->{commission_markup} = {digital_spread_percentage => $commission_markup, fxd_scaling => $global_commission_adjustment};
+     $pricing_parameters->{commission_markup} = {digital_spread_percentage => $commission_markup, dsp_scaling => $global_commission_adjustment};
 
 
     my $theo_param = $debug_information->{$contract_type}{theo_probability}{parameters};
