@@ -50,7 +50,7 @@ my $app1 = $c->call_ok(
         args  => {
             name         => 'App 1',
             scopes       => ['read', 'trade'],
-            redirect_uri => 'https://www.example.com/',
+            redirect_uri => 'https://www.example.com/'
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
@@ -64,7 +64,7 @@ $app1 = $c->call_ok(
             app_update   => $app1->{app_id},
             name         => 'App 1',
             scopes       => ['read', 'trade', 'admin'],
-            redirect_uri => 'https://www.example.com/callback',
+            redirect_uri => 'https://www.example.com/callback'
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply([sort @{$app1->{scopes}}], ['admin', 'read', 'trade'], 'scopes are updated');
@@ -98,8 +98,24 @@ my $app2 = $c->call_ok(
             name         => 'App 2',
             scopes       => ['read', 'admin'],
             redirect_uri => 'https://www.example2.com/',
+            markup       => 2
         },
     })->has_no_system_error->has_no_error->result;
+is $app2->{markup}, 2, 'markup is right';
+
+$app2 = $c->call_ok(
+    'app_update',
+    {
+        token => $token,
+        args  => {
+            app_update   => $app2->{app_id},
+            name         => 'App 2',
+            scopes       => ['read', 'admin'],
+            redirect_uri => 'https://www.example2.com/',
+            markup       => 4
+        },
+    })->has_no_system_error->has_no_error->result;
+is $app2->{markup}, 4, 'markup is updated';
 
 my $get_apps = $c->call_ok(
     'app_list',
