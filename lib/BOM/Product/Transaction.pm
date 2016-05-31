@@ -153,6 +153,19 @@ has markup => (
     default => 0
 );
 
+has app_commission => (
+    is         => 'ro',
+    isa        => 'Maybe[Num]',
+    lazy_build => 1
+);
+
+sub _build_app_commission {
+    my $self = shift;
+
+    return 0 if $self->contract->is_spread;
+    return (($self->markup / 100) * $self->payout);
+}
+
 sub BUILDARGS {
     my ($class, $args) = @_;
 
@@ -461,7 +474,7 @@ sub prepare_bet_data_for_buy {
             transaction_data => {
                 staff_loginid => $self->staff,
                 source        => $self->source,
-                markup        => $self->markup
+                markup        => $self->app_commission
             },
             bet_data     => $bet_params,
             account_data => {
