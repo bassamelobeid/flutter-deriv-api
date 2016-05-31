@@ -227,7 +227,6 @@ sub _price_stream_results_adjustment {
                     base_commission  => $results->{base_commission},
                     amount           => $amount,
                 }));
-        $amount                   = roundnear(0.01, $amount);
         $results->{ask_price}     = roundnear(0.01, $amount);
         $results->{display_value} = roundnear(0.01, $amount);
         $results->{payout}        = roundnear(0.01, $payout);
