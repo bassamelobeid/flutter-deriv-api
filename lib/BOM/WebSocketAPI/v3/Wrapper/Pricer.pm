@@ -155,7 +155,8 @@ sub process_pricing_events {
             $results = $err;
         } else {
             my $adjusted_results = {};
-            $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount) if $orig_args->{basis};
+            $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount)
+                if $orig_args->{basis};
 
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('price_stream', $ref->{code}, $ref->{message_to_client});
