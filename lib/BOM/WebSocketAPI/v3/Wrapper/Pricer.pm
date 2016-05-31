@@ -137,14 +137,14 @@ sub process_pricing_events {
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
 
-    if (not $c->stash->{last_pricer_expiry_update} or time - $c->stash->{last_pricer_expiry_update} > 30) {
-        BOM::System::RedisReplicated::redis_pricer->expire($response->{key}, 60);
+
+    if (not $c->stash->{last_pricer_expiry_update} or time - $c->stash->{last_pricer_expiry_update} > 20) {
+        BOM::System::RedisReplicated::redis_pricer->expire($response->{key}, 90);
         $c->stash->{last_pricer_expiry_update} = time;
     }
 
     delete $response->{data};
     delete $response->{key};
-    my $hostname = delete $response->{hostname};
 
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
         next if $amount eq 'channel_name';
@@ -155,7 +155,7 @@ sub process_pricing_events {
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
-            my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
+            my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount) if $orig_args->{basis};
 
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('price_stream', $ref->{code}, $ref->{message_to_client});
@@ -186,9 +186,6 @@ sub process_pricing_events {
                 time   => 1000 * $results->{price_stream}->{rpc_time},
                 method => 'price_stream',
             };
-            if ($hostname =~ /^wwwpool(\d+)\./) {
-                $results->{debug}->{host} = $1;
-            }
         }
 
         $c->send({json => $results});
