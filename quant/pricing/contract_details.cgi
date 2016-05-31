@@ -27,7 +27,7 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 my %params = %{request()->params};
 my ($pricing_parameters, @contract_details, $start);
 
-my $broker = $params{broker} // request()->broker->code ;
+my $broker = $params{broker} // request()->broker->code;
 my $id = $params{id} ? $params{id} : '';
 
 if ($broker and $id) {
@@ -98,11 +98,15 @@ sub output_as_csv {
 sub _get_pricing_parameter_from_IH_pricer {
     my $contract = shift;
     my $pricing_parameters;
-    my $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $contract});
-    my $ask_probability = $contract->ask_probability;
+    my $pe                = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $contract});
+    my $theo_probability  = $contract->theo_probability;
+    my $bs_probability    = $pe->formula->($pe->_formula_args);
+    my $commission_markup = $contract->commission_markup->amount * BOM::Product::Contract::Helper::global_commission_adjustment();
+
     $pricing_parameters->{ask_probability} = {
-        bs_probability => $ask_probability->peek_amount(lc($contract->code) . '_theoretical_probability'),
-        map { $_ => $ask_probability->peek_amount($_) } qw(intraday_delta_correction vega_correction risk_markup commission_markup),
+        bs_probability    => $bs_probability,
+        commission_markup => $commission_markup,
+        map { $_ => $theo_probability->peek_amount($_) } qw(intraday_delta_correction vega_correction risk_markup),
     };
 
     my @bs_keys = ('S', 'K', 't', 'discount_rate', 'mu', 'vol');
@@ -114,27 +118,22 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     $pricing_parameters->{vega_correction} = {
         historical_vol_mean_reversion => BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_vol_meanrev},
-        map { $_ => $ask_probability->peek_amount($_) } qw(intraday_vega long_term_prediction),
+        map { $_ => $theo_probability->peek_amount($_) } qw(intraday_vega long_term_prediction),
     };
 
     $pricing_parameters->{intraday_delta_correction} = {
           short_term_delta_correction => $contract->get_time_to_expiry->minutes < 10 ? $pe->_get_short_term_delta_correction
         : $contract->get_time_to_expiry->minutes > 20 ? 0
-        : $ask_probability->peek_amount('delta_correction_short_term_value'),
+        : $theo_probability->peek_amount('delta_correction_short_term_value'),
         long_term_delta_correction => $contract->get_time_to_expiry->minutes > 20 ? $pe->_get_long_term_delta_correction
         : $contract->get_time_to_expiry->minutes < 10 ? 0
-        :                                               $ask_probability->peek_amount('delta_correction_long_term_value'),
+        :                                               $theo_probability->peek_amount('delta_correction_long_term_value'),
     };
 
     $pricing_parameters->{risk_markup} = {
-        intraday_historical_iv_risk => $contract->is_atm_bet ? 0 : $ask_probability->peek_amount('intraday_historical_iv_risk'),
-        map { $_ => $ask_probability->peek_amount($_) } qw(economic_events_markup eod_market_risk_markup),
-    };
-
-    $pricing_parameters->{commission_markup} = {
-        base_commission         => $ask_probability->peek_amount('intraday_historical_fixed'),
-        quite_period_adjustment => $ask_probability->peek_amount('quiet_period_markup') ? $ask_probability->peek_amount('quiet_period_markup') : 0,
-        map { $_ => $ask_probability->peek_amount($_) } qw(digital_spread_percentage dsp_scaling),
+        intraday_historical_iv_risk => $contract->is_atm_bet ? 0 : $theo_probability->peek_amount('intraday_historical_iv_risk'),
+        eod_market_risk_markup      => $contract->is_atm_bet ? 0 : $theo_probability->peek_amount('eod_market_risk_markup'),
+        economic_events_markup => $theo_probability->peek_amount('economic_events_markup'),
     };
 
     return $pricing_parameters;
@@ -149,13 +148,12 @@ sub _get_pricing_parameter_from_slope_pricer {
     my $contract_type     = $contract->pricing_engine->contract_type;
     my $theo_probability  = $contract->theo_probability->amount - $contract->risk_markup->amount;
     my $risk_markup       = $contract->risk_markup->amount;
-    my $commission_markup = $contract->commission_markup->amount ;
-    my $global_commission_adjustment = BOM::Product::Contract::Helper::global_commission_adjustment();
+    my $commission_markup = $contract->commission_markup->amount * BOM::Product::Contract::Helper::global_commission_adjustment();
 
     $pricing_parameters->{ask_probability} = {
         theoretical_probability => $theo_probability,
         risk_markup             => $risk_markup,
-        commission_markup       => $commission_markup * $global_commission_adjustment,
+        commission_markup       => $commission_markup,
     };
 
     my $theo_param = $debug_information->{$contract_type}{theo_probability}{parameters};
