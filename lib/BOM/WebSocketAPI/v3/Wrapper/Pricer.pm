@@ -182,12 +182,13 @@ sub process_pricing_events {
         }
 
         if ($c->stash('debug')) {
-            $hostname =~ /^wwwpool(\d+)\./;
             $results->{debug} = {
                 time   => 1000 * $results->{price_stream}->{rpc_time},
                 method => 'price_stream',
-                host   => $1,
             };
+            if ($hostname =~ /^wwwpool(\d+)\./) {
+                $results->{debug}->{host} = $1;
+            }
         }
 
         $c->send({json => $results});
