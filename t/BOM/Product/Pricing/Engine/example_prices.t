@@ -18,6 +18,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Market::Underlying;
 use Path::Tiny;
 use YAML::XS qw(LoadFile);
+use Test::MockModule;
 
 my $data_file       = path(__FILE__)->parent->child('config.yml');
 my $config_data     = LoadFile($data_file);
@@ -32,8 +33,10 @@ my $date_pricing = $date_start;
 my $recorded_date = Date::Utility->new($date_start);
 # This test are benchmarked againsts market rates.
 # The intermittent failure of the test is due to the switching between implied and market rates in app settings.
-my $mocked = Test::MockModule->new('BOM::Market::Underlying');
-$mocked->mock('uses_implied_rate', sub { return 0 });
+my $u_c = Test::MockModule->new('Quant::Framework::Utils::UnderlyingConfig');
+$u_c->mock('uses_implied_rate', sub { return 0 });
+$u_c->mock('uses_implied_rate_for_asset', sub { return 0 });
+$u_c->mock('uses_implied_rate_for_quoted_currency', sub { return 0 });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
@@ -184,7 +187,9 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
             epoch      => $date_pricing,
             quote      => $expectations->{spot},
         });
-        $underlying->config->spot = $expectations->{spot};
+
+        my $mock = Test::MockModule->new('Quant::Framework::Utils::UnderlyingConfig');
+        $mock->mock('spot', sub { return $expectations->{spot} });
 
         my %barriers =
             $expectations->{barrier2}
@@ -219,6 +224,8 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         is(roundnear(1e-4, $bet->risk_markup->amount),       $expectations->{risk_markup},       'Risk markup is correct.');
         $date_pricing++;
         $date_start++;
+
+        $mock->unmock('spot');
     }
 }
 
