@@ -63,7 +63,7 @@ sub price {
     $response->{data} = $self->{data};
     $response->{key}  = $self->{key};
 
-    $response->{hostname}  = Sys::Hostname::hostname;
+    $response->{hostname} = Sys::Hostname::hostname;
     return encode_json($response);
 }
 
