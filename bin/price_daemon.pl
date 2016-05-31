@@ -85,7 +85,7 @@ while (1) {
             });
     } else {
         print "no job found\n";
-        sleep (5);
+        sleep (60);
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.forks.idle.count', -1);
     }
     print "Ending the child\n";
