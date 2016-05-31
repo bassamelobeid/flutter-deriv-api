@@ -26,7 +26,7 @@ use BOM::Product::Types;
 use Quant::Framework::VolSurface::Utils;
 use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
-use Quant::Framework::Fetcher::VolSurface;
+use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Platform::Static::Config;
