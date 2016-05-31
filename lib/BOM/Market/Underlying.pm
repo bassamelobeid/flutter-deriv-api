@@ -279,7 +279,10 @@ sub _build_config {
 
     state $vol = LoadFile('/home/git/regentmarkets/bom-market/config/files/flat_volatility.yml');
     my $flat_vol = undef;
-    $flat_vol = $vol->{$self->symbol} if exists $vol->{$self->symbol};
+
+    #Flat is given underlying's system_symbol to fetch flat volatility.
+    #So we use the same attribute here
+    $flat_vol = $vol->{$self->system_symbol} if exists $vol->{$self->system_symbol};
 
     return Quant::Framework::Utils::UnderlyingConfig->new({
         symbol                                => $self->symbol,
