@@ -181,7 +181,7 @@ sub authorize {
     my $i = 1;
     my @params;
     foreach my $c1 ($user->clients) {
-        my ($access_token, $expires_in) = $oauth_model->store_access_token_only($app_id, $c1->loginid, @scopes);
+        my ($access_token, $expires_in) = $oauth_model->store_access_token_only($app_id, $c1->loginid);
 
         # loginid
         my $key = 'acct' . $i;
