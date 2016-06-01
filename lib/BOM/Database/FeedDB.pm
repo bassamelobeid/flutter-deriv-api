@@ -6,6 +6,11 @@ use warnings;
 use YAML::XS;
 use DBI;
 
+my $config;
+BEGIN {
+  $config = YAML::XS::LoadFile('/etc/rmg/feeddb.yml');
+}
+
 sub read_dbh {
   my $db_postfix = $ENV{DB_POSTFIX} // '';
     return DBI->connect_cached(
@@ -18,10 +23,6 @@ sub write_dbh {
     my $ip = 'ip';
     $ip = shift if @_;
     my $db_postfix = $ENV{DB_POSTFIX} // '';
-    my $config;
-    BEGIN {
-      $config = YAML::XS::LoadFile('/etc/rmg/feeddb.yml');
-    }
     return DBI->connect_cached(
         "dbi:Pg:dbname=feed$db_postfix;port=5433;host=" . $config->{write}->{$ip},
         "write", $config->{password} )
