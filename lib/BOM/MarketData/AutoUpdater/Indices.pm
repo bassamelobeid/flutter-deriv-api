@@ -133,7 +133,7 @@ sub run {
             if (exists $otc_list{'OTC_' . $symbol}) {
                 my $otc         = BOM::Market::Underlying->new('OTC_' . $symbol);
                 my $otc_surface = $volsurface->clone({
-                    underlying => $otc,
+                    underlying_config => $otc->config,
                 });
                 $otc_surface->save;
             }
