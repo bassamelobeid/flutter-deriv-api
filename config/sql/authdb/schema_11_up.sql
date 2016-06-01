@@ -1,5 +1,5 @@
 BEGIN;
 
-ALTER TABLE oauth.apps ADD COLUMN markup_percentage NUMERIC(3,2) DEFAULT 0.00;
+ALTER TABLE oauth.apps ADD COLUMN markup_percentage NUMERIC(3,2) DEFAULT 0;
 
 COMMIT;
