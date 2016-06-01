@@ -111,6 +111,7 @@ sub startup {
                 server_name  => $c->server_name,
                 client_ip    => $c->client_ip,
                 country_code => $c->country_code,
+                country      => $c->country_code,
                 user_agent   => $c->req->headers->header('User-Agent'),
             );
         });
@@ -319,6 +320,9 @@ sub startup {
         my $action_options = $action->[1] ||= {};
         $action_options->{in_validator}  = $in_validator;
         $action_options->{out_validator} = $out_validator;
+
+        $action_options->{stash_params} ||= [];
+        push @{$action_options->{stash_params}}, qw( language country source );
     }
 
     $app->plugin(
