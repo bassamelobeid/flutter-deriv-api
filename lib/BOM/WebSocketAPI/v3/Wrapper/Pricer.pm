@@ -138,11 +138,6 @@ sub process_pricing_events {
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
 
-    if (not $c->stash->{last_pricer_expiry_update} or time - $c->stash->{last_pricer_expiry_update} > 20) {
-        BOM::System::RedisReplicated::redis_pricer->expire($response->{key}, 90);
-        $c->stash->{last_pricer_expiry_update} = time;
-    }
-
     delete $response->{data};
     delete $response->{key};
 
