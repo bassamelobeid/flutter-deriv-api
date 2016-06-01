@@ -1,5 +1,5 @@
 BEGIN;
 
-ALTER TABLE transaction.transaction ADD COLUMN markup NUMERIC(3,2) DEFAULT 0.00;
+ALTER TABLE transaction.transaction ADD COLUMN markup NUMERIC DEFAULT 0;
 
 COMMIT;
