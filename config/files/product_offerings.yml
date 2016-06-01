@@ -156,7 +156,7 @@ INMARUTI: *stocks
 INRIL: *stocks
 INTATAMOTORS: *stocks
 INTATASTEEL: *stocks
-INBHARTIART: *stocks
+INBHARTIARTL: *stocks
 BFX: &limited_callput
   callput:
     daily:
