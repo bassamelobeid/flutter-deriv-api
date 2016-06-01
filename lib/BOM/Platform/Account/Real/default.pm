@@ -140,6 +140,13 @@ sub _after_register_client {
     $emailmsg .= join("\n\t\t", @address, Locale::Country::code2country($client->residence));
     $client->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$emailmsg\n");
 
+    if ($client->landing_company->short eq 'iom'
+        and (length $client->first_name < 3 or length $client->last_name < 3))
+    {
+        $emailmsg .= join("\n\t\t", $client->first_name, $client->last_name, Locale::Country::code2country($client->residence));
+        $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$emailmsg\n");
+    }
+
     if (BOM::Platform::Runtime->instance->app_config->system->on_production) {
         try {
             my $desk_api = BOM::Platform::Desk->new({
