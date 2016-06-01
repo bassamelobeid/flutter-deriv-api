@@ -60,13 +60,13 @@ sub from_mojo {
     __SetEnvironment();
 
     $args->{_ip} = '';
-    if ($main::ENV{'REMOTE_ADDR'}) {
+    if ( $main::ENV{'REMOTE_ADDR'} ) {
         $args->{_ip} = $main::ENV{'REMOTE_ADDR'};
     }
-    
-    if (not $args->{_ip} and $request->headers->header('x-forwarded-for')) {
-        my @ips = split(/,\s*/, $request->headers->header('x-forwarded-for'));
-        $args->{_ip} = $ips[0] if Data::Validate::IP::is_ipv4($ips[0]);
+
+    if ( not $args->{_ip} and $request->headers->header('x-forwarded-for') ) {
+        my @ips = split( /,\s*/, $request->headers->header('x-forwarded-for') );
+        $args->{_ip} = $ips[0] if Data::Validate::IP::is_ipv4( $ips[0] );
     }
 
     $args->{domain_name} = $request->url->to_abs->host;
