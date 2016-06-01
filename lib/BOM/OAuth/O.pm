@@ -179,15 +179,21 @@ sub authorize {
 
     ## create tokens for all loginids
     my $i = 1;
-    my @accts;
+    my @params;
     foreach my $c1 ($user->clients) {
         my ($access_token, $expires_in) = $oauth_model->store_access_token_only($app_id, $c1->loginid);
-        push @accts, 'acct' . $i . '=' . $c1->loginid . '&token' . $i . '=' . $access_token;
-        $i++;
+
+        # loginid
+        my $key = 'acct' . $i;
+        push @params, ($key => $c1->loginid);
+
+        # token
+        $key = 'token' . $i++;
+        push @params, ($key => $access_token);
     }
 
-    $uri .= '#' . join('&', @accts);
-    $uri .= '&state=' . $state if defined $state;
+    push @params, (state => $state) if defined $state;
+    $uri->query(\@params);
 
     ## clear session
     delete $c->session->{__is_logined};
