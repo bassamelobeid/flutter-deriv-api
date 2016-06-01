@@ -92,6 +92,7 @@ sub _forget_pricing_subscription {
         foreach my $channel (keys %{$pricing_channel}) {
             foreach my $amount (keys %{$pricing_channel->{$channel}}) {
                 next if $amount eq 'channel_name';
+                next unless exists $pricing_channel->{$channel}->{$amount}->{uuid};
                 if ($pricing_channel->{$channel}->{$amount}->{uuid} eq $uuid) {
                     push @$removed_ids, $pricing_channel->{$channel}->{$amount}->{uuid};
                     delete $pricing_channel->{$channel}->{$amount};
