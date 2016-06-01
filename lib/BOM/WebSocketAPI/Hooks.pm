@@ -209,12 +209,12 @@ sub after_forward {
 
     return unless $result;
 
-    my $args = $req_storage->{args};
+    my $args                     = $req_storage->{args};
     my $output_validation_result = $req_storage->{out_validator}->validate($result);
     if (not $output_validation_result) {
         my $error = join(" - ", $output_validation_result->errors);
         $c->app->log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
-        %$result = %{ $c->new_error($req_storage->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error) };
+        %$result = %{$c->new_error($req_storage->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error)};
     }
 
     if (ref($result) && $c->stash('debug')) {
@@ -226,7 +226,7 @@ sub after_forward {
 
     my $l = length JSON::to_json($result || {});
     if ($l > 328000) {
-        %$result = %{ $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.')) };
+        %$result = %{$c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'))};
     }
     return;
 }

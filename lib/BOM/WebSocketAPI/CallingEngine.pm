@@ -17,7 +17,7 @@ sub make_call_params {
     my $call_params_cb = delete $req_storage->{make_call_params};
 
     my $call_params = $req_storage->{call_params};
-    $call_params->{args}     = $args;
+    $call_params->{args} = $args;
 
     if (defined $stash_params) {
         $call_params->{$_} = $c->stash($_) for @$stash_params;
