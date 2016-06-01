@@ -500,23 +500,13 @@ subtest $method => sub {
         },
         'tnc_approval is excluded, still status is empty'
     );
-    $test_client->set_status('ok', 'test staff', 1);
-    $test_client->save();
-    is_deeply(
-        $c->tcall($method, {token => $token1}),
-        {
-            status              => [qw(ok)],
-            risk_classification => ''
-        },
-        'ok status'
-    );
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => [qw(ok authenticated)],
+            status              => [ 'authenticated' ],
             risk_classification => ''
         },
         'ok, authenticated'
