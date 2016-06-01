@@ -36,11 +36,11 @@ my $surface_string = url_decode($cgi->param('surface'));
 $surface_string =~ s/point/./g;
 my $surface_data = from_json($surface_string);
 
-my $class = 'BOM::MarketData::VolSurface::' . ($type eq 'moneyness' ? 'Moneyness' : 'Delta');
+my $class = 'Quant::Framework::VolSurface::' . ($type eq 'moneyness' ? 'Moneyness' : 'Delta');
 my $surface;
 
 $surface = $class->new(
-    underlying     => $underlying,
+    underlying_config     => $underlying->config,
     surface        => $surface_data,
     recorded_date  => $recorded_date,
     spot_reference => $spot,
