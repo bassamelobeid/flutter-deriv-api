@@ -49,7 +49,7 @@ has _supported_types => (
     },
 );
 
-has [qw(model_markup bs_probability probability d2)] => (
+has [qw(bs_probability probability d2)] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
@@ -97,7 +97,29 @@ sub _build_bs_probability {
         @max,
         base_amount => $tv,
     });
+
+    # If BS is very high, we don't want that business, even if it makes sense.
+    if ($tv > 0.999) {
+        $bs_prob->include_adjustment('add', $self->no_business_probability);
+    }
+
     return $bs_prob;
+}
+
+has no_business_probability => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_no_business_probability',
+);
+
+sub _build_no_business_probability {
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'no_business',
+        description => 'setting probability to 1',
+        set_by      => 'BOM::Product::Pricing::Engine::VannaVolga',
+        base_amount => 1,
+    });
+
 }
 
 sub _build_d2 {
@@ -116,35 +138,6 @@ sub _build_d2 {
     });
 
     return $d2_ret;
-}
-
-=head2 model_markup
-
-The commission from model we should apply for this bet.
-
-=cut
-
-sub _build_model_markup {
-    my $self = shift;
-
-    my $model = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'model_markup',
-        description => 'The markup calculated by this engine.',
-        set_by      => 'BOM::Product::Pricing::Engine',
-        minimum     => 0,
-        maximum     => 100,
-        base_amount => 0,
-    });
-    my $standard = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'standard_rate',
-        description => 'Our standard markup',
-        set_by      => 'BOM::Product::Pricing::Engine',
-        base_amount => 0.10,
-    });
-
-    $model->include_adjustment('add', $standard);
-
-    return $model;
 }
 
 =head2 probability

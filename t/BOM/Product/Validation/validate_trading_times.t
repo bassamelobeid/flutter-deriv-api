@@ -41,6 +41,13 @@ for my $date ($weekend, $weekday) {
             recorded_date => $date
         });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'index',
+        {
+            symbol        => $_,
+            recorded_date => $date
+        }) for qw(RDBULL R_100);
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => $_,

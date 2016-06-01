@@ -14,7 +14,7 @@ sub code { return 'DIGITDIFF'; }
 
 sub localizable_description {
     return +{
-        tick => '[_1] [_2] payout if the last digit of [_3] is not [_6] after [plural,_5,%d tick,%d ticks].',
+        tick => 'Win payout if the last digit of [_3] is not [_6] after [plural,_5,%d tick,%d ticks].',
     };
 }
 
@@ -36,19 +36,7 @@ sub _build_greek_engine {
 
 sub _build_barrier {
     my $self = shift;
-
-    if (not defined $self->supplied_barrier) {
-        $self->add_error({
-            severity          => 110,
-            message           => 'supplied barrier for digits is undefined',
-            message_to_client => localize('We could not process this contract at this time.'),
-        });
-        # setting supplied barrier to zero
-        $self->supplied_barrier(0);
-    }
-
-    my $supp = $self->supplied_barrier + 0;    # make numeric
-    return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => $supp);
+    return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => $self->supplied_barrier);
 }
 
 sub check_expiry_conditions {
@@ -65,6 +53,10 @@ sub check_expiry_conditions {
 }
 
 sub _validate_barrier {
+    my $self = shift;
+
+    return $self->barrier->primary_validation_error unless ($self->barrier->confirm_validity);
+
     return;    # override barrier validation
 }
 

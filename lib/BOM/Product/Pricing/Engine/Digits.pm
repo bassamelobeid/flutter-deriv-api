@@ -4,7 +4,6 @@ use Moose;
 extends 'BOM::Product::Pricing::Engine';
 
 use BOM::Platform::Context qw(localize);
-use BOM::Utility::ErrorStrings qw( format_error_string );
 
 use List::Util qw(first min max);
 use Math::Util::CalculatedValue::Validatable;
@@ -43,20 +42,6 @@ sub _build_probability {
         base_amount => $winning_digits / 10,
     });
 
-    if ($winning_digits == 0) {
-        my $contract  = $self->bet;
-        my $sentiment = $contract->sentiment;
-        my @range     = ($sentiment eq 'under') ? (1, 9) : (0, 8);    # Can only happen for over/under
-        $prob_cv->add_errors({
-                severity => 100,
-                message  => format_error_string(
-                    'No winning digits',
-                    code      => $contract->code,
-                    selection => $contract->barrier->as_absolute,
-                ),
-                message_to_client => localize('Digit must be in the range of [_1] to [_2].', @range)});
-    }
-
     return $prob_cv;
 }
 
@@ -71,7 +56,7 @@ sub _build_winning_digits {
 
     my $contract  = $self->bet;
     my $sentiment = $contract->sentiment;
-    my $digit     = $contract->barrier->as_absolute;
+    my $digit     = $contract->barrier ? $contract->barrier->as_absolute : undef;
 
     return
           ($sentiment eq 'match')  ? 1
@@ -93,42 +78,6 @@ override bs_probability => sub {
         base_amount => $self->probability->amount,
     });
 };
-
-has model_markup => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_model_markup {
-    my $self = shift;
-
-    my $markup_cv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'model_markup',
-        description => 'equivalent to tick trades',
-        set_by      => __PACKAGE__,
-        minimum     => 0,
-        maximum     => 1,
-        base_amount => 0,
-    });
-    my $commission_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_markup',
-        description => 'equivalent to tick trades',
-        set_by      => __PACKAGE__,
-        base_amount => 0.01,
-    });
-
-    my $risk_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'risk_markup',
-        description => 'A set of markups added to accommodate for pricing risk',
-        set_by      => __PACKAGE__,
-        base_amount => 0,
-    });
-
-    $markup_cv->include_adjustment('add', $commission_markup);
-    $markup_cv->include_adjustment('add', $risk_markup);
-
-    return $markup_cv;
-}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

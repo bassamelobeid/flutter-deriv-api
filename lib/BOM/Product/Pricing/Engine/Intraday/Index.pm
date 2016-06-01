@@ -5,20 +5,15 @@ extends 'BOM::Product::Pricing::Engine::Intraday';
 
 use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
-use BOM::Utility::ErrorStrings qw( format_error_string );
 
 =head2 probability
 
 probability for Intraday Index is hard-coded to 55%.
 There's no model in this price calculation yet.
 
-=head2 model_markup
-
-Model markup of zero for Intraday Index
-
 =cut
 
-has [qw(pricing_vol probability model_markup)] => (
+has [qw(pricing_vol probability risk_markup)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -41,24 +36,14 @@ has _supported_types => (
 sub _build_probability {
     my $self = shift;
 
+    # This has zero risk_markup
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'theoretical_probability',
         description => 'theoretical probability for intraday index',
         set_by      => __PACKAGE__,
-        minimum     => 0,
+        minimum     => 0.5,                                            # we don't go lower than 0.5
         maximum     => 1,
         base_amount => $self->formula->($self->_formula_args),
-    });
-}
-
-sub _build_model_markup {
-    my $self = shift;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'model_markup',
-        description => 'model markup for intraday index',
-        set_by      => __PACKAGE__,
-        base_amount => 0.05,
     });
 }
 

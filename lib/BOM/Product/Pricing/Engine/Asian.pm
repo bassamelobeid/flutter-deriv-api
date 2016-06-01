@@ -17,7 +17,7 @@ has _supported_types => (
     },
 );
 
-has [qw(probablity model_markup)] => (
+has [qw(probablity)] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
@@ -34,19 +34,6 @@ sub _build_probability {
     });
 
     return $p;
-}
-
-sub _build_model_markup {
-    my $self = shift;
-
-    my $markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'model_markup',
-        description => 'Model markup for asian',
-        set_by      => __PACKAGE__,
-        base_amount => 0.015,
-    });
-
-    return $markup;
 }
 
 no Moose;

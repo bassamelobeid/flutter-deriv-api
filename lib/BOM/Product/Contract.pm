@@ -5,12 +5,14 @@ use Moose;
 # very bad name, not sure why it needs to be
 # attached to Validatable.
 use MooseX::Role::Validatable::Error;
+use Math::Function::Interpolator;
 use Quant::Framework::Currency;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time);
 use List::Util qw(min max first);
 use List::MoreUtils qw(none);
 use Scalar::Util qw(looks_like_number);
+use BOM::Product::Contract::Helper;
 
 use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
@@ -27,7 +29,6 @@ use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw( get_contract_specifics );
-use BOM::Utility::ErrorStrings qw( format_error_string );
 use BOM::Platform::Static::Config;
 use BOM::System::Chronicle;
 
@@ -46,7 +47,7 @@ has [qw(id pricing_code display_name sentiment other_side_code payout_type payou
     default => undef,
 );
 
-has [qw(average_tick_count long_term_prediction)] => (
+has [qw(long_term_prediction)] => (
     is      => 'rw',
     default => undef,
 );
@@ -163,7 +164,7 @@ sub _build_basis_tick {
             symbol => $self->underlying->symbol,
         });
         $self->add_error({
-            message           => format_error_string('Waiting for entry tick', symbol => $self->underlying->symbol),
+            message           => "Waiting for entry tick [symbol: " . $self->underlying->symbol . "]",
             message_to_client => $potential_error,
         });
     }
@@ -405,13 +406,9 @@ has [qw(volsurface)] => (
     lazy_build => 1,
 );
 
-# commission_adjustment - A multiplicative factor which adjusts the model_markup.  This scale factor must be in the range [0.01, 5].
 # discounted_probability - The discounted total probability, given the time value of the money at stake.
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
 has [qw(
-        commission_adjustment
-        model_markup
-        total_markup
         ask_probability
         theo_probability
         bid_probability
@@ -701,7 +698,7 @@ sub _build_opposite_contract {
         $opp_parameters{date_start}  = $self->date_start;
         $opp_parameters{pricing_new} = 1;
         push @opposite_contract_parameters, qw(pricing_engine_name pricing_spot r_rate q_rate pricing_vol discount_rate mu barriers_for_pricing);
-        push @opposite_contract_parameters, qw(empirical_volsurface average_tick_count long_term_prediction news_adjusted_pricing_vol)
+        push @opposite_contract_parameters, qw(empirical_volsurface long_term_prediction news_adjusted_pricing_vol)
             if $self->priced_with_intraday_model;
     } else {
         # not pricing_new will only happen when we are repricing an
@@ -882,10 +879,34 @@ has dividend_adjustment => (
 sub _build_dividend_adjustment {
     my $self = shift;
 
-    return $self->underlying->dividend_adjustments_for_period({
+    my $dividend_adjustment = $self->underlying->dividend_adjustments_for_period({
         start => $self->date_pricing,
         end   => $self->date_expiry,
     });
+
+    my @corporate_actions = $self->underlying->get_applicable_corporate_actions_for_period({
+        start => $self->date_pricing->truncate_to_day,
+        end   => Date::Utility->new,
+    });
+
+    my $dividend_recorded_date = $dividend_adjustment->{recorded_date};
+
+    if (scalar @corporate_actions and (first { Date::Utility->new($_->{effective_date})->is_after($dividend_recorded_date) } @corporate_actions)) {
+
+        $self->add_error({
+            message => 'Dividend is not updated  after corporate action'
+                . "[dividend recorded date : "
+                . $dividend_recorded_date->datetime . "] "
+                . "[symbol: "
+                . $self->underlying->symbol . "]",
+            message_to_client =>
+                localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name()),
+        });
+
+    }
+
+    return $dividend_adjustment;
+
 }
 
 sub _build_discounted_probability {
@@ -947,148 +968,23 @@ sub _build_bid_price {
     return $self->_price_from_prob('bid_probability');
 }
 
-sub _build_total_markup {
-    my $self = shift;
-
-    my %max =
-          ($self->priced_with_intraday_model and not $self->is_atm_bet)
-        ? ()
-        : (maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100);
-
-    my %min;
-    if ($self->pricing_engine_name =~ /TickExpiry/) {
-        # we allowed tick expiry total markup to be less than zero
-        # because of equal tick discount.
-        %min = ();
-    } elsif ($self->has_payout and $self->payout != 0) {
-        %min = (minimum => 0.02 / $self->payout);
-    } else {
-        %min = (minimum => 0);
-    }
-
-    my $total_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'total_markup',
-        description => 'Our total markup over theoretical value',
-        set_by      => 'BOM::Product::Contract',
-        base_amount => 0,
-        %min,
-        %max,
-    });
-
-    $total_markup->include_adjustment('reset',    $self->model_markup);
-    $total_markup->include_adjustment('multiply', $self->commission_adjustment);
-
-    return $total_markup;
-}
-
 sub _build_ask_probability {
     my $self = shift;
 
-    return $self->default_probabilities->{ask_probability} if $self->primary_validation_error;
+    my $base_amount = BOM::Product::Contract::Helper::calculate_ask_probability({
+        theo_probability      => $self->theo_probability->amount,
+        commission_markup     => $self->commission_markup->amount,
+        probability_threshold => $self->market->deep_otm_threshold,
+    });
 
-    # Eventually we'll return the actual object.
-    # And start from an actual object.
-    my $minimum;
-    if ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
-        $minimum = 0.4;
-    } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
-        $minimum = 0.5 + $self->model_markup->amount;
-    } else {
-        $minimum = $self->theo_probability->amount;
-    }
-
-    # The above is a pretty unacceptable way to acheive this result. You do that stuff at the
-    # Engine level.. or work it into your markup.  This is nonsense.
-
-    my $marked_up = Math::Util::CalculatedValue::Validatable->new({
+    my $ask_probability = Math::Util::CalculatedValue::Validatable->new({
         name        => 'ask_probability',
         description => 'The price we request for this contract.',
         set_by      => 'BOM::Product::Contract',
-        minimum     => $minimum,
-        maximum     => 1,
+        base_amount => $base_amount,
     });
 
-    $marked_up->include_adjustment('reset', $self->theo_probability);
-
-    $marked_up->include_adjustment('add', $self->total_markup);
-
-    my $min_allowed_ask_prob = $self->market->deep_otm_threshold;
-
-    if ($marked_up->amount < $min_allowed_ask_prob) {
-        my $deep_otm_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'deep_otm_markup',
-            description => 'Additional markup for deep OTM contracts',
-            set_by      => 'BOM::Product::Contract',
-            minimum     => 0,
-            maximum     => $min_allowed_ask_prob,
-            base_amount => $min_allowed_ask_prob - $marked_up->amount,
-        });
-        $marked_up->include_adjustment('add', $deep_otm_markup);
-    }
-    my $max_allowed_ask_prob = 1 - $min_allowed_ask_prob;
-    if ($marked_up->amount > $max_allowed_ask_prob) {
-        my $max_prob_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'max_prob_markup',
-            description => 'Additional markup for contracts with prob higher that max allowed probability',
-            set_by      => __PACKAGE__,
-            base_amount => $min_allowed_ask_prob,
-        });
-        $marked_up->include_adjustment('add', $max_prob_markup);
-    }
-    # If BS is very high, we don't want that business, even if it makes sense.
-    # Also, if the market supplement would absolutely drive us out of [0,1]
-    # Then it is nonsense to be ignored.
-    if (   $self->bs_probability->amount >= 0.999
-        || abs($self->theo_probability->peek_amount('market_supplement') // 0) >= 1
-        || ($self->theo_probability->peek_amount('market_supplement') // 0) <= -0.5)
-    {
-        my $no_business = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'too_high_bs_prob',
-            description => 'Marked up to drive price to 1 when BS is very high',
-            set_by      => __PACKAGE__,
-            base_amount => 1,
-        });
-        $marked_up->include_adjustment('add', $no_business);
-    }
-
-    return $marked_up;
-}
-
-sub _build_commission_adjustment {
-    my $self = shift;
-
-    my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'global_commission_adjustment',
-        description => 'Our scaling adjustment to calculated model markup.',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100),
-        maximum     => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100),
-        base_amount => 0,
-    });
-
-    my $adjustment_used = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'scaling_factor',
-        description => 'Our scaling adjustment to calculated model markup.',
-        set_by      => 'quants.commission.adjustment.global_scaling',
-        base_amount => (BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100),
-    });
-
-    $comm_scale->include_adjustment('reset', $adjustment_used);
-
-    if ($self->for_sale) {
-        $comm_scale->include_adjustment(
-            'multiply',
-            Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'bom_created_bet',
-                    description => 'We created this bet with the intent to get more action.',
-                    minimum     => 0,
-                    maximum     => 1,
-                    set_by      => 'quants.commission.adjustment.bom_created_bet',
-                    base_amount => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{bom_created_bet} / 100),
-                }));
-    }
-
-    return $comm_scale;
+    return $ask_probability;
 }
 
 sub is_valid_to_buy {
@@ -1122,7 +1018,7 @@ sub is_valid_to_sell {
 
     if (scalar @{$self->corporate_actions}) {
         $self->add_error({
-            message           => format_error_string('affected by corporate action', symbol => $self->underlying->symbol),
+            message           => "affected by corporate action [symbol: " . $self->underlying->symbol . "]",
             message_to_client => localize("This contract is affected by corporate action."),
         });
     }
@@ -1197,12 +1093,18 @@ sub _build_ask_price {
 sub _build_payout {
     my $self = shift;
 
-    my $payout            = $self->ask_price / $self->ask_probability->amount;
-    my $dollar_commission = $payout * $self->total_markup->amount;
-    if ($dollar_commission < 0.02) {
-        $payout -= (0.02 - $dollar_commission);
-    }
+    my $theo_prob       = $self->theo_probability->amount;
+    my $base_commission = $self->base_commission;
+    my $ask_price       = $self->ask_price;
 
+    my $commission = BOM::Product::Contract::Helper::commission({
+        theo_probability => $theo_prob,
+        stake            => $ask_price,
+        base_commission  => $base_commission,
+    });
+
+    my $payout = $ask_price / ($theo_prob + $commission * BOM::Product::Contract::Helper::global_commission_adjustment());
+    $payout = max($ask_price, $payout);
     return roundnear(0.01, $payout);
 }
 
@@ -1218,7 +1120,7 @@ sub _build_theo_probability {
             set_by      => $self->pricing_engine_name,
             minimum     => 0,
             maximum     => 1,
-            base_amount => $self->pricing_engine->theo_probability,
+            base_amount => $self->pricing_engine->probability,
         });
     } else {
         $theo = $self->pricing_engine->probability;
@@ -1252,44 +1154,46 @@ sub _build_bs_price {
     return $self->_price_from_prob('bs_probability');
 }
 
-sub _build_model_markup {
+# base_commission can be overridden on contract type level.
+# When this happens, underlying base_commission is ignored.
+has [qw(risk_markup commission_markup base_commission)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_risk_markup {
     my $self = shift;
 
-    my $model_markup;
-    if ($self->new_interface_engine) {
-        my $risk_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup',
-            description => 'Risk markup for a pricing model',
-            set_by      => $self->pricing_engine_name,
-            base_amount => $self->pricing_engine->risk_markup,
-        });
-        my $commission_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'Commission markup for a pricing model',
-            set_by      => $self->pricing_engine_name,
-            base_amount => $self->pricing_engine->commission_markup,
-        });
-        if ($self->for_sale) {
-            my $sell_discount = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'sell_discount',
-                description => 'Discount on sell',
-                set_by      => __PACKAGE__,
-                base_amount => BOM::Platform::Static::Config::quants->{commission}->{resell_discount_factor},
-            });
-            $commission_markup->include_adjustment('multiply', $sell_discount);
-        }
-        $model_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_markup',
-            description => 'Risk and commission markup for a pricing model',
-            set_by      => $self->pricing_engine_name,
-        });
-        $model_markup->include_adjustment('reset', $risk_markup);
-        $model_markup->include_adjustment('add',   $commission_markup);
-    } else {
-        $model_markup = $self->pricing_engine->model_markup;
-    }
+    my $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->theo_probability->peek_amount('risk_markup');
+    $base_amount = 0 unless defined $base_amount;
 
-    return $model_markup;
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'risk_markup',
+        description => 'Risk markup for a pricing model',
+        set_by      => $self->pricing_engine_name,
+        base_amount => $base_amount,
+    });
+}
+
+sub _build_base_commission {
+    my $self = shift;
+
+    return $self->underlying->base_commission;
+}
+
+sub _build_commission_markup {
+    my $self = shift;
+
+    my %min = ($self->has_payout and $self->payout != 0) ? (minimum => 0.02 / $self->payout) : ();
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'commission_markup',
+        description => 'Commission markup for a pricing model',
+        set_by      => $self->pricing_engine_name,
+        base_amount => $self->base_commission *
+            BOM::Product::Contract::Helper::commission_multiplier($self->payout, $self->theo_probability->amount),
+        maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100,
+        %min,
+    });
 }
 
 sub _build_theo_price {
@@ -1358,7 +1262,6 @@ sub _build_pricing_args {
     };
 
     if ($self->priced_with_intraday_model) {
-        $args->{average_tick_count}   = $self->average_tick_count;
         $args->{long_term_prediction} = $self->long_term_prediction;
         $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
     }
@@ -1395,17 +1298,16 @@ sub _build_pricing_vol {
             uses_flat_vol         => $uses_flat_vol,
         });
         $self->long_term_prediction($volsurface->long_term_prediction);
-        $self->average_tick_count($volsurface->average_tick_count);
         if ($volsurface->error) {
             $self->add_error({
-                    message => format_error_string(
-                        'Too few periods for historical vol calculation',
-                        symbol   => $self->underlying->symbol,
-                        duration => $self->remaining_time->as_concise_string,
-                    ),
-                    message_to_client =>
-                        localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name()),
-                });
+                message => 'Too few periods for historical vol calculation '
+                    . "[symbol: "
+                    . $self->underlying->symbol . "] "
+                    . "[duration: "
+                    . $self->remaining_time->as_concise_string . "]",
+                message_to_client =>
+                    localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name()),
+            });
         }
     } else {
         $vol = $self->vol_at_strike;
@@ -1543,13 +1445,13 @@ sub _build_pricing_spot {
         $initial_spot = $self->underlying->tick_at($self->date_pricing->epoch, {allow_inconsistent => 1});
         $initial_spot //= $self->underlying->pip_size * 2;
         $self->add_error({
-                message => format_error_string(
-                    'Undefined spot',
-                    'date pricing' => $self->date_pricing->datetime,
-                    symbol         => $self->underlying->symbol
-                ),
-                message_to_client => localize('We could not process this contract at this time.'),
-            });
+            message => 'Undefined spot '
+                . "[date pricing: "
+                . $self->date_pricing->datetime . "] "
+                . "[symbol: "
+                . $self->underlying->symbol . "]",
+            message_to_client => localize('We could not process this contract at this time.'),
+        });
     }
 
     if ($self->underlying->market->prefer_discrete_dividend) {
@@ -1627,37 +1529,21 @@ sub _build_staking_limits {
         if ($self->underlying->market->name eq 'indices' and not $self->is_atm_bet and $self->timeindays->amount < 7);
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
-    my $stake_max = $payout_max;
-
-    # Client likes lower stake/payout limit on volidx market.
     my $payout_min =
         ($self->underlying->market->name eq 'volidx')
         ? $bet_limits->{min_payout}->{volidx}->{$curr}
         : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->for_sale) ? $payout_min / 20 : $payout_min / 2;
 
-    # err is included here to allow the web front-end access to the same message generated in the back-end.
+    my $message_to_client =
+        $self->for_sale
+        ? localize('Contract market price is too close to final payout.')
+        : localize('Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max));
+
     return {
-        stake => {
-            min => $stake_min,
-            max => $stake_max,
-            err => ($self->for_sale)
-            ? localize('Contract market price is too close to final payout.')
-            : localize(
-                'Buy price must be between [_1] and [_2].',
-                to_monetary_number_format($stake_min, 1),
-                to_monetary_number_format($stake_max, 1)
-            ),
-        },
-        payout => {
-            min => $payout_min,
-            max => $payout_max,
-            err => localize(
-                'Payout must be between [_1] and [_2].',
-                to_monetary_number_format($payout_min, 1),
-                to_monetary_number_format($payout_max, 1)
-            ),
-        },
+        min               => $stake_min,
+        max               => $payout_max,
+        message_to_client => $message_to_client,
     };
 }
 
@@ -1780,6 +1666,7 @@ sub _market_data {
         },
         get_atm_volatility => sub {
             my $args = shift;
+
             $args->{delta} = 50;
             my $vol = $volsurface->get_volatility($args);
 
@@ -2131,14 +2018,15 @@ sub _build_exit_tick {
             and $self->calendar->trading_days_between($entry_tick_date, $exit_tick_date))
         {
             $self->add_error({
-                    message => format_error_string(
-                        'Exit tick date differs from entry tick date on intraday',
-                        symbol => $underlying->symbol,
-                        start  => $exit_tick_date->datetime,
-                        expiry => $entry_tick_date->datetime,
-                    ),
-                    message_to_client => localize("Intraday contracts may not cross market open."),
-                });
+                message => 'Exit tick date differs from entry tick date on intraday '
+                    . "[symbol: "
+                    . $underlying->symbol . "] "
+                    . "[start: "
+                    . $exit_tick_date->datetime . "] "
+                    . "[expiry: "
+                    . $entry_tick_date->datetime . "]",
+                message_to_client => localize("Intraday contracts may not cross market open."),
+            });
         }
     }
 
@@ -2153,7 +2041,7 @@ sub _validate_offerings {
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->trading) {
         return {
-            message           => format_error_string('All trading suspended on system'),
+            message           => 'All trading suspended on system',
             message_to_client => localize("Trading is suspended at the moment."),
         };
     }
@@ -2163,7 +2051,7 @@ sub _validate_offerings {
 
     if ($underlying->is_trading_suspended) {
         return {
-            message           => format_error_string('Underlying trades suspended', symbol => $underlying->symbol),
+            message           => "Underlying trades suspended [symbol: " . $underlying->symbol . "]",
             message_to_client => localize('Trading is suspended at the moment.'),
         };
     }
@@ -2173,14 +2061,14 @@ sub _validate_offerings {
     my $suspend_claim_types = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
     if (@$suspend_claim_types and first { $contract_code eq $_ } @{$suspend_claim_types}) {
         return {
-            message           => format_error_string('Trading suspended for contract type', code => $contract_code),
+            message           => "Trading suspended for contract type [code: " . $contract_code . "]",
             message_to_client => localize("Trading is suspended at the moment."),
         };
     }
 
     if (first { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions}) {
         return {
-            message           => format_error_string('Underlying trades suspended due to corporate actions', symbol => $underlying->symbol),
+            message           => "Underlying trades suspended due to corporate actions [symbol: " . $underlying->symbol . "]",
             message_to_client => localize('Trading is suspended at the moment.'),
         };
     }
@@ -2198,7 +2086,7 @@ sub _validate_feed {
 
     if (not $self->current_tick) {
         return {
-            message           => format_error_string('No realtime data',                              symbol => $underlying->symbol),
+            message           => "No realtime data [symbol: " . $underlying->symbol . "]",
             message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
         };
     } elsif ($self->calendar->is_open_at($self->date_pricing)
@@ -2206,7 +2094,7 @@ sub _validate_feed {
     {
         # only throw errors for quote too old, if the exchange is open at pricing time
         return {
-            message           => format_error_string('Quote too old',                                 symbol => $underlying->symbol),
+            message           => "Quote too old [symbol: " . $underlying->symbol . "]",
             message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
         };
     }
@@ -2214,89 +2102,16 @@ sub _validate_feed {
     return;
 }
 
-sub _validate_payout {
+sub _validate_price {
     my $self = shift;
 
     # Extant contracts can have whatever payouts were OK then.
     return if $self->for_sale;
-
-    my $bet_payout      = $self->payout;
-    my $payout_currency = $self->currency;
-    my $limits          = $self->staking_limits->{payout};
-    my $payout_max      = $limits->{max};
-    my $payout_min      = $limits->{min};
-
-    if ($bet_payout < $payout_min or $bet_payout > $payout_max) {
-        return {
-            message => format_error_string(
-                'payout amount outside acceptable range',
-                given => $bet_payout,
-                min   => $payout_min,
-                max   => $payout_max
-            ),
-            message_to_client => $limits->{err},
-        };
-    }
-
-    my $payout_as_string = "" . $bet_payout;    #Just to be sure we're deailing with a string.
-    $payout_as_string =~ s/[\.0]+$//;           # Strip trailing zeroes and decimal points to be more friendly.
-
-    if ($bet_payout =~ /\.[0-9]{3,}/) {
-        # We did the best we could to clean up looks like still too many decimals
-        return {
-            message => format_error_string(
-                'payout amount has too many decimal places',
-                permitted => 2,
-                payout    => $bet_payout
-            ),
-            message_to_client => localize('Payout may not have more than two decimal places.',),
-        };
-    }
-
-    return;
-}
-
-sub _validate_stake {
-    my $self = shift;
-
-    my $contract_stake = $self->ask_price;
-
-    return ($self->ask_probability->all_errors)[0] if (not $self->ask_probability->confirm_validity);
-
-    my $contract_payout = $self->payout;
-    my $limits          = $self->staking_limits->{stake};
-    my $stake_minimum   = $limits->{min};
-    my $stake_maximum   = $limits->{max};
-
-    if (not $contract_stake) {
-        return {
-            message           => format_error_string('Empty or zero stake', stake => $contract_stake),
-            message_to_client => localize("Invalid stake"),
-        };
-    }
-
-    if ($contract_stake < $stake_minimum or $contract_stake > $stake_maximum) {
-        return {
-            message => format_error_string(
-                'stake is not within limits',
-                stake => $contract_stake,
-                min   => $stake_minimum,
-                max   => $stake_maximum
-            ),
-            message_to_client => $limits->{err},
-        };
-    }
-
-    # Compared as strings of maximum visible client currency width to avoid floating-point issues.
-    if (sprintf("%.2f", $contract_stake) eq sprintf("%.2f", $contract_payout)) {
-        my $message = ($self->for_sale) ? localize('Current market price is 0.') : localize('This contract offers no return.');
-        return {
-            message           => format_error_string('stake same as payout'),
-            message_to_client => $message,
-        };
-    }
-
-    return;
+    return BOM::Product::Contract::Helper::validate_price({
+            ask_price         => $self->ask_price,
+            payout            => $self->payout,
+            minimum_ask_price => $self->staking_limits->{min},
+            maximum_payout    => $self->staking_limits->{max}});
 }
 
 sub _validate_input_parameters {
@@ -2308,34 +2123,22 @@ sub _validate_input_parameters {
 
     if ($epoch_expiry == $epoch_start) {
         return {
-            message => format_error_string(
-                'Start and Expiry times are the same',
-                'start'  => $epoch_start,
-                'expiry' => $epoch_expiry,
-            ),
+            message           => 'Start and Expiry times are the same ' . "[start: " . $epoch_start . "] " . "[expiry: " . $epoch_expiry . "]",
             message_to_client => localize('Expiry time cannot be equal to start time.'),
         };
     } elsif ($epoch_expiry < $epoch_start) {
         return {
-            message => format_error_string(
-                'Start must be before expiry',
-                'start' => $epoch_start,
-                expiry  => $epoch_expiry
-            ),
+            message           => 'Start must be before expiry ' . "[start: " . $epoch_start . "] " . "[expiry: " . $epoch_expiry . "]",
             message_to_client => localize("Expiry time cannot be in the past."),
         };
     } elsif (not $self->for_sale and $epoch_start < $when_epoch) {
         return {
-            message => format_error_string(
-                'starts in the past',
-                'start' => $epoch_start,
-                'now'   => $when_epoch
-            ),
+            message           => 'starts in the past ' . "[start: " . $epoch_start . "] " . "[now: " . $when_epoch . "]",
             message_to_client => localize("Start time is in the past"),
         };
     } elsif (not $self->is_forward_starting and $epoch_start > $when_epoch) {
         return {
-            message           => format_error_string('Forward time for non-forward-starting contract type', code => $self->code),
+            message           => "Forward time for non-forward-starting contract type [code: " . $self->code . "]",
             message_to_client => localize('Start time is in the future.'),
         };
     } elsif ($self->is_forward_starting and not $self->for_sale) {
@@ -2343,13 +2146,13 @@ sub _validate_input_parameters {
         my $fs_blackout_seconds = 300;
         if ($epoch_start < $when_epoch + $fs_blackout_seconds) {
             return {
-                message => format_error_string('forward-starting blackout', 'blackout' => $fs_blackout_seconds . 's'),
+                message           => "forward-starting blackout [blackout: " . $fs_blackout_seconds . "s]",
                 message_to_client => localize("Start time on forward-starting contracts must be more than 5 minutes from now."),
             };
         }
     } elsif ($self->is_after_expiry) {
         return {
-            message           => format_error_string('already expired contract'),
+            message           => 'already expired contract',
             message_to_client => localize("Contract has already expired."),
         };
     } elsif ($self->expiry_daily) {
@@ -2357,11 +2160,11 @@ sub _validate_input_parameters {
         my $closing     = $self->calendar->closing_on($date_expiry);
         if ($closing and not $date_expiry->is_same_as($closing)) {
             return {
-                message => format_error_string(
-                    'daily expiry must expire at close',
-                    expiry            => $date_expiry->datetime,
-                    underlying_symbol => $self->underlying->symbol
-                ),
+                message => 'daily expiry must expire at close '
+                    . "[expiry: "
+                    . $date_expiry->datetime . "] "
+                    . "[underlying_symbol: "
+                    . $self->underlying->symbol . "]",
                 message_to_client => localize(
                     'Contracts on [_1] with duration more than 24 hours must expire at the end of a trading day.',
                     $self->underlying->translated_display_name
@@ -2385,15 +2188,11 @@ sub _validate_trading_times {
         my $message =
             ($self->is_forward_starting) ? localize("The market must be open at the start time.") : localize('This market is presently closed.');
         return {
-            message => format_error_string(
-                'underlying is closed at start',
-                symbol => $underlying->symbol,
-                start  => $date_start->datetime
-            ),
+            message => 'underlying is closed at start ' . "[symbol: " . $underlying->symbol . "] " . "[start: " . $date_start->datetime . "]",
             message_to_client => $message . " " . localize("Try out the Volatility Indices which are always open.")};
     } elsif (not $calendar->trades_on($date_expiry)) {
         return ({
-            message           => format_error_string('Exchange is closed on expiry date', expiry => $date_expiry->date),
+            message           => "Exchange is closed on expiry date [expiry: " . $date_expiry->date . "]",
             message_to_client => localize("The contract must expire on a trading day."),
         });
     }
@@ -2402,18 +2201,14 @@ sub _validate_trading_times {
         if (not $calendar->is_open_at($date_expiry)) {
             my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             return {
-                message => format_error_string(
-                    'underlying closed at expiry',
-                    symbol => $underlying->symbol,
-                    expiry => $date_expiry->datetime
-                ),
+                message => 'underlying closed at expiry ' . "[symbol: " . $underlying->symbol . "] " . "[expiry: " . $date_expiry->datetime . "]",
                 message_to_client => localize("Contract must expire during trading hours."),
                 info_link         => $times_link,
                 info_text         => localize('Trading Times'),
             };
         } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($date_start)->epoch < $date_expiry->epoch) {
             return {
-                message           => format_error_string('Intraday duration must expire on same day', symbol => $underlying->symbol),
+                message           => "Intraday duration must expire on same day [symbol: " . $underlying->symbol . "]",
                 message_to_client => localize(
                     'Contracts on [_1] with durations under 24 hours must expire on the same trading day.',
                     $underlying->translated_display_name()
@@ -2440,11 +2235,7 @@ sub _validate_trading_times {
                 : localize("Too many market holidays during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
             my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             return {
-                message => format_error_string(
-                    'Not enough trading days for calendar days',
-                    trading  => $trading_days,
-                    calendar => $calendar_days,
-                ),
+                message => 'Not enough trading days for calendar days ' . "[trading: " . $trading_days . "] " . "[calendar: " . $calendar_days . "]",
                 message_to_client => $message,
                 info_link         => $times_link,
                 info_text         => $times_text,
@@ -2590,12 +2381,12 @@ sub _validate_start_and_expiry_date {
                     push @args, ($start->date, $end->date);
                 }
                 return {
-                    message => format_error_string(
-                        'blackout period',
-                        symbol => $self->underlying->symbol,
-                        from   => $period->[0],
-                        to     => $period->[1],
-                    ),
+                    message => 'blackout period '
+                        . "[symbol: "
+                        . $self->underlying->symbol . "] "
+                        . "[from: "
+                        . $period->[0] . "] " . "[to: "
+                        . $period->[1] . "]",
                     message_to_client => localize($message_to_client, @args),
                 };
             }
@@ -2611,7 +2402,7 @@ sub _validate_lifetime {
     if ($self->tick_expiry and $self->for_sale) {
         # we don't offer sellback on tick expiry contracts.
         return {
-            message           => format_error_string('resale of tick expiry contract'),
+            message           => 'resale of tick expiry contract',
             message_to_client => localize('Resale of this contract is not offered.'),
         };
     }
@@ -2628,7 +2419,7 @@ sub _validate_lifetime {
     # it's a valid bet type for multi-day contracts.
     if (not($min_duration and $max_duration)) {
         return {
-            message           => format_error_string('trying unauthorised combination'),
+            message           => 'trying unauthorised combination',
             message_to_client => $message_to_client,
         };
     }
@@ -2654,12 +2445,13 @@ sub _validate_lifetime {
         my $asset_text = localize('Asset Index');
         my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
         return {
-            message => format_error_string(
-                $message,
-                'duration seconds' => $duration,
-                symbol             => $self->underlying->symbol,
-                code               => $self->code
-            ),
+            message => $message . " "
+                . "[duration seconds: "
+                . $duration . "] "
+                . "[symbol: "
+                . $self->underlying->symbol . "] "
+                . "[code: "
+                . $self->code . "]",
             message_to_client => $message_to_client,
             info_link         => $asset_link,
             info_text         => $asset_text,
@@ -2679,7 +2471,7 @@ sub _validate_volsurface {
 
     if ($volsurface->get_smile_flags) {
         return {
-            message           => format_error_string('Volsurface has smile flags', symbol => $self->underlying->symbol),
+            message           => "Volsurface has smile flags [symbol: " . $self->underlying->symbol . "]",
             message_to_client => $message_to_client,
         };
     }
@@ -2701,12 +2493,13 @@ sub _validate_volsurface {
 
     if ($exceeded) {
         return {
-            message => format_error_string(
-                'volsurface too old',
-                symbol => $self->underlying->symbol,
-                age    => $surface_age . 'h',
-                max    => $exceeded,
-            ),
+            message => 'volsurface too old '
+                . "[symbol: "
+                . $self->underlying->symbol . "] "
+                . "[age: "
+                . $surface_age . "h] "
+                . "[max: "
+                . $exceeded . "]",
             message_to_client => $message_to_client,
         };
     }
@@ -2714,12 +2507,13 @@ sub _validate_volsurface {
     if ($volsurface->type eq 'moneyness' and my $current_spot = $self->current_spot) {
         if (abs($volsurface->spot_reference - $current_spot) / $current_spot * 100 > 5) {
             return {
-                message => format_error_string(
-                    'spot too far from surface reference',
-                    symbol              => $self->underlying->symbol,
-                    spot                => $current_spot,
-                    'surface reference' => $volsurface->spot_reference
-                ),
+                message => 'spot too far from surface reference '
+                    . "[symbol: "
+                    . $self->underlying->symbol . "] "
+                    . "[spot: "
+                    . $current_spot . "] "
+                    . "[surface reference: "
+                    . $volsurface->spot_reference . "]",
                 message_to_client => $message_to_client,
             };
         }
@@ -2742,10 +2536,9 @@ sub confirm_validity {
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     # This is the default list of validations.
-    my @validation_methods =
-        qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed _validate_stake _validate_payout);
+    my @validation_methods = qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed _validate_price);
 
-    push @validation_methods, '_validate_volsurface' if (not($self->volsurface->type eq 'flat'));
+    push @validation_methods, '_validate_volsurface' if (not $self->volsurface->type eq 'flat');
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) if not $self->underlying->always_available;
 
     foreach my $method (@validation_methods) {
