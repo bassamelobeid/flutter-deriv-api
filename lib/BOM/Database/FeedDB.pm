@@ -19,13 +19,15 @@ sub write_dbh {
     $ip = shift if @_;
     my $db_postfix = $ENV{DB_POSTFIX} // '';
     my $config;
+    my $srvip;
     BEGIN {
       $config = YAML::XS::LoadFile('/etc/rmg/feeddb.yml');
-      return DBI->connect_cached(
-          "dbi:Pg:dbname=feed$db_postfix;port=5433;host=" . $config->{write}->{$ip},
-          "write", $config->{password} )
-        || die($DBI::errstr);
+      $srvip  = $config->{write}->{$ip};
     }
+    return DBI->connect_cached(
+        "dbi:Pg:dbname=feed$db_postfix;port=5433;host=" . $srvip,
+        "write", $config->{password} )
+      || die($DBI::errstr);
 }
 
 sub any_event_connection_str {
