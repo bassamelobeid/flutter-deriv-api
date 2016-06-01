@@ -242,7 +242,7 @@ sub init_redis_connections {
 sub forget_all {
     my $c = shift;
     # stop all recurring
-    BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {forget_all => 1});
+    BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {args => {forget_all => 1}});
     delete $c->stash->{redis};
     delete $c->stash->{redis_pricer};
     return;
