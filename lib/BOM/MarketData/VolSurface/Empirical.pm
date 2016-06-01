@@ -151,6 +151,7 @@ sub _categorized_economic_events {
 
         next unless $news_parameters;
         $news_parameters->{release_time} = Date::Utility->new($event->{release_date})->epoch;
+        $news_parameters->{magnitude}    = ($news_parameters->{magnitude} - 1) * 1.5 + 1;       # static multiplier of 1.5
         push @events, $news_parameters;
     }
 
