@@ -42,10 +42,6 @@ sub _initialize {
     my $pickup_time = gettimeofday;
     my $insert_time = BOM::System::RedisReplicated::redis_pricer->get($self->{key});
     DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.price.pickup_delay', 1000 * ($pickup_time - $insert_time));
-
-    my $r = BOM::Platform::Context::Request->new({language => $self->{params}->{language}});
-
-    BOM::Platform::Context::request($r);
     return;
 }
 
