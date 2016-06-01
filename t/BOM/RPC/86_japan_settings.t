@@ -8,7 +8,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
 use BOM::RPC::v3::NewAccount;
-use BOM::RPC::v3::NewAccount::Japan;
+use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::Accounts;
 
 ## do not send email
