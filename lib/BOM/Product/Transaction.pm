@@ -163,7 +163,7 @@ sub _build_markup {
     my $self = shift;
 
     return 0 if $self->contract->is_spread;
-    return (($self->markup / 100) * $self->payout);
+    return (($self->markup_percentage / 100) * $self->payout);
 }
 
 sub BUILDARGS {
