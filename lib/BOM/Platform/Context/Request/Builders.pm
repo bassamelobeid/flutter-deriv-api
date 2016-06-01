@@ -62,7 +62,8 @@ sub from_mojo {
     $args->{_ip} = '';
     if ($request->headers->header('x-forwarded-for')) {
         my @ips = split(/,\s*/, $request->headers->header('x-forwarded-for'));
-        $args->{_ip} = $ips[0] if Data::Validate::IP::is_ipv4($ips[0]);
+
+        $args->{_ip} = $ips[$#ips] if Data::Validate::IP::is_ipv4($ips[$#ips]);
     }
     if (not $args->{_ip} and $main::ENV{'REMOTE_ADDR'}) {
         $args->{_ip} = $main::ENV{'REMOTE_ADDR'};
