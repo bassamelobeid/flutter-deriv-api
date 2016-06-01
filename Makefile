@@ -11,19 +11,16 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@" $L; }; p
 
 test: $(TESTS)
 
-test_all: test unit_test_myaffiliates_extended
+test_all: test
 
 unit_test_platform_client:
 	@$(PROVE) -r t/BOM/Platform/Client/
 
 unit_test_platform_all:
-	@$(PROVE) -r $$(ls -1d t/BOM/Platform/* | grep -v -e /Client -e /MyAffiliates)
+	@$(PROVE) -r $$(ls -1d t/BOM/Platform/* | grep -v -e /Client)
 
 unit_test_system:
 	@$(PROVE) -r t/BOM/System/
-
-unit_test_myaffiliates_extended:
-	@export EXTENDED_TESTING=1; unset SKIP_MYAFFILIATES; $(PROVE) -r t/BOM/Platform/MyAffiliates/
 
 leaktest:
 	$(PROVE) -r t/BOM/leaks
