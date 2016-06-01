@@ -12,11 +12,11 @@ my $test_user_id = 999;
 ## clear
 $m->dbh->do("DELETE FROM oauth.access_token");
 $m->dbh->do("DELETE FROM oauth.user_scope_confirm");
-$m->dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
+$m->dbh->do("DELETE FROM oauth.apps");
 
 my $app1 = $m->create_app({
     name         => 'App 1',
-    scopes       => ['read', 'payments', 'trade', 'admin'],
+    scopes       => ['read', 'payments', 'trade'],
     homepage     => 'http://www.example.com/',
     github       => 'https://github.com/binary-com/binary-static',
     user_id      => $test_user_id,
@@ -28,7 +28,6 @@ my $test_appid = $app1->{app_id};
 my $app = $m->verify_app($test_appid);
 is $app->{id}, $test_appid;
 
-$m->dbh->do("DELETE FROM oauth.user_scope_confirm");    # clear
 my $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 0, 'not confirmed';
 
@@ -39,10 +38,22 @@ is $is_confirmed, 1, 'confirmed after confirm_scope';
 my ($access_token) = $m->store_access_token_only($test_appid, $test_loginid);
 ok $access_token;
 is $m->get_loginid_by_access_token($access_token), $test_loginid, 'get_loginid_by_access_token';
-is $m->get_app_id_by_token($access_token), $test_appid, 'get_app_id_by_token';
+is $m->get_app_id_by_token($access_token),         $test_appid,   'get_app_id_by_token';
 
 my @scopes = $m->get_scopes_by_access_token($access_token);
-is_deeply([sort @scopes], ['admin', 'payments', 'read', 'trade'], 'scopes are right');
+is_deeply([sort @scopes], ['payments', 'read', 'trade'], 'scopes are right');
+
+## test update_app
+$app1 = $m->update_app(
+    $test_appid,
+    {
+        name         => 'App 1',
+        scopes       => ['read', 'payments', 'trade', 'admin'],
+        redirect_uri => 'https://www.example.com/callback',
+    });
+@scopes = $m->get_scopes_by_access_token($access_token);
+is_deeply([sort @scopes], ['admin', 'payments', 'read', 'trade'], 'scopes are updated');
+is $app1->{redirect_uri}, 'https://www.example.com/callback', 'redirect_uri is updated';
 
 ### get app_register/app_list/app_get
 my $get_app = $m->get_app($test_user_id, $app1->{app_id});
@@ -114,7 +125,7 @@ subtest 'revoke tokens by loginid and app_id' => sub {
             my ($access_token) = $m->store_access_token_only($app_id, $loginid);
             ok $access_token;
             is $m->get_loginid_by_access_token($access_token), $loginid, 'get_loginid_by_access_token';
-            is $m->get_app_id_by_token($access_token), $app_id, 'get_app_id_by_token';
+            is $m->get_app_id_by_token($access_token),         $app_id,  'get_app_id_by_token';
         }
     }
 

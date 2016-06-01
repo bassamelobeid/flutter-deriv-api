@@ -17,7 +17,9 @@ CREATE INDEX idx_oauth_apps_binary_user_id ON oauth.apps USING btree (binary_use
 GRANT SELECT, INSERT, UPDATE, DELETE ON oauth.apps TO write;
 GRANT SELECT ON oauth.apps TO read;
 
-INSERT INTO oauth.apps (id, name, binary_user_id) values ('binarycom', 'Binary.com', 1);
+INSERT INTO oauth.apps (id, name, binary_user_id) values ('binarycom',      'Binary.com',            1);
+INSERT INTO oauth.apps (id, name, binary_user_id) values ('binary-expiryd', 'Binary.com expiryd.pl', 1);
+INSERT INTO oauth.apps (id, name, binary_user_id) values ('binary-riskd',   'Binary.com riskd.pl',   1);
 
 CREATE TABLE oauth.app_redirect_uri (
     app_id            varchar(32) NOT NULL REFERENCES oauth.apps(id),
