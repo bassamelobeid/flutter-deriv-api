@@ -66,26 +66,15 @@ sub _pricing_channel {
 
     my $uuid = Data::UUID->new->create_str();
 
-    my $rp = Mojo::Redis::Processor->new({
-        'write_conn' => BOM::System::RedisReplicated::redis_pricer,
-        'read_conn'  => BOM::System::RedisReplicated::redis_pricer,
-        data         => $serialized_args,
-        trigger      => 'FEED::' . $args->{symbol},
-    });
-
     # subscribe if it is not already subscribed
     if (not $pricing_channel->{$serialized_args} and not BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args)) {
-        $rp->send();
-        $c->stash('redis_pricer')->subscribe([$rp->_processed_channel], sub { });
-
-        my $request_time = gettimeofday;
-        BOM::System::RedisReplicated::redis_pricer->set($rp->_processed_channel, $request_time);
-        BOM::System::RedisReplicated::redis_pricer->expire($rp->_processed_channel, 60);
+        # race for setting a unique key
+        BOM::System::RedisReplicated::redis_pricer->setnx($serialized_args, 1);
+        $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
 
     $pricing_channel->{$serialized_args}->{$amount}->{uuid} = $uuid;
     $pricing_channel->{$serialized_args}->{$amount}->{args} = $args;
-    $pricing_channel->{$serialized_args}->{channel_name}    = $rp->_processed_channel;
     $pricing_channel->{uuid}->{$uuid}->{serialized_args}    = $serialized_args;
     $pricing_channel->{uuid}->{$uuid}->{amount}             = $amount;
     $pricing_channel->{uuid}->{$uuid}->{args}               = $args;
@@ -142,10 +131,9 @@ sub process_pricing_events {
     delete $response->{key};
 
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
-        next if $amount eq 'channel_name';
         my $results;
         if ($response and exists $response->{error}) {
-            $c->stash('redis')->subscribe([$pricing_channel->{$serialized_args}->{channel_name}]);
+            $c->stash('redis_pricer')->unsubscribe([$serialized_args]);
             my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;

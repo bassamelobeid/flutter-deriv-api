@@ -91,7 +91,6 @@ sub _forget_pricing_subscription {
     if ($pricing_channel) {
         foreach my $channel (keys %{$pricing_channel}) {
             foreach my $amount (keys %{$pricing_channel->{$channel}}) {
-                next if $amount eq 'channel_name';
                 if ($pricing_channel->{$channel}->{$amount}->{uuid} eq $uuid) {
                     push @$removed_ids, $pricing_channel->{$channel}->{$amount}->{uuid};
                     delete $pricing_channel->{$channel}->{$amount};
@@ -99,7 +98,7 @@ sub _forget_pricing_subscription {
             }
 
             if (scalar keys %{$pricing_channel->{$channel}} == 1) {
-                $c->stash('redis_pricer')->unsubscribe([$pricing_channel->{$channel}->{channel_name}]);
+                $c->stash('redis_pricer')->unsubscribe([$channel]);
                 delete $pricing_channel->{$channel};
             }
         }
@@ -121,7 +120,7 @@ sub _forget_all_pricing_subscriptions {
             delete $pricing_channel->{uuid}->{$uuid};
             delete $pricing_channel->{$serialized_args}->{$amount};
             if (scalar keys %{$pricing_channel->{$serialized_args}} == 0) {
-                $c->stash('redis_pricer')->unsubscribe([$pricing_channel->{$serialized_args}->{channel_name}]);
+                $c->stash('redis_pricer')->unsubscribe([$serialized_args]);
                 delete $pricing_channel->{$serialized_args};
             }
             push @$removed_ids, $uuid;
@@ -129,7 +128,7 @@ sub _forget_all_pricing_subscriptions {
             return $removed_ids;
         }
         foreach my $serialized_args (keys %{$pricing_channel}) {
-            $c->stash('redis_pricer')->unsubscribe([$pricing_channel->{$serialized_args}->{channel_name}]);
+            $c->stash('redis_pricer')->unsubscribe([$serialized_args]);
             delete $pricing_channel->{$serialized_args};
         }
         delete $pricing_channel->{uuid};
