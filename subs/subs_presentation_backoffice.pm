@@ -10,7 +10,7 @@ use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use Mojo::URL;
-use BOM::View::JavascriptConfig;
+use BOM::JavascriptConfig;
 use BOM::Platform::Plack qw( AjaxSession );
 use BOM::Platform::Sysinit ();
 use BOM::Backoffice::Auth0;
@@ -35,11 +35,9 @@ sub BrokerPresentation {
     print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/external/grid.css', undef, undef, {internal_static => 1}) . '"/>';
     print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/jquery-ui.custom.css') . '"/>';
 
-    BOM::Platform::Context::template->process('backoffice/global/javascripts.html.tt',
-        {javascript => BOM::View::JavascriptConfig->instance->config_for()})
-        || die BOM::Platform::Context::template->error;
+    print '<script type="text/javascript" src="' . BOM::JavascriptConfig->instance->binary_js . '"></script>';
 
-    foreach my $js_file (BOM::View::JavascriptConfig->instance->bo_js_files_for($0)) {
+    foreach my $js_file (BOM::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';
     }
 

@@ -9,6 +9,8 @@ use BOM::System::Config;
 use BOM::Backoffice::Auth0;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
+use BOM::JavascriptConfig;
+
 BOM::Platform::Sysinit::init();
 PrintContentType();
 
@@ -38,10 +40,9 @@ if ($sig_request) {
       <title>Please Authenticate</title>
       ~;
 
-    BOM::Platform::Context::template->process('backoffice/global/javascripts.html.tt',
-        {javascript => BOM::View::JavascriptConfig->instance->config_for()})
-        || die BOM::Platform::Context::template->error;
-    foreach my $js_file (BOM::View::JavascriptConfig->instance->bo_js_files_for($0)) {
+    print '<script type="text/javascript" src="' . BOM::JavascriptConfig->instance->binary_js . '"></script>';
+
+    foreach my $js_file (BOM::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';
     }
 
