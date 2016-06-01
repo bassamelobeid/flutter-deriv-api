@@ -21,11 +21,11 @@ sub write_dbh {
     my $config;
     BEGIN {
       $config = YAML::XS::LoadFile('/etc/rmg/feeddb.yml');
+      return DBI->connect_cached(
+          "dbi:Pg:dbname=feed$db_postfix;port=5433;host=" . $config->{write}->{$ip},
+          "write", $config->{password} )
+        || die($DBI::errstr);
     }
-    return DBI->connect_cached(
-        "dbi:Pg:dbname=feed$db_postfix;port=5433;host=" . $config->{write}->{$ip},
-        "write", $config->{password} )
-      || die($DBI::errstr);
 }
 
 sub any_event_connection_str {
