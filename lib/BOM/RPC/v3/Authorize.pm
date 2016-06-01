@@ -87,6 +87,7 @@ sub logout {
                 my $oauth  = BOM::Database::Model::OAuth->new;
                 my $app_id = $oauth->get_app_id_by_token($params->{token});
 
+                # need to skip as we impersonate from backoffice using read only token
                 $skip_login_history = 1 if ($scopes and scalar(@$scopes) == 1 and grep { $_ eq 'read' } @$scopes);
 
                 foreach my $c1 ($user->clients) {
