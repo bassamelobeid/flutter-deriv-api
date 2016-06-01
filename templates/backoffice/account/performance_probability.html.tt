@@ -21,8 +21,10 @@
 <p><b>[% full_name %]</b>, [% email %] from [% runtime.countries.country_from_code(residence) %]</p>
 </div>
 
+<span class="probability">[% performance_probability %]</span>
+
 [% IF performance_probability %]
-        <p>[% display_probability(performance_probability) %]</p>
+        <p>[% display_performance_probability(performance_probability) %]</p>
 [% END %]
 
 
