@@ -61,7 +61,7 @@ sub on_message {
                     : $c->forward($req_storage);
             }
 
-            $result = $c->after_forward($result, $req_storage);
+            $c->after_forward($result, $req_storage);
         } elsif (!$result) {
             $c->app->log->debug("unrecognised request: " . $c->dumper($args));
             $result = $c->new_error('error', 'UnrecognisedRequest', $c->l('Unrecognised request.'));
