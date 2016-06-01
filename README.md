@@ -7,5 +7,4 @@ This repo contains the Binary.com business-object library, implementing the core
 (TODO: make this happen)
 
 * https://github.com/regentmarkets/cpan
-* https://github.com/regentmarkets/bom-utility
 * https://github.com/regentmarkets/bom-postgres

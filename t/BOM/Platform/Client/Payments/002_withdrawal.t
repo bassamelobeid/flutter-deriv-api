@@ -12,7 +12,7 @@ use JSON qw(decode_json);
 
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
-use BOM::Utility::CurrencyConverter qw(amount_from_to_currency);
+use BOM::Platform::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -141,7 +141,7 @@ subtest 'CR withdrawal' => sub {
     subtest 'fully authenticated' => sub {
         my $client = new_client('USD');
         $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-        $client->set_authentication('ID_192')->status('pass');
+        $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         $client->smart_payment(%deposit, amount => 20000);
         lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Authed CR withdrawal no more than USD10K';
@@ -189,7 +189,7 @@ subtest 'JP withdrawal' => sub {
         );
 
         $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-        $client->set_authentication('ID_192')->status('pass');
+        $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
         $client->smart_payment(%deposit_jpy, amount => 2000000);
         lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -999999) } 'Authed JP withdrawal no more than JPY 1,000,000';
@@ -241,10 +241,10 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
 
     ok $client->validate_payment(%wd3000), 'Unauthed, allowed to withdraw GBP equiv of EUR3000.';
 
-    $client->set_authentication('ID_192')->status('pass');
+    $client->set_authentication('ID_DOCUMENT')->status('pass');
     $client->save;
     ok $client->validate_payment(%wd3001), 'Authed, allowed to withdraw GBP equiv of EUR3001.';
-    $client->set_authentication('ID_192')->status('pending');
+    $client->set_authentication('ID_DOCUMENT')->status('pending');
     $client->save;
 
     $client->smart_payment(%wd2500);
@@ -295,14 +295,14 @@ subtest 'Total EUR2300 MLT limitation.' => sub {
     };
 
     subtest 'authenticated' => sub {
-        $client->set_authentication('ID_192')->status('pass');
+        $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
 
         ok $client->validate_payment(%withdrawal_eur, amount => -2301), 'Authed, allowed to withdraw EUR2301.';
         $client->smart_payment(%withdrawal_eur, amount => -2301);
         ok $client->validate_payment(%withdrawal_eur, amount => -2301), 'Authed, allowed to withdraw EUR (2301+2301), no limit anymore.';
 
-        $client->set_authentication('ID_192')->status('pending');
+        $client->set_authentication('ID_DOCUMENT')->status('pending');
         $client->save;
 
         throws_ok { $client->validate_payment(%withdrawal_eur, amount => -100) } qr/exceeds withdrawal limit \[EUR/,

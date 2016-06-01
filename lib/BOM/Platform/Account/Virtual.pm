@@ -24,6 +24,7 @@ sub create_account {
     my $email     = lc $details->{email};
     my $password  = BOM::System::Password::hashpw($details->{client_password});
     my $residence = $details->{residence};
+    my $source    = $details->{source};
 
     # TODO: to be removed later
     BOM::Platform::Account::invalid_japan_access_check($residence, $email);
@@ -59,7 +60,7 @@ sub create_account {
             secret_answer      => '',
             myaffiliates_token_registered => 0,
             checked_affiliate_exposures   => 0,
-            source                        => $details->{source} // '',
+            source                        => $source,
             latest_environment            => $details->{latest_environment} // '',
         });
     }
@@ -77,7 +78,7 @@ sub create_account {
         ($email_verified) ? (email_verified => 1) : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
-    $client->deposit_virtual_funds;
+    $client->deposit_virtual_funds($source);
 
     unless ($email_verified) {
         my $token = verify_token => BOM::Platform::Token::Verification->new({
