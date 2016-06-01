@@ -18,9 +18,6 @@ sub make_call_params {
 
     my $call_params = $req_storage->{call_params};
     $call_params->{args}     = $args;
-    $call_params->{language} = $c->stash('language');
-    $call_params->{country}  = $c->stash('country') || $c->country_code;
-    $call_params->{source}   = $c->stash('source');
 
     if (defined $stash_params) {
         $call_params->{$_} = $c->stash($_) for @$stash_params;
