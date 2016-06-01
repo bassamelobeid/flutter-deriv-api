@@ -8,7 +8,9 @@ use JSON::XS qw(encode_json decode_json);
 use BOM::RPC::v3::Contract;
 use BOM::System::RedisReplicated;
 use DataDog::DogStatsd::Helper;
+use Time::HiRes qw(gettimeofday tv_interval);
 use utf8;
+use BOM::System::RedisReplicated;
 
 sub new {
     my ($class, @args) = @_;
@@ -36,6 +38,11 @@ sub _initialize {
     my $args = {};
 
     $self->{params} = {@{JSON::XS::decode_json($self->{data})}};
+
+    my $pickup_time = gettimeofday;
+    my $insert_time = BOM::System::RedisReplicated::redis_pricer->get($self->{key});
+    DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.price.pickup_delay', 1000 * ($pickup_time - $insert_time));
+
     my $r = BOM::Platform::Context::Request->new({language => $self->{params}->{language}});
 
     BOM::Platform::Context::request($r);
@@ -45,7 +52,7 @@ sub _initialize {
 sub price {
     my $self = shift;
 
-    my $response = BOM::RPC::v3::Contract::send_ask({args => $self->{params}});
+    my $response = BOM::RPC::v3::Contract::send_ask({args => $self->{params}}, 1);
 
     delete $response->{longcode};
 
@@ -54,6 +61,7 @@ sub price {
 
     $response->{data} = $self->{data};
     $response->{key}  = $self->{key};
+
     return encode_json($response);
 }
 

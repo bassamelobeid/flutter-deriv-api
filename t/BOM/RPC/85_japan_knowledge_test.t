@@ -8,7 +8,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
 use BOM::RPC::v3::NewAccount;
-use BOM::RPC::v3::NewAccount::Japan;
+use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::Accounts;
 
 ## do not send email
@@ -89,7 +89,7 @@ subtest 'no test taken yet' => sub {
 
 my $test_epoch;
 subtest 'First Test taken: fail test' => sub {
-    $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
+    $res = BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test({
             client => $vr_client,
             args   => {
                 score  => 10,
@@ -122,7 +122,7 @@ subtest 'First Test taken: fail test' => sub {
 };
 
 subtest 'No test allow within same day' => sub {
-    $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
+    $res = BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test({
             client => $vr_client,
             args   => {
                 score  => 18,
@@ -149,7 +149,7 @@ subtest 'Test is allowed after 1 day' => sub {
     'fake last test date';
 
     subtest 'Pass test' => sub {
-        $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
+        $res = BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test({
                 client => $vr_client,
                 args   => {
                     score  => 18,
@@ -180,7 +180,7 @@ subtest 'Test is allowed after 1 day' => sub {
 };
 
 subtest 'No test allowed after passing' => sub {
-    $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
+    $res = BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test({
             client => $vr_client,
             args   => {
                 score  => 18,
@@ -228,7 +228,7 @@ subtest 'Test not allowed for non Japanese Client' => sub {
     };
 
     subtest 'Test not allowed for VRTC Client' => sub {
-        $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
+        $res = BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test({
                 client => $vr_client,
                 args   => {
                     score  => 18,
@@ -254,7 +254,7 @@ subtest 'No test allowed for VRTJ, unless JP exists' => sub {
     };
 
     subtest 'Test not allowed, unless upgraded to JP client' => sub {
-        $res = BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test({
+        $res = BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test({
                 client => $vr_client,
                 args   => {
                     score  => 18,

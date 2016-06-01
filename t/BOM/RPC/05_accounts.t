@@ -232,7 +232,7 @@ subtest $method => sub {
         'This account is unavailable.',
         'check authorization'
     );
-    is($c->tcall($method, {token => $token1})->{count},   0,   'have 0 statements if no default account');
+    is($c->tcall($method, {token => $token1})->{count}, 0, 'have 0 statements if no default account');
 
     my $contract_expired = produce_contract({
         underlying   => $underlying,
@@ -260,7 +260,7 @@ subtest $method => sub {
 
     my $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
-    is($result->{count}, 3 , "have 3 statements");
+    is($result->{count},                        3,      "have 3 statements");
     $result = $c->tcall(
         $method,
         {
@@ -269,7 +269,7 @@ subtest $method => sub {
 
     is(
         $result->{transactions}[0]{longcode},
-        'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.',
+        'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.',
         "if have short code, then simple_contract_info is called"
     );
     is($result->{transactions}[2]{longcode}, 'free gift', "if no short code, then longcode is the remark");
@@ -369,7 +369,7 @@ subtest $method => sub {
     };
 
     is_deeply($result->{transactions}[0], $expect0, 'result is correct');
-    $expect0->{longcode}  = 'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
+    $expect0->{longcode}  = 'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
     $expect0->{shortcode} = $data->[0]{short_code};
     $result               = $c->tcall(
         $method,
@@ -500,23 +500,13 @@ subtest $method => sub {
         },
         'tnc_approval is excluded, still status is empty'
     );
-    $test_client->set_status('ok', 'test staff', 1);
-    $test_client->save();
-    is_deeply(
-        $c->tcall($method, {token => $token1}),
-        {
-            status              => [qw(ok)],
-            risk_classification => ''
-        },
-        'ok status'
-    );
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => [qw(ok authenticated)],
+            status              => [ 'authenticated' ],
             risk_classification => ''
         },
         'ok, authenticated'

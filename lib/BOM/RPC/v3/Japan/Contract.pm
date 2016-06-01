@@ -7,6 +7,7 @@ use BOM::Market::UnderlyingDB;
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw(localize);
 use BOM::System::RedisReplicated;
+use Format::Util::Numbers qw(roundnear);
 
 sub validate_table_props {
 
@@ -62,6 +63,15 @@ sub validate_table_props {
             }};
     }
 
+    if (not defined $args->{payout} or $args->{payout} <= 0) {
+        return {
+            error => {
+                code    => 'InvalidPayout',
+                message => "Payout [_1] invalid",
+                params  => [$args->{payout}],
+            }};
+    }
+
     return;
 
 }
@@ -80,6 +90,42 @@ sub get_table {
 
     my $redis_read = BOM::System::RedisReplicated::redis_read();
     return $redis_read->get($id);
+}
+
+sub update_table {
+    my $args  = shift;
+    my $table = shift;
+
+    my %prices_table;
+    foreach my $barrier (keys %$table) {
+        foreach my $bet_type (keys %{$table->{$barrier}}) {
+            my $params = $table->{$barrier}->{$bet_type};
+            my $ask_price;
+            my $default_price = $args->{payout};
+            if (%$params) {
+                $ask_price = BOM::RPC::v3::Contract::calculate_ask_price({
+                    theo_probability      => $params->{theo_probability},
+                    base_commission       => $params->{base_commission},
+                    probability_threshold => $params->{probability_threshold},
+                    amount                => $args->{payout},
+                });
+                $ask_price = roundnear(1, $ask_price);
+                my $error = BOM::RPC::v3::Contract::validate_price({
+                        ask_price         => $ask_price,
+                        payout            => $args->{payout},
+                        minimum_ask_price => $params->{minimum_stake},
+                        maximum_payout    => $params->{maximum_payout}});
+                $ask_price = $error ? $default_price : $ask_price;
+            } else {
+                $ask_price = $default_price;
+            }
+
+            $prices_table{$barrier} = {} if !defined $prices_table{$barrier};
+            $prices_table{$barrier}->{$bet_type} = $ask_price;
+        }
+    }
+
+    return \%prices_table;
 }
 
 1;

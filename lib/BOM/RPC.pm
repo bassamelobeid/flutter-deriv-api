@@ -11,7 +11,6 @@ use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client;
 use BOM::Database::Rose::DB;
-use BOM::Database::Model::OAuth;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
@@ -26,7 +25,7 @@ use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::App;
-use BOM::RPC::v3::NewAccount::Japan;
+use BOM::RPC::v3::Japan::NewAccount;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -60,6 +59,7 @@ sub register {
 
             my $args = {};
             $args->{country_code} = $params->{country} if exists $params->{country};
+            $params->{token} = $params->{args}->{authorize} if !$params->{token} && $params->{args}->{authorize};
             my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
             if ($token_details and exists $token_details->{loginid} and $token_details->{loginid} =~ /^(\D+)\d+$/) {
                 $args->{broker_code} = $1;
@@ -179,7 +179,7 @@ sub startup {
         ['new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest,  1],
         ['new_account_japan',       \&BOM::RPC::v3::NewAccount::new_account_japan,        1],
         ['new_account_virtual',     \&BOM::RPC::v3::NewAccount::new_account_virtual],
-        ['jp_knowledge_test',       \&BOM::RPC::v3::NewAccount::Japan::jp_knowledge_test, 1],
+        ['jp_knowledge_test',       \&BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test, 1],
 
         ['portfolio',              \&BOM::RPC::v3::PortfolioManagement::portfolio,              1],
         ['sell_expired',           \&BOM::RPC::v3::PortfolioManagement::sell_expired,           1],
@@ -188,6 +188,7 @@ sub startup {
         ['app_register', \&BOM::RPC::v3::App::register,   1],
         ['app_list',     \&BOM::RPC::v3::App::list,       1],
         ['app_get',      \&BOM::RPC::v3::App::get,        1],
+        ['app_update',   \&BOM::RPC::v3::App::update,     1],
         ['app_delete',   \&BOM::RPC::v3::App::delete,     1],
         ['oauth_apps',   \&BOM::RPC::v3::App::oauth_apps, 1],
 

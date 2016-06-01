@@ -18,7 +18,7 @@ my $oauth = BOM::Database::Model::OAuth->new;
 my $dbh   = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
-$dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
+$dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
 BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
@@ -53,6 +53,22 @@ my $app1 = $c->call_ok(
             redirect_uri => 'https://www.example.com/',
         },
     })->has_no_system_error->has_no_error->result;
+is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
+is $app1->{redirect_uri}, 'https://www.example.com/', 'redirect_uri is right';
+
+$app1 = $c->call_ok(
+    'app_update',
+    {
+        token => $token,
+        args  => {
+            app_update   => $app1->{app_id},
+            name         => 'App 1',
+            scopes       => ['read', 'trade', 'admin'],
+            redirect_uri => 'https://www.example.com/callback',
+        },
+    })->has_no_system_error->has_no_error->result;
+is_deeply([sort @{$app1->{scopes}}], ['admin', 'read', 'trade'], 'scopes are updated');
+is $app1->{redirect_uri}, 'https://www.example.com/callback', 'redirect_uri is updated';
 
 my $get_app = $c->call_ok(
     'app_get',
@@ -94,7 +110,7 @@ my $get_apps = $c->call_ok(
         },
     })->has_no_system_error->result;
 
-$get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
+$get_apps = [grep { $_->{app_id} ne '1' } @$get_apps];
 is_deeply($get_apps, [$app1, $app2], 'list ok');
 
 my $delete_st = $c->call_ok(
@@ -115,7 +131,7 @@ $get_apps = $c->call_ok(
             app_list => 1,
         },
     })->has_no_system_error->result;
-$get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
+$get_apps = [grep { $_->{app_id} ne '1' } @$get_apps];
 is_deeply($get_apps, [$app1], 'delete ok');
 
 # delete again will return 0
@@ -144,7 +160,7 @@ my $used_apps = $c->call_ok(
     })->has_no_system_error->result;
 is scalar(@{$used_apps}), 1;
 is $used_apps->[0]->{app_id}, $test_appid, 'app_id 1';
-is_deeply([sort @{$used_apps->[0]->{scopes}}], ['read', 'trade'], 'scopes are right');
+is_deeply([sort @{$used_apps->[0]->{scopes}}], ['admin', 'read', 'trade'], 'scopes are right');
 ok $used_apps->[0]->{last_used}, 'last_used ok';
 
 $oauth = BOM::Database::Model::OAuth->new;    # re-connect db
