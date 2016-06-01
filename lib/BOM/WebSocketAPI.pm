@@ -102,7 +102,7 @@ sub startup {
 
             $c->stash(
                 server_name  => $c->server_name,
-                client_ip    => $c->client_ip,
+                client_ip    => $c->tx->handshake->req->content->headers->header('REMOTE_ADDR'),
                 country_code => $c->country_code,
                 user_agent   => $c->req->headers->header('User-Agent'),
             );
