@@ -495,7 +495,8 @@ sub send_pricing_table {
     my $id           = shift;
     my $arguments    = shift;
     my $message      = shift;
-    my $params_table = JSON::from_json($message);
+    my $params_table = JSON::from_json($message // "{}");                                        # BOM::RPC::v3::Japan::Contract::get_table
+                                                                                                 # returns undef while running tests
     my $table        = BOM::RPC::v3::Japan::Contract::update_table($arguments, $params_table);
 
     $c->send({
