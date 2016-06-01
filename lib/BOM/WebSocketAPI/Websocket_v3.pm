@@ -156,6 +156,7 @@ sub entry_point {
             my $c = shift;
             BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {forget_all => 1});
             delete $c->stash->{redis};
+            delete $c->stash->{redis_pricer};
         });
 
     return;
