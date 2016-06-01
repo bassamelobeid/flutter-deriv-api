@@ -14,7 +14,7 @@ use BOM::Market::Registry;
 use BOM::Product::CustomClientLimits;
 use BOM::View::Controller::Bet;
 
-use Performance::Probability;
+use Performance::Probability qw(get_performance_probability);
 
 use f_brokerincludeall;
 BOM::Platform::Sysinit::init();
@@ -83,17 +83,15 @@ foreach my $contract (@{$sold_contracts}) {
     $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy-price});
 }
 
-my $performance_probability_obj = Performance::Probability->new({
+my $performance_probability = Performance::Probability::get_performance_probability({
     payout       => \@payout_price,
     bought_price => \@buy_price,
     pnl          => $cumulative_pnl,
-    type         => \@bet_type,
+    types        => \@bet_type,
     underlying   => \@underlying_symbol,
     start_time   => \@start_time,
     sell_time    => \@sell_time,
 });
-
-my $performance_probability = $performance_probability_obj->get_performance_probability();
 
 BOM::Platform::Context::template->process(
     'backoffice/account/performance_probability.html.tt',
