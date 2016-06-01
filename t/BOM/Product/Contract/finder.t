@@ -33,7 +33,7 @@ subtest "available contracts for symbol" => sub {
         random  => ['R_100',     'RDBEAR'],
         forex   => ['frxUSDJPY', 'frxAUDCAD', 'WLDUSD'],
         indices => ['AEX',       'SYNAEX'],
-        stocks  => ['FPCS'],
+        stocks  => ['USAAPL'],
         commodities => ['frxXAUUSD', 'frxXPDUSD'],
     );
     my %expected = (

@@ -12,7 +12,7 @@ sub code { return 'DIGITODD'; }
 
 sub localizable_description {
     return +{
-        tick => '[_1] [_2] payout if the last digit of [_3] is odd after [_5] ticks.',
+        tick => 'Win payout if the last digit of [_3] is odd after [_5] ticks.',
     };
 }
 
@@ -33,9 +33,9 @@ sub _build_greek_engine {
 }
 
 sub _build_barrier {
-    my $self = shift;
-    my $supp = $self->supplied_barrier + 0;    # make numeric
-    return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => $supp);
+    # We don't use this barrier for settlement. But it is needed because of database constraint.
+    # Setting it to zero.
+    return BOM::Product::Contract::Strike::Digit->new(supplied_barrier => 0);
 }
 
 sub check_expiry_conditions {
