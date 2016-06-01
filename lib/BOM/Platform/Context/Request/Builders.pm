@@ -60,13 +60,13 @@ sub from_mojo {
     __SetEnvironment();
 
     $args->{_ip} = '';
-    if ( $main::ENV{'REMOTE_ADDR'} ) {
+    if ($main::ENV{'REMOTE_ADDR'}) {
         $args->{_ip} = $main::ENV{'REMOTE_ADDR'};
     }
 
-    if ( not $args->{_ip} and $request->headers->header('x-forwarded-for') ) {
-        my @ips = split( /,\s*/, $request->headers->header('x-forwarded-for') );
-        $args->{_ip} = $ips[0] if Data::Validate::IP::is_ipv4( $ips[0] );
+    if (not $args->{_ip} and $request->headers->header('x-forwarded-for')) {
+        my @ips = split(/,\s*/, $request->headers->header('x-forwarded-for'));
+        $args->{_ip} = $ips[0] if Data::Validate::IP::is_ipv4($ips[0]);
     }
 
     $args->{domain_name} = $request->url->to_abs->host;
@@ -82,8 +82,10 @@ sub from_mojo {
 sub __SetEnvironment {
     if (
         not $ENV{'REMOTE_ADDR'}
+
         # REMOTE_ADDR not set for whatever reason
         or $ENV{'REMOTE_ADDR'} =~ /\Q127.0.0.1\E/
+
         # client IP showing up as same as server IP
         or ($ENV{'SERVER_ADDR'} and $ENV{'REMOTE_ADDR'} eq $ENV{'SERVER_ADDR'}))
     {
@@ -93,7 +95,9 @@ sub __SetEnvironment {
             my @ips = split(/,\s*/, $ENV{'HTTP_X_FORWARDED_FOR'});
             shift @ips while ($ips[0] and $ips[0] =~ /^(192|10|172|127)\./);
             my $real_client_ip = $ips[0];
-            if (defined $real_client_ip and $real_client_ip =~ /^(\d+\.\d+\.\d+\.\d+)$/) {
+            if (defined $real_client_ip
+                and $real_client_ip =~ /^(\d+\.\d+\.\d+\.\d+)$/)
+            {
                 $ENV{'REMOTE_ADDR'} = $1;               ## no critic
             }
         }
