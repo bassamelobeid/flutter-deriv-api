@@ -4,22 +4,13 @@ use strict;
 use warnings;
 use Test::Exception;
 use Test::MockObject::Extends;
-use Test::More tests => 3;
+use Test::More tests => 2;
 use Test::NoWarnings;
 
 use Path::Tiny;
 use Bloomberg::FileDownloader;
 use Date::Utility;
 
-subtest 'sftp_server_ip(s).' => sub {
-    plan tests => 2;
-
-    my $bbdl = Bloomberg::FileDownloader->new(data_dir => '/tmp');
-
-    is(ref $bbdl->sftp_server_ips, 'ARRAY', 'sftp_server_ips type.');
-
-    like($bbdl->sftp_server_ip, qr/^\d+\.\d+\.\d+\.\d+$/, 'sftp_server_ip looks like an IP address.');
-};
 
 my $dirname         = path(__FILE__)->parent;
 my $sample_csv_file = $dirname->child("sample_OVDV_vols.csv.enc");
