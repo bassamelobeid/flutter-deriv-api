@@ -178,15 +178,6 @@ sub get_settings_by_group {
                 quants.markets.disabled
                 quants.markets.disable_iv
                 quants.features.suspend_claim_types
-
-                quants.client_limits.financial_market_limits
-                quants.client_limits.submarket_limits
-                quants.client_limits.underlying_limits
-                quants.client_limits.custom_limits
-                quants.client_limits.spreads_turnover_limit_profile
-
-                quants.custom_suspend_trading_conditions
-
                 quants.underlyings.disable_autoupdate_vol
                 quants.underlyings.disabled_due_to_corporate_actions
                 quants.underlyings.suspend_buy
