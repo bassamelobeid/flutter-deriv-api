@@ -314,7 +314,7 @@ sub startup {
         ['new_account_real',        {require_auth => 'admin'}],
         ['new_account_japan',       {require_auth => 'admin'}],
         ['new_account_maltainvest', {require_auth => 'admin'}],
-        ['jp_knowledge_test',       {require_auth => 'admin'}],    
+        ['jp_knowledge_test',       {require_auth => 'admin'}],
     ];
 
     for my $action (@$actions) {
