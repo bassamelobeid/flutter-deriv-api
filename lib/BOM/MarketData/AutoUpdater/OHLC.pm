@@ -81,8 +81,7 @@ sub run {
 
             next if (not $underlying->trades_on($now));
 
-            if (grep { $_ eq $bom_underlying_symbol } @symbols_to_update
-                and my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol))
+            if (my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol, @symbols_to_update))
             {
                 $report->{$bom_underlying_symbol} = {
                     success => 0,
@@ -120,12 +119,11 @@ sub run {
 }
 
 sub _passes_sanity_check {
-    my ($self, $data, $bom_underlying_symbol) = @_;
+    my ($self, $data, $bom_underlying_symbol, @symbols_to_update) = @_;
 
     if ($data->{'ERROR CODE'} != 0 or grep { $_ eq 'N.A.' } values %$data) {
         return 'Invalid data received from bloomberg';
     }
-
     my $underlying = BOM::Market::Underlying->new($bom_underlying_symbol);
     my $spot_eod   = $underlying->spot;
     my $symbol     = $underlying->symbol;
@@ -133,11 +131,10 @@ sub _passes_sanity_check {
     $date =~ s/^0//;
     my $now   = Date::Utility->new;
     my $today = $now->date_ddmmmyy;
-
     if ($date ne $today) {
         return 'OHLC for ' . $symbol . ' is not updated. Incorrect date [' . $date . ']';
     }
-
+    my $skip_close_check = (grep { $_ eq $bom_underlying_symbol } @symbols_to_update) ? 0: 1;
     my $divisor = $underlying->divisor;
     $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN}  /= $divisor;
     $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH}  /= $divisor;
@@ -181,7 +178,7 @@ sub _passes_sanity_check {
         return "OHLC suspicious data $symbol/$today: Suspicious : low ($low) < open ($open) - \%$p_suspicious_move";
     } elsif ($close < $open * (1 - $suspicious_move)) {
         return "OHLC suspicious data $symbol/$today: Suspicious : close ($close) < open ($open) - \%$p_suspicious_move";
-    } elsif (abs(($spot_eod - $close) / $spot_eod) > 0.05) {
+    } elsif (not $skip_close_check and abs(($spot_eod - $close) / $spot_eod) > 0.05) {
         return "OHLC big difference between official [$close] and unofficial [$spot_eod] with percentage diff"
             . abs(($spot_eod - $close) / $spot_eod);
     }
