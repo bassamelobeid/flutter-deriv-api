@@ -74,7 +74,6 @@ my $sold_contracts = $fmb_dm->get_sold({
 });
 
 
-print "test test test ";
 #Performance probability
 my $do_calculation = request()->param('calc_performance_probability');
 
@@ -87,7 +86,7 @@ my @bet_type;
 
 my $cumulative_pnl = 0;
 
-my $performance_probability = 1.0;
+my $performance_probability;
 
 print "$do_calculation";
 
@@ -116,9 +115,6 @@ if (defined $do_calculation) {
         start_time   => \@start_time,
         sell_time    => \@sell_time,
     });
-
-
-    print $performance_probability;
 }
 
 my $open_contracts = $fmb_dm->get_open_bets_of_account();
