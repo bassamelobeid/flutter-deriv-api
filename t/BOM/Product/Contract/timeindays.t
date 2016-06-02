@@ -143,12 +143,12 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-03-09 10:00:00'),
         date_expiry => Date::Utility->new('29-Mar-12')->plus_time_interval('23h59m59s'),
     );
-    is($bet->timeindays->amount, 21, 'Three week FX bet in summer.');
+    is($bet->timeindays->amount, 20, 'Three week FX bet in summer.');
     cmp_ok(
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                days   => 21,
+                days   => 20,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
                 r_rate => $bet->r_rate,
@@ -162,12 +162,12 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-03-09 10:00:00'),
         date_expiry => Date::Utility->new('30-Mar-12')->plus_time_interval('23h59m59s'),
     );
-    is($bet->timeindays->amount, 22, 'Three week FX bet in summer ending on Friday.');
+    is($bet->timeindays->amount, 21, 'Three week FX bet in summer ending on Friday.');
     cmp_ok(
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                days   => 22,
+                days   => 21,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
                 r_rate => $bet->r_rate,
