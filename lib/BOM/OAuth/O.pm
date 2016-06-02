@@ -301,7 +301,9 @@ sub __login {
         $options
     );
 
-    if ($session->have_multiple_sessions) {
+    my @app_scopes = @{$app->{scopes}};
+    # send when token has scope other than read (as we impersonate from backoffice using read only tokens) and have multiple sessions
+    if ($session->have_multiple_sessions and not(scalar @app_scopes == 1 and grep { $_ eq 'read' } @app_scopes)) {
         try {
             if ($last_login and exists $last_login->{environment}) {
                 my ($old_env, $user_agent, $r) =
