@@ -65,28 +65,29 @@ while (1) {
         'read_conn'   => _redis_pricer,
         'write_conn'  => _redis_pricer,
         'daemon_conn' => _redis_read,
-        'usleep'      => 100000,
+        'usleep'      => 100_000,
         'retry'       => 100,
     );
-
-    my $next = $rp->next;
-    if ($next) {
-        print "next [$next]\n";
-        DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.next');
-        my $p = BOM::RPC::PricerDaemon->new(data=>$rp->{data}, key=>$rp->_processed_channel);
-
-        # Trigger channel (like FEED::R_25) comes as part of data workload. Here we define what will happend whenever there is a new signal in that channel.
-        $rp->on_trigger(
-            sub {
-                my $payload = shift;
-                my $result = $p->price;
-                print "res [$result]\n";
-                return $p->price;
-            });
-    } else {
+    my $next;
+    while (not $next = $rp->next ) {
         print "no job found\n";
-        sleep (30);
+        sleep (1);
     }
+
+    print "next [$next]\n";
+    DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.next');
+    my $p = BOM::RPC::PricerDaemon->new(data=>$rp->{data}, key=>$rp->_processed_channel);
+
+    # Trigger channel (like FEED::R_25) comes as part of data workload. Here we define what will happend whenever there is a new signal in that channel.
+    $rp->on_trigger(
+        sub {
+            my $payload = shift;
+            my $result = $p->price;
+            print "res [$result]\n";
+            return $p->price;
+        });
+
+    DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.end');
     print "Ending the child\n";
     $pm->finish;
 }
