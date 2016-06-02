@@ -87,6 +87,8 @@ my $cumulative_pnl = 0;
 
 my $performance_probability = undef;
 
+print "$do_calculation";
+
 if (defined $do_calculation) {
 
     foreach my $contract (@{$sold_contracts}) {
@@ -113,6 +115,8 @@ if (defined $do_calculation) {
         sell_time    => \@sell_time,
     });
 
+
+    print $performance_probability;
 }
 
 my $open_contracts = $fmb_dm->get_open_bets_of_account();
