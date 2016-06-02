@@ -1,0 +1,40 @@
+<form action="[% url %]" method="POST">
+    <table>
+        <tr>
+            <td>Market: </td>
+            <td><input type="text" name="market"></input></td>
+            <td> e.g. forex</td>
+        </tr>
+        <tr>
+            <td>Submarket: </td>
+            <td><input type="text" name="submarket"></input></td>
+            <td> e.g. major_pairs</td>
+        </tr>
+        <tr>
+            <td>Underlying symbol: </td>
+            <td><input type="text" name="underlying_symbol"></input></td>
+            <td> e.g. frxUSDJPY</td>
+        </tr>
+        <tr>
+            <td>Contract category: </td>
+            <td><input type="text" name="contract_category"></input></td>
+            <td> e.g. callput</td>
+        </tr>
+        <tr>
+            <td>Start type: </td>
+            <td><input type="text" name="start_type"></input></td>
+            <td> e.g. spot | forward</td>
+        </tr>
+        <tr>
+            <td>Expiry Type: </td>
+            <td><input type="text" name="expiry_type"></input></td>
+            <td> e.g. daily | intraday | tick</td>
+        </tr>
+        <tr>
+            <td>Barrier category: </td>
+            <td><input type="text" name="barrier_category"></input></td>
+            <td> e.g. euro_atm</td>
+        </tr>
+        <tr><input type="submit" value="Update"></tr>
+    </table>
+</form>

@@ -30,7 +30,7 @@ foreach my $data (@$custom_limits) {
     my $profile = delete $copy{risk_profile};
     $output_ref->{payout_limit} = $limit_profile->{$profile}{payout}{USD};
     $output_ref->{turnover_limit} = $limit_profile->{$profile}{turnover}{USD};
-    $output_ref->{condition_string} = join "\n", map {"$_: $copy{$_}"} keys %copy;
+    $output_ref->{condition_string} = join "\n", map {$_ . "[$copy{$_}] "} keys %copy;
     push @output, $output_ref;
 }
 
@@ -53,16 +53,17 @@ foreach my $client_loginid (keys %$custom_client_limits) {
     foreach my $limit_ref (@$limits) {
         my $output_ref;
         my %copy = %$limit_ref;
+        delete $copy{name};
         my $profile = delete $copy{risk_profile};
         $output_ref->{payout_limit} = $limit_profile->{$profile}{payout}{USD};
         $output_ref->{turnover_limit} = $limit_profile->{$profile}{turnover}{USD};
-        $output_ref->{condition_string} = join "\n", map {"$_: $copy{$_}"} keys %copy;
+        $output_ref->{condition_string} = join "\n", map {$_ . "[$copy{$_}] "} keys %copy;
         push @output, $output_ref;
     }
     push @client_output, +{
         client_loginid => $client_loginid,
         reason => $reason,
-        output => \@output,
+        @output ? (output => \@output) : (),
     };
 }
 
@@ -72,4 +73,11 @@ BOM::Platform::Context::template->process(
         output             => \@client_output,
     }) || die BOM::Platform::Context::template->error;
 
+Bar("Update Limit");
+
+BOM::Platform::Context::template->process(
+    'backoffice/update_limit.html.tt',
+    {
+        url             => request()->url_for('backoffice/quant/product_management.cgi'),
+    }) || die BOM::Platform::Context::template->error;
 code_exit_BO();
