@@ -18,3 +18,4 @@ tags
 *.o
 *.bs
 *.sw?
+statics/javascript/data
