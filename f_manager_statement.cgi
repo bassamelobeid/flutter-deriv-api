@@ -49,7 +49,6 @@ Bar("$loginID ($client_email) Portfolio");
 print "<form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_clientloginid_edit.cgi') . "\" METHOD=POST>";
 print "<input type=hidden name=broker value=$broker>";
 print "<input type=hidden name=loginID value=$loginID>";
-print "Language: <select name=l>", BOM::Platform::Locale::getLanguageOptions(), "</select>";
 print "<INPUT type=\"submit\" value=\"EDIT $loginID DETAILS\">";
 print "</form><form style=\"float:right\" action=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" method=\"POST\">
 Quick jump to see another portfolio: <input name=loginID type=text size=10 value='$broker'>";

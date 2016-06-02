@@ -7,6 +7,7 @@ use warnings;
 use YAML::XS;
 use XML::Simple;
 use BOM::Platform::Plack qw( PrintContentType PrintContentType_XML );
+use BOM::JavascriptConfig;
 
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();
@@ -39,10 +40,10 @@ if (request()->param('raw')) {
      <head>
         <link  href="[% request.url_for('css/external/shThemeDefault.css', undef, undef, {internal_static => 1}) %]" rel="stylesheet" type="text/css" />
       ~;
-    BOM::Platform::Context::template->process('backoffice/global/javascripts.html.tt',
-        {javascript => BOM::View::JavascriptConfig->instance->config_for()})
-        || die BOM::Platform::Context::template->error;
-    foreach my $js_file (BOM::View::JavascriptConfig->instance->bo_js_files_for($0)) {
+
+    print '<script type="text/javascript" src="' . BOM::JavascriptConfig->instance->binary_js . '"></script>';
+
+    foreach my $js_file (BOM::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';
     }
     print qq~
