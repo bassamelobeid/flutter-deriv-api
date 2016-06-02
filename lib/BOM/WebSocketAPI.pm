@@ -99,7 +99,12 @@ sub startup {
                     $c->finish();
                 }
             }
-            my $client_ip = $c->tx->req->headers->header('REMOTE_ADDR') ? $c->tx->req->headers->header('REMOTE_ADDR') : $c->client_ip;
+            my $client_ip = $c->client_ip;
+
+            if ($c->tx and $c->tx->req) {
+                my $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
+            }
+
             $c->stash(
                 server_name  => $c->server_name,
                 client_ip    => $client_ip,
