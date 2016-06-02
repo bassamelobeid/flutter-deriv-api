@@ -87,7 +87,7 @@ my @bet_type;
 
 my $cumulative_pnl = 0;
 
-my $performance_probabiliity = 1.0;
+my $performance_probability = 1.0;
 
 print "$do_calculation";
 
