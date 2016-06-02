@@ -74,11 +74,11 @@ subtest 'get_smile' => sub {
     my $D25 = $smile->{25};
     my $D50 = $smile->{50};
     my $D75 = $smile->{75};
-    cmp_ok($D25, "<", 0.224, "25D for the interpolated 3-day smile if less than 7-day 25D ");
+    cmp_ok($D25, "<", 0.26, "25D for the interpolated 3-day smile if less than 7-day 25D ");
     cmp_ok($D25, ">", 0.2,   "25D for the interpolated 3-day smile if more than 1-day 25D ");
-    cmp_ok($D50, "<", 0.2,   "50D for the interpolated 3-day smile if less than 7-day 50D ");
+    cmp_ok($D50, "<", 0.22,   "50D for the interpolated 3-day smile if less than 7-day 50D ");
     cmp_ok($D50, ">", 0.1,   "50D for the interpolated 3-day smile if more than 1-day 50D ");
-    cmp_ok($D75, "<", 0.35,  "75D for the interpolated 3-day smile if less than 7-day 75D ");
+    cmp_ok($D75, "<", 0.40,  "75D for the interpolated 3-day smile if less than 7-day 75D ");
     cmp_ok($D75, ">", 0.3,   "75D for the interpolated 3-day smile if more than 1-day 75D ");
 
     lives_ok { $smile = $surface->get_smile(0.5) } "can get_smile for term less than the minimum term on the surface";
