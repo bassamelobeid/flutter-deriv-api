@@ -175,7 +175,7 @@ sub before_forward {
     }
 
     if ($req_storage->{require_auth} and not(grep { $_ eq $req_storage->{require_auth} } @{$c->stash('scopes') || []})) {
-        return $c->new_error($req_storage->{name}, 'PermissionDenied', $c->l('Permission denied, requiring [_1]', $req_storage->{require_auth}));
+        return $c->new_error($req_storage->{name}, 'PermissionDenied', $c->l('Permission denied, requires [_1] scope.', $req_storage->{require_auth}));
     }
 
     if ($loginid) {
