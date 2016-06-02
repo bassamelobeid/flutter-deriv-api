@@ -73,8 +73,11 @@ my @bet_type;
 my $cumulative_pnl = 0;
 
 foreach my $contract (@{$sold_contracts}) {
-    push @start_time,        $contract->{start_time};
-    push @sell_time,         $contract->{sell_time};
+    my $start_epoch = Date::Utility->new($contract->{start_time})->epoch;
+    my $sell_epoch  = Date::Utility->new($contract->{sell_time})->epoch;
+
+    push @start_time,        $start_epoch;
+    push @sell_time,         $sell_epoch;
     push @buy_price,         $contract->{buy_price};
     push @payout_price,      $contract->{payout_price};
     push @bet_type,          $contract->{bet_type};
