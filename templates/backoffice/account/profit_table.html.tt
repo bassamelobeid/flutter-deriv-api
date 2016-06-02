@@ -108,12 +108,13 @@
         <INPUT type="submit" value="Update" />
 </FORM>
 
-<FORM ACTION="[% request.url_for('backoffice/f_performance_probability.cgi') %]" METHOD="POST">
+<FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
         Sold Contracts Between <INPUT name=startdate type=text size=20 value="[% startdate %]" />
         and <INPUT name=enddate type=text size=20 value="[% enddate %]" />
         <INPUT type=hidden name="loginID" value="[% loginid %]" />
         <INPUT type=hidden name="broker" value="[% request.broker.code %]" />
         <INPUT type=hidden name="l" value="EN" />
+        <INPUT type=hidden name="calc_performance_probability" value="y" />
         <INPUT type=checkbox name="all">All (No pagination) </INPUT>
         <INPUT type="submit" value="Calculate Performance Probability" />
 </FORM>

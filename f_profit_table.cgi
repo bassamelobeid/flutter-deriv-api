@@ -14,6 +14,8 @@ use BOM::Market::Registry;
 use BOM::Product::CustomClientLimits;
 use BOM::ContractInfo;
 
+use Performance::Probability qw(get_performance_probability);
+
 use f_brokerincludeall;
 BOM::Platform::Sysinit::init();
 
@@ -71,6 +73,48 @@ my $sold_contracts = $fmb_dm->get_sold({
     limit  => (request()->param('all') ? 99999 : 50),
 });
 
+#Performance probability
+my $do_calculation = request()->param('calc_performance_probability');
+
+my @buy_price;
+my @payout_price;
+my @start_time;
+my @sell_time;
+my @underlying_symbol;
+my @bet_type;
+
+my $cumulative_pnl = 0;
+
+my $performance_probability = undef;
+
+if (defined $do_calculation) {
+
+    foreach my $contract (@{$sold_contracts}) {
+        my $start_epoch = Date::Utility->new($contract->{start_time})->epoch;
+        my $sell_epoch  = Date::Utility->new($contract->{sell_time})->epoch;
+
+        push @start_time,        $start_epoch;
+        push @sell_time,         $sell_epoch;
+        push @buy_price,         $contract->{buy_price};
+        push @payout_price,      $contract->{payout_price};
+        push @bet_type,          $contract->{bet_type};
+        push @underlying_symbol, $contract->{underlying_symbol};
+
+        $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy-price});
+    }
+
+    $performance_probability = Performance::Probability::get_performance_probability({
+        payout       => \@payout_price,
+        bought_price => \@buy_price,
+        pnl          => $cumulative_pnl,
+        types        => \@bet_type,
+        underlying   => \@underlying_symbol,
+        start_time   => \@start_time,
+        sell_time    => \@sell_time,
+    });
+
+}
+
 my $open_contracts = $fmb_dm->get_open_bets_of_account();
 foreach my $contract (@{$open_contracts}) {
     $contract->{purchase_date} = Date::Utility->new($contract->{purchase_time});
@@ -79,18 +123,19 @@ foreach my $contract (@{$open_contracts}) {
 BOM::Platform::Context::template->process(
     'backoffice/account/profit_table.html.tt',
     {
-        sold_contracts   => $sold_contracts,
-        open_contracts   => $open_contracts,
-        limits           => $limits,
-        markets          => [BOM::Market::Registry->instance->display_markets],
-        email            => $client->email,
-        full_name        => $client->full_name,
-        loginid          => $client->loginid,
-        posted_startdate => $startdate,
-        posted_enddate   => $enddate,
-        currency         => $client->currency,
-        residence        => $client->residence,
-        contract_details => \&BOM::ContractInfo::get_info,
+        sold_contracts          => $sold_contracts,
+        open_contracts          => $open_contracts,
+        limits                  => $limits,
+        markets                 => [BOM::Market::Registry->instance->display_markets],
+        email                   => $client->email,
+        full_name               => $client->full_name,
+        loginid                 => $client->loginid,
+        posted_startdate        => $startdate,
+        posted_enddate          => $enddate,
+        currency                => $client->currency,
+        residence               => $client->residence,
+        contract_details        => \&BOM::ContractInfo::get_info,
+        performance_probability => $performance_probability,
     }) || die BOM::Platform::Context::template->error();
 
 code_exit_BO();
