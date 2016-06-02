@@ -1542,15 +1542,20 @@ sub _build_staking_limits {
         : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->for_sale) ? $payout_min / 20 : $payout_min / 2;
 
-    my $message_to_client =
-        $self->for_sale
-        ? localize('Contract market price is too close to final payout.')
-        : localize('Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max));
+    my $message_to_client_array;
+    my $message_to_client;
+    if ($self->for_sale) {
+        $message_to_client = localize('Contract market price is too close to final payout.');
+    } else {
+        $message_to_client       = localize('Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max));
+        $message_to_client_array = ['Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
+    }
 
     return {
-        min               => $stake_min,
-        max               => $payout_max,
-        message_to_client => $message_to_client,
+        min                     => $stake_min,
+        max                     => $payout_max,
+        message_to_client       => $message_to_client,
+        message_to_client_array => $message_to_client_array,
     };
 }
 
@@ -2415,6 +2420,7 @@ sub _validate_lifetime {
     my $permitted = $self->permitted_expiries;
     my ($min_duration, $max_duration) = @{$permitted}{'min', 'max'};
 
+    my $message_to_client_array;
     my $message_to_client =
         $self->for_sale
         ? localize('Resale of this contract is not offered.')
@@ -2434,7 +2440,10 @@ sub _validate_lifetime {
         $duration = $self->tick_count;
         $message  = 'Invalid tick count for tick expiry';
         # slightly different message for tick expiry.
-        $message_to_client = localize('Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration) if $min_duration != 0;
+        if ($min_duration != 0) {
+            $message_to_client       = localize('Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration);
+            $message_to_client_array = ['Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration];
+        }
     } elsif (not $self->expiry_daily) {
         $duration = $self->get_time_to_expiry({from => $self->date_start})->seconds;
         ($min_duration, $max_duration) = ($min_duration->seconds, $max_duration->seconds);
@@ -2457,9 +2466,10 @@ sub _validate_lifetime {
                 . $self->underlying->symbol . "] "
                 . "[code: "
                 . $self->code . "]",
-            message_to_client => $message_to_client,
-            info_link         => $asset_link,
-            info_text         => $asset_text,
+            message_to_client       => $message_to_client,
+            message_to_client_array => $message_to_client_array,
+            info_link               => $asset_link,
+            info_text               => $asset_text,
         };
     }
 
