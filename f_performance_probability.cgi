@@ -12,7 +12,6 @@ use BOM::Platform::Sysinit ();
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Market::Registry;
 use BOM::Product::CustomClientLimits;
-use BOM::View::Controller::Bet;
 
 use Performance::Probability qw(get_performance_probability);
 
