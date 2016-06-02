@@ -101,7 +101,7 @@ sub startup {
             }
             my $client_ip = $c->client_ip;
 
-            if ($c->tx and $c->tx->req) {
+            if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
                 $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
             }
 
