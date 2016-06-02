@@ -51,10 +51,11 @@ while (1) {
         DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.price.call');
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.price.time', $response->{rpc_time});
 
-        if ( $redis->publish($next, encode_json($response)) == 0 ) {
-            # None was subscribed, so delete the job
-            $redis->del($next);
-        }
+        my $subsribers_count = $redis->publish($next, encode_json($response));
+        # if None was subscribed, so delete the job
+        $redis->del($next) if $subsribers_count == 0;
+        DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.subscribers', $subsribers_count);
+
     }
 
     $pm->finish;
