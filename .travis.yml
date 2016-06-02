@@ -39,6 +39,12 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
     - /tmp/travis-scripts/redis.sh
 
+    # TODO DELETE
+    - git clone https://github.com/evostrov/perl-Mojo-WebSocketProxy.git /tmp/perl-Mojo-WebSocketProxy
+    - cd /tmp/perl-Mojo-WebSocketProxy
+    - perl Makefile.PL && make && make install
+    # /TODO DELETE
+
 install:
     - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
     - export WEBSOCKET_CONFIG=$PWD/websocket.conf.travis; export RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis
