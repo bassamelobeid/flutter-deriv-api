@@ -7,7 +7,7 @@ services:
     - redis-server
 cache: apt
 before_install:
-    - git clone https://4567a7cce4d5523d146047ec96cbb2a6204fd253@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone https://6b8b5139b6cfaf61ea0b34834b62c275b500fa8b@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - /tmp/travis-scripts/fixHostName.sh
