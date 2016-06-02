@@ -620,7 +620,7 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
         my $currency   = $self->contract->currency;
         my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
             %$bet_data,
-            account_data => [map {client_loginid => $_->{loginid}, currency_code => $currency} @$list],
+            account_data => [map {+{client_loginid => $_->{loginid}, currency_code => $currency}} @$list],
             limits       => [map {$_->{limits}} @$list],
             db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
         );
