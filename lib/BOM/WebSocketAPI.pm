@@ -102,7 +102,7 @@ sub startup {
             my $client_ip = $c->client_ip;
 
             if ($c->tx and $c->tx->req) {
-                my $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
+                $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
             }
 
             $c->stash(
