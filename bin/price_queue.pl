@@ -14,6 +14,6 @@ while (Time::HiRes::Sleep::Until->new->epoch(time+1)) {
     DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.size', (scalar @$keys));
     DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.not_processed', $redis->llen('pricer_jobs'));
     $redis->del('pricer_jobs');
-    $redis->push('pricer_jobs', @{$keys});
+    $redis->push('pricer_jobs', uniq @{$keys});
 }
 

@@ -30,15 +30,12 @@ $pm->run_on_finish(
     }
 );
 sub signal_handler {
-    foreach my $pid (@running_forks) {
-        `kill -9 $pid`, "\n";
-    }
-
+    kill KILL=>@running_forks;
     exit 0;
 }
 
 while (1) {
-    my $pid = $pm->start and next;
+    $pm->start and next;
 
     my $redis = BOM::System::RedisReplicated::redis_pricer;
 
@@ -57,6 +54,6 @@ while (1) {
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.subscribers', $subsribers_count);
 
     }
-
+    sleep(1);
     $pm->finish;
 }
