@@ -110,6 +110,7 @@
         <INPUT type=hidden name="l" value="EN" />
         <INPUT type=checkbox name="all">All (No pagination) </INPUT>
         <INPUT type="submit" value="Update" />
+        <input type="submit" name="calc_performance_probability" value="Calculate Performance Probability" />
 </FORM>
 
 <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
