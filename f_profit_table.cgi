@@ -73,7 +73,6 @@ my $sold_contracts = $fmb_dm->get_sold({
     limit  => (request()->param('all') ? 99999 : 50),
 });
 
-
 #Performance probability
 my $do_calculation = request()->param('calc_performance_probability');
 
@@ -87,8 +86,6 @@ my @bet_type;
 my $cumulative_pnl = 0;
 
 my $performance_probability;
-
-print "$do_calculation";
 
 if (defined $do_calculation) {
 
