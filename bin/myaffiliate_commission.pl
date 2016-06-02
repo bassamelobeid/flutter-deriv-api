@@ -106,7 +106,8 @@ sub script_run {
             $calc_commission_sth->execute($start_date->ymd, $end_date_loop->ymd);
             @count = $calc_commission_sth->fetchrow_array();
             1;
-        } or {
+        };
+        if ($@) {
             warn('Failed Calculating affiliate commission, month[' . $start_date->ymd . "], error[$@]");
             last;
         }
