@@ -5,6 +5,7 @@ use warnings;
 
 use YAML::XS;
 use DBI;
+use feature "state";
 
 sub read_dbh {
   my $db_postfix = $ENV{DB_POSTFIX} // '';
