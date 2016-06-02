@@ -18,13 +18,13 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 
 Bar("Product Management");
 
-my $limit_profile = BOM::Platform::Static::Config::quants;
+my $limit_profile = BOM::Platform::Static::Config::quants->{risk_profile};
 my $config = BOM::Platform::Runtime->instance->app_config->quants;
 my $custom_limits = from_json($config->custom_product_profiles);
 
 my @output;
 foreach my $data (@$custom_limits) {
-    my $output;
+    my $output_ref;
     my %copy = %$data;
     $output_ref->{name} = delete $copy{name};
     my $profile = delete $copy{risk_profile};
