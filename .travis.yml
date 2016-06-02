@@ -25,6 +25,13 @@ before_install:
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - /tmp/travis-scripts/fixHostName.sh
     - /tmp/travis-scripts/postgres.sh
+
+    # TODO DELETE
+    - git clone https://github.com/evostrov/perl-Mojo-WebSocketProxy.git /tmp/perl-Mojo-WebSocketProxy
+    - (cd /tmp/perl-Mojo-WebSocketProxy && git checkout evgeniy/wsproxy_dispatcher)
+    - perl Makefile.PL && make && sudo make install
+    # /TODO DELETE
+
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
@@ -38,13 +45,6 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
     - /tmp/travis-scripts/redis.sh
-
-    # TODO DELETE
-    - git clone https://github.com/evostrov/perl-Mojo-WebSocketProxy.git /tmp/perl-Mojo-WebSocketProxy
-    - cd /tmp/perl-Mojo-WebSocketProxy
-    - git checkout evgeniy/wsproxy_dispatcher
-    - perl Makefile.PL && make && sudo make install
-    # /TODO DELETE
 
 install:
     - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
