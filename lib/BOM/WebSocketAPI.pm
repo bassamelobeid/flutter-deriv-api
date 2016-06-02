@@ -328,6 +328,8 @@ sub startup {
 
         $action_options->{stash_params} ||= [];
         push @{$action_options->{stash_params}}, qw( language country source );
+        
+        push @{$action_options->{stash_params}}, 'token' if $action_options->{require_auth};
     }
 
     $app->plugin(
