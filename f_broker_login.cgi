@@ -233,7 +233,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 				</td>
                                 <td align="center" width="50%">
 					<p><b>PRODUCT MANAGEMENT</b></p>
-					<form action="~ . request()->url_for('backoffice/quant/pricing/product_management.cgi') . qq~" method="post"><font size=2>
+					<form action="~ . request()->url_for('backoffice/quant/product_management.cgi') . qq~" method="post"><font size=2>
                                                 <input type="submit" value="RETRIEVE CONTRACT DETAILS">
 					</font></form>
 				</td>

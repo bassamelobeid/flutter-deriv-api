@@ -1,0 +1,17 @@
+[% FOREACH data IN output %]
+    <table>
+        <tr>
+            <td>Client Loginid: [% data.client_loginid %]</td>
+        </tr>
+        <tr>
+            <td>Comment: [% data.reason %]</td>
+        </tr>
+        [% FOREACH data IN data.output %]
+            <tr>
+                <td>[% data.condition_string %]</td>
+                <td>[% data.payout_limit %]</td>
+                <td>[% data.turnover_limit %]</td>
+            </tr>
+        [% END %]
+    </table>
+[% END %]
