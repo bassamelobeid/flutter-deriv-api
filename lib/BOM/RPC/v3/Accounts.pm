@@ -133,7 +133,8 @@ sub statement {
             amount         => $txn->{amount},
             action_type    => $txn->{action_type},
             balance_after  => $txn->{balance_after},
-            contract_id    => $txn->{financial_market_bet_id}};
+            contract_id    => $txn->{financial_market_bet_id},
+            payout         => $txn->{payout_price}};
 
         my $txn_time;
         if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
@@ -203,6 +204,7 @@ sub profit_table {
         my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price/);
         $trx{contract_id}    = $row->{id};
         $trx{transaction_id} = $row->{txn_id};
+        $trx{payout}         = $row->{payout_price};
         $trx{purchase_time}  = Date::Utility->new($row->{purchase_time})->epoch;
         $trx{sell_time}      = Date::Utility->new($row->{sell_time})->epoch;
 
