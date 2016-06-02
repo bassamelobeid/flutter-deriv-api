@@ -106,10 +106,15 @@ sub startup {
                     $c->finish();
                 }
             }
+            my $client_ip = $c->client_ip;
+
+            if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
+                $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
+            }
 
             $c->stash(
                 server_name  => $c->server_name,
-                client_ip    => $c->tx->handshake->req->content->headers->header('REMOTE_ADDR') // $c->client_ip,
+                client_ip    => $client_ip,
                 country_code => $c->country_code,
                 country      => $c->country_code,
                 user_agent   => $c->req->headers->header('User-Agent'),
