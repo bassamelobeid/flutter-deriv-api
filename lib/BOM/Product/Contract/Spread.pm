@@ -209,7 +209,7 @@ sub _build_current_tick {
         $self->add_errors({
             message           => "Current tick is undefined [symbol: " . $self->underlying->symbol . "]",
             severity          => 99,
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
         });
     }
 
@@ -250,7 +250,7 @@ sub _build_entry_tick {
         $self->add_errors({
             message           => "Entry tick is undefined [symbol: " . $self->underlying->symbol . "]",
             severity          => 99,
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
         });
     }
 
@@ -458,7 +458,7 @@ sub _validate_quote {
             {
             message           => "Quote too old [symbol: " . $self->underlying->symbol . "]",
             severity          => 98,
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
             };
     }
     return @err;
@@ -474,7 +474,7 @@ sub _validate_underlying {
             {
             message           => "Invalid underlying for spread [symbol: " . $self->underlying->symbol . "]",
             severity          => 98,
-            message_to_client => localize('Trading on [_1] is not offered for this contract type.', $self->underlying->translated_display_name),
+            message_to_client => localize('Trading on this market is not offered for this contract type.'),
             };
     }
 
