@@ -81,8 +81,7 @@ sub run {
 
             next if (not $underlying->trades_on($now));
 
-            if (my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol, @symbols_to_update))
-            {
+            if (my $validation_error = $self->_passes_sanity_check($data, $bom_underlying_symbol, @symbols_to_update)) {
                 $report->{$bom_underlying_symbol} = {
                     success => 0,
                     reason  => $validation_error,
@@ -131,10 +130,11 @@ sub _passes_sanity_check {
     $date =~ s/^0//;
     my $now   = Date::Utility->new;
     my $today = $now->date_ddmmmyy;
+
     if ($date ne $today) {
         return 'OHLC for ' . $symbol . ' is not updated. Incorrect date [' . $date . ']';
     }
-    my $skip_close_check = (grep { $_ eq $bom_underlying_symbol } @symbols_to_update) ? 0: 1;
+    my $skip_close_check = (grep { $_ eq $bom_underlying_symbol } @symbols_to_update) ? 0 : 1;
     my $divisor = $underlying->divisor;
     $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN}  /= $divisor;
     $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH}  /= $divisor;
