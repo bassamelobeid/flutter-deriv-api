@@ -11,10 +11,6 @@ use BOM::System::Config;
 
 use constant quants => LoadFile('/home/git/regentmarkets/bom-platform/config/quants_config.yml');
 
-sub get_display_languages {
-    return ['EN', 'ID', 'RU', 'ES', 'FR', 'PT', 'DE', 'ZH_CN', 'PL', 'AR', 'ZH_TW', 'VI', 'IT'];
-}
-
 sub get_static_path {
     return "/home/git/binary-com/binary-static/src/";
 }
