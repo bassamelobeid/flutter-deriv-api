@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 package main;
 
-use BOM::Platform::MyAffiliates::GenerateRegistrationDaily;
+use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Sysinit ();
@@ -16,7 +16,7 @@ sub run {
     my $to;
     GetOptions('to=s' => \$to);
 
-    my $result = BOM::Platform::MyAffiliates::GenerateRegistrationDaily->new->run;
+    my $result = BOM::MyAffiliates::GenerateRegistrationDaily->new->run;
     send_email({
         from    => BOM::Platform::Runtime->instance->app_config->system->email,
         to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,

@@ -8,7 +8,7 @@ use FileHandle;
 use Date::Utility;
 use BOM::System::Localhost;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::MyAffiliates::ActivityReporter;
+use BOM::MyAffiliates::ActivityReporter;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;
 
@@ -43,7 +43,7 @@ $to_date_str   ||= $yesterday_yyyymmdd->date_yyyymmdd;
 my $from_date = Date::Utility->new($from_date_str);
 my $to_date   = Date::Utility->new($to_date_str);
 
-my $reporter        = BOM::Platform::MyAffiliates::ActivityReporter->new();
+my $reporter        = BOM::MyAffiliates::ActivityReporter->new();
 my $processing_date = Date::Utility->new($from_date->epoch);
 my @csv_filenames;
 

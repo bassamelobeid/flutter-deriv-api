@@ -17,7 +17,7 @@ use warnings;
 use Date::Utility;
 use BOM::System::Localhost;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::MyAffiliates::BackfillManager;
+use BOM::MyAffiliates::BackfillManager;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;
 
@@ -25,7 +25,7 @@ BOM::Platform::Sysinit::init();
 
 my $runtime = Date::Utility->new;
 
-my $backfill_manager            = BOM::Platform::MyAffiliates::BackfillManager->new;
+my $backfill_manager            = BOM::MyAffiliates::BackfillManager->new;
 my @backfill_promo_codes_report = $backfill_manager->backfill_promo_codes;
 
 my $full_report = ['Mark First Deposits:', ''];
