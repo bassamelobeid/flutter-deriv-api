@@ -90,7 +90,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         }
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
-                        is roundnear(0.00001,$c->theo_probability->amount), roundnear(0.00001,$expectation->{$code} + $c->risk_markup->amount), 'theo probability matches [' . $c->shortcode . ']';
+                        is roundnear(0.00001,$c->theo_probability->amount), roundnear(0.00001,$expectation->{$code}), 'theo probability matches [' . $c->shortcode . ']';
                     }
                     'survived';
                 }
