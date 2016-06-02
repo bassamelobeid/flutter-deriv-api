@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 package BOM::System::Script::UpdateCorpActions;
 
+use strict;
+use warnings;
+
 use Try::Tiny;
 use List::MoreUtils qw(pairwise);
 
@@ -41,7 +44,7 @@ sub script_run {
                 or Quant::Framework::CorporateAction::create($storage_accessor, $symbol, $now);
 
             my ($new_corp, $new_actions, $cancelled_actions) =
-                $previous_corp->update(grouped_actions { $symbol }, $now);
+                $previous_corp->update($grouped_actions{$symbol}, $now);
 
             try {
                 $new_corp->save;
