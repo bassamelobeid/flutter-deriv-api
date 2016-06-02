@@ -151,7 +151,7 @@ sub _build_basis_tick {
         $basis_tick      = $self->entry_tick;
         $potential_error = localize('Waiting for entry tick.');
     } else {
-        $basis_tick = $self->current_tick;
+        $basis_tick      = $self->current_tick;
         $potential_error = localize('Trading on this market is suspended due to missing market data.');
     }
 
@@ -906,8 +906,7 @@ sub _build_dividend_adjustment {
                 . $dividend_recorded_date->datetime . "] "
                 . "[symbol: "
                 . $self->underlying->symbol . "]",
-            message_to_client =>
-                localize('Trading on this market is suspended due to missing market data.'),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
         });
 
     }
@@ -1312,8 +1311,7 @@ sub _build_pricing_vol {
                     . $self->underlying->symbol . "] "
                     . "[duration: "
                     . $self->remaining_time->as_concise_string . "]",
-                message_to_client =>
-                    localize('Trading on this market is suspended due to missing market data.'),
+                message_to_client => localize('Trading on this market is suspended due to missing market data.'),
             });
         }
     } else {
@@ -1547,8 +1545,12 @@ sub _build_staking_limits {
     if ($self->for_sale) {
         $message_to_client = localize('Contract market price is too close to final payout.');
     } else {
-        $message_to_client       = localize('Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max));
-        $message_to_client_array = ['Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
+        $message_to_client = localize(
+            'Minimum stake of [_1] and maximum payout of [_2]',
+            to_monetary_number_format($stake_min),
+            to_monetary_number_format($payout_max));
+        $message_to_client_array =
+            ['Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
     }
 
     return {
@@ -2177,9 +2179,8 @@ sub _validate_input_parameters {
                     . $date_expiry->datetime . "] "
                     . "[underlying_symbol: "
                     . $self->underlying->symbol . "]",
-                message_to_client => localize(
-                    'Contracts on this market with a duration of more than 24 hours must expire at the end of a trading day.'
-                ),
+                message_to_client =>
+                    localize('Contracts on this market with a duration of more than 24 hours must expire at the end of a trading day.'),
             };
         }
     }
@@ -2220,9 +2221,7 @@ sub _validate_trading_times {
         } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($date_start)->epoch < $date_expiry->epoch) {
             return {
                 message           => "Intraday duration must expire on same day [symbol: " . $underlying->symbol . "]",
-                message_to_client => localize(
-                    'Contracts on this market with a duration of under 24 hours must expire on the same trading day.'
-                ),
+                message_to_client => localize('Contracts on this market with a duration of under 24 hours must expire on the same trading day.'),
             };
         }
     } elsif ($self->expiry_daily and not $self->is_atm_bet) {
@@ -2441,7 +2440,7 @@ sub _validate_lifetime {
         $message  = 'Invalid tick count for tick expiry';
         # slightly different message for tick expiry.
         if ($min_duration != 0) {
-            $message_to_client       = localize('Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration);
+            $message_to_client = localize('Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration);
             $message_to_client_array = ['Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration];
         }
     } elsif (not $self->expiry_daily) {

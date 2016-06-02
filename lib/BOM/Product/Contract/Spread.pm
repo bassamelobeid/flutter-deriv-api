@@ -57,8 +57,7 @@ sub BUILD {
             severity => 99,
             message_to_client =>
                 localize('Amount Per Point must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency),
-            message_to_client_array =>
-                ['Amount Per Point must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency],
+            message_to_client_array => ['Amount Per Point must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency],
         });
     }
 
@@ -511,8 +510,8 @@ sub _validate_stop_loss {
                 . $limits->{min} . "] "
                 . "[max: "
                 . $limits->{max} . "]",
-            severity          => 99,
-            message_to_client => $message_to_client,
+            severity                => 99,
+            message_to_client       => $message_to_client,
             message_to_client_array => $message_to_client_array,
             };
     }
@@ -540,8 +539,8 @@ sub _validate_stop_profit {
                 . $limits->{min} . "] "
                 . "[max: "
                 . $limits->{max} . "]",
-            severity          => 99,
-            message_to_client => $message_to_client,
+            severity                => 99,
+            message_to_client       => $message_to_client,
             message_to_client_array => $message_to_client_array,
             };
     }
