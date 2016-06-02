@@ -326,7 +326,7 @@ sub startup {
     }
 
     $app->plugin(
-        'BOM::WebSocketAPI::Plugins::WebSocketProxy' => {
+        'web_socket_proxy' => {
             actions => $actions,
 
             # action hooks
