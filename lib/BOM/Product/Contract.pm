@@ -152,7 +152,7 @@ sub _build_basis_tick {
         $potential_error = localize('Waiting for entry tick.');
     } else {
         $basis_tick = $self->current_tick;
-        $potential_error = localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name);
+        $potential_error = localize('Trading on this market is suspended due to missing market data.');
     }
 
     # if there's no basis tick, don't die but catch the error.
@@ -900,7 +900,7 @@ sub _build_dividend_adjustment {
                 . "[symbol: "
                 . $self->underlying->symbol . "]",
             message_to_client =>
-                localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name()),
+                localize('Trading on this market is suspended due to missing market data.'),
         });
 
     }
@@ -1306,7 +1306,7 @@ sub _build_pricing_vol {
                     . "[duration: "
                     . $self->remaining_time->as_concise_string . "]",
                 message_to_client =>
-                    localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name()),
+                    localize('Trading on this market is suspended due to missing market data.'),
             });
         }
     } else {
@@ -2087,7 +2087,7 @@ sub _validate_feed {
     if (not $self->current_tick) {
         return {
             message           => "No realtime data [symbol: " . $underlying->symbol . "]",
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
         };
     } elsif ($self->calendar->is_open_at($self->date_pricing)
         and $self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch)
@@ -2095,7 +2095,7 @@ sub _validate_feed {
         # only throw errors for quote too old, if the exchange is open at pricing time
         return {
             message           => "Quote too old [symbol: " . $underlying->symbol . "]",
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
         };
     }
 
@@ -2166,8 +2166,7 @@ sub _validate_input_parameters {
                     . "[underlying_symbol: "
                     . $self->underlying->symbol . "]",
                 message_to_client => localize(
-                    'Contracts on [_1] with duration more than 24 hours must expire at the end of a trading day.',
-                    $self->underlying->translated_display_name
+                    'Contracts on this market with a duration of more than 24 hours must expire at the end of a trading day.'
                 ),
             };
         }
@@ -2210,8 +2209,7 @@ sub _validate_trading_times {
             return {
                 message           => "Intraday duration must expire on same day [symbol: " . $underlying->symbol . "]",
                 message_to_client => localize(
-                    'Contracts on [_1] with durations under 24 hours must expire on the same trading day.',
-                    $underlying->translated_display_name()
+                    'Contracts on this market with a duration of under 24 hours must expire on the same trading day.'
                 ),
             };
         }
@@ -2232,7 +2230,7 @@ sub _validate_trading_times {
             my $message =
                 ($self->for_sale)
                 ? localize('Resale of this contract is not offered due to market holidays during contract period.')
-                : localize("Too many market holidays during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
+                : localize("Too many market holidays during the contract period.");
             my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             return {
                 message => 'Not enough trading days for calendar days ' . "[trading: " . $trading_days . "] " . "[calendar: " . $calendar_days . "]",
