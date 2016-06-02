@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More $ENV{SKIP_MYAFFILIATES} ? (skip_all => 'SKIP_MYAFFILIATES set') : (tests => 4);
+use Test::More (tests => 4);
 use Test::NoWarnings;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::MyAffiliates::ActivityReporter;
