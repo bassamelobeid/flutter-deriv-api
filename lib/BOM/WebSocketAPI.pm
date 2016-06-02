@@ -356,6 +356,9 @@ sub startup {
 
             # helper config
             url => \&BOM::WebSocketAPI::Hooks::get_rpc_url,    # make url for manually called actions
+
+            # Skip check sanity to password fields
+            skip_check_sanity => qr/password/,
         });
 
     return;
