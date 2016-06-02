@@ -125,7 +125,7 @@ subtest 'simple_contract_info' => sub {
 
     my ($desc, $ticky, $spready) = simple_contract_info($contract_params);
 
-    like $desc, qr#^USD 1.00#, 'our params got us what seems like it might be a description';
+    like $desc, qr#^Win payout if#, 'our params got us what seems like it might be a description';
     ok(!$ticky,   "our params do not create a tick expiry contract.");
     ok(!$spready, "our params do not create a spread contract.");
 
@@ -140,7 +140,7 @@ subtest 'simple_contract_info' => sub {
 
     ($desc, $ticky, $spready) = simple_contract_info($contract_params);
 
-    like $desc, qr#^USD 1.00#, 'our params got us what seems like it might be a description';
+    like $desc, qr#^Win payout if#, 'our params got us what seems like it might be a description';
     ok($ticky,    "our params create a tick expiry contract.");
     ok(!$spready, "our params do not create a spread contract.");
 
