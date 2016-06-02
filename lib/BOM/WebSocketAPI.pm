@@ -116,7 +116,6 @@ sub startup {
                 server_name  => $c->server_name,
                 client_ip    => $client_ip,
                 country_code => $c->country_code,
-                country      => $c->country_code,
                 user_agent   => $c->req->headers->header('User-Agent'),
             );
         });
@@ -129,7 +128,7 @@ sub startup {
         [
             'logout',
             {
-                stash_params => [qw/ token token_type email client_ip country_code user_agent /],
+                stash_params => [qw/ token token_type email client_ip user_agent /],
                 success      => \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
             },
         ],
@@ -153,7 +152,7 @@ sub startup {
         ['ping',          {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::ping}],
         ['time',          {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::server_time}],
 
-        ['website_status', {stash_params => [qw/ country_code /]}],
+        ['website_status'],
         ['contracts_for'],
         ['residence_list'],
         ['states_list'],
@@ -327,7 +326,7 @@ sub startup {
         $action_options->{out_validator} = $out_validator;
 
         $action_options->{stash_params} ||= [];
-        push @{$action_options->{stash_params}}, qw( language country source );
+        push @{$action_options->{stash_params}}, qw( language country_code source );
 
         push @{$action_options->{stash_params}}, 'token' if $action_options->{require_auth};
     }
