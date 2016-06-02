@@ -271,7 +271,7 @@ sub stats_stop {
 }
 
 sub calculate_limits {
-    my $self   = shift;
+    my $self = shift;
     my $client = shift || $self->client;
 
     my %limits;
@@ -620,8 +620,9 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
         my $currency   = $self->contract->currency;
         my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
             %$bet_data,
-            account_data => [map {+{client_loginid => $_->{loginid}, currency_code => $currency}} @$list],
-            limits       => [map {$_->{limits}} @$list],
+            # great readablility provided by our tidy rules
+            account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
+            limits       => [map                                      { $_->{limits} } @$list],
             db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
         );
 
@@ -2033,7 +2034,8 @@ Returns: Error::Base object with message to client
 
 =cut
 
-# TODO: move this to bom-app: BOM::View::Controller::Bet
+# This comment causes our structure test to fail if the module name is spelled correctly
+# TODO: move this to bom-app: B_O_M::View::Controller::Bet
 sub validate_request_method {
     if (BOM::Platform::Context::request()->http_method ne 'POST') {
         return Error::Base->cuss(
