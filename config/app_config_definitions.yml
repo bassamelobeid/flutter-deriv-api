@@ -290,15 +290,13 @@ quants:
       global: 1
       default: 'extreme_risk'
     custom_client_profiles:
-      description: "Custom client limits specification. Available conditions[expiry_type|start_type|market|underlying_symbol|contract_category|barrier_category]"
+      description: "Custom client limits specification."
       isa: json_string
-      global: 1
       default: '{}'
     custom_product_profiles:
-      description: "Custom limits specification. Available conditions[expiry_type|start_type|market|underlying_symbol|contract_category|barrier_category]"
+      description: "Custom limits specification."
       isa: json_string
-      global: 1
-      default: '[{"expiry_type": "tick","start_type": "spot","contract_category": "callput","market":"forex","risk_profile": "high_risk","name": "tick_expiry_engine_turnover_limit"},{"expiry_type": "intraday","start_type": "spot","market": "indices","contract_category": "callput","risk_profile": "high_risk","name": "intraday_spot_index_turnover_limit"},{"expiry_type": "tick", "contract_category": "asian","risk_profile": "high_risk","name": "asian_turnover_limit"}]'
+      default: '{}'
 system:
   description: "Various parameters determining core application functionality"
   isa: section
