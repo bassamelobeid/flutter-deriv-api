@@ -19,9 +19,8 @@ sub get_token_details {
     return unless $token;
 
     my ($loginid, $creation_time, $epoch);
-    my @scopes            = qw/read trade admin payments/;    # scopes is everything for session token
-    my $markup_percentage = 0;
-    if (length $token == 15) {                                # access token
+    my @scopes = qw/read trade admin payments/;    # scopes is everything for session token
+    if (length $token == 15) {                     # access token
         my $m = BOM::Database::Model::AccessToken->new;
         ($loginid, $creation_time) = $m->get_loginid_by_token($token);
         return unless $loginid;
@@ -32,9 +31,7 @@ sub get_token_details {
         ($loginid, $creation_time) = $m->get_loginid_by_access_token($token);
         return unless $loginid;
         $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
-        my $app = $m->get_app_details_by_access_token($token);
-        @scopes            = @{$app->{scopes}};
-        $markup_percentage = $app->{markup_percentage};
+        @scopes = $m->get_scopes_by_access_token($token);
     } else {
         my $session = BOM::Platform::SessionCookie->new(token => $token);
         return unless $session and $session->validate_session;
@@ -43,10 +40,9 @@ sub get_token_details {
     }
 
     return {
-        loginid           => $loginid,
-        scopes            => \@scopes,
-        epoch             => $epoch,
-        markup_percentage => $markup_percentage
+        loginid => $loginid,
+        scopes  => \@scopes,
+        epoch   => $epoch
     };
 }
 
