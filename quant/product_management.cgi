@@ -3,12 +3,16 @@
 package main;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
-use JSON qw(from_json);
+use JSON qw(from_json to_json);
 use f_brokerincludeall;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Static::Config;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Product::Offerings qw(get_offerings_with_filter);
+use List::Util qw(first);
+use Digest::MD5 qw(md5_hex);
+
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -16,28 +20,92 @@ PrintContentType();
 BrokerPresentation('Product Management');
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
+my $r             = request();
+my $limit_profile = BOM::Platform::Static::Config::quants->{risk_profile};
+
+if ($r->param('update_limit')) {
+    my @known_keys = qw(contract_category barrier_category market submarket underlying_symbol start_type expiry_type);
+    my %known_values = map { $_ => [get_offerings_with_filter($_)] } @known_keys;
+    my %ref;
+
+    foreach my $key (@known_keys) {
+        if (my $value = $r->param($key)) {
+            if (first { $value eq $_ } @{$known_values{$key}}) {
+                $ref{$key} = $value;
+            } else {
+                print "Unrecognized value[" . $r->param($key) . "] for $key. Nothing is updated!!";
+                code_exit_BO();
+            }
+        }
+    }
+    my $p = $r->param('risk_profile');
+    if ($p and first { $p eq $_ } keys %$limit_profile) {
+        $ref{risk_profile} = $p;
+    } else {
+        print "Unrecognize risk profile.";
+        code_exit_BO();
+    }
+
+    if (my $id = $r->param('client_loginid')) {
+        my $current  = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+        my $comment  = $r->param('comment');
+        my $uniq_key = substr(md5_hex(join('_', sort { $a <=> $b } values %ref)), 0, 16);
+        if (not $current->{$id}) {
+            $current->{$id} = {
+                ($comment ? (reason => $comment) : ()),
+                custom_limits => {
+                    $uniq_key => \%ref,
+                },
+            };
+        } else {
+            if ($current->{$id}->{$uniq_key}) {
+                print "Conditions already exists, id[$uniq_key]";
+                code_exit_BO();
+            } else {
+                $current->{$id}->{custom_limits}->{$uniq_key} = \%ref;
+                $current->{$id}->{reason} = $comment if $comment;
+            }
+        }
+
+        BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
+        BOM::Platform::Runtime->instance->app_config->save_dynamic;
+    } else {
+        my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
+        my $uniq_key = substr(md5_hex(join('_', sort { $a <=> $b } values %ref)), 0, 16);
+        if ($current->{$uniq_key}) {
+            print "Conditions already exists, id[$uniq_key]";
+            code_exit_BO();
+        } else {
+            $current->{$uniq_key} = \%ref;
+            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($current));
+            BOM::Platform::Runtime->instance->app_config->save_dynamic;
+        }
+    }
+}
+
 Bar("Existing limits");
 
-my $limit_profile = BOM::Platform::Static::Config::quants->{risk_profile};
-my $config = BOM::Platform::Runtime->instance->app_config->quants;
+my $config        = BOM::Platform::Runtime->instance->app_config->quants;
 my $custom_limits = from_json($config->custom_product_profiles);
 
 my @output;
-foreach my $data (@$custom_limits) {
+foreach my $id (keys %$custom_limits) {
+    my $data = $custom_limits->{$id};
     my $output_ref;
     my %copy = %$data;
+    $output_ref->{id}   = $id;
     $output_ref->{name} = delete $copy{name};
     my $profile = delete $copy{risk_profile};
-    $output_ref->{payout_limit} = $limit_profile->{$profile}{payout}{USD};
-    $output_ref->{turnover_limit} = $limit_profile->{$profile}{turnover}{USD};
-    $output_ref->{condition_string} = join "\n", map {$_ . "[$copy{$_}] "} keys %copy;
+    $output_ref->{payout_limit}     = $limit_profile->{$profile}{payout}{USD};
+    $output_ref->{turnover_limit}   = $limit_profile->{$profile}{turnover}{USD};
+    $output_ref->{condition_string} = join "\n", map { $_ . "[$copy{$_}] " } keys %copy;
     push @output, $output_ref;
 }
 
 BOM::Platform::Context::template->process(
     'backoffice/existing_limit.html.tt',
     {
-        output             => \@output,
+        output => \@output,
     }) || die BOM::Platform::Context::template->error;
 
 Bar("Custom Client Limits");
@@ -46,31 +114,33 @@ my $custom_client_limits = from_json($config->custom_client_profiles);
 
 my @client_output;
 foreach my $client_loginid (keys %$custom_client_limits) {
-    my %data = %{$custom_client_limits->{$client_loginid}};
+    my %data   = %{$custom_client_limits->{$client_loginid}};
     my $reason = $data{reason};
     my $limits = $data{custom_limits};
     my @output;
-    foreach my $limit_ref (@$limits) {
+    foreach my $id (keys %$limits) {
         my $output_ref;
-        my %copy = %$limit_ref;
+        my %copy = %{$limits->{$id}};
         delete $copy{name};
         my $profile = delete $copy{risk_profile};
-        $output_ref->{payout_limit} = $limit_profile->{$profile}{payout}{USD};
-        $output_ref->{turnover_limit} = $limit_profile->{$profile}{turnover}{USD};
-        $output_ref->{condition_string} = join "\n", map {$_ . "[$copy{$_}] "} keys %copy;
+        $output_ref->{id}               = $id;
+        $output_ref->{payout_limit}     = $limit_profile->{$profile}{payout}{USD};
+        $output_ref->{turnover_limit}   = $limit_profile->{$profile}{turnover}{USD};
+        $output_ref->{condition_string} = join "\n", map { $_ . "[$copy{$_}] " } keys %copy;
         push @output, $output_ref;
     }
-    push @client_output, +{
+    push @client_output,
+        +{
         client_loginid => $client_loginid,
-        reason => $reason,
+        reason         => $reason,
         @output ? (output => \@output) : (),
-    };
+        };
 }
 
 BOM::Platform::Context::template->process(
     'backoffice/custom_client_limit.html.tt',
     {
-        output             => \@client_output,
+        output => \@client_output,
     }) || die BOM::Platform::Context::template->error;
 
 Bar("Update Limit");
@@ -78,6 +148,7 @@ Bar("Update Limit");
 BOM::Platform::Context::template->process(
     'backoffice/update_limit.html.tt',
     {
-        url             => request()->url_for('backoffice/quant/product_management.cgi'),
+        url => request()->url_for('backoffice/quant/product_management.cgi'),
     }) || die BOM::Platform::Context::template->error;
+
 code_exit_BO();

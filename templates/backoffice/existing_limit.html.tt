@@ -1,5 +1,6 @@
 <table>
     <tr>
+        <td><b>ID</b></td>
         <td><b>Name</b></td>
         <td><b>Limit Conditions</b></td>
         <td><b>Payout Limit</b></td>
@@ -7,6 +8,7 @@
     </tr>
     [% FOREACH data IN output %]
         <tr>
+            <td>[% data.id %]</td>
             <td>[% data.name %]</td>
             <td>[% data.condition_string %]</td>
             <td>[% data.payout_limit %]</td>
