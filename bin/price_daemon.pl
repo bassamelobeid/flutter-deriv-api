@@ -6,6 +6,7 @@ use JSON;
 use BOM::System::RedisReplicated;
 use Getopt::Long;
 use DataDog::DogStatsd::Helper;
+use BOM::RPC::v3::Contract;
 use sigtrap qw/handler signal_handler normal-signals/;
 
 my $workers = 4;
@@ -39,7 +40,9 @@ while (1) {
 
     my $redis = BOM::System::RedisReplicated::redis_pricer;
 
-    while (my $next = $redis->brpop("pricer_jobs", 0)) {
+    while (my $key = $redis->brpop("pricer_jobs", 0)) {
+        my $next = $key->[1];
+        $next =~ s/^PRICER_KEYS:://;
         my $payload  = JSON::XS::decode_json($next);
         my $params   = {@{$payload}};
         my $trigger  = $params->{symbol};
@@ -48,12 +51,10 @@ while (1) {
         DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.price.call');
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.price.time', $response->{rpc_time});
 
-        my $subsribers_count = $redis->publish($next, encode_json($response));
+        my $subsribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job
-        $redis->del($next) if $subsribers_count == 0;
+        $redis->del($key->[1]) if $subsribers_count == 0;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.subscribers', $subsribers_count);
-
     }
-    sleep(1);
     $pm->finish;
 }
