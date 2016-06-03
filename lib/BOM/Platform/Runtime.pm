@@ -13,8 +13,6 @@ use YAML::XS;
 use Locale::Country::Extra;
 use Locale::Country;
 
-use BOM::System::Types qw(bom_language_code);
-
 =head1 NAME
 
 BOM::Platform::Runtime
