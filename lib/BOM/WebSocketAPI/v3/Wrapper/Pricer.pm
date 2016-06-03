@@ -51,7 +51,7 @@ sub _send_ask {
             my $pricing_channel = $c->stash('pricing_channel');
             if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
                 my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
-                my $amount          = $args->{amount_per_point} || $args->{amount};
+                my $amount = $args->{amount_per_point} || $args->{amount};
                 $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $response->{longcode};
                 $c->stash('pricing_channel' => $pricing_channel);
             }
@@ -133,7 +133,8 @@ sub process_pricing_events {
         my $results;
         if ($response and exists $response->{error}) {
             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$serialized_args}->{$amount}->{uuid});
-            $response->{error}->{message_to_client} localize(@{$response->{error}->{message_to_client_array}}) if $response->{error}->{message_to_client_array};
+            $response->{error}->{message_to_client} = localize(@{$response->{error}->{message_to_client_array}})
+                if $response->{error}->{message_to_client_array};
             my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
