@@ -93,7 +93,12 @@ sub get_turnover_limit_parameters {
             name  => $profile->{name},
             limit => $self->limits->{$profile->{risk_profile}}{turnover}{$self->currency},
         };
-        $params->{tick_expiry} = 1 if $profile->{tick_expiry};
+
+        if (my $exp = $profile->{expiry_type}) {
+            my $what = $exp eq 'tick' ? 'tick_expiry' : $exp eq 'intraday' ? 'intraday' : 'daily';
+            $params->{$what} = 1;
+        }
+
         if ($profile->{market}) {
             $params->{symbols} = [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => $profile->{market}})];
         } elsif ($profile->{submarket}) {
