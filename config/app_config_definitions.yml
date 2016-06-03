@@ -292,10 +292,12 @@ quants:
     custom_client_profiles:
       description: "Custom client limits specification."
       isa: json_string
+      global: 1
       default: '{}'
     custom_product_profiles:
       description: "Custom limits specification."
       isa: json_string
+      global: 1
       default: '{}'
 system:
   description: "Various parameters determining core application functionality"
