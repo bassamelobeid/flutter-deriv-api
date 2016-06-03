@@ -72,7 +72,7 @@ sub _serialized_args {
     foreach my $k (sort keys %$h) {
         push @a, ($k, $h->{$k});
     }
-    return encode_json(\@a);
+    return 'PRICER_KEYS::' . encode_json(\@a);
 }
 
 sub _pricing_channel {
@@ -122,9 +122,10 @@ sub process_pricing_events {
 
     # in case that it is a spread
     return if not $message or not $c->tx;
+    $message =~ s/^PRICER_KEYS:://;
 
     my $response        = decode_json($message);
-    my $serialized_args = $response->{data};
+    my $serialized_args = $chan;
 
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
