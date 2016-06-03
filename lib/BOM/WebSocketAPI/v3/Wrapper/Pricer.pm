@@ -21,7 +21,7 @@ sub price_stream {
     if ($response and exists $response->{error}) {
         return $c->new_error('price_stream', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
     } else {
-        _send_ask($c, $uuid, $args);
+        _send_ask($c, $args);
     }
     return;
 }
@@ -50,7 +50,7 @@ sub _send_ask {
             if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
                 my $pricing_channel = $c->stash('pricing_channel');
                 my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
-                my $amount = $args->{amount_per_point} || $args->{amount};
+                my $amount          = $args->{amount_per_point} || $args->{amount};
                 $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $response->{longcode};
                 $c->stash('pricing_channel' => $pricing_channel);
             }
@@ -115,7 +115,6 @@ sub _pricing_channel {
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
 }
-
 
 sub process_pricing_events {
     my ($c, $message, $chan) = @_;
