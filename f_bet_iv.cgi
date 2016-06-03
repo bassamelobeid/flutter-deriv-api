@@ -32,11 +32,8 @@ print get_update_interest_rates_form();
 
 Bar("BLOOMBERG DATA LICENSE");
 print '<p>BLOOMBERG DATA LICENSE (BBDL) is an FTP service where we can make requests to the Bloomberg system.
- There are 2 FTP servers. You can upload the REQUEST (.req) files to either server.
- You can list the contents of the FTP servers by using the List Directory function.
  <br>Note1: to view currently scheduled batch files, upload the JYSscheduled.req request file.
- Then wait a minute and download scheduled.out.
-<br>Note2: BBDL TIME field should be in the form HHMM, where HH=00-23 and MM=00-59 and should be in TOKYO time zone as our account attached to TOKYO . TOKYO time= GMT+9.</p>';
+ Then wait a minute and download scheduled.out . </p>';
 
 unless (BOM::System::Localhost::is_master_server()) {
     print
@@ -44,18 +41,11 @@ unless (BOM::System::Localhost::is_master_server()) {
 }
 
 my $bbdl             = Bloomberg::FileDownloader->new();
-my $selectbbdlserver = '<select name="server">';
-foreach my $ip (@{$bbdl->sftp_server_ips}) {
-    $selectbbdlserver .= "<option value='$ip'>$ip</option>";
-}
-$selectbbdlserver .= '</select>';
-
 my $directory_listing_url = request()->url_for('backoffice/f_bbdl_list_directory.cgi');
 print '<LI><b>BBDL FTP directory listing<b> - click this button to list the contents of the BBDL servers.';
 print qq~
 <form method=post action=$directory_listing_url>
 <input type=hidden name=broker value=$broker>
-Server: $selectbbdlserver
  <input type=submit value='List Directory'> (click once; will be slow)
 </form>~;
 
@@ -70,7 +60,6 @@ print qq~
 my $request_files_upload_url = request()->url_for('backoffice/f_bbdl_upload_request_files.cgi');
 print '<LI><b>Upload the request files<b> ';
 print qq~<br><form method=post action=$request_files_upload_url>
-    Server: $selectbbdlserver
     <select name=frequency>
             <option value='daily'>Daily (Normal)</option>
             <option value='oneshot'>Oneshot</option>
@@ -90,7 +79,6 @@ print qq~<P><LI>
 <input type=hidden name=broker value=$broker>
 Upload a file to the Bloomberg Data License FTP folder:<br>
 Filename: <input type=text size=20 name=filename value='scheduled.req'>
-Server: $selectbbdlserver
 <input type=submit value='Upload File'><br>
 <textarea rows=10 cols=90 name=bbdl_file_content>START-OF-FILE
 FIRMNAME=dl623471
@@ -106,7 +94,6 @@ print qq~
 <form method=post action=$download_dir>
 <input type=hidden name=broker value=$broker>
 Download Filename: <input type=text size=20 name=filename value='scheduled.out'>
-Server: $selectbbdlserver
 <input type=submit value='Download File'>
 </form>~;
 
