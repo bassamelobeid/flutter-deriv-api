@@ -16,11 +16,6 @@ has contract => (
     required => 1,
 );
 
-has client_loginid => (
-    is      => 'ro',
-    default => undef,
-);
-
 has has_custom_client_limit => (
     is      => 'rw',
     isa     => 'Bool',
@@ -118,20 +113,24 @@ sub get_turnover_limit_parameters {
 }
 
 has applicable_profiles => (
+    is      => 'rw',
+    default => sub { [] },
+);
+
+has custom_profiles => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-sub _build_applicable_profiles {
+sub _build_custom_profiles {
     my $self = shift;
 
     my $custom_product_profiles = from_json($self->app_config->custom_product_profiles);
 
-    my @custom_profiles;
     foreach my $id (keys %$custom_product_profiles) {
         my $p = $custom_product_profiles->{$id};
         if ($self->_match_conditions($p)) {
-            push @custom_profiles, $p;
+            push @{$self->applicable_profiles}, $p;
         }
     }
 
@@ -139,25 +138,29 @@ sub _build_applicable_profiles {
     my $risk_profile = $ul->risk_profile;
     my $setter       = $ul->risk_profile_setter;
     # default market level profile
-    push @custom_profiles,
+    push @{$self->applicable_profiles},
         +{
         risk_profile => $risk_profile,
         name         => $self->contract_info->{$setter} . '_turnover_limit',
         $setter      => $self->contract_info->{$setter},
         };
 
-    if ($self->client_loginid) {
-        my $custom_client_profiles = from_json($self->app_config->custom_client_profiles)->{$self->client_loginid}->{custom_limits};
-        foreach my $id (keys %$custom_client_profiles) {
-            my $p = $custom_client_profiles->{$id};
-            if ($self->_match_conditions($p)) {
-                push @custom_profiles, $p;
-                $self->has_custom_client_limit(1);
-            }
+    return;
+}
+
+sub get_profiles_for_client {
+    my $client_loginid = shift;
+
+    if ($client_loginid) {
+        my $custom_client = from_json($self->app_config->custom_client_profiles);
+        if (exists $custom_client->{$client_loginid} and my $limits = $custom_client->{$client_loginid}->{custom_limits}) {
+            my @matches = map { $limits->{$_} } grep { $self->_match_conditions($limits->{$_}) } keys %$limits;
+            push @{$self->applicable_profiles}, @matches;
+            return @matches;
         }
     }
 
-    return \@custom_profiles;
+    return;
 }
 
 sub _match_conditions {

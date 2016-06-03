@@ -1527,7 +1527,7 @@ sub _build_staking_limits {
 
     my $static                    = BOM::Platform::Static::Config::quants;
     my $bet_limits                = $static->{bet_limits};
-    my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile}{payout}{$self->currency};
+    my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
     my @possible_payout_maxes     = ($bet_limits->{maximum_payout}->{$curr}, $per_contract_payout_limit);
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
@@ -2611,7 +2611,7 @@ has [qw(risk_profile)] => (
 sub _build_risk_profile {
     my $self = shift;
 
-    return BOM::Product::RiskProfile->new(contract => $self)->get_risk_profile;
+    return BOM::Product::RiskProfile->new(contract => $self);
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
