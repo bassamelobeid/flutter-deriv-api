@@ -652,7 +652,7 @@ sub _build_timeindays {
     # If market is Forex, We go with integer days as per the market convention
     if ($self->market->integer_number_of_day and not $self->priced_with_intraday_model) {
         my $recorded_date = $self->volsurface->recorded_date;
-        my $utils        = Quant::Framework::VolSurface::Utils->new;
+        my $utils         = Quant::Framework::VolSurface::Utils->new;
         my $days_between  = $self->date_expiry->days_between($recorded_date);
         $atid = $utils->is_before_rollover($recorded_date) ? ($days_between + 1) : $days_between;
         if ($recorded_date->day_of_week >= 5 or ($recorded_date->day_of_week == 4 and not $utils->is_before_rollover($recorded_date))) {
