@@ -245,7 +245,7 @@ my @dispatch = (
         'buy', '', 1, 'trade',
         {
             before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
-            stash_params   => [qw/ markup_percentage /]}
+        }
     ],
     ['transaction', '', 1, 'read', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction}],
     ['portfolio',   '', 1, 'read'],
@@ -254,7 +254,7 @@ my @dispatch = (
         '', 1, 'read',
         {
             rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
-            stash_params    => [qw/ markup_percentage /]}
+        }
     ],
     ['sell_expired', '', 1, 'trade'],
 
@@ -555,9 +555,10 @@ sub rpc {
     }
     $url .= $method;
 
-    $params->{language} = $c->stash('language');
-    $params->{country}  = $c->stash('country') || $c->country_code;
-    $params->{source}   = $c->stash('source');
+    $params->{language}          = $c->stash('language');
+    $params->{country}           = $c->stash('country') || $c->country_code;
+    $params->{source}            = $c->stash('source');
+    $params->{markup_percentage} = $c->stash('markup_percentage') // 0;
 
     BOM::WebSocketAPI::CallingEngine::call_rpc(
         $c,
