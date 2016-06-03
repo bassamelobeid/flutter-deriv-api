@@ -24,6 +24,8 @@ sub startup {
     my $r = $app->routes;
     $r->get('/activity_report')->to('C#activity_report');
     $r->get('/registration')->to('C#registration');
+
+    return;
 }
 
 1;

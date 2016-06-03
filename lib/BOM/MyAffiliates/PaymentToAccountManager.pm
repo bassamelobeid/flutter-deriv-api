@@ -69,7 +69,7 @@ sub get_csv_file_locs {
 
 sub _split_txn_by_landing_company {
     my @account_transactions = @_;
-    my $txn_for  = {};
+    my $txn_for              = {};
 
     my @allow_broker = map { $_->code } @{request()->website->broker_codes};
     foreach my $transaction (@account_transactions) {

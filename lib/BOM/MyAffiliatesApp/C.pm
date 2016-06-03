@@ -6,7 +6,6 @@ use Path::Tiny;
 
 use BOM::Platform::Runtime;
 
-
 sub activity_report {
     my $c = shift;
     return $c->__send_file('activity_report');
@@ -16,7 +15,6 @@ sub registration {
     my $c = shift;
     return $c->__send_file('registration');
 }
-
 
 sub __send_file {
     my ($c, $type) = @_;
@@ -38,21 +36,20 @@ sub __send_file {
 
     $filename = $filename . Date::Utility->new({datetime => $date})->date_yyyymmdd . '.csv';
 
-    unless (-f -r $path.$filename) {
+    unless (-f -r $path . $filename) {
         return $c->__bad_request("No data for date: $date");
     }
 
     # Set response headers
     my $headers = $c->res->content->headers();
-    $headers->add( 'Content-Type', 'application/octet-stream ;name=' . $filename );
-    $headers->add( 'Content-Disposition', 'inline; filename=' . $filename );
+    $headers->add('Content-Type',        'application/octet-stream ;name=' . $filename);
+    $headers->add('Content-Disposition', 'inline; filename=' . $filename);
 
-    my $asset = Mojo::Asset::File->new(path => $path.$filename);
+    my $asset = Mojo::Asset::File->new(path => $path . $filename);
     $c->res->content->asset($asset);
 
     return $c->rendered(200);
 }
-
 
 sub __bad_request {
     my ($c, $error) = @_;
