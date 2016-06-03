@@ -220,6 +220,7 @@ sub _price_stream_results_adjustment {
                 details           => {
                     longcode      => $results->{longcode},
                     display_value => $results->{display_value},
+                    payout        => $results->{payout},
                 },
             }};
     }
