@@ -1090,7 +1090,7 @@ sub _price_from_prob {
     } else {
         $price = (defined $self->$prob_method) ? $self->payout * $self->$prob_method->amount : undef;
     }
-    return (defined $price) ? roundnear(0.01, $price) : undef;
+    return (defined $price) ? roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $price) : undef;
 }
 
 sub _build_ask_price {
@@ -1114,7 +1114,7 @@ sub _build_payout {
 
     my $payout = $ask_price / ($theo_prob + $commission * BOM::Product::Contract::Helper::global_commission_adjustment());
     $payout = max($ask_price, $payout);
-    return roundnear(0.01, $payout);
+    return roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $payout);
 }
 
 sub _build_theo_probability {
