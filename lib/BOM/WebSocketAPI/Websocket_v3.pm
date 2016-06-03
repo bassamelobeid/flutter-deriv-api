@@ -442,8 +442,8 @@ sub __handle {
         }
 
         if ($descriptor->{require_scope} and not(grep { $_ eq $descriptor->{require_scope} } @{$c->stash('scopes') || []})) {
-            return $c->new_error($descriptor->{category}, 'PermissionDenied',
-                $c->l('Permission denied, requiring [_1]', $descriptor->{require_scope}));
+            return $c->new_error($descriptor->{category},
+                'PermissionDenied', $c->l('Permission denied, requires [_1] scope.', $descriptor->{require_scope}));
         }
 
         if ($loginid) {
