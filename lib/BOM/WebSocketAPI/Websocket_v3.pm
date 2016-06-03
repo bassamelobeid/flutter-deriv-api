@@ -60,7 +60,7 @@ sub entry_point {
         $redis_pricer->on(
             message => sub {
                 my ($self, $msg, $channel) = @_;
-                BOM::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel)
+                BOM::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel);
             });
         $c->stash->{redis_pricer} = $redis_pricer;
     }

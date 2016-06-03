@@ -134,8 +134,14 @@ sub process_pricing_events {
         my $results;
         if ($response and exists $response->{error}) {
             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$serialized_args}->{$amount}->{uuid});
-            $response->{error}->{message_to_client} = localize(@{$response->{error}->{message_to_client_array}})
-                if $response->{error}->{message_to_client_array};
+            # in pricer_dameon everything happens in Eng to maximize the collisions. If translations has params it will come as message_to_client_array.
+            # eitherway it need l10n here.
+            if ($response->{error}->{message_to_client_array}) {
+                $response->{error}->{message_to_client} = localize(@{$response->{error}->{message_to_client_array}});
+            } else {
+                $response->{error}->{message_to_client} = localize(@{$response->{error}->{message_to_client}});
+            }
+
             my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
