@@ -941,7 +941,10 @@ sub _build_bid_probability {
 sub _build_bid_price {
     my $self = shift;
 
-    return $self->_price_from_prob('bid_probability');
+    my $price = $self->_price_from_prob('bid_probability');
+    $price = $self->currency eq 'JPY' ? roundnear(1, $price) : $price;
+
+    return $price;
 }
 
 sub _build_ask_probability {
@@ -1063,7 +1066,10 @@ sub _price_from_prob {
 sub _build_ask_price {
     my $self = shift;
 
-    return $self->_price_from_prob('ask_probability');
+    my $price = $self->_price_from_prob('ask_probability');
+    $price = $self->currency eq 'JPY' ? roundnear(1, $price) : $price;
+
+    return $price;
 }
 
 sub _build_payout {
@@ -1081,7 +1087,7 @@ sub _build_payout {
 
     my $payout = $ask_price / ($theo_prob + $commission * BOM::Product::Contract::Helper::global_commission_adjustment());
     $payout = max($ask_price, $payout);
-    return roundnear(0.01, $payout);
+    return roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $payout);
 }
 
 sub _build_theo_probability {
