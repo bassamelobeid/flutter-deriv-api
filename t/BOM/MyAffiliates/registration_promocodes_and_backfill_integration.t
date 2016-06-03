@@ -12,7 +12,6 @@ use BOM::Database::DataMapper::CollectorReporting;
 
 alarm(1800);    #This is a long test. Avoid causing PANICTIMEOUT
 
-########## Move me down, please ##
 subtest "Sanity check" => sub {
     plan tests => 17;
     # Those tests rely on having a few tokens and promocodes and affiliates accounts with subordinate flags set on the MyAffiliate

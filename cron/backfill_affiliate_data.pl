@@ -1,16 +1,6 @@
 #!/usr/bin/perl
 package main;
 
-=head1 NAME
-
-myaffiliates/backfill_affiliate_data.pl
-
-=head1 DESCRIPTION
-
-su nobody -c "perl /home/git/regentmarkets/bom-backoffice/crons/myaffiliates/backfill_affiliate_data.pl"
-
-=cut
-
 use strict;
 use warnings;
 

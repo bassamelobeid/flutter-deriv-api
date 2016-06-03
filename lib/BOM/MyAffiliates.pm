@@ -167,9 +167,9 @@ sub _get_setup_id {
     return $plan_name_to_setup_id{$plan_name};
 }
 
-=item fetch_BOM_account_transactions
+=item fetch_account_transactions
 
-Returns an array of "to BOM account" payment transactions
+Returns an array of "to Binary account" payment transactions
 (HashRefs, with details of a transaction from the MyAffiliates system).
 
 # MyAffiliates have four transaction types that you'll find against an
@@ -199,7 +199,7 @@ Returns an array of "to BOM account" payment transactions
 =back
 =cut
 
-sub fetch_BOM_account_transactions {
+sub fetch_account_transactions {
     my $self = shift;
     my %args = @_ % 2 ? %{$_[0]} : @_;
 

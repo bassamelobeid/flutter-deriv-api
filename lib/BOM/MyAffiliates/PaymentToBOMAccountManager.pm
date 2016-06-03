@@ -1,12 +1,12 @@
-package BOM::MyAffiliates::PaymentToBOMAccountManager;
+package BOM::MyAffiliates::PaymentToAccountManager;
 
 =head1 NAME
 
-BOM::MyAffiliates::PaymentToBOMAccountManager
+BOM::MyAffiliates::PaymentToAccountManager
 
 =head1 SYNOPSIS
 
-    my $manager = BOM::MyAffiliates::PaymentToBOMAccountManager->new(from => $from_date, to => $to_date);
+    my $manager = BOM::MyAffiliates::PaymentToAccountManager->new(from => $from_date, to => $to_date);
 
 =cut
 
@@ -57,46 +57,45 @@ sub get_csv_file_locs {
 
     my $api = BOM::MyAffiliates->new;
 
-    my @BOM_account_transactions = $api->fetch_BOM_account_transactions(
+    my @account_transactions = $api->fetch_account_transactions(
         'FROM_DATE' => $self->from->date_yyyymmdd,
         'TO_DATE'   => $self->to->date_yyyymmdd,
     );
 
-    my $transactions_for_server = _split_transactions_by_destination_dealing_server(@BOM_account_transactions);
+    my $txn_for_company = _split_txn_by_landing_company(@account_transactions);
 
-    return $self->_write_csv_files($transactions_for_server);
+    return $self->_write_csv_files($txn_for_company);
 }
 
-sub _split_transactions_by_destination_dealing_server {
-    my @BOM_account_transactions = @_;
-    my $transactions_for_server  = {};
+sub _split_txn_by_landing_company {
+    my @account_transactions = @_;
+    my $txn_for  = {};
 
     my @allow_broker = map { $_->code } @{request()->website->broker_codes};
-    foreach my $transaction (@BOM_account_transactions) {
-        my $BOM_account = _get_BOM_loginid_from_transaction($transaction);
+    foreach my $transaction (@account_transactions) {
+        my $loginid = _get_loginid_from_txn($transaction);
 
-        # Ok, the following is not a server name. I basically want to hold onto transactions
+        # Ok, the following is not a landing_company name. I basically want to hold onto transactions
         # that we can't process, so that I can report them as erroneous later. The naming
         # doesn't quite fit the underlying concept, but works.
-        my $server = 'LOGIN_EXTRACTION_ERRORS';
-        if ($BOM_account =~ /^([A-Z]+)\d+$/) {
+        my $company = 'LOGIN_EXTRACTION_ERRORS';
+        if ($loginid =~ /^([A-Z]+)\d+$/) {
             my $broker = $1;
             if (any { $broker eq $_ } @allow_broker) {
-                $server = BOM::Platform::Runtime->instance->broker_codes->dealing_server_for($broker);
+                $company = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($broker)->short;
             }
         }
 
-        if (not ref $transactions_for_server->{$server}) {
-            $transactions_for_server->{$server} = [];
+        if (not ref $txn_for->{$company}) {
+            $txn_for->{$company} = [];
         }
-
-        push @{$transactions_for_server->{$server}}, $transaction;
+        push @{$txn_for->{$company}}, $transaction;
     }
 
-    return $transactions_for_server;
+    return $txn_for;
 }
 
-sub _get_BOM_loginid_from_transaction {
+sub _get_loginid_from_txn {
     my $transaction = shift;
 
     my $details = $transaction->{USER_PAYMENT_TYPE}->{PAYMENT_DETAILS}->{DETAIL};
@@ -112,25 +111,25 @@ sub _get_BOM_loginid_from_transaction {
 }
 
 sub _write_csv_files {
-    my ($self, $transactions_for_server) = @_;
+    my ($self, $txn_for_company) = @_;
     my @csv_file_locs;
     my @parse_errors;
 
     local $\ = "\n";    # because my print statements do not punch a record separator
 
-    foreach my $server (keys %{$transactions_for_server}) {
-        my $file_loc        = $self->_get_file_loc($server);
-        my $transaction_set = $transactions_for_server->{$server};
+    foreach my $company (keys %{$txn_for_company}) {
+        my $file_loc        = $self->_get_file_loc($company);
+        my $transaction_set = $txn_for_company->{$company};
 
         open my $fh, '>', $file_loc or die "Cannot open $file_loc: $!";
 
-        if ($server eq 'LOGIN_EXTRACTION_ERRORS') {
+        if ($company eq 'LOGIN_EXTRACTION_ERRORS') {
             print $fh Dumper($transaction_set);
             close $fh;
         } else {
             foreach my $transaction (@{$transaction_set}) {
                 try {
-                    print $fh _get_csv_line_from_transaction($transaction);
+                    print $fh _get_csv_line_from_txn($transaction);
                 }
                 catch {
                     push @parse_errors, $_;
@@ -167,27 +166,27 @@ sub _get_file_loc {
 
     return
           BOM::Platform::Runtime->instance->app_config->system->directory->tmp
-        . '/BOM_account_affiliate_payment_'
+        . '/affiliate_payment_'
         . $report_name . '_'
         . $from_string . '_'
         . $to_string . '.'
         . $file_extension;
 }
 
-sub _get_csv_line_from_transaction {
+sub _get_csv_line_from_txn {
     my $transaction = shift;
 
     # loginid
-    my $loginid = _get_BOM_loginid_from_transaction($transaction);
+    my $loginid = _get_loginid_from_txn($transaction);
     die 'Could not extract BOM loginid from transaction. Full transaction details: ' . Dumper($transaction) unless $loginid;
     my $client = BOM::Platform::Client::get_instance({loginid => $loginid});
     if (not $client) {
         die 'Could not instantiate client from extracted BOM loginid. Full transaction details: ' . Dumper($transaction);
     }
 
-# amount:
+    # amount:
     my $USD_amount = $transaction->{'AMOUNT'};
-# since this was a debit from the affiliate MyAffiliates account, the amount comes through negative
+    # since this was a debit from the affiliate MyAffiliates account, the amount comes through negative
     if (not defined $USD_amount or $USD_amount >= 0) {
         die 'Amount[' . $USD_amount . '] is invalid. Full transaction details: ' . Dumper($transaction);
     }
@@ -202,7 +201,7 @@ sub _get_csv_line_from_transaction {
 
     my $comment = 'Payment from Binary Services Ltd ' . $month_str;
 
-# got everything, so lets make the CSV line:
+    # got everything, so lets make the CSV line:
     my $csv = Text::CSV->new;
     $csv->combine($loginid, 'credit', 'affiliate_reward', $preferred_currency, $preferred_currency_amount, $comment);
     my $string = trim $csv->string;
