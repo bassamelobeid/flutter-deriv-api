@@ -27,6 +27,23 @@ is $res->{msg_type}, 'ping';
 is $res->{ping},     'pong';
 test_schema('ping', $res);
 
+use Test::MockObject;
+use Test::MockModule;
+my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
+$fake_rpc_response = Test::MockObject->new();
+$fake_rpc_response->mock('is_error', sub { '' });
+$fake_rpc_response->mock('result', sub { +{ok => ('1' x 328000)} });
+$fake_rpc_client = Test::MockObject->new();
+$fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
+$rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
+$rpc_client_mock->mock('new', sub { return $fake_rpc_client });
+
+$t = $t->send_ok({json => {website_status => 1}})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'ResponseTooLarge';
+
+$rpc_client_mock->unmock_all;
+
 $t->finish_ok;
 
 done_testing();

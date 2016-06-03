@@ -350,6 +350,7 @@ sub startup {
             base_path         => '/websockets/v3',
             stream_timeout    => 120,
             max_connections   => 100000,
+            max_response_size => 328000,
             opened_connection => \&BOM::WebSocketAPI::Hooks::init_redis_connections,
             finish_connection => \&BOM::WebSocketAPI::Hooks::forget_all,
 
