@@ -147,6 +147,32 @@ sub create_app {
     };
 }
 
+sub update_app {
+    my ($self, $app_id, $app) = @_;
+
+    my $sth = $self->dbh->prepare("
+        UPDATE oauth.apps SET
+            name = ?, scopes = ?, homepage = ?, github = ?,
+            appstore = ?, googleplay = ?, redirect_uri = ?
+        WHERE id = ?
+    ");
+    $sth->execute(
+        $app->{name}, $app->{scopes},
+        $app->{homepage}     || '',
+        $app->{github}       || '',
+        $app->{appstore}     || '',
+        $app->{googleplay}   || '',
+        $app->{redirect_uri} || '', $app_id
+    );
+
+    return {
+        app_id       => $app_id,
+        name         => $app->{name},
+        scopes       => $app->{scopes},
+        redirect_uri => $app->{redirect_uri},
+    };
+}
+
 sub get_app {
     my ($self, $user_id, $app_id) = @_;
 
