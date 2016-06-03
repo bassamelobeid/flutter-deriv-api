@@ -39,7 +39,7 @@ while (1) {
 
     my $redis = BOM::System::RedisReplicated::redis_pricer;
 
-    while (my $next = $redis->brpop("pricer_jobs")) {
+    while (my $next = $redis->brpop("pricer_jobs", 0)) {
         my $payload  = JSON::XS::decode_json($next);
         my $params   = {@{$payload}};
         my $trigger  = $params->{symbol};
