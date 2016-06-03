@@ -972,10 +972,7 @@ sub _build_bid_probability {
 sub _build_bid_price {
     my $self = shift;
 
-    my $price = $self->_price_from_prob('bid_probability');
-    $price = $self->currency eq 'JPY' ? roundnear(1, $price) : $price;
-
-    return $price;
+    return $self->_price_from_prob('bid_probability');
 }
 
 sub _build_ask_probability {
@@ -1091,16 +1088,13 @@ sub _price_from_prob {
     } else {
         $price = (defined $self->$prob_method) ? $self->payout * $self->$prob_method->amount : undef;
     }
-    return (defined $price) ? roundnear(0.01, $price) : undef;
+    return (defined $price) ? roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $price) : undef;
 }
 
 sub _build_ask_price {
     my $self = shift;
 
-    my $price = $self->_price_from_prob('ask_probability');
-    $price = $self->currency eq 'JPY' ? roundnear(1, $price) : $price;
-
-    return $price;
+    return $self->_price_from_prob('ask_probability');
 }
 
 sub _build_payout {
