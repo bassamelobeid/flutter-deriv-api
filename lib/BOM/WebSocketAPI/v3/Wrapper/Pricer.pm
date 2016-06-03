@@ -68,8 +68,7 @@ sub _pricing_channel {
 
     # subscribe if it is not already subscribed
     if (not $pricing_channel->{$serialized_args} and not BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args)) {
-        # race for setting a unique key
-        BOM::System::RedisReplicated::redis_pricer->setnx($serialized_args, 1);
+        BOM::System::RedisReplicated::redis_pricer->set($serialized_args, 1);
         $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
 
