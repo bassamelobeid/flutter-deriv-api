@@ -103,7 +103,6 @@ sub validate {
         return "$f must be a positive integer." unless $v =~ /^\d+$/ and $v > 0;
     }
 
-    # subtype 'bom_money', as Num, where { not /\.\d{3}/ and not /\.$/ }, message { "Invalid money amount $_" };
     foreach my $f ('amount', 'bonus', 'fee') {
         next unless defined(my $v = $c->request_parameters->{$f});
         return "Invalid money amount: $v" unless looks_like_number($v);
