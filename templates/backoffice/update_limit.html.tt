@@ -24,7 +24,7 @@
         <tr>
             <td>Contract category: </td>
             <td><input type="text" name="contract_category" value=''></input></td>
-            <td> e.g. callput</td>
+            <td> e.g. callput | touchnotouch | endsinout | staysinout | digits | asian </td>
         </tr>
         <tr>
             <td>Start type: </td>
@@ -39,7 +39,7 @@
         <tr>
             <td>Barrier category: </td>
             <td><input type="text" name="barrier_category" value=''></input></td>
-            <td> e.g. euro_atm</td>
+            <td> e.g. euro_atm | euro_non_atm | asian | non_financial | american </td>
         </tr>
         <tr>
             <td>Client loginid: </td>
