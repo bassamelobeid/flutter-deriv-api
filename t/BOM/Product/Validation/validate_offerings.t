@@ -115,7 +115,7 @@ subtest 'disable underlying due to corporate action' => sub {
 subtest 'custom suspend trading' => sub {
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;
     BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
-        '[{"market": "forex", "contract_category":"callput", "expiry_type": "tick", "risk_profile": "no_business"}]');
+        '{"xxx": {"market": "forex", "contract_category":"callput", "expiry_type": "tick", "risk_profile": "no_business"}}');
     $bet_params->{underlying} = 'frxUSDJPY';
     $bet_params->{bet_type}   = 'CALL', $bet_params->{duration} = '5t';
     $bet_params->{barrier}    = 'S0P';

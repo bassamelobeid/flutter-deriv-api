@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+use JSON qw(to_json);
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More;    # tests => 4;
@@ -214,6 +215,9 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        note("tick_expiry_engine_daily_turnover's risk type is high_risk");
+        note("mocked high_risk USD limit to 149.99");
+        BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
         my $contract = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -244,9 +248,18 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            note("tick_expiry_engine_daily_turnover's risk type is high_risk");
-            note("mocked high_risk USD limit to 149.99");
-            BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
+            note('mocking custom_product_limits');
+            my $new  = {
+                xxx => {
+                    "expiry_type"       => "tick",
+                    "start_type"        => "spot",
+                    "contract_category" => "callput",
+                    "market"            => "forex",
+                    "risk_profile"      => "high_risk",
+                    "name"              => "tick_expiry_engine_turnover_limit"
+                }};
+
+            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($new));
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -317,6 +330,9 @@ subtest 'asian_daily_turnover_limit', sub {
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        note("asian_turnover_limit's risk type is high_risk");
+        note("mocked high_risk USD limit to 149.99");
+        BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
         my $contract = produce_contract({
             underlying   => 'R_100',
             bet_type     => 'ASIANU',
@@ -347,9 +363,16 @@ subtest 'asian_daily_turnover_limit', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            note("asian_turnover_limit's risk type is high_risk");
-            note("mocked high_risk USD limit to 149.99");
-            BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
+            note('mocking custom_product_limits');
+            my $new  = {
+                xxx => {
+                    "expiry_type"       => "tick",
+                    "contract_category" => "asian",
+                    "risk_profile"      => "high_risk",
+                    "name"              => "asian_turnover_limit"
+                }};
+
+            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($new));
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -423,6 +446,9 @@ subtest 'intraday_spot_index_turnover_limit', sub {
         is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        note("intraday_spot_index_turnover_limit's risk type is high_risk");
+        note("mocked high_risk USD limit to 149.99");
+        BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
         my $contract = produce_contract({
             underlying   => $underlying_GDAXI,
             bet_type     => 'CALL',
@@ -459,9 +485,18 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            note("intraday_spot_index_turnover_limit's risk type is high_risk");
-            note("mocked high_risk USD limit to 149.99");
-            BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
+            note('mocking custom_product_limits');
+            my $new  = {
+                xxx => {
+                    "expiry_type"       => "intraday",
+                    "start_type"        => "spot",
+                    "market"            => "indices",
+                    "contract_category" => "callput",
+                    "risk_profile"      => "high_risk",
+                    "name"              => "intraday_spot_index_turnover_limit"
+                }};
+
+            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($new));
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
