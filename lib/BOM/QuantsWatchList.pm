@@ -24,7 +24,7 @@ sub update_details_for {
     my $current = get_watchlist();
 
     if ($comment) {
-        $current->{$client_loginid} = $comment . ', updated by ' . $commented_by; # override
+        $current->{$client_loginid} = $comment . ', updated by ' . $commented_by;    # override
     } elsif (exists $current->{$client_loginid}) {
         delete $current->{$client_loginid};
     }

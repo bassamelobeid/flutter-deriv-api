@@ -39,6 +39,7 @@ if ($r->param('update_limit')) {
         }
     }
     my $p = $r->param('risk_profile');
+    my $uniq_key = substr(md5_hex(join('_', sort { $a <=> $b } values %ref)), 0, 16);
     if ($p and first { $p eq $_ } keys %$limit_profile) {
         $ref{risk_profile} = $p;
     } else {
@@ -47,9 +48,8 @@ if ($r->param('update_limit')) {
     }
 
     if (my $id = $r->param('client_loginid')) {
-        my $current  = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
-        my $comment  = $r->param('comment');
-        my $uniq_key = substr(md5_hex(join('_', sort { $a <=> $b } values %ref)), 0, 16);
+        my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+        my $comment = $r->param('comment');
         if (not $current->{$id}) {
             $current->{$id} = {
                 ($comment ? (reason => $comment) : ()),
@@ -71,15 +71,9 @@ if ($r->param('update_limit')) {
         BOM::Platform::Runtime->instance->app_config->save_dynamic;
     } else {
         my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
-        my $uniq_key = substr(md5_hex(join('_', sort { $a <=> $b } values %ref)), 0, 16);
-        if ($current->{$uniq_key}) {
-            print "Conditions already exists, id[$uniq_key]";
-            code_exit_BO();
-        } else {
-            $current->{$uniq_key} = \%ref;
-            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($current));
-            BOM::Platform::Runtime->instance->app_config->save_dynamic;
-        }
+        $current->{$uniq_key} = \%ref;
+        BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($current));
+        BOM::Platform::Runtime->instance->app_config->save_dynamic;
     }
 }
 
