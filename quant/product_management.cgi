@@ -83,6 +83,33 @@ if ($r->param('update_limit')) {
     }
 }
 
+if ($r->param('delete_limit')) {
+    my $id = $r->param('id');
+    if (not $id) {
+        print "ID is required. Nothing is deleted.";
+        code_exit_BO();
+    }
+
+    if (my $client_loginid = $r->param('client_loginid')) {
+        my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+        delete $current->{$client_loginid}->{custom_limits}->{$id};
+        BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
+    } else {
+        my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
+        delete $current->{$id};
+        BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($current));
+    }
+
+    BOM::Platform::Runtime->instance->app_config->save_dynamic;
+}
+
+if ($r->param('delete_client')) {
+    my $client_loginid = $r->param('client_loginid');
+    my $current        = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+    delete $current->{$client_loginid};
+    BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
+}
+
 Bar("Existing limits");
 
 my $config        = BOM::Platform::Runtime->instance->app_config->quants;
