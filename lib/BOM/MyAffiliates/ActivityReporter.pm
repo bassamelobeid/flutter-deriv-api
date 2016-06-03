@@ -23,7 +23,6 @@ use Moose;
 use Text::CSV;
 use File::SortedSeek qw(numeric get_between);
 
-# For completeness and cleanliness
 use Date::Utility;
 use BOM::Database::DataMapper::MyAffiliates;
 

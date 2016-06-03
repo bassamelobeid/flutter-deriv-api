@@ -27,30 +27,15 @@ use BOM::Platform::Client;
 use BOM::MyAffiliates;
 use BOM::Platform::Context qw(request);
 
-=head1 ATTRIBUTES
-
-=head2 from, to
-
-Deal with transactions between these From and To Date::Utilitys. Required.
-
-=cut
-
 has ['from', 'to'] => (
     is       => 'ro',
     isa      => 'Date::Utility',
     required => 1,
 );
 
-=head1 METHODS
-
-=head2 get_csv_file_locs
-
-Returns an array of paths to files on the server where the payment CSV files
-are located. Can then be passed to our mailing code for emailing out etc.
-
-Also returns paths to files containing error reports.
-
-=cut
+# Returns an array of paths to files on the server where the payment CSV files
+# are located. Can then be passed to our mailing code for emailing out etc.
+# Also returns paths to files containing error reports.
 
 sub get_csv_file_locs {
     my $self = shift;

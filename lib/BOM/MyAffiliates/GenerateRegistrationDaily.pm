@@ -21,12 +21,8 @@ has start_time => (
 
 has input_date => (
     is      => 'rw',
-    default => sub { _yesterday() },
+    default => sub { Date::Utility->new(time - 86400)->date_ddmmmyy; },
 );
-
-sub _yesterday {
-    return Date::Utility->new(time - 86400)->date_ddmmmyy;
-}
 
 has requested_date => (
     is      => 'ro',

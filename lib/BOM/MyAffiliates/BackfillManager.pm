@@ -12,7 +12,7 @@ held in client details or in our client affiliate exposures.
 =head1 SYNOPSIS
 
     my $backfill_manager = BOM::MyAffiliates::BackfillManager->new;
-    $backfill_manager->backfill_client_info;
+    $backfill_manager->backfill_promo_codes;
 
 =cut
 
@@ -44,13 +44,8 @@ has '_myaffiliates' => (
     isa        => 'BOM::MyAffiliates',
     lazy_build => 1
 );
+
 sub _build__myaffiliates { return BOM::MyAffiliates->new }
-
-=head1 METHODS
-
-=head2 backfill_promo_codes
-
-=cut
 
 sub backfill_promo_codes {
     my $self = shift;
@@ -77,39 +72,21 @@ sub backfill_promo_codes {
     return @report;
 }
 
-=head2 is_backfill_pending($date)
-
-Checks if there is any client whose promocode still needs to be
-backfilled into the MyAffiliates platform up to the given date
-
-$date should be either a Date::Utility object or a string parseable by it :-)
-
-=cut
+# Checks if there is any client whose promocode still needs to be
+# backfilled into the MyAffiliates platform up to the given date
 
 sub is_backfill_pending {
     my ($self, $date_str) = @_;
-    return scalar $self->clients_pending_backfill($date_str);
-}
+    my $date = Date::Utility->new($date_str)->truncate_to_day;
 
-=head2 clients_pending_backfill($date)
-
-Returns an array of clients whose promocodes still needs to be
-backfilled into the MyAffiliates platform for the given date
-
-$date should be either a Date::Utility object or a string parseable by it :-)
-
-=cut
-
-sub clients_pending_backfill {
-    my ($self, $date) = @_;
-    $date = Date::Utility->new($date)->truncate_to_day;
-
-    return map {
+    my @pending = map {
         grep { $date->is_same_as(Date::Utility->new($_->date_joined)->truncate_to_day) } BOM::Platform::Client->by_promo_code(
             broker_code             => $_,
             checked_in_myaffiliates => 'f'
             )
     } @{$self->_available_broker_codes};
+
+    return scalar @pending;
 }
 
 #
