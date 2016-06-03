@@ -107,7 +107,8 @@ sub _get_ask {
                     code              => $code,
                     details           => {
                         longcode      => $contract->longcode,
-                        display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price))
+                        display_value => ($contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price)),
+                        payout => sprintf('%.2f', $contract->payout),
                     },
                 });
         } else {
