@@ -31,7 +31,6 @@ BOM::Platform::Sysinit::init();
 my %input = %{request()->params};
 
 PrintContentType();
-my $language  = $input{l};
 my $dbloc     = BOM::Platform::Runtime->instance->app_config->system->directory->db;
 my $loginid   = trim(uc $input{loginID}) || die 'failed to pass loginID (note mixed case!)';
 my $self_post = request()->url_for('backoffice/f_clientloginid_edit.cgi');
@@ -490,7 +489,6 @@ print qq{<br/>
         </select>
         &nbsp;&nbsp;<input type="submit" value="View">
         <input type="hidden" name="broker" value="$broker">
-        <input type="hidden" name="l" value="$language">
         <input type="hidden" name="currency" value="default">
         <div class="flat" id="StatementOption" style="display:none">
             <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only
@@ -598,8 +596,7 @@ print qq{<p>Click for <a href="$new_log_href">history of changes</a> to $loginid
 print qq[<form action="$self_post" method="POST">
     <input type="submit" value="Save Client Details">
     <input type="hidden" name="broker" value="$broker">
-    <input type="hidden" name="loginID" value="$loginid">
-    <input type="hidden" name="l" value="$language">];
+    <input type="hidden" name="loginID" value="$loginid">];
 
 print_client_details($client, $staff);
 
@@ -613,7 +610,6 @@ if (not $client->is_virtual) {
             <input type="hidden" name="whattodo" value="sync_to_DF">
             <input type="hidden" name="broker" value="$broker">
             <input type="hidden" name="loginID" value="$loginid">
-            <input type="hidden" name="l" value="$language">
             <input type="submit" value="Sync now !!">
         </form>
     };
@@ -650,7 +646,6 @@ print qq{
   <input type=hidden name=whattodo value=uploadID>
   <input type=hidden name=broker value=$broker>
   <input type=hidden name=loginID value=$loginid>
-  <input type=hidden name=l value=$language>
   Expiration date:<input type="text" size=10 name="expiration_date"><i> format YYYY-MM-DD </i>
   <input type=submit value="Upload new ID doc.">
 </form>
