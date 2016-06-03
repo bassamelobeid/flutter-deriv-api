@@ -392,6 +392,7 @@ sub get_transactions_ws {
                 b.short_code,
                 b.purchase_time,
                 b.sell_time,
+                b.payout_price,
                 p.payment_time,
                 p.remark AS payment_remark
             FROM
