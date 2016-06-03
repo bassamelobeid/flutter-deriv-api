@@ -146,6 +146,7 @@ sub process_pricing_events {
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
+            delete $response->{longcode};
             my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
 
             if (my $ref = $adjusted_results->{error}) {
