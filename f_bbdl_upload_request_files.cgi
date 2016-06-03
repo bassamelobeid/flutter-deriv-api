@@ -17,11 +17,10 @@ BOM::Platform::Sysinit::init();
 PrintContentType();
 
 my $cgi       = CGI->new;
-my $server_ip = $cgi->param('server');
 my $frequency = $cgi->param('frequency');
 my $type      = $cgi->param('type');
 
-Bar("BBDL RequestFiles Upload $server_ip");
+Bar("BBDL RequestFiles Upload");
 
 #don't allow from devserver, to avoid uploading wrong files
 if (not BOM::Platform::Runtime->instance->app_config->system->on_production) {
@@ -30,7 +29,6 @@ if (not BOM::Platform::Runtime->instance->app_config->system->on_production) {
 }
 
 my $bbdl = Bloomberg::FileDownloader->new();
-$bbdl->sftp_server_ip($server_ip);
 my $sftp = $bbdl->login;
 
 my $request_file = Bloomberg::RequestFiles->new();

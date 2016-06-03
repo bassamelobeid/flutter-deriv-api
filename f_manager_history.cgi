@@ -63,9 +63,6 @@ print '<form action="'
     . $broker . '>'
     . '<input type=hidden name=loginID value='
     . $loginID . '>'
-    . 'Language: <select name=l>'
-    . BOM::Platform::Locale::getLanguageOptions()
-    . '</select>'
     . '<input type=submit value="View/edit '
     . $loginID
     . ' details">'

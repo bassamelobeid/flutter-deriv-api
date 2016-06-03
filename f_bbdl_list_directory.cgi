@@ -16,13 +16,11 @@ PrintContentType();
 BrokerPresentation('BBDL LIST DIRECTORY');
 
 my $cgi       = CGI->new;
-my $server_ip = $cgi->param('server');
 my $broker    = $cgi->param('broker');
 
 my $bbdl = Bloomberg::FileDownloader->new();
-$bbdl->sftp_server_ip($server_ip);
 
-Bar("BBDL Directory Listing $server_ip");
+Bar("BBDL Directory Listing");
 #don't allow from devserver, to avoid uploading wrong files
 if (not BOM::Platform::Runtime->instance->app_config->system->on_production) {
     print "<font color=red>Sorry, you cannot connect to Bloomberg's ftp from a development server. Please use a live server.</font>";
@@ -35,8 +33,8 @@ my $ls = $sftp->ls('/') or die "unable to change cwd: " . $sftp->error;
 my @request_files  = grep { $_->{'filename'} =~ /\.req$/ } @{$ls};
 my @response_files = grep { $_->{'filename'} =~ /\.csv\.enc$/ } @{$ls};
 
-my @request_list  = map { _retrieve_table_data($_, $broker, $server_ip) } @request_files;
-my @response_list = map { _retrieve_table_data($_, $broker, $server_ip) } @response_files;
+my @request_list  = map { _retrieve_table_data($_, $broker) } @request_files;
+my @response_list = map { _retrieve_table_data($_, $broker) } @response_files;
 
 if (@request_list) {
     my $request_f;
@@ -69,7 +67,7 @@ if (@response_list) {
 }
 
 sub _retrieve_table_data {
-    my ($rf, $current_broker, $server_ip_addr) = @_;
+    my ($rf, $current_broker) = @_;
 
     my $mdtm            = $rf->{"a"}->mtime;
     my $bom_mdtm        = Date::Utility->new($mdtm);
@@ -81,7 +79,6 @@ sub _retrieve_table_data {
         {
             broker   => $current_broker,
             filename => $rf->{"filename"},
-            server   => $server_ip_addr
         });
 
     return {
