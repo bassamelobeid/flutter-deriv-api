@@ -124,9 +124,15 @@ sub proposal_open_contract {
                 my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
                 $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
 
+                # ask_price doesn't make any sense for contract that are already bought or sold
+                delete $bid->{ask_price};
+
+                # add markup if any to buy price
+                my $buy_price = $fmb->{buy_price} + ($fmb->{markup} // 0);
+
                 $response->{$id} = {
                     transaction_ids => $transaction_ids,
-                    buy_price       => $fmb->{buy_price},
+                    buy_price       => sprintf('%.2f', $buy_price),
                     purchase_time   => Date::Utility->new($fmb->{purchase_time})->epoch,
                     account_id      => $fmb->{account_id},
                     is_sold         => $fmb->{is_sold},
