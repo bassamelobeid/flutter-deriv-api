@@ -2,6 +2,11 @@
 <form action="[% url %]" method="POST">
     <table>
         <tr>
+            <td>Name: </td>
+            <td><input type="text" name="custom_name"></input></td>
+            <td> e.g. short description of this limit, forex_tick_expiry_limit</td>
+        </tr>
+        <tr>
             <td>Risk Profile: </td>
             <td><input type="text" name="risk_profile"></input></td>
             <td> e.g. extreme_risk | no_business | high_risk | medium_risk | low_risk (required)</td>
