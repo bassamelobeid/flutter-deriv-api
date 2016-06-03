@@ -6,6 +6,8 @@ use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
+use Test::MockObject;
+use Test::MockModule;
 
 my $t = build_mojo_test();
 
@@ -27,8 +29,6 @@ is $res->{msg_type}, 'ping';
 is $res->{ping},     'pong';
 test_schema('ping', $res);
 
-use Test::MockObject;
-use Test::MockModule;
 my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
 $fake_rpc_response = Test::MockObject->new();
 $fake_rpc_response->mock('is_error', sub { '' });
