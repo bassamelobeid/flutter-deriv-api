@@ -651,9 +651,16 @@ sub _build_timeindays {
     my $atid;
     # If market is Forex, We go with integer days as per the market convention
     if ($self->market->integer_number_of_day and not $self->priced_with_intraday_model) {
-        my $utils        = BOM::MarketData::VolSurface::Utils->new;
-        my $days_between = $self->date_expiry->days_between($self->date_start);
-        $atid = $utils->is_before_rollover($self->date_start) ? ($days_between + 1) : $days_between;
+        my $recorded_date = $self->volsurface->recorded_date;
+        my $utils         = BOM::MarketData::VolSurface::Utils->new;
+        my $days_between  = $self->date_expiry->days_between($recorded_date);
+        $atid = $utils->is_before_rollover($recorded_date) ? ($days_between + 1) : $days_between;
+        if ($recorded_date->day_of_week >= 5 or ($recorded_date->day_of_week == 4 and not $utils->is_before_rollover($recorded_date))) {
+            $atid -= 1;
+        }
+        # On contract starting on Thursday expiring on Friday,
+        # this algorithm will be zero. We are flooring it at 1 day.
+        $atid = max(1, $atid);
     }
     # If intraday or not FX, then use the exact duration with fractions of a day.
     $atid ||= $self->get_time_to_expiry({
@@ -879,10 +886,34 @@ has dividend_adjustment => (
 sub _build_dividend_adjustment {
     my $self = shift;
 
-    return $self->underlying->dividend_adjustments_for_period({
+    my $dividend_adjustment = $self->underlying->dividend_adjustments_for_period({
         start => $self->date_pricing,
         end   => $self->date_expiry,
     });
+
+    my @corporate_actions = $self->underlying->get_applicable_corporate_actions_for_period({
+        start => $self->date_pricing->truncate_to_day,
+        end   => Date::Utility->new,
+    });
+
+    my $dividend_recorded_date = $dividend_adjustment->{recorded_date};
+
+    if (scalar @corporate_actions and (first { Date::Utility->new($_->{effective_date})->is_after($dividend_recorded_date) } @corporate_actions)) {
+
+        $self->add_error({
+            message => 'Dividend is not updated  after corporate action'
+                . "[dividend recorded date : "
+                . $dividend_recorded_date->datetime . "] "
+                . "[symbol: "
+                . $self->underlying->symbol . "]",
+            message_to_client =>
+                localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name()),
+        });
+
+    }
+
+    return $dividend_adjustment;
+
 }
 
 sub _build_discounted_probability {

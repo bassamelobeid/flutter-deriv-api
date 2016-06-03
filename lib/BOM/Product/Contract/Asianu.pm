@@ -12,7 +12,7 @@ sub code { return 'ASIANU'; }
 
 sub localizable_description {
     return +{
-        tick => '[_1] [_2] payout if the last tick of [_3] is strictly higher than the average of the [plural,_5,%d tick,%d ticks].',
+        tick => 'Win payout if the last tick of [_3] is strictly higher than the average of the [plural,_5,%d tick,%d ticks].',
     };
 }
 
