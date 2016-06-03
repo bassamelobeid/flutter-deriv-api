@@ -3,13 +3,10 @@ use strict;
 use warnings;
 use BOM::System::RedisReplicated;
 use DataDog::DogStatsd::Helper;
-use Time::HiRes::Sleep::Until;
 use List::MoreUtils qw(uniq);
 use Time::HiRes;
 
 my $redis = BOM::System::RedisReplicated::redis_pricer;
-
-my $su=Time::HiRes::Sleep::Until->new;
 
 while (1) {
     my $t = Time::HiRes::time();
