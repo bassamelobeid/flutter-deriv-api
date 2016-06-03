@@ -61,10 +61,10 @@ my $token = BOM::Platform::SessionCookie->new(
     loginid => "CR0021",
     email   => 'shuwnyuan@regentmarkets.com',
 )->token;
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-$res = decode_json($t->message->[1]);
+$t       = $t->send_ok({json => {authorize => $token}})->message_ok;
+$res     = decode_json($t->message->[1]);
 @$params = ();
-$t = $t->send_ok({
+$t       = $t->send_ok({
         json => {
             buy   => 1,
             price => 1,
@@ -79,7 +79,7 @@ is $params->[0]->[2]->{tags}->[0], 'rpc:buy', 'Should set tag with rpc method na
 @$params = ();
 my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
 $fake_rpc_response = Test::MockObject->new();
-$fake_rpc_response->mock('is_error', sub { 1 });
+$fake_rpc_response->mock('is_error',      sub { 1 });
 $fake_rpc_response->mock('error_message', sub { 'error' });
 $fake_rpc_client = Test::MockObject->new();
 $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
