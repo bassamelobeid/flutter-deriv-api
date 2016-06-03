@@ -15,7 +15,7 @@ use BOM::Platform::Context qw(localize request);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
-use BOM::Market::Types;
+use BOM::Product::Types;
 use BOM::Platform::Static::Config;
 
 with 'MooseX::Role::Validatable';

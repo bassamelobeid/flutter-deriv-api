@@ -11,7 +11,6 @@ use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::Platform::Context qw(localize);
 use Format::Util::Numbers qw(roundnear);
-use BOM::Product::Types;
 use feature "state";
 
 with 'MooseX::Role::Validatable';
