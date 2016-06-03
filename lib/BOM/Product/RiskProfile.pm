@@ -123,7 +123,8 @@ sub _build_applicable_profiles {
     my $custom_product_profiles = from_json($self->app_config->custom_product_profiles);
 
     my @custom_profiles;
-    foreach my $p (@$custom_product_profiles) {
+    foreach my $id (keys %$custom_product_profiles) {
+        my $p = $custom_product_profiles->{$id};
         if ($self->_match_conditions($p)) {
             push @custom_profiles, $p;
         }
@@ -141,8 +142,9 @@ sub _build_applicable_profiles {
         };
 
     if ($self->client_loginid) {
-        my $custom_client_profiles = from_json($self->app_config->custom_client_profiles)->{$self->client_loginid};
-        foreach my $p (@$custom_client_profiles) {
+        my $custom_client_profiles = from_json($self->app_config->custom_client_profiles)->{$self->client_loginid}->{custom_limits};
+        foreach my $id (keys %$custom_client_profiles) {
+            my $p = $custom_client_profiles->{$id};
             if ($self->_match_conditions($p)) {
                 push @custom_profiles, $p;
                 $self->has_custom_client_limit(1);
