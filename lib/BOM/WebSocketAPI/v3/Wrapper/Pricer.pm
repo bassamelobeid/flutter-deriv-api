@@ -12,6 +12,7 @@ use JSON::XS qw(encode_json decode_json);
 use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
+use BOM::Platform::Context qw (localize);
 
 sub price_stream {
     my ($c, $args) = @_;
@@ -132,6 +133,7 @@ sub process_pricing_events {
         my $results;
         if ($response and exists $response->{error}) {
             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$serialized_args}->{$amount}->{uuid});
+            $response->{error}->{message_to_client} localize(@{$response->{error}->{message_to_client_array}}) if $response->{error}->{message_to_client_array};
             my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
