@@ -158,7 +158,6 @@ subtest 'legal allowed underlyings' => sub {
         USPG 
         UKBP 
         UKRIO 
-        UKBT 
         UKSTAN 
         UKLLOY 
         UKTSCO 
@@ -166,8 +165,7 @@ subtest 'legal allowed underlyings' => sub {
         DENOT 
         DESAP 
         DEDBK 
-        DEAIR 
-        DEEOAN 
+        DEAIR  
         INMARUTI 
         INRIL 
         INTATAMOTORS 
