@@ -15,7 +15,7 @@ has 'account_data' => (
 
 has 'bet' => (
     is  => 'rw',
-    isa => 'BOM::Database::Model::FinancialMarketBet',
+    isa => 'BOM::Database::Model::FinancialMarketBetOpen',
 );
 
 has 'bet_data' => (
