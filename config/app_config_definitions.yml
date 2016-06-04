@@ -21,10 +21,6 @@ cgi:
           description: "Backoffice login cookie"
           isa: Str
           default: "staff"
-        affiliate_tracking:
-          description: "Cookie used to track client's affiliate token"
-          isa: Str
-          default: "affiliate_tracking"
     allowed_languages:
       description: "Allowed languages for this website"
       isa: ArrayRef
