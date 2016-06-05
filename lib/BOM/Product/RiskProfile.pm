@@ -47,15 +47,6 @@ has limits => (
     },
 );
 
-has app_config => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_app_config {
-    return BOM::Platform::Runtime->instance->app_config->quants;
-}
-
 has risk_profiles => (
     is      => 'ro',
     default => sub { [qw(no_business extreme_risk high_risk medium_risk low_risk)] },
@@ -121,7 +112,7 @@ has custom_profiles => (
 sub _build_custom_profiles {
     my $self = shift;
 
-    my $custom_product_profiles = from_json($self->app_config->custom_product_profiles);
+    my $custom_product_profiles = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
 
     my @profiles;
     foreach my $id (keys %$custom_product_profiles) {
@@ -154,7 +145,7 @@ sub include_client_profiles {
     my ($self, $client_loginid) = @_;
 
     if ($client_loginid) {
-        my $custom_client = from_json($self->app_config->custom_client_profiles);
+        my $custom_client = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
         if (exists $custom_client->{$client_loginid} and my $limits = $custom_client->{$client_loginid}->{custom_limits}) {
             my @matches = map { $limits->{$_} } grep { $self->_match_conditions($limits->{$_}) } keys %$limits;
             push @{$self->custom_client_profiles}, @matches;
