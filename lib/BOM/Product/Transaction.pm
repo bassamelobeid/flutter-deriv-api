@@ -411,6 +411,9 @@ sub buy {    ## no critic (RequireArgUnpacking)
     my $self    = shift;
     my %options = @_;
 
+    my $contract = $self->contract;
+    $contract->risk_profile->include_client_profiles($self->client->loginid) unless $contract->is_spread;
+
     my $error_status;
 
     my $stats_data = $self->stats_start('buy');
@@ -1399,13 +1402,17 @@ Validate if payout is not over the client limits
 sub _validate_payout_limit {
     my $self = shift;
 
+    my $contract = $self->contract;
+
+    return if $contract->is_spread;
+
     my $client = $self->client;
     my $payout = $self->payout;
     my $rp     = $self->contract->risk_profile;
 
     # setups client specific payout and turnover limits, if any.
-    if ($rp->get_profiles_for_client($client->loginid)) {
-        my $custom_limit = BOM::Platform::Static::Config::quants->{risk_profile}{$rp->get_risk_profile}{payout}{$self->contract->currency};
+    if (@{$rp->custom_client_profiles}) {
+        my $custom_limit = BOM::Platform::Static::Config::quants->{risk_profile}{$rp->get_risk_profile}{payout}{$contract->currency};
         if (defined $custom_limit and $payout > $custom_limit) {
             return Error::Base->cuss(
                 -type              => 'PayoutLimitExceeded',
