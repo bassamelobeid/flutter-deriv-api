@@ -47,7 +47,10 @@ if ($r->param('update_limit')) {
         code_exit_BO();
     }
 
-    if (my $id = $r->param('client_loginid')) {
+    # spreads does not go through the same path.
+    if ($ref{contract_category} eq 'spreads') {
+        BOM::Platform::Runtime->instance->app_config->quants->spreads_daily_profit_limit($ref{risk_profile});
+    } elsif (my $id = $r->param('client_loginid')) {
         my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
         my $comment = $r->param('comment');
         $current->{$id}->{custom_limits}->{$uniq_key} = \%ref;
