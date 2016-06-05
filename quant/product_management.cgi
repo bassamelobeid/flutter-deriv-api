@@ -50,18 +50,8 @@ if ($r->param('update_limit')) {
     if (my $id = $r->param('client_loginid')) {
         my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
         my $comment = $r->param('comment');
-        if (not $current->{$id}) {
-            $current->{$id} = {
-                ($comment ? (reason => $comment) : ()),
-                custom_limits => {
-                    $uniq_key => \%ref,
-                },
-            };
-        } else {
-            $current->{$id}->{custom_limits}->{$uniq_key} = \%ref;
-            $current->{$id}->{reason} = $comment if $comment;
-        }
-
+        $current->{$id}->{custom_limits}->{$uniq_key} = \%ref;
+        $current->{$id}->{reason} = $comment if $comment;
         BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
     } else {
         my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
