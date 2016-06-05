@@ -1,4 +1,5 @@
 <p>Update custom limits: </p>
+<p>** spreads risk profile can be updated here. But it will not show in the tables above.</p>
 <form action="[% url %]" method="POST">
     <table>
         <tr>
@@ -29,7 +30,7 @@
         <tr>
             <td>Contract category: </td>
             <td><input type="text" name="contract_category" value=''></input></td>
-            <td> e.g. callput | touchnotouch | endsinout | staysinout | digits | asian </td>
+            <td> e.g. callput | touchnotouch | endsinout | staysinout | digits | asian | spreads</td>
         </tr>
         <tr>
             <td>Start type: </td>
