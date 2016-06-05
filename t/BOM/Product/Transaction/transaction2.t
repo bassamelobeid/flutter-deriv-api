@@ -796,7 +796,8 @@ subtest 'spreads', sub {
 };
 # see further transaction.t:  many more tests
 #             transaction2.t: special turnover limits
-
+my $empty_hashref = {};
+BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($empty_hashref));
 Test::NoWarnings::had_no_warnings;
 
 done_testing;
