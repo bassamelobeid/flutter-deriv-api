@@ -58,23 +58,18 @@ if ($r->param('update_limit')) {
                 },
             };
         } else {
-            if ($current->{$id}->{$uniq_key}) {
-                print "Conditions already exists, id[$uniq_key]";
-                code_exit_BO();
-            } else {
-                $current->{$id}->{custom_limits}->{$uniq_key} = \%ref;
-                $current->{$id}->{reason} = $comment if $comment;
-            }
+            $current->{$id}->{custom_limits}->{$uniq_key} = \%ref;
+            $current->{$id}->{reason} = $comment if $comment;
         }
 
         BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
-        BOM::Platform::Runtime->instance->app_config->save_dynamic;
     } else {
         my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
         $current->{$uniq_key} = \%ref;
         BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($current));
-        BOM::Platform::Runtime->instance->app_config->save_dynamic;
     }
+
+    BOM::Platform::Runtime->instance->app_config->save_dynamic;
 }
 
 if ($r->param('delete_limit')) {
