@@ -794,6 +794,92 @@ subtest 'spreads', sub {
     }
     'survived';
 };
+
+subtest 'custom client limit' => sub {
+    plan tests => 10;
+    lives_ok {
+        my $cl = create_client;
+
+        top_up $cl, 'USD', 5000;
+
+        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+
+        my $bal;
+        is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
+
+        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        note("tick_expiry_engine_daily_turnover's risk type is high_risk");
+        note("mocked high_risk USD limit to 149.99");
+        BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            tick_expiry  => 1,
+            tick_count   => 5,
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Product::Transaction->new({
+            client      => $cl,
+            contract    => $contract,
+            price       => 50.00,
+            payout      => $contract->payout,
+            amount_type => 'payout',
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_transaction->mock(
+                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            note('mocking custom_product_profiles');
+            my $new  = {
+                xxx => {
+                    "expiry_type"       => "tick",
+                    "start_type"        => "spot",
+                    "contract_category" => "callput",
+                    "market"            => "forex",
+                    "risk_profile"      => "high_risk",
+                    "name"              => "tick_expiry_engine_turnover_limit"
+                }};
+            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($new));
+
+            note('mocking custom_client_profiles to no_business profile');
+            my $fake = {
+                $cl->loginid => {
+                    custom_limits => {xxx => {risk_profile => 'no_business', expiry_type => 'tick'}}
+                },
+            };
+            BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($fake));
+
+            $txn->buy;
+        };
+        SKIP: {
+            skip 'no error', 6
+                unless (defined $error and (isa_ok $error, 'Error::Base'));
+
+            is $error->get_type, 'PayoutLimitExceeded', 'error is payout limit exceeding';
+
+            is $error->{-message_to_client}, 'This contract is unavailable on this account.', 'message_to_client';
+            like($error->{-mesg}, qr/payout \[100\] over custom limit\[0\]/,   'mesg');
+
+            is $txn->contract_id,    undef, 'txn->contract_id';
+            is $txn->transaction_id, undef, 'txn->transaction_id';
+            is $txn->balance_after,  undef, 'txn->balance_after';
+        }
+    }
+    'survived';
+};
+
 # see further transaction.t:  many more tests
 #             transaction2.t: special turnover limits
 my $empty_hashref = {};
