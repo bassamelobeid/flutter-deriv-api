@@ -72,11 +72,6 @@ has limits => (
     default => sub { +{} },
 );
 
-has risk_profile_specifics => (
-    is      => 'rw',
-    default => sub { +{} },
-);
-
 has payout => (
     is         => 'rw',
     isa        => 'Num',

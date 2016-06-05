@@ -11,7 +11,7 @@ use JSON qw(from_json);
 use List::Util qw(first);
 use List::MoreUtils qw(all);
 
-has contract => (
+has [qw(contract_category underlying expiry_type start_type currency)] => (
     is       => 'ro',
     required => 1,
 );
@@ -22,7 +22,7 @@ has has_custom_client_limit => (
     default => 0,
 );
 
-has [qw(contract_info currency)] => (
+has [qw(contract_info)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -30,20 +30,14 @@ has [qw(contract_info currency)] => (
 sub _build_contract_info {
     my $self = shift;
 
-    my $c = $self->contract;
-
     return {
-        underlying_symbol => $c->underlying->symbol,
-        market            => $c->market->name,
-        submarket         => $c->underlying->submarket->name,
-        contract_category => $c->category_code,
-        expiry_type       => $c->expiry_type,
-        start_type        => $c->start_type,
+        underlying_symbol => $self->underlying->symbol,
+        market            => $self->underlying->market->name,
+        submarket         => $self->underlying->submarket->name,
+        contract_category => $self->contract_category,
+        expiry_type       => $self->expiry_type,
+        start_type        => $self->start_type,
     };
-}
-
-sub _build_currency {
-    return shift->contract->currency;
 }
 
 has limits => (
@@ -54,11 +48,13 @@ has limits => (
 );
 
 has app_config => (
-    is      => 'ro',
-    default => sub {
-        return BOM::Platform::Runtime->instance->app_config->quants;
-    },
+    is         => 'ro',
+    lazy_build => 1,
 );
+
+sub _build_app_config {
+    return BOM::Platform::Runtime->instance->app_config->quants;
+}
 
 has risk_profiles => (
     is      => 'ro',
@@ -135,7 +131,7 @@ sub _build_custom_profiles {
         }
     }
 
-    my $ul           = $self->contract->underlying;
+    my $ul           = $self->underlying;
     my $risk_profile = $ul->risk_profile;
     my $setter       = $ul->risk_profile_setter;
     # default market level profile

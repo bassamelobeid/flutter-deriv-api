@@ -2075,7 +2075,7 @@ sub _validate_offerings {
         };
     }
 
-    if ($self->risk_profile eq 'no_business') {
+    if ($self->risk_profile->get_risk_profile eq 'no_business') {
         return {
             message           => 'manually disabled by quants',
             message_to_client => localize('Trading is suspended at the moment.'),
@@ -2611,7 +2611,13 @@ has [qw(risk_profile)] => (
 sub _build_risk_profile {
     my $self = shift;
 
-    return BOM::Product::RiskProfile->new(contract => $self);
+    return BOM::Product::RiskProfile->new(
+        underlying        => $self->underlying,
+        contract_category => $self->category_code,
+        expiry_type       => $self->expiry_type,
+        start_type        => $self->start_type,
+        currency          => $self->currency,
+    );
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
