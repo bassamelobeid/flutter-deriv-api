@@ -5,6 +5,7 @@ use Test::NoWarnings ();
 use Test::Exception;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::FinancialMarketBet;
+use BOM::Database::Model::FinancialMarketBetOpen;
 use BOM::Database::Model::FinancialMarketBet::Factory;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
@@ -64,7 +65,7 @@ lives_ok {
     });
     $financial_market_bet_helper->buy_bet;
 
-    $financial_market_bet_id = $financial_market_bet->financial_market_bet_record->id;
+    $financial_market_bet_id = $financial_market_bet->financial_market_bet_open_record->id;
 }
 'expect to be able to buy the bet';
 
@@ -158,9 +159,9 @@ lives_ok {
     });
     $financial_market_bet_helper->buy_bet;
 
-    $financial_market_bet = BOM::Database::Model::FinancialMarketBet->new({
+    $financial_market_bet = BOM::Database::Model::FinancialMarketBetOpen->new({
             data_object_params => {
-                'financial_market_bet_id' => $financial_market_bet->financial_market_bet_record->id,
+                'financial_market_bet_id' => $financial_market_bet->financial_market_bet_open_record->id,
             },
             db => $connection_builder->db,
         },
@@ -202,9 +203,9 @@ lives_ok {
     });
     $financial_market_bet_helper->buy_bet;
 
-    $financial_market_bet = BOM::Database::Model::FinancialMarketBet->new({
+    $financial_market_bet = BOM::Database::Model::FinancialMarketBetOpen->new({
             'data_object_params' => {
-                'financial_market_bet_id' => $financial_market_bet->financial_market_bet_record->id,
+                'financial_market_bet_id' => $financial_market_bet->financial_market_bet_open_record->id,
                 ,
             },
             db => $connection_builder->db,
@@ -268,7 +269,7 @@ lives_ok {
     my @fmbs;
 
     my $financial_market_bet = BOM::Database::Model::FinancialMarketBet::HigherLowerBet->new({'data_object_params' => \%bet_params});
-    $financial_market_bet->financial_market_bet_record->account_id($account->id);
+    $financial_market_bet->financial_market_bet_open_record->account_id($account->id);
     my $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({
         %account_data,
         bet => $financial_market_bet,
