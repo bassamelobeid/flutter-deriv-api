@@ -16,21 +16,61 @@ use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 sub price_stream {
     my ($c, $req_storage) = @_;
 
-    my $args     = $req_storage->{args};
-    my $symbol   = $args->{symbol};
+    my $symbol   = $req_storage->{args}->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return $c->new_error('price_stream', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
     } else {
-        my $uuid;
-        if ($args->{subscribe} and $args->{subscribe} == 1 and not $uuid = _pricing_channel($c, 'subscribe', $args)) {
-            return $c->new_error('price_stream',
-                'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
-        }
-        $req_storage->{uuid} = $uuid;
         _send_ask($c, $req_storage);
     }
     return;
+}
+
+
+sub _send_ask {
+    my ($c, $req_storage) = @_;
+
+    my $args = $req_storage->{args};
+    $c->call_rpc({
+            args     => $args,
+            method   => 'send_ask',
+            msg_type => 'price_stream',
+            response_cb  => sub {
+                my $rpc_response = shift;
+                if ($rpc_response and exists $rpc_response->{error}) {
+                    my $err = $c->new_error('price_stream', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
+                    $err->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
+                    return $err;
+                }
+    
+                my $uuid;
+                if ($args->{subscribe} and $args->{subscribe} == 1 and not $uuid = _pricing_channel($c, 'subscribe', $args)) {
+                    return $c->new_error('price_stream',
+                        'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+                }
+    
+                # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
+                my $pricing_channel = $c->stash('pricing_channel');
+                if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
+                    my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
+                    my $amount = $args->{amount_per_point} || $args->{amount};
+                    $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $rpc_response->{longcode};
+                    $c->stash('pricing_channel' => $pricing_channel);
+                }
+    
+                return {
+                    msg_type => 'price_stream',
+                    price_stream => {($uuid ? (id => $uuid) : ()), %$rpc_response}};
+            }
+        });
+    return;
+}
+sub _send_ask {
+    my ($c, $args) = @_;
+
+        sub {
+
+        },
 }
 
 sub _serialized_args {
@@ -39,7 +79,7 @@ sub _serialized_args {
     foreach my $k (sort keys %$h) {
         push @a, ($k, $h->{$k});
     }
-    return encode_json(\@a);
+    return 'PRICER_KEYS::' . encode_json(\@a);
 }
 
 sub _pricing_channel {
@@ -68,26 +108,14 @@ sub _pricing_channel {
 
     my $uuid = Data::UUID->new->create_str();
 
-    my $rp = Mojo::Redis::Processor->new({
-        'write_conn' => BOM::System::RedisReplicated::redis_pricer,
-        'read_conn'  => BOM::System::RedisReplicated::redis_pricer,
-        data         => $serialized_args,
-        trigger      => 'FEED::' . $args->{symbol},
-    });
-
     # subscribe if it is not already subscribed
     if (not $pricing_channel->{$serialized_args} and not BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args)) {
-        $rp->send();
-        $c->stash('redis_pricer')->subscribe([$rp->_processed_channel], sub { });
-
-        my $request_time = gettimeofday;
-        BOM::System::RedisReplicated::redis_pricer->set($rp->_processed_channel, $request_time);
-        BOM::System::RedisReplicated::redis_pricer->expire($rp->_processed_channel, 60);
+        BOM::System::RedisReplicated::redis_pricer->set($serialized_args, 1);
+        $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
 
     $pricing_channel->{$serialized_args}->{$amount}->{uuid} = $uuid;
     $pricing_channel->{$serialized_args}->{$amount}->{args} = $args;
-    $pricing_channel->{$serialized_args}->{channel_name}    = $rp->_processed_channel;
     $pricing_channel->{uuid}->{$uuid}->{serialized_args}    = $serialized_args;
     $pricing_channel->{uuid}->{$uuid}->{amount}             = $amount;
     $pricing_channel->{uuid}->{$uuid}->{args}               = $args;
@@ -96,71 +124,36 @@ sub _pricing_channel {
     return $uuid;
 }
 
-sub _send_ask {
-    my ($c, $req_storage) = @_;
-
-    my $args = $req_storage->{args};
-    $c->call_rpc({
-            args     => $args,
-            uuid     => $req_storage->{uuid},
-            method   => 'send_ask',
-            msg_type => 'price_stream',
-            success  => sub {
-                my ($c, $rpc_response, $req_storage) = @_;
-                my $pricing_channel = $c->stash('pricing_channel');
-                my $uuid            = $req_storage->{uuid};
-                # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
-                if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
-                    my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
-                    my $amount = $args->{amount_per_point} || $args->{amount};
-                    $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $rpc_response->{longcode};
-                    $c->stash('pricing_channel' => $pricing_channel);
-                }
-                return;
-            },
-            error => sub {
-                my ($c, $rpc_response, $req_storage) = @_;
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $req_storage->{uuid});
-                return;
-            },
-            response => sub {
-                my ($rpc_response, $api_response, $req_storage) = @_;
-
-                if ($api_response->{error}) {
-                    $api_response->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
-                } else {
-                    $api_response->{proposal}->{id} = $req_storage->{uuid} if $req_storage->{uuid};
-                }
-                return $api_response;
-            }
-        });
-    return;
-}
-
 sub process_pricing_events {
     my ($c, $message, $chan) = @_;
 
     # in case that it is a spread
     return if not $message or not $c->tx;
+    $message =~ s/^PRICER_KEYS:://;
 
     my $response        = decode_json($message);
-    my $serialized_args = $response->{data};
+    my $serialized_args = $chan;
 
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
 
-    delete $response->{data};
-    delete $response->{key};
-
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
-        next if $amount eq 'channel_name';
         my $results;
         if ($response and exists $response->{error}) {
-            $c->stash('redis')->subscribe([$pricing_channel->{$serialized_args}->{channel_name}]);
+            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$serialized_args}->{$amount}->{uuid});
+            # in pricer_dameon everything happens in Eng to maximize the collisions. If translations has params it will come as message_to_client_array.
+            # eitherway it need l10n here.
+            if ($response->{error}->{message_to_client_array}) {
+                $response->{error}->{message_to_client} = $c->l(@{$response->{error}->{message_to_client_array}});
+            } else {
+                $response->{error}->{message_to_client} = $c->l(@{$response->{error}->{message_to_client}});
+            }
+
             my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
+            delete $response->{longcode};
             my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
 
             if (my $ref = $adjusted_results->{error}) {
@@ -218,13 +211,11 @@ sub _price_stream_results_adjustment {
         $results->{display_value} = roundnear(0.01, $ask_price);
         $results->{payout}        = roundnear(0.01, $amount);
     } elsif ($orig_args->{basis} eq 'stake') {
-        my $payout = roundnear(
-            0.01,
-            BOM::RPC::v3::Contract::calculate_payout({
-                    theo_probability => $results->{theo_probability},
-                    base_commission  => $results->{base_commission},
-                    amount           => $amount,
-                }));
+        my $payout = BOM::RPC::v3::Contract::calculate_payout({
+            theo_probability => $results->{theo_probability},
+            base_commission  => $results->{base_commission},
+            amount           => $amount,
+        });
         $results->{ask_price}     = roundnear(0.01, $amount);
         $results->{display_value} = roundnear(0.01, $amount);
         $results->{payout}        = roundnear(0.01, $payout);
