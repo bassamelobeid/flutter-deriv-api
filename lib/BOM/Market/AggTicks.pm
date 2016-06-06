@@ -191,6 +191,13 @@ Return the aggregated tick data for an underlying over the last BOM:TimeInterval
 sub retrieve {
     my ($self, $args) = @_;
 
+    return $self->_retrieve_from_database($args) if $args->{underlying}->for_date;
+    return $self->_retrieve_from_cache($args);
+}
+
+sub _retrieve_from_cache {
+    my ($self, $args) = @_;
+
     my $which      = $args->{underlying};
     my $ti         = $args->{interval} || $self->agg_retention_interval;
     my $end        = $args->{ending_epoch} || time;
@@ -202,7 +209,6 @@ sub retrieve {
     my @res;
 
     if (my $tc = $args->{tick_count}) {
-        $self->fill_from_historical_feed($args) if ($fill_cache and $end < time - $self->unagg_retention_interval->seconds);
         @res = map { $decoder->decode($_) } reverse @{$redis->zrevrangebyscore($self->_make_key($which, 0), $end, 0, 'LIMIT', 0, $tc)};
     } else {
         my ($hold_secs, $key);
@@ -215,7 +221,6 @@ sub retrieve {
         }
 
         my $start = $end - min($ti->seconds, $hold_secs);    # No requests for longer than the retention.
-        $self->fill_from_historical_feed($args) if ($fill_cache and $start < time - ($hold_secs + $agg_seconds));
 
         @res = map { $decoder->decode($_) } @{$redis->zrangebyscore($key, $start, $end)};
         # We get the last tick for aggregated tick request.
@@ -228,6 +233,12 @@ sub retrieve {
     }
 
     return \@res;
+}
+
+sub retrieve_from_database {
+    my ($self, $args) = @_;
+    $self->fill_from_historical_feed($args);
+    return $self->_retrieve_from_cache($args);
 }
 
 =head2 aggregate_for
