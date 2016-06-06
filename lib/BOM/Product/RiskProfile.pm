@@ -77,8 +77,13 @@ sub get_turnover_limit_parameters {
         };
 
         if (my $exp = $profile->{expiry_type}) {
-            my $what = $exp eq 'tick' ? 'tick_expiry' : $exp eq 'intraday' ? 'intraday' : 'daily';
-            $params->{$what} = 1;
+            if ($exp eq 'tick') {
+                $params->{tick_expiry} = 1;
+            } elsif ($exp eq 'daily') {
+                $params->{daily} = 1;
+            } else {
+                $params->{daily} = 0;
+            }
         }
 
         if ($profile->{market}) {

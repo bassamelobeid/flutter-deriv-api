@@ -434,7 +434,7 @@ subtest 'asian_daily_turnover_limit', sub {
 };
 
 subtest 'intraday_spot_index_turnover_limit', sub {
-    plan tests => 13;
+    plan tests => 14;
     lives_ok {
         my $cl = create_client;
 
@@ -449,6 +449,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
         note("intraday_spot_index_turnover_limit's risk type is high_risk");
         note("mocked high_risk USD limit to 149.99");
         BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
+        $DB::single=1;
         my $contract = produce_contract({
             underlying   => $underlying_GDAXI,
             bet_type     => 'CALL',
@@ -513,6 +514,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
 
             $txn->buy;
         };
+
         SKIP: {
             skip 'no error', 6
                 unless isa_ok $error, 'Error::Base';
@@ -526,6 +528,43 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             is $txn->transaction_id, undef, 'txn->transaction_id';
             is $txn->balance_after,  undef, 'txn->balance_after';
         }
+
+        # can still buy a daily contract
+        my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+        $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+        $mock_contract->mock(
+            pricing_engine_name => sub {
+                note "mocked Contract->pricing_engine_name returning 'BOM::Product::Pricing::Engine::Intraday::Index'";
+                'Pricing::Engine::EuropeanDigitalSlope';
+            });
+
+        my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+        # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+        $mock_transaction->mock(
+            _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+        $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
+        $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+        my $daily_contract = produce_contract({
+            underlying   => $underlying_GDAXI,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            date_start   => $now->epoch,
+            duration     => '1d',
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+        $txn = BOM::Product::Transaction->new({
+            client        => $cl,
+            contract      => $daily_contract,
+            price         => 50.00,
+            payout        => $daily_contract->payout,
+            amount_type   => 'payout',
+            purchase_date => $daily_contract->date_start,
+        });
+
+        is $txn->buy, undef, 'can still buy daily';
 
         # now matching exactly the limit -- should succeed
         $error = do {
@@ -548,6 +587,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
             $contract = make_similar_contract($contract);
+            $DB::single=1;
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
                 client        => $cl,
@@ -884,6 +924,7 @@ subtest 'custom client limit' => sub {
 #             transaction2.t: special turnover limits
 my $empty_hashref = {};
 BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($empty_hashref));
+BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($empty_hashref));
 Test::NoWarnings::had_no_warnings;
 
 done_testing;
