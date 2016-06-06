@@ -230,8 +230,8 @@ sub startup {
         [
             'verify_email',
             {
-                before_call  => [\&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email_get_type_code],
-                stash_params => [qw/ server_name /],
+                before_forward => [\&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email_get_type_code],
+                stash_params   => [qw/ server_name /],
             }
         ],
         ['new_account_virtual'],
