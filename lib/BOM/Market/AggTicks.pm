@@ -25,6 +25,7 @@ use Time::Duration::Concise;
 use Scalar::Util qw( blessed );
 use Sereal::Encoder;
 use Sereal::Decoder;
+use BOM::Market::Underlying;
 
 my $encoder = Sereal::Encoder->new({
     protocol_version => 2,
@@ -191,7 +192,8 @@ Return the aggregated tick data for an underlying over the last BOM:TimeInterval
 sub retrieve {
     my ($self, $args) = @_;
 
-    return $self->_retrieve_from_database($args) if ref $args->{underlying} eq 'BOM::Market::Underlying' and $args->{underlying}->for_date;
+    $args->{underlying} = BOM::Market::Underlying->new($args->{underlying}) if ref $args->{underlying} ne 'BOM::Market::Underlying';
+    return $self->_retrieve_from_database($args) if $args->{underlying}->for_date;
     return $self->_retrieve_from_cache($args);
 }
 
