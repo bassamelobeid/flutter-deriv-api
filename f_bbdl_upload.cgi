@@ -18,9 +18,8 @@ PrintContentType();
 my $cgi       = CGI->new;
 my $filename  = $cgi->param('filename');
 my $content   = $cgi->param('bbdl_file_content');
-my $server_ip = $cgi->param('server');
 
-Bar("Upload a file to BBDL $server_ip");
+Bar("Upload a file to BBDL");
 
 #don't allow from devserver, to avoid uploading wrong files
 if (not BOM::Platform::Runtime->instance->app_config->system->on_production) {
@@ -29,7 +28,6 @@ if (not BOM::Platform::Runtime->instance->app_config->system->on_production) {
 }
 
 my $bbdl = Bloomberg::FileDownloader->new();
-$bbdl->sftp_server_ip($server_ip);
 my $sftp = $bbdl->login;
 
 my $message;
@@ -49,7 +47,7 @@ if (length($filename) >= 25) {
     if ($sftp->error) {
         $message = "<p>Upload Failed: " . $sftp->error . '</p>';
     } else {
-        $message = '<p>Successfully uploaded file[' . $filename . '] to server[' . $server_ip . ']. Your response file is ' . $replyfile . '</p>';
+        $message = '<p>Successfully uploaded file[' . $filename . '] to server[' . ']. Your response file is ' . $replyfile . '</p>';
     }
 
     print $message;
