@@ -26,29 +26,29 @@ sub price_stream {
     return;
 }
 
-
 sub _send_ask {
     my ($c, $req_storage) = @_;
 
     my $args = $req_storage->{args};
     $c->call_rpc({
-            args     => $args,
-            method   => 'send_ask',
-            msg_type => 'price_stream',
-            response_cb  => sub {
+            args        => $args,
+            method      => 'send_ask',
+            msg_type    => 'price_stream',
+            response_cb => sub {
                 my $rpc_response = shift;
                 if ($rpc_response and exists $rpc_response->{error}) {
                     my $err = $c->new_error('price_stream', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                     $err->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
                     return $err;
                 }
-    
+
                 my $uuid;
                 if ($args->{subscribe} and $args->{subscribe} == 1 and not $uuid = _pricing_channel($c, 'subscribe', $args)) {
                     return $c->new_error('price_stream',
-                        'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+                        'AlreadySubscribedOrLimit',
+                        $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
                 }
-    
+
                 # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
                 my $pricing_channel = $c->stash('pricing_channel');
                 if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
@@ -57,20 +57,13 @@ sub _send_ask {
                     $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $rpc_response->{longcode};
                     $c->stash('pricing_channel' => $pricing_channel);
                 }
-    
+
                 return {
                     msg_type => 'price_stream',
                     price_stream => {($uuid ? (id => $uuid) : ()), %$rpc_response}};
             }
         });
     return;
-}
-sub _send_ask {
-    my ($c, $args) = @_;
-
-        sub {
-
-        },
 }
 
 sub _serialized_args {
