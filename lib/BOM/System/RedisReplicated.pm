@@ -47,7 +47,7 @@ sub redis_pricer {
     state $redis_pricer = do {
         my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml');
         RedisDB->new(
-            timeout => 10,
+            timeout => 3600,
             host    => $config->{write}->{host},
             port    => $config->{write}->{port},
             ($config->{write}->{password} ? ('password', $config->{write}->{password}) : ()));
