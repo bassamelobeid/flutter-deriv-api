@@ -80,6 +80,7 @@ is $params->[0]->[2]->{tags}->[0], 'rpc:buy', 'Should set tag with rpc method na
 my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
 $fake_rpc_response = Test::MockObject->new();
 $fake_rpc_response->mock('is_error',      sub { 1 });
+$fake_rpc_response->mock('result',      sub { +{} });
 $fake_rpc_response->mock('error_message', sub { 'error' });
 $fake_rpc_client = Test::MockObject->new();
 $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
