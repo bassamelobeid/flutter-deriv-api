@@ -19,10 +19,9 @@ data_js:
 
 i18n:
 	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 \
-		--output=messages.pot --output-dir=/home/git/translations/binary-static-www2/src/config/locales/ --directory=/home/git/translations/binary-static-www2/src/templates/ --directory=/home/git/regentmarkets/bom-backoffice/   --directory=/home/git/regentmarkets/bom-platform/ --directory=/home/git/regentmarkets/bom/ --directory=/home/git/regentmarkets/bom-websocket-api/ --directory=/home/git/regentmarkets/bom-rpc/
-	perl -I /home/git/regentmarkets/bom-platform/lib /home/git/regentmarkets/bom-backoffice/bin/extra_translations.pl  /home/git/translations/binary-static-www2/src/config/locales/messages.pot
-	for i in $(shell ls /home/git/translations/binary-static-www2/src/config/locales/*.po); do \
-		msgmerge --previous --backup none --no-wrap --update $$i /home/git/translations/binary-static-www2/src/config/locales/messages.pot ; \
+		--output=messages.pot --output-dir=/home/git/binary-com/translations-websockets-api/src/locales   --directory=/home/git/regentmarkets/bom-backoffice/   --directory=/home/git/regentmarkets/bom-platform/ --directory=/home/git/regentmarkets/bom/ --directory=/home/git/regentmarkets/bom-websocket-api/ --directory=/home/git/regentmarkets/bom-rpc/
+	for i in $(shell ls /home/git/binary-com/translations-websockets-api/src/locales/*.po); do \
+		msgmerge --previous --backup none --no-wrap --update $$i /home/git/binary-com/translations-websockets-api/src/locales/messages.pot ; \
 	done
-	msgmerge --previous --backup none --no-wrap --update /home/git/translations/binary-static-www2/src/config/en.po /home/git/translations/binary-static-www2/src/config/locales/messages.pot ; \
-	perl -pi -e 's/Content-Type: text\/plain; charset=CHARSET/Content-Type: text\/plain; charset=UTF-8/' /home/git/translations/binary-static-www2/src/config/locales/messages.pot
+	msgmerge --previous --backup none --no-wrap --update  /home/git/binary-com/translations-websockets-api/src/en.po  /home/git/binary-com/translations-websockets-api/src/locales/messages.pot ; \
+	perl -pi -e 's/Content-Type: text\/plain; charset=CHARSET/Content-Type: text\/plain; charset=UTF-8/'  /home/git/binary-com/translations-websockets-api/src/locales/messages.pot
