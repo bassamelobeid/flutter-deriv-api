@@ -191,7 +191,7 @@ Return the aggregated tick data for an underlying over the last BOM:TimeInterval
 sub retrieve {
     my ($self, $args) = @_;
 
-    return $self->_retrieve_from_database($args) if $args->{underlying}->for_date;
+    return $self->_retrieve_from_database($args) if ref $args->{underlying} eq 'BOM::Market::Underlying' and $args->{underlying}->for_date;
     return $self->_retrieve_from_cache($args);
 }
 
