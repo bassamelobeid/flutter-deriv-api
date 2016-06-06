@@ -153,7 +153,7 @@ lives_ok {
 }
 'expect to sell';
 
-is($legacy_bet->financial_market_bet_open_ercord->account_id,        $account->id,       'account_id');
+is($legacy_bet->financial_market_bet_open_record->account_id,        $account->id,       'account_id');
 is($legacy_bet->financial_market_bet_open_record->underlying_symbol, $underlying_symbol, 'underlying_symbol');
 is($legacy_bet->financial_market_bet_open_record->payout_price,      $payout_price,      'payout_price');
 is($legacy_bet->financial_market_bet_open_record->buy_price,         $buy_price,         'buy_price');
