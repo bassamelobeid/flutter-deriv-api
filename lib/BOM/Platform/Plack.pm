@@ -14,7 +14,6 @@ use CGI;
 use CGI::Util;
 use CGI::Cookie;
 use DateTime::Format::Mail;
-use YAML::XS;
 use Plack::App::CGIBin::Streaming;
 use Try::Tiny;
 
