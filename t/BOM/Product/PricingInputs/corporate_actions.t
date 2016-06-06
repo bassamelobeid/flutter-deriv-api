@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+::42#!/usr/bin/perl
 use strict;
 use warnings;
 
@@ -389,7 +389,7 @@ subtest 'two actions' => sub {
         };
         my $bet = produce_contract($bet_params);
         is $bet->shortcode, 'CALL_USAAPL_100_1364394000_1364673600_S0P_0', 'Can get bet shortcode';
-        is $bet->longcode, 'Win payout if Apple Inc is strictly higher than entry spot at close on 2013-03-30.', 'Can get bet longcode';
+        is $bet->longcode, 'Win payout if Apple is strictly higher than entry spot at close on 2013-03-30.', 'Can get bet longcode';
         cmp_ok $bet->barrier->as_absolute,          '==', 55.17,  'original quote adjusted by corporate action';
         cmp_ok $bet->original_barrier->as_absolute, '==', 100.00, 'original quote without corporate action adjustment';
 
