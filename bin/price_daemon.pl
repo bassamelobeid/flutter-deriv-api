@@ -21,6 +21,7 @@ $pm->run_on_start(
         my $pid = shift;
         push @running_forks, $pid;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks));
+        warn "Started a new fork [$pid]\n";
     }
 );
 $pm->run_on_finish(
@@ -28,6 +29,7 @@ $pm->run_on_finish(
         my ($pid, $exit_code) = @_;
         @running_forks = grep {$_ != $pid } @running_forks;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks));
+        warn "Fork [$pid] ended with exit code [$exit_code]\n";
     }
 );
 sub signal_handler {
