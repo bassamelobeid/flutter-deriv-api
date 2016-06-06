@@ -1074,7 +1074,7 @@ has intraday_interval => (
 
 The general rule to determine which currency's rate should be implied are as below:
 
-1) One of the currencies is Metal - imply Metal depo.
+1) One of the currencies is Metal - imply Metal deposit rate.
 
 2. One of the currencies is USD - imply non-USD depo (for offshore market).
 
