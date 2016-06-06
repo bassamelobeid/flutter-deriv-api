@@ -12,7 +12,6 @@ use JSON::XS qw(encode_json decode_json);
 use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
-use BOM::Platform::Context qw (localize);
 
 sub price_stream {
     my ($c, $args) = @_;
@@ -137,9 +136,9 @@ sub process_pricing_events {
             # in pricer_dameon everything happens in Eng to maximize the collisions. If translations has params it will come as message_to_client_array.
             # eitherway it need l10n here.
             if ($response->{error}->{message_to_client_array}) {
-                $response->{error}->{message_to_client} = localize(@{$response->{error}->{message_to_client_array}});
+                $response->{error}->{message_to_client} = $c->l(@{$response->{error}->{message_to_client_array}});
             } else {
-                $response->{error}->{message_to_client} = localize(@{$response->{error}->{message_to_client}});
+                $response->{error}->{message_to_client} = $c->l(@{$response->{error}->{message_to_client}});
             }
 
             my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
