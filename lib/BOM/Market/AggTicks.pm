@@ -235,7 +235,7 @@ sub _retrieve_from_cache {
     return \@res;
 }
 
-sub retrieve_from_database {
+sub _retrieve_from_database {
     my ($self, $args) = @_;
     $self->fill_from_historical_feed($args);
     return $self->_retrieve_from_cache($args);
