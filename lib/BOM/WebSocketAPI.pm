@@ -219,8 +219,8 @@ sub startup {
         [
             'set_account_currency',
             {
-                require_auth     => 'admin',
-                make_call_params => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler
+                require_auth   => 'admin',
+                before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler
             }
         ],
         ['set_financial_assessment', {require_auth => 'admin'}],

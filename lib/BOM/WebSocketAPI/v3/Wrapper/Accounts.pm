@@ -54,8 +54,9 @@ sub login_history_response_handler {
 }
 
 sub set_account_currency_params_handler {
-    my ($c, $args) = @_;
-    return {currency => $args->{set_account_currency}};
+    my ($c, $req_storage) = @_;
+    $req_storage->{call_params}->{currency} = $req_storage->{args}->{set_account_currency};
+    return;
 }
 
 1;
