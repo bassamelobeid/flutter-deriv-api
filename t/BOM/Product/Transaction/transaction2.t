@@ -449,7 +449,6 @@ subtest 'intraday_spot_index_turnover_limit', sub {
         note("intraday_spot_index_turnover_limit's risk type is high_risk");
         note("mocked high_risk USD limit to 149.99");
         BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
-        $DB::single=1;
         my $contract = produce_contract({
             underlying   => $underlying_GDAXI,
             bet_type     => 'CALL',
@@ -587,7 +586,6 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             BOM::Platform::Static::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
 
             $contract = make_similar_contract($contract);
-            $DB::single=1;
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
                 client        => $cl,
