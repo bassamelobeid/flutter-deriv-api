@@ -198,7 +198,7 @@ sub _price_stream_results_adjustment {
     # overrides the theo_probability_value which take the most calculation time.
     $contract_parameters->{theo_probability_value}    = $results->{theo_probability};
     $contract_parameters->{app_commission_percentage} = $app_commission_percentage;
-    my $contract = BOM::RPC::v3::Contract::produce_contract($contract_parameters);
+    my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
     if (my $error = $contract->validate_price) {
         return {
