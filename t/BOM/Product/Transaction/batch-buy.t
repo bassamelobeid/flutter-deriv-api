@@ -173,7 +173,7 @@ sub check_one_result {
         is $m->{loginid}, $cl->loginid, 'loginid';
         is $m->{txn}->{account_id}, $acc->id, 'txn account_id';
         is $m->{fmb}->{account_id}, $acc->id, 'fmb account_id';
-        is $m->{txn}->{financial_market_bet_id}, $fmb->{id}, 'txn financial_market_bet_id';
+        is $m->{txn}->{financial_market_bet_id}, $m->{fmb}->{id}, 'txn financial_market_bet_id';
         is $m->{txn}->{balance_after}, $balance_after, 'balance_after';
     };
 }
