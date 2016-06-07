@@ -14,13 +14,11 @@ use CGI;
 use CGI::Util;
 use CGI::Cookie;
 use DateTime::Format::Mail;
-use YAML::XS;
 use Plack::App::CGIBin::Streaming;
 use Try::Tiny;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
-use BOM::Platform::MyAffiliates::TrackingHandler;
 use BOM::Platform::Context qw(request localize);
 use base qw( Exporter );
 
@@ -69,10 +67,6 @@ sub PrintContentType {
         die "PrintContentType called outside ui";
     }
 
-    if (not request()->param('_pjax')) {
-        push @cookies, _handle_tracking();
-    }
-
     my $lang = request()->language;
 
     local $\ = '';
@@ -80,43 +74,17 @@ sub PrintContentType {
     my $http_handler = request()->http_handler;
     $http_handler->print_content_type("text/html; charset=UTF-8");
 
-    my $is_public;
-    my $page_name = request()->http_path;
-
-    $page_name =~ s/\/cgi\///g;
-    my $page_rules = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/page_caching_rules.yml')->{$page_name};
-    if (    request()->http_method eq 'GET'
-        and $page_rules
-        and $page_rules->{header}
-        and not BOM::Platform::Runtime->instance->app_config->system->suspend->system)
-    {
-        my $page_caching_rules = $page_rules->{header};
-        foreach my $key (keys %{$page_caching_rules}) {
-            if ($page_caching_rules->{$key}) {
-                $http_handler->print_header($key => $page_caching_rules->{$key});
-
-                if ($page_caching_rules->{$key} =~ /s-maxage=(\d+)/) {
-                    my $max_age = $1;
-                    $http_handler->print_header('Surrogate-Control' => "max-age=$max_age");
-                }
-            }
-            if ($page_caching_rules->{$key} =~ /public/) {
-                $is_public = 1;
-            }
-        }
-    } else {
-        $http_handler->print_header(
-            'Cache-control' => "no-cache, no-store, private, must-revalidate, max-age=0, max-stale=0, post-check=0, pre-check=0",
-            'Pragma'        => "no-cache",
-            'Expires'       => "0",
-        );
-    }
+    $http_handler->print_header(
+        'Cache-control' => "no-cache, no-store, private, must-revalidate, max-age=0, max-stale=0, post-check=0, pre-check=0",
+        'Pragma'        => "no-cache",
+        'Expires'       => "0",
+    );
 
     if ($lang) {
         $http_handler->print_header('Content-Language' => lc $lang);
     }
 
-    if (not $is_public and scalar @cookies > 0) {
+    if (scalar @cookies > 0) {
         _header_set_cookie(\@cookies);
     }
 
@@ -150,17 +118,6 @@ sub _header_set_cookie {
         request()->http_handler->print_header_add('Set-Cookie' => $cookie);
     }
     return;
-}
-
-sub _handle_tracking {
-    my @cookies = ();
-
-    my $myaff_handler = BOM::Platform::MyAffiliates::TrackingHandler->new;
-    if ($myaff_handler->tracking_cookie) {
-        push @cookies, $myaff_handler->tracking_cookie;
-    }
-
-    return @cookies;
 }
 
 sub PrintContentType_XSendfile {
