@@ -576,6 +576,13 @@ sub buy {    ## no critic (RequireArgUnpacking)
     return;
 }
 
+# expected parameters:
+# $self->multiple
+#   an array of hashes. Elements with a key "code" are ignored. They are
+#   thought to be already erroneous. Otherwise the element should contain
+#   a "loginid" key. For each element a BOM::Platform::Client object is
+#   created and stored under the key "client".
+
 sub batch_buy {                        ## no critic (RequireArgUnpacking)
     my $self    = shift;
     my @options = @_;
@@ -638,19 +645,10 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
                 $el->{txn} = $res->{txn};
             }
         }
+        enqueue_multiple_new_transactions $self, [grep {!$_->{code}} @$list];
     }
 
-    # return $self->stats_stop(
-    #     $stats_data,
-    #     Error::Base->cuss(
-    #         -type              => 'GeneralError',
-    #         -mesg              => 'Cannot perform database action',
-    #         -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
-    #     )) if $error;
-
     # $self->stats_stop($stats_data);
-
-    # enqueue_new_transaction($self);    # For soft realtime expiration notification.
 
     return;
 }
