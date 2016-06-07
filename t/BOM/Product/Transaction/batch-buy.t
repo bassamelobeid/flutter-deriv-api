@@ -221,6 +221,7 @@ subtest 'batch-buy', sub {
                 {loginid => $cl2->loginid},
                 {code    => 'ignore'},
                 {loginid => $cl1->loginid},
+                {loginid => $cl2->loginid},
             ],
         });
 
@@ -244,8 +245,9 @@ subtest 'batch-buy', sub {
         my $m = $txn->multiple;
         check_one_result 'result for client #1', $cl1, $acc1, $m->[2];
         check_one_result 'result for client #2', $cl2, $acc2, $m->[0];
+        check_one_result 'result for client #3', $cl2, $acc2, $m->[3];
 
-        note explain $txn->multiple;
+        # note explain $txn->multiple;
     }
     'survived';
 };
