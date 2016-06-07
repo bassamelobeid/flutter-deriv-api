@@ -492,10 +492,10 @@ sub _build_pricing_engine_name {
     } elsif (
         $self->is_intraday and not $self->is_forward_starting and grep {
             $self->market->name eq $_
-        } qw(forex indices)
+        } qw(forex indices commodities)
         )
     {
-        my $func = $self->market->name eq 'forex' ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
+        my $func = (first { $self->market->name eq $_ } qw(forex commodities)) ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
         my @symbols = BOM::Market::UnderlyingDB->instance->$func;
         if (_match_symbol(\@symbols, $self->underlying->symbol) and my $loc = $self->offering_specifics->{historical}) {
             my $duration = $self->remaining_time;
