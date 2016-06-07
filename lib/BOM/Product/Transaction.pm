@@ -147,23 +147,23 @@ has transaction_parameters => (
     default => sub { {}; },
 );
 
-has markup_percentage => (
+has app_markup_percentage => (
     is      => 'ro',
     isa     => 'Maybe[Num]',
     default => 0
 );
 
-has markup => (
+has app_markup => (
     is         => 'ro',
     isa        => 'Maybe[Num]',
     lazy_build => 1
 );
 
-sub _build_markup {
+sub _build_app_markup {
     my $self = shift;
 
     return 0 if $self->contract->is_spread;
-    return (($self->markup_percentage / 100) * $self->payout);
+    return (($self->app_markup_percentage / 100) * $self->payout);
 }
 
 sub BUILDARGS {
@@ -474,7 +474,7 @@ sub prepare_bet_data_for_buy {
             transaction_data => {
                 staff_loginid => $self->staff,
                 source        => $self->source,
-                markup        => $self->markup
+                app_markup    => $self->app_markup
             },
             bet_data     => $bet_params,
             account_data => {
