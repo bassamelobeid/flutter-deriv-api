@@ -98,7 +98,7 @@ sub _forget_pricing_subscription {
                 }
             }
 
-            if (scalar keys %{$pricing_channel->{$channel}} == 1) {
+            if (scalar keys %{$pricing_channel->{$channel}} == 0) {
                 $c->stash('redis_pricer')->unsubscribe([$channel]);
                 delete $pricing_channel->{$channel};
             }

@@ -9,17 +9,17 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use BOM::System::RedisReplicated;
-use BOM::Feed::Populator::InsertTicks;
-use BOM::Feed::Buffer::TickFile;
+use BOM::Populator::InsertTicks;
+use BOM::Populator::TickFile;
 use File::Temp;
 use Date::Utility;
 
 my $now = Date::Utility->new('2016-05-13 00:00:00');
 set_fixed_time($now->epoch);
 my $work_dir   = File::Temp->newdir();
-my $buffer     = BOM::Feed::Buffer::TickFile->new(base_dir => "$work_dir");
+my $buffer     = BOM::Populator::TickFile->new(base_dir => "$work_dir");
 my $fill_start = $now;
-my $populator  = BOM::Feed::Populator::InsertTicks->new({
+my $populator  = BOM::Populator::InsertTicks->new({
     symbols            => [qw/ frxUSDJPY /],
     last_migrated_time => $fill_start,
     buffer             => $buffer,
