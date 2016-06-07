@@ -9,7 +9,7 @@ use Time::HiRes qw(tv_interval gettimeofday time);
 use List::Util qw(min max first);
 use JSON qw( from_json );
 use Date::Utility;
-use ExpiryQueue qw( enqueue_new_transaction );
+use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Format::Util::Numbers qw(roundnear to_monetary_number_format);
 use RateLimitations qw(within_rate_limits);
 use Try::Tiny;
