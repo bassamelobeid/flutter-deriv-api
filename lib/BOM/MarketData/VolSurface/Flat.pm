@@ -53,7 +53,7 @@ has flat_vol => (
 
 sub _build_flat_vol {
     my $self = shift;
-    return $vol->{$self->underlying_config->symbol};
+    return $vol->{$self->symbol};
 }
 
 # a fixed 7% of volatility spread
