@@ -174,7 +174,7 @@ sub process_pricing_events {
 
         if ($c->stash('debug')) {
             $results->{debug} = {
-                time   => 1000 * $results->{price_stream}->{rpc_time},
+                time   => $results->{price_stream}->{rpc_time},
                 method => 'price_stream',
             };
         }
@@ -199,18 +199,18 @@ sub _price_stream_results_adjustment {
             probability_threshold => $results->{probability_threshold},
             amount                => $amount,
         });
-        $results->{ask_price}     = roundnear(0.01, $ask_price);
-        $results->{display_value} = roundnear(0.01, $ask_price);
-        $results->{payout}        = roundnear(0.01, $amount);
+        $results->{ask_price}     = sprintf('%.2f', $ask_price);
+        $results->{display_value} = sprintf('%.2f', $ask_price);
+        $results->{payout}        = sprintf('%.2f', $amount);
     } elsif ($orig_args->{basis} eq 'stake') {
         my $payout = BOM::RPC::v3::Contract::calculate_payout({
             theo_probability => $results->{theo_probability},
             base_commission  => $results->{base_commission},
             amount           => $amount,
         });
-        $results->{ask_price}     = roundnear(0.01, $amount);
-        $results->{display_value} = roundnear(0.01, $amount);
-        $results->{payout}        = roundnear(0.01, $payout);
+        $results->{ask_price}     = sprintf('%.2f', $amount);
+        $results->{display_value} = sprintf('%.2f', $amount);
+        $results->{payout}        = sprintf('%.2f', $payout);
     }
 
     if (
