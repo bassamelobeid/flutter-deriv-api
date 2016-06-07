@@ -23,7 +23,7 @@ sub fetch_surface {
     my $class      = 'Quant::Framework::VolSurface::' . ucfirst lc $underlying->volatility_surface_type;
     $class = 'BOM::MarketData::VolSurface::Flat' if lc($underlying->volatility_surface_type) eq 'flat';
 
-    my $module     = $class;
+    my $module = $class;
     if (not $INC{($module =~ s!::!/!gr) . '.pm'}) {
         die "Could not load volsurface for " . $underlying->symbol;
     }
