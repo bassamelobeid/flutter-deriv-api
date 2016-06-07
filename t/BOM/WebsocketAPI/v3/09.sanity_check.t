@@ -17,8 +17,7 @@ my $t = build_mojo_test();
 $t = $t->send_ok({json => {ping => '௰'}})->message_ok;
 my $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'SanityCheckFailed';
-ok ref($res->{echo_req}) eq 'HASH';
-ok !keys %{$res->{echo_req}};
+ok ref($res->{echo_req}) eq 'HASH' && !keys %{$res->{echo_req}};
 test_schema('ping', $res);
 
 # undefs are fine for some values
