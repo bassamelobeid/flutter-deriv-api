@@ -171,7 +171,7 @@ sub top_up {
 ####################################################################
 
 subtest 'batch-buy', sub {
-    plan tests => 13;
+    plan tests => 6;
     lives_ok {
         my $clm = create_client; # manager
         my $cl1 = create_client;
@@ -224,12 +224,12 @@ subtest 'batch-buy', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->tick_expiry_engine_daily_turnover;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(
-                USD => sub { note "mocked app_config->quants->client_limits->tick_expiry_engine_daily_turnover->USD returning 150"; 150 });
+            # my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->tick_expiry_engine_daily_turnover;
+            # (my $fname = $class) =~ s!::!/!g;
+            # $INC{$fname . '.pm'} = 1;
+            # my $mock_limits = Test::MockModule->new($class);
+            # $mock_limits->mock(
+            #     USD => sub { note "mocked app_config->quants->client_limits->tick_expiry_engine_daily_turnover->USD returning 150"; 150 });
 
             $txn->batch_buy;
         };
