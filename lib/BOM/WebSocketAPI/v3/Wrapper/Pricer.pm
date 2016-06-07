@@ -194,7 +194,7 @@ sub _price_stream_results_adjustment {
     return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
 
     my $app_commission_percentage = 0;                                                 # not sure where it will come from now.
-    my $contract_parameters   = BOM::RPC::v3::Contract::prepare_ask($orig_args);
+    my $contract_parameters       = BOM::RPC::v3::Contract::prepare_ask($orig_args);
     # overrides the theo_probability_value which take the most calculation time.
     $contract_parameters->{theo_probability_value}    = $results->{theo_probability};
     $contract_parameters->{app_commission_percentage} = $app_commission_percentage;
