@@ -154,8 +154,8 @@ sub _get_ask {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $markup_percentage) =
-        @{$params}{qw/short_code contract_id currency is_sold sell_time markup_percentage/};
+    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $app_markup_percentage) =
+        @{$params}{qw/short_code contract_id currency is_sold sell_time app_markup_percentage/};
 
     my $response;
     try {

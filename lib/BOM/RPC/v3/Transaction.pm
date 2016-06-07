@@ -41,12 +41,12 @@ sub buy {
             message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
 
     my $trx = BOM::Product::Transaction->new({
-            client            => $client,
-            contract          => $contract,
-            price             => ($args->{price} || 0),
-            purchase_date     => $purchase_date,
-            source            => $source,
-            markup_percentage => ($params->{markup_percentage} || 0)});
+            client                => $client,
+            contract              => $contract,
+            price                 => ($args->{price} || 0),
+            purchase_date         => $purchase_date,
+            source                => $source,
+            app_markup_percentage => ($params->{app_markup_percentage} || 0)});
 
     if (my $err = $trx->buy) {
         return BOM::RPC::v3::Utility::create_error({
