@@ -174,7 +174,7 @@ sub process_pricing_events {
 
         if ($c->stash('debug')) {
             $results->{debug} = {
-                time   => 1000 * $results->{price_stream}->{rpc_time},
+                time   => $results->{price_stream}->{rpc_time},
                 method => 'price_stream',
             };
         }
