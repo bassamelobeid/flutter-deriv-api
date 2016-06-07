@@ -553,10 +553,10 @@ sub rpc {
     }
     $url .= $method;
 
-    $params->{language}          = $c->stash('language');
-    $params->{country}           = $c->stash('country') || $c->country_code;
-    $params->{source}            = $c->stash('source');
-    $params->{markup_percentage} = $c->stash('markup_percentage') // 0;
+    $params->{language}              = $c->stash('language');
+    $params->{country}               = $c->stash('country') || $c->country_code;
+    $params->{source}                = $c->stash('source');
+    $params->{app_markup_percentage} = $c->stash('app_markup_percentage') // 0;
 
     BOM::WebSocketAPI::CallingEngine::call_rpc(
         $c,

@@ -26,7 +26,7 @@
             "type": "string",
             "description":"Application redirect_uri"
           },
-          "markup_percentage": {
+          "app_markup_percentage": {
             "type": "number",
             "description": "Markup added to contract prices (as a percentage of contract payout)"
           }

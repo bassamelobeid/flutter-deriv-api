@@ -142,13 +142,13 @@ sub send_proposal {
             }
         },
         {
-            short_code        => delete $details->{short_code},
-            contract_id       => $contract_id,
-            currency          => delete $details->{currency},
-            is_sold           => delete $details->{is_sold},
-            sell_time         => $sell_time,
-            markup_percentage => $c->stash('markup_percentage') // 0,
-            args              => $details
+            short_code            => delete $details->{short_code},
+            contract_id           => $contract_id,
+            currency              => delete $details->{currency},
+            is_sold               => delete $details->{is_sold},
+            sell_time             => $sell_time,
+            app_markup_percentage => $c->stash('app_markup_percentage') // 0,
+            args                  => $details
         },
         'proposal_open_contract'
     );

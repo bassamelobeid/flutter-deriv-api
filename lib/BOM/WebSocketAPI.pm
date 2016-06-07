@@ -89,9 +89,9 @@ sub startup {
                     }
 
                     $c->stash(
-                        source            => $app_id,
-                        app_name          => $app->{name},
-                        markup_percentage => $app->{markup_percentage});
+                        source                => $app_id,
+                        app_name              => $app->{name},
+                        app_markup_percentage => $app->{app_markup_percentage});
                 }
 
                 if ($error) {

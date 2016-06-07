@@ -32,7 +32,7 @@
               "type": "string"
             }
           },
-          "markup_percentage": {
+          "app_markup_percentage": {
             "type": "number",
             "description": "Markup added to contract prices (as a percentage of contract payout)"
           }
