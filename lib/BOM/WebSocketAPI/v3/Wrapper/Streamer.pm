@@ -213,7 +213,10 @@ sub send_ask {
                 msg_type => 'proposal',
                 proposal => {($id ? (id => $id) : ()), %$response}};
         },
-        {args => $args},
+        {
+            args              => $args,
+            markup_percentage => $c->stash('markup_percentage')
+        },
         'proposal'
     );
     return;
