@@ -166,12 +166,22 @@ sub top_up {
     note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
 }
 
+sub check_one_result {
+    my ($title, $cl, $acc, $m) = @_;
+
+    subtest $title, sub {
+        is $m->{loginid}, $cl->loginid, 'loginid';
+        is $m->{txn}->{account_id}, $acc->id, 'txn account_id';
+        is $m->{fmb}->{account_id}, $acc->id, 'fmb account_id';
+    };
+}
+
 ####################################################################
 # real tests begin here
 ####################################################################
 
 subtest 'batch-buy', sub {
-    plan tests => 6;
+    plan tests => 8;
     lives_ok {
         my $clm = create_client; # manager
         my $cl1 = create_client;
@@ -226,17 +236,14 @@ subtest 'batch-buy', sub {
 
             BOM::Platform::Runtime->instance->app_config->quants
                     ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
-            # my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->tick_expiry_engine_daily_turnover;
-            # (my $fname = $class) =~ s!::!/!g;
-            # $INC{$fname . '.pm'} = 1;
-            # my $mock_limits = Test::MockModule->new($class);
-            # $mock_limits->mock(
-            #     USD => sub { note "mocked app_config->quants->client_limits->tick_expiry_engine_daily_turnover->USD returning 150"; 150 });
 
             $txn->batch_buy;
         };
 
-        is $error, undef, 'successful buy';
+        is $error, undef, 'successful batch_buy';
+        my $m = $txn->multiple;
+        check_one_result 'result for client #1', $cl1, $acc1, $m->[2];
+        check_one_result 'result for client #2', $cl2, $acc2, $m->[0];
 
         note explain $txn->multiple;
     }
