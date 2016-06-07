@@ -43,7 +43,7 @@ has client => (
 
 has multiple => (
     is  => 'ro',
-    isa => 'Maybe[Array]',
+    isa => 'Maybe[ArrayRef]',
 );
 
 has contract => (
