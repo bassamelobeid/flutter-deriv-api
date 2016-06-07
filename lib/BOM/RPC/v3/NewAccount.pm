@@ -86,7 +86,7 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p>',
+                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
                         $params->{code})
                 ],
                 use_email_template => 1
@@ -99,7 +99,7 @@ sub verify_email {
                     subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
                     message => [
                         BOM::Platform::Context::localize(
-                            '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on Binary.com.</p>',
+                            '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on Binary.com.</p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
                             $params->{code})
                     ],
                     use_email_template => 1
@@ -112,7 +112,7 @@ sub verify_email {
                     message => [
                         '<div style="line-height:200%;color:#333333;font-size:15px;">'
                             . BOM::Platform::Context::localize(
-                            '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p>'
+                            '<p>Dear Valued Customer,</p><p>It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>'
                             )
                             . '</div>'
                     ],
@@ -126,7 +126,7 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p>',
+                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
                         $params->{code})
                 ],
                 use_email_template => 1
@@ -138,7 +138,7 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p>',
+                        '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
                         $params->{code})
                 ],
                 use_email_template => 1
