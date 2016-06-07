@@ -633,9 +633,9 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
             db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
         );
 
-        my @res = $fmb_helper->batch_buy_bet;
+        my $result = $fmb_helper->batch_buy_bet;
         for my $el (@$list) {
-            my $res = shift @res;
+            my $res = shift @$result;
             if ($res->{e_code}) {
                 # TODO: map DB errors to client messages
                 $el->{code}  = $res->{e_code};
