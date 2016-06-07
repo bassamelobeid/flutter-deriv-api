@@ -145,7 +145,7 @@ sub _configure_template_for {
         push @include_path, '/home/git/regentmarkets/bom-backoffice/templates/';
     }
 
-    push @include_path, path(BOM::Platform::Static::Config::get_static_path())->child('templates', 'toolkit');
+    push @include_path, '/home/git/regentmarkets/bom-platform/templates/';
 
     my $template_toolkit = Template->new({
             ENCODING     => 'utf8',
