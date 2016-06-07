@@ -104,7 +104,7 @@ sub logout {
                 $user->save;
             }
         }
-        BOM::System::AuditLog::log("user logout", "$email,$loginid");
+        BOM::System::AuditLog::log("user logout", join(',', $email, $loginid // '');
     }
 
     # Invalidates token, but we can only do this if we have a session token
