@@ -991,7 +991,7 @@ sub _build_ask_probability {
 
     my $max_ask = 1 - $min_ask;
     if ($ask_cv->amount > $max_ask) {
-        $self->include_adjustment('reset', $self->default_probability->{ask_probability});
+        $ask_cv->include_adjustment('reset', $self->default_probabilities->{ask_probability});
     }
 
     return $ask_cv;
@@ -1206,7 +1206,7 @@ sub _build_theo_probability_value {
     my $self = shift;
 
     return $self->pricing_engine->probability if $self->new_interface_engine;
-    return $self->pricing_engine->probability;
+    return $self->pricing_engine->probability->amount;
 }
 
 sub _build_app_markup {
