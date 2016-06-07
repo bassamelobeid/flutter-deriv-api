@@ -1261,8 +1261,10 @@ has [qw(risk_markup commission_markup base_commission)] => (
 sub _build_risk_markup {
     my $self = shift;
 
-    my $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->theo_probability->peek_amount('risk_markup');
-    $base_amount = 0 unless defined $base_amount;
+    my $base_amount = 0;
+    if ($self->pricing_engine->can('risk_markup')) {
+        $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
+    }
 
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'risk_markup',
