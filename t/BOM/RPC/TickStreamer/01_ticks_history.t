@@ -13,7 +13,7 @@ use File::Temp;
 
 use Test::BOM::RPC::Client;
 use BOM::Test::Data::Utility::FeedTestDatabase qw/:init/;
-use BOM::Feed::Buffer::TickFile;
+use BOM::Buffer::TickFile;
 use BOM::Populator::InsertTicks;
 
 use utf8;
@@ -37,7 +37,7 @@ subtest 'Initialization' => sub {
     lives_ok {
         my ($fill_start, $populator, @ticks, $fh);
         my $work_dir = File::Temp->newdir();
-        my $buffer = BOM::Feed::Buffer::TickFile->new(base_dir => "$work_dir");
+        my $buffer = BOM::Buffer::TickFile->new(base_dir => "$work_dir");
 
         # Insert HSI data ticks
         $fill_start = $now->minus_time_interval('7h');
