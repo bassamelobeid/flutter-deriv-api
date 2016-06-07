@@ -20,7 +20,6 @@ use Try::Tiny;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
-use BOM::Platform::MyAffiliates::TrackingHandler;
 use BOM::Platform::Context qw(request localize);
 use base qw( Exporter );
 
@@ -67,10 +66,6 @@ sub PrintContentType {
     }
     if (not request()->from_ui) {
         die "PrintContentType called outside ui";
-    }
-
-    if (not request()->param('_pjax')) {
-        push @cookies, _handle_tracking();
     }
 
     my $lang = request()->language;
@@ -150,17 +145,6 @@ sub _header_set_cookie {
         request()->http_handler->print_header_add('Set-Cookie' => $cookie);
     }
     return;
-}
-
-sub _handle_tracking {
-    my @cookies = ();
-
-    my $myaff_handler = BOM::Platform::MyAffiliates::TrackingHandler->new;
-    if ($myaff_handler->tracking_cookie) {
-        push @cookies, $myaff_handler->tracking_cookie;
-    }
-
-    return @cookies;
 }
 
 sub PrintContentType_XSendfile {

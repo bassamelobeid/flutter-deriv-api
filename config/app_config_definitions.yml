@@ -21,10 +21,6 @@ cgi:
           description: "Backoffice login cookie"
           isa: Str
           default: "staff"
-        affiliate_tracking:
-          description: "Cookie used to track client's affiliate token"
-          isa: Str
-          default: "affiliate_tracking"
     allowed_languages:
       description: "Allowed languages for this website"
       isa: ArrayRef
@@ -374,6 +370,7 @@ system:
           description: "Directory where our feed files are stored"
           isa: Str
           default: "/feed"
+          global: 1
         tmp_gif:
           description: "Directory where we store temporary gif files"
           isa: Str
