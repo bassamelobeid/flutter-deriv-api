@@ -87,7 +87,7 @@ sub create_account {
                 created_for => 'verify_email'
             })->token;
         my $email_content;
-        BOM::Platform::Context::template->process('email/resend_verification.html.tt', {token => $token}, \$email_content)
+        BOM::Platform::Context::template->process('resend_verification.html.tt', {token => $token}, \$email_content)
             || die BOM::Platform::Context::template->error();
 
         send_email({
