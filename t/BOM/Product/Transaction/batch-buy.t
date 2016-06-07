@@ -14,6 +14,8 @@ use BOM::System::Password;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Static::Config;
 
+use ExpiryQueue ();
+
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -240,6 +242,7 @@ subtest 'batch-buy', sub {
             BOM::Platform::Runtime->instance->app_config->quants
                     ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
 
+        note explain +ExpiryQueue::queue_status;
             $txn->batch_buy;
         };
 
@@ -250,6 +253,7 @@ subtest 'batch-buy', sub {
         check_one_result 'result for client #3', $cl2, $acc2, $m->[3], '4900.0000';
 
         # note explain $txn->multiple;
+        note explain +ExpiryQueue::queue_status;
     }
     'survived';
 };
