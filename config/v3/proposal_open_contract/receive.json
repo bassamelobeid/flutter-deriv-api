@@ -185,7 +185,7 @@
         },
         "sell_spot": {
           "type": "number",
-          "description": "Latest spot price at the sell time. Example: 86.630 (only present for contracts already sold)"
+          "description": "Latest spot value at the sell time. Example: 86.630 (only present for contracts already sold)"
         },
         "sell_spot_time": {
           "type": "integer",
