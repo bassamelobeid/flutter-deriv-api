@@ -224,6 +224,8 @@ subtest 'batch-buy', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
+            BOM::Platform::Runtime->instance->app_config->quants
+                    ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
             # my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits->tick_expiry_engine_daily_turnover;
             # (my $fname = $class) =~ s!::!/!g;
             # $INC{$fname . '.pm'} = 1;
