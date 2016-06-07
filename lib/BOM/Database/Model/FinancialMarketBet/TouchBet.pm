@@ -67,7 +67,7 @@ sub save {
     my $args = shift;
 
     $self->SUPER::save($args);
-    $self->touch_bet_record->financial_market_bet_id($self->financial_market_bet_record->id);
+    $self->touch_bet_record->financial_market_bet_id($self->financial_market_bet_open_record->id);
     return $self->_save_orm_object({'record' => $self->touch_bet_record});
 }
 
