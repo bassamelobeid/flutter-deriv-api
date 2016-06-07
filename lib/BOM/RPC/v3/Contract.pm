@@ -11,7 +11,6 @@ use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Product::Contract::Helper;
 use Format::Util::Numbers qw(roundnear);
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing);
@@ -126,11 +125,7 @@ sub _get_ask {
 
             # only required for non-spead contracts
             if ($p2->{from_pricer_daemon} and $p2->{amount_type}) {
-                $response->{theo_probability}      = $contract->theo_probability->amount;
-                $response->{base_commission}       = $contract->base_commission;
-                $response->{probability_threshold} = $contract->market->deep_otm_threshold;
-                $response->{minimum_stake}         = $contract->staking_limits->{min};
-                $response->{maximum_payout}        = $contract->staking_limits->{max};
+                $response->{theo_probability} = $contract->theo_probability->amount;
             }
 
             if ($contract->underlying->feed_license eq 'realtime') {
@@ -312,44 +307,10 @@ sub get_contract_details {
     return $response;
 }
 
-sub validate_price {
-    my $params = shift;
+sub produce_contract {
+    my $contract_parameters = shift;
 
-    return BOM::Product::Contract::Helper::validate_price($params);
-}
-
-sub calculate_ask_price {
-    my $params = shift;
-
-    my $commission_markup = BOM::Product::Contract::Helper::commission({
-        theo_probability => $params->{theo_probability},
-        base_commission  => $params->{base_commission},
-        payout           => $params->{amount},
-    });
-    my $ask_probability = BOM::Product::Contract::Helper::calculate_ask_probability({
-        theo_probability      => $params->{theo_probability},
-        commission_markup     => $commission_markup,
-        probability_threshold => $params->{probability_threshold},
-    });
-
-    return roundnear(0.01, $ask_probability * $params->{amount});
-}
-
-sub calculate_payout {
-    my $params = shift;
-
-    my $commission_markup = BOM::Product::Contract::Helper::commission({
-        theo_probability => $params->{theo_probability},
-        base_commission  => $params->{base_commission},
-        stake            => $params->{amount},
-    });
-    my $payout = BOM::Product::Contract::Helper::calculate_payout({
-        theo_probability => $params->{theo_probability},
-        commission       => $commission_markup,
-        stake            => $params->{amount},
-    });
-
-    return roundnear(0.01, $payout);
+    return produce_contract($contract_parameters);
 }
 
 1;
