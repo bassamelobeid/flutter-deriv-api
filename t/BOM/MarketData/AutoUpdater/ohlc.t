@@ -1,5 +1,6 @@
 use Test::MockTime qw( restore_time set_absolute_time );
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db update_combined_realtime);
 use Test::Most;
 use Test::FailWarnings;
 use File::Spec::Functions qw(rel2abs splitpath);
@@ -12,7 +13,7 @@ my $abspath   = rel2abs((splitpath(__FILE__))[1]);
 my $data_path = $abspath . '/../../../data/bbdl/ohlc';
 my $module    = Test::MockModule->new('BOM::Market::Underlying');
 $module->mock('has_holiday_on', sub { 0 });
-
+initialize_realtime_ticks_db();
 subtest everything => sub {
 
     my $updater = BOM::MarketData::AutoUpdater::OHLC->new(
@@ -57,16 +58,20 @@ subtest everything => sub {
     }
 
 };
+set_absolute_time(Date::Utility->new('2014-01-10 08:00:00')->epoch);
 
 subtest 'valid index' => sub {
     my $updater = BOM::MarketData::AutoUpdater::OHLC->new(
-        is_a_weekend      => 0,
         file              => [$data_path . '/valid.csv'],
         directory_to_save => tempdir,
     );
-    $updater = Test::MockObject::Extends->new($updater);
-    $updater->mock('_passes_sanity_check', sub { '' });
     lives_ok {
+        update_combined_realtime(
+            underlying_symbol => 'HSI',
+            datetime          => Date::Utility->new,
+            tick              => {quote => 10192.45},
+        );
+
         $updater->run();
         ok($updater->report->{HSI}->{success}, 'HSI is updated');
     }
@@ -76,19 +81,23 @@ subtest 'valid index' => sub {
 
 subtest 'valid stocks' => sub {
     my $updater = BOM::MarketData::AutoUpdater::OHLC->new(
-        is_a_weekend      => 0,
         file              => [$data_path . '/stocks.csv'],
         directory_to_save => tempdir,
     );
-    $updater = Test::MockObject::Extends->new($updater);
-    $updater->mock('_passes_sanity_check', sub { '' });
     lives_ok {
+        update_combined_realtime(
+            underlying_symbol => 'FPFP',
+            datetime          => Date::Utility->new,
+            tick              => {quote => 33},
+        );
+
         $updater->run();
         ok($updater->report->{FPFP}->{success}, 'FPFP is updated');
     }
     'ohlc for FPFP updated successfully';
 };
 
+restore_time();
 subtest 'valid close' => sub {
     my $updater = BOM::MarketData::AutoUpdater::OHLC->new(
         is_a_weekend      => 0,
@@ -98,18 +107,14 @@ subtest 'valid close' => sub {
 
     lives_ok {
 
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'HSI',
-            epoch      => 1456272000,
-            open       => 19282.34,
-            high       => 19360.80,
-            low        => 19060.16,
-            close      => 19192.45,
-        });
-
         set_absolute_time(Date::Utility->new('2016-02-24')->epoch);
-        $updater->run();
+        update_combined_realtime(
+            underlying_symbol => 'HSI',
+            datetime          => Date::Utility->new,
+            tick              => {quote => 19192.45},
+        );
 
+        $updater->run();
         ok !$updater->report->{HSI}->{success}, 'HSI failed to be updated due to close >=5%';
         like($updater->report->{HSI}->{reason}, qr/OHLC big difference/i, 'sanity check for close');
     }
