@@ -3,7 +3,6 @@ package BOM::Platform::Context::Request::Urls;
 use Memoize;
 use Moose::Role;
 use Mojo::URL;
-use YAML::XS;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
@@ -50,11 +49,6 @@ sub url_for {
 
             if ($domain_type->{bo} and $path !~ /backoffice/) {
                 $path = 'backoffice/' . $path;
-            }
-
-            if ($self->_is_page_cached($url->path)) {
-                $path = '/c/' . $path;
-            } else {
                 $path = '/d/' . $path;
             }
 
@@ -143,33 +137,10 @@ sub _get_domain_type {
     return $domain_type;
 }
 
-has [qw(_page_caching_rules _dealing_domain _localhost_domain)] => (
+has [qw(_dealing_domain _localhost_domain)] => (
     is         => 'ro',
     lazy_build => 1,
 );
-
-sub _is_page_cached {
-    my $self = shift;
-    my $path = shift;
-
-    if ($path =~ /\.cgi/) {
-        $path =~ s/^\///g;
-    } elsif ($path !~ /^\//) {
-        $path = "/$path";
-    }
-
-    my $cache_control = $self->_page_caching_rules->{$path};
-    if ($cache_control->{"header"} and $cache_control->{"header"}->{'Cache-Control'} =~ /public/) {
-        return 1;
-    }
-
-    return;
-}
-
-sub _build__page_caching_rules {
-    my $self = shift;
-    return YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/page_caching_rules.yml');
-}
 
 sub _build__dealing_domain {
     my $self = shift;
