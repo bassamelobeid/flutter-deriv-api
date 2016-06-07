@@ -74,7 +74,6 @@ subtest 'what happens to an undefined symbol name' => sub {
     is($symbol_undefined->spot_spread,      0.005, 'an undefined symbol has correct spot_spread');
     is($symbol_undefined->delay_amount,     0,     'an undefined symbol has correct delay_amount');
     cmp_ok($symbol_undefined->outlier_tick,         '==', 0.10, 'an undefined symbol has correct outlier tick level');
-    cmp_ok($symbol_undefined->weekend_outlier_tick, '==', 0.10, 'an undefined symbol has correct outlier tick level');
 };
 
 subtest 'display_decimals' => sub {
@@ -799,24 +798,6 @@ subtest 'forward_starts_on' => sub {
         }
         eq_or_diff([map { $_->epoch } (@{$underlying->forward_starts_on($date)})], $expected_starts, "Got Correct starts");
     };
-};
-
-subtest 'weekend outlier tick' => sub {
-    cmp_ok(BOM::Market::Underlying->new('frxUSDJPY')->weekend_outlier_tick, '==', 0.05, 'non quanto fx weekend outlier move is 0.05');
-    cmp_ok(BOM::Market::Underlying->new('frxUSDSGD')->weekend_outlier_tick, '==', 0.1,  'quanto fx weekend outlier move is 0.1');
-    cmp_ok(BOM::Market::Underlying->new('frxXAUUSD')->weekend_outlier_tick, '==', 0.05, 'commodities weekend outlier move is 0.05');
-    cmp_ok(
-        BOM::Market::Underlying->new('AEX')->weekend_outlier_tick, '==',
-        BOM::Market::Underlying->new('AEX')->outlier_tick,         'indices weekend_outlier_tick matches outlier_tick'
-    );
-    cmp_ok(
-        BOM::Market::Underlying->new('FPFP')->weekend_outlier_tick, '==',
-        BOM::Market::Underlying->new('FPFP')->outlier_tick,         'commodities weekend_outlier_tick matches outlier_tick5'
-    );
-    cmp_ok(
-        BOM::Market::Underlying->new('R_100')->weekend_outlier_tick, '==',
-        BOM::Market::Underlying->new('R_100')->outlier_tick,         'randoms weekend_outlier_tick matches outlier_tick'
-    );
 };
 
 done_testing;

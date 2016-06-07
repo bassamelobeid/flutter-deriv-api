@@ -5,7 +5,6 @@ commodities:
     volatility_surface_type: "delta"
     suspicious_move: 0.05
     outlier_tick: 0.01
-    weekend_outlier_tick: 0.05
     display_name: "Commodities"
     display_order: 4
     integer_number_of_day: 1
@@ -30,7 +29,6 @@ forex:
     display_current_spot: 1
     suspicious_move: 0.05
     outlier_tick: 0.05
-    weekend_outlier_tick: 0.05
     deep_otm_threshold: 0.05
     display_name: "Forex"
     display_order: 1

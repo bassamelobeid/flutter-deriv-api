@@ -176,18 +176,6 @@ has outlier_tick => (
     default => sub { return shift->market->outlier_tick; },
 );
 
-=head2 outlier_tick
-
-Allowed percentage move between consecutive ticks when is crosses weekend/holiday
-
-=cut
-
-has weekend_outlier_tick => (
-    is      => 'ro',
-    lazy    => 1,
-    default => sub { return shift->market->weekend_outlier_tick; },
-);
-
 has [qw(sod_blackout_start eod_blackout_start eod_blackout_expiry)] => (
     is         => 'ro',
     lazy_build => 1,
