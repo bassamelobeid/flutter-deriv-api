@@ -57,6 +57,7 @@ sub BUILD {
             severity => 99,
             message_to_client =>
                 localize('Amount Per Point must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency),
+            message_to_client_array => ['Amount Per Point must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency],
         });
     }
 
@@ -209,7 +210,7 @@ sub _build_current_tick {
         $self->add_errors({
             message           => "Current tick is undefined [symbol: " . $self->underlying->symbol . "]",
             severity          => 99,
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
         });
     }
 
@@ -250,7 +251,7 @@ sub _build_entry_tick {
         $self->add_errors({
             message           => "Entry tick is undefined [symbol: " . $self->underlying->symbol . "]",
             severity          => 99,
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
         });
     }
 
@@ -458,7 +459,7 @@ sub _validate_quote {
             {
             message           => "Quote too old [symbol: " . $self->underlying->symbol . "]",
             severity          => 98,
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
             };
     }
     return @err;
@@ -474,7 +475,7 @@ sub _validate_underlying {
             {
             message           => "Invalid underlying for spread [symbol: " . $self->underlying->symbol . "]",
             severity          => 98,
-            message_to_client => localize('Trading on [_1] is not offered for this contract type.', $self->underlying->translated_display_name),
+            message_to_client => localize('Trading on this market is not offered for this contract type.'),
             };
     }
 
@@ -499,6 +500,7 @@ sub _validate_stop_loss {
     if ($self->stop_loss < $limits->{min} or $self->stop_loss > $limits->{max}) {
         my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min', 'max'});
         my $message_to_client = localize('Stop Loss must be between [_1] and [_2] [_3]', $min, $max, $unit);
+        my $message_to_client_array = ['Stop Loss must be between [_1] and [_2] [_3]', $min, $max, $unit];
         push @err,
             {
             message => 'Stop Loss is not within limits '
@@ -508,8 +510,9 @@ sub _validate_stop_loss {
                 . $limits->{min} . "] "
                 . "[max: "
                 . $limits->{max} . "]",
-            severity          => 99,
-            message_to_client => $message_to_client,
+            severity                => 99,
+            message_to_client       => $message_to_client,
+            message_to_client_array => $message_to_client_array,
             };
     }
 
@@ -525,7 +528,8 @@ sub _validate_stop_profit {
         max => min($self->stop_loss * 5, 1000 / $self->amount_per_point)};
     if ($self->stop_profit < $limits->{min} or $self->stop_profit > $limits->{max}) {
         my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min', 'max'});
-        my $message_to_client = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
+        my $message_to_client       = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
+        my $message_to_client_array = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
         push @err,
             {
             message => 'Stop Profit is not within limits '
@@ -535,8 +539,9 @@ sub _validate_stop_profit {
                 . $limits->{min} . "] "
                 . "[max: "
                 . $limits->{max} . "]",
-            severity          => 99,
-            message_to_client => $message_to_client,
+            severity                => 99,
+            message_to_client       => $message_to_client,
+            message_to_client_array => $message_to_client_array,
             };
     }
 
