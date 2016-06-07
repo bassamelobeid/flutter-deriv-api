@@ -18,7 +18,7 @@ use BOM::Platform::Runtime;
 with 'App::Base::Script';
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
-use Quant::Framework::VolSurface::Flat;
+use BOM::MarketData::VolSurface::Flat;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use BOM::Market::UnderlyingDB;
 use BOM::Platform::Runtime;

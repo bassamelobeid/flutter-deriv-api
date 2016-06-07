@@ -4,7 +4,7 @@ use Moose;
 use Quant::Framework::VolSurface::Cutoff;
 use Quant::Framework::VolSurface::Delta;
 use BOM::MarketData::VolSurface::Empirical;
-use Quant::Framework::VolSurface::Flat;
+use BOM::MarketData::VolSurface::Flat;
 use Quant::Framework::VolSurface::Moneyness;
 
 =head1 fetch_surface
