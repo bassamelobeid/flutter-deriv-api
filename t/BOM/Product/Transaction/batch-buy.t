@@ -167,12 +167,14 @@ sub top_up {
 }
 
 sub check_one_result {
-    my ($title, $cl, $acc, $m) = @_;
+    my ($title, $cl, $acc, $m, $balance_after) = @_;
 
     subtest $title, sub {
         is $m->{loginid}, $cl->loginid, 'loginid';
         is $m->{txn}->{account_id}, $acc->id, 'txn account_id';
         is $m->{fmb}->{account_id}, $acc->id, 'fmb account_id';
+        is $m->{txn}->{financial_market_bet_id}, $fmb->{id}, 'txn financial_market_bet_id';
+        is $m->{txn}->{balance_after}, $balance_after, 'balance_after';
     };
 }
 
@@ -181,7 +183,7 @@ sub check_one_result {
 ####################################################################
 
 subtest 'batch-buy', sub {
-    plan tests => 8;
+    plan tests => 9;
     lives_ok {
         my $clm = create_client; # manager
         my $cl1 = create_client;
@@ -243,9 +245,9 @@ subtest 'batch-buy', sub {
 
         is $error, undef, 'successful batch_buy';
         my $m = $txn->multiple;
-        check_one_result 'result for client #1', $cl1, $acc1, $m->[2];
-        check_one_result 'result for client #2', $cl2, $acc2, $m->[0];
-        check_one_result 'result for client #3', $cl2, $acc2, $m->[3];
+        check_one_result 'result for client #1', $cl1, $acc1, $m->[2], '4950.000';
+        check_one_result 'result for client #2', $cl2, $acc2, $m->[0], '4950.000';
+        check_one_result 'result for client #3', $cl2, $acc2, $m->[3], '4900.000';
 
         # note explain $txn->multiple;
     }
