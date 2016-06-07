@@ -56,7 +56,7 @@ while (1) {
         my $subsribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job
         $redis->del($key->[1]) if $subsribers_count == 0;
-        DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.subscribers', $subsribers_count);
+        DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subsribers_count);
     }
     $pm->finish;
 }
