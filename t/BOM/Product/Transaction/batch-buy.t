@@ -245,9 +245,9 @@ subtest 'batch-buy', sub {
 
         is $error, undef, 'successful batch_buy';
         my $m = $txn->multiple;
-        check_one_result 'result for client #1', $cl1, $acc1, $m->[2], '4950.000';
-        check_one_result 'result for client #2', $cl2, $acc2, $m->[0], '4950.000';
-        check_one_result 'result for client #3', $cl2, $acc2, $m->[3], '4900.000';
+        check_one_result 'result for client #1', $cl1, $acc1, $m->[2], '4950.0000';
+        check_one_result 'result for client #2', $cl2, $acc2, $m->[0], '4950.0000';
+        check_one_result 'result for client #3', $cl2, $acc2, $m->[3], '4900.0000';
 
         # note explain $txn->multiple;
     }
