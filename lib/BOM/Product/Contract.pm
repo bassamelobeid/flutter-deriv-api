@@ -402,7 +402,7 @@ has empirical_volsurface => (
 
 has [qw(volsurface)] => (
     is         => 'rw',
-    isa        => 'BOM::MarketData::VolSurface',
+    isa        => 'Quant::Framework::VolSurface',
     lazy_build => 1,
 );
 
