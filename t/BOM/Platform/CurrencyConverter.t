@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Cache::RedisDB;
 use BOM::Platform::CurrencyConverter;
-use Test::More tests=>17;
+use Test::More tests => 17;
 use Test::Exception;
 use Scalar::Util ('looks_like_number');
 use feature 'say';

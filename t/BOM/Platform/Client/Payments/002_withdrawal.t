@@ -117,8 +117,8 @@ subtest 'CR withdrawal' => sub {
         lives_ok { $client->validate_payment(%withdrawal, amount => -9999) } 'Non-Authed CR withdrawal USD9999';
 
         subtest 'perform withdraw' => sub {
-            lives_ok{ $client->smart_payment(%withdrawal, amount => -5000) } 'first 5k withdrawal';
-            throws_ok{ $client->smart_payment(%withdrawal, amount => -5001) } qr/exceeds withdrawal limit \[USD 5000.00\]/,
+            lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'first 5k withdrawal';
+            throws_ok { $client->smart_payment(%withdrawal, amount => -5001) } qr/exceeds withdrawal limit \[USD 5000.00\]/,
                 'total withdraw cannot > 10k';
         };
     };
@@ -132,8 +132,8 @@ subtest 'CR withdrawal' => sub {
         lives_ok { $client->validate_payment(%withdrawal_eur, amount => -9999) } 'Non-Authed CR withdrawal EUR 9999';
 
         subtest 'perform withdraw' => sub {
-            lives_ok{ $client->smart_payment(%withdrawal_eur, amount => -5000) } 'first 5k withdrawal';
-            throws_ok{ $client->smart_payment(%withdrawal_eur, amount => -5001) } qr/exceeds withdrawal limit \[EUR 5000.00\]/,
+            lives_ok { $client->smart_payment(%withdrawal_eur, amount => -5000) } 'first 5k withdrawal';
+            throws_ok { $client->smart_payment(%withdrawal_eur, amount => -5001) } qr/exceeds withdrawal limit \[EUR 5000.00\]/,
                 'total withdraw cannot > 10k';
         };
     };
@@ -148,8 +148,8 @@ subtest 'CR withdrawal' => sub {
         lives_ok { $client->validate_payment(%withdrawal, amount => -10001) } 'Authed CR withdrawal more than USD10K';
 
         subtest 'perform withdraw' => sub {
-            lives_ok{ $client->smart_payment(%withdrawal, amount => -5000) }, 'first 5k withdrawal';
-            lives_ok{ $client->smart_payment(%withdrawal, amount => -6000) }, 'subsequent 6k withdrawal';
+            lives_ok { $client->smart_payment(%withdrawal, amount => -5000) }, 'first 5k withdrawal';
+            lives_ok { $client->smart_payment(%withdrawal, amount => -6000) }, 'subsequent 6k withdrawal';
         };
     };
 };
@@ -175,8 +175,8 @@ subtest 'JP withdrawal' => sub {
         lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -999999) } 'Non-Authed JP withdrawal JPY 999,999';
 
         subtest 'perform withdraw' => sub {
-            lives_ok{ $client->smart_payment(%withdrawal_jpy, amount => -500000) } 'first 500k withdrawal';
-            throws_ok{ $client->smart_payment(%withdrawal_jpy, amount => -500001) } qr/exceeds withdrawal limit \[JPY 500000.00\]/,
+            lives_ok { $client->smart_payment(%withdrawal_jpy, amount => -500000) } 'first 500k withdrawal';
+            throws_ok { $client->smart_payment(%withdrawal_jpy, amount => -500001) } qr/exceeds withdrawal limit \[JPY 500000.00\]/,
                 'total withdraw cannot > 10M';
         };
     };
@@ -196,8 +196,8 @@ subtest 'JP withdrawal' => sub {
         lives_ok { $client->validate_payment(%withdrawal_jpy, amount => -1000001) } 'Authed JP withdrawal more than JPY 1,000,000';
 
         subtest 'perform withdraw' => sub {
-            lives_ok{ $client->smart_payment(%withdrawal_jpy, amount => -500000) } 'first 500k withdrawal';
-            lives_ok{ $client->smart_payment(%withdrawal_jpy, amount => -600000) } 'subsequent 600k withdrawal';
+            lives_ok { $client->smart_payment(%withdrawal_jpy, amount => -500000) } 'first 500k withdrawal';
+            lives_ok { $client->smart_payment(%withdrawal_jpy, amount => -600000) } 'subsequent 600k withdrawal';
         };
     };
 };
