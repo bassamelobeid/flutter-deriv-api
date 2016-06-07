@@ -163,7 +163,7 @@ sub _build_app_markup {
     my $self = shift;
 
     return 0 if $self->contract->is_spread;
-    return (($self->app_markup_percentage / 100) * $self->payout);
+    return $self->contract->app_markup_dollar_amount;
 }
 
 sub BUILDARGS {

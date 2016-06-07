@@ -1191,13 +1191,13 @@ sub _build_theo_probability {
 
 # Application developer's commission.
 # Defaults to 0%
-has app_commission_percentage => (
+has app_markup_percentage => (
     is      => 'ro',
     default => 0,
 );
 
 # theo_probability_value should be removed when we get rid of CalculatedValue.
-has [qw(theo_probability_value app_dollar_commission app_markup)] => (
+has [qw(theo_probability_value app_markup_dollar_amount app_markup)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -1216,11 +1216,11 @@ sub _build_app_markup {
         name        => 'app_markup',
         description => 'commission markup for app developer',
         set_by      => __PACKAGE__,
-        base_amount => $self->app_commission_percentage / 100,
+        base_amount => $self->app_markup_percentage / 100,
     });
 }
 
-sub _build_app_dollar_commission {
+sub _build_app_markup_dollar_amount {
     my $self = shift;
 
     return ($self->app_markup->amount * $self->payout);
