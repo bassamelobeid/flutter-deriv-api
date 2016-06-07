@@ -93,14 +93,16 @@ if (defined $do_calculation) {
         my $start_epoch = Date::Utility->new($contract->{start_time})->epoch;
         my $sell_epoch  = Date::Utility->new($contract->{sell_time})->epoch;
 
-        push @start_time,        $start_epoch;
-        push @sell_time,         $sell_epoch;
-        push @buy_price,         $contract->{buy_price};
-        push @payout_price,      $contract->{payout_price};
-        push @bet_type,          $contract->{bet_type};
-        push @underlying_symbol, $contract->{underlying_symbol};
+        if ($contract->{bet_type} eq 'CALL' or $contract->{bet_type} eq 'PUT') {
+            push @start_time,        $start_epoch;
+            push @sell_time,         $sell_epoch;
+            push @buy_price,         $contract->{buy_price};
+            push @payout_price,      $contract->{payout_price};
+            push @bet_type,          $contract->{bet_type};
+            push @underlying_symbol, $contract->{underlying_symbol};
 
-        $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy-price});
+            $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy-price});
+        }
     }
 
     $performance_probability = Performance::Probability::get_performance_probability({
