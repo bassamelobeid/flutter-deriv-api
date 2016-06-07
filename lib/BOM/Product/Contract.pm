@@ -153,8 +153,8 @@ sub _build_basis_tick {
         $basis_tick      = $self->entry_tick;
         $potential_error = localize('Waiting for entry tick.');
     } else {
-        $basis_tick = $self->current_tick;
-        $potential_error = localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name);
+        $basis_tick      = $self->current_tick;
+        $potential_error = localize('Trading on this market is suspended due to missing market data.');
     }
 
     # if there's no basis tick, don't die but catch the error.
@@ -908,8 +908,7 @@ sub _build_dividend_adjustment {
                 . $dividend_recorded_date->datetime . "] "
                 . "[symbol: "
                 . $self->underlying->symbol . "]",
-            message_to_client =>
-                localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name()),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
         });
 
     }
@@ -1314,8 +1313,7 @@ sub _build_pricing_vol {
                     . $self->underlying->symbol . "] "
                     . "[duration: "
                     . $self->remaining_time->as_concise_string . "]",
-                message_to_client =>
-                    localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name()),
+                message_to_client => localize('Trading on this market is suspended due to missing market data.'),
             });
         }
     } else {
@@ -1537,15 +1535,24 @@ sub _build_staking_limits {
         : $bet_limits->{min_payout}->{default}->{$curr};
     my $stake_min = ($self->for_sale) ? $payout_min / 20 : $payout_min / 2;
 
-    my $message_to_client =
-        $self->for_sale
-        ? localize('Contract market price is too close to final payout.')
-        : localize('Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max));
+    my $message_to_client_array;
+    my $message_to_client;
+    if ($self->for_sale) {
+        $message_to_client = localize('Contract market price is too close to final payout.');
+    } else {
+        $message_to_client = localize(
+            'Minimum stake of [_1] and maximum payout of [_2]',
+            to_monetary_number_format($stake_min),
+            to_monetary_number_format($payout_max));
+        $message_to_client_array =
+            ['Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($stake_min), to_monetary_number_format($payout_max)];
+    }
 
     return {
-        min               => $stake_min,
-        max               => $payout_max,
-        message_to_client => $message_to_client,
+        min                     => $stake_min,
+        max                     => $payout_max,
+        message_to_client       => $message_to_client,
+        message_to_client_array => $message_to_client_array,
     };
 }
 
@@ -2096,7 +2103,7 @@ sub _validate_feed {
     if (not $self->current_tick) {
         return {
             message           => "No realtime data [symbol: " . $underlying->symbol . "]",
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
         };
     } elsif ($self->calendar->is_open_at($self->date_pricing)
         and $self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch)
@@ -2104,7 +2111,7 @@ sub _validate_feed {
         # only throw errors for quote too old, if the exchange is open at pricing time
         return {
             message           => "Quote too old [symbol: " . $underlying->symbol . "]",
-            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
+            message_to_client => localize('Trading on this market is suspended due to missing market data.'),
         };
     }
 
@@ -2174,10 +2181,8 @@ sub _validate_input_parameters {
                     . $date_expiry->datetime . "] "
                     . "[underlying_symbol: "
                     . $self->underlying->symbol . "]",
-                message_to_client => localize(
-                    'Contracts on [_1] with duration more than 24 hours must expire at the end of a trading day.',
-                    $self->underlying->translated_display_name
-                ),
+                message_to_client =>
+                    localize('Contracts on this market with a duration of more than 24 hours must expire at the end of a trading day.'),
             };
         }
     }
@@ -2218,10 +2223,7 @@ sub _validate_trading_times {
         } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($date_start)->epoch < $date_expiry->epoch) {
             return {
                 message           => "Intraday duration must expire on same day [symbol: " . $underlying->symbol . "]",
-                message_to_client => localize(
-                    'Contracts on [_1] with durations under 24 hours must expire on the same trading day.',
-                    $underlying->translated_display_name()
-                ),
+                message_to_client => localize('Contracts on this market with a duration of under 24 hours must expire on the same trading day.'),
             };
         }
     } elsif ($self->expiry_daily and not $self->is_atm_bet) {
@@ -2241,7 +2243,7 @@ sub _validate_trading_times {
             my $message =
                 ($self->for_sale)
                 ? localize('Resale of this contract is not offered due to market holidays during contract period.')
-                : localize("Too many market holidays during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
+                : localize("Too many market holidays during the contract period.");
             my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             return {
                 message => 'Not enough trading days for calendar days ' . "[trading: " . $trading_days . "] " . "[calendar: " . $calendar_days . "]",
@@ -2419,6 +2421,7 @@ sub _validate_lifetime {
     my $permitted = $self->permitted_expiries;
     my ($min_duration, $max_duration) = @{$permitted}{'min', 'max'};
 
+    my $message_to_client_array;
     my $message_to_client =
         $self->for_sale
         ? localize('Resale of this contract is not offered.')
@@ -2438,7 +2441,10 @@ sub _validate_lifetime {
         $duration = $self->tick_count;
         $message  = 'Invalid tick count for tick expiry';
         # slightly different message for tick expiry.
-        $message_to_client = localize('Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration) if $min_duration != 0;
+        if ($min_duration != 0) {
+            $message_to_client = localize('Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration);
+            $message_to_client_array = ['Number of ticks must be between [_1] and [_2]', $min_duration, $max_duration];
+        }
     } elsif (not $self->expiry_daily) {
         $duration = $self->get_time_to_expiry({from => $self->date_start})->seconds;
         ($min_duration, $max_duration) = ($min_duration->seconds, $max_duration->seconds);
@@ -2461,9 +2467,10 @@ sub _validate_lifetime {
                 . $self->underlying->symbol . "] "
                 . "[code: "
                 . $self->code . "]",
-            message_to_client => $message_to_client,
-            info_link         => $asset_link,
-            info_text         => $asset_text,
+            message_to_client       => $message_to_client,
+            message_to_client_array => $message_to_client_array,
+            info_link               => $asset_link,
+            info_text               => $asset_text,
         };
     }
 
