@@ -14,7 +14,7 @@ use File::Temp;
 use Test::BOM::RPC::Client;
 use BOM::Test::Data::Utility::FeedTestDatabase qw/:init/;
 use BOM::Feed::Buffer::TickFile;
-use BOM::Feed::Populator::InsertTicks;
+use BOM::Populator::InsertTicks;
 
 use utf8;
 
@@ -41,7 +41,7 @@ subtest 'Initialization' => sub {
 
         # Insert HSI data ticks
         $fill_start = $now->minus_time_interval('7h');
-        $populator  = BOM::Feed::Populator::InsertTicks->new({
+        $populator  = BOM::Populator::InsertTicks->new({
             symbols            => [qw/ HSI /],
             last_migrated_time => $fill_start,
             buffer             => $buffer,
@@ -59,7 +59,7 @@ subtest 'Initialization' => sub {
 
         # Insert R_100 data ticks
         $fill_start = $now->minus_time_interval('1d7h');
-        $populator  = BOM::Feed::Populator::InsertTicks->new({
+        $populator  = BOM::Populator::InsertTicks->new({
             symbols            => [qw/ R_100 /],
             last_migrated_time => $fill_start,
             buffer             => $buffer,
