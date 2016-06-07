@@ -24,7 +24,7 @@ CREATE OR REPLACE FUNCTION bet_v1.buy_bet(  a_loginid           VARCHAR(12),    
                                             t_staff_loginid     VARCHAR(24),    -- 19
                                             t_remark            VARCHAR(800),   -- 20
                                             t_source            BIGINT,         -- 21
-                                            t_markup            NUMERIC,        -- 22
+                                            t_app_markup        NUMERIC,        -- 22
                                             -- quants_bets_variables
                                             q_qv                JSON,           -- 23
                                             p_limits            JSON,           -- 24
@@ -108,7 +108,7 @@ BEGIN
         action_type,
         quantity,
         source,
-        markup
+        app_markup
     ) VALUES (
         v_account.id,
         coalesce(t_transaction_time, now()),
@@ -120,7 +120,7 @@ BEGIN
         'buy',
         1,
         t_source,
-        t_markup
+        t_app_markup
     )
     RETURNING * INTO v_trans;
 
@@ -165,7 +165,7 @@ CREATE OR REPLACE FUNCTION bet_v1.buy_bet_nofail(   a_loginid           VARCHAR(
                                                     t_staff_loginid     VARCHAR(24),    -- 19
                                                     t_remark            VARCHAR(800),   -- 20
                                                     t_source            BIGINT,         -- 21
-                                                    t_markup            NUMERIC,        -- 22
+                                                    t_app_markup        NUMERIC,        -- 22
                                                     -- quants_bets_variables
                                                     q_qv                JSON,           -- 23
                                                     p_limits            JSON,           -- 24
@@ -203,7 +203,7 @@ BEGIN
                                 t_staff_loginid,
                                 t_remark,
                                 t_source,
-                                t_markup,
+                                t_app_markup,
                                 -- quants_bets_variables
                                 q_qv,
                                 p_limits) t;

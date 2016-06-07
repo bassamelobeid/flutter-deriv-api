@@ -125,7 +125,7 @@ SELECT (v_fmb).*, (v_trans).*
         JSON::XS::encode_json(+{map { my $v = $bet{$_}; defined $v ? ($_ => $v) : () } @chld_col}),
 
         # transaction table
-        @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source markup/},
+        @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source app_markup/},
 
         # data_collection.quants_bet_variables
         $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
@@ -217,7 +217,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
         JSON::XS::encode_json(+{map { my $v = $bet{$_}; defined $v ? ($_ => $v) : () } @chld_col}),
 
         # transaction table
-        @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source markup/},
+        @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source app_markup/},
 
         # data_collection.quants_bet_variables
         $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,

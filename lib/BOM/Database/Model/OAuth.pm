@@ -123,7 +123,7 @@ sub create_app {
 
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.apps
-            (name, scopes, homepage, github, appstore, googleplay, redirect_uri, markup_percentage, binary_user_id)
+            (name, scopes, homepage, github, appstore, googleplay, redirect_uri, app_markup_percentage, binary_user_id)
         VALUES
             (?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
@@ -131,22 +131,22 @@ sub create_app {
     $sth->execute(
         $app->{name},
         $app->{scopes},
-        $app->{homepage}          || '',
-        $app->{github}            || '',
-        $app->{appstore}          || '',
-        $app->{googleplay}        || '',
-        $app->{redirect_uri}      || '',
-        $app->{markup_percentage} || 0,
+        $app->{homepage}              || '',
+        $app->{github}                || '',
+        $app->{appstore}              || '',
+        $app->{googleplay}            || '',
+        $app->{redirect_uri}          || '',
+        $app->{app_markup_percentage} || 0,
         $app->{user_id});
 
     my @result = $sth->fetchrow_array();
 
     return {
-        app_id            => $result[0],
-        name              => $app->{name},
-        scopes            => $app->{scopes},
-        redirect_uri      => $app->{redirect_uri},
-        markup_percentage => $app->{markup_percentage} || 0
+        app_id                => $result[0],
+        name                  => $app->{name},
+        scopes                => $app->{scopes},
+        redirect_uri          => $app->{redirect_uri},
+        app_markup_percentage => $app->{app_markup_percentage} || 0
     };
 }
 
@@ -156,27 +156,27 @@ sub update_app {
     my $sth = $self->dbh->prepare("
         UPDATE oauth.apps SET
             name = ?, scopes = ?, homepage = ?, github = ?,
-            appstore = ?, googleplay = ?, redirect_uri = ?, markup_percentage = ?
+            appstore = ?, googleplay = ?, redirect_uri = ?, app_markup_percentage = ?
         WHERE id = ?
     ");
     $sth->execute(
         $app->{name},
         $app->{scopes},
-        $app->{homepage}          || '',
-        $app->{github}            || '',
-        $app->{appstore}          || '',
-        $app->{googleplay}        || '',
-        $app->{redirect_uri}      || '',
-        $app->{markup_percentage} || 0,
+        $app->{homepage}              || '',
+        $app->{github}                || '',
+        $app->{appstore}              || '',
+        $app->{googleplay}            || '',
+        $app->{redirect_uri}          || '',
+        $app->{app_markup_percentage} || 0,
         $app_id
     );
 
     return {
-        app_id            => $app_id,
-        name              => $app->{name},
-        scopes            => $app->{scopes},
-        redirect_uri      => $app->{redirect_uri},
-        markup_percentage => $app->{markup_percentage} || 0
+        app_id                => $app_id,
+        name                  => $app->{name},
+        scopes                => $app->{scopes},
+        redirect_uri          => $app->{redirect_uri},
+        app_markup_percentage => $app->{app_markup_percentage} || 0
     };
 }
 
@@ -184,7 +184,7 @@ sub get_app {
     my ($self, $user_id, $app_id) = @_;
 
     my $app = $self->dbh->selectrow_hashref("
-        SELECT id as app_id, name, redirect_uri, scopes, markup_percentage FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
+        SELECT id as app_id, name, redirect_uri, scopes, app_markup_percentage FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
     ", undef, $app_id, $user_id);
     return unless $app;
 
@@ -197,7 +197,7 @@ sub get_apps_by_user_id {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            id as app_id, name, redirect_uri, scopes, markup_percentage
+            id as app_id, name, redirect_uri, scopes, app_markup_percentage
         FROM oauth.apps WHERE binary_user_id = ? AND active ORDER BY name
     ", {Slice => {}}, $user_id);
     return [] unless $apps;
@@ -232,7 +232,7 @@ sub get_used_apps_by_loginid {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            u.app_id, name, a.scopes, a.markup_percentage
+            u.app_id, name, a.scopes, a.app_markup_percentage
         FROM oauth.apps a JOIN oauth.user_scope_confirm u ON a.id=u.app_id
         WHERE loginid = ? AND a.active ORDER BY a.name
     ", {Slice => {}}, $loginid);
