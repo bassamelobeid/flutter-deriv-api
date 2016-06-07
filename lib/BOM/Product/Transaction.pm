@@ -645,7 +645,7 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
                 $el->{txn} = $res->{txn};
             }
         }
-        enqueue_multiple_new_transactions $self, [grep {!$_->{code}} @$list];
+        enqueue_multiple_new_transactions $self, [grep { !$_->{code} } @$list];
     }
 
     # $self->stats_stop($stats_data);
