@@ -11,18 +11,6 @@ use BOM::Market::Registry;
 
 throws_ok { BOM::Market->new() } qr/Attribute \(name\) is required/, 'Name is Required';
 
-subtest 'outlier tick' => sub {
-    foreach my $market (BOM::Market::Registry->instance->display_markets) {
-        subtest $market->name => sub {
-            my $ot = $market->outlier_tick;
-            ok defined $ot, 'has a defined outlier tick level';
-            cmp_ok $ot, '>',  0,    '... which is positive';
-            cmp_ok $ot, '<=', 0.20, '... and less than or equal to 20%';
-
-        };
-    }
-};
-
 subtest 'disabled' => sub {
     subtest 'simple' => sub {
         my $bfm = new_ok('BOM::Market' => [{'name' => 'forex'}]);

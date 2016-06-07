@@ -47,16 +47,6 @@ has suspicious_move => (
     is => 'ro',
 );
 
-=head2 outlier_tick
-
-Allowed percentage move between consecutive ticks
-
-=cut
-
-has outlier_tick => (
-    is => 'ro',
-);
-
 =head2 integer_barrier
 
 Only allow integer barrier for this market. Default to false.

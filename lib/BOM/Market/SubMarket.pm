@@ -164,18 +164,6 @@ has max_failover_feed_delay => (
     coerce  => 1,
 );
 
-=head2 outlier_tick
-
-Allowed percentage move between consecutive ticks
-
-=cut
-
-has outlier_tick => (
-    is      => 'ro',
-    lazy    => 1,
-    default => sub { return shift->market->outlier_tick; },
-);
-
 has [qw(sod_blackout_start eod_blackout_start eod_blackout_expiry)] => (
     is         => 'ro',
     lazy_build => 1,
