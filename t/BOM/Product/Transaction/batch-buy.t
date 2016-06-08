@@ -372,8 +372,8 @@ subtest 'contract already started', sub {
             $txn->batch_buy;
         };
 
-        isa $error, 'Error::Base';
-        note explain $error;
+        note explain $error, $txn->multiple;
+        isa_ok $error, 'Error::Base';
         ok 1;
     }
     'survived';
