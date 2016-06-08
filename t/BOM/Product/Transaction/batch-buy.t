@@ -229,6 +229,7 @@ subtest 'batch-buy', sub {
             ],
         });
 
+        my $skip_qstat = 0;
         my $error = do {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
@@ -243,8 +244,8 @@ subtest 'batch-buy', sub {
                     ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
 
             my $redis = Cache::RedisDB->redis;
-            if ($redis->{port} == 6379) {
-                note "ATTENTION: not flushing redis. This can cause a failure.";
+            if ($redis->{port} == 6379) { # refuse to flush default redis
+                $skip_qstat = 1;          # instead skip the test below
             } else {
                 note "flushing redis";
                 $redis->flushall;
@@ -260,7 +261,11 @@ subtest 'batch-buy', sub {
         check_one_result 'result for client #3', $cl2, $acc2, $m->[3], '4900.0000';
 
         # note explain $txn->multiple;
-        note explain +ExpiryQueue::queue_status;
+        my $qstat = ExpiryQueue::queue_status;
+        SKIP: {
+            skip 'use the test redis instead of the default', 1 if $skip_qstat;
+            is $qstat->{open_contracts}, 3, 'ExpiryQueue';
+        }
     }
     'survived';
 };
