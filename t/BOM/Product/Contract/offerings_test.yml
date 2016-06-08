@@ -77,7 +77,7 @@ AS51:
         american:
           max: 365d
           min: 1d
-USAAAPL: &1
+USAAPL: &1
   callput:
     daily:
       spot:
@@ -97,27 +97,43 @@ USAAPL: *1
 USAMZN: *1
 USCT: *1
 USFB: *1
-USGE: *1
 USGOOG: *1
-USKO: *1
 USMSFT: *1
-USPFE: *1
 USXOM: *1
 UKBARC: *1
 UKBATS: *1
-UKGSK: *1
 UKHSBA: *1
-UKVOD: *1
 DEALV: *1
-DEBAYER: *1
 DEDAI: *1
 DESIE: *1
-DEVOWGEN: *1
-AUANZ: *1
-AUBHP: *1
-AUCBA: *1
-AUMQG: *1
-AUQAN: *1
+USCAT: *1
+USGLDSCH: *1 
+USMCDON: *1
+USMA: *1
+USBRKSHR: *1
+USBNG: *1
+USIBM: *1
+USALIBA: *1 
+USPEP: *1
+USEA: *1
+USJNJ: *1
+USAMX: *1
+USPG: *1
+UKBP: *1
+UKRIO: *1
+UKSTAN: *1
+UKLLOY: *1
+UKTSCO: *1
+DEBMW: *1
+DENOT: *1
+DESAP: *1
+DEDBK: *1
+DEAIR: *1
+INMARUTI: *1
+INRIL: *1
+INTATAMOTORS: *1
+INTATASTEEL: *1
+INBHARTIARTL: *1
 BFX:
   callput:
     daily:
