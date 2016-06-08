@@ -295,7 +295,7 @@ my @dispatch = (
             response => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
         }
     ],
-    ['cashier',                 '', 1, 'payments'],
+    ['cashier', '', 1, 'payments'],
     ['new_account_real',        '', 1, 'admin', {stash_params => [qw/ server_name client_ip user_agent /]}],
     ['new_account_japan',       '', 1, 'admin', {stash_params => [qw/ server_name client_ip user_agent /]}],
     ['new_account_maltainvest', '', 1, 'admin', {stash_params => [qw/ server_name client_ip user_agent /]}],
