@@ -242,7 +242,9 @@ subtest 'batch-buy', sub {
             BOM::Platform::Runtime->instance->app_config->quants
                     ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
 
-        note explain +ExpiryQueue::queue_status;
+            my $redis = RedisDB->new;
+            $redis->flushall unless $redis->{port} == 6379; # better to fail the test than to reset redis
+            note explain +ExpiryQueue::queue_status;
             $txn->batch_buy;
         };
 
