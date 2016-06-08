@@ -8,7 +8,6 @@ use Date::Utility;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Contract;
-use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
@@ -119,8 +118,10 @@ sub _candles {
                 start_time => $start_time,
                 end_time   => $end_time,
             })->[0];
-        $ohlc->{epoch} = $start_time;
-        push @all_ohlc, $ohlc;
+        if ($ohlc) {
+            $ohlc->{epoch} = $start_time;
+            push @all_ohlc, $ohlc;
+        }
     } elsif ($granularity >= 86400 and $ul->ohlc_daily_open) {
         # For the underlying nocturne, for daily ohlc, the date need to be date
         $start_time = Date::Utility->new($start_time)->truncate_to_day;

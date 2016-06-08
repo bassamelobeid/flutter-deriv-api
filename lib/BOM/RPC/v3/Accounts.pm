@@ -11,7 +11,7 @@ use Data::Password::Meter;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
-use BOM::RPC::v3::NewAccount::Japan;
+use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
@@ -133,7 +133,8 @@ sub statement {
             amount         => $txn->{amount},
             action_type    => $txn->{action_type},
             balance_after  => $txn->{balance_after},
-            contract_id    => $txn->{financial_market_bet_id}};
+            contract_id    => $txn->{financial_market_bet_id},
+            payout         => $txn->{payout_price}};
 
         my $txn_time;
         if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
@@ -203,6 +204,7 @@ sub profit_table {
         my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price/);
         $trx{contract_id}    = $row->{id};
         $trx{transaction_id} = $row->{txn_id};
+        $trx{payout}         = $row->{payout_price};
         $trx{purchase_time}  = Date::Utility->new($row->{purchase_time})->epoch;
         $trx{sell_time}      = Date::Utility->new($row->{sell_time})->epoch;
 
@@ -511,11 +513,11 @@ sub get_settings {
 
     # get JP real a/c status, for Japan Virtual a/c client
     my $jp_account_status;
-    $jp_account_status = BOM::RPC::v3::NewAccount::Japan::get_jp_account_status($client) if ($client->landing_company->short eq 'japan-virtual');
+    $jp_account_status = BOM::RPC::v3::Japan::NewAccount::get_jp_account_status($client) if ($client->landing_company->short eq 'japan-virtual');
 
     # get Japan specific a/c details (eg: daily loss, occupation, trading experience), for Japan real a/c client
     my $jp_real_settings;
-    $jp_real_settings = BOM::RPC::v3::NewAccount::Japan::get_jp_settings($client) if ($client->landing_company->short eq 'japan');
+    $jp_real_settings = BOM::RPC::v3::Japan::NewAccount::get_jp_settings($client) if ($client->landing_company->short eq 'japan');
 
     return {
         email        => $client->email,

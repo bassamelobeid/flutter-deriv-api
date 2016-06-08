@@ -14,6 +14,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::System::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Data::Dumper;
+use Quant::Framework::Utils::Test;
 
 initialize_realtime_ticks_db();
 my $now    = Date::Utility->new('2005-09-21 06:46:00');
@@ -190,14 +191,14 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'   => '51.49',
-        'ask_price'       => '51.49',
-        'longcode'        => 'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
-        'spot'            => '963.3054',
-        'payout'          => '100',
-        'base_commission' => 0.015,
-        'maximum_payout'  => 50000,
-        'minimum_stake'   => 0.35,
+        'display_value'         => '51.49',
+        'ask_price'             => '51.49',
+        'longcode'              => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'spot'                  => '963.3054',
+        'payout'                => '100',
+        'base_commission'       => 0.015,
+        'maximum_payout'        => 50000,
+        'minimum_stake'         => 0.35,
         'probability_threshold' => 0.025,
         'theo_probability'      => 0.499862404631018,
     };
@@ -245,7 +246,7 @@ subtest 'send_ask' => sub {
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
-        'USD 100.00 payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
         'long code  is correct'
     );
     {
@@ -283,7 +284,6 @@ subtest 'get_bid' => sub {
         date_expiry   => $now->epoch - 500,
         purchase_date => $now->epoch - 901
     );
-
     my $params = {
         short_code  => $contract->shortcode,
         contract_id => $contract->id,
@@ -353,7 +353,6 @@ subtest 'get_bid' => sub {
             current_spot_time
             contract_id
             underlying
-            has_corporate_actions
             is_expired
             is_valid_to_sell
             is_forward_starting
@@ -407,7 +406,7 @@ subtest $method => sub {
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
-            'longcode'     => "USD 194.22 payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
+            'longcode'     => "Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.",
             'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
         },
@@ -468,13 +467,125 @@ subtest $method => sub {
         'entry_tick_time' => 1127286661,
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287059,
-        'longcode'        => 'USD 208.81 payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
+        'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
         'shortcode'       => 'CALL_FRXAUDCAD_208.81_1127286660_1127287060_S0P_0',
         'underlying'      => 'frxAUDCAD',
     };
 
     foreach my $key (keys %$expected_result) {
         cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
+    }
+
+};
+
+subtest 'get_bid_affected_by_corporate_action' => sub {
+    my $opening    = BOM::Market::Underlying->new('USAAPL')->calendar->opening_on($now);
+    my $closing    = BOM::Market::Underlying->new('USAAPL')->calendar->closing_on($now);
+    my $underlying = BOM::Market::Underlying->new('USAAPL');
+    my $starting   = $opening->plus_time_interval('50m');
+    my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'USAAPL',
+        epoch      => $starting->epoch,
+        quote      => 100
+    });
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'index',
+        {
+            symbol        => 'USAAPL',
+            recorded_date => $opening->plus_time_interval('1d'),
+        });
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol         => 'USAAPL',
+            spot_reference => 100,
+            recorded_date  => $opening->plus_time_interval('1d'),
+        });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'USAAPL',
+        epoch      => $starting->epoch + 30,
+        quote      => 111
+    });
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'USAAPL',
+        epoch      => $starting->epoch + 90,
+        quote      => 80
+    });
+    my $action = {
+        11223360 => {
+            description    => 'STOCK split ',
+            flag           => 'N',
+            modifier       => 'divide',
+            action_code    => '3000',
+            value          => 2,
+            effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
+            type           => 'STOCK_SPLT',
+        }};
+    Quant::Framework::Utils::Test::create_doc(
+        'corporate_action',
+        {
+            symbol           => 'USAAPL',
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            actions          => $action
+        });
+
+    my $contract = create_contract(
+        client        => $client,
+        bet_type      => 'PUT',
+        underlying    => 'USAAPL',
+        spread        => 0,
+        current_tick  => $entry_tick,
+        date_start    => $starting,
+        date_expiry   => $closing->plus_time_interval('3d'),
+        purchase_date => $starting,
+        date_pricing  => $starting->plus_time_interval('1550m'),
+    );
+
+    my $params = {
+        short_code  => $contract->shortcode,
+        contract_id => $contract->id,
+        currency    => $client->currency,
+        is_sold     => 0,
+    };
+
+    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+
+    my $expected_result = {
+        'barrier'               => '55.50',
+        'contract_id'           => '20',
+        'date_settlement'       => '1127592000',
+        'original_barrier'      => '111.00',
+        'validation_error'      => 'This contract is affected by corporate action.',
+        'currency'              => 'USD',
+        'underlying'            => 'USAAPL',
+        'entry_tick'            => '111.00',
+        'date_start'            => '1127312400',
+        'current_spot'          => '80.00',
+        'is_intraday'           => '0',
+        'contract_type'         => 'PUT',
+        'is_expired'            => '0',
+        'is_valid_to_sell'      => '0',
+        'shortcode'             => 'PUT_USAAPL_1333.33_1127312400_1127592000_S0P_0',
+        'is_forward_starting'   => '0',
+        'bid_price'             => '0.00',
+        'longcode'              => 'Win payout if Apple Inc is strictly lower than entry spot at close on 2005-09-24.',
+        'date_expiry'           => '1127592000',
+        'is_path_dependent'     => '0',
+        'display_name'          => 'Apple Inc',
+        'ask_price'             => '133.33',
+        'entry_tick_time'       => '1127312430',
+        'entry_spot'            => '111.00',
+        'has_corporate_actions' => '1',
+        'current_spot_time'     => '1127312490',
+        'payout'                => '1333.33'
+    };
+
+    foreach my $key (keys %$expected_result) {
+        cmp_ok $result->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
     }
 
 };
@@ -509,12 +620,12 @@ sub create_contract {
     my $purchase_date = $now->epoch - 101;
     my $contract_data = {
         underlying   => $underlying,
-        bet_type     => 'FLASHU',
+        bet_type     => $args{bet_type} // 'FLASHU',
         currency     => 'USD',
-        current_tick => $args{current_tick} ? $args{current_tick} : $tick,
+        current_tick => $args{current_tick} // $tick,
         stake        => 100,
-        date_start   => $args{date_start} ? $args{date_start} : $date_start,
-        date_expiry  => $args{date_expiry} ? $args{date_expiry} : $date_expiry,
+        date_start   => $args{date_start} // $date_start,
+        date_expiry  => $args{date_expiry} // $date_expiry,
         barrier      => 'S0P',
     };
     if ($args{date_pricing}) { $contract_data->{date_pricing} = $args{date_pricing}; }
