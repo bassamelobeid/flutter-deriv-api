@@ -27,7 +27,6 @@ use BOM::Platform::Context qw(localize);
 use BOM::Market;
 use BOM::Market::SubMarket;
 use BOM::Market::SubMarket::Registry;
-use BOM::Product::Types;
 use Cache::RedisDB;
 use BOM::Platform::Context qw(request);
 
