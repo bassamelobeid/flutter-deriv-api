@@ -125,7 +125,6 @@ sub get_bet_results {
 
         my $currency = ($base_or_num eq 'base') ? $record->{base_currency} : $record->{numeraire_currency};
         my $bet_type = $record->{bet_type};
-
         my $bet_args = {
             underlying   => $underlying,
             bet_type     => $bet_type,
@@ -151,7 +150,7 @@ sub get_bet_results {
         );
 
         my $bet      = produce_contract($bet_args);
-        my $bom_mid  = $bet->theo_probability->amount - $bet->risk_markup->amount;
+        my $bom_mid  = $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope' ? $bet->pricing_engine->theo_probability: $bet->pricing_engine->base_probability->amount;
         my $bom_bs   = $bet->bs_probability->amount;
         my $sd_mid   = $record->{sd_mid};
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');

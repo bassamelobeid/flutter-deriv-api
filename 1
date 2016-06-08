@@ -271,7 +271,7 @@ sub _build_price {
     } elsif ($self->price_type eq 'bid') {
         $price = $self->bet->bid_price;
     } elsif ($self->price_type eq 'theo') {
-        $price = $self->theo_prob * $self->bet->payout;
+        $price = $self->bet->theo_probability->amount * $self->bet->payout - $self->bet->risk_markup->amount * $self->bet->payout;
     }
 
     #this is for VV engine
@@ -457,9 +457,9 @@ sub get_csv_line {
     $line .= ',' . $self->bet->bid_probability->amount;
     $line .= ',' . $self->bet->ask_probability->amount;
     $line .= ',' . ($self->bet->ask_probability->amount - $self->bet->bid_probability->amount);
-    $line .= ',' . $self->theo_prob;
+    $line .= ',' . ($self->bet->theo_probability->amount - $self->bet->risk_markup->amount);
     $line .= ',' . $self->bloomberg_exported_price_mid / 100;
-    $line .= ',' . abs(sprintf("%.4f", $self->theo_prob) - $self->bloomberg_exported_price_mid / 100);
+    $line .= ',' . abs(sprintf("%.4f", $self->bet->theo_probability->amount - $self->bet->risk_markup->amount) - $self->bloomberg_exported_price_mid / 100);
     return $line;
 }
 
