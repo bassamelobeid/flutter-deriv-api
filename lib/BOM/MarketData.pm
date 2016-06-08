@@ -1,7 +1,7 @@
 package BOM::MarketData;
 
 use Moose;
-use BOM::System::Types;
+use BOM::Market::Types;
 
 has symbol => (
     is       => 'ro',
