@@ -142,12 +142,12 @@ sub send_proposal {
             }
         },
         {
-            short_code            => delete $details->{short_code},
-            contract_id           => $contract_id,
-            currency              => delete $details->{currency},
-            is_sold               => delete $details->{is_sold},
-            sell_time             => $sell_time,
-            args                  => $details
+            short_code  => delete $details->{short_code},
+            contract_id => $contract_id,
+            currency    => delete $details->{currency},
+            is_sold     => delete $details->{is_sold},
+            sell_time   => $sell_time,
+            args        => $details
         },
         'proposal_open_contract'
     );

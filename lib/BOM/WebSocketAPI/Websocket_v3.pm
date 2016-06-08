@@ -251,7 +251,7 @@ my @dispatch = (
         'proposal_open_contract',
         '', 1, 'read',
         {
-            stash_params => [qw/ app_markup_percentage /],
+            stash_params    => [qw/ app_markup_percentage /],
             rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
         }
     ],

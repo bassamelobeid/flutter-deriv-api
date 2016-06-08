@@ -213,9 +213,7 @@ sub send_ask {
                 msg_type => 'proposal',
                 proposal => {($id ? (id => $id) : ()), %$response}};
         },
-        {
-            args                  => $args
-        },
+        {args => $args},
         'proposal'
     );
     return;
