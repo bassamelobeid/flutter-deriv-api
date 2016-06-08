@@ -449,8 +449,8 @@ subtest 'single contract fails in database', sub {
         subtest 'result for client #3', sub {
             ok !exists($m->[3]->{fmb}), 'fmb does not exist';
             ok !exists($m->[3]->{txn}), 'txn does not exist';
-            is $m->{code}, 'InsufficientBalance', 'code = InsufficientBalance';
-            is $m->{error}, 'Your account balance (USD40.00) is insufficient to buy this contract (USD50.00).', 'correct description';
+            is $m->[3]->{code}, 'InsufficientBalance', 'code = InsufficientBalance';
+            is $m->[3]->{error}, 'Your account balance (USD40.00) is insufficient to buy this contract (USD50.00).', 'correct description';
         };
 
         my $expected_status = {
