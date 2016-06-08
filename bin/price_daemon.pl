@@ -42,12 +42,22 @@ while (1) {
 
     my $redis = BOM::System::RedisReplicated::redis_pricer;
 
+    my $tv = [Time::HiRes::gettimeofday];
     while (my $key = $redis->brpop("pricer_jobs", 0)) {
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv));
+
         my $next = $key->[1];
         $next =~ s/^PRICER_KEYS:://;
         my $payload  = JSON::XS::decode_json($next);
         my $params   = {@{$payload}};
         my $trigger  = $params->{symbol};
+
+        my $current_spot_ts = BOM::Market::Underlying->new($params->{symbol})->spot_tick->epoch;
+        my $last_price_ts = $redis->get($next) || 0;
+
+        next if ($current_spot_ts==$last_price_ts and time - $last_price_ts<=10 );
+
+        $redis->set($next, time);
         my $response = BOM::RPC::v3::Contract::send_ask({args => $params}, 1);
 
         DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.price.call');
@@ -55,8 +65,12 @@ while (1) {
 
         my $subsribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job
-        $redis->del($key->[1]) if $subsribers_count == 0;
+        if ($subsribers_count == 0) {
+            $redis->del($key->[1]);
+            $redis->del($next);
+        }
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subsribers_count);
+        $tv = [Time::HiRes::gettimeofday];
     }
     $pm->finish;
 }
