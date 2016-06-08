@@ -34,8 +34,8 @@ sub _send_ask {
             args        => $args,
             method      => 'send_ask',
             msg_type    => 'price_stream',
-            response_cb => sub {
-                my $rpc_response = shift;
+            rpc_response_cb => sub {
+                my ($c, $args, $rpc_response) = @_;
                 if ($rpc_response and exists $rpc_response->{error}) {
                     my $err = $c->new_error('price_stream', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                     $err->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
