@@ -626,7 +626,7 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
 
     for my $m (@{$self->multiple}) {
         next if $m->{code};
-        my $c = BOM::Platform::Client->new({loginid => $m->{loginid}});
+        my $c = try{ BOM::Platform::Client->new({loginid => $m->{loginid}}) };
         unless ($c) {
             $m->{code}  = 'InvalidLoginid';
             $m->{error} = BOM::Platform::Context::localize('Invalid loginid');

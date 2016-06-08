@@ -292,6 +292,7 @@ subtest 'batch-buy 2', sub {
             amount_type => 'payout',
             multiple    => [
                 {code    => 'ignore'},
+                {},
                 {code    => 'ignore'},
             ],
         });
