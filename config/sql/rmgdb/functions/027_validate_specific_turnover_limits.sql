@@ -100,7 +100,8 @@ BEGIN
                                          array_to_string(ARRAY[
                                              '(' || s.s || ')',
                                              '(' || p.t || ')',
-                                             CASE WHEN (t.el -> 'tick_expiry') IS NOT NULL THEN 'b.tick_count IS NOT NULL' END
+                                             CASE WHEN (t.el -> 'tick_expiry') IS NOT NULL THEN 'b.tick_count IS NOT NULL' END,
+                                             CASE (t.el ->> 'daily')::BOOLEAN WHEN TRUE THEN 'b.expiry_daily IS TRUE' WHEN FALSE THEN 'b.expiry_daily IS FALSE' END
                                          ], ' AND '),
                                          t.el ->> 'limit',
                                          t.el ->> 'name')), ARRAY[]::TEXT[])
