@@ -164,8 +164,8 @@ sub BUILDARGS {
     return $args;
 }
 
-my %known_errors;               # forward declaration
-sub sell_expired_contracts;     # forward declaration
+my %known_errors;              # forward declaration
+sub sell_expired_contracts;    # forward declaration
 
 sub _build_purchase_date {
 
@@ -614,7 +614,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
 #   there is no way for a contract to be bought but not reported back to the
 #   caller.
 
-sub batch_buy {                        ## no critic (RequireArgUnpacking)
+sub batch_buy {    ## no critic (RequireArgUnpacking)
     my $self    = shift;
     my @options = @_;
 
@@ -626,7 +626,7 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
 
     for my $m (@{$self->multiple}) {
         next if $m->{code};
-        my $c = try{ BOM::Platform::Client->new({loginid => $m->{loginid}}) };
+        my $c = try { BOM::Platform::Client->new({loginid => $m->{loginid}}) };
         unless ($c) {
             $m->{code}  = 'InvalidLoginid';
             $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
@@ -655,9 +655,7 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
         # this sorting is to prevent deadlocks in the database
         @$list = sort { $a->{loginid} cmp $b->{loginid} } @$list;
 
-        my @general_error = (
-            'UnexpectedError',
-            BOM::Platform::Context::localize('An unexpected error occurred'));
+        my @general_error = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'));
 
         try {
             my $currency   = $self->contract->currency;
@@ -675,11 +673,14 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
                 if (my $ecode = $res->{e_code}) {
                     # map DB errors to client messages
                     if (my $ref = $known_errors{$ecode}) {
-                        my $error = (ref $ref eq 'CODE'
-                                     ? $ref->($self, $el->{client},
-                                              1_000_000, # fake an insanely high retry count
-                                              $res->{e_description})
-                                     : $ref);
+                        my $error = (
+                            ref $ref eq 'CODE'
+                            ? $ref->(
+                                $self, $el->{client},
+                                1_000_000,    # fake an insanely high retry count
+                                $res->{e_description})
+                            : $ref
+                        );
                         $el->{code}  = $error->{-type};
                         $el->{error} = $error->{-message_to_client};
                     } else {
@@ -693,7 +694,7 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
             enqueue_multiple_new_transactions $self, [grep { !$_->{code} } @$list];
         }
         catch {
-            warn __PACKAGE__.':('.__LINE__.'): '.$_; # log it
+            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
 
             for my $el (@$list) {
                 @{$el}{qw/code error/} = @general_error unless $el->{code} or $el->{fmb};
@@ -892,7 +893,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_daily_turnover, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_daily_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your daily turnover limit of [_1][_2].',
@@ -1072,7 +1073,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_daily_losses, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_daily_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your daily limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1087,7 +1088,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_7day_turnover, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_7day_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 7-day turnover limit of [_1][_2].',
@@ -1104,7 +1105,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_7day_losses, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_7day_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 7-day limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1128,7 +1129,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_30day_turnover, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_30day_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 30-day turnover limit of [_1][_2].',
@@ -1145,7 +1146,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_30day_losses, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_30day_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 30-day limit on losses of [_1][_2].', $currency, $limit);
 
