@@ -164,7 +164,8 @@ sub BUILDARGS {
     return $args;
 }
 
-sub sell_expired_contracts;    # forward declaration
+my %known_errors;               # forward declaration
+sub sell_expired_contracts;     # forward declaration
 
 sub _build_purchase_date {
 
@@ -636,10 +637,14 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
         my $result = $fmb_helper->batch_buy_bet;
         for my $el (@$list) {
             my $res = shift @$result;
-            if ($res->{e_code}) {
+            if (my $ecode = $res->{e_code}) {
                 # TODO: map DB errors to client messages
-                $el->{code}  = $res->{e_code};
-                $el->{error} = $res->{e_description};
+                if (exists $known_errors{$ecode}) {
+                    ...;
+                } else {
+                    $el->{code}  = $res->{e_code};
+                    $el->{error} = $res->{e_description};
+                }
             } else {
                 $el->{fmb} = $res->{fmb};
                 $el->{txn} = $res->{txn};
@@ -833,11 +838,11 @@ In case of an unexpected error, the exception is re-thrown unmodified.
 
 =cut
 
-my %known_errors = (
+%known_errors = (
     BI001 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
         my $limit    = to_monetary_number_format($client->get_limit_for_daily_turnover, 1);
 
@@ -855,19 +860,20 @@ my %known_errors = (
         );
     },
     BI002 => sub {
-        my $self  = shift;
-        my $retry = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
 
         unless ($retry) {
             my $res = sell_expired_contracts +{
-                client       => $self->client,
+                client       => $client,
                 source       => $self->source,
                 only_expired => 1
             };
             return if $res and $res->{number_of_sold_bets} > 0;    # retry
         }
 
-        my $limit = $self->client->get_limit_for_open_positions;
+        my $limit = $client->get_limit_for_open_positions;
         return Error::Base->cuss(
             -type              => 'OpenPositionLimit',
             -mesg              => "Client has reached the limit of $limit open positions.",
@@ -878,12 +884,13 @@ my %known_errors = (
         );
     },
     BI003 => sub {
-        my $self  = shift;
-        my $retry = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
 
         unless ($retry) {
             my $res = sell_expired_contracts +{
-                client       => $self->client,
+                client       => $client,
                 source       => $self->source,
                 only_expired => 1
             };
@@ -892,7 +899,7 @@ my %known_errors = (
 
         my $currency = $self->contract->currency;
         my $account  = BOM::Database::DataMapper::Account->new({
-            client_loginid => $self->client->loginid,
+            client_loginid => $client->loginid,
             currency_code  => $currency,
         });
         my $balance = $account->get_balance();
@@ -921,12 +928,13 @@ my %known_errors = (
         -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.'),
     ),
     BI007 => sub {
-        my $self  = shift;
-        my $retry = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
 
         unless ($retry) {
             my $res = sell_expired_contracts +{
-                client       => $self->client,
+                client       => $client,
                 source       => $self->source,
                 only_expired => 1
             };
@@ -942,14 +950,15 @@ my %known_errors = (
         );
     },
     BI008 => sub {
-        my $self  = shift;
-        my $retry = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($self->client->get_limit_for_account_balance, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_account_balance, 1);
 
         my $account = BOM::Database::DataMapper::Account->new({
-            client_loginid => $self->client->loginid,
+            client_loginid => $client->loginid,
             currency_code  => $currency,
         });
         my $balance = $account->get_balance();
@@ -964,12 +973,13 @@ my %known_errors = (
         );
     },
     BI009 => sub {
-        my $self  = shift;
-        my $retry = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
 
         unless ($retry) {
             my $res = sell_expired_contracts +{
-                client       => $self->client,
+                client       => $client,
                 source       => $self->source,
                 only_expired => 1
             };
@@ -977,7 +987,7 @@ my %known_errors = (
         }
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($self->client->get_limit_for_payout, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_payout, 1);
 
         return Error::Base->cuss(
             -type              => 'OpenPositionPayoutLimit',
@@ -995,9 +1005,10 @@ my %known_errors = (
             'Your account has exceeded the trading limit with free promo code, please deposit if you wish to continue trading.'),
     ),
     BI011 => sub {
-        my $self  = shift;
-        my $retry = shift;
-        my $msg   = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
+        my $msg    = shift;
 
         my $limit_name = 'Unknown';
         $msg =~ /^.+: ([^,]+)/ and $limit_name = $1;
@@ -1009,9 +1020,9 @@ my %known_errors = (
         );
     },
     BI012 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
         my $limit    = to_monetary_number_format($client->get_limit_for_daily_losses, 1);
 
@@ -1024,9 +1035,9 @@ my %known_errors = (
         );
     },
     BI013 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
         my $limit    = to_monetary_number_format($client->get_limit_for_7day_turnover, 1);
 
@@ -1041,9 +1052,9 @@ my %known_errors = (
         );
     },
     BI014 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
         my $limit    = to_monetary_number_format($client->get_limit_for_7day_losses, 1);
 
@@ -1065,9 +1076,9 @@ my %known_errors = (
         );
     },
     BI016 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
         my $limit    = to_monetary_number_format($client->get_limit_for_30day_turnover, 1);
 
@@ -1082,9 +1093,9 @@ my %known_errors = (
         );
     },
     BI017 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
         my $limit    = to_monetary_number_format($client->get_limit_for_30day_losses, 1);
 
@@ -1105,7 +1116,7 @@ sub _recover {
 
     if (ref($err) eq 'ARRAY') {    # special BINARY code
         my $ref = $known_errors{$err->[0]};
-        return ref $ref eq 'CODE' ? $ref->($self, $retry, $err->[1]) : $ref if $ref;
+        return ref $ref eq 'CODE' ? $ref->($self, $self->client, $retry, $err->[1]) : $ref if $ref;
     } else {
         # TODO: recover from deadlocks & co.
     }
