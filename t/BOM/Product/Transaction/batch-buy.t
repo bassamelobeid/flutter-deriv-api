@@ -291,9 +291,9 @@ subtest 'batch-buy 2', sub {
             payout      => $contract->payout,
             amount_type => 'payout',
             multiple    => [
-                {code => 'ignore'},
-                {},
-                {code => 'ignore'},
+                {code    => 'ignore'},
+                {loginid => 'NONE000'},
+                {code    => 'ignore'},
             ],
         });
 
