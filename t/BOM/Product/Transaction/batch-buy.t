@@ -264,7 +264,7 @@ subtest 'batch-buy', sub {
 };
 
 subtest 'batch-buy 2', sub {
-    plan tests => 10;
+    plan tests => 3;
     lives_ok {
         my $clm = create_client; # manager
 
@@ -313,6 +313,14 @@ subtest 'batch-buy 2', sub {
         };
 
         is $error, undef, 'successful batch_buy';
+        my $expected = [
+            {code    => 'ignore'},
+            {
+                code  => 'InvalidLoginid',
+                error => 'Invalid loginid',
+            },
+            {code    => 'ignore'},
+        ];
         my $m = $txn->multiple;
         note explain $m;
     }
