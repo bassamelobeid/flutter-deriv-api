@@ -366,6 +366,7 @@ subtest $method => sub {
         'sell_time'      => Date::Utility->new($data->[0]{sell_time})->epoch,
         'buy_price'      => '100',
         'purchase_time'  => Date::Utility->new($data->[0]{purchase_time})->epoch,
+        'payout'         => $contract_expired->payout
     };
 
     is_deeply($result->{transactions}[0], $expect0, 'result is correct');
@@ -500,23 +501,13 @@ subtest $method => sub {
         },
         'tnc_approval is excluded, still status is empty'
     );
-    $test_client->set_status('ok', 'test staff', 1);
-    $test_client->save();
-    is_deeply(
-        $c->tcall($method, {token => $token1}),
-        {
-            status              => [qw(ok)],
-            risk_classification => ''
-        },
-        'ok status'
-    );
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => [qw(ok authenticated)],
+            status              => ['authenticated'],
             risk_classification => ''
         },
         'ok, authenticated'

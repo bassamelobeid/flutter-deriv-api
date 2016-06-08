@@ -101,7 +101,7 @@ sub update_table {
         foreach my $bet_type (keys %{$table->{$barrier}}) {
             my $params = $table->{$barrier}->{$bet_type};
             my $ask_price;
-            my $default_price = 1000;
+            my $default_price = $args->{payout};
             if (%$params) {
                 $ask_price = BOM::RPC::v3::Contract::calculate_ask_price({
                     theo_probability      => $params->{theo_probability},
