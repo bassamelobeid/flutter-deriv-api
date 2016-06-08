@@ -26,11 +26,6 @@ before_install:
     - /tmp/travis-scripts/fixHostName.sh
     - /tmp/travis-scripts/postgres.sh
 
-    # TODO DELETE
-    - git clone https://github.com/evostrov/perl-Mojo-WebSocketProxy.git /tmp/perl-Mojo-WebSocketProxy
-    - (cd /tmp/perl-Mojo-WebSocketProxy && git checkout evgeniy/wsproxy_dispatcher && perl Makefile.PL && make && sudo make install)
-    # /TODO DELETE
-
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
