@@ -378,6 +378,87 @@ subtest 'contract already started', sub {
     'survived';
 };
 
+subtest 'single contract fails in database', sub {
+    plan tests => 10;
+    lives_ok {
+        my $clm = create_client; # manager
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+
+        top_up $clm, 'USD', 0;   # the manager has no money
+        top_up $cl1, 'USD', 5000;
+        top_up $cl2, 'USD', 90;
+
+        isnt + (my $acc1 = $cl1->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #1';
+        isnt + (my $acc2 = $cl2->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #2';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 90, 'USD balance #2 is 90 got: ' . $bal;
+
+        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            tick_expiry  => 1,
+            tick_count   => 5,
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Product::Transaction->new({
+            client      => $clm,
+            contract    => $contract,
+            price       => 50.00,
+            payout      => $contract->payout,
+            amount_type => 'payout',
+            multiple    => [
+                {loginid => $cl2->loginid},
+                {code    => 'ignore'},
+                {loginid => $cl1->loginid},
+                {loginid => $cl2->loginid},
+            ],
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_transaction->mock(
+                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            BOM::Platform::Runtime->instance->app_config->quants
+                    ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
+
+            ExpiryQueue::queue_flush;
+            note explain +ExpiryQueue::queue_status;
+            $txn->batch_buy;
+        };
+
+        is $error, undef, 'successful batch_buy';
+        my $m = $txn->multiple;
+        check_one_result 'result for client #1', $cl1, $acc1, $m->[2], '4950.0000';
+        check_one_result 'result for client #2', $cl2, $acc2, $m->[0], '40.0000';
+        # check_one_result 'result for client #3', $cl2, $acc2, $m->[3], '40.0000';
+
+        my $expected_status = {
+            active_queues  => 2, # TICK_COUNT and SETTLEMENT_EPOCH
+            open_contracts => 2, # the ones just bought
+            ready_to_sell  => 0, # obviously
+        };
+        is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
+
+        note explain $m->[3];
+    }
+    'survived';
+};
+
 Test::NoWarnings::had_no_warnings;
 
 done_testing;
