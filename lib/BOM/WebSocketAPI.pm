@@ -16,6 +16,9 @@ use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 
+use File::Slurp;
+use JSON::Schema;
+
 sub apply_usergroup {
     my ($cf, $log) = @_;
 
