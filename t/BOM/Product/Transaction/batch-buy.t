@@ -185,7 +185,7 @@ sub check_one_result {
 ####################################################################
 
 subtest 'batch-buy', sub {
-    plan tests => 9;
+    plan tests => 10;
     lives_ok {
         my $clm = create_client; # manager
         my $cl1 = create_client;
@@ -243,13 +243,7 @@ subtest 'batch-buy', sub {
             BOM::Platform::Runtime->instance->app_config->quants
                     ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
 
-            my $redis = Cache::RedisDB->redis;
-            if ($redis->{port} == 6379) { # refuse to flush default redis
-                $skip_qstat = 1;          # instead skip the test below
-            } else {
-                note "flushing redis";
-                $redis->flushall;
-            }
+            ExpiryQueue::queue_flush;
             note explain +ExpiryQueue::queue_status;
             $txn->batch_buy;
         };
@@ -261,11 +255,12 @@ subtest 'batch-buy', sub {
         check_one_result 'result for client #3', $cl2, $acc2, $m->[3], '4900.0000';
 
         # note explain $txn->multiple;
-        my $qstat = ExpiryQueue::queue_status;
-        SKIP: {
-            skip 'use the test redis instead of the default', 1 if $skip_qstat;
-            is $qstat->{open_contracts}, 3, 'ExpiryQueue';
-        }
+        my $expected_status = {
+            active_queues  => 2, # TICK_COUNT and SETTLEMENT_EPOCH
+            open_contracts => 3, # the ones just bought
+            ready_to_sell  => 0, # obviously
+        };
+        is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
     }
     'survived';
 };
