@@ -31,7 +31,7 @@ sub init {
         # 30 minute timeout for backoffice scripts, 1 minute for client requests.
         my $timeout = (request()->backoffice or $0 =~ /backend/) ? 1800 : 60;
 
-        $SIG{ALRM} = sub {
+        $SIG{ALRM} = sub {    ## no critic
             my $runtime = time - $^T;
             my $timenow = Date::Utility->new->datetime;
 
