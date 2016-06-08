@@ -29,7 +29,7 @@ try {
     );
 
     my $corp = Quant::Framework::CorporateAction::load($storage_accessor, $symbol)
-        or die("No corporate actions for '$sybmol' available for update");
+        || die("No corporate actions for '$sybmol' available for update");
 
     # creates new corporate action with new date
     $corp = $corp->update({}, Date::Utility->new);
