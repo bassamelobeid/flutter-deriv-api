@@ -625,32 +625,50 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
         # this sorting is to prevent deadlocks in the database
         @$list = sort { $a->{loginid} cmp $b->{loginid} } @$list;
 
-        my $currency   = $self->contract->currency;
-        my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
-            %$bet_data,
-            # great readablility provided by our tidy rules
-            account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
-            limits       => [map                                      { $_->{limits} } @$list],
-            db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
-        );
+        my @general_error = (
+            'UnexpectedError',
+            BOM::Platform::Context::localize('An unexpected error occurred'));
 
-        my $result = $fmb_helper->batch_buy_bet;
-        for my $el (@$list) {
-            my $res = shift @$result;
-            if (my $ecode = $res->{e_code}) {
-                # TODO: map DB errors to client messages
-                if (exists $known_errors{$ecode}) {
-                    ...;
+        try {
+            my $currency   = $self->contract->currency;
+            my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
+                %$bet_data,
+                # great readablility provided by our tidy rules
+                account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
+                limits       => [map                                      { $_->{limits} } @$list],
+                db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+            );
+
+            my $result = $fmb_helper->batch_buy_bet;
+            for my $el (@$list) {
+                my $res = shift @$result;
+                if (my $ecode = $res->{e_code}) {
+                    # map DB errors to client messages
+                    if (my $ref = $known_errors{$ecode}) {
+                        my $error = (ref $ref eq 'CODE'
+                                     ? $ref->($self, $el->{client},
+                                              1_000_000, # fake an insanely high retry count
+                                              $res->{e_description})
+                                     : $ref);
+                        $el->{code}  = $error->{-type};
+                        $el->{error} = $error->{-message_to_client};
+                    } else {
+                        @{$el}{qw/code error/} = @general_error;
+                    }
                 } else {
-                    $el->{code}  = $res->{e_code};
-                    $el->{error} = $res->{e_description};
+                    $el->{fmb} = $res->{fmb};
+                    $el->{txn} = $res->{txn};
                 }
-            } else {
-                $el->{fmb} = $res->{fmb};
-                $el->{txn} = $res->{txn};
             }
+            enqueue_multiple_new_transactions $self, [grep { !$_->{code} } @$list];
         }
-        enqueue_multiple_new_transactions $self, [grep { !$_->{code} } @$list];
+        catch {
+            warn $_;            # log it
+
+            for my $el (@$list) {
+                @{$el}{qw/code error/} = @general_error unless $el->{code} or $el->{fmb};
+            }
+        };
     }
 
     # $self->stats_stop($stats_data);
