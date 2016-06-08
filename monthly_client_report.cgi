@@ -6,7 +6,7 @@ use warnings;
 
 use Text::CSV;
 
-use BOM::Platform::Plack qw( PrintContentType_excel );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType_excel );
 
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();

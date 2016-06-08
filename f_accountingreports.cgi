@@ -6,7 +6,7 @@ use strict 'vars';
 use List::MoreUtils qw(any);
 use DateTime;
 use f_brokerincludeall;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Market::UnderlyingDB;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();

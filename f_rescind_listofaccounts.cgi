@@ -9,7 +9,7 @@ use f_brokerincludeall;
 use BOM::Platform::Transaction;
 use BOM::Platform::CurrencyConverter qw(in_USD);
 use BOM::Product::Transaction;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 
 BOM::Platform::Sysinit::init();
 

@@ -9,7 +9,7 @@ use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Sysinit ();
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Market::Registry;
 use BOM::Product::CustomClientLimits;
 use BOM::ContractInfo;

@@ -5,7 +5,7 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Quant::Framework::InterestRate;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();

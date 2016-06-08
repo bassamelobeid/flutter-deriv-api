@@ -16,7 +16,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Runtime;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 use BOM::Platform::Context qw(request);
