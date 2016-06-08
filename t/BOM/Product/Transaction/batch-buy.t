@@ -446,6 +446,12 @@ subtest 'single contract fails in database', sub {
         check_one_result 'result for client #1', $cl1, $acc1, $m->[2], '4950.0000';
         check_one_result 'result for client #2', $cl2, $acc2, $m->[0], '40.0000';
         # check_one_result 'result for client #3', $cl2, $acc2, $m->[3], '40.0000';
+        subtest 'result for client #3', sub {
+            ok !exists($m->[3]->{fmb}), 'fmb does not exist';
+            ok !exists($m->[3]->{txn}), 'txn does not exist';
+            is $m->{code}, 'InsufficientBalance', 'code = InsufficientBalance';
+            is $m->{error}, 'Your account balance (USD40.00) is insufficient to buy this contract (USD50.00).', 'correct description';
+        };
 
         my $expected_status = {
             active_queues  => 2, # TICK_COUNT and SETTLEMENT_EPOCH
@@ -453,8 +459,6 @@ subtest 'single contract fails in database', sub {
             ready_to_sell  => 0, # obviously
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
-
-        note explain $m->[3];
     }
     'survived';
 };
