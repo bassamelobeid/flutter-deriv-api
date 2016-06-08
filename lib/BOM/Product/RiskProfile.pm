@@ -165,6 +165,10 @@ sub _match_conditions {
 
     my %copy = %$custom;
     delete $copy{$_} for qw(name risk_profile);
+
+    # if there's no condition, exit.
+    return if not keys %copy;
+
     my %reversed = reverse %copy;
     if (all { $reversed{$self->contract_info->{$_}} } values %reversed) {
         return $custom;
