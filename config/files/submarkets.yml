@@ -162,7 +162,7 @@ us:
 us_otc_stock:
     name: us_otc_stock
     display_name: 'US'
-    display_order: 4
+    display_order: 5
     is_OTC: 1
     asset_type: 'stock'
     market: stocks
@@ -172,7 +172,7 @@ uk_otc_stock:
     name: uk_otc_stock
     display_name: 'UK'
     is_OTC: 1
-    display_order: 3
+    display_order: 4
     asset_type: 'stock'
     market: stocks
     explanation: 'UK OTC Stocks'
@@ -185,6 +185,15 @@ au_otc_stock:
     asset_type: 'stock'
     market: stocks
     explanation: 'Australia OTC Stocks'
+    volatility_surface_type: "moneyness"
+india_otc_stock:
+    name: india_otc_stock
+    display_name: 'India'
+    is_OTC: 1
+    display_order: 3
+    asset_type: 'stock'
+    market: stocks
+    explanation: 'India OTC Stocks'
     volatility_surface_type: "moneyness"
 ge_otc_stock:
     name: ge_otc_stock
