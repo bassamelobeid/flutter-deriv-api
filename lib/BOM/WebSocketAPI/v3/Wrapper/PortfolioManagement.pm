@@ -147,7 +147,6 @@ sub send_proposal {
             currency              => delete $details->{currency},
             is_sold               => delete $details->{is_sold},
             sell_time             => $sell_time,
-            app_markup_percentage => $c->stash('app_markup_percentage') // 0,
             args                  => $details
         },
         'proposal_open_contract'

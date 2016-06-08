@@ -251,6 +251,7 @@ my @dispatch = (
         'proposal_open_contract',
         '', 1, 'read',
         {
+            stash_params => [qw/ app_markup_percentage /],
             rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
         }
     ],
@@ -556,7 +557,7 @@ sub rpc {
     $params->{language}              = $c->stash('language');
     $params->{country}               = $c->stash('country') || $c->country_code;
     $params->{source}                = $c->stash('source');
-    $params->{app_markup_percentage} = $c->stash('app_markup_percentage') // 0;
+    $params->{app_markup_percentage} = $c->stash('app_markup_percentage');
 
     BOM::WebSocketAPI::CallingEngine::call_rpc(
         $c,
