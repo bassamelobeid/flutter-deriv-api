@@ -28,14 +28,13 @@ sub ticks {
         $c->send({
                 json => {
                     msg_type => 'tick',
-                    echo_req => $args,
-                    (exists $args->{req_id})
-                    ? (req_id => $args->{req_id})
-                    : (),
-                    error => {
+                    error    => {
                         code    => $code,
                         message => $message
-                    }}});
+                    }}
+            },
+            $req_storage
+        );
     };
 
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
@@ -77,7 +76,8 @@ sub ticks_history {
                 args            => $args,
                 method          => 'ticks_history',
                 rpc_response_cb => sub {
-                    my ($c, $args, $rpc_response) = @_;
+                    my ($c, $rpc_response, $req_storage) = @_;
+                    my $args = $req_storage->{args};
                     if (exists $rpc_response->{error}) {
                         # cancel subscription if response has error
                         _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args);
@@ -215,7 +215,8 @@ sub send_ask {
                 my ($rpc_response, $api_response, $req_storage) = @_;
 
                 if ($api_response->{error}) {
-                    $api_response->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
+                    $api_response->{error}->{details} = $rpc_response->{error}->{details}
+                        if (exists $rpc_response->{error}->{details});
                 } else {
                     $api_response->{proposal}->{id} = $req_storage->{id} if $req_storage->{id};
                 }
@@ -408,7 +409,11 @@ sub process_transaction_updates {
         my $payload = JSON::from_json($message);
         my $args    = {};
         foreach my $type (keys %{$channel}) {
-            if ($payload and exists $payload->{error} and exists $payload->{error}->{code} and $payload->{error}->{code} eq 'TokenDeleted') {
+            if (    $payload
+                and exists $payload->{error}
+                and exists $payload->{error}->{code}
+                and $payload->{error}->{code} eq 'TokenDeleted')
+            {
                 _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
             } else {
                 $args = (exists $channel->{$type}->{args}) ? $channel->{$type}->{args} : {};
@@ -451,7 +456,7 @@ sub process_transaction_updates {
                                         language   => $c->stash('language'),
                                     },
                                     rpc_response_cb => sub {
-                                        my ($c, $args, $rpc_response) = @_;
+                                        my ($c, $rpc_response, $req_storage) = @_;
 
                                         if (exists $rpc_response->{error}) {
                                             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;

@@ -9,7 +9,9 @@ use BOM::System::Config;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
-    $req_storage->{tv} = [Time::HiRes::gettimeofday];
+    if ($req_storage) {
+        $req_storage->{tv} = [Time::HiRes::gettimeofday];
+    }
     return;
 }
 
@@ -38,14 +40,16 @@ sub log_call_timing_connection {
 
 sub add_req_data {
     my ($c, $req_storage, $api_response) = @_;
-    $api_response->{echo_req} = $req_storage->{args};
-    $api_response->{req_id} = $req_storage->{args}->{req_id} if $req_storage->{args}->{req_id};
+    if ($req_storage) {
+        $api_response->{echo_req} = $req_storage->{args};
+        $api_response->{req_id} = $req_storage->{args}->{req_id} if $req_storage->{args}->{req_id};
+    }
     return;
 }
 
 sub add_call_debug {
     my ($c, $req_storage, $api_response) = @_;
-    if ($c->stash('debug')) {
+    if ($c->stash('debug') && $req_storage) {
         $api_response->{debug} = {
             time   => 1000 * Time::HiRes::tv_interval($req_storage->{tv}),
             method => $req_storage->{method},
@@ -56,7 +60,7 @@ sub add_call_debug {
 
 sub log_call_timing_sent {
     my ($c, $req_storage) = @_;
-    if ($req_storage->{tv} && $req_storage->{method}) {
+    if ($req_storage && $req_storage->{tv} && $req_storage->{method}) {
         DataDog::DogStatsd::Helper::stats_timing(
             'bom_websocket_api.v_3.rpc.call.timing.sent',
             1000 * Time::HiRes::tv_interval($req_storage->{tv}),

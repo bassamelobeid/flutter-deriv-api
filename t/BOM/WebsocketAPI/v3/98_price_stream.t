@@ -14,7 +14,7 @@ my ($req, $res, $start, $end);
 
 build_test_R_50_data();
 
-my $t = build_mojo_test();
+my $t     = build_mojo_test();
 my $token = BOM::Platform::SessionCookie->new(
     client_id       => 1,
     loginid         => "CR2002",

@@ -76,11 +76,10 @@ $t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
 note explain $res;
 is $res->{msg_type}, 'proposal_open_contract';
+ok $res->{echo_req};
+ok $res->{req_id};
 ok $res->{proposal_open_contract}->{contract_id};
-SKIP: {
-    skip 'SKIP until travis db connection will be fixed', 1 unless BOM::System::Config::env =~ /^qa/;
-    ok $res->{proposal_open_contract}->{id};
-}
+ok $res->{proposal_open_contract}->{id};
 test_schema('proposal_open_contract', $res);
 
 is $res->{proposal_open_contract}->{contract_id}, $contract_id, 'got correct contract from proposal open contracts';
@@ -147,7 +146,7 @@ $module->unmock_all;
 
 $t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok;
 
-my ($res, $call_params) = call_mocked_client(
+($res, $call_params) = call_mocked_client(
     $t,
     {
         proposal_open_contract => 1,

@@ -9,8 +9,9 @@ use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 
 sub proposal_open_contract {
-    my ($c, $args, $response) = @_;
+    my ($c, $response, $req_storage) = @_;
 
+    my $args = $req_storage->{args};
     if (exists $response->{error}) {
         return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -20,10 +21,11 @@ sub proposal_open_contract {
                 my $result = shift;
                 $c->send({
                         json => {
-                            echo_req => $args,
-                            (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                             msg_type               => 'proposal_open_contract',
-                            proposal_open_contract => {%$result}}});
+                            proposal_open_contract => {%$result}}
+                    },
+                    $req_storage
+                );
             };
             foreach my $contract_id (@contract_ids) {
                 if (exists $response->{$contract_id}->{error}) {
@@ -114,7 +116,8 @@ sub send_proposal {
                 sell_time   => $sell_time,
             },
             rpc_response_cb => sub {
-                my ($c, $args, $rpc_response) = @_;
+                my ($c, $rpc_response, $req_storage) = @_;
+                my $args = $req_storage->{args};
                 if ($rpc_response) {
                     if (exists $rpc_response->{error}) {
                         if ($id) {

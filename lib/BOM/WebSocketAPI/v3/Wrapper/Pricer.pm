@@ -31,11 +31,12 @@ sub _send_ask {
 
     my $args = $req_storage->{args};
     $c->call_rpc({
-            args        => $args,
-            method      => 'send_ask',
-            msg_type    => 'price_stream',
+            args            => $args,
+            method          => 'send_ask',
+            msg_type        => 'price_stream',
             rpc_response_cb => sub {
-                my ($c, $args, $rpc_response) = @_;
+                my ($c, $rpc_response, $req_storage) = @_;
+                my $args = $req_storage->{args};
                 if ($rpc_response and exists $rpc_response->{error}) {
                     my $err = $c->new_error('price_stream', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                     $err->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
