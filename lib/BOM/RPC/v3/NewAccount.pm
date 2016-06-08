@@ -66,6 +66,15 @@ sub new_account_virtual {
 
     my $client  = $acc->{client};
     my $account = $client->default_account->load;
+    my $user    = $acc->{user};
+    $user->add_login_history({
+        action      => 'login',
+        environment => BOM::RPC::v3::Utility::login_env($params),
+        successful  => 't'
+    });
+    $user->save;
+
+    BOM::System::AuditLog::log("successful login", "$email");
     return {
         client_id   => $client->loginid,
         email       => $email,
@@ -185,6 +194,16 @@ sub new_account_real {
 
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
+    my $user            = $acc->{user};
+
+    $user->add_login_history({
+        action      => 'login',
+        environment => BOM::RPC::v3::Utility::login_env($params),
+        successful  => 't'
+    });
+    $user->save;
+
+    BOM::System::AuditLog::log("successful login", "$client->email");
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -233,6 +252,16 @@ sub new_account_maltainvest {
 
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
+    my $user            = $acc->{user};
+
+    $user->add_login_history({
+        action      => 'login',
+        environment => BOM::RPC::v3::Utility::login_env($params),
+        successful  => 't'
+    });
+    $user->save;
+
+    BOM::System::AuditLog::log("successful login", "$client->email");
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -287,6 +316,16 @@ sub new_account_japan {
 
     my $new_client      = $acc->{client};
     my $landing_company = $new_client->landing_company;
+    my $user            = $acc->{user};
+
+    $user->add_login_history({
+        action      => 'login',
+        environment => BOM::RPC::v3::Utility::login_env($params),
+        successful  => 't'
+    });
+    $user->save;
+
+    BOM::System::AuditLog::log("successful login", "$client->email");
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
