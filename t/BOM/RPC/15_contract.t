@@ -191,16 +191,12 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value'         => '51.49',
-        'ask_price'             => '51.49',
-        'longcode'              => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
-        'spot'                  => '963.3054',
-        'payout'                => '100',
-        'base_commission'       => 0.015,
-        'maximum_payout'        => 50000,
-        'minimum_stake'         => 0.35,
-        'probability_threshold' => 0.025,
-        'theo_probability'      => 0.499862404631018,
+        'display_value'    => '51.49',
+        'ask_price'        => '51.49',
+        'longcode'         => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
+        'spot'             => '963.3054',
+        'payout'           => '100',
+        'theo_probability' => 0.499862404631018,
     };
     is_deeply($result, $expected, 'the left values are all right');
 
@@ -239,10 +235,7 @@ subtest 'send_ask' => sub {
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
-    my $expected_keys = [
-        sort (
-            qw(longcode spot display_value ask_price spot_time date_start rpc_time payout base_commission theo_probability probability_threshold minimum_stake maximum_payout)
-        )];
+    my $expected_keys = [sort (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout theo_probability))];
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
