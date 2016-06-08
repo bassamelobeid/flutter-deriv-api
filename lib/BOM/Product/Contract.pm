@@ -1233,13 +1233,16 @@ sub _build_app_markup {
 sub _build_app_markup_dollar_amount {
     my $self = shift;
 
+    my $amount;
     if ($self->amount_type eq 'stake') {
         # can't use payout directly here, because payout is adjusted by app_markup.
         my $orig_payout = $self->_calculate_payout($self->commission_from_stake);
-        return $self->app_markup->amount * $orig_payout;
+        $amount = $self->app_markup->amount * $orig_payout;
     } else {
-        return ($self->app_markup->amount * $self->payout);
+        $amount = $self->app_markup->amount * $self->payout;
     }
+
+    return roundnear(0.01, $amount);
 }
 
 sub _build_bs_probability {
