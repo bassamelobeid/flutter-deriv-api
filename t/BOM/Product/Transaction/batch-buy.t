@@ -184,7 +184,7 @@ sub check_one_result {
 # real tests begin here
 ####################################################################
 
-subtest 'batch-buy', sub {
+subtest 'batch-buy success', sub {
     plan tests => 10;
     lives_ok {
         my $clm = create_client; # manager
@@ -263,7 +263,7 @@ subtest 'batch-buy', sub {
     'survived';
 };
 
-subtest 'batch-buy 2', sub {
+subtest 'batch-buy success 2', sub {
     plan tests => 3;
     lives_ok {
         my $clm = create_client; # manager
@@ -322,8 +322,59 @@ subtest 'batch-buy 2', sub {
             {code    => 'ignore'},
         ];
         is_deeply $txn->multiple, $expected, 'nothing bought';
-        my $m = $txn->multiple;
-        note explain $m;
+    }
+    'survived';
+};
+
+subtest 'contract already started', sub {
+    plan tests => 3;
+    lives_ok {
+        my $clm = create_client; # manager
+
+        top_up $clm, 'USD', 0;   # the manager has no money
+
+        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            tick_expiry  => 1,
+            tick_count   => 5,
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Product::Transaction->new({
+            client        => $clm,
+            purchase_date => 19, # long in the past
+            contract      => $contract,
+            price         => 50.00,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            multiple      => [{code => 'ignore'}],
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_transaction->mock(
+                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            BOM::Platform::Runtime->instance->app_config->quants
+                    ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
+
+            $txn->batch_buy;
+        };
+
+        isa $error, 'Error::Base';
+        note explain $error;
+        ok 1;
     }
     'survived';
 };
