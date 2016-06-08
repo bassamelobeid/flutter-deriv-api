@@ -26,7 +26,7 @@ subtest 'BOM::Market::SubMarket::Registry' => sub {
         forex       => 3,
         volidx      => 3,
         indices     => 6,
-        stocks      => 4,
+        stocks      => 5,
         commodities => 2,
     );
 
