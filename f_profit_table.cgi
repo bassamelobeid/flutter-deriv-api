@@ -105,15 +105,17 @@ if (defined $do_calculation) {
         }
     }
 
-    $performance_probability = Performance::Probability::get_performance_probability({
-        payout       => \@payout_price,
-        bought_price => \@buy_price,
-        pnl          => $cumulative_pnl,
-        types        => \@bet_type,
-        underlying   => \@underlying_symbol,
-        start_time   => \@start_time,
-        sell_time    => \@sell_time,
-    });
+    if (scalar(@start_time) > 0) {
+        $performance_probability = Performance::Probability::get_performance_probability({
+            payout       => \@payout_price,
+            bought_price => \@buy_price,
+            pnl          => $cumulative_pnl,
+            types        => \@bet_type,
+            underlying   => \@underlying_symbol,
+            start_time   => \@start_time,
+            sell_time    => \@sell_time,
+        });
+    }
 }
 
 my $open_contracts = $fmb_dm->get_open_bets_of_account();
