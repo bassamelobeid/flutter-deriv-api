@@ -16,12 +16,6 @@ has [qw(contract_category underlying expiry_type start_type currency)] => (
     required => 1,
 );
 
-has has_custom_client_limit => (
-    is      => 'rw',
-    isa     => 'Bool',
-    default => 0,
-);
-
 has [qw(contract_info)] => (
     is         => 'ro',
     lazy_build => 1,
