@@ -348,7 +348,7 @@ subtest 'contract already started', sub {
 
         my $txn = BOM::Product::Transaction->new({
             client        => $clm,
-            purchase_date => 19, # long in the past
+            purchase_date => Date::Utility::today->plus_time_interval('3 days'),
             contract      => $contract,
             price         => 50.00,
             payout        => $contract->payout,
