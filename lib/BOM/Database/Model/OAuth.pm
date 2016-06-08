@@ -36,7 +36,7 @@ sub verify_app {
     my ($self, $app_id) = @_;
 
     my $app = $self->dbh->selectrow_hashref("
-        SELECT id, name, redirect_uri, scopes FROM oauth.apps WHERE id = ? AND active
+        SELECT id, name, redirect_uri, scopes, app_markup_percentage FROM oauth.apps WHERE id = ? AND active
     ", undef, $app_id);
     return unless $app;
 
