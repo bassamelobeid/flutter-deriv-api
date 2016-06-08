@@ -10,7 +10,7 @@ use Format::Util::Numbers qw(roundnear);
 use Try::Tiny;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw(produce_contract);
-
+use BOM::Database::DataMapper::Transaction;
 has save_file => (
     is      => 'ro',
     default => 1,
@@ -153,7 +153,6 @@ sub generate_report {
                 my $summary     = $ds_path . $run_for->date_ddmmmyy . '.summary' . $fileext;
                 my $tempsummary = $summary . '.temp';
                 my $sm_fh       = new IO::File '> ' . $tempsummary || die '[' . $0 . '] Can\'t write to ' . $tempsummary . ' ' . $!;
-
                 my $generation_msg =
                       '\#File generated for '
                     . $run_for->date . ' on '
@@ -167,7 +166,6 @@ sub generate_report {
                 close $sm_fh;
                 rename($tempsummary, $summary);
             }
-
             $total_pl->{$broker}->{$currency} = $agg_total_open_bets_profit;
         }
     }
