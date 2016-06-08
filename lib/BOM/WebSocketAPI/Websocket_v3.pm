@@ -242,6 +242,7 @@ my @dispatch = (
     [
         'buy', '', 1, 'trade',
         {
+            stash_params   => [qw/ app_markup_percentage /],
             before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
         }
     ],
