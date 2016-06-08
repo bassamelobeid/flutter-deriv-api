@@ -214,8 +214,8 @@ sub send_ask {
                 proposal => {($id ? (id => $id) : ()), %$response}};
         },
         {
-            args              => $args,
-            markup_percentage => $c->stash('markup_percentage')
+            args                  => $args,
+            app_markup_percentage => $c->stash('app_markup_percentage')
         },
         'proposal'
     );
