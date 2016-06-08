@@ -66,8 +66,7 @@ while (1) {
         my $subsribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job
         if ($subsribers_count == 0) {
-            $redis->del($key->[1]);
-            $redis->del($next);
+            $redis->del($key->[1], $next);
         }
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subsribers_count);
         $tv = [Time::HiRes::gettimeofday];
