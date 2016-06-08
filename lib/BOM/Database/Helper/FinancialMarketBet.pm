@@ -98,7 +98,7 @@ SELECT (v_fmb).*, (v_trans).*
                         $6::NUMERIC, $7::TIMESTAMP, $8::TIMESTAMP, $9::TIMESTAMP, $10::BOOLEAN,
                         $11::VARCHAR(30), $12::VARCHAR(30), $13::VARCHAR(800), $14::VARCHAR(255), $15::BOOLEAN,
                         $16::INT, $17::JSON, $18::TIMESTAMP, $19::VARCHAR(24), $20::VARCHAR(800),
-                        $21::BIGINT, $22::INT, $23::JSON, $24::JSON)');
+                        $21::BIGINT, $22::NUMERIC, $23::JSON, $24::JSON)');
     my %bet = (
         expiry_daily => 0,
         is_expired   => 0,
@@ -191,7 +191,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
                                 $5::NUMERIC, $6::TIMESTAMP, $7::TIMESTAMP, $8::TIMESTAMP, $9::BOOLEAN,
                                 $10::VARCHAR(30), $11::VARCHAR(30), $12::VARCHAR(800), $13::VARCHAR(255),
                                 $14::BOOLEAN, $15::INT, $16::JSON, $17::TIMESTAMP, $18::VARCHAR(24),
-                                $19::VARCHAR(800), $20::BIGINT, $21::INT, $22::JSON, acc.limits) b');
+                                $19::VARCHAR(800), $20::BIGINT, $21::NUMERIC, $22::JSON, acc.limits) b');
     my %bet = (
         expiry_daily => 0,
         is_expired   => 0,
