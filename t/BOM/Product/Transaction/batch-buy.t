@@ -321,6 +321,7 @@ subtest 'batch-buy 2', sub {
             },
             {code    => 'ignore'},
         ];
+        is_deeply $txn->multiple, $expected, 'nothing bought';
         my $m = $txn->multiple;
         note explain $m;
     }
