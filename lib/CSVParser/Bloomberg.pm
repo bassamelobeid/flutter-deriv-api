@@ -221,7 +221,6 @@ has 'volsurface' => (
 
 sub _build_bet {
     my $self = shift;
-$DB::single=1;
     my $bet_args = {
         underlying   => $self->underlying,
         current_spot => $self->spot,
