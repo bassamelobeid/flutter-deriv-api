@@ -104,7 +104,6 @@ sub logout {
                 $user->save;
                 BOM::System::AuditLog::log("user logout", join(',', $email, $loginid // ''));
             }
-            BOM::System::AuditLog::log("user logout", "$email,$loginid");
         }
     }
 
