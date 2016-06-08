@@ -956,6 +956,76 @@ SKIP: {
             ],
             'specific turnover limit reached: test1, test3, test5, test7';
 
+        dies_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
+                expiry_daily => 1,
+                limits => {
+                    max_turnover             => 100,
+                    max_losses               => 100,
+                    specific_turnover_limits => [
+                        {    # fails
+                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            limit    => 20 - 0.01,
+                            daily    => 1,
+                            name     => 'test1',
+                        },
+                        {    # passes
+                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            limit    => 20,
+                            daily    => 1,
+                            name     => 'test2',
+                        },
+                    ],
+                },
+            };
+        }
+        'specific turnover validation failed';
+        is_deeply $@,
+            [
+            BI011 => 'ERROR:  specific turnover limit reached: test1',
+            ],
+            'specific turnover limit reached: test1';
+
+        dies_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
+                limits => {
+                    max_turnover             => 100,
+                    max_losses               => 100,
+                    specific_turnover_limits => [
+                        {    # passes
+                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            limit    => 100 - 0.01,
+                            daily    => 1,
+                            name     => 'test1',
+                        },
+                        {    # fails
+                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            limit    => 100 - 0.01,
+                            daily    => 0,
+                            name     => 'test2',
+                        },
+                        {    # passes
+                            bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
+                            symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
+                            limit    => 100,
+                            daily    => 0,
+                            name     => 'test1',
+                        },
+                    ],
+                },
+            };
+        }
+        'specific turnover validation failed';
+        is_deeply $@,
+            [
+            BI011 => 'ERROR:  specific turnover limit reached: test2',
+            ],
+            'specific turnover limit reached: test2';
+
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
                 limits => {
