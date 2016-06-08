@@ -253,7 +253,6 @@ subtest 'batch-buy', sub {
         check_one_result 'result for client #2', $cl2, $acc2, $m->[0], '4950.0000';
         check_one_result 'result for client #3', $cl2, $acc2, $m->[3], '4900.0000';
 
-        # note explain $txn->multiple;
         my $expected_status = {
             active_queues  => 2, # TICK_COUNT and SETTLEMENT_EPOCH
             open_contracts => 3, # the ones just bought
@@ -315,7 +314,7 @@ subtest 'batch-buy 2', sub {
 
         is $error, undef, 'successful batch_buy';
         my $m = $txn->multiple;
-
+        note explain $m;
     }
     'survived';
 };
