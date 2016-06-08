@@ -2,6 +2,9 @@
 
 package main;
 
+use strict;
+use warnings;
+
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use JSON qw(from_json to_json);
 use f_brokerincludeall;
@@ -24,7 +27,7 @@ my $r             = request();
 my $limit_profile = BOM::Platform::Static::Config::quants->{risk_profile};
 
 if ($r->param('update_limit')) {
-    my @known_keys = qw(contract_category barrier_category market submarket underlying_symbol start_type expiry_type);
+    my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type);
     my %known_values = map { $_ => [get_offerings_with_filter($_)] } @known_keys;
     my %ref;
 
