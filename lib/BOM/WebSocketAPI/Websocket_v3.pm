@@ -234,7 +234,7 @@ my @dispatch = (
             stash_params => [qw/ server_name /],
         }
     ],
-    ['new_account_virtual', '', 0],
+    ['new_account_virtual', '', 0, '', {stash_params => [qw/ server_name client_ip user_agent /]}],
     ['reset_password',      '', 0],
 
     # authenticated calls
@@ -296,10 +296,10 @@ my @dispatch = (
         }
     ],
     ['cashier',                 '', 1, 'payments'],
-    ['new_account_real',        '', 1, 'admin'],
-    ['new_account_japan',       '', 1, 'admin'],
-    ['new_account_maltainvest', '', 1, 'admin'],
-    ['jp_knowledge_test',       '', 1, 'admin'],
+    ['new_account_real',        '', 1, 'admin', {stash_params => [qw/ server_name client_ip user_agent /]}],
+    ['new_account_japan',       '', 1, 'admin', {stash_params => [qw/ server_name client_ip user_agent /]}],
+    ['new_account_maltainvest', '', 1, 'admin', {stash_params => [qw/ server_name client_ip user_agent /]}],
+    ['jp_knowledge_test',       '', 1, 'admin', {stash_params => [qw/ server_name client_ip user_agent /]}],
 );
 
 # key: category, value:  hashref (descriptor) with fields
