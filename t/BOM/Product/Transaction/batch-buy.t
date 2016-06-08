@@ -372,7 +372,6 @@ subtest 'contract already started', sub {
             $txn->batch_buy;
         };
 
-        note explain $error, $txn->multiple;
         isa_ok $error, 'Error::Base';
         is $error->{-type}, 'ContractAlreadyStarted', 'ContractAlreadyStarted';
     }
