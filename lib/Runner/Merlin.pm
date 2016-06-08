@@ -108,14 +108,15 @@ sub _calculate_results {
         my $merlin_mid    = ($record->{merlin_ask} + $record->{merlin_bid}) / 2;
         my $arb_available = ($bet->bid_probability->amount > $record->{merlin_ask} or $bet->ask_probability->amount < $record->{merlin_bid}) ? 1 : 0;
         my $tv_diff       = abs($record->{merlin_tv} - $bet->bs_probability->amount);
-        my $mid_diff      = abs($merlin_mid - $bet->theo_probability->amount);
+        my $bom_mid     =  $bet->theo_probability->amount -  $bet->risk_markup->amount;
+        my $mid_diff      = abs($merlin_mid - $bom_mid);
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
 
         my @output_array = (
             $record->{bet_num},            $record->{volcut},        $record->{cut},                      $record->{currency},
             $record->{underlying}->symbol, $bet_type,                $record->{date_start}->date_ddmmmyy, $record->{date_expiry}->date,
             $bet->pricing_spot,            @barriers,                $record->{merlin_tv},                $bet->bs_probability->amount,
-            $tv_diff,                      $merlin_mid,              $bet->theo_probability->amount,      $mid_diff,
+            $tv_diff,                      $merlin_mid,              $bom_mid,                             $mid_diff,
             $record->{atm_vol},            $bet->atm_vols->{fordom}, $arb_available,                      $base_or_num,
             $record->{transformed_cut});
 

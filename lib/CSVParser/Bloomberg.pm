@@ -221,7 +221,7 @@ has 'volsurface' => (
 
 sub _build_bet {
     my $self = shift;
-
+$DB::single=1;
     my $bet_args = {
         underlying   => $self->underlying,
         current_spot => $self->spot,
@@ -248,7 +248,6 @@ sub _build_bet {
         epoch      => $bet_args->{date_start}->epoch,
     );
     my $bet = produce_contract($bet_args);
-
     return $bet;
 }
 
@@ -267,7 +266,7 @@ sub _build_price {
     } elsif ($self->price_type eq 'bid') {
         $price = $self->bet->bid_price;
     } elsif ($self->price_type eq 'theo') {
-        $price = $self->bet->theo_price;
+        $price = $self->bet->theo_probability->amount * $self->bet->payout - $self->bet->risk_markup->amount * $self->bet->payout;
     }
 
     #this is for VV engine
@@ -446,9 +445,9 @@ sub get_csv_line {
     $line .= ',' . $self->bet->bid_probability->amount;
     $line .= ',' . $self->bet->ask_probability->amount;
     $line .= ',' . ($self->bet->ask_probability->amount - $self->bet->bid_probability->amount);
-    $line .= ',' . $self->bet->theo_probability->amount;
+    $line .= ',' . ($self->bet->theo_probability->amount - $self->bet->risk_markup->amount);
     $line .= ',' . $self->bloomberg_exported_price_mid / 100;
-    $line .= ',' . abs(sprintf("%.4f", $self->bet->theo_probability->amount) - $self->bloomberg_exported_price_mid / 100);
+    $line .= ',' . abs(sprintf("%.4f", $self->bet->theo_probability->amount - $self->bet->risk_markup->amount) - $self->bloomberg_exported_price_mid / 100);
     return $line;
 }
 

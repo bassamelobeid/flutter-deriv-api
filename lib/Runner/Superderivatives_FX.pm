@@ -151,7 +151,7 @@ sub get_bet_results {
         );
 
         my $bet      = produce_contract($bet_args);
-        my $bom_mid  = $bet->theo_probability->amount;
+        my $bom_mid  = $bet->theo_probability->amount - $bet->risk_markup->amount;
         my $bom_bs   = $bet->bs_probability->amount;
         my $sd_mid   = $record->{sd_mid};
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
