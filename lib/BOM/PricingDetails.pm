@@ -634,7 +634,7 @@ sub _get_overview {
         days  => $bet->timeinyears->amount * 365,
     });
     my ($delta_strike1, $delta_strike2) = (0, 0);
-    if ($bet->category_code eq 'digits') {
+    if ($bet->category_code ne 'digits') {
         if ($bet->two_barriers) {
             $delta_strike1 = 100 * get_delta_for_strike({
                 strike           => $bet->high_barrier->as_absolute,
