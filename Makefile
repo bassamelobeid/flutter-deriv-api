@@ -25,7 +25,8 @@ i18n:
 	done
 	msgmerge --previous --backup none --no-wrap --update  /home/git/binary-com/translations-websockets-api/src/en.po  /home/git/binary-com/translations-websockets-api/src/locales/messages.pot
 	perl -pi -e 's/Content-Type: text\/plain; charset=CHARSET/Content-Type: text\/plain; charset=UTF-8/'  /home/git/binary-com/translations-websockets-api/src/locales/messages.pot
-	sed -i '/^#:.\+:[0-9]\+/d'  /home/git/binary-com/translations-websockets-api/src/en.po
+	perl -ni -e  'print unless m/^#:.+:\d+$$/'  /home/git/binary-com/translations-websockets-api/src/en.po
 	for i in $(shell ls /home/git/binary-com/translations-websockets-api/src/locales/*.po*); do \
-		sed -i '/^#:.\+:[0-9]\+/d'  $$i ; \
+		perl -ni -e  'print unless m/^#:.+:\d+$$/'  $$i ; \
 	done
+
