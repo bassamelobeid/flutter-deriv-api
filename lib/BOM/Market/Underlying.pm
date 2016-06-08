@@ -360,39 +360,6 @@ sub _build_providers {
 
 }
 
-=head2 outlier_tick
-
-Allowed percentage move between consecutive ticks
-
-=cut
-
-has outlier_tick => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_outlier_tick {
-    my $self = shift;
-
-    return ($self->quanto_only) ? 0.10 : $self->submarket->outlier_tick;
-}
-
-=head2 outlier_tick
-
-Allowed percentage move between consecutive ticks when is crosses weekend/holiday
-
-=cut
-
-has weekend_outlier_tick => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_weekend_outlier_tick {
-    my $self = shift;
-    return max($self->outlier_tick, $self->submarket->weekend_outlier_tick);
-}
-
 has forward_feed => (
     is      => 'ro',
     isa     => 'Bool',
