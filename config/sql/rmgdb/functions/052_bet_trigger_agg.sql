@@ -41,11 +41,7 @@ BEGIN
         AND account_id = NEW.account_id
     ;
 
-  IF FOUND THEN
-    RETURN new;
-  ELSE
-    RETURN NULL;
-  END IF;
+  RETURN new;
 END;
 $$ LANGUAGE plpgsql;
 
