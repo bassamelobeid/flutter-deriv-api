@@ -1,6 +1,0 @@
-
-
-	perl -ni -e  'print unless m/^#:.+:\d+$$/'  /home/git/binary-com/translations-websockets-api/src/en.po
-	for i in $(shell ls /home/git/binary-com/translations-websockets-api/src/locales/*.po*); do \
-		perl -ni -e  'print unless m/^#:.+:\d+$$/'  $i ; \
-	done
