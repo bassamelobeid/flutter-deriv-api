@@ -374,7 +374,7 @@ subtest 'contract already started', sub {
 
         note explain $error, $txn->multiple;
         isa_ok $error, 'Error::Base';
-        ok 1;
+        is $error->{-type}, 'ContractAlreadyStarted', 'ContractAlreadyStarted';
     }
     'survived';
 };
