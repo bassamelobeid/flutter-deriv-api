@@ -1,6 +1,7 @@
 package BOM::Platform::Context::Request;
 
 use Moose;
+use Moose::Util::TypeConstraints;
 
 use JSON;
 use CGI;
@@ -17,8 +18,6 @@ use BOM::Platform::SessionCookie;
 use BOM::Platform::Untaint;
 
 use Plack::App::CGIBin::Streaming::Request;
-
-use BOM::System::Types;
 
 with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
 
@@ -120,8 +119,15 @@ has 'ui_settings' => (
 );
 
 has 'broker_code' => (
-    is         => 'ro',
-    isa        => 'bom_broker_code',
+    is  => 'ro',
+    isa => subtype(
+        Str => where {
+            my $test = $_;
+            exists {map { $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ)}->{$test}
+        } => message {
+            "Unknown broker code [$_]"
+        }
+    ),
     lazy_build => 1,
 );
 
