@@ -52,12 +52,13 @@ while (1) {
         my $params   = {@{$payload}};
         my $trigger  = $params->{symbol};
 
+        my $current_time = time;
         my $current_spot_ts = BOM::Market::Underlying->new($params->{symbol})->spot_tick->epoch;
         my $last_price_ts = $redis->get($next) || 0;
 
-        next if ($current_spot_ts==$last_price_ts and time - $last_price_ts<=10 );
+        next if ($current_spot_ts==$last_price_ts and $current_time - $last_price_ts<=10 );
 
-        $redis->set($next, time);
+        $redis->set($next, $current_time);
         my $response = BOM::RPC::v3::Contract::send_ask({args => $params}, 1);
 
         DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.price.call');
