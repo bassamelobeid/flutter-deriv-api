@@ -581,8 +581,38 @@ sub buy {    ## no critic (RequireArgUnpacking)
 # $self->multiple
 #   an array of hashes. Elements with a key "code" are ignored. They are
 #   thought to be already erroneous. Otherwise the element should contain
-#   a "loginid" key. For each element a BOM::Platform::Client object is
-#   created and stored under the key "client".
+#   a "loginid" key.
+#   The following keys are added:
+#   * client: the BOM::Platform::Client object corresponding to the loginid
+#   * limits: a hash representing the betting limits of this client
+#   * fmb and txn: the FMB and transaction records that have been written
+#     to the database in case of success
+#   * code and error: in case of an error during the transaction these keys
+#     contain the error description corresponding to the usual -type and
+#     -message_to_client members of an Error::Base object.
+# $self->contract
+#   the contract
+# $self->staff
+# $self->source
+# ...
+#
+# set or modified during operation:
+# $self->price
+#   the price
+# @{$self->multiple}
+#   see above
+#
+# return value:
+#   - empty list on success. Success means the database function has been called.
+#     It does not mean any contract has been bought.
+#   - an Error::Base object indicates that something more fundamental went wrong.
+#     For instance the contract's start date may be in the past.
+#
+# Exceptions:
+#   The function may throw exceptions. However, it is guaranteed that after
+#   buying the first contract no exception whatsoever is thrown. That means
+#   there is no way for a contract to be bought but not reported back to the
+#   caller.
 
 sub batch_buy {                        ## no critic (RequireArgUnpacking)
     my $self    = shift;
@@ -663,7 +693,7 @@ sub batch_buy {                        ## no critic (RequireArgUnpacking)
             enqueue_multiple_new_transactions $self, [grep { !$_->{code} } @$list];
         }
         catch {
-            warn $_;            # log it
+            warn __PACKAGE__.':('.__LINE__.'): '.$_; # log it
 
             for my $el (@$list) {
                 @{$el}{qw/code error/} = @general_error unless $el->{code} or $el->{fmb};

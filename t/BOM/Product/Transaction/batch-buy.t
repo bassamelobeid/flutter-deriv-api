@@ -229,7 +229,6 @@ subtest 'batch-buy', sub {
             ],
         });
 
-        my $skip_qstat = 0;
         my $error = do {
             my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
             $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
@@ -261,6 +260,57 @@ subtest 'batch-buy', sub {
             ready_to_sell  => 0, # obviously
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
+    }
+    'survived';
+};
+
+subtest 'batch-buy 2', sub {
+    plan tests => 10;
+    lives_ok {
+        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            tick_expiry  => 1,
+            tick_count   => 5,
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Product::Transaction->new({
+            contract    => $contract,
+            price       => 50.00,
+            payout      => $contract->payout,
+            amount_type => 'payout',
+            multiple    => [
+                {code => 'ignore'},
+                {},
+                {code => 'ignore'},
+            ],
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_transaction->mock(
+                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            BOM::Platform::Runtime->instance->app_config->quants
+                    ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
+
+            $txn->batch_buy;
+        };
+
+        is $error, undef, 'successful batch_buy';
+        my $m = $txn->multiple;
+
     }
     'survived';
 };
