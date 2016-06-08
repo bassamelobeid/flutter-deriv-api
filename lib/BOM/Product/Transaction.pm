@@ -147,12 +147,6 @@ has transaction_parameters => (
     default => sub { {}; },
 );
 
-has app_markup_percentage => (
-    is      => 'ro',
-    isa     => 'Maybe[Num]',
-    default => 0
-);
-
 has app_markup => (
     is         => 'ro',
     isa        => 'Maybe[Num]',

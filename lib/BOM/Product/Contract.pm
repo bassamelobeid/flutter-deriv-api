@@ -41,6 +41,11 @@ require BOM::Product::Pricing::Greeks::BlackScholes;
 
 sub is_spread { return 0 }
 
+has amount_type => (
+    is      => 'ro',
+    default => 'payout',
+);
+
 has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
     is      => 'ro',
     default => undef,
@@ -1103,7 +1108,7 @@ sub _build_ask_price {
 sub _build_payout {
     my $self = shift;
 
-    my $commission = $self->calculate_commission + $self->app_markup->amount;
+    my $commission = $self->commission_from_stake + $self->app_markup->amount;
     my $payout = max($self->ask_price, $self->_calculate_payout($commission));
     return roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $payout);
 }
@@ -1135,7 +1140,12 @@ sub commission_multiplier {
     return $multiplier;
 }
 
-sub calculate_commission {
+has commission_from_stake => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_commission_from_stake {
     my $self = shift;
 
     my $theo_probability = $self->theo_probability->amount;
@@ -1223,7 +1233,13 @@ sub _build_app_markup {
 sub _build_app_markup_dollar_amount {
     my $self = shift;
 
-    return ($self->app_markup->amount * $self->payout);
+    if ($self->amount_type eq 'stake') {
+        # can't use payout directly here, because payout is adjusted by app_markup.
+        my $orig_payout = $self->_calculate_payout($self->commission_from_stake);
+        return $self->app_markup->amount * $orig_payout;
+    } else {
+        return ($self->app_markup->amount * $self->payout);
+    }
 }
 
 sub _build_bs_probability {
