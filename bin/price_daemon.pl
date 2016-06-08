@@ -45,6 +45,7 @@ while (1) {
     my $tv = [Time::HiRes::gettimeofday];
     while (my $key = $redis->brpop("pricer_jobs", 0)) {
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv));
+        $tv = [Time::HiRes::gettimeofday];
 
         my $next = $key->[1];
         $next =~ s/^PRICER_KEYS:://;
@@ -70,6 +71,7 @@ while (1) {
             $redis->del($key->[1], $next);
         }
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subsribers_count);
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv));
         $tv = [Time::HiRes::gettimeofday];
     }
     $pm->finish;
