@@ -49,9 +49,8 @@ sub url_for {
 
             if ($domain_type->{bo} and $path !~ /backoffice/) {
                 $path = 'backoffice/' . $path;
-                $path = '/d/' . $path;
             }
-
+            $path = '/d/' . $path;
             $path =~ s/\/\//\//g;
             $url->path($path);
         } elsif ($url->path !~ /^\//) {
