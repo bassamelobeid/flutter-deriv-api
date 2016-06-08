@@ -191,7 +191,7 @@ subtest 'batch-buy', sub {
         my $cl1 = create_client;
         my $cl2 = create_client;
 
-        top_up $clm, 'USD', 1;   # the manager has no money
+        top_up $clm, 'USD', 0;   # the manager has no money
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 5000;
 
@@ -267,6 +267,10 @@ subtest 'batch-buy', sub {
 subtest 'batch-buy 2', sub {
     plan tests => 10;
     lives_ok {
+        my $clm = create_client; # manager
+
+        top_up $clm, 'USD', 0;   # the manager has no money
+
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
             underlying   => $underlying,
@@ -281,6 +285,7 @@ subtest 'batch-buy 2', sub {
         });
 
         my $txn = BOM::Product::Transaction->new({
+            client      => $clm,
             contract    => $contract,
             price       => 50.00,
             payout      => $contract->payout,
