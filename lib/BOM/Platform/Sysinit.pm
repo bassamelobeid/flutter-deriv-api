@@ -42,8 +42,8 @@ sub init {
                 . '<p class="normalfonterror">'
                 . $timenow . ' '
                 . localize(
-                        'The page has timed out. This may be due to a slow Internet connection, or to excess load on our servers.  Please try again in a few moments.'
-                        )
+                'The page has timed out. This may be due to a slow Internet connection, or to excess load on our servers.  Please try again in a few moments.'
+                )
                 . '</p>'
                 . '<p class="normalfonterror">'
                 . '<a href="javascript:document.location.reload();"><b>'
@@ -61,7 +61,7 @@ sub init {
         alarm($timeout);
 
         # used for logging
-        $ENV{BOM_ACCOUNT} = request()->loginid;                     ## no critic
+        $ENV{BOM_ACCOUNT} = request()->loginid;    ## no critic
 
         $http_handler->register_cleanup(
             sub {
@@ -104,12 +104,12 @@ sub init {
 }
 
 sub build_request {
-    if (Plack::App::CGIBin::Streaming->request) {   # is web server ?
+    if (Plack::App::CGIBin::Streaming->request) {    # is web server ?
         if ($0 =~ /(bom-backoffice|contact)/) {
-            $CGI::POST_MAX        = 8000 * 1024;    # max 8MB posts
+            $CGI::POST_MAX        = 8000 * 1024;     # max 8MB posts
             $CGI::DISABLE_UPLOADS = 0;
         } else {
-            $CGI::DISABLE_UPLOADS = 1;              # no uploads
+            $CGI::DISABLE_UPLOADS = 1;               # no uploads
         }
 
         return request(
