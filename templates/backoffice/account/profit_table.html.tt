@@ -1,3 +1,7 @@
+[%- MACRO display_performance_probability(probability) BLOCK -%]
+         <span class="probability">[% probability %]</span>
+[%- END -%]
+
 [%- MACRO display_amount(amount) BLOCK -%]
         [% IF amount >= 0 %]
                 <span class="profit">[% to_monetary_number_format(amount) %]</span>
@@ -106,7 +110,13 @@
         <INPUT type=hidden name="l" value="EN" />
         <INPUT type=checkbox name="all">All (No pagination) </INPUT>
         <INPUT type="submit" value="Update" />
+        <input type="submit" name="calc_performance_probability" value="Calculate Performance Probability" />
 </FORM>
+
+[% IF performance_probability %]
+        <p>Performance Probability: [% display_performance_probability(performance_probability) %]</p>
+[% END %]
+
 <div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
 <p><b>[% full_name %]</b>, [% email %] from [% runtime.countries.country_from_code(residence) %]</p>
 </div>
