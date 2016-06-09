@@ -42,8 +42,9 @@ has report_file => (
 
 sub run_dataset {
     my $self = shift;
+    my $file = shift;
 
-    my @files = @{$self->files};
+    my @files = $file ? ($file) : @{$self->files};
     my $result_all;
 
     my $csv_title =
@@ -82,10 +83,12 @@ sub run_dataset {
 
     my $base_analysis_report      = $self->calculates_and_saves_analysis_report($self->report_file->{analysis_base}, $base_results);
     my $numeraire_analysis_report = $self->calculates_and_saves_analysis_report($self->report_file->{analysis_num},  $num_results);
+    my $num_key  = (scalar @files == 1) ? $file . '_NUM'  : 'NUM';
+    my $base_key = (scalar @files == 1) ? $file . '_BASE' : 'BASE';
 
     return {
-        NUM  => $numeraire_analysis_report,
-        BASE => $base_analysis_report,
+        $num_key  => $numeraire_analysis_report,
+        $base_key => $base_analysis_report,
     };
 }
 
@@ -125,13 +128,12 @@ sub get_bet_results {
 
         my $cutoff_str  = $date_start->day_of_week == 5 ? 'UTC 21:00' : 'UTC 23:59';
         my $vol_surface = $raw_surface->generate_surface_for_cutoff($cutoff_str);
-        my $surface = $raw_surface->clone({
-       surface => $vol_surface,
-       cutoff  => $cutoff_str,
-     });
+        my $surface     = $raw_surface->clone({
+            surface => $vol_surface,
+            cutoff  => $cutoff_str,
+        });
         my $currency = ($base_or_num eq 'base') ? $record->{base_currency} : $record->{numeraire_currency};
         my $bet_type = $record->{bet_type};
-        $date_expiry = $underlying->calendar->closing_on($date_expiry);
         my $bet_args = {
             underlying   => $underlying,
             bet_type     => $bet_type,
