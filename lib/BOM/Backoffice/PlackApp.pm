@@ -11,10 +11,6 @@ use File::Copy  ();
 use File::Path  ();
 
 BEGIN {
-    $ENV{ERROR_LOG} ||= 'error_log';
-    if ($ENV{ERROR_LOG} ne 'STDERR') {
-        open STDERR, '>>', $ENV{ERROR_LOG} or die "Cannot open $ENV{ERROR_LOG}: $!";
-    }
     select +(select(STDERR), $| = 1)[0];    ## no critic
 
     my $t = Time::HiRes::time;
