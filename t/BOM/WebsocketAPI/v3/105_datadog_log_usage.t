@@ -10,16 +10,17 @@ use TestHelper qw/test_schema build_mojo_test/;
 use Test::MockModule;
 
 my $t = build_mojo_test({
-    debug    => 1,
-    language => 'RU'
-}, {Origin => 'http://test.com'});
+        debug    => 1,
+        language => 'RU'
+    },
+    {Origin => 'http://test.com'});
 my ($req_storage, $res, $start, $end);
 
 my $datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
 my $timing  = [];
-my $stats  = [];
+my $stats   = [];
 $datadog->mock('stats_timing', sub { push @$timing, \@_ });
-$datadog->mock('stats_inc', sub { push @$stats, \@_ });
+$datadog->mock('stats_inc',    sub { push @$stats,  \@_ });
 
 $t->send_ok({json => {website_status => 1}})->message_ok;
 $res = decode_json($t->message->[1]);

@@ -39,7 +39,7 @@ $rpc_client_mock->mock('new', sub { return $fake_rpc_client });
 
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
-is $res->{error}->{code}, 'ResponseTooLarge';
+is $res->{error}->{code},              'ResponseTooLarge';
 is $res->{echo_req}->{website_status}, 1;
 
 $rpc_client_mock->unmock_all;
