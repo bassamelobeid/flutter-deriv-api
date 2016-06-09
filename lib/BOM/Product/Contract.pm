@@ -2048,7 +2048,7 @@ sub _build_exit_tick {
 sub _validate_offerings {
     my $self = shift;
 
-    my $message_to_client = localize('Your trading on this instrument is temporarily suspended.');
+    my $message_to_client = localize('This trade is temporarily unavailable.');
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->trading) {
         return {

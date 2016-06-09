@@ -459,7 +459,7 @@ sub _validate_quote {
         push @err,
             +{
             message           => 'manually disabled by quants',
-            message_to_client => localize('Your trading on this instrument is temporarily suspended.'),
+            message_to_client => localize('This trade is temporarily unavailable.'),
             };
     }
 
