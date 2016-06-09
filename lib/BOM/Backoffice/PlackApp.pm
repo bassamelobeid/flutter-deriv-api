@@ -51,9 +51,9 @@ sub app {    ## no critic
     $options{preload} //= ["*.cgi"];
     $options{root} //= "/home/git/regentmarkets/bom-app";
 
-    my $app = BOM::System::Plack::Streaming->new(
+    my $app = BOM::Backoffice::PlackApp::Streaming->new(
         %options,
-        request_class => 'BOM::System::Plack::Request',
+        request_class => 'BOM::Backoffice::PlackApp::Request',
     );
     my $app_sub = $app->to_app;
 
@@ -66,7 +66,7 @@ sub app {    ## no critic
     };
 }
 
-package BOM::System::Plack::Streaming;    ## no critic
+package BOM::Backoffice::PlackApp::Streaming;    ## no critic
 
 use strict;
 use warnings;
@@ -118,7 +118,7 @@ sub mkapp {
     return $self->SUPER::mkapp($sub);
 }
 
-package BOM::System::Plack::Request;    ## no critic
+package BOM::Backoffice::PlackApp::Request;    ## no critic
 
 use strict;
 use warnings;
