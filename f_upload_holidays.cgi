@@ -6,7 +6,7 @@ use strict 'vars';
 use BOM::BloombergCalendar;
 use File::Temp ();
 use File::Copy;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 PrintContentType();

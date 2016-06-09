@@ -7,7 +7,7 @@ use f_brokerincludeall;
 use Auth::DuoWeb;
 use BOM::System::Config;
 use BOM::Backoffice::Auth0;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::JavascriptConfig;
 

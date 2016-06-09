@@ -2,7 +2,7 @@
 package main;
 use strict 'vars';
 
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use subs::subs_backoffice_removeexpired;
 use BOM::Platform::Sysinit ();

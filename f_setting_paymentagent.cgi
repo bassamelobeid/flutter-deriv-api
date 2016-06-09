@@ -4,7 +4,7 @@ use strict 'vars';
 
 use Try::Tiny;
 
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Runtime;
 use BOM::Platform::Client::PaymentAgent;
 use BOM::Backoffice::Form;

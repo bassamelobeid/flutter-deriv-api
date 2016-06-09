@@ -7,7 +7,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Product::Transaction;
 use BOM::Platform::Locale;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::Static::Config;
 
