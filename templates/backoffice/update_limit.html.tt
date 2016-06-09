@@ -1,5 +1,4 @@
 <p>Update custom limits: </p>
-<p>** spreads risk profile can be updated here. But it will not show in the tables above.</p>
 <form action="[% url %]" method="POST">
     <table>
         <tr>

@@ -45,7 +45,7 @@ if ($r->param('update_limit')) {
     }
 
     my $p = $r->param('risk_profile');
-    my $uniq_key = substr(md5_hex(join('_', sort { $a <=> $b } values %ref)), 0, 16);
+    my $uniq_key = substr(md5_hex(join('_', sort { $a cmp $b } values %ref)), 0, 16);
 
     if (my $custom_name = $r->param('custom_name')) {
         $ref{name} = $custom_name;
@@ -61,10 +61,7 @@ if ($r->param('update_limit')) {
         code_exit_BO();
     }
 
-    # spreads does not go through the same path.
-    if (exists $ref{contract_category} and $ref{contract_category} eq 'spreads') {
-        BOM::Platform::Runtime->instance->app_config->quants->spreads_daily_profit_limit($ref{risk_profile});
-    } elsif (my $id = $r->param('client_loginid')) {
+    if (my $id = $r->param('client_loginid')) {
         my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
         my $comment = $r->param('comment');
         $current->{$id}->{custom_limits}->{$uniq_key} = \%ref;
