@@ -262,7 +262,7 @@ sub stats_stop {
     if ($what eq 'batch_buy') {
         my @tags = grep { !/^(?:broker|virtual):/ } @{$tags->{tags}};
         while (my ($broker, $xd) = each %$extra) {
-            my $tags = {tags => ["broker:$broker", "virtual:" . ($broker =~ /^VR/ ? "yes" : "no"), @tags]};
+            my $tags = {tags => ["broker:" . lc($broker), "virtual:" . ($broker =~ /^VR/ ? "yes" : "no"), @tags]};
             stats_count("transaction.buy.attempt", $xd->{attempt}, $tags);
             stats_count("transaction.buy.success", $xd->{success}, $tags);
 

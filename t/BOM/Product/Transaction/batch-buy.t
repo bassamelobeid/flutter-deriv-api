@@ -42,6 +42,15 @@ $datadog_mock->mock(count     => sub {shift; push @datadog_actions, to_json +{co
     *BOM::System::Config::env = sub {return 'production'}; # for testing datadog
 }
 
+sub reset_datadog {
+    @datadog_actions = ();
+}
+
+sub check_datadog {
+    my $item = to_json +{@_};
+    ok +(!!grep {} @datadog_actions), "found datadog action: $item";
+}
+
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -476,7 +485,7 @@ subtest 'single contract fails in database', sub {
 };
 
 subtest 'batch-buy multiple databases and datadog', sub {
-    plan tests => 13;
+    plan tests => 25;
     lives_ok {
         my $clm = create_client 'VRTC'; # manager
         my @cl;
@@ -532,8 +541,8 @@ subtest 'batch-buy multiple databases and datadog', sub {
                     ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
 
             ExpiryQueue::queue_flush;
-            @datadog_actions = ();
-            note explain +ExpiryQueue::queue_status;
+            # note explain +ExpiryQueue::queue_status;
+            reset_datadog;
             $txn->batch_buy;
         };
 
@@ -551,6 +560,90 @@ subtest 'batch-buy multiple databases and datadog', sub {
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
 
         note explain \@datadog_actions;
+        check_datadog increment => ["transaction.batch_buy.attempt" => {tags => [
+            qw/ broker:vrtc
+                virtual:yes
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog increment => ["transaction.batch_buy.success" => {tags => [
+            qw/ broker:vrtc
+                virtual:yes
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog count => ["transaction.buy.attempt" => 1, {tags => [
+            qw/ broker:vrtc
+                virtual:yes
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog count => ["transaction.buy.success" => 1, {tags => [
+            qw/ broker:vrtc
+                virtual:yes
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog count => ["transaction.buy.attempt" => 2, {tags => [
+            qw/ broker:cr
+                virtual:no
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog count => ["transaction.buy.success" => 2, {tags => [
+            qw/ broker:cr
+                virtual:no
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog count => ["transaction.buy.attempt" => 2, {tags => [
+            qw/ broker:mf
+                virtual:no
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog count => ["transaction.buy.success" => 2, {tags => [
+            qw/ broker:mf
+                virtual:no
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog count => ["business.turnover_usd" => 10000, {tags => [
+            qw/ broker:cr
+                virtual:no
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog count => ["business.turnover_usd" => 10000, {tags => [
+            qw/ broker:mf
+                virtual:no
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog count => ["business.buy_minus_sell_usd" => 10000, {tags => [
+            qw/ broker:cr
+                virtual:no
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog count => ["business.buy_minus_sell_usd" => 10000, {tags => [
+            qw/ broker:mf
+                virtual:no
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
     }
     'survived';
 };
