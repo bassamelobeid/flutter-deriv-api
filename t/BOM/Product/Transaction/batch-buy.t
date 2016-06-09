@@ -49,11 +49,12 @@ sub reset_datadog {
 sub check_datadog {
     my $item = to_json +{@_};
     if ($_[0] eq 'timing') {
-        $item =~ s/,/,\\E[\\d.]+\\Q,/;
-        $item = "\\Q$item\\E";
-        $item = qr/$item/;
-        note $item;
-        ok +(!!grep {/$item/} @datadog_actions), "found datadog action: $item";
+        my $re = $item;
+        $re =~ s/,/,\\E[\\d.]+\\Q,/;
+        $re = "\\Q$re\\E";
+        note $re;
+        $re = qr/$re/;
+        ok +(!!grep {/$re/} @datadog_actions), "found datadog action: $item";
     } else {
         ok +(!!grep {$_ eq $item} @datadog_actions), "found datadog action: $item";
     }
