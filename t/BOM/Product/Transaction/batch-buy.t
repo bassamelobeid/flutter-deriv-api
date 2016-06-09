@@ -169,12 +169,13 @@ sub check_one_result {
     my ($title, $cl, $acc, $m, $balance_after) = @_;
 
     subtest $title, sub {
-        is $m->{loginid}, $cl->loginid, 'loginid';
-        is $m->{txn}->{account_id}, $acc->id, 'txn account_id';
-        is $m->{fmb}->{account_id}, $acc->id, 'fmb account_id';
-        is $m->{txn}->{financial_market_bet_id}, $m->{fmb}->{id}, 'txn financial_market_bet_id';
-        is $m->{txn}->{balance_after}, $balance_after, 'balance_after';
-        note explain $m if $m->{e_code};
+        my $err = 0;
+        $err++ unless is $m->{loginid}, $cl->loginid, 'loginid';
+        $err++ unless is $m->{txn}->{account_id}, $acc->id, 'txn account_id';
+        $err++ unless is $m->{fmb}->{account_id}, $acc->id, 'fmb account_id';
+        $err++ unless is $m->{txn}->{financial_market_bet_id}, $m->{fmb}->{id}, 'txn financial_market_bet_id';
+        $err++ unless is $m->{txn}->{balance_after}, $balance_after, 'balance_after';
+        note explain $m if $err;
     };
 }
 
