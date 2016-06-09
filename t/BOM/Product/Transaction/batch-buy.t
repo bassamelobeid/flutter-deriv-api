@@ -48,7 +48,15 @@ sub reset_datadog {
 
 sub check_datadog {
     my $item = to_json +{@_};
-    ok +(!!grep {$_ eq $item} @datadog_actions), "found datadog action: $item";
+    if ($_[0] eq 'timing') {
+        $item =~ s/,/,\E[\d.]+\Q,/;
+        $item = "\\Q$item\\E";
+        $item = qr/$item/;
+        note $item;
+        ok +(!!grep {/$item/} @datadog_actions), "found datadog action: $item";
+    } else {
+        ok +(!!grep {$_ eq $item} @datadog_actions), "found datadog action: $item";
+    }
 }
 
 {
@@ -497,7 +505,7 @@ subtest 'single contract fails in database', sub {
 };
 
 subtest 'batch-buy multiple databases and datadog', sub {
-    plan tests => 25;
+    plan tests => 27;
     lives_ok {
         my $clm = create_client 'VRTC'; # manager
         my @cl;
@@ -571,7 +579,6 @@ subtest 'batch-buy multiple databases and datadog', sub {
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
 
-        note explain \@datadog_actions;
         check_datadog increment => ["transaction.batch_buy.attempt" => {tags => [
             qw/ broker:vrtc
                 virtual:yes
@@ -652,6 +659,20 @@ subtest 'batch-buy multiple databases and datadog', sub {
         check_datadog count => ["business.buy_minus_sell_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'), {tags => [
             qw/ broker:mf
                 virtual:no
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog timing => ["transaction.batch_buy.elapsed_time" => {tags => [
+            qw/ broker:vrtc
+                virtual:yes
+                rmgenv:production
+                contract_class:higher_lower_bet
+                amount_type:payout
+                expiry_type:duration /]}];
+        check_datadog timing => ["transaction.batch_buy.db_time" => {tags => [
+            qw/ broker:vrtc
+                virtual:yes
                 rmgenv:production
                 contract_class:higher_lower_bet
                 amount_type:payout
