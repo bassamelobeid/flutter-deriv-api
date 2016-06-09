@@ -134,27 +134,43 @@ subtest 'legal allowed underlyings' => sub {
         USAMZN
         USCT
         USFB
-        USGE
         USGOOG
-        USKO
         USMSFT
-        USPFE
         USXOM
         UKBARC
         UKBATS
-        UKGSK
         UKHSBA
-        UKVOD
         DEALV
-        DEBAYER
         DEDAI
         DESIE
-        DEVOWGEN
-        AUANZ
-        AUBHP
-        AUCBA
-        AUMQG
-        AUQAN
+        USCAT
+        USGLDSCH 
+        USMCDON 
+        USMA
+        USBRKSHR
+        USBNG 
+        USIBM 
+        USALIBA 
+        USPEP 
+        USEA 
+        USJNJ 
+        USAMX 
+        USPG 
+        UKBP 
+        UKRIO 
+        UKSTAN 
+        UKLLOY 
+        UKTSCO 
+        DEBMW 
+        DENOT 
+        DESAP 
+        DEDBK 
+        DEAIR  
+        INMARUTI 
+        INRIL 
+        INTATAMOTORS 
+        INTATASTEEL 
+        INBHARTIARTL
         OTC_IXIC
         OTC_BSESENSEX30
         OTC_BIST100
