@@ -648,7 +648,6 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
     }
 
     my %stat = map { $_ => { attempt => 0 + @{$per_broker{$_}} } } keys %per_broker;
-    Test::More::note Test::More::explain \%stat if defined &Test::More::note;
 
     for my $broker (keys %per_broker) {
         my $list = $per_broker{$broker};
@@ -670,6 +669,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
                 db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
             );
 
+            my $success = 0;
             my $result = $fmb_helper->batch_buy_bet;
             for my $el (@$list) {
                 my $res = shift @$result;
@@ -692,8 +692,10 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
                 } else {
                     $el->{fmb} = $res->{fmb};
                     $el->{txn} = $res->{txn};
+                    $success++;
                 }
             }
+            $stat{$broker}->{success} = $success;
             enqueue_multiple_new_transactions $self, [grep { !$_->{code} } @$list];
         }
         catch {
@@ -705,6 +707,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
         };
     }
 
+    Test::More::note Test::More::explain \%stat if defined &Test::More::note;
     # $self->stats_stop($stats_data);
 
     return;
