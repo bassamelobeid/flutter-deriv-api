@@ -28,7 +28,7 @@ subtest 'check daily_aggregates' => sub {
                 fmb7.turnover AS old_turnover7, fmb7.loss AS old_loss7,
                 fmb30.turnover AS old_turnover30, fmb30.loss AS old_loss30
             FROM
-                betonmarket.client AS c
+                betonmarkets.client AS c
                 JOIN transaction.account AS a ON (a.client_loginid = c.loginid)
                 FULL JOIN (
                     WITH trange AS (
