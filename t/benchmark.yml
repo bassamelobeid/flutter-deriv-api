@@ -65,7 +65,7 @@ mini:
                 avg: 0.0387
                 max: 0.2231
             ONETOUCH:
-                avg: 0.0227
+                avg: 0.0226
                 max: 0.1333
             NOTOUCH:
                 avg: 0.0138
@@ -81,7 +81,7 @@ mini:
                 max: 0.0469
         MINOR_NUM:
             ONETOUCH:
-                avg: 0.0226
+                avg: 0.0227
                 max: 0.1319
             CALL:
                 avg: 0.0087
