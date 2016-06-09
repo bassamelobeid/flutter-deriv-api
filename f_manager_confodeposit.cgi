@@ -12,7 +12,7 @@ use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Context;
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
@@ -42,7 +42,6 @@ my $toLoginID    = uc((delete $params{to_account} || ''));
 my $amount       = delete $params{amount};
 my $informclient = delete $params{informclientbyemail};
 my $ttype        = delete $params{ttype};
-my $ajax_only    = delete $params{ajax_only};
 my $DCcode       = delete $params{DCcode};
 my $range        = delete $params{range};
 

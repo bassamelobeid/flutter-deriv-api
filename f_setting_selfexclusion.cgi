@@ -3,7 +3,7 @@ package main;
 use strict 'vars';
 
 use Scalar::Util qw(looks_like_number);
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
 
 use f_brokerincludeall;

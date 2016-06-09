@@ -5,7 +5,7 @@ use strict 'vars';
 use Locale::Country;
 use f_brokerincludeall;
 use BOM::Platform::Locale;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Context;
 use BOM::ContractInfo;
 use BOM::Platform::Sysinit ();
