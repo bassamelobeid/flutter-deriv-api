@@ -19,14 +19,6 @@ has suite => (
     default => 'mini',
 );
 
-has files => (
-    is      => 'ro',
-    isa     => 'ArrayRef',
-    default => sub {
-        [qw(20111117_EURUSD 20111121_USDJPY 20111201_GBPJPY 20111201_USDSEK 20111203_GBPPLN 20111202_USDCHF 20111203_GBPAUD)];
-    },
-);
-
 has report_file => (
     is      => 'ro',
     isa     => 'HashRef',
@@ -42,9 +34,19 @@ has report_file => (
 
 sub run_dataset {
     my $self = shift;
-    my $file = shift;
+    my $key  = shift;
 
-    my @files = $file ? ($file) : @{$self->files};
+    my @files;
+
+    my $key_base = 'BASE';
+    my $key_num  = 'NUM';
+    if ($key) {
+        @files    = $key eq 'major' ? qw(SD_EURUSD SD_USDJPY SD_GBPJPY SD_USDCHF) : qw(SD_USDSEK SD_GBPPLN SD_GBPAUD);
+        $key_base = uc($key) . '_BASE';
+        $key_num  = uc($key) . '_NUM';
+    } else {
+        @files = qw(SD_EURUSD SD_USDJPY SD_GBPJPY SD_USDCHF SD_GBPAUD SD_USDSEK SD_GBPPLN);
+    }
     my $result_all;
 
     my $csv_title =
@@ -66,7 +68,6 @@ sub run_dataset {
             file  => $file,
             suite => $self->suite,
         )->records;
-
         my @base_dataset      = @{$records->{base_records}};
         my @numeraire_dataset = @{$records->{numeraire_records}};
 
@@ -83,12 +84,10 @@ sub run_dataset {
 
     my $base_analysis_report      = $self->calculates_and_saves_analysis_report($self->report_file->{analysis_base}, $base_results);
     my $numeraire_analysis_report = $self->calculates_and_saves_analysis_report($self->report_file->{analysis_num},  $num_results);
-    my $num_key  = (scalar @files == 1) ? $file . '_NUM'  : 'NUM';
-    my $base_key = (scalar @files == 1) ? $file . '_BASE' : 'BASE';
 
     return {
-        $num_key  => $numeraire_analysis_report,
-        $base_key => $base_analysis_report,
+        $key_num  => $numeraire_analysis_report,
+        $key_base => $base_analysis_report,
     };
 }
 
