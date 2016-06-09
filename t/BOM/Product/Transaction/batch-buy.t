@@ -28,14 +28,14 @@ $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platf
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
-use JSON qw/to_JSON/;
+use JSON qw/to_json/;
 my $datadog_mock = Test::MockModule->new('DataDog::DogStatsd');
 my @datadog_actions;
-$datadog_mock->mock(increment => sub {shift; push @datadog_actions, to_JSON +{increment => [@_]}; return;});
-$datadog_mock->mock(decrement => sub {shift; push @datadog_actions, to_JSON +{decrement => [@_]}; return;});
-$datadog_mock->mock(timing    => sub {shift; push @datadog_actions, to_JSON +{timing    => [@_]}; return;});
-$datadog_mock->mock(gauge     => sub {shift; push @datadog_actions, to_JSON +{gauge     => [@_]}; return;});
-$datadog_mock->mock(count     => sub {shift; push @datadog_actions, to_JSON +{count     => [@_]}; return;});
+$datadog_mock->mock(increment => sub {shift; push @datadog_actions, to_json +{increment => [@_]}; return;});
+$datadog_mock->mock(decrement => sub {shift; push @datadog_actions, to_json +{decrement => [@_]}; return;});
+$datadog_mock->mock(timing    => sub {shift; push @datadog_actions, to_json +{timing    => [@_]}; return;});
+$datadog_mock->mock(gauge     => sub {shift; push @datadog_actions, to_json +{gauge     => [@_]}; return;});
+$datadog_mock->mock(count     => sub {shift; push @datadog_actions, to_json +{count     => [@_]}; return;});
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
