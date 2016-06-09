@@ -12,7 +12,7 @@ use Carp;
 use CSVParser::Superderivatives_FX;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
-
+use BOM::MarketData::VolSurface::Utils;
 has suite => (
     is      => 'ro',
     isa     => 'Str',
@@ -114,7 +114,7 @@ sub get_bet_results {
         my $date_start   = $record->{date_start};
         my $date_expiry  = $record->{date_expiry};
         my $underlying   = $record->{underlying};
-        my $surface      = $record->{volsurface};
+        my $raw_surface  = $record->{volsurface};
         my $payout       = $record->{payout};
         my $date_pricing = $record->{date_start};
         my $spot         = $record->{spot};
@@ -123,8 +123,18 @@ sub get_bet_results {
         next if $date_expiry->epoch - $date_start->epoch > 365 * 86400;
         next if $date_expiry->is_a_weekend or $date_start->is_a_weekend;
 
+        my $cutoff_str  = $date_start->day_of_week == 5 ? 'UTC 21:00' : 'UTC 23:59';
+        my $vol_surface = $raw_surface->generate_surface_for_cutoff($cutoff_str);
+        my $surface     = BOM::MarketData::VolSurface::Delta->new(
+            underlying    => $underlying,
+            recorded_date => $date_start,
+            surface       => $vol_surface,
+            cutoff        => $cutoff_str,
+            deltas        => [25, 50, 75],
+        );
         my $currency = ($base_or_num eq 'base') ? $record->{base_currency} : $record->{numeraire_currency};
         my $bet_type = $record->{bet_type};
+        $date_expiry = $underlying->calendar->closing_on($date_expiry);
         my $bet_args = {
             underlying   => $underlying,
             bet_type     => $bet_type,
@@ -148,9 +158,11 @@ sub get_bet_results {
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start}->epoch,
         );
-
-        my $bet      = produce_contract($bet_args);
-        my $bom_mid  = $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope' ? $bet->pricing_engine->theo_probability: $bet->pricing_engine->base_probability->amount;
+        my $bet = produce_contract($bet_args);
+        my $bom_mid =
+              $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
+            ? $bet->pricing_engine->theo_probability
+            : $bet->pricing_engine->base_probability->amount;
         my $bom_bs   = $bet->bs_probability->amount;
         my $sd_mid   = $record->{sd_mid};
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
