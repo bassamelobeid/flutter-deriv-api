@@ -8,7 +8,7 @@ use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Token::Verification;
 use BOM::Platform::Static::Config;

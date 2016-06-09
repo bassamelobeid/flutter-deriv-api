@@ -12,7 +12,7 @@ use BOM::Platform::Runtime;
 use Format::Util::Strings qw( set_selected_item );
 use BOM::Backoffice::Auth0;
 use BOM::StaffPages;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Market::Registry;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();

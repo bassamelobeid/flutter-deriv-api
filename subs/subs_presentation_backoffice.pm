@@ -11,7 +11,6 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use Mojo::URL;
 use BOM::JavascriptConfig;
-use BOM::Platform::Plack qw( AjaxSession );
 use BOM::Platform::Sysinit ();
 use BOM::Backoffice::Auth0;
 
@@ -21,7 +20,7 @@ our ($vk_BarIsDoneOnce, $vk_didBOtopPRES,);
 sub BrokerPresentation {
     my ($Title, $title_description, $noDisplayOfTopMenu, $outputtype) = @_;
 
-    if (AjaxSession() or $outputtype =~ /csv/ or request()->param('printable')) {
+    if ($outputtype =~ /csv/ or request()->param('printable')) {
         return;
     }
 

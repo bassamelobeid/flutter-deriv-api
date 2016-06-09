@@ -14,7 +14,7 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Transaction;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
 use BOM::System::AuditLog;
 use BOM::Platform::Static::Config;

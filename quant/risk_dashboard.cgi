@@ -9,7 +9,7 @@ use f_brokerincludeall;
 use Format::Util::Numbers qw( to_monetary_number_format );
 use BOM::RiskReporting::Dashboard;
 use BOM::Platform::Runtime;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 

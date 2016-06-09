@@ -11,7 +11,7 @@ use Try::Tiny;
 
 use f_brokerincludeall;
 use BOM::Platform::Context;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;
 use BOM::Platform::Client;

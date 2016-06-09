@@ -6,7 +6,7 @@ use Date::Utility;
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();

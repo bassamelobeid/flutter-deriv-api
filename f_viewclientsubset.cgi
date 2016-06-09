@@ -9,7 +9,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Platform::CurrencyConverter qw(in_USD);
 use BOM::Platform::Email qw(send_email);
 use open qw[ :encoding(UTF-8) ];
-use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
+use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 
 use Path::Tiny;
 use f_brokerincludeall;
