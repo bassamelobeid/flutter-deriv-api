@@ -20,7 +20,7 @@ use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Database::ClientDB;
 use BOM::Product::Contract::Helper qw( global_commission_adjustment);
 use BOM::Database::DataMapper::Transaction;
-use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
+use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 BOM::Backoffice::Auth0::can_access(['Quants']);

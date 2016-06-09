@@ -12,7 +12,7 @@ use Proc::Killall;
 use BOM::Market::Registry;
 use Feed::Listener::Quote;
 use Try::Tiny;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 

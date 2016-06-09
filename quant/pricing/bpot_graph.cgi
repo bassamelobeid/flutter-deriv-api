@@ -24,7 +24,7 @@ use perlchartdir;
 
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
-use BOM::Platform::Plack qw( PrintContentType_image );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType_image );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 

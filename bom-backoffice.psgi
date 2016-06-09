@@ -8,8 +8,8 @@ use lib qw!/etc/perl
            /home/git/regentmarkets/bom-backoffice
            /home/git/regentmarkets/bom-backoffice/lib!;
 
-use BOM::System::Plack::App;
+use BOM::Backoffice::PlackApp;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
-BOM::System::Plack::App::app("root"=>"/home/git/regentmarkets/bom-backoffice");
+BOM::Backoffice::PlackApp::app("root"=>"/home/git/regentmarkets/bom-backoffice");

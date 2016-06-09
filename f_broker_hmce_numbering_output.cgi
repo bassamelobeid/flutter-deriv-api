@@ -5,7 +5,7 @@ use strict 'vars';
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Transaction;
 use Try::Tiny;
-use BOM::Platform::Plack qw( PrintContentType_excel );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType_excel );
 use BOM::Platform::Sysinit ();
 use BOM::Product::ContractFactory qw( simple_contract_info );
 

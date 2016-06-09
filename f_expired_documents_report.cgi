@@ -4,7 +4,7 @@ package main;
 use strict 'vars';
 
 use Locale::Country;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Database::DAO::Client;
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();
