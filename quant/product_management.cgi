@@ -15,6 +15,7 @@ use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use List::Util qw(first);
 use Digest::MD5 qw(md5_hex);
+use Date::Utility;
 
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -23,6 +24,7 @@ PrintContentType();
 BrokerPresentation('Product Management');
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
+my $staff         = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $r             = request();
 my $limit_profile = BOM::Platform::Static::Config::quants->{risk_profile};
 
@@ -42,6 +44,9 @@ if ($r->param('update_limit')) {
         }
     }
 
+    my $p = $r->param('risk_profile');
+    my $uniq_key = substr(md5_hex(join('_', sort { $a <=> $b } values %ref)), 0, 16);
+
     if (my $custom_name = $r->param('custom_name')) {
         $ref{name} = $custom_name;
     } else {
@@ -49,8 +54,6 @@ if ($r->param('update_limit')) {
         code_exit_BO();
     }
 
-    my $p = $r->param('risk_profile');
-    my $uniq_key = substr(md5_hex(join('_', sort { $a <=> $b } values %ref)), 0, 16);
     if ($p and first { $p eq $_ } keys %$limit_profile) {
         $ref{risk_profile} = $p;
     } else {
@@ -59,16 +62,20 @@ if ($r->param('update_limit')) {
     }
 
     # spreads does not go through the same path.
-    if ($ref{contract_category} eq 'spreads') {
+    if (exists $ref{contract_category} and $ref{contract_category} eq 'spreads') {
         BOM::Platform::Runtime->instance->app_config->quants->spreads_daily_profit_limit($ref{risk_profile});
     } elsif (my $id = $r->param('client_loginid')) {
         my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
         my $comment = $r->param('comment');
         $current->{$id}->{custom_limits}->{$uniq_key} = \%ref;
-        $current->{$id}->{reason} = $comment if $comment;
+        $current->{$id}->{reason}     = $comment if $comment;
+        $current->{$id}->{updated_by} = $staff;
+        $current->{$id}->{updated_on} = Date::Utility->new->date;
         BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
     } else {
         my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
+        $ref{updated_by}      = $staff;
+        $ref{updated_on}      = Date::Utility->new->date;
         $current->{$uniq_key} = \%ref;
         BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($current));
     }
@@ -114,8 +121,10 @@ foreach my $id (keys %$custom_limits) {
     my $data = $custom_limits->{$id};
     my $output_ref;
     my %copy = %$data;
-    $output_ref->{id}   = $id;
-    $output_ref->{name} = delete $copy{name};
+    $output_ref->{id}         = $id;
+    $output_ref->{name}       = delete $copy{name};
+    $output_ref->{updated_by} = delete $copy{updated_by};
+    $output_ref->{updated_on} = delete $copy{updated_on};
     my $profile = delete $copy{risk_profile};
     $output_ref->{payout_limit}     = $limit_profile->{$profile}{payout}{USD};
     $output_ref->{turnover_limit}   = $limit_profile->{$profile}{turnover}{USD};
@@ -135,9 +144,11 @@ my $custom_client_limits = from_json($config->custom_client_profiles);
 
 my @client_output;
 foreach my $client_loginid (keys %$custom_client_limits) {
-    my %data   = %{$custom_client_limits->{$client_loginid}};
-    my $reason = $data{reason};
-    my $limits = $data{custom_limits};
+    my %data       = %{$custom_client_limits->{$client_loginid}};
+    my $reason     = $data{reason};
+    my $limits     = $data{custom_limits};
+    my $updated_by = $data{updated_by};
+    my $updated_on = $data{updated_on};
     my @output;
     foreach my $id (keys %$limits) {
         my $output_ref;
@@ -154,6 +165,8 @@ foreach my $client_loginid (keys %$custom_client_limits) {
         +{
         client_loginid => $client_loginid,
         reason         => $reason,
+        updated_by     => $updated_by,
+        updated_on     => $updated_on,
         @output ? (output => \@output) : (),
         };
 }

@@ -6,6 +6,12 @@
         <tr>
             <td>Comment: [% data.reason %]</td>
         </tr>
+        <tr>
+            <td>Updated by: [% data.updated_by %]</td>
+        </tr>
+        <tr>
+            <td>Updated on: [% data.updated_on %]</td>
+        </tr>
         [% IF data.output %]
             <tr>
                 <td><b>ID</b></td>
