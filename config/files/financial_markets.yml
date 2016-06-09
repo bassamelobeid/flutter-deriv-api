@@ -4,8 +4,6 @@ commodities:
     display_current_spot: 1
     volatility_surface_type: "delta"
     suspicious_move: 0.05
-    outlier_tick: 0.01
-    weekend_outlier_tick: 0.05
     display_name: "Commodities"
     display_order: 4
     integer_number_of_day: 1
@@ -29,8 +27,6 @@ forex:
     volatility_surface_type: "delta"
     display_current_spot: 1
     suspicious_move: 0.05
-    outlier_tick: 0.05
-    weekend_outlier_tick: 0.05
     deep_otm_threshold: 0.05
     display_name: "Forex"
     display_order: 1
@@ -51,7 +47,6 @@ forex:
         apply_butterfly_markup: 1
 futures:
     suspicious_move: 0.07
-    outlier_tick: 0.10
     display_name: "Futures"
     eod_blackout_expiry: '59s'
     sod_blackout_start: '10m'
@@ -67,7 +62,6 @@ indices:
     base_commission: 0.025
     volatility_surface_type: "moneyness"
     suspicious_move: 0.07
-    outlier_tick: 0.10
     display_name: "Indices"
     integer_barrier: 1
     display_order: 2
@@ -89,7 +83,6 @@ indices:
 stocks:
     base_commission: 0.05
     suspicious_move: 0.25
-    outlier_tick: 0.10
     display_name: "OTC Stocks"
     volatility_surface_type: "moneyness"
     eod_blackout_expiry: '1m'
@@ -116,7 +109,6 @@ volidx:
     base_commission: 0.015
     display_current_spot: 1
     suspicious_move: 0.5
-    outlier_tick: 0.10
     display_name: "Volatility Indices"
     volatility_surface_type: "flat"
     deep_otm_threshold: 0.025
@@ -133,7 +125,6 @@ volidx:
 synthetic:
     volatility_surface_type: "flat"
     suspicious_move: 0.07
-    outlier_tick: 0.10
     display_name: "Synthetic"
     intradays_must_be_same_day: 1
     asset_type: 'index'
@@ -145,4 +136,3 @@ synthetic:
 #This is just a fake market to default to when market is not found.
 config:
     license: "realtime"
-    outlier_tick: 0.10
