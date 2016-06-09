@@ -58,7 +58,7 @@ mini:
                 avg: 0.0062
                 max: 0.0197
             PUT:
-                avg: 0.0093
+                avg: 0.0094
                 max: 0.0609
         MINOR_BASE:
             UPORDOWN:
