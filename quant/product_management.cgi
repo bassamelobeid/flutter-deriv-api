@@ -41,6 +41,14 @@ if ($r->param('update_limit')) {
             }
         }
     }
+
+    if (my $custom_name = $r->param('custom_name')) {
+        $ref{name} = $custom_name;
+    } else {
+        print "Name is required";
+        code_exit_BO();
+    }
+
     my $p = $r->param('risk_profile');
     my $uniq_key = substr(md5_hex(join('_', sort { $a <=> $b } values %ref)), 0, 16);
     if ($p and first { $p eq $_ } keys %$limit_profile) {
