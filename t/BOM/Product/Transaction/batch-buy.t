@@ -97,8 +97,9 @@ sub db {
 }
 
 sub create_client {
+    my $broker = shift || 'CR';
     return BOM::Platform::Client->register_and_return_new_client({
-        broker_code      => 'CR',
+        broker_code      => $broker,
         client_password  => BOM::System::Password::hashpw('12345678'),
         salutation       => 'Ms',
         last_name        => 'Doe',
@@ -455,6 +456,83 @@ subtest 'single contract fails in database', sub {
         my $expected_status = {
             active_queues  => 2, # TICK_COUNT and SETTLEMENT_EPOCH
             open_contracts => 2, # the ones just bought
+            ready_to_sell  => 0, # obviously
+        };
+        is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
+    }
+    'survived';
+};
+
+subtest 'batch-buy multiple databases and datadog', sub {
+    plan tests => 10;
+    lives_ok {
+        my $clm = create_client 'VRTC'; # manager
+        my @cl;
+        push @cl, create_client;
+        push @cl, create_client;
+        push @cl, create_client 'MLT';
+        push @cl, create_client 'MLT';
+        push @cl, create_client 'VRTC';
+
+        top_up $clm, 'USD', 0;   # the manager has no money
+        top_up $_, 'USD', 5000 for (@cl);
+
+        my @acc;
+        isnt + (push @acc, $cl1->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #'.@acc for (@cl);
+
+        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5m',
+            tick_expiry  => 1,
+            tick_count   => 5,
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Product::Transaction->new({
+            client      => $clm,
+            contract    => $contract,
+            price       => 50.00,
+            payout      => $contract->payout,
+            amount_type => 'payout',
+            multiple    => [
+                map { +{loginid => $_->loginid} } @cl,
+                {code    => 'ignore'},
+                {loginid => 'NONE000'},
+            ],
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_transaction->mock(
+                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            BOM::Platform::Runtime->instance->app_config->quants
+                    ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
+
+            ExpiryQueue::queue_flush;
+            note explain +ExpiryQueue::queue_status;
+            $txn->batch_buy;
+        };
+
+        is $error, undef, 'successful batch_buy';
+        my $m = $txn->multiple;
+        for (my $i = 0; $i<@cl; $i++) {
+            check_one_result 'result for client #'.$i, $cl[$i], $acc[$i], $m->[$i], '4950.0000';
+        }
+
+        my $expected_status = {
+            active_queues  => 2, # TICK_COUNT and SETTLEMENT_EPOCH
+            open_contracts => 5, # the ones just bought
             ready_to_sell  => 0, # obviously
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
