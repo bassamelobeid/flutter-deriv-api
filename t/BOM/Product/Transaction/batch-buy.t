@@ -524,7 +524,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
         is $error, undef, 'successful batch_buy';
         my $m = $txn->multiple;
         for (my $i = 0; $i<@cl; $i++) {
-            check_one_result 'result for client #'.$i, $cl[$i], $acc[$i], $m->[$i], '4950.0000';
+            check_one_result 'result for client '.$m->[$i]->{loginid}, $cl[$i], $acc[$i], $m->[$i], '4950.0000';
         }
 
         my $expected_status = {
