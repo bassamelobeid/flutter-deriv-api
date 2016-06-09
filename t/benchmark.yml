@@ -69,7 +69,7 @@ mini:
                 max: 0.1333
             NOTOUCH:
                 avg: 0.0138
-                max: 0.0563
+                max: 0.0565
             CALL:
                 avg: 0.0056
                 max: 0.0312
