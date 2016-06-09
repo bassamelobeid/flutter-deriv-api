@@ -7,14 +7,7 @@ use Test::More tests => 2;
 
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
-#use BOM::Database::Helper::FinancialMarketBet;
-#use BOM::Platform::Client;
 use BOM::Database::ClientDB;
-#use BOM::System::Password;
-#use BOM::Platform::Client::Utility;
-#use BOM::Database::Model::FinancialMarketBet::Factory;
-#use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-#Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
 
 sub db {
     return BOM::Database::ClientDB->new({
@@ -38,8 +31,18 @@ subtest 'check daily_aggregates' => sub {
                 a.client AS c
                 JOIN transaction.account AS a ON (a.client_loginid = c.loginid)
                 FULL JOIN (
-                    SELECT account_id, sum(CASE WHEN  date_trunc('day', now()) - '6d'::INTERVAL <= day AND day < date_trunc('day', now()) + '1d'::INTERVAL THEN turnover ELSE 0 END) AS turnover7,sum(CASE WHEN  date_trunc('day', now()) - '6d'::INTERVAL <= day AND day < date_trunc('day', now()) + '1d'::INTERVAL THEN loss ELSE 0 END) AS loss7, sum(CASE WHEN  date_trunc('day', now()) - '29d'::INTERVAL <= day AND day < date_trunc('day', now()) + '1d'::INTERVAL THEN turnover ELSE 0 END) AS turnover30,sum(CASE WHEN  date_trunc('day', now()) - '29d'::INTERVAL <= day AND day < date_trunc('day', now()) + '1d'::INTERVAL THEN loss ELSE 0 END) AS loss30
-                    FROM bet.daily_aggregates
+                    WITH trange AS (
+                        SELECT
+                            'today'::timestamp - '6d'::INTERVAL AS last6,
+                            'today'::timestamp - '29d'::INTERVAL AS last29,
+                            'tomorrow'::timestamp AS tomorrow
+                    ) SELECT
+                        account_id,
+                        sum(CASE WHEN trange.last6 <= day AND day < trange.tomorrow THEN turnover END) AS turnover7,
+                        sum(CASE WHEN trange.last6 <= day AND day < trange.tomorrow THEN loss END) AS loss7,
+                        sum(CASE WHEN trange.last29 <= day AND day < trange.tomorrow THEN turnover END) AS turnover30,
+                        sum(CASE WHEN trange.last29 <= day AND day < trange.tomorrow THEN loss END) AS loss30
+                    FROM bet.daily_aggregates, trange
                     GROUP BY 1
                 ) AS agg
                     ON (agg.account_id = a.id)
