@@ -37,7 +37,10 @@ $datadog_mock->mock(timing    => sub {shift; push @datadog_actions, to_json +{ti
 $datadog_mock->mock(gauge     => sub {shift; push @datadog_actions, to_json +{gauge     => [@_]}; return;});
 $datadog_mock->mock(count     => sub {shift; push @datadog_actions, to_json +{count     => [@_]}; return;});
 
-*BOM::System::Config::env = sub {return 'production'};
+{
+    no warnings 'redefine';
+    *BOM::System::Config::env = sub {return 'production'}; # for testing datadog
+}
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
