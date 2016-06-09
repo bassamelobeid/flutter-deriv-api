@@ -11,6 +11,7 @@ use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Format::Util::Numbers qw(roundnear);
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing);
@@ -84,12 +85,14 @@ sub prepare_ask {
 }
 
 sub _get_ask {
-    my $p2 = shift;
+    my $p2                    = shift;
+    my $app_markup_percentage = shift;
 
     my $response;
     try {
-        my $tv       = [Time::HiRes::gettimeofday];
-        my $contract = produce_contract({%$p2});
+        my $tv = [Time::HiRes::gettimeofday];
+        $p2->{app_markup_percentage} = $app_markup_percentage;
+        my $contract = produce_contract($p2);
 
         if (!$contract->is_valid_to_buy) {
             my ($message_to_client, $code);
@@ -155,7 +158,11 @@ sub get_bid {
     my $response;
     try {
         my $tv = [Time::HiRes::gettimeofday];
-        my $contract = produce_contract($short_code, $currency, $is_sold);
+
+        my $bet_params = shortcode_to_parameters($short_code, $currency);
+        $bet_params->{is_sold}               = $is_sold;
+        $bet_params->{app_markup_percentage} = $app_markup_percentage;
+        my $contract = produce_contract($bet_params);
 
         $response = {
             ask_price           => sprintf('%.2f', $contract->ask_price),
@@ -270,7 +277,7 @@ sub send_ask {
             from_pricer_daemon => $from_pricer_daemon,
             %details,
         };
-        $response = _get_ask(prepare_ask($arguments));
+        $response = _get_ask(prepare_ask($arguments), $params->{app_markup_percentage});
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
