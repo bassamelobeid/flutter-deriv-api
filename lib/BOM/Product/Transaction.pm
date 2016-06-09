@@ -284,6 +284,8 @@ sub stats_stop {
             stats_count('business.buy_minus_sell_usd', -$usd_amount, $tags);
         }
     }
+
+    return;
 }
 
 sub calculate_limits {
