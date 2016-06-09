@@ -29,20 +29,20 @@ subtest 'check daily_aggregates' => sub {
             count(*) as cnt
         FROM (
             SELECT
-                client.loginid,
-                account.id,
+                c.loginid,
+                a.id,
                 turnover7, loss7, turnover30, loss30,
                 fmb7.turnover AS old_turnover7, fmb7.loss AS old_loss7,
                 fmb30.turnover AS old_turnover30, fmb30.loss AS old_loss30
             FROM
-                audit.client
-                JOIN transaction.account ON (client_loginid = loginid)
+                a.client AS c
+                JOIN transaction.account AS a ON (a.client_loginid = c.loginid)
                 FULL JOIN (
                     SELECT account_id, sum(CASE WHEN  date_trunc('day', now()) - '6d'::INTERVAL <= day AND day < date_trunc('day', now()) + '1d'::INTERVAL THEN turnover ELSE 0 END) AS turnover7,sum(CASE WHEN  date_trunc('day', now()) - '6d'::INTERVAL <= day AND day < date_trunc('day', now()) + '1d'::INTERVAL THEN loss ELSE 0 END) AS loss7, sum(CASE WHEN  date_trunc('day', now()) - '29d'::INTERVAL <= day AND day < date_trunc('day', now()) + '1d'::INTERVAL THEN turnover ELSE 0 END) AS turnover30,sum(CASE WHEN  date_trunc('day', now()) - '29d'::INTERVAL <= day AND day < date_trunc('day', now()) + '1d'::INTERVAL THEN loss ELSE 0 END) AS loss30
                     FROM bet.daily_aggregates
                     GROUP BY 1
                 ) AS agg
-                    ON (agg.account_id = account.id)
+                    ON (agg.account_id = a.id)
                 FULL JOIN (
                     SELECT
                         b.account_id,
@@ -53,7 +53,7 @@ subtest 'check daily_aggregates' => sub {
                        AND b.purchase_time < date_trunc('day', now()) + '1d'::INTERVAL
                     GROUP BY 1
                 ) AS fmb30
-                    ON (fmb30.account_id = account.id)
+                    ON (fmb30.account_id = a.id)
                 FULL JOIN (
                     SELECT
                         b.account_id,
@@ -67,10 +67,10 @@ subtest 'check daily_aggregates' => sub {
                     ON (fmb7.account_id = account.id)
         ) AS res
         WHERE
-            coalesce(turnover7, 0) != coalesce(old_turnover7, 0)
-            OR coalesce(loss7, 0) != coalesce(old_loss7, 0)
-            OR coalesce(turnover30, 0) != coalesce(old_turnover30, 0)
-            OR coalesce(loss30, 0) != coalesce(old_loss30, 0)
+            turnover7 IS DISTINCT FROM old_turnover7
+            OR loss7 IS DISTINCT FROM old_loss7
+            OR turnover30 IS DISTINCT FROM old_turnover30
+            OR loss30 IS DISTINCT FROM old_loss30
     })->{'cnt'}, 0, "No difference between daily_aggregate and agg select");
 
 
