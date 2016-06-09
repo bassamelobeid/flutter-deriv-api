@@ -49,7 +49,7 @@ sub reset_datadog {
 sub check_datadog {
     my $item = to_json +{@_};
     if ($_[0] eq 'timing') {
-        $item =~ s/,/,\E[\d.]+\Q,/;
+        $item =~ s/,/,\\E[\\d.]+\\Q,/;
         $item = "\\Q$item\\E";
         $item = qr/$item/;
         note $item;
