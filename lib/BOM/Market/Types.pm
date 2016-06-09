@@ -21,17 +21,17 @@ This module provides validated definition of various datatypes that are prevalen
 
     use Moose;
 
-    use BOM::Market::Types qw( bom_client_loginid );
+    use BOM::Market::Types qw( bom_financial_market );
 
-    has 'client_loginid' => (
+    has 'financial_market' => (
         is  => 'rw',
-        isa => 'bom_client_loginid',
+        isa => 'bom_financial_market',
     );
 
     package main;
 
-    my $good = new MyClass( client_loginid => 'CR1234' ); # works
-    my $bad = new MyClass( client_loginid => 'fribitz' ); # dies with an explanation
+    my $good = new MyClass( financial_market => 'CR1234' ); # works
+    my $bad = new MyClass( financial_market => 'fribitz' ); # dies with an explanation
 
 
 =cut
@@ -41,7 +41,6 @@ use DateTime;
 use Data::Validate::IP qw( );
 use Math::BigInt;
 
-extends 'BOM::System::Types';
 use MooseX::Types::Moose qw(Int Num Str);
 use MooseX::Types -declare => [
     map { "bom_$_" }
@@ -52,10 +51,34 @@ use MooseX::Types -declare => [
         cutoff_helper
         market_markups
         market_feed
+        surface_type
+        cutoff_code
+        date_object
+        time_interval
         )];
 
 use Moose::Util::TypeConstraints;
 use Try::Tiny;
+
+subtype 'bom_time_interval', as 'Time::Duration::Concise';
+coerce 'bom_time_interval', from 'Str', via { Time::Duration::Concise->new(interval => $_) };
+
+subtype 'bom_date_object', as 'Date::Utility';
+coerce 'bom_date_object', from 'Str', via { Date::Utility->new($_) };
+
+subtype 'bom_cutoff_code', as Str, where {
+    /^(?:Bangkok|Beijing|Bucharest|Budapest|Colombia|Frankfurt|Hanoi|Istanbul|Jakarta|Kuala Lumpur|London|Manila|Mexico|Moscow|Mumbai|New York|PTAX \(Ask\)|Santiago|Sao Paulo|Seoul|Singapore|Taipei|Taiwan|Tel Aviv|Tokyo|UTC|GMT|Warsaw|Wellington) \d{1,2}:\d{2}$/;
+}, message {
+    'Invalid cutoff_code [' . $_ . ']';
+};
+
+my @surface_types = qw(delta flat moneyness);
+subtype 'bom_surface_type', as Str, where {
+    my $regex = '(' . join('|', @surface_types) . ')';
+    /^$regex$/;
+}, message {
+    "Invalid surface type $_. Must be one of: " . join(', ', @surface_types);
+};
 
 subtype 'bom_financial_market', as 'BOM::Market';
 coerce 'bom_financial_market', from 'Str', via { return BOM::Market::Registry->instance->get($_); };

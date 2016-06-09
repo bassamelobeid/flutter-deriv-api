@@ -33,7 +33,7 @@ my $encoder = Sereal::Encoder->new({
 });
 my $decoder = Sereal::Decoder->new;
 
-use BOM::System::Types;
+use BOM::Market::Types;
 
 =head2 agg_interval
 
