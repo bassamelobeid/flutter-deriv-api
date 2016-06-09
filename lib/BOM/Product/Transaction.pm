@@ -243,7 +243,7 @@ sub _normalize_error {
 }
 
 sub stats_stop {
-    my ($self, $data, $error) = @_;
+    my ($self, $data, $error, $extra) = @_;
 
     my $what = $data->{what};
     my $tags = $data->{tags};
@@ -259,6 +259,22 @@ sub stats_stop {
     stats_timing("transaction.$what.db_time",      1000 * tv_interval($data->{validation_done}, $now), $tags);
     stats_inc("transaction.$what.success", $tags);
 
+    if ($what eq 'batch_buy') {
+        my @tags = grep {!/^(?:broker|virtual):/} @{$tags->{tags}};
+        while (my ($broker, $data) = each %$extra) {
+            my $tags = {tags => ["broker:$broker", "virtual:".($broker =~ /^VR/ ? "yes" : "no"), @tags]};
+            stats_count("transaction.buy.attempt", $data->{attempt}, $tags);
+            stats_count("transaction.buy.success", $data->{success}, $tags);
+
+            next if $broker =~ /^VR/ or $data->{rmgenv} ne 'production';
+
+            my $usd_amount = $data->{success} * int(in_USD($self->price, $self->contract->currency) * 100);
+            stats_count('business.turnover_usd',       $usd_amount, $tags);
+            stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
+        }
+        return;
+    }
+
     if ($data->{rmgenv} eq 'production' and $data->{virtual} eq 'no') {
         my $usd_amount = int(in_USD($self->price, $self->contract->currency) * 100);
         if ($what eq 'buy') {
@@ -268,8 +284,6 @@ sub stats_stop {
             stats_count('business.buy_minus_sell_usd', -$usd_amount, $tags);
         }
     }
-
-    return;
 }
 
 sub calculate_limits {
@@ -707,8 +721,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
         };
     }
 
-    Test::More::note Test::More::explain \%stat if defined &Test::More::note;
-    # $self->stats_stop($stats_data);
+    $self->stats_stop($stats_data, undef, \%stat);
 
     return;
 }
