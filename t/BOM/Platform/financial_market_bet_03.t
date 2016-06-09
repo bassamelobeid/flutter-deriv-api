@@ -20,13 +20,7 @@ subtest 'check daily_aggregates' => sub {
     my $res = db->dbh->selectrow_hashref(qq{
         SELECT
             count(*) as cnt,
-            count(*) FILTER (
-                        WHERE turnover7 IS DISTINCT FROM old_turnover7
-                        OR loss7 IS DISTINCT FROM old_loss7
-                        OR turnover30 IS DISTINCT FROM old_turnover30
-                        OR loss30 IS DISTINCT FROM old_loss30
-                ) AS unequal
-/*            sum(
+            sum(
                 CASE
                     WHEN (
                         turnover7 IS DISTINCT FROM old_turnover7
@@ -38,7 +32,7 @@ subtest 'check daily_aggregates' => sub {
                     ELSE
                         0
                     END
-            ) AS unequal*/
+            ) AS unequal
         FROM (
             SELECT
                 c.loginid,
@@ -57,14 +51,10 @@ subtest 'check daily_aggregates' => sub {
                             'tomorrow'::timestamp AS tomorrow
                     ) SELECT
                         account_id,
-                        count(*) FILTER (WHERE trange.last6 <= day AND day < trange.tomorrow) AS turnover7,
-                        count(*) FILTER (WHERE trange.last6 <= day AND day < trange.tomorrow) AS loss7,
-                        count(*) FILTER (WHERE trange.last29 <= day AND day < trange.tomorrow) AS turnover30,
-                        count(*) FILTER (WHERE trange.last29 <= day AND day < trange.tomorrow) AS loss30
---                        sum(CASE WHEN trange.last6 <= day AND day < trange.tomorrow THEN turnover END) AS turnover7,
---                        sum(CASE WHEN trange.last6 <= day AND day < trange.tomorrow THEN loss END) AS loss7,
---                        sum(CASE WHEN trange.last29 <= day AND day < trange.tomorrow THEN turnover END) AS turnover30,
---                        sum(CASE WHEN trange.last29 <= day AND day < trange.tomorrow THEN loss END) AS loss30
+                        sum(CASE WHEN trange.last6 <= day AND day < trange.tomorrow THEN turnover END) AS turnover7,
+                        sum(CASE WHEN trange.last6 <= day AND day < trange.tomorrow THEN loss END) AS loss7,
+                        sum(CASE WHEN trange.last29 <= day AND day < trange.tomorrow THEN turnover END) AS turnover30,
+                        sum(CASE WHEN trange.last29 <= day AND day < trange.tomorrow THEN loss END) AS loss30
                     FROM bet.daily_aggregates, trange
                     GROUP BY 1
                 ) AS agg
