@@ -41,6 +41,20 @@ has atm_spread_point => (
     default => '50',
 );
 
+has underlying => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_underlying {
+    my $self = shift;
+    my $args = {
+        symbol => $self->symbol,
+        ($self->for_date) ? (for_date => $self->for_date) : (),
+    };
+    return BOM::Market::Underlying->new($args);
+}
+
 =head2 flat_vol
 
 The flat volatility returned for all points on this surface.
@@ -142,7 +156,7 @@ sub _build_cutoff {
 
     my $date = $self->for_date ? $self->for_date : Date::Utility->new;
 
-    return BOM::MarketData::VolSurface::Cutoff->new('UTC ' . $self->underlying->calendar->standard_closing_on($date)->time_hhmm);
+    return Quant::Framework::VolSurface::Cutoff->new('UTC ' . $self->underlying->calendar->standard_closing_on($date)->time_hhmm);
 }
 
 no Moose;
