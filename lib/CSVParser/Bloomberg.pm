@@ -248,6 +248,10 @@ sub _build_bet {
     my $raw_surface = $self->volsurface;
     my $cutoff_str  = $self->date_start->day_of_week == 5 ? 'UTC 21:00' : 'UTC 23:59';
     my $vol_surface = $raw_surface->generate_surface_for_cutoff($cutoff_str);
+    my $surface = $raw_surface->clone({
+       surface => $vol_surface,
+       cutoff  => $cutoff_str,
+     });
     my $surface     = BOM::MarketData::VolSurface::Delta->new(
         underlying    => $self->underlying,
         recorded_date => $self->date_start,

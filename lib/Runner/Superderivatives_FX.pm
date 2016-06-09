@@ -125,13 +125,10 @@ sub get_bet_results {
 
         my $cutoff_str  = $date_start->day_of_week == 5 ? 'UTC 21:00' : 'UTC 23:59';
         my $vol_surface = $raw_surface->generate_surface_for_cutoff($cutoff_str);
-        my $surface     = BOM::MarketData::VolSurface::Delta->new(
-            underlying    => $underlying,
-            recorded_date => $date_start,
-            surface       => $vol_surface,
-            cutoff        => $cutoff_str,
-            deltas        => [25, 50, 75],
-        );
+        my $surface = $raw_surface->clone({
+       surface => $vol_surface,
+       cutoff  => $cutoff_str,
+     });
         my $currency = ($base_or_num eq 'base') ? $record->{base_currency} : $record->{numeraire_currency};
         my $bet_type = $record->{bet_type};
         $date_expiry = $underlying->calendar->closing_on($date_expiry);
