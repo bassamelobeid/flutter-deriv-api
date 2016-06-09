@@ -270,7 +270,7 @@ sub process_realtime_events {
                 return;
             }
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
-            BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
+            BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
                 if $c->tx;
         } elsif ($m[0] eq $symbol) {
             unless ($c->tx) {
@@ -479,7 +479,7 @@ sub process_transaction_updates {
                         $args->{sell_time}  = Date::Utility->new($payload->{sell_time})->epoch;
 
                         # send proposal details last time
-                        BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, undef, $args);
+                        BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, undef, $args);
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
                     _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
