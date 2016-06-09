@@ -48,7 +48,7 @@ sub reset_datadog {
 
 sub check_datadog {
     my $item = to_json +{@_};
-    ok +(!!grep {} @datadog_actions), "found datadog action: $item";
+    ok +(!!grep {$_ eq $item} @datadog_actions), "found datadog action: $item";
 }
 
 my $now = Date::Utility->new;
