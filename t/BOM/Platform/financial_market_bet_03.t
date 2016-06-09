@@ -67,7 +67,7 @@ subtest 'check daily_aggregates' => sub {
                        AND b.purchase_time < date_trunc('day', now()) + '1d'::INTERVAL
                     GROUP BY 1
                 ) AS fmb7
-                    ON (fmb7.account_id = account.id)
+                    ON (fmb7.account_id = a.id)
         ) AS res
         WHERE
             turnover7 IS DISTINCT FROM old_turnover7
