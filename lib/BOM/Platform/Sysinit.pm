@@ -6,11 +6,11 @@ use strict;
 use Time::HiRes ();
 use Guard;
 use File::Copy;
+use Plack::App::CGIBin::Streaming;
 use BOM::Platform::Context::Request;
-use BOM::Platform::Context qw(request);
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Static::Config;    # called here as we generate hash for static files as it does not change on every request
-use Try::Tiny::Except ();             # should be preloaded as early as possible (BOM::System::Plack::App).
+use Try::Tiny::Except ();             # should be preloaded as early as possible
                                       # this statement here is merely a comment.
 
 sub init {
@@ -30,11 +30,38 @@ sub init {
         my $http_handler = Plack::App::CGIBin::Streaming->request;
         # 30 minute timeout for backoffice scripts, 1 minute for client requests.
         my $timeout = (request()->backoffice or $0 =~ /backend/) ? 1800 : 60;
-        $SIG{ALRM} = \&BOM::Platform::Plack::panic_code_timeout;    ## no critic
+
+        $SIG{ALRM} = sub {    ## no critic
+            my $runtime = time - $^T;
+            my $timenow = Date::Utility->new->datetime;
+
+            warn("Panic timeout after $runtime seconds");
+
+            my $website = request()->website;
+            print '<div id="page_timeout_notice" class="aligncenter">'
+                . '<p class="normalfonterror">'
+                . $timenow . ' '
+                . localize(
+                'The page has timed out. This may be due to a slow Internet connection, or to excess load on our servers.  Please try again in a few moments.'
+                )
+                . '</p>'
+                . '<p class="normalfonterror">'
+                . '<a href="javascript:document.location.reload();"><b>'
+                . localize('Reload page')
+                . '</b></a> '
+                . ' <a href="http://'
+                . $website->primary_url . '">'
+                . $website->primary_url . '</a> '
+                . localize('homepage') . '</p>'
+                . $suggest_whattodo
+                . '</div>';
+            BOM::Platform::Context::request_completed();
+            exit;
+        };
         alarm($timeout);
 
         # used for logging
-        $ENV{BOM_ACCOUNT} = request()->loginid;                     ## no critic
+        $ENV{BOM_ACCOUNT} = request()->loginid;    ## no critic
 
         $http_handler->register_cleanup(
             sub {
@@ -60,7 +87,15 @@ sub init {
     log_bo_access();
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->system and request()->from_ui and not request()->backoffice) {
-        PrintContentType();
+        local $\ = '';
+        my $http_handler = request()->http_handler;
+        $http_handler->print_content_type("text/html; charset=UTF-8");
+        $http_handler->print_header(
+            'Cache-control' => "no-cache, no-store, private, must-revalidate, max-age=0, max-stale=0, post-check=0, pre-check=0",
+            'Pragma'        => "no-cache",
+            'Expires'       => "0",
+        );
+        $http_handler->status(200);
         print 'System is under maintenance.';
         BOM::Platform::Sysinit::code_exit();
     }
@@ -69,12 +104,12 @@ sub init {
 }
 
 sub build_request {
-    if (BOM::Platform::Plack::is_web_server()) {
+    if (Plack::App::CGIBin::Streaming->request) {    # is web server ?
         if ($0 =~ /(bom-backoffice|contact)/) {
-            $CGI::POST_MAX        = 8000 * 1024;    # max 8MB posts
+            $CGI::POST_MAX        = 8000 * 1024;     # max 8MB posts
             $CGI::DISABLE_UPLOADS = 0;
         } else {
-            $CGI::DISABLE_UPLOADS = 1;              # no uploads
+            $CGI::DISABLE_UPLOADS = 1;               # no uploads
         }
 
         return request(
