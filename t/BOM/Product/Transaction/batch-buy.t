@@ -478,7 +478,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
         top_up $_, 'USD', 5000 for (@cl);
 
         my @acc;
-        isnt + (push @acc, $cl1->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #'.@acc for (@cl);
+        isnt + (push @acc, $_->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account #'.@acc for (@cl);
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
