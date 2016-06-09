@@ -455,12 +455,12 @@ sub process_transaction_updates {
                                     }
                                 },
                                 {
-                                    args       => $args,
-                                    token      => $c->stash('token'),
-                                    short_code => $payload->{short_code},
-                                    currency   => $payload->{currency_code},
-                                    language   => $c->stash('language'),
-                                });
+                                    args                  => $args,
+                                    token                 => $c->stash('token'),
+                                    short_code            => $payload->{short_code},
+                                    currency              => $payload->{currency_code},
+                                    language              => $c->stash('language'),
+                                    app_markup_percentage => $c->stash('app_markup_percentage')});
                         } else {
                             $details->{$type}->{longcode}         = $payload->{payment_remark};
                             $details->{$type}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
