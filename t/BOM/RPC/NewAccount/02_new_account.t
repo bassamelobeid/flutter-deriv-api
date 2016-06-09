@@ -5,6 +5,7 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 use Test::FailWarnings;
+use Test::Warn;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
@@ -67,9 +68,12 @@ subtest $method => sub {
         email       => $email,
         created_for => 'account_opening'
     )->token;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('invalid', 'If could not be created account it should return error')
-        ->error_message_is('Sorry, account opening is unavailable.', 'If could not be created account it should return error_message');
+
+    warnings_like {
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('invalid', 'If could not be created account it should return error')
+            ->error_message_is('Sorry, account opening is unavailable.', 'If could not be created account it should return error_message');
+    } [qr/^Virtual: register_and_return_new_client err/], "Expected warn about error virtual account opening";
 
     $params->{args}->{verification_code} = BOM::Platform::Token::Verification->new(
         email       => $email,
@@ -154,20 +158,11 @@ subtest $method => sub {
             'It should return error when try to create new client using exists real client');
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vclient->loginid, 'test token');
-        {
-            #suppress warning because we want to test this error
-            local $SIG{__WARN__} = sub {
-                my $msg = shift;
-                if ($msg !~ /Use of uninitialized value \$country in hash element/) {
-                    print STDERR $msg;
-                }
-            };
-            $rpc_ct->call_ok($method, $params)
-                ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails',
-                'It should return error when try to create account without residence')
-                ->error_message_is('Please provide complete details for account opening.',
-                'It should return error when try to create account without residence');
-        }
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails',
+            'It should return error when try to create account without residence')
+            ->error_message_is('Please provide complete details for account opening.',
+            'It should return error when try to create account without residence');
 
         $params->{args}->{residence} = 'id';
         @{$params->{args}}{keys %$client_details} = values %$client_details;
@@ -287,12 +282,14 @@ subtest $method => sub {
 
         $params->{args}->{residence} = 'id';
 
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('invalid residence', 'It should return error if residence does not fit with maltainvest')
-            ->error_message_is(
-            'Sorry, our service is not available for your country of residence.',
-            'It should return error if residence does not fit with maltainvest'
-            );
+        warnings_like {
+            $rpc_ct->call_ok($method, $params)
+                ->has_no_system_error->has_error->error_code_is('invalid residence', 'It should return error if residence does not fit with maltainvest')
+                ->error_message_is(
+                'Sorry, our service is not available for your country of residence.',
+                'It should return error if residence does not fit with maltainvest'
+                );
+        } [qr/^acc opening err:/], "Expected warn about wrong residence";
 
         $params->{args}->{residence} = 'de';
 
@@ -387,17 +384,16 @@ subtest $method => sub {
         $user->email_verified(1);
         $user->save;
 
-        {
-            #suppress warning because we want to test this error
-            local $SIG{__WARN__} = sub { };
+        $params->{args}->{annual_income}                  = '1-3 million JPY';
+        $params->{args}->{trading_experience_public_bond} = 'Less than 6 months';
+        $params->{args}->{trading_experience_margin_fx}   = '6 months to 1 year';
 
-            $rpc_ct->call_ok($method, $params)
-                ->has_no_system_error->has_error->error_code_is('insufficient score', 'It should return error if client has insufficient score')
-                ->error_message_is(
-                'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.',
-                'It should return error if client has insufficient score'
-                );
-        }
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('insufficient score', 'It should return error if client has insufficient score')
+            ->error_message_is(
+            'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.',
+            'It should return error if client has insufficient score'
+            );
 
         $params->{args}->{annual_income}                  = '50-100 million JPY';
         $params->{args}->{trading_experience_public_bond} = 'Over 5 years';
