@@ -4,6 +4,7 @@ use feature 'state';
 
 use Moose;
 use YAML::XS qw(LoadFile);
+use Quant::Framework::Utils::Types;
 extends 'Quant::Framework::VolSurface';
 
 =head1 NAME
@@ -131,7 +132,7 @@ override is_valid => sub {
 
 has cutoff => (
     is         => 'ro',
-    isa        => 'bom_cutoff_helper',
+    isa        => 'qf_cutoff_helper',
     lazy_build => 1,
     coerce     => 1,
 );
