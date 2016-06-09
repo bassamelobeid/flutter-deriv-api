@@ -226,7 +226,7 @@ has 'volsurface' => (
 );
 
 sub _build_bet {
-    my $self = shift;
+    my $self     = shift;
     my $bet_args = {
         underlying   => $self->underlying,
         current_spot => $self->spot,
@@ -245,8 +245,18 @@ sub _build_bet {
     } else {
         $bet_args->{barrier} = $self->barrier;
     }
+    my $raw_surface = $self->volsurface;
+    my $cutoff_str  = $self->date_start->day_of_week == 5 ? 'UTC 21:00' : 'UTC 23:59';
+    my $vol_surface = $raw_surface->generate_surface_for_cutoff($cutoff_str);
+    my $surface     = BOM::MarketData::VolSurface::Delta->new(
+        underlying    => $self->underlying,
+        recorded_date => $self->date_start,
+        surface       => $vol_surface,
+        cutoff        => $cutoff_str,
+        deltas        => [25, 50, 75],
+    );
 
-    $bet_args->{volsurface} = $self->volsurface if defined $self->volsurface;
+    $bet_args->{volsurface}   = $surface;
     $bet_args->{current_tick} = BOM::Market::Data::Tick->new(
         underlying => $bet_args->{underlying}->symbol,
         quote      => $bet_args->{current_spot},
@@ -281,9 +291,12 @@ sub _build_price {
 
 sub _build_theo_prob {
     my $self = shift;
-    my $bet = $self->bet;
-    my $theo  = $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope' ? $bet->pricing_engine->theo_probability: $bet->pricing_engine->base_probability->amount;
-   return $theo;
+    my $bet  = $self->bet;
+    my $theo =
+          $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
+        ? $bet->pricing_engine->theo_probability
+        : $bet->pricing_engine->base_probability->amount;
+    return $theo;
 }
 
 sub _build_underlying {
