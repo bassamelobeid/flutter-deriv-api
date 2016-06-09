@@ -2048,10 +2048,12 @@ sub _build_exit_tick {
 sub _validate_offerings {
     my $self = shift;
 
+    my $message_to_client = localize('Your trading on this instrument is temporarily suspended.');
+
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->trading) {
         return {
             message           => 'All trading suspended on system',
-            message_to_client => localize("Trading is suspended at the moment."),
+            message_to_client => $message_to_client,
         };
     }
 
@@ -2061,7 +2063,7 @@ sub _validate_offerings {
     if ($underlying->is_trading_suspended) {
         return {
             message           => "Underlying trades suspended [symbol: " . $underlying->symbol . "]",
-            message_to_client => localize('Trading is suspended at the moment.'),
+            message_to_client => $message_to_client,
         };
     }
 
@@ -2071,21 +2073,21 @@ sub _validate_offerings {
     if (@$suspend_claim_types and first { $contract_code eq $_ } @{$suspend_claim_types}) {
         return {
             message           => "Trading suspended for contract type [code: " . $contract_code . "]",
-            message_to_client => localize("Trading is suspended at the moment."),
+            message_to_client => $message_to_client,
         };
     }
 
     if (first { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions}) {
         return {
             message           => "Underlying trades suspended due to corporate actions [symbol: " . $underlying->symbol . "]",
-            message_to_client => localize('Trading is suspended at the moment.'),
+            message_to_client => $message_to_client,
         };
     }
 
     if ($self->risk_profile->get_risk_profile eq 'no_business') {
         return {
             message           => 'manually disabled by quants',
-            message_to_client => localize('Trading is suspended at the moment.'),
+            message_to_client => $message_to_client,
         };
     }
 
