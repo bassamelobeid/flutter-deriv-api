@@ -3,36 +3,36 @@ mini:
     merlin:
         NUM:
             UPORDOWN:
-                avg: 0.0181
-                max: 0.041
+                avg: 0.0131
+                max: 0.0284
             ONETOUCH:
-                avg: 0.0108
-                max: 0.0257
+                avg: 0.0078
+                max: 0.0146
             NOTOUCH:
-                avg: 0.0343
-                max: 0.1225
+                avg: 0.0192
+                max: 0.0618
             CALL:
-                avg: 0.0056
-                max: 0.0418
+                avg: 0.0062
+                max: 0.0342
             RANGE:
-                avg: 0.05
-                max: 0.2075
+                avg: 0.0272
+                max: 0.1167
         BASE:
             UPORDOWN:
-                avg: 0.0177
-                max: 0.0411
+                avg: 0.0138
+                max: 0.0306
             ONETOUCH:
-                avg: 0.0104
-                max: 0.0275
+                avg: 0.0091
+                max: 0.0230
             NOTOUCH:
-                avg: 0.0346
-                max: 0.1597
+                avg: 0.0176
+                max: 0.080
             CALL:
-                avg: 0.01417
-                max: 0.0814
+                avg: 0.0147
+                max: 0.0836
             RANGE:
-                avg: 0.0526
-                max: 0.2545
+                avg: 0.0280
+                max: 0.148
     sdfx:
         BASE:
             UPORDOWN:
@@ -66,8 +66,8 @@ mini:
     sdeq:
         DJI:
             ONETOUCH:
-                avg: 0.021
-                max: 0.1871
+                avg: 0.0229
+                max: 0.1927
             CALL:
                 avg: 0.0059
                 max: 0.0245
@@ -80,14 +80,14 @@ mini:
                 max: 0.0204
         SPC:
             ONETOUCH:
-                avg: 0.0229
+                avg: 0.0248
                 max: 0.0840
             CALL:
                 avg: 0.0085
                 max: 0.0319
         N225:
             ONETOUCH:
-                avg: 0.0118
+                avg: 0.0121
                 max: 0.1506
             CALL:
                 avg: 0.0038
