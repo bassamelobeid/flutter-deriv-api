@@ -10,7 +10,7 @@ use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Static::Config;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();

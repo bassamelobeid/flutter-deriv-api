@@ -6,7 +6,7 @@ use File::Temp;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Database::ClientDB;
-use BOM::Platform::Plack qw/PrintContentType_XSendfile/;
+use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
 use BOM::Platform::Sysinit ();
 
 use f_brokerincludeall;

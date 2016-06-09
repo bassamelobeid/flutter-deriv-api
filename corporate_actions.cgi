@@ -10,7 +10,7 @@ use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
 use BOM::Platform::Runtime;
 use JSON qw(to_json);
-use BOM::Platform::Plack qw( PrintContentType_JSON );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType_JSON );
 use CGI;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
