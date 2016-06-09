@@ -93,6 +93,7 @@ if ($r->param('delete_client')) {
     my $current        = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
     delete $current->{$client_loginid};
     BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
+    BOM::Platform::Runtime->instance->app_config->save_dynamic;
 }
 
 Bar("Existing limits");
