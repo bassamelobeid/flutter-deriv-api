@@ -7,7 +7,7 @@ use Path::Tiny;
 use Cache::RedisDB;
 
 use f_brokerincludeall;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::System::AuditLog;
 use BOM::DualControl;

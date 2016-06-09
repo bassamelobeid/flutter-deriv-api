@@ -3,7 +3,7 @@ package main;
 
 use strict 'vars';
 
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();

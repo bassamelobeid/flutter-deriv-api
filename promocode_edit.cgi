@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use Scalar::Util 'looks_like_number';
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use JSON;
 
 use f_brokerincludeall;

@@ -8,7 +8,7 @@ use Text::CSV;
 use DateTime;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Plack qw( PrintContentType_excel );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType_excel );
 use BOM::Database::ClientDB;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();

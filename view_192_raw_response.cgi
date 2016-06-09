@@ -6,7 +6,7 @@ use warnings;
 
 use YAML::XS;
 use XML::Simple;
-use BOM::Platform::Plack qw( PrintContentType PrintContentType_XML );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_XML );
 use BOM::JavascriptConfig;
 
 use f_brokerincludeall;

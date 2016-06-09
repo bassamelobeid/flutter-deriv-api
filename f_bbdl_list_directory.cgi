@@ -7,7 +7,7 @@ use CGI;
 
 use f_brokerincludeall;
 
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Bloomberg::FileDownloader;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
