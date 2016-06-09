@@ -157,13 +157,3 @@ END %]
         <input type="submit" name="QQ" value="Quant Query" class="investigate">
     </form>
 <div>
-<div class="grd-parent grd-grid-12 table-header grd-row-padding">
-    <b>Being watched for: </b>
-    <form action="[% request.url_for('backoffice/f_profit_table.cgi') %]" method="post">
-        <input type="hidden" name="loginID" value="[% loginid %]"/>
-        <input type="hidden" name="startdate" value="[% startdate %]" />
-        <input type="hidden" name="enddate" value="[% enddate %]" />
-        <input type="text" name="watchlist_comment" value="[% limits %]" size=50 />
-        <input type="submit" name="update_watchlist" value="Update"/>
-    </form>
-</div>

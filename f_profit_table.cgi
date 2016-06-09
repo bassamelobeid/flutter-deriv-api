@@ -11,7 +11,6 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Sysinit ();
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Market::Registry;
-use BOM::QuantsWatchList;
 use BOM::ContractInfo;
 
 use Performance::Probability qw(get_performance_probability);
@@ -36,11 +35,6 @@ if (not $client) {
     code_exit_BO();
 }
 
-if (request()->param('update_watchlist')) {
-    my $watchlist_comment = request()->param('watchlist_comment');
-    BOM::QuantsWatchList::update_details_for($loginID, $watchlist_comment, BOM::Backoffice::Auth0::from_cookie()->{nickname});
-}
-
 my $startdate = request()->param('startdate');
 my $enddate   = request()->param('enddate');
 
@@ -59,7 +53,6 @@ my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     db             => $db,
 });
 
-my $limits         = BOM::QuantsWatchList::get_details_for($loginID);
 my $sold_contracts = $fmb_dm->get_sold({
     after  => $startdate,
     before => $enddate,
@@ -121,7 +114,6 @@ BOM::Platform::Context::template->process(
     {
         sold_contracts          => $sold_contracts,
         open_contracts          => $open_contracts,
-        limits                  => $limits,
         markets                 => [BOM::Market::Registry->instance->display_markets],
         email                   => $client->email,
         full_name               => $client->full_name,

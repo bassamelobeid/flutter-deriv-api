@@ -23,7 +23,6 @@ extends 'BOM::RiskReporting::Base';
 use Cache::RedisDB;
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::QuantsWatchList;
 use Format::Util::Numbers qw(roundnear);
 use BOM::Database::Model::Account;
 use BOM::Database::ClientDB;
@@ -74,7 +73,9 @@ sub _do_name_plus {
         };
     }
 
-    $href->{being_watched_for} = BOM::QuantsWatchList::get_details_for($href->{loginid});
+    my $app_config = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+    my $reason = $app_config->{$href->{loginid}}->{reason} // '';
+    $href->{being_watched_for} = $reason;
     return $href;
 }
 
@@ -366,7 +367,7 @@ sub _payment_and_profit_report {
             if ($losers[$i] and $losers[$i]->{usd_profit} < 0);
     }
     my %all_watched =
-        map { $_ => 1 } (keys %{BOM::QuantsWatchList::get_watchlist()});
+        map { $_ => 1 } (keys %{from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles)});
 
     foreach my $mover (@movers) {
         $self->_do_name_plus($mover);
