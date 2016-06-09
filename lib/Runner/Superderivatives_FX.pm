@@ -12,19 +12,11 @@ use Carp;
 use CSVParser::Superderivatives_FX;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
-
+use BOM::MarketData::VolSurface::Utils;
 has suite => (
     is      => 'ro',
     isa     => 'Str',
     default => 'mini',
-);
-
-has files => (
-    is      => 'ro',
-    isa     => 'ArrayRef',
-    default => sub {
-        [qw(20111117_EURUSD 20111121_USDJPY 20111201_GBPJPY 20111201_USDSEK 20111203_GBPPLN 20111202_USDCHF 20111203_GBPAUD)];
-    },
 );
 
 has report_file => (
@@ -42,8 +34,19 @@ has report_file => (
 
 sub run_dataset {
     my $self = shift;
+    my $key  = shift;
 
-    my @files = @{$self->files};
+    my @files;
+
+    my $key_base = 'BASE';
+    my $key_num  = 'NUM';
+    if ($key) {
+        @files    = $key eq 'major' ? qw(SD_EURUSD SD_USDJPY SD_GBPJPY) : qw(SD_USDSEK SD_GBPPLN SD_GBPAUD SD_USDCHF);
+        $key_base = uc($key) . '_BASE';
+        $key_num  = uc($key) . '_NUM';
+    } else {
+        @files = qw(SD_EURUSD SD_USDJPY SD_GBPJPY SD_USDCHF SD_GBPAUD SD_USDSEK SD_GBPPLN);
+    }
     my $result_all;
 
     my $csv_title =
@@ -65,7 +68,6 @@ sub run_dataset {
             file  => $file,
             suite => $self->suite,
         )->records;
-
         my @base_dataset      = @{$records->{base_records}};
         my @numeraire_dataset = @{$records->{numeraire_records}};
 
@@ -84,8 +86,8 @@ sub run_dataset {
     my $numeraire_analysis_report = $self->calculates_and_saves_analysis_report($self->report_file->{analysis_num},  $num_results);
 
     return {
-        NUM  => $numeraire_analysis_report,
-        BASE => $base_analysis_report,
+        $key_num  => $numeraire_analysis_report,
+        $key_base => $base_analysis_report,
     };
 }
 
@@ -114,7 +116,7 @@ sub get_bet_results {
         my $date_start   = $record->{date_start};
         my $date_expiry  = $record->{date_expiry};
         my $underlying   = $record->{underlying};
-        my $surface      = $record->{volsurface};
+        my $raw_surface  = $record->{volsurface};
         my $payout       = $record->{payout};
         my $date_pricing = $record->{date_start};
         my $spot         = $record->{spot};
@@ -123,9 +125,14 @@ sub get_bet_results {
         next if $date_expiry->epoch - $date_start->epoch > 365 * 86400;
         next if $date_expiry->is_a_weekend or $date_start->is_a_weekend;
 
+        my $cutoff_str  = $date_start->day_of_week == 5 ? 'UTC 21:00' : 'UTC 23:59';
+        my $vol_surface = $raw_surface->generate_surface_for_cutoff($cutoff_str);
+        my $surface     = $raw_surface->clone({
+            surface => $vol_surface,
+            cutoff  => $cutoff_str,
+        });
         my $currency = ($base_or_num eq 'base') ? $record->{base_currency} : $record->{numeraire_currency};
         my $bet_type = $record->{bet_type};
-
         my $bet_args = {
             underlying   => $underlying,
             bet_type     => $bet_type,
@@ -149,9 +156,11 @@ sub get_bet_results {
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start}->epoch,
         );
-
-        my $bet      = produce_contract($bet_args);
-        my $bom_mid  = $bet->theo_probability->amount;
+        my $bet = produce_contract($bet_args);
+        my $bom_mid =
+              $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
+            ? $bet->pricing_engine->theo_probability
+            : $bet->pricing_engine->base_probability->amount;
         my $bom_bs   = $bet->bs_probability->amount;
         my $sd_mid   = $record->{sd_mid};
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');

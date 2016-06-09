@@ -126,6 +126,12 @@ has 'price' => (
     lazy_build => 1,
 );
 
+has 'theo_prob' => (
+    is         => 'rw',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
 #higher barrier or the main barrier
 has 'high_barrier' => (
     is  => 'rw',
@@ -220,8 +226,7 @@ has 'volsurface' => (
 );
 
 sub _build_bet {
-    my $self = shift;
-
+    my $self     = shift;
     my $bet_args = {
         underlying   => $self->underlying,
         current_spot => $self->spot,
@@ -240,15 +245,21 @@ sub _build_bet {
     } else {
         $bet_args->{barrier} = $self->barrier;
     }
+    my $raw_surface = $self->volsurface;
+    my $cutoff_str  = $self->date_start->day_of_week == 5 ? 'UTC 21:00' : 'UTC 23:59';
+    my $vol_surface = $raw_surface->generate_surface_for_cutoff($cutoff_str);
+    my $surface = $raw_surface->clone({
+       surface => $vol_surface,
+       cutoff  => $cutoff_str,
+     });
 
-    $bet_args->{volsurface} = $self->volsurface if defined $self->volsurface;
+    $bet_args->{volsurface}   = $surface;
     $bet_args->{current_tick} = BOM::Market::Data::Tick->new(
         underlying => $bet_args->{underlying}->symbol,
         quote      => $bet_args->{current_spot},
         epoch      => $bet_args->{date_start}->epoch,
     );
     my $bet = produce_contract($bet_args);
-
     return $bet;
 }
 
@@ -267,12 +278,22 @@ sub _build_price {
     } elsif ($self->price_type eq 'bid') {
         $price = $self->bet->bid_price;
     } elsif ($self->price_type eq 'theo') {
-        $price = $self->bet->theo_price;
+        $price = $self->theo_prob * $self->bet->payout;
     }
 
     #this is for VV engine
     #if (price_type eq 'VV')
     return sprintf("%.2f", $price);
+}
+
+sub _build_theo_prob {
+    my $self = shift;
+    my $bet  = $self->bet;
+    my $theo =
+          $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
+        ? $bet->pricing_engine->theo_probability
+        : $bet->pricing_engine->base_probability->amount;
+    return $theo;
 }
 
 sub _build_underlying {
@@ -446,9 +467,9 @@ sub get_csv_line {
     $line .= ',' . $self->bet->bid_probability->amount;
     $line .= ',' . $self->bet->ask_probability->amount;
     $line .= ',' . ($self->bet->ask_probability->amount - $self->bet->bid_probability->amount);
-    $line .= ',' . $self->bet->theo_probability->amount;
+    $line .= ',' . $self->theo_prob;
     $line .= ',' . $self->bloomberg_exported_price_mid / 100;
-    $line .= ',' . abs(sprintf("%.4f", $self->bet->theo_probability->amount) - $self->bloomberg_exported_price_mid / 100);
+    $line .= ',' . abs(sprintf("%.4f", $self->theo_prob) - $self->bloomberg_exported_price_mid / 100);
     return $line;
 }
 

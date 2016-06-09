@@ -3,7 +3,8 @@ perl:
     - "5.14.2"
 env:
     - TEST_SUITE=merlin_benchmark
-    - TEST_SUITE=SDFX_benchmark
+    - TEST_SUITE=SDFX_benchmark_major
+    - TEST_SUITE=SDFX_benchmark_minor
     - TEST_SUITE=SDEQ_benchmark_DJI
     - TEST_SUITE=SDEQ_benchmark_FCHI
     - TEST_SUITE=SDEQ_benchmark_SPC
@@ -30,7 +31,6 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-app
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
 

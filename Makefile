@@ -1,5 +1,6 @@
 TESTS=merlin_benchmark \
-      SDFX_benchmark \
+      SDFX_benchmark_major \
+      SDFX_benchmark_minor \
       SDEQ_benchmark_DJI \
       SDEQ_benchmark_FCHI \
       SDEQ_benchmark_SPC \
@@ -28,8 +29,11 @@ test: $(TESTS)
 merlin_benchmark:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=merlin
 
-SDFX_benchmark:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx
+SDFX_benchmark_major:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx --file=major
+
+SDFX_benchmark_minor:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx --file=minor
 
 SDEQ_benchmark_DJI:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=DJI
