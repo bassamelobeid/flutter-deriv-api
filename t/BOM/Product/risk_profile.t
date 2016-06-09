@@ -112,3 +112,7 @@ subtest 'empty limit condition' => sub {
     my $rp = BOM::Product::RiskProfile->new(%args);
     is $rp->get_risk_profile, 'low_risk', 'ignore profile with no conditions';
 };
+
+#cleanup
+BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles('{}');
+BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles('{}');
