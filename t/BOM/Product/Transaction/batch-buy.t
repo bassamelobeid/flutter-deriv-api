@@ -51,7 +51,6 @@ sub check_datadog {
     if ($_[0] eq 'timing') {
         my ($p1, $p2) = split /,/, $item, 2;
         my $re = qr/\Q$p1\E,[\d.]+,\Q$p2\E/;
-        note $re;
         ok +(!!grep {/$re/} @datadog_actions), "found datadog action: $item";
     } else {
         ok +(!!grep {$_ eq $item} @datadog_actions), "found datadog action: $item";
