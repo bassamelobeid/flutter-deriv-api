@@ -168,7 +168,7 @@ foreach my $client_loginid (keys %$custom_client_limits) {
         updated_by     => $updated_by,
         updated_on     => $updated_on,
         @output ? (output => \@output) : (),
-        };
+        } if @output;
 }
 
 BOM::Platform::Context::template->process(
