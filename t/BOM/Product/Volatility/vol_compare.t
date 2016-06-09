@@ -338,6 +338,10 @@ my $counter = 0;
 for my $expiry (@expiry_dates) {
     my $start_date = $expiry->minus_time_interval('8d');
     my $end_of_day = $expiry->plus_time_interval('23h59m59s');
+    if ( $end_of_day->day_of_week == 5 ) {
+        $end_of_day = $expiry->plus_time_interval('21h');
+    }
+
     my @dates;
 
     while ($start_date->is_before($end_of_day)) {
