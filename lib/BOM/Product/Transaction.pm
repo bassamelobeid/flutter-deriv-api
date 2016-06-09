@@ -297,8 +297,8 @@ sub calculate_limits {
     $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
 
     if ($contract->is_spread) {
-        my $spreads_limit_profit = BOM::Platform::Runtime->instance->app_config->quants->spreads_daily_profit_limit;
-        $self->limits->{spread_bet_profit_limit} = $static_config->{risk_profile}{$spreads_limit_profit}{turnover}{$currency};
+        # limits are calculated differently for spreads
+        $self->limits->{spread_bet_profit_limit} = $static_config->{risk_profile}{$contract->risk_profile->get_risk_profile}{turnover}{$currency};
     } else {
         push @{$self->limits->{specific_turnover_limits}}, @{$self->contract->risk_profile->get_turnover_limit_parameters};
     }
@@ -406,8 +406,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
     my $self    = shift;
     my %options = @_;
 
-    my $contract = $self->contract;
-    $contract->risk_profile->include_client_profiles($self->client->loginid) unless $contract->is_spread;
+    $self->contract->risk_profile->include_client_profiles($self->client->loginid);
 
     my $error_status;
 

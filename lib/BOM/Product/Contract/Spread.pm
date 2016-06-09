@@ -17,6 +17,7 @@ use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
 use BOM::Product::Types;
 use BOM::Platform::Static::Config;
+use BOM::Product::RiskProfile;
 
 with 'MooseX::Role::Validatable';
 
@@ -455,7 +456,7 @@ sub _validate_quote {
 
     my @err;
 
-    if (BOM::Platform::Runtime->instance->app_config->quants->spreads_daily_profit_limit eq 'no_business') {
+    if ($self->risk_profile->get_risk_profile eq 'no_business') {
         push @err,
             +{
             message           => 'manually disabled by quants',
@@ -569,6 +570,23 @@ sub _get_min_max_unit {
     }
 
     return (roundnear(0.01, $min), roundnear(0.01, $max), $unit);
+}
+
+has risk_profile => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_risk_profile {
+    my $self = shift;
+
+    return BOM::Product::RiskProfile->new(
+        underlying        => $self->underlying,
+        contract_category => $self->category_code,
+        expiry_type       => 'intraday',             # making this intraday.
+        start_type        => 'spot',
+        currency          => $self->currency,
+    );
 }
 
 no Moose;
