@@ -53,7 +53,6 @@ sub init {
                 . $website->primary_url . '">'
                 . $website->primary_url . '</a> '
                 . localize('homepage') . '</p>'
-                . $suggest_whattodo
                 . '</div>';
             BOM::Platform::Context::request_completed();
             exit;
