@@ -29,6 +29,11 @@ subtest 'validations' => sub {
     is $res->{error}->{code}, 'InvalidGranularity', "Correct error code for granularity";
     delete $req_storage->{granularity};
 
+    $t->send_ok({json => $req_storage});
+    $t   = $t->message_ok;
+    $res = decode_json($t->message->[1]);
+    is $res->{echo_req}->{granularity}, 60, 'Should set default granularity if it is empty';
+
     $req_storage->{style} = 'sample';
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
