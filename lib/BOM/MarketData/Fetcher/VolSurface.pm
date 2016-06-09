@@ -34,8 +34,8 @@ sub fetch_surface {
         $args->{for_date} ? (for_date => $args->{for_date}) : ($underlying->for_date) ? (for_date => $underlying->for_date) : (),
         $args->{cutoff} ? (cutoff => $args->{cutoff}) : (),
     };
-    
-    $surface_args->{underlying} = $args->{underlying} if lc($underlying->volatility_surface_type) eq 'flat'; 
+
+    $surface_args->{underlying} = $args->{underlying} if lc($underlying->volatility_surface_type) eq 'flat';
 
     return $class->new($surface_args);
 }
