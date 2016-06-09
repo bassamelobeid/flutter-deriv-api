@@ -181,14 +181,13 @@ sub stats_start {
     my $client   = $self->client;
     my $contract = $self->contract;
 
-    my $loginid   = lc($client->loginid);
     my $broker    = lc($client->broker_code);
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
     my $rmgenv    = BOM::System::Config::env;
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
     my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",]};
 
-    if ($what eq 'buy') {
+    if ($what eq 'buy' or $what eq 'batch_buy') {
         if ($self->contract->is_spread) {
             push @{$tags->{tags}}, "stop_type:" . lc($contract->stop_type);
         } else {
@@ -250,25 +249,27 @@ sub stats_stop {
     my $tags = $data->{tags};
 
     if ($error) {
-        stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, 'reason:' . _normalize_error($error),]});
-    } else {
-        my $now = [gettimeofday];
-        stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
-        stats_timing("transaction.$what.db_time",      1000 * tv_interval($data->{validation_done}, $now), $tags);
-        stats_inc("transaction.$what.success", $tags);
+        stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, 'reason:' . _normalize_error($error)]});
 
-        if ($data->{rmgenv} eq 'production' and $data->{virtual} eq 'no') {
-            my $usd_amount = int(in_USD($self->price, $self->contract->currency) * 100);
-            if ($what eq 'buy') {
-                stats_count('business.turnover_usd',       $usd_amount, $tags);
-                stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
-            } elsif ($what eq 'sell') {
-                stats_count('business.buy_minus_sell_usd', -$usd_amount, $tags);
-            }
+        return $error;
+    }
+
+    my $now = [gettimeofday];
+    stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
+    stats_timing("transaction.$what.db_time",      1000 * tv_interval($data->{validation_done}, $now), $tags);
+    stats_inc("transaction.$what.success", $tags);
+
+    if ($data->{rmgenv} eq 'production' and $data->{virtual} eq 'no') {
+        my $usd_amount = int(in_USD($self->price, $self->contract->currency) * 100);
+        if ($what eq 'buy') {
+            stats_count('business.turnover_usd',       $usd_amount, $tags);
+            stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
+        } elsif ($what eq 'sell') {
+            stats_count('business.buy_minus_sell_usd', -$usd_amount, $tags);
         }
     }
 
-    return $error;
+    return;
 }
 
 sub calculate_limits {
@@ -610,9 +611,8 @@ sub buy {    ## no critic (RequireArgUnpacking)
 #
 # Exceptions:
 #   The function may throw exceptions. However, it is guaranteed that after
-#   buying the first contract no exception whatsoever is thrown. That means
-#   there is no way for a contract to be bought but not reported back to the
-#   caller.
+#   contract validation no exception whatsoever is thrown. That means there
+#   is no way for a contract to be bought but not reported back to the caller.
 
 sub batch_buy {    ## no critic (RequireArgUnpacking)
     my $self    = shift;
@@ -646,6 +646,9 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
         next if $m->{code};
         push @{$per_broker{$m->{client}->broker_code}}, $m;
     }
+
+    my %stat = map { $_ => { attempt => 0 + @{$per_broker->{$_}} } } keys %per_broker;
+    Test::More::note Test::More::explain \%stat if defined &Test::More::note;
 
     for my $broker (keys %per_broker) {
         my $list = $per_broker{$broker};
