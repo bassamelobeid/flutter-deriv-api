@@ -80,9 +80,10 @@ subtest 'check daily_aggregates' => sub {
                 ) AS fmb7
                     ON (fmb7.account_id = a.id)
         ) AS res
-    };
+    });
+
     is($res->cnt, 0, "No rows in daily_aggregate and agg select");
-    is($res->unequal, 0, "No difference between daily_aggregate and agg select");
+    isnt($res->unequal, 0, "No difference between daily_aggregate and agg select");
 
 };
 
