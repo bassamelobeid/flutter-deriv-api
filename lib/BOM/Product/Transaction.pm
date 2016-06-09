@@ -260,9 +260,9 @@ sub stats_stop {
     stats_inc("transaction.$what.success", $tags);
 
     if ($what eq 'batch_buy') {
-        my @tags = grep {!/^(?:broker|virtual):/} @{$tags->{tags}};
+        my @tags = grep { !/^(?:broker|virtual):/ } @{$tags->{tags}};
         while (my ($broker, $xd) = each %$extra) {
-            my $tags = {tags => ["broker:$broker", "virtual:".($broker =~ /^VR/ ? "yes" : "no"), @tags]};
+            my $tags = {tags => ["broker:$broker", "virtual:" . ($broker =~ /^VR/ ? "yes" : "no"), @tags]};
             stats_count("transaction.buy.attempt", $xd->{attempt}, $tags);
             stats_count("transaction.buy.success", $xd->{success}, $tags);
 
@@ -661,7 +661,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
         push @{$per_broker{$m->{client}->broker_code}}, $m;
     }
 
-    my %stat = map { $_ => { attempt => 0 + @{$per_broker{$_}} } } keys %per_broker;
+    my %stat = map { $_ => {attempt => 0 + @{$per_broker{$_}}} } keys %per_broker;
 
     for my $broker (keys %per_broker) {
         my $list = $per_broker{$broker};
@@ -684,7 +684,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
             );
 
             my $success = 0;
-            my $result = $fmb_helper->batch_buy_bet;
+            my $result  = $fmb_helper->batch_buy_bet;
             for my $el (@$list) {
                 my $res = shift @$result;
                 if (my $ecode = $res->{e_code}) {
