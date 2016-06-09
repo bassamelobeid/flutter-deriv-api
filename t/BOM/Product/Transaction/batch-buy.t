@@ -51,6 +51,18 @@ sub check_datadog {
     ok +(!!grep {$_ eq $item} @datadog_actions), "found datadog action: $item";
 }
 
+{
+    my %exch = (
+        USD => 2,
+        EUR => 3,
+    );
+    no warnings 'redefine';
+    *BOM::Product::Transaction::in_USD = sub { # for testing datadog
+        my ($amount, $currency) = @_;
+        return $amount * $exch{$currency};
+    };
+}
+
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -616,28 +628,28 @@ subtest 'batch-buy multiple databases and datadog', sub {
                 contract_class:higher_lower_bet
                 amount_type:payout
                 expiry_type:duration /]}];
-        check_datadog count => ["business.turnover_usd" => 10000, {tags => [
+        check_datadog count => ["business.turnover_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'), {tags => [
             qw/ broker:cr
                 virtual:no
                 rmgenv:production
                 contract_class:higher_lower_bet
                 amount_type:payout
                 expiry_type:duration /]}];
-        check_datadog count => ["business.turnover_usd" => 10000, {tags => [
+        check_datadog count => ["business.turnover_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'), {tags => [
             qw/ broker:mf
                 virtual:no
                 rmgenv:production
                 contract_class:higher_lower_bet
                 amount_type:payout
                 expiry_type:duration /]}];
-        check_datadog count => ["business.buy_minus_sell_usd" => 10000, {tags => [
+        check_datadog count => ["business.buy_minus_sell_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'), {tags => [
             qw/ broker:cr
                 virtual:no
                 rmgenv:production
                 contract_class:higher_lower_bet
                 amount_type:payout
                 expiry_type:duration /]}];
-        check_datadog count => ["business.buy_minus_sell_usd" => 10000, {tags => [
+        check_datadog count => ["business.buy_minus_sell_usd" => 100 * BOM::Product::Transaction::in_USD(100, 'USD'), {tags => [
             qw/ broker:mf
                 virtual:no
                 rmgenv:production
