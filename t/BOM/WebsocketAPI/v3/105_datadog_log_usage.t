@@ -12,11 +12,9 @@ use Test::MockModule;
 my $t = build_mojo_test({
     debug    => 1,
     language => 'RU'
-});
+}, {Origin => 'http://test.com'});
 my ($req_storage, $res, $start, $end);
 
-my $headers = Test::MockModule->new('Mojo::Headers');
-$headers->mock('header', sub { $_[1] eq 'Origin' ? 'http://test.com' : '' });
 my $datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
 my $timing  = [];
 my $stats  = [];
@@ -38,8 +36,6 @@ is $timing->[1]->[2]->{tags}->[0], 'rpc:website_status', 'Should set tag with rp
 
 is $stats->[0]->[0], 'bom_websocket_api.v_3.call.website_status';
 is $stats->[0]->[1]->{tags}->[0], 'origin:test.com', 'Should set req origin';
-
-$headers->unmock_all();
 
 @$timing = ();
 my %contractParameters = (
