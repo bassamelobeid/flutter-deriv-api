@@ -647,7 +647,7 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
         push @{$per_broker{$m->{client}->broker_code}}, $m;
     }
 
-    my %stat = map { $_ => { attempt => 0 + @{$per_broker->{$_}} } } keys %per_broker;
+    my %stat = map { $_ => { attempt => 0 + @{$per_broker{$_}} } } keys %per_broker;
     Test::More::note Test::More::explain \%stat if defined &Test::More::note;
 
     for my $broker (keys %per_broker) {
