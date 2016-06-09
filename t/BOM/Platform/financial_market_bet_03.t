@@ -17,9 +17,20 @@ sub db {
 
 subtest 'check daily_aggregates' => sub {
 
-    is(db->dbh->selectrow_hashref(qq{
+    my %res = db->dbh->selectrow_hashref(qq{
         SELECT
-            count(*) as cnt
+            count(*) as cnt,
+            sum(
+                CASE
+                    WHEN (
+                        turnover7 IS DISTINCT FROM old_turnover7
+                        OR loss7 IS DISTINCT FROM old_loss7
+                        OR turnover30 IS DISTINCT FROM old_turnover30
+                        OR loss30 IS DISTINCT FROM old_loss30
+                    ) THEN
+                        1
+                    END
+            ) AS unequal
         FROM (
             SELECT
                 c.loginid,
@@ -69,13 +80,9 @@ subtest 'check daily_aggregates' => sub {
                 ) AS fmb7
                     ON (fmb7.account_id = a.id)
         ) AS res
-        WHERE
-            turnover7 IS DISTINCT FROM old_turnover7
-            OR loss7 IS DISTINCT FROM old_loss7
-            OR turnover30 IS DISTINCT FROM old_turnover30
-            OR loss30 IS DISTINCT FROM old_loss30
-    })->{'cnt'}, 0, "No difference between daily_aggregate and agg select");
-
+    };
+    is($res->cnt, 0, "No rows in daily_aggregate and agg select");
+    is($res->unequal, 0, "No difference between daily_aggregate and agg select");
 
 };
 
