@@ -2,7 +2,7 @@
 package main;
 use strict 'vars';
 
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Data::Validate::Sanctions qw/is_sanctioned/;
 use Path::Tiny;
 use f_brokerincludeall;

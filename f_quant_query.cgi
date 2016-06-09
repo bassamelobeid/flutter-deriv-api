@@ -7,7 +7,7 @@ use Date::Utility;
 
 use BOM::Platform::Client;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 
 use f_brokerincludeall;

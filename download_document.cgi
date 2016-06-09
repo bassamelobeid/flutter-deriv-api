@@ -3,7 +3,7 @@ package main;
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
-use BOM::Platform::Plack qw/PrintContentType_XSendfile/;
+use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
 use BOM::Platform::Sysinit ();
 
 use f_brokerincludeall;
