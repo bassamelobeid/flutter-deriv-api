@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 4;
+use Test::Most tests => 3;
 use Test::Exception;
 use Test::FailWarnings;
 
@@ -10,18 +10,6 @@ use BOM::Market;
 use BOM::Market::Registry;
 
 throws_ok { BOM::Market->new() } qr/Attribute \(name\) is required/, 'Name is Required';
-
-subtest 'outlier tick' => sub {
-    foreach my $market (BOM::Market::Registry->instance->display_markets) {
-        subtest $market->name => sub {
-            my $ot = $market->outlier_tick;
-            ok defined $ot, 'has a defined outlier tick level';
-            cmp_ok $ot, '>',  0,    '... which is positive';
-            cmp_ok $ot, '<=', 0.20, '... and less than or equal to 20%';
-
-        };
-    }
-};
 
 subtest 'disabled' => sub {
     subtest 'simple' => sub {
