@@ -454,6 +454,15 @@ sub _validate_quote {
     my $self = shift;
 
     my @err;
+
+    if (BOM::Platform::Runtime->instance->app_config->quants->spreads_daily_profit_limit eq 'no_business') {
+        push @err,
+            +{
+            message           => 'manually disabled by quants',
+            message_to_client => localize('Your trading on this instrument is temporarily suspended.'),
+            };
+    }
+
     if ($self->date_pricing->epoch - $self->underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch) {
         push @err,
             {
