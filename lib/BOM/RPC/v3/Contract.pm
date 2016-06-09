@@ -297,7 +297,11 @@ sub get_contract_details {
 
     my $response;
     try {
-        my $contract = produce_contract($params->{short_code}, $params->{currency});
+        my $bet_params = shortcode_to_parameters($params->{short_code}, $params->{currency});
+        $bet_params->{app_markup_percentage} = $params->{app_markup_percentage};
+
+        my $contract = produce_contract($bet_params);
+
         $response = {
             longcode     => $contract->longcode,
             symbol       => $contract->underlying->symbol,
