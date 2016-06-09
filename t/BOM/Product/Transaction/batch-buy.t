@@ -468,8 +468,8 @@ subtest 'batch-buy multiple databases and datadog', sub {
         my @cl;
         push @cl, create_client;
         push @cl, create_client;
-        push @cl, create_client 'MLT';
-        push @cl, create_client 'MLT';
+        push @cl, create_client 'MF';
+        push @cl, create_client 'MF';
         push @cl, create_client 'VRTC';
 
         top_up $clm, 'USD', 0;   # the manager has no money
