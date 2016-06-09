@@ -268,7 +268,7 @@ sub stats_stop {
 
             next if $broker =~ /^VR/ or $data->{rmgenv} ne 'production';
 
-            my $usd_amount = $data->{success} * int(in_USD($self->price, $self->contract->currency) * 100);
+            my $usd_amount = $xd->{success} * int(in_USD($self->price, $self->contract->currency) * 100);
             stats_count('business.turnover_usd',       $usd_amount, $tags);
             stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
         }
