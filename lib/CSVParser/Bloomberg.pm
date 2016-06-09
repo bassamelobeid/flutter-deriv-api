@@ -252,13 +252,6 @@ sub _build_bet {
        surface => $vol_surface,
        cutoff  => $cutoff_str,
      });
-    my $surface     = BOM::MarketData::VolSurface::Delta->new(
-        underlying    => $self->underlying,
-        recorded_date => $self->date_start,
-        surface       => $vol_surface,
-        cutoff        => $cutoff_str,
-        deltas        => [25, 50, 75],
-    );
 
     $bet_args->{volsurface}   = $surface;
     $bet_args->{current_tick} = BOM::Market::Data::Tick->new(
