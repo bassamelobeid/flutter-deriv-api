@@ -51,7 +51,6 @@ use List::MoreUtils qw( uniq );
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
-use BOM::Platform::Plack qw( PrintContentType );
 use Quant::Framework::VolSurface::Delta;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData::Display::VolatilitySurface;
