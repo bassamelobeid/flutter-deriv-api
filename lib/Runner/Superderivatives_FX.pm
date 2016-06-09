@@ -41,7 +41,7 @@ sub run_dataset {
     my $key_base = 'BASE';
     my $key_num  = 'NUM';
     if ($key) {
-        @files    = $key eq 'major' ? qw(SD_EURUSD SD_USDJPY SD_GBPJPY SD_USDCHF) : qw(SD_USDSEK SD_GBPPLN SD_GBPAUD);
+        @files    = $key eq 'major' ? qw(SD_EURUSD SD_USDJPY SD_GBPJPY) : qw(SD_USDSEK SD_GBPPLN SD_GBPAUD SD_USDCHF);
         $key_base = uc($key) . '_BASE';
         $key_num  = uc($key) . '_NUM';
     } else {
