@@ -633,36 +633,38 @@ sub _get_overview {
         delta => 50,
         days  => $bet->timeinyears->amount * 365,
     });
-    my ($delta_strike1, $delta_strike2);
-    if ($bet->two_barriers) {
-        $delta_strike1 = 100 * get_delta_for_strike({
-            strike           => $bet->high_barrier->as_absolute,
-            atm_vol          => $atm_vol,
-            t                => $bet->timeinyears->amount,
-            spot             => $bet->current_spot,
-            r_rate           => $bet->r_rate,
-            q_rate           => $bet->q_rate,
-            premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
-        });
-        $delta_strike2 = 100 * get_delta_for_strike({
-            strike           => $bet->low_barrier->as_absolute,
-            atm_vol          => $atm_vol,
-            t                => $bet->timeinyears->amount,
-            spot             => $bet->current_spot,
-            r_rate           => $bet->r_rate,
-            q_rate           => $bet->q_rate,
-            premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
-        });
-    } else {
-        $delta_strike1 = 100 * get_delta_for_strike({
-            strike           => $bet->barrier->as_absolute,
-            atm_vol          => $atm_vol,
-            t                => $bet->timeinyears->amount,
-            spot             => $bet->current_spot,
-            r_rate           => $bet->r_rate,
-            q_rate           => $bet->q_rate,
-            premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
-        });
+    my ($delta_strike1, $delta_strike2) = (0, 0);
+    if ($bet->category_code ne 'digits') {
+        if ($bet->two_barriers) {
+            $delta_strike1 = 100 * get_delta_for_strike({
+                strike           => $bet->high_barrier->as_absolute,
+                atm_vol          => $atm_vol,
+                t                => $bet->timeinyears->amount,
+                spot             => $bet->current_spot,
+                r_rate           => $bet->r_rate,
+                q_rate           => $bet->q_rate,
+                premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
+            });
+            $delta_strike2 = 100 * get_delta_for_strike({
+                strike           => $bet->low_barrier->as_absolute,
+                atm_vol          => $atm_vol,
+                t                => $bet->timeinyears->amount,
+                spot             => $bet->current_spot,
+                r_rate           => $bet->r_rate,
+                q_rate           => $bet->q_rate,
+                premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
+            });
+        } else {
+            $delta_strike1 = 100 * get_delta_for_strike({
+                strike           => $bet->barrier->as_absolute,
+                atm_vol          => $atm_vol,
+                t                => $bet->timeinyears->amount,
+                spot             => $bet->current_spot,
+                r_rate           => $bet->r_rate,
+                q_rate           => $bet->q_rate,
+                premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
+            });
+        }
     }
 
     # survival prob

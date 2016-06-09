@@ -5,10 +5,10 @@ use strict 'vars';
 use Getopt::Long;
 use Text::CSV;
 use IO::File;
-use BOM::Platform::MyAffiliates::PaymentToBOMAccountManager;
+use BOM::MyAffiliates::PaymentToAccountManager;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use f_brokerincludeall;
 use Fcntl qw/:flock O_RDWR O_CREAT/;
@@ -80,7 +80,7 @@ if (not defined $pid) {
     alarm 900;
 
     try {
-        my @csv_file_locs = BOM::Platform::MyAffiliates::PaymentToBOMAccountManager->new(
+        my @csv_file_locs = BOM::MyAffiliates::PaymentToAccountManager->new(
             from => $from,
             to   => $to
         )->get_csv_file_locs;

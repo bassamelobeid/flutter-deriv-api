@@ -9,7 +9,7 @@ use File::Slurp;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Bloomberg::FileDownloader;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -17,10 +17,9 @@ BOM::Platform::Sysinit::init();
 PrintContentType();
 
 my $cgi       = CGI->new;
-my $server_ip = $cgi->param('server');
 my $filename  = $cgi->param('filename');
 
-Bar("Download a file from BBDL $server_ip");
+Bar("Download a file from BBDL");
 
 #don't allow from devserver, to avoid uploading wrong files
 if (not BOM::Platform::Runtime->instance->app_config->system->on_production) {
@@ -29,7 +28,6 @@ if (not BOM::Platform::Runtime->instance->app_config->system->on_production) {
 }
 
 my $bbdl = Bloomberg::FileDownloader->new();
-$bbdl->sftp_server_ip($server_ip);
 my $sftp = $bbdl->login;
 
 my $file_stat = $sftp->stat($filename);

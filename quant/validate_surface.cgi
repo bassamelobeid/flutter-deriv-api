@@ -20,7 +20,7 @@ use JSON qw( from_json to_json );
 use URL::Encode qw( url_decode );
 
 use f_brokerincludeall;
-use BOM::Platform::Plack qw( PrintContentType_JSON );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType_JSON );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 

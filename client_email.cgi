@@ -14,7 +14,7 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::ClientDB;

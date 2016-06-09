@@ -7,6 +7,7 @@ use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();

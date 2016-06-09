@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Scalar::Util qw(looks_like_number);
 use f_brokerincludeall;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::Database::UserDB;
 use BOM::Database::AuthDB;
