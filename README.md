@@ -42,7 +42,7 @@ Update Translation
 ===================
 
 ### Install
-* apt-get install gettext
+* $ apt-get install gettext
 
 ### Update translation files (.po, .pot):
 * In `/home/git/binary-com/translations-websockets-api`, switch to `translations` branch
