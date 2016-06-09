@@ -29,6 +29,8 @@ subtest 'check daily_aggregates' => sub {
                         OR loss30 IS DISTINCT FROM old_loss30
                     ) THEN
                         1
+                    ELSE
+                        0
                     END
             ) AS unequal
         FROM (
