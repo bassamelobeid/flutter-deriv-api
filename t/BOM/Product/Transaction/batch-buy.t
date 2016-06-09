@@ -121,7 +121,6 @@ sub create_client {
 sub top_up {
     my ($c, $cur, $amount) = @_;
 
-    # my $fdp = $c->is_first_deposit_pending;
     my @acc = $c->account;
     if (@acc) {
         @acc = grep { $_->currency_code eq $cur } @acc;
@@ -162,9 +161,6 @@ sub top_up {
     });
     $acc->save(cascade => 1);
     $trx->load;    # to re-read (get balance_after)
-
-    # BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
-    #     if $fdp;
 
     note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
 }
@@ -500,7 +496,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
             payout      => $contract->payout,
             amount_type => 'payout',
             multiple    => [
-                map { +{loginid => $_->loginid} } @cl,
+                (map { +{loginid => $_->loginid} } @cl),
                 {code    => 'ignore'},
                 {loginid => 'NONE000'},
             ],
