@@ -37,10 +37,15 @@ $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) }
 $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
 $rpc_client_mock->mock('new', sub { return $fake_rpc_client });
 
-$t = $t->send_ok({json => {website_status => 1}})->message_ok;
+$t = $t->send_ok({
+        json => {
+            website_status => 1,
+            req_id         => 3
+        }})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code},              'ResponseTooLarge';
 is $res->{echo_req}->{website_status}, 1;
+is $res->{req_id}, 3;
 
 $rpc_client_mock->unmock_all;
 
