@@ -47,7 +47,7 @@ EOP
 sub configs_for {
     my $config = {};
 
-    my $locales_dir = path(BOM::Platform::Static::Config::get_static_path())->child('config');
+    my $locales_dir = '/home/git/binary-com/translations-websockets-api/src';
     warn("Unable to locate locales directory. Looking in $locales_dir") unless (-d $locales_dir);
 
     foreach my $language (@{BOM::Platform::Runtime->instance->app_config->cgi->supported_languages}) {
