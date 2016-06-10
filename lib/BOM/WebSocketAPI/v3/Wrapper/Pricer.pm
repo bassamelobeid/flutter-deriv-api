@@ -139,7 +139,7 @@ sub process_pricing_events {
             if ($response->{error}->{message_to_client_array}) {
                 $response->{error}->{message_to_client} = $c->l(@{$response->{error}->{message_to_client_array}});
             } else {
-                $response->{error}->{message_to_client} = $c->l(@{$response->{error}->{message_to_client}});
+                $response->{error}->{message_to_client} = $c->l($response->{error}->{message_to_client});
             }
 
             my $err = $c->new_error('price_stream', $response->{error}->{code}, $response->{error}->{message_to_client});
