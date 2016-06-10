@@ -209,17 +209,17 @@ sub get_rpc_url {
     return;
 }
 
-sub after_forward {
-    my ($c, $result, $req_storage) = @_;
+sub output_validation {
+    my ($c, $req_storage, $api_response) = @_;
 
-    return unless $result;
+    return unless $req_storage;
 
     my $args                     = $req_storage->{args};
-    my $output_validation_result = $req_storage->{out_validator}->validate($result);
+    my $output_validation_result = $req_storage->{out_validator}->validate($api_response);
     if (not $output_validation_result) {
         my $error = join(" - ", $output_validation_result->errors);
-        $c->app->log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
-        %$result = %{$c->new_error($req_storage->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error)};
+        $c->app->log->warn("Invalid output parameter for [ " . JSON::to_json($api_response) . " error: $error ]");
+        %$api_response = %{$c->new_error($req_storage->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error)};
     }
 
     return;

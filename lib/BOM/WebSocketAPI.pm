@@ -339,13 +339,14 @@ sub startup {
             actions => $actions,
 
             # action hooks
-            before_forward          => [\&BOM::WebSocketAPI::Hooks::before_forward, \&BOM::WebSocketAPI::Hooks::get_rpc_url],
-            after_forward           => [\&BOM::WebSocketAPI::Hooks::after_forward],
-            before_call             => [\&BOM::WebSocketAPI::Hooks::start_timing],
-            before_get_rpc_response => [\&BOM::WebSocketAPI::Hooks::log_call_timing],
-            after_got_rpc_response  => [\&BOM::WebSocketAPI::Hooks::log_call_timing_connection],
-            before_send_api_response =>
-                [\&BOM::WebSocketAPI::Hooks::add_call_debug, \&BOM::WebSocketAPI::Hooks::add_req_data, \&BOM::WebSocketAPI::Hooks::start_timing],
+            before_forward           => [\&BOM::WebSocketAPI::Hooks::before_forward, \&BOM::WebSocketAPI::Hooks::get_rpc_url],
+            before_call              => [\&BOM::WebSocketAPI::Hooks::start_timing],
+            before_get_rpc_response  => [\&BOM::WebSocketAPI::Hooks::log_call_timing],
+            after_got_rpc_response   => [\&BOM::WebSocketAPI::Hooks::log_call_timing_connection],
+            before_send_api_response => [
+                \&BOM::WebSocketAPI::Hooks::output_validation, \&BOM::WebSocketAPI::Hooks::add_call_debug,
+                \&BOM::WebSocketAPI::Hooks::add_req_data,      \&BOM::WebSocketAPI::Hooks::start_timing
+            ],
             after_sent_api_response => [\&BOM::WebSocketAPI::Hooks::log_call_timing_sent],
             after_dispatch          => [\&BOM::WebSocketAPI::Hooks::clear_db_cache],
 
