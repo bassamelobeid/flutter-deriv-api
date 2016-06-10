@@ -87,7 +87,6 @@ sub add_underlyings {
         my $msgid = $self->msg_id($underlying->{display_name});
         if ($self->is_id_unique($msgid)) {
             print $fh "\n";
-            print $fh "#: Underlying Symbol " . $underlying->{symbol} . "\n";
             print $fh $msgid . "\n";
             print $fh "msgstr \"\"\n";
         }
@@ -117,7 +116,6 @@ sub add_contract_types {
             my $msgid = $self->msg_id($ct_config->{display_name});
             if ($self->is_id_unique($msgid)) {
                 print $fh "\n";
-                print $fh "#: Translation for contract type \"" . $contract_type . "\"\n";
                 print $fh $msgid . "\n";
                 print $fh "msgstr \"\"\n";
             }
@@ -134,7 +132,6 @@ sub add_contract_types {
                     print $fh "#. %5 - Expiration datetime\n";
                     print $fh "#. %6 - High (or single) barrier\n";
                     print $fh "#. %7 - Low barrier (when present)\n";
-                    print $fh "#: Translation for contract type description (" . $contract_type . ' - ' . $description_key . ")\n";
                     print $fh $msgid . "\n";
                     print $fh "msgstr \"\"\n";
                 }
@@ -155,7 +152,6 @@ sub add_contract_categories {
             my $msgid = $self->msg_id($contract_category->display_name);
             if ($self->is_id_unique($msgid)) {
                 print $fh "\n";
-                print $fh "#: Translation for contract category \"" . $contract_category->code . "\"\n";
                 print $fh $msgid . "\n";
                 print $fh "msgstr \"\"\n";
             }
@@ -164,7 +160,6 @@ sub add_contract_categories {
             my $msgid = $self->msg_id($contract_category->explanation);
             if ($self->is_id_unique($msgid)) {
                 print $fh "\n";
-                print $fh "#: Explanation for contract category " . $contract_category->display_name . "\n";
                 print $fh $msgid . "\n";
                 print $fh "msgstr \"\"\n";
             }
@@ -184,7 +179,6 @@ sub add_markets {
             my $msgid = $self->msg_id($market->display_name);
             if ($self->is_id_unique($msgid)) {
                 print $fh "\n";
-                print $fh "#: Translation for market name\n";
                 print $fh $msgid . "\n";
                 print $fh "msgstr \"\"\n";
             }
@@ -194,7 +188,6 @@ sub add_markets {
             my $msgid = $self->msg_id($market->explanation);
             if ($self->is_id_unique($msgid)) {
                 print $fh "\n";
-                print $fh "#: Explanation for market " . $market->display_name . "\n";
                 print $fh $msgid . "\n";
                 print $fh "msgstr \"\"\n";
             }
@@ -213,7 +206,6 @@ sub add_submarkets {
             my $msgid = $self->msg_id($submarket->display_name);
             if ($self->is_id_unique($msgid)) {
                 print $fh "\n";
-                print $fh "#: Translation for sub market name\n";
                 print $fh $msgid . "\n";
                 print $fh "msgstr \"\"\n";
             }
@@ -223,7 +215,6 @@ sub add_submarkets {
             my $msgid = $self->msg_id($submarket->explanation);
             if ($self->is_id_unique($msgid)) {
                 print $fh "\n";
-                print $fh "#: Explanation for market " . $submarket->display_name . "\n";
                 print $fh $msgid . "\n";
                 print $fh "msgstr \"\"\n";
             }
