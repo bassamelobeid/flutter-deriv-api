@@ -135,8 +135,6 @@ sub before_forward {
         $c->stash('connection_id' => Data::UUID->new()->create_str());
     }
 
-    $req_storage->{handle_t0} = [Time::HiRes::gettimeofday];
-
     # For authorized calls that are heavier we will limit based on loginid
     # For unauthorized calls that are less heavy we will use connection id.
     # None are much helpful in a well prepared DDoS.
