@@ -20,19 +20,19 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(USD JPY);
+    }) for qw(USD AUD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
+        symbol        => 'frxAUDUSD',
         recorded_date => $now
     });
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
+    underlying => 'frxAUDUSD',
     epoch      => $now->epoch
 });
 my $bet_params = {
-    underlying   => 'frxUSDJPY',
+    underlying   => 'frxAUDUSD',
     bet_type     => 'CALL',
     currency     => 'USD',
     payout       => 100,
@@ -102,8 +102,8 @@ subtest 'invalid underlying - contract type combination' => sub {
 
 subtest 'disable underlying due to corporate action' => sub {
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions;
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['frxUSDJPY']);
-    $bet_params->{underlying} = 'frxUSDJPY';
+    BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['frxAUDUSD']);
+    $bet_params->{underlying} = 'frxAUDUSD';
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/suspended due to corporate actions/, 'Underlying suspended due to corporate action');
