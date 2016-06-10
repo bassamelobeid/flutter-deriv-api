@@ -391,35 +391,36 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     my $expected_reasons = [qr/move below minimum/, qr/barrier.*spot.*start/, qr/stake.*same as.*payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{barrier} = 'S1000P';
+    $bet_params->{barrier} = 110;
     $bet = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we ask for a further barrier, it validates just fine.');
 
     $bet_params->{bet_type}     = 'UPORDOWN';
-    $bet_params->{high_barrier} = 'S5P';
-    $bet_params->{low_barrier}  = 0.50;
+    $bet_params->{high_barrier} = 100.001;
+    $bet_params->{low_barrier}  = 'S-5P';
     $bet_params->{duration}     = '7d';
     $bet                        = produce_contract($bet_params);
     $expected_reasons = [qr/^Mixed.*barriers/, qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{low_barrier} = 'S-100000P';    # Fine, we'll set our low barrier like you want.
+    $bet_params->{low_barrier} = -100;    # Fine, we'll set our low barrier like you want.
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/^Non-positive barrier/, qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{low_barrier} = 'S10P';         # Sigh, ok, then, what about this one?
+    $bet_params->{low_barrier} = 111;         # Sigh, ok, then, what about this one?
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/barriers inverted/, qr/straddle.*spot/, qr/stake.*same as.*payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{low_barrier} = 'S5P';          # Surely this must be ok.
+    $bet_params->{high_barrier} = 110;
+    $bet_params->{low_barrier} = 110;          # Surely this must be ok.
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/barriers must be different/, qr/straddle.*spot/, qr/stake.*same as.*payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{high_barrier} = 'S1000P';                        # Ok, I think I get it now.
-    $bet_params->{low_barrier}  = 'S-1000P';
+    $bet_params->{high_barrier} = 110;                        # Ok, I think I get it now.
+    $bet_params->{low_barrier}  = 90;
     $bet                        = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but with properly set barriers, it validates just fine.');
 };
@@ -561,7 +562,7 @@ subtest 'invalid start times' => sub {
         date_start   => $starting,
         date_pricing => $starting - 300,
         duration     => '3d',
-        barrier      => 'S500P',
+        barrier      => '110',
         current_tick => $tick,
     };
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
@@ -1226,7 +1227,7 @@ subtest 'tentative events' => sub {
         'correct error message'
     );
 
-    $c = produce_contract({%$contract_args, underlying => 'frxGBPUSD'});
+    $c = produce_contract({%$contract_args, underlying => 'frxGBPCHF'});
     ok !$c->_validate_start_and_expiry_date, 'no error if event is not affecting the underlying';
 
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_end->minus_time_interval('1s');

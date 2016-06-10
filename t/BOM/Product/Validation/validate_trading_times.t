@@ -33,7 +33,7 @@ for my $date ($weekend, $weekday) {
         {
             symbol        => $_,
             recorded_date => $date
-        }) for qw(USD AUD HKD);
+        }) for qw(USD AUD HKD AUD-USD);
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
@@ -52,7 +52,7 @@ for my $date ($weekend, $weekday) {
         {
             symbol        => $_,
             recorded_date => $date
-        }) for qw(frxAUDUSD frxAUDUSD);
+        }) for qw(frxAUDUSD frxAUDUSD frxUSDHKD);
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
