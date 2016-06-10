@@ -72,6 +72,8 @@ while (1) {
         }
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subsribers_count);
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv));
+        my $end_time = Time::HiRes::time;
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)));
         $tv = [Time::HiRes::gettimeofday];
     }
     $pm->finish;
