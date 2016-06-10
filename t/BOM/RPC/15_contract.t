@@ -200,6 +200,29 @@ subtest 'get_ask' => sub {
     };
     is_deeply($result, $expected, 'the left values are all right');
 
+    my $val = $result->{ask_price};
+    # check for payout proposal - ask_price should increase
+    $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params), 1);
+    is $result->{ask_price} - $val, 1 / 100 * 100, "as app markup is added so client has to 1% of payout";
+
+    # check app_markup for stake proposal
+    $params = {
+        "proposal"         => 1,
+        "amount"           => "100",
+        "basis"            => "stake",
+        "contract_type"    => "CALL",
+        "currency"         => "USD",
+        "duration"         => "60",
+        "duration_unit"    => "s",
+        "symbol"           => "R_50",
+        from_pricer_daemon => 1,
+    };
+    $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    $val    = $result->{payout};
+
+    $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params), 2);
+    cmp_ok $val - $result->{payout}, ">", 2 / 100 * $val, "as app markup is added so client will get less payout as compared when there is no markup";
+
     $params->{symbol} = "invalid symbol";
     is_deeply(
         BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
