@@ -37,12 +37,6 @@ $fake_rpc_client->mock('call', sub { shift; $call_params = $_[1]->{params}; retu
 my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
 $module->mock('new', sub { return $fake_rpc_client });
 
-$t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'payout_currencies');
-ok(ref $res->{payout_currencies});
-is $call_params->{token}, $token;
-
 $t = $t->send_ok({json => {landing_company => 'de'}})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'landing_company');
@@ -157,7 +151,20 @@ is($res->{msg_type}, 'set_financial_assessment');
 ok(ref $res->{set_financial_assessment});
 is $call_params->{token}, $token;
 
-%$rpc_response = (records => [qw/ record /]);
+$rpc_response = [qw/ test /];
+$t            = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
+$res          = decode_json($t->message->[1]);
+is($res->{msg_type}, 'payout_currencies');
+ok(ref $res->{payout_currencies});
+is $call_params->{token}, $token;
+
+$rpc_response = {
+    records => [{
+            time        => 1,
+            action      => 's',
+            environment => 's',
+            status      => 1
+        }]};
 $t = $t->send_ok({
         json => {
             login_history => 1,
