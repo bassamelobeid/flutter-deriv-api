@@ -2053,18 +2053,6 @@ sub _build_exit_tick {
 sub _validate_offerings {
     my $self = shift;
 
-    my $announcement_date = Date::Utility->new('2016-06-16');
-    if (    $self->market->name eq 'forex'
-        and not $self->is_atm_bet
-        and $self->date_expiry->is_before($announcement_date)
-        and $self->underlying->symbol =~ /JPY/)
-    {
-        return +{
-            message           => 'stay out for Japan economic announcement',
-            message_to_client => localize('This trade is temporarily unavailable.'),
-        };
-    }
-
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->trading) {
         return {
             message           => 'All trading suspended on system',
@@ -2573,6 +2561,23 @@ sub confirm_validity {
         }
         return 0 if ($self->primary_validation_error);
     }
+
+    # Should have included this in one of the validation subroutines but it will screw with existing tests.
+    # Since this is a temporary solution and we will work on a proper fix, this is acceptable for now.
+    my $announcement_date = Date::Utility->new('2016-06-16');
+    if (    $self->market->name eq 'forex'
+        and not $self->is_atm_bet
+        and $self->date_expiry->is_before($announcement_date)
+        and $self->underlying->symbol =~ /JPY/)
+    {
+        my $err = {
+            message           => 'stay out for Japan economic announcement',
+            message_to_client => localize('This trade is temporarily unavailable.'),
+        };
+        $self->add_error($err);
+        return 0;
+    }
+
 
     return 1;
 }
