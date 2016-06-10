@@ -2578,7 +2578,6 @@ sub confirm_validity {
         return 0;
     }
 
-
     return 1;
 }
 
