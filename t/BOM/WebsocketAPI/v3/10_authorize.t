@@ -85,7 +85,6 @@ ok exists $stash->{loginid} && !defined $stash->{email},                'Should 
 ok exists $stash->{loginid} && !defined $stash->{token},                'Should remove token from stash';
 ok exists $stash->{loginid} && !defined $stash->{token_type},           'Should remove token_type from stash';
 ok exists $stash->{loginid} && !defined $stash->{account_id},           'Should remove account_id from stash';
-ok exists $stash->{loginid} && !defined $stash->{country_code},         'Should remove country from stash';
 ok exists $stash->{loginid} && !defined $stash->{currency},             'Should remove currency from stash';
 ok exists $stash->{loginid} && !defined $stash->{landing_company_name}, 'Should remove landing_company_name from stash';
 
