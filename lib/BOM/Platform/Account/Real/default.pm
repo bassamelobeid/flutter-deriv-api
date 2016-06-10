@@ -143,7 +143,11 @@ sub _after_register_client {
     if ($client->landing_company->short eq 'iom'
         and (length $client->first_name < 3 or length $client->last_name < 3))
     {
-        $emailmsg .= join("\n\t\t", $client->first_name, $client->last_name, Locale::Country::code2country($client->residence));
+        $emailmsg = "$client_loginid - first name or last name less than 3 characters \n\n\n\t\t";
+        $emailmsg .= join("\n\t\t",
+            'first name: ' . $client->first_name,
+            'last name: ' . $client->last_name,
+            'residence: ' . Locale::Country::code2country($client->residence));
         $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$emailmsg\n");
     }
 

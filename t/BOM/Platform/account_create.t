@@ -5,6 +5,7 @@ use Guard;
 
 use Test::More (tests => 4);
 use Test::Exception;
+use Test::Warn;
 use Test::MockModule;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Account::Virtual;
@@ -100,13 +101,6 @@ subtest 'create account' => sub {
         }
         'create VR acc';
 
-        # real acc failed
-        lives_ok { $real_acc = create_real_acc($vr_client, $user, $broker); } "create $broker acc";
-        is($real_acc->{error}, 'email unverified', "create $broker acc failed: email verification required");
-
-        $user->email_verified(1);
-        $user->save;
-
         # real acc
         lives_ok {
             $real_acc = create_real_acc($vr_client, $user, $broker);
@@ -120,10 +114,11 @@ subtest 'create account' => sub {
         is($real_acc->{error}, 'duplicate email', "Create duplicate $broker acc failed");
 
         # MF acc
-        lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
         if ($broker eq 'MLT') {
+            lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
             is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
         } else {
+            warning_like { $real_acc = create_mf_acc($real_client, $user); } qr/maltainvest acc opening err/, "failed to create MF acc";
             is($real_acc->{error}, 'invalid', "$broker client can't open MF acc");
         }
     }
@@ -143,8 +138,6 @@ subtest 'create account' => sub {
         ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
     }
     'create VR acc';
-    $user->email_verified(1);
-    $user->save;
 
     my %t_details = (
         %real_client_details,
