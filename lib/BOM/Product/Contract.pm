@@ -2053,6 +2053,18 @@ sub _build_exit_tick {
 sub _validate_offerings {
     my $self = shift;
 
+    my $announcement_date = Date::Utility->new('2016-06-16');
+    if (    $self->market->name eq 'forex'
+        and not $self->is_atm_bet
+        and $self->date_expiry->is_before($announcement_date)
+        and $self->underlying->symbol =~ /JPY/)
+    {
+        return +{
+            message           => 'stay out for Japan economic announcement',
+            message_to_client => localize('This trade is temporarily unavailable.'),
+        };
+    }
+
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->trading) {
         return {
             message           => 'All trading suspended on system',
