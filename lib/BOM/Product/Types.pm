@@ -21,11 +21,11 @@ This module provides validated definition of various datatypes that are prevalen
 
     use Moose;
 
-    use BOM::Product::Types qw( bom_client_loginid );
+    use BOM::Product::Types qw( bom_contract_category );
 
-    has 'client_loginid' => (
+    has 'contract_category' => (
         is  => 'rw',
-        isa => 'bom_client_loginid',
+        isa => 'bom_contract_category',
     );
 
     package main;
@@ -40,13 +40,19 @@ use MooseX::Types::Moose qw(Int Num Str);
 use MooseX::Types -declare => [
     map { "bom_$_" }
         qw(
-        contract_type
-        )];
+        contract_category
+        ),
+    'PositiveNum'
+];
 extends 'BOM::Market::Types';
 use Moose::Util::TypeConstraints;
 
 subtype 'bom_contract_category', as 'BOM::Product::Contract::Category';
 coerce 'bom_contract_category', from 'Str', via { BOM::Product::Contract::Category->new($_) };
+
+subtype
+    'PositiveNum' => as 'Num',
+    => where { $_ > 0 } => message { 'Must be positive number: [' . $_ . ']' };
 
 =head1 AUTHOR
 
