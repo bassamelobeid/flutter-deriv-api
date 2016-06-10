@@ -9,17 +9,14 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use BOM::System::Password;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context::Request;
-use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client;
 use BOM::Platform::User;
-use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Token::Verification;
 use BOM::Platform::Account;
-use BOM::Platform::Static::Config;
 
 sub create_account {
-    my $args = shift;
-    my ($details, $email_verified) = @{$args}{'details', 'email_verified'};
+    my $args    = shift;
+    my $details = $args->{details};
 
     my $email     = lc $details->{email};
     my $password  = BOM::System::Password::hashpw($details->{client_password});
@@ -73,31 +70,14 @@ sub create_account {
     }
 
     my $user = BOM::Platform::User->create(
-        email    => $email,
-        password => $password,
-        ($email_verified) ? (email_verified => 1) : ());
+        email          => $email,
+        password       => $password,
+        email_verified => 1
+    );
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
     $client->deposit_virtual_funds($source);
 
-    unless ($email_verified) {
-        my $token = verify_token => BOM::Platform::Token::Verification->new({
-                email       => $email,
-                expires_in  => 3600,
-                created_for => 'verify_email'
-            })->token;
-        my $email_content;
-        BOM::Platform::Context::template->process('email/resend_verification.html.tt', {token => $token}, \$email_content)
-            || die BOM::Platform::Context::template->error();
-
-        send_email({
-            from               => BOM::Platform::Static::Config::get_customer_support_email(),
-            to                 => $email,
-            subject            => localize('Verify your email address - [_1]', request()->website->display_name),
-            message            => [$email_content],
-            use_email_template => 1,
-        });
-    }
     stats_inc("business.new_account.virtual");
 
     return {
