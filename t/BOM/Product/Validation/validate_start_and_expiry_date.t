@@ -25,7 +25,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $weekday
-    }) for qw(USD JPY HKD);
+    }) for qw(USD JPY HKD AUD-USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
@@ -37,7 +37,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $weekday
-    }) for qw(frxUSDJPY frxUSDHKD);
+    }) for qw(frxUSDJPY frxUSDHKD frxAUDHKD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {

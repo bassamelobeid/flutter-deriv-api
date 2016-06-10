@@ -324,7 +324,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
         date_start   => $starting,
         date_pricing => $starting,
         duration     => '3d',
-        barrier      => 'S1000000P',
+        barrier      => 1100,
         current_tick => $tick,
     };
 
