@@ -57,7 +57,6 @@ sub new_account_virtual {
                 source          => $params->{source},
                 $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : ()
             },
-            email_verified => 1
         });
 
     return BOM::RPC::v3::Utility::create_error({
