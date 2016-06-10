@@ -148,11 +148,12 @@ sub _categorized_economic_events {
         my $key             = $underlying->symbol . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name;
         my $default         = $underlying->symbol . '_' . $event->{symbol} . '_' . $event->{impact} . '_default';
         my $news_parameters = $news_categories->{$key} // $news_categories->{$default};
+        my %dereference     = $news_parameters ? %$news_parameters : ();
 
-        next unless $news_parameters;
-        $news_parameters->{release_time} = Date::Utility->new($event->{release_date})->epoch;
-        $news_parameters->{magnitude}    = ($news_parameters->{magnitude} - 1) * 1.5 + 1;       # static multiplier of 1.5
-        push @events, $news_parameters;
+        next unless keys %dereference;
+        $dereference{release_time} = Date::Utility->new($event->{release_date})->epoch;
+        $dereference{magnitude}    = ($dereference{magnitude} - 1) * 1.5 + 1;             # static multiplier of 1.5
+        push @events, \%dereference;
     }
 
     return \@events;
