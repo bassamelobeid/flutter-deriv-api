@@ -325,7 +325,7 @@ subtest 'get_bid' => sub {
         sell_time             => undef,
         app_markup_percentage => 1
     };
-    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
 
     $contract = create_contract(
@@ -345,8 +345,7 @@ subtest 'get_bid' => sub {
         currency    => $client->currency,
         is_sold     => 0,
     };
-
-    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (
         qw(ask_price
