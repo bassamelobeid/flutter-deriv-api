@@ -30,7 +30,16 @@ $t = $t->send_ok({
             new_password    => '௰'
         }})->message_ok;
 $res = decode_json($t->message->[1]);
-ok $res->{error}->{code} ne 'SanityCheckFailed';
+ok $res->{error}->{code} ne 'SanityCheckFailed', 'Do not check value of password key';
+
+$t = $t->send_ok({
+        json => {
+            change_password    => 1,
+            '௰_old_password' => '௰',
+            new_password       => '௰'
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'SanityCheckFailed', 'Should be failed if paswword key consist of non sanity symbols';
 
 $t->finish_ok;
 
