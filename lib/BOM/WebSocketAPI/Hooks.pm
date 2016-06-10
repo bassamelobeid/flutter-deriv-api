@@ -214,12 +214,15 @@ sub output_validation {
 
     return unless $req_storage;
 
-    my $args                     = $req_storage->{args};
-    my $output_validation_result = $req_storage->{out_validator}->validate($api_response);
-    if (not $output_validation_result) {
-        my $error = join(" - ", $output_validation_result->errors);
-        $c->app->log->warn("Invalid output parameter for [ " . JSON::to_json($api_response) . " error: $error ]");
-        %$api_response = %{$c->new_error($req_storage->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error)};
+    my $args = $req_storage->{args};
+
+    if ($req_storage->{out_validator}) {
+        my $output_validation_result = $req_storage->{out_validator}->validate($api_response);
+        if (not $output_validation_result) {
+            my $error = join(" - ", $output_validation_result->errors);
+            $c->app->log->warn("Invalid output parameter for [ " . JSON::to_json($api_response) . " error: $error ]");
+            %$api_response = %{$c->new_error($req_storage->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error)};
+        }
     }
 
     return;
