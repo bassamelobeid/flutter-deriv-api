@@ -37,3 +37,15 @@ The -l switch says to listen to where nginx is sending backoffice requests.
 The -r switch will restart the webserver immediately on changes to a source file.
 
 <a href="https://zenhub.io"><img src="https://raw.githubusercontent.com/ZenHubIO/support/master/zenhub-badge.png" height="18px"></a>
+
+Update Translation
+===================
+
+### Install
+* $ apt-get install gettext
+
+### Update translation files (.po, .pot):
+* In `/home/git/binary-com/translations-websockets-api`, switch to `translations` branch
+* under `/home/git/regentmarkets/bom-backoffice`, run `make i18n`
+* In `/home/git/binary-com/translations-websockets-api`, `*.po , .pot` files will be updated. After `git push origin translations`, new text will appear in Weblate for translation
+* Once translation is done on Weblate, create PR from `translations` branch to `master` for `/home/git/binary-com/translations-websockets-api`
