@@ -78,19 +78,19 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $an_hour_earlier,
-    }) for (qw/USD JPY EUR AUD SGD GBP JPY-USD EUR-USD/);
+    }) for (qw/USD EUR AUD SGD GBP AUD-USD EUR-USD/);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
         recorded_date => $an_hour_earlier->minus_time_interval('150d'),
-    }) for (qw/USD JPY EUR AUD SGD GBP JPY-USD EUR-USD/);
+    }) for (qw/USD EUR AUD SGD GBP AUD-USD EUR-USD/);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
+        symbol        => 'frxAUDUSD',
         recorded_date => $an_hour_earlier,
     });
 
@@ -151,7 +151,7 @@ ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim
 
 subtest 'valid bet passing and stuff' => sub {
 
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -199,7 +199,7 @@ subtest 'invalid underlying is a weak foundation' => sub {
 
     plan tests => 5;
 
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -236,7 +236,7 @@ subtest 'invalid underlying is a weak foundation' => sub {
     my $orig_trades = BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades;
     $bet_params->{current_tick} = $tick;
     $bet = produce_contract($bet_params);
-    ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades(['frxUSDJPY']), 'Suspending trading on this underlying.');
+    ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades(['frxAUDUSD']), 'Suspending trading on this underlying.');
     $bet->underlying->clear_is_buying_suspended;
     $bet->underlying->clear_is_trading_suspended;
     $expected_reasons = [qr/^Underlying.*suspended/];
@@ -247,7 +247,7 @@ subtest 'invalid underlying is a weak foundation' => sub {
 subtest 'invalid bet payout hobbling around' => sub {
     plan tests => 5;
 
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -288,7 +288,7 @@ subtest 'invalid bet payout hobbling around' => sub {
 subtest 'invalid bet types are dull' => sub {
     plan tests => 1;
 
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -312,7 +312,7 @@ subtest 'invalid bet types are dull' => sub {
 subtest 'invalid contract stake evokes sympathy' => sub {
     plan tests => 6;
 
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -324,7 +324,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
         date_start   => $starting,
         date_pricing => $starting,
         duration     => '3d',
-        barrier      => 'S1000000P',
+        barrier      => 1100,
         current_tick => $tick,
     };
 
@@ -372,7 +372,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
 subtest 'invalid barriers knocked down for great justice' => sub {
     plan tests => 7;
 
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -391,35 +391,36 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     my $expected_reasons = [qr/move below minimum/, qr/barrier.*spot.*start/, qr/stake.*same as.*payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{barrier} = 'S1000P';
+    $bet_params->{barrier} = 110;
     $bet = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we ask for a further barrier, it validates just fine.');
 
     $bet_params->{bet_type}     = 'UPORDOWN';
-    $bet_params->{high_barrier} = 'S5P';
-    $bet_params->{low_barrier}  = 0.50;
+    $bet_params->{high_barrier} = 100.001;
+    $bet_params->{low_barrier}  = 'S-5P';
     $bet_params->{duration}     = '7d';
     $bet                        = produce_contract($bet_params);
     $expected_reasons = [qr/^Mixed.*barriers/, qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{low_barrier} = 'S-100000P';    # Fine, we'll set our low barrier like you want.
+    $bet_params->{low_barrier} = -100;    # Fine, we'll set our low barrier like you want.
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/^Non-positive barrier/, qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{low_barrier} = 'S10P';         # Sigh, ok, then, what about this one?
+    $bet_params->{low_barrier} = 111;         # Sigh, ok, then, what about this one?
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/barriers inverted/, qr/straddle.*spot/, qr/stake.*same as.*payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{low_barrier} = 'S5P';          # Surely this must be ok.
+    $bet_params->{high_barrier} = 110;
+    $bet_params->{low_barrier} = 110;          # Surely this must be ok.
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/barriers must be different/, qr/straddle.*spot/, qr/stake.*same as.*payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{high_barrier} = 'S1000P';                        # Ok, I think I get it now.
-    $bet_params->{low_barrier}  = 'S-1000P';
+    $bet_params->{high_barrier} = 110;                        # Ok, I think I get it now.
+    $bet_params->{low_barrier}  = 90;
     $bet                        = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but with properly set barriers, it validates just fine.');
 };
@@ -427,7 +428,7 @@ subtest 'invalid barriers knocked down for great justice' => sub {
 subtest 'volsurfaces become old and invalid' => sub {
     plan tests => 8;
 
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch + 10 * 86400;
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -438,7 +439,7 @@ subtest 'volsurfaces become old and invalid' => sub {
         });
 
     my $tick = BOM::Market::Data::Tick->new({
-        symbol => 'frxUSDJPY',
+        symbol => 'frxAUDUSD',
         epoch  => $starting,
         quote  => 100
     });
@@ -550,7 +551,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 subtest 'invalid start times' => sub {
     plan tests => 9;
 
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -561,7 +562,7 @@ subtest 'invalid start times' => sub {
         date_start   => $starting,
         date_pricing => $starting - 300,
         duration     => '3d',
-        barrier      => 'S500P',
+        barrier      => '110',
         current_tick => $tick,
     };
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
@@ -569,7 +570,7 @@ subtest 'invalid start times' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
-            symbol        => 'frxUSDJPY',
+            symbol        => 'frxAUDUSD',
             recorded_date => Date::Utility->new($bet_params->{date_start}),
         });
 
@@ -694,7 +695,7 @@ subtest 'invalid start times' => sub {
 subtest 'invalid expiry times' => sub {
     plan tests => 5;
 
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+    my $underlying = BOM::Market::Underlying->new('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
 
     my $bet_params = {
@@ -1155,7 +1156,7 @@ subtest 'zero vol' => sub {
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
-            symbol  => 'frxUSDJPY',
+            symbol  => 'frxAUDUSD',
             surface => {
                 7 => {
                     smile => {
@@ -1170,7 +1171,7 @@ subtest 'zero vol' => sub {
 
     my $c = produce_contract({
         bet_type     => 'ONETOUCH',
-        underlying   => 'frxUSDJPY',
+        underlying   => 'frxAUDUSD',
         date_start   => $now,
         date_pricing => $now,
         duration     => '6d',
@@ -1203,7 +1204,7 @@ subtest 'tentative events' => sub {
             ],
         });
     my $contract_args = {
-        underlying => 'frxUSDJPY',
+        underlying => 'frxAUDUSD',
         bet_type   => 'CALL',
         barrier    => 'S0P',
         duration   => '2m',
@@ -1222,11 +1223,11 @@ subtest 'tentative events' => sub {
     cmp_ok(
         ($c->_validate_start_and_expiry_date)[0]->{message},
         'eq',
-        'blackout period [symbol: frxUSDJPY] [from: 1458273600] [to: 1458280800]',
+        'blackout period [symbol: frxAUDUSD] [from: 1458273600] [to: 1458280800]',
         'correct error message'
     );
 
-    $c = produce_contract({%$contract_args, underlying => 'frxGBPJPY'});
+    $c = produce_contract({%$contract_args, underlying => 'frxGBPCHF'});
     ok !$c->_validate_start_and_expiry_date, 'no error if event is not affecting the underlying';
 
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_end->minus_time_interval('1s');
@@ -1235,7 +1236,7 @@ subtest 'tentative events' => sub {
     cmp_ok(
         ($c->_validate_start_and_expiry_date)[0]->{message},
         'eq',
-        'blackout period [symbol: frxUSDJPY] [from: 1458273600] [to: 1458280800]',
+        'blackout period [symbol: frxAUDUSD] [from: 1458273600] [to: 1458280800]',
         'correct error message'
     );
     $contract_args->{date_pricing} = $contract_args->{date_start} = $blackout_start->minus_time_interval('1s');
@@ -1295,8 +1296,8 @@ subtest 'integer barrier' => sub {
         {
             symbol        => $_,
             recorded_date => $now,
-        }) for qw(frxUSDJPY frxAUDJPY frxAUDUSD);
-    $params->{underlying}   = 'frxUSDJPY';
+        }) for qw(frxAUDUSD frxAUDJPY frxAUDUSD);
+    $params->{underlying}   = 'frxAUDUSD';
     $params->{date_pricing} = $now;
     $c                      = produce_contract($params);
     ok $c->is_valid_to_buy, 'valid to buy if barrier is non integer for forex';
