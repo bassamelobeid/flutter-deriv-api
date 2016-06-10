@@ -43,7 +43,9 @@ while (1) {
 
     my $redis = BOM::System::RedisReplicated::redis_pricer;
 
-    my $tv = [Time::HiRes::gettimeofday];
+    my $tv                    = [Time::HiRes::gettimeofday];
+    my $pricing_count         = 0;
+    my $current_pricing_epoch = time;
     while (my $key = $redis->brpop("pricer_jobs", 0)) {
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv));
         $tv = [Time::HiRes::gettimeofday];
@@ -75,6 +77,12 @@ while (1) {
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv));
         my $end_time = Time::HiRes::time;
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)));
+        $pricing_count++;
+        if ($current_pricing_epoch != time) {
+            DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.price.count_per_second', $pricing_count);
+            $pricing_count = 0;
+            $current_pricing_epoch = time;
+        }
         $tv = [Time::HiRes::gettimeofday];
     }
     $pm->finish;
