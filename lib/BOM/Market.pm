@@ -47,31 +47,6 @@ has suspicious_move => (
     is => 'ro',
 );
 
-=head2 outlier_tick
-
-Allowed percentage move between consecutive ticks
-
-=cut
-
-has outlier_tick => (
-    is => 'ro',
-);
-
-=head2 outlier_tick
-
-Allowed percentage move between consecutive ticks when is crosses weekend/holiday
-
-=cut
-
-has weekend_outlier_tick => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_weekend_outlier_tick {
-    return shift->outlier_tick;
-}
-
 =head2 integer_barrier
 
 Only allow integer barrier for this market. Default to false.
