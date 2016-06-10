@@ -313,6 +313,28 @@ subtest 'get_bid' => sub {
         );
 
     $contract = create_contract(
+        client                => $client,
+        spread                => 0,
+        app_markup_percentage => 1
+    );
+    $params = {
+        short_code            => $contract->shortcode,
+        contract_id           => $contract->id,
+        currency              => $client->currency,
+        is_sold               => 0,
+        sell_time             => undef,
+        app_markup_percentage => 1
+    };
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
+
+    $contract = create_contract(
+        client => $client,
+        spread => 0
+    );
+    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
+
+    $contract = create_contract(
         client => $client,
         spread => 1
     );
@@ -635,14 +657,15 @@ sub create_contract {
     my $underlying    = BOM::Market::Underlying->new($symbol);
     my $purchase_date = $now->epoch - 101;
     my $contract_data = {
-        underlying   => $underlying,
-        bet_type     => $args{bet_type} // 'FLASHU',
-        currency     => 'USD',
-        current_tick => $args{current_tick} // $tick,
-        stake        => 100,
-        date_start   => $args{date_start} // $date_start,
-        date_expiry  => $args{date_expiry} // $date_expiry,
-        barrier      => 'S0P',
+        underlying            => $underlying,
+        bet_type              => $args{bet_type} // 'FLASHU',
+        currency              => 'USD',
+        current_tick          => $args{current_tick} // $tick,
+        stake                 => 100,
+        date_start            => $args{date_start} // $date_start,
+        date_expiry           => $args{date_expiry} // $date_expiry,
+        barrier               => 'S0P',
+        app_markup_percentage => $args{app_markup_percentage} // 0
     };
     if ($args{date_pricing}) { $contract_data->{date_pricing} = $args{date_pricing}; }
 
