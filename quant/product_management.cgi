@@ -11,7 +11,7 @@ use f_brokerincludeall;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Static::Config;
-use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use List::Util qw(first);
 use Digest::MD5 qw(md5_hex);
