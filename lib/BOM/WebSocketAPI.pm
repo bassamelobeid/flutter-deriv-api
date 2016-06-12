@@ -312,11 +312,31 @@ sub startup {
                 response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
             }
         ],
-        ['cashier',                 {require_auth => 'payments'}],
-        ['new_account_real',        {require_auth => 'admin', stash_params => [qw/ server_name client_ip user_agent /]}],
-        ['new_account_japan',       {require_auth => 'admin', stash_params => [qw/ server_name client_ip user_agent /]}],
-        ['new_account_maltainvest', {require_auth => 'admin', stash_params => [qw/ server_name client_ip user_agent /]}],
-        ['jp_knowledge_test',       {require_auth => 'admin', stash_params => [qw/ server_name client_ip user_agent /]}],
+        ['cashier', {require_auth => 'payments'}],
+        [
+            'new_account_real',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'new_account_japan',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'new_account_maltainvest',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'jp_knowledge_test',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
     ];
 
     for my $action (@$actions) {
