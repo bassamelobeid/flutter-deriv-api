@@ -237,7 +237,7 @@ sub startup {
                 stash_params   => [qw/ server_name /],
             }
         ],
-        ['new_account_virtual'],
+        ['new_account_virtual', {stash_params => [qw/ server_name client_ip user_agent /]}],
         ['reset_password'],
 
         # authenticated calls
@@ -313,10 +313,10 @@ sub startup {
             }
         ],
         ['cashier',                 {require_auth => 'payments'}],
-        ['new_account_real',        {require_auth => 'admin'}],
-        ['new_account_japan',       {require_auth => 'admin'}],
-        ['new_account_maltainvest', {require_auth => 'admin'}],
-        ['jp_knowledge_test',       {require_auth => 'admin'}],
+        ['new_account_real',        {require_auth => 'admin', stash_params => [qw/ server_name client_ip user_agent /]}],
+        ['new_account_japan',       {require_auth => 'admin', stash_params => [qw/ server_name client_ip user_agent /]}],
+        ['new_account_maltainvest', {require_auth => 'admin', stash_params => [qw/ server_name client_ip user_agent /]}],
+        ['jp_knowledge_test',       {require_auth => 'admin', stash_params => [qw/ server_name client_ip user_agent /]}],
     ];
 
     for my $action (@$actions) {
