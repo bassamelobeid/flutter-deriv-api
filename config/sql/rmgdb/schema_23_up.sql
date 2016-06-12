@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS bet.daily_aggregates (
-  day        TIMESTAMP,
+  day        DATE,
   account_id BIGINT REFERENCES transaction.account(id),
   turnover   NUMERIC,
   loss       NUMERIC,
