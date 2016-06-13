@@ -61,7 +61,7 @@
     },
     "timeout_until":{
       "type": ["integer", "null"],
-      "pattern": "^\\d{0,5}$",
+      "pattern": "^\\d{10}$",
       "description": "Timeout me from the website until (Epoch)"
     },
     "passthrough": {
