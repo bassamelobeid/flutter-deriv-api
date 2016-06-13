@@ -86,9 +86,6 @@ coerce 'bom_financial_market', from 'Str', via { return BOM::Market::Registry->i
 subtype 'bom_submarket', as 'BOM::Market::SubMarket';
 coerce 'bom_submarket', from 'Str', via { return BOM::Market::SubMarket::Registry->instance->get($_); };
 
-subtype 'bom_cutoff_helper', as 'BOM::MarketData::VolSurface::Cutoff';
-coerce 'bom_cutoff_helper', from 'Str', via { BOM::MarketData::VolSurface::Cutoff->new($_) };
-
 subtype 'bom_market_markups', as 'BOM::Market::Markups';
 coerce 'bom_market_markups', from 'HashRef' => via { BOM::Market::Markups->new($_); };
 

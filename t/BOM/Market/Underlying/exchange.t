@@ -78,10 +78,6 @@ my $chronicle_r = BOM::System::Chronicle::get_chronicle_reader($date);
 my $LSE = Quant::Framework::TradingCalendar->new('LSE', $chronicle_r, 'EN', $date);
 my $ul_LSE = BOM::Market::Underlying->new('FTSE');
 is $ul_LSE->exchange->symbol, $LSE->symbol, "This underlying's exchange is what we expect";
-is $ul_LSE->closed_weight, 0.55, 'Sanity check so that our weighted math matches :-)';
-is $ul_LSE->weighted_days_in_period($trade_start, $trade_end), 7.2, 'Weighted period calculated correctly: 5 trading days, plus 4 weekends/holidays';
-
-is $ul_LSE->weighted_days_in_period($trade_start, $trade_end2), 8.2, 'Weighted period calculated correctly: 6 trading days, plus 4 weekends/holidays';
 
 # Gold has the same exchange as FOREX.
 # Yng Shan is planning to create a commodities exchange in the near future.

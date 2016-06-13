@@ -238,9 +238,9 @@ subtest 'all attributes on a variety of underlyings' => sub {
         is((scalar grep { exists $underlying->market_convention->{$_} } qw(delta_style delta_premium_adjusted)),
             2, ' with at least the minimal key set');
 
-        ok(looks_like_number($underlying->closed_weight), 'Closed weight is numeric');
-        cmp_ok($underlying->closed_weight, '>=', 0, ' nonnegative');
-        cmp_ok($underlying->closed_weight, '<',  1, ' and smaller than 1');
+        ok(looks_like_number($underlying->_builder->closed_weight), 'Closed weight is numeric');
+        cmp_ok($underlying->_builder->closed_weight, '>=', 0, ' nonnegative');
+        cmp_ok($underlying->_builder->closed_weight, '<',  1, ' and smaller than 1');
 
         my $license = $underlying->feed_license;
         is((scalar grep { $license eq $_ } qw(chartonly delayed daily realtime)), 1, 'Feed license is exactly one of our allowed values');
@@ -574,21 +574,28 @@ subtest 'all methods on a selection of underlyings' => sub {
         ok($worm->is_in_quiet_period, $worm->symbol . ' is quiet after New York closes');
     }
 
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => 'frxEURUSD',
-            recorded_date => Date::Utility->new,
-        });
+    Quant::Framework::Utils::Test::create_doc(
+      'volsurface_delta',
+      {
+        underlying_config        => BOM::Market::Underlying->new('frxEURUSD')->config,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        recorded_date => Date::Utility->new,
+      });
 
     my $today = Date::Utility->today;
     foreach my $ul ($AS51, $EURUSD) {
         my $prev_weight = 0;
+        my $builder = Quant::Framework::Utils::Builder->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            underlying_config => Quant::Framework::Utils::Test::create_underlying_config($ul->symbol),
+          });
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
-            my $day_weight    = $ul->weight_on($test_day);
-            my $period_weight = $ul->weighted_days_in_period($today, $test_day);
-            cmp_ok($day_weight, '>=', $ul->closed_weight,
+            my $day_weight    = $builder->weight_on($test_day);
+            my $period_weight = $builder->weighted_days_in_period($today, $test_day);
+            cmp_ok($day_weight, '>=', $builder->closed_weight,
                 $ul->display_name . ' weight for ' . $test_day->date . ' is at least as big as the closed weight');
             cmp_ok($day_weight, '<=', 1, 'And no larger than 1');
             cmp_ok(
