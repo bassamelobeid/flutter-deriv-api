@@ -13,8 +13,8 @@ use BOM::System::Localhost;
 use Format::Util::Numbers qw( commas );
 use Quant::Framework::InterestRate;
 use Quant::Framework::ImpliedRate;
-use BOM::MarketData::VolSurface::Delta;
-use BOM::MarketData::VolSurface::Moneyness;
+use Quant::Framework::VolSurface::Delta;
+use Quant::Framework::VolSurface::Moneyness;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::Platform::Runtime;
@@ -67,8 +67,8 @@ if ($filen eq 'editvol') {
     my $market     = $underlying->market->name;
     my $model =
         ($underlying->volatility_surface_type eq 'moneyness')
-        ? 'BOM::MarketData::VolSurface::Moneyness'
-        : 'BOM::MarketData::VolSurface::Delta';
+        ? 'Quant::Framework::VolSurface::Moneyness'
+        : 'Quant::Framework::VolSurface::Delta';
 
     my $surface_data   = {};
     my $col_names_line = shift @lines;
@@ -100,7 +100,9 @@ if ($filen eq 'editvol') {
         };
     }
     my %surface_args = (
-        underlying    => $underlying,
+        underlying_config    => $underlying->config,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         surface       => $surface_data,
         recorded_date => Date::Utility->new,
         (request()->param('spot_reference') ? (spot_reference => request()->param('spot_reference')) : ()),
