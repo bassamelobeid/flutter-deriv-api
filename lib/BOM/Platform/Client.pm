@@ -9,6 +9,7 @@ use Mail::Sender;
 use DateTime;
 use Date::Utility;
 use Cache::RedisDB;
+use List::Util qw(min);
 use Format::Util::Numbers qw(roundnear);
 
 use BOM::Platform::Context qw(request localize);
@@ -474,22 +475,17 @@ sub get_limit_for_account_balance {
 sub get_limit_for_daily_turnover {
     my $self = shift;
 
-    my $excl;
+    # turnover maxed at 500K of any currency.
+    my @limits = (BOM::Platform::Static::Config::quants->{client_limits}->{maximum_daily_turnover}{$self->currency});
     if ($self->get_self_exclusion && $self->get_self_exclusion->max_turnover) {
-        $excl = $self->get_self_exclusion->max_turnover;
+        push @limits, $self->get_self_exclusion->max_turnover;
     }
 
-    my $val = $self->custom_max_daily_turnover;
-    return $excl && $excl < $val ? $excl : $val if defined $val;
+    if (my $val = $self->custom_max_daily_turnover) {
+        push @limits, $val;
+    }
 
-    my $curr         = $self->currency;
-    my $max_turnover = BOM::Platform::Static::Config::quants->{client_limits}->{max_daily_turnover};
-    $val =
-          $self->is_virtual                 ? $max_turnover->{virtual}->{$curr}
-        : $self->client_fully_authenticated ? $max_turnover->{real_authenticated}->{$curr}
-        :                                     $max_turnover->{real_unauthenticated}->{$curr};
-
-    return $excl && $excl < $val ? $excl : $val;
+    return min(@limits);
 }
 
 sub get_limit_for_daily_losses {
@@ -573,15 +569,8 @@ sub get_limit_for_payout {
     return $val if defined $val;
 
     my $max_payout = BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions};
-    my $curr       = $self->currency;
 
-    $val =
-          $self->is_virtual                                ? $max_payout->{virtual}->{$curr}
-        : ($self->landing_company->short eq 'maltainvest') ? $max_payout->{maltainvest}->{$curr}
-        : $self->client_fully_authenticated                ? $max_payout->{real_authenticated}->{$curr}
-        :                                                    $max_payout->{real_unauthenticated}->{$curr};
-
-    return $val;
+    return $max_payout->{$self->currency};
 }
 
 sub get_limit {
