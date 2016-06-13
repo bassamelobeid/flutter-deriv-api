@@ -26,10 +26,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol => 'TOP40',
         date   => Date::Utility->new,
     });
-my $test_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+my $test_surface = Quant::Framework::Utils::Test::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'TOP40',
+        underlying_config        => BOM::Market::Underlying->new('TOP40')->config,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
         recorded_date => Date::Utility->new,
     });
 
@@ -57,11 +59,13 @@ subtest 'surface data not found' => sub {
 
 subtest 'surface has not change' => sub {
     my $test_file        = dirname(__FILE__) . '/combined_without_DJI.xls';
-    my $existing_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    my $existing_surface = Quant::Framework::Utils::Test::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'TOP40',
-            recorded_date => Date::Utility->new(Date::Utility->new - 18000),
+          underlying_config        => BOM::Market::Underlying->new('TOP40')->config,
+          chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+          chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+          recorded_date => Date::Utility->new(Date::Utility->new - 18000),
         });
     my $au = BOM::MarketData::AutoUpdater::Indices->new(
         file               => $test_file,

@@ -22,7 +22,7 @@ use Try::Tiny;
 use File::Find::Rule;
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::MarketData::VolSurface::Delta;
+use Quant::Framework::VolSurface::Delta;
 use List::Util qw( first );
 
 has file => (
@@ -158,10 +158,12 @@ sub run {
         my $underlying = BOM::Market::Underlying->new($symbol);
         next if $underlying->volatility_surface_type eq 'flat';
         my $raw_volsurface = $surfaces_from_file->{$symbol};
-        my $volsurface     = BOM::MarketData::VolSurface::Delta->new({
-            underlying    => $underlying,
-            recorded_date => $raw_volsurface->{recorded_date},
-            surface       => $raw_volsurface->{surface},
+        my $volsurface     = Quant::Framework::VolSurface::Delta->new({
+            underlying_config => $underlying->config,
+            recorded_date     => $raw_volsurface->{recorded_date},
+            surface           => $raw_volsurface->{surface},
+            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
         });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
@@ -212,7 +214,7 @@ sub passes_additional_check {
     # More generally, we don't want to update if we won't trade on the effective date,
     # for the same reasons. This is likely mostly partially covered by some of the above,
     # but I am sitting here fixing this on Christmas, so I might be missing something.
-    my $underlying         = $volsurface->underlying;
+    my $underlying         = BOM::Market::Underlying->new($volsurface->underlying_config->symbol);
     my $recorded_date      = $volsurface->recorded_date;
     my $friday_after_close = ($recorded_date->day_of_week == 5 and not $underlying->calendar->is_open_at($recorded_date));
     my $wont_open          = not $underlying->calendar->trades_on($volsurface->effective_date);

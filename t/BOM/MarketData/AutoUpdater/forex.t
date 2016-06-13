@@ -45,10 +45,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }
         },
     });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+Quant::Framework::Utils::Test::create_doc(
     'volsurface_delta',
     {
-        symbol        => $_,
+        underlying_config        => BOM::Market::Underlying->new($_)->config,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
         recorded_date => Date::Utility->new,
     }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
 
@@ -77,10 +79,13 @@ my $data = {
         vol_spread => {50 => 0.1}
     },
 };
+
+my $usdjpy_config = BOM::Market::Underlying->new('frxUSDJPY')->config;
+
 my $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
+        underlying_config => $usdjpy_config,
         surface       => $data,
         recorded_date => Date::Utility->new(time - 7210),
     });
@@ -129,7 +134,7 @@ $data = {
 $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
+        underlying_config => $usdjpy_config,
         recorded_date => Date::Utility->new(time - 7199),
         surface       => $data
     });
@@ -150,7 +155,7 @@ $clone->{14}->{smile}->{25} = 1.3;
 $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
+        underlying_config => $usdjpy_config,
         recorded_date => Date::Utility->new(time - 7199),
         surface       => $clone,
         save          => 0,
@@ -169,7 +174,7 @@ subtest 'big difference' => sub {
 $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
+        underlying_config => $usdjpy_config,
         recorded_date => Date::Utility->new(time - 7199),
         save          => 0,
     });
@@ -215,6 +220,7 @@ subtest "Friday after close, weekend, won't open check." => sub {
         my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'volsurface_delta',
             {
+                underlying_config => $usdjpy_config,
                 recorded_date => Date::Utility->new($details->{datetime}),
             });
 

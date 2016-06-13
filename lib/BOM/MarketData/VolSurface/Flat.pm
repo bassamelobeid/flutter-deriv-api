@@ -4,7 +4,8 @@ use feature 'state';
 
 use Moose;
 use YAML::XS qw(LoadFile);
-extends 'BOM::MarketData::VolSurface';
+use Quant::Framework::Utils::Types;
+extends 'Quant::Framework::VolSurface';
 
 =head1 NAME
 
@@ -40,6 +41,20 @@ has atm_spread_point => (
     default => '50',
 );
 
+has underlying => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_underlying {
+    my $self = shift;
+    my $args = {
+        symbol => $self->symbol,
+        ($self->for_date) ? (for_date => $self->for_date) : (),
+    };
+    return BOM::Market::Underlying->new($args);
+}
+
 =head2 flat_vol
 
 The flat volatility returned for all points on this surface.
@@ -53,7 +68,7 @@ has flat_vol => (
 
 sub _build_flat_vol {
     my $self = shift;
-    return $vol->{$self->underlying->symbol};
+    return $vol->{$self->symbol};
 }
 
 # a fixed 7% of volatility spread
@@ -80,11 +95,23 @@ sub get_volatility {
     return $self->flat_vol;
 }
 
+=head2 get_smile
+
+Returns default flat smile for flat volatility surface
+
+=cut
+
 sub get_smile {
     my $self = shift;
 
     return {map { $_ => $self->flat_vol } (qw(25 50 75))};
 }
+
+=head2 get_market_rr_bf
+
+Returns RR/BF for the smile of the current volatility surface
+
+=cut
 
 sub get_market_rr_bf {
     my ($self, $day) = @_;
@@ -119,7 +146,7 @@ override is_valid => sub {
 
 has cutoff => (
     is         => 'ro',
-    isa        => 'bom_cutoff_helper',
+    isa        => 'qf_cutoff_helper',
     lazy_build => 1,
     coerce     => 1,
 );
@@ -129,7 +156,7 @@ sub _build_cutoff {
 
     my $date = $self->for_date ? $self->for_date : Date::Utility->new;
 
-    return BOM::MarketData::VolSurface::Cutoff->new('UTC ' . $self->underlying->calendar->standard_closing_on($date)->time_hhmm);
+    return Quant::Framework::VolSurface::Cutoff->new('UTC ' . $self->underlying->calendar->standard_closing_on($date)->time_hhmm);
 }
 
 no Moose;

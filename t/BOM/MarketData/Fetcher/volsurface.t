@@ -10,10 +10,11 @@ use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Market::Underlying;
-use BOM::MarketData::VolSurface::Delta;
-use BOM::MarketData::VolSurface::Moneyness;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::MarketData::VolSurface::Cutoff;
+use Quant::Framework::VolSurface::Delta;
+use Quant::Framework::VolSurface::Moneyness;
+use Quant::Framework::VolSurface::Cutoff;
+use Quant::Framework::Utils::Test;
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new;
@@ -31,9 +32,11 @@ subtest 'Saving delta then moneyness.' => sub {
 
     my $forex = BOM::Market::Underlying->new('frxUSDJPY');
 
-    my $delta_surface = BOM::MarketData::VolSurface::Delta->new({
+    my $delta_surface = Quant::Framework::VolSurface::Delta->new({
             deltas        => [75, 50, 25],
-            underlying    => $forex,
+            underlying_config    => $forex->config,
+            chronicle_reader =>  BOM::System::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
             recorded_date => $now,
             surface       => {
                 1 => {
@@ -58,9 +61,11 @@ subtest 'Saving delta then moneyness.' => sub {
     is_deeply($saved->surface, $delta_surface->surface, 'Delta surface matches.');
 
     my $indices           = BOM::Market::Underlying->new('GDAXI');
-    my $moneyness_surface = BOM::MarketData::VolSurface::Moneyness->new({
+    my $moneyness_surface = Quant::Framework::VolSurface::Moneyness->new({
             moneynesses   => [99, 100, 101],
-            underlying    => $indices,
+            underlying_config    => $indices->config,
+            chronicle_reader =>  BOM::System::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
             recorded_date => $now,
             surface       => {
                 7 => {
@@ -87,11 +92,13 @@ subtest 'Saving delta then moneyness.' => sub {
 subtest 'Fetch cut.' => sub {
     plan tests => 4;
 
-    my $original = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    my $original = Quant::Framework::Utils::Test::create_doc(
         'volsurface_delta',
         {
-            symbol        => 'frxUSDJPY',
+            underlying_config => BOM::Market::Underlying->new('frxUSDJPY')->config,
             recorded_date => $now,
+            chronicle_reader =>  BOM::System::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
         });
 
     my $cut_surface = $dm->fetch_surface({
@@ -117,7 +124,7 @@ subtest 'Fetch cut.' => sub {
 
     $cut_surface = $dm->fetch_surface({
         underlying => BOM::Market::Underlying->new('frxUSDJPY'),
-        cutoff     => BOM::MarketData::VolSurface::Cutoff->new('UTC 10:25'),
+        cutoff     => Quant::Framework::VolSurface::Cutoff->new('UTC 10:25'),
     });
     is($cut_surface->cutoff->code, 'UTC 10:25', 'Passing a Cutoff object to fetch_surface.');
 
@@ -150,11 +157,13 @@ subtest 'Consecutive saves.' => sub {
 
     my $underlying = BOM::Market::Underlying->new('frxEURUSD');
 
-    my $surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    my $surface = Quant::Framework::Utils::Test::create_doc(
         'volsurface_delta',
         {
             recorded_date => $now->minus_time_interval('3h'),
-            underlying    => $underlying,
+            underlying_config    => $underlying->config,
+            chronicle_reader =>  BOM::System::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
         });
     my @recorded_dates = ($surface->recorded_date);    # keep track of all saved surface recorded_dates
 
@@ -162,11 +171,13 @@ subtest 'Consecutive saves.' => sub {
 
     for (0 .. 2) {
         my $recorded_date = $now->minus_time_interval(2 - $_ . 'h');
-        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        Quant::Framework::Utils::Test::create_doc(
             'volsurface_delta',
             {
                 recorded_date => $recorded_date,
-                underlying    => $underlying,
+                underlying_config    => $underlying->config,
+                chronicle_reader =>  BOM::System::Chronicle::get_chronicle_reader,
+                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
             });
         unshift @recorded_dates, $recorded_date;
     }
