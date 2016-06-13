@@ -1,0 +1,93 @@
+<p>Update custom limits: </p>
+<form action="[% url %]" method="POST">
+    <table>
+        <tr>
+            <td>Name: </td>
+            <td><input type="text" name="custom_name"></input></td>
+            <td> e.g. short description of this limit, forex_tick_expiry_limit</td>
+        </tr>
+        <tr>
+            <td>Risk Profile: </td>
+            <td><input type="text" name="risk_profile"></input></td>
+            <td> e.g. extreme_risk | no_business | high_risk | medium_risk | low_risk (required)</td>
+        </tr>
+        <tr>
+            <td>Market: </td>
+            <td><input type="text" name="market" value=''></input></td>
+            <td> e.g. forex</td>
+        </tr>
+        <tr>
+            <td>Submarket: </td>
+            <td><input type="text" name="submarket" value=''></input></td>
+            <td> e.g. major_pairs</td>
+        </tr>
+        <tr>
+            <td>Underlying symbol: </td>
+            <td><input type="text" name="underlying_symbol" value=''></input></td>
+            <td> e.g. frxUSDJPY</td>
+        </tr>
+        <tr>
+            <td>Contract category: </td>
+            <td><input type="text" name="contract_category" value=''></input></td>
+            <td> e.g. callput | touchnotouch | endsinout | staysinout | digits | asian | spreads</td>
+        </tr>
+        <tr>
+            <td>Start type: </td>
+            <td><input type="text" name="start_type" value=''></input></td>
+            <td> e.g. spot | forward</td>
+        </tr>
+        <tr>
+            <td>Expiry Type: </td>
+            <td><input type="text" name="expiry_type" value=''></input></td>
+            <td> e.g. daily | intraday | tick</td>
+        </tr>
+        <tr>
+            <td>Client loginid: </td>
+            <td><input type="text" name="client_loginid" value=''></input></td>
+            <td> e.g. CR10001 (include this if you wish to limit a specific client)</td>
+        </tr>
+        <tr>
+            <td>Client's comment: </td>
+            <td><input type="text" name="comment" value=''></input></td>
+            <td> e.g. Why do you limit this client</td>
+        </tr>
+        <tr>
+            <td><input type="submit" name="update_limit" value="Update"></td>
+        </tr>
+    </table>
+</form>
+
+<p>Delete custom limit by ID: </p>
+
+<form action="[% url %]" method="POST">
+    <table>
+        <tr>
+            <td>ID: </td>
+            <td><input type="text" name="id"></input></td>
+            <td> e.g. The ID of the custom limit</td>
+        </tr>
+        <tr>
+            <td>Client loginid: </td>
+            <td><input type="text" name="client_loginid" value=''></input></td>
+            <td> e.g. CR10001 (include this if you wish to limit a specific client)</td>
+        </tr>
+        <tr>
+            <td><input type="submit" name="delete_limit" value="Update"></td>
+        </tr>
+    </table>
+</form>
+
+<p>Delete client from custom client limits: </p>
+
+<form action="[% url %]" method="POST">
+    <table>
+        <tr>
+            <td>Client loginid: </td>
+            <td><input type="text" name="client_loginid" value=''></input></td>
+            <td> e.g. CR10001</td>
+        </tr>
+        <tr>
+            <td><input type="submit" name="delete_client" value="Update"></td>
+        </tr>
+    </table>
+</form>
