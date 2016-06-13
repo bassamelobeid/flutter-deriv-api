@@ -19,7 +19,7 @@ The surface object that you want to display
 
 has surface => (
     is       => 'ro',
-    isa      => 'BOM::MarketData::VolSurface',
+    isa      => 'Quant::Framework::VolSurface',
     required => 1,
 );
 

@@ -62,7 +62,7 @@ sub _build__volsurface_mapper {
 
 has master_surface => (
     is         => 'rw',
-    isa        => 'BOM::MarketData::VolSurface',
+    isa        => 'Quant::Framework::VolSurface',
     lazy_build => 1,
 );
 
