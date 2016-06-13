@@ -16,7 +16,8 @@ BEGIN
     END IF;
 
     BEGIN
-      INSERT INTO bet.daily_aggregates VALUES (NEW.purchase_time::date, NEW.account_id, NEW.buy_price, 0);
+      INSERT INTO bet.daily_aggregates(day, account_id, turnover, loss)
+      VALUES (NEW.purchase_time::date, NEW.account_id, NEW.buy_price, 0);
       RETURN new;
     EXCEPTION WHEN unique_violation THEN
       -- nothing
