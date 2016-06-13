@@ -121,7 +121,7 @@ sub create_contract {
         underlying            => $underlying,
         bet_type              => 'CALL',
         currency              => 'USD',
-        amount_type           => 'payout',
+        amount_type           => $args{basis} // 'payout',
         amount                => 100,
         date_start            => $start->epoch,
         date_expiry           => $expire->epoch,
