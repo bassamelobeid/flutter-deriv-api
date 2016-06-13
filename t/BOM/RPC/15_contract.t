@@ -200,29 +200,6 @@ subtest 'get_ask' => sub {
     };
     is_deeply($result, $expected, 'the left values are all right');
 
-    my $val = $result->{ask_price};
-    # check for payout proposal - ask_price should increase
-    $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params), 1);
-    is $result->{ask_price} - $val, 1 / 100 * 100, "as app markup is added so client has to 1% of payout";
-
-    # check app_markup for stake proposal
-    $params = {
-        "proposal"         => 1,
-        "amount"           => "100",
-        "basis"            => "stake",
-        "contract_type"    => "CALL",
-        "currency"         => "USD",
-        "duration"         => "60",
-        "duration_unit"    => "s",
-        "symbol"           => "R_50",
-        from_pricer_daemon => 1,
-    };
-    $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
-    $val    = $result->{payout};
-
-    $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params), 2);
-    cmp_ok $val - $result->{payout}, ">", 2 / 100 * $val, "as app markup is added so client will get less payout as compared when there is no markup";
-
     $params->{symbol} = "invalid symbol";
     is_deeply(
         BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params)),
@@ -313,28 +290,6 @@ subtest 'get_bid' => sub {
         );
 
     $contract = create_contract(
-        client                => $client,
-        spread                => 0,
-        app_markup_percentage => 1
-    );
-    $params = {
-        short_code            => $contract->shortcode,
-        contract_id           => $contract->id,
-        currency              => $client->currency,
-        is_sold               => 0,
-        sell_time             => undef,
-        app_markup_percentage => 1
-    };
-    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
-
-    $contract = create_contract(
-        client => $client,
-        spread => 0
-    );
-    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
-
-    $contract = create_contract(
         client => $client,
         spread => 1
     );
@@ -345,7 +300,7 @@ subtest 'get_bid' => sub {
         currency    => $client->currency,
         is_sold     => 0,
     };
-    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
 
     my @expected_keys = (
         qw(ask_price
@@ -624,6 +579,145 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
     foreach my $key (keys %$expected_result) {
         cmp_ok $result->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
     }
+
+};
+
+subtest 'app_markup_percentage' => sub {
+    my $params = {
+        "proposal"         => 1,
+        "amount"           => "100",
+        "basis"            => "payout",
+        "contract_type"    => "CALL",
+        "currency"         => "USD",
+        "duration"         => "60",
+        "duration_unit"    => "s",
+        "symbol"           => "R_50",
+        from_pricer_daemon => 1,
+    };
+    my $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    my $val    = $result->{ask_price};
+    # check for payout proposal - ask_price should increase
+    $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params), 1);
+    is $result->{ask_price} - $val, 1 / 100 * 100, "as app markup is added so client has to 1% of payout";
+
+    # check app_markup for stake proposal
+    $params = {
+        "proposal"         => 1,
+        "amount"           => "100",
+        "basis"            => "stake",
+        "contract_type"    => "CALL",
+        "currency"         => "USD",
+        "duration"         => "60",
+        "duration_unit"    => "s",
+        "symbol"           => "R_50",
+        from_pricer_daemon => 1,
+    };
+    $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params));
+    $val    = $result->{payout};
+
+    $result = BOM::RPC::v3::Contract::_get_ask(BOM::RPC::v3::Contract::prepare_ask($params), 2);
+    cmp_ok $val - $result->{payout}, ">", 2 / 100 * $val, "as app markup is added so client will get less payout as compared when there is no markup";
+
+    my $contract = create_contract(
+        client                => $client,
+        spread                => 0,
+        app_markup_percentage => 1
+    );
+    $params = {
+        short_code            => $contract->shortcode,
+        contract_id           => $contract->id,
+        currency              => $client->currency,
+        is_sold               => 0,
+        sell_time             => undef,
+        app_markup_percentage => 1
+    };
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
+
+    $contract = create_contract(
+        client => $client,
+        spread => 0
+    );
+    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
+
+    $contract = create_contract(
+        client                => $client,
+        spread                => 0,
+        app_markup_percentage => 1
+    );
+    $params = {
+        short_code            => $contract->shortcode,
+        contract_id           => $contract->id,
+        currency              => $client->currency,
+        is_sold               => 0,
+        sell_time             => undef,
+        app_markup_percentage => 1
+    };
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
+
+    $contract = create_contract(
+        client => $client,
+        spread => 0
+    );
+    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
+
+    $contract = create_contract(
+        client => $client,
+        spread => 1
+    );
+    $contract = create_contract(
+        client                => $client,
+        spread                => 0,
+        app_markup_percentage => 1
+    );
+    $params = {
+        short_code            => $contract->shortcode,
+        contract_id           => $contract->id,
+        currency              => $client->currency,
+        is_sold               => 0,
+        sell_time             => undef,
+        app_markup_percentage => 1
+    };
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
+
+    $contract = create_contract(
+        client => $client,
+        spread => 0
+    );
+    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
+
+    $contract = create_contract(
+        client => $client,
+        spread => 1
+    );
+    $contract = create_contract(
+        client                => $client,
+        spread                => 0,
+        app_markup_percentage => 1
+    );
+    $params = {
+        short_code            => $contract->shortcode,
+        contract_id           => $contract->id,
+        currency              => $client->currency,
+        is_sold               => 0,
+        sell_time             => undef,
+        app_markup_percentage => 1
+    };
+    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
+
+    $contract = create_contract(
+        client => $client,
+        spread => 0
+    );
+    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
+
+    $contract = create_contract(
+        client => $client,
+        spread => 1
+    );
 
 };
 
