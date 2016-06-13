@@ -73,7 +73,8 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('invalid', 'If could not be created account it should return error')
             ->error_message_is('Sorry, account opening is unavailable.', 'If could not be created account it should return error_message');
-    } [qr/^Virtual: register_and_return_new_client err/], "Expected warn about error virtual account opening";
+    }
+    [qr/^Virtual: register_and_return_new_client err/], "Expected warn about error virtual account opening";
 
     $params->{args}->{verification_code} = BOM::Platform::Token::Verification->new(
         email       => $email,
@@ -283,13 +284,13 @@ subtest $method => sub {
         $params->{args}->{residence} = 'id';
 
         warnings_like {
-            $rpc_ct->call_ok($method, $params)
-                ->has_no_system_error->has_error->error_code_is('invalid residence', 'It should return error if residence does not fit with maltainvest')
-                ->error_message_is(
+            $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('invalid residence',
+                'It should return error if residence does not fit with maltainvest')->error_message_is(
                 'Sorry, our service is not available for your country of residence.',
                 'It should return error if residence does not fit with maltainvest'
                 );
-        } [qr/^acc opening err:/], "Expected warn about wrong residence";
+        }
+        [qr/^acc opening err:/], "Expected warn about wrong residence";
 
         $params->{args}->{residence} = 'de';
 

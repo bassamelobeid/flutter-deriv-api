@@ -182,4 +182,64 @@ subtest 'app_markup' => sub {
     cmp_ok $payout, ">", $result->{payout}, "Payout in case of stake contracts that have app_markup will be less than original payout";
 };
 
+subtest 'app_markup_transaction' => sub {
+    my $contract = BOM::Test::Data::Utility::Product::create_contract();
+
+    my $now = time;
+    my $txn = BOM::Product::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        purchase_date => $now
+    });
+
+    is $txn->buy,        undef, "no error in transaction buy";
+    is $txn->app_markup, 0,     "no app markup";
+
+    my $app_markup_percentage = 1;
+    $contract = BOM::Test::Data::Utility::Product::create_contract(app_markup_percentage => $app_markup_percentage);
+    $now      = time;
+    $txn      = BOM::Product::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        purchase_date => $now
+    });
+
+    is $txn->buy, undef, "no error in transaction buy";
+    is $txn->app_markup, $app_markup_percentage / 100 * $contract->payout,
+        "transaction app_markup is app_markup_percentage of contract payout for payout amount_type";
+
+    $contract = BOM::Test::Data::Utility::Product::create_contract(basis => 'stake');
+    my $payout = $contract->payout;
+    $now = time;
+    $txn = BOM::Product::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        purchase_date => $now
+    });
+
+    is $txn->buy,        undef, "no error in transaction buy for stake";
+    is $txn->app_markup, 0,     "no app markup for stake";
+
+    $app_markup_percentage = 2;
+    $contract              = BOM::Test::Data::Utility::Product::create_contract(
+        basis                 => 'stake',
+        app_markup_percentage => $app_markup_percentage
+    );
+    $now = time;
+    $txn = BOM::Product::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        purchase_date => $now
+    });
+
+    is $txn->buy, undef, "no error in transaction buy for stake";
+    is $txn->app_markup, sprintf('%.2f', $payout * $app_markup_percentage / 100),
+        "in case of stake contract, app_markup is app_markup_percentage of actual payout would have been";
+    cmp_ok $txn->payout, "<", $payout, "payout after app_markup_percentage is less than actual payout";
+};
+
 done_testing();
