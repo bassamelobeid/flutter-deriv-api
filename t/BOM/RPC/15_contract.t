@@ -15,10 +15,18 @@ use BOM::System::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Data::Dumper;
 use Quant::Framework::Utils::Test;
+use Quant::Framework::CorporateAction;
+use Quant::Framework::StorageAccessor;
 
 initialize_realtime_ticks_db();
-my $now    = Date::Utility->new('2005-09-21 06:46:00');
-my $email  = 'test@binary.com';
+my $now   = Date::Utility->new('2005-09-21 06:46:00');
+my $email = 'test@binary.com';
+
+my $storage_accessor = Quant::Framework::StorageAccessor->new(
+    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+);
+
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
     email       => $email,
@@ -235,7 +243,7 @@ subtest 'send_ask' => sub {
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
-    my $expected_keys = [sort (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout theo_probability))];
+    my $expected_keys = [sort { $a cmp $b } (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout theo_probability))];
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
@@ -481,6 +489,16 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
         quote      => 100
     });
 
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'USAAPL',
+        epoch      => $starting->epoch + 30,
+        quote      => 111
+    });
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'USAAPL',
+        epoch      => $starting->epoch + 90,
+        quote      => 80
+    });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
@@ -496,16 +514,6 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
             recorded_date  => $opening->plus_time_interval('1d'),
         });
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'USAAPL',
-        epoch      => $starting->epoch + 30,
-        quote      => 111
-    });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'USAAPL',
-        epoch      => $starting->epoch + 90,
-        quote      => 80
-    });
     my $action = {
         11223360 => {
             description    => 'STOCK split ',
@@ -516,14 +524,8 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
             effective_date => $opening->plus_time_interval('1d')->date_ddmmmyy,
             type           => 'STOCK_SPLT',
         }};
-    Quant::Framework::Utils::Test::create_doc(
-        'corporate_action',
-        {
-            symbol           => 'USAAPL',
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-            actions          => $action
-        });
+
+    Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $opening)->update($action, $opening)->save;
 
     my $contract = create_contract(
         client        => $client,
