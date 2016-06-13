@@ -50,11 +50,13 @@ my $app1 = $c->call_ok(
         args  => {
             name         => 'App 1',
             scopes       => ['read', 'trade'],
-            redirect_uri => 'https://www.example.com/'
+            redirect_uri => 'https://www.example.com/',
+            homepage     => 'https://www.homepage.com/'
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
-is $app1->{redirect_uri}, 'https://www.example.com/', 'redirect_uri is right';
+is $app1->{redirect_uri}, 'https://www.example.com/',  'redirect_uri is right';
+is $app1->{homepage},     'https://www.homepage.com/', 'homepage is right';
 
 $app1 = $c->call_ok(
     'app_update',
@@ -64,11 +66,13 @@ $app1 = $c->call_ok(
             app_update   => $app1->{app_id},
             name         => 'App 1',
             scopes       => ['read', 'trade', 'admin'],
-            redirect_uri => 'https://www.example.com/callback'
+            redirect_uri => 'https://www.example.com/callback',
+            homepage     => 'https://www.homepage2.com/'
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply([sort @{$app1->{scopes}}], ['admin', 'read', 'trade'], 'scopes are updated');
 is $app1->{redirect_uri}, 'https://www.example.com/callback', 'redirect_uri is updated';
+is $app1->{homepage},     'https://www.homepage2.com/',       'homepage is updated';
 
 my $get_app = $c->call_ok(
     'app_get',
