@@ -551,6 +551,21 @@ sub get_limit_for_open_positions {
     return $excl && $excl < 60 ? $excl : 60;
 }
 
+# return undef or Date::Utility object
+sub get_min_self_exclusion_until {
+    my $self = shift;
+
+    my $excl = $self->get_self_exclusion;
+    return unless $excl;
+
+    my $exclude_until = $excl->exclude_until;
+    my $timeout_until = $excl->timeout_until;
+    return unless $exclude_until || $timeout_until;
+    return Date::Utility->new(List::Util::min(Date::Utility->new($exclude_until)->epoch, Date::Utility->new($timeout_until)->epoch))
+        if $exclude_until && $timeout_until;
+    return Date::Utility->new($exclude_until || $timeout_until);
+}
+
 sub get_limit_for_payout {
     my $self = shift;
 
@@ -833,11 +848,10 @@ sub login_error {
         return localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif ($client->get_status('disabled')) {
         return localize('This account is unavailable. For any questions please contact Customer Support.');
-    } elsif ($client->get_self_exclusion
-        && $client->get_self_exclusion->exclude_until
-        && Date::Utility->new->is_before(Date::Utility->new($client->get_self_exclusion->exclude_until)))
+    } elsif ($client->get_min_self_exclusion_until
+        && Date::Utility->new->is_before($client->get_min_self_exclusion_until))
     {
-        return localize('Sorry, you have excluded yourself until [_1].', $client->get_self_exclusion->exclude_until);
+        return localize('Sorry, you have excluded yourself until [_1].', $client->get_min_self_exclusion_until->date);
     }
     return;
 }
