@@ -23,6 +23,14 @@ BEGIN
     IF (p_limits -> 'max_7day_turnover') IS NOT NULL OR
        (p_limits -> 'max_7day_losses') IS NOT NULL THEN
         SELECT INTO v_r
+/*
+               coalesce(sum(b.turnover), 0) AS turnover,
+               coalesce(sum(b.loss), 0) AS loss
+          FROM bet.daily_aggregates b
+         WHERE b.account_id=p_account.id
+           AND date_trunc('day', p_purchase_time) - '6d'::INTERVAL <= b.day
+           AND b.day < date_trunc('day', p_purchase_time) + '1d'::INTERVAL;
+*/
                coalesce(sum(b.buy_price), 0) AS turnover,
                coalesce(sum(b.buy_price - b.sell_price), 0) AS loss
           FROM bet.financial_market_bet b

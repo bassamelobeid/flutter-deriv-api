@@ -144,6 +144,10 @@ sub create_app {
         name         => $app->{name},
         scopes       => $app->{scopes},
         redirect_uri => $app->{redirect_uri},
+        homepage     => $app->{homepage} || '',
+        github       => $app->{github}   || '',
+        appstore     => $app->{appstore} || '',
+        googleplay   => $app->{googleplay} || '',
     };
 }
 
@@ -170,6 +174,10 @@ sub update_app {
         name         => $app->{name},
         scopes       => $app->{scopes},
         redirect_uri => $app->{redirect_uri},
+        homepage     => $app->{homepage} || '',
+        github       => $app->{github}   || '',
+        appstore     => $app->{appstore} || '',
+        googleplay   => $app->{googleplay} || '',
     };
 }
 
@@ -177,7 +185,10 @@ sub get_app {
     my ($self, $user_id, $app_id) = @_;
 
     my $app = $self->dbh->selectrow_hashref("
-        SELECT id as app_id, name, redirect_uri, scopes FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
+        SELECT
+            id as app_id, name, redirect_uri, scopes,
+            homepage, github, appstore, googleplay
+        FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
     ", undef, $app_id, $user_id);
     return unless $app;
 
@@ -190,7 +201,8 @@ sub get_apps_by_user_id {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            id as app_id, name, redirect_uri, scopes
+            id as app_id, name, redirect_uri, scopes,
+            homepage, github, appstore, googleplay
         FROM oauth.apps WHERE binary_user_id = ? AND active ORDER BY name
     ", {Slice => {}}, $user_id);
     return [] unless $apps;
