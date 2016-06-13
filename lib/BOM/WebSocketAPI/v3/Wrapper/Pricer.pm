@@ -19,7 +19,7 @@ sub proposal {
     my $symbol   = $args->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
-        return $c->new_error('proposal' , $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
+        return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
     } else {
         _send_ask($c, $args, 'proposal');
     }
@@ -51,7 +51,7 @@ sub _send_ask {
             if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
                 my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
                 my $amount = $args->{amount_per_point} || $args->{amount};
-                $pricing_channel->{$serialized_args}->{$amount}->{longcode}  = $response->{longcode};
+                $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $response->{longcode};
                 $c->stash('pricing_channel' => $pricing_channel);
             }
 
@@ -155,8 +155,8 @@ sub process_pricing_events {
                 $results = $err;
             } else {
                 $results = {
-                    msg_type     => 'proposal',
-                    'proposal'   => {
+                    msg_type   => 'proposal',
+                    'proposal' => {
                         id       => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
                         longcode => $pricing_channel->{$serialized_args}->{$amount}->{longcode},
                         %$adjusted_results,
