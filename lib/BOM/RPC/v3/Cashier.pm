@@ -36,6 +36,11 @@ use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 
+use BOM::Market::Registry;
+use JSON qw(from_json);
+use BOM::Market::SubMarket::Registry;
+use BOM::Product::Offerings qw(get_offerings_with_filter);
+
 sub cashier {
     my $params = shift;
 
@@ -284,11 +289,12 @@ sub get_limits {
     my $wl_config       = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company;
 
     my $limit = +{
-        map ({
-                $_ => $client->get_limit({'for' => $_});
-            } (qw/account_balance daily_turnover payout/)),
-        open_positions => $client->get_limit_for_open_positions,
+        account_balance => $client->get_limit_for_account_balance,
+        payout          => $client->get_limit_for_payout,
+        open_positions  => $client->get_limit_for_open_positions,
     };
+
+    $limit->{market_specific} = _get_market_limit_profile($client);
 
     my $numdays       = $wl_config->for_days;
     my $numdayslimit  = $wl_config->limit_for_days;
@@ -1211,6 +1217,35 @@ sub topup_virtual {
         amount   => $amount,
         currency => $curr
     };
+}
+
+sub _get_market_limit_profile {
+    my $client = shift;
+
+    my $currency        = $client->currency;
+    my $landing_company = $client->landing_company->short;
+    my @markets         = map { BOM::Market::Registry->get($_) } get_offerings_with_filter('market', {landing_company => $landing_company});
+
+    my $limit_ref = BOM::Platform::Static::Config::quants->{risk_profile};
+
+    my %limits;
+    foreach my $market (@markets) {
+        my @submarket_list =
+            grep { $_->risk_profile }
+            map { BOM::Market::SubMarket::Registry->get($_) } get_offerings_with_filter('submarket', {market => $market->name});
+        if (@submarket_list) {
+            my @list = map { {name => $_->display_name, turnover_limit => $limit_ref->{$_->risk_profile}{turnover}{$currency},} } @submarket_list;
+            push @{$limits{$market->name}}, @list;
+        } else {
+            push @{$limits{$market->name}},
+                +{
+                name           => $market->display_name,
+                turnover_limit => $limit_ref->{$market->risk_profile}{turnover}{$currency},
+                };
+        }
+    }
+
+    return \%limits;
 }
 
 1;
