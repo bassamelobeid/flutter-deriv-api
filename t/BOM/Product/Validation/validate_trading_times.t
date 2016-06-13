@@ -19,11 +19,11 @@ use Test::MockModule;
 my $weekend             = Date::Utility->new('2016-03-26');
 my $weekday             = Date::Utility->new('2016-03-29');
 my $usdjpy_weekend_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
+    underlying => 'frxAUDUSD',
     epoch      => $weekend->epoch
 });
 my $usdjpy_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
+    underlying => 'frxAUDUSD',
     epoch      => $weekday->epoch
 });
 
@@ -33,7 +33,7 @@ for my $date ($weekend, $weekday) {
         {
             symbol        => $_,
             recorded_date => $date
-        }) for qw(USD JPY HKD);
+        }) for qw(USD AUD HKD AUD-USD);
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
@@ -52,7 +52,7 @@ for my $date ($weekend, $weekday) {
         {
             symbol        => $_,
             recorded_date => $date
-        }) for qw(frxUSDJPY frxUSDHKD);
+        }) for qw(frxAUDUSD frxAUDUSD frxUSDHKD);
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
@@ -88,7 +88,7 @@ for my $date ($weekend, $weekday) {
 subtest 'trading hours' => sub {
     my $args = {
         bet_type     => 'CALL',
-        underlying   => 'frxUSDJPY',
+        underlying   => 'frxAUDUSD',
         barrier      => 'S0P',
         date_start   => $weekday,
         date_pricing => $weekday,

@@ -24,7 +24,7 @@ subtest 'get_offerings_flyby' => sub {
                 'exchange_name',                  'sentiment',
                 'start_type',                     'submarket',
                 'underlying_symbol',              'min_contract_duration',
-                'max_contract_duration',          'payout_limit',
+                'max_contract_duration',
                 'min_historical_pricer_duration', 'max_historical_pricer_duration',
                 'contract_category_display'
             )
@@ -174,26 +174,10 @@ subtest 'get_contract_specifics' => sub {
     };
     throws_ok { get_contract_specifics($params) } qr/Improper arguments/, '... ALL required parameters.';
 
-    $params->{barrier_category} = 'euro_atm';
-
-    my $default_payout = {
-        payout_limit => {
-            USD => 100000,
-            AUD => 100000,
-            GBP => 100000,
-            EUR => 100000,
-            JPY => 10000000,
-        }};
-    eq_or_diff(get_contract_specifics($params), $default_payout, 'Non-matching parameters yield just a default payout limit');
     $params->{barrier_category} = 'american';
+    $params->{underlying_symbol} = 'R_100';
     my $result = get_contract_specifics($params);
 
-    ok exists $result->{payout_limit}, 'Things which can be sold also have the payout_limit set';
-
-    $params->{underlying_symbol} = 'R_100';
-    $result = get_contract_specifics($params);
-
-    ok exists $result->{payout_limit}, 'Randoms also have the payout_limit set';
     ok exists $result->{permitted},    'and permitted durations';
     ok exists $result->{permitted}->{min}, '... including minimum';
     ok exists $result->{permitted}->{max}, '... and maximum';
