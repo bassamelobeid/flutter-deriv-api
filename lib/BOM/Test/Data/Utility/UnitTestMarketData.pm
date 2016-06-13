@@ -24,8 +24,8 @@ use BOM::Platform::Runtime;
 use Carp qw( croak );
 use YAML::XS;
 
-use BOM::MarketData::VolSurface::Delta;
-use BOM::MarketData::VolSurface::Moneyness;
+use Quant::Framework::VolSurface::Delta;
+use Quant::Framework::VolSurface::Moneyness;
 use BOM::System::Chronicle;
 use BOM::System::RedisReplicated;
 use Quant::Framework::Utils::Test;
@@ -137,9 +137,21 @@ sub _init {
 sub create_doc {
     my ($yaml_db, $data_mod) = @_;
 
-    if (grep { $_ eq $yaml_db } qw{currency randomindex stock index holiday economic_events partial_trading asset correlation_matrix}) {
+    if (grep { $_ eq $yaml_db }
+        qw{currency randomindex stock index holiday economic_events partial_trading asset correlation_matrix volsurface_moneyness volsurface_delta})
+    {
         $data_mod->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader();
         $data_mod->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();
+
+        if ($yaml_db eq 'volsurface_delta' or $yaml_db eq 'volsurface_moneyness') {
+            if (exists($data_mod->{symbol}) and not exists($data_mod->{underlying_config})) {
+                $data_mod->{underlying_config} = BOM::Market::Underlying->new($data_mod->{symbol})->config;
+                delete $data_mod->{symbol};
+            } elsif (exists($data_mod->{underlying}) and not exists($data_mod->{underlying_config})) {
+                $data_mod->{underlying_config} = $data_mod->{underlying}->config;
+                delete $data_mod->{underlying};
+            }
+        }
 
         return Quant::Framework::Utils::Test::create_doc($yaml_db, $data_mod);
     }
