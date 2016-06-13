@@ -27,9 +27,8 @@ BEGIN
                coalesce(sum(CASE WHEN underlying_symbol=p_underlying_symbol
                                   AND bet_type=p_bet_type
                                  THEN payout_price END), 0) AS same_symtype
-          FROM bet.financial_market_bet
-         WHERE account_id=p_account.id
-           AND NOT is_sold;
+          FROM bet.financial_market_bet_open
+         WHERE account_id=p_account.id;
 
         IF (p_limits -> 'max_open_bets') IS NOT NULL AND
            (v_r.cnt + 1) > (p_limits ->> 'max_open_bets')::BIGINT THEN
