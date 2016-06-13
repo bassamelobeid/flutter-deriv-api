@@ -80,18 +80,15 @@ subtest 'app_markup' => sub {
         underlying   => $underlying,
         bet_type     => 'FLASHU',
         currency     => $currency,
-        amount       => 10,
-        date_start   => $now,
-        date_expiry  => $now->epoch + 300,
+        payout       => 10,
+        duration     => '15m',
         current_tick => $tick,
-        barrier      => 'S0P',
-        amount_type  => 'payout'
+        barrier      => 'S0P'
     });
 
     my $transaction = BOM::Product::Transaction->new({
         client   => $client,
-        contract => $contract,
-        source   => 1
+        contract => $contract
     });
 
     my $error = $transaction->buy;
