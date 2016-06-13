@@ -23,6 +23,7 @@ my $app1 = $m->create_app({
     redirect_uri => 'https://www.example.com',
 });
 my $test_appid = $app1->{app_id};
+is $app1->{homepage}, 'http://www.example.com/', 'homepage is correct';
 
 ## it's in test db
 my $app = $m->verify_app($test_appid);
@@ -50,10 +51,12 @@ $app1 = $m->update_app(
         name         => 'App 1',
         scopes       => ['read', 'payments', 'trade', 'admin'],
         redirect_uri => 'https://www.example.com/callback',
+        homepage     => 'http://www.example2.com/',
     });
 @scopes = $m->get_scopes_by_access_token($access_token);
 is_deeply([sort @scopes], ['admin', 'payments', 'read', 'trade'], 'scopes are updated');
 is $app1->{redirect_uri}, 'https://www.example.com/callback', 'redirect_uri is updated';
+is $app1->{homepage}, 'http://www.example2.com/', 'homepage is updated';
 
 ### get app_register/app_list/app_get
 my $get_app = $m->get_app($test_user_id, $app1->{app_id});
