@@ -489,6 +489,16 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
         quote      => 100
     });
 
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'USAAPL',
+        epoch      => $starting->epoch + 30,
+        quote      => 111
+    });
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'USAAPL',
+        epoch      => $starting->epoch + 90,
+        quote      => 80
+    });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
@@ -504,16 +514,6 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
             recorded_date  => $opening->plus_time_interval('1d'),
         });
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'USAAPL',
-        epoch      => $starting->epoch + 30,
-        quote      => 111
-    });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'USAAPL',
-        epoch      => $starting->epoch + 90,
-        quote      => 80
-    });
     my $action = {
         11223360 => {
             description    => 'STOCK split ',
