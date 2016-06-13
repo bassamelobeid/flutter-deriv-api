@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::NoWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -110,4 +110,20 @@ subtest 'disable underlying due to corporate action' => sub {
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions($orig);
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
+};
+
+subtest 'custom suspend trading' => sub {
+    my $orig = BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"xxx": {"market": "forex", "contract_category":"callput", "expiry_type": "tick", "risk_profile": "no_business"}}');
+    $bet_params->{underlying} = 'frxUSDJPY';
+    $bet_params->{bet_type}   = 'CALL', $bet_params->{duration} = '5t';
+    $bet_params->{barrier}    = 'S0P';
+
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like($c->primary_validation_error->message, qr/manually disabled by quants/, 'throws error');
+    $bet_params->{underlying} = 'R_100';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy for random';
 };

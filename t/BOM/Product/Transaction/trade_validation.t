@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 12;
+use Test::Most tests => 11;
 use Test::NoWarnings;
 use File::Spec;
 use JSON qw(decode_json);
@@ -131,60 +131,6 @@ subtest 'IOM withdrawal limit' => sub {
         qr/Due to regulatory requirements, you are required to authenticate your account in order to continue trading/,
         'iom client exceeded withdrawal limit msg'
     );
-};
-
-subtest 'custom client payout limit' => sub {
-    plan tests => 7;
-
-    my $custom_list = BOM::Product::CustomClientLimits->new;
-    ok(
-        $custom_list->update({
-                loginid       => $client->loginid,
-                market        => 'forex',
-                contract_kind => 'all',
-                payout_limit  => 500,
-                comment       => 'test',
-                staff         => 'test',
-            }
-        ),
-        'Added ' . $client->loginid
-    );
-
-    my $error;
-    lives_ok {
-        my $transaction = BOM::Product::Transaction->new({
-            client   => $client,
-            contract => $contract,
-        });
-        $error = $transaction->_validate_payout_limit;
-    }
-    'validate payout limit';
-
-    is($error->get_type, 'PayoutLimitExceeded', 'Exceeded client payout limit');
-    like($error->{-message_to_client}, qr/This contract is limited to 500.00 payout on this account/, 'payout limit msg to client');
-
-    ok(
-        $custom_list->update({
-                loginid       => $client->loginid,
-                market        => 'forex',
-                contract_kind => 'all',
-                payout_limit  => 2000,
-                comment       => 'test',
-                staff         => 'test',
-            }
-        ),
-        'Added ' . $client->loginid
-    );
-    lives_ok {
-        my $transaction = BOM::Product::Transaction->new({
-            client   => $client,
-            contract => $contract,
-        });
-        $error = $transaction->_validate_payout_limit;
-    }
-    'validate payout limit';
-
-    is($error, undef, 'Not exceeded client payout limit');
 };
 
 subtest 'Is contract valid to buy' => sub {
