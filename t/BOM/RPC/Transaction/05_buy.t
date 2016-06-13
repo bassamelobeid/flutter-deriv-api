@@ -120,4 +120,66 @@ subtest 'buy' => sub {
 
 };
 
+subtest 'app_markup' => sub {
+    my $contract = BOM::Test::Data::Utility::Product::create_contract();
+
+    my $params = {
+        language            => 'EN',
+        token               => $token,
+        source              => 1,
+        contract_parameters => {
+            "proposal"      => 1,
+            "amount"        => "100",
+            "basis"         => "payout",
+            "contract_type" => "CALL",
+            "currency"      => "USD",
+            "duration"      => "120",
+            "duration_unit" => "s",
+            "symbol"        => "R_50",
+        },
+        args => {price => $contract->ask_price}};
+    my $payout    = $contract->payout;
+    my $ask_price = $contract->ask_price;
+
+    my $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
+    my @expected_keys = (qw(
+            transaction_id
+            contract_id
+            balance_after
+            purchase_time
+            buy_price
+            start_time
+            longcode
+            shortcode
+            payout
+    ));
+    is_deeply([sort keys %$result], [sort @expected_keys], 'result keys is ok');
+    is $payout, $result->{payout}, "contract and transaction payout are equal";
+    is $result->{buy_price}, $ask_price, "ideally contract ask_price is same as buy_price";
+
+    delete $params->{args}->{price};
+
+    $contract = BOM::Test::Data::Utility::Product::create_contract(app_markup_percentage => 1);
+    $params->{app_markup_percentage} = 1;
+
+    $params->{args}->{price} = $contract->ask_price;
+    $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
+    is $result->{buy_price}, $ask_price + 1, "buy_price is ask_price plus + app_markup same for payout";
+
+    # check for stake contracts
+    $contract = BOM::Test::Data::Utility::Product::create_contract(basis => 'stake');
+    $payout = $contract->payout;
+
+    $contract = BOM::Test::Data::Utility::Product::create_contract(
+        basis                 => 'stake',
+        app_markup_percentage => 1
+    );
+    $params->{contract_parameters}->{basis} = "stake";
+    $params->{app_markup_percentage} = 1;
+
+    $params->{args}->{price} = $contract->ask_price;
+    $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
+    cmp_ok $payout, ">", $result->{payout}, "Payout in case of stake contracts that have app_markup will be less than original payout";
+};
+
 done_testing();
