@@ -715,12 +715,6 @@ subtest 'app_markup_percentage' => sub {
         spread => 0
     );
     cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
-
-    $contract = create_contract(
-        client => $client,
-        spread => 1
-    );
-
 };
 
 done_testing();
