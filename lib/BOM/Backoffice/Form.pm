@@ -25,6 +25,7 @@ sub get_self_exclusion_form {
     my (
         $limit_max_ac_bal,  $limit_daily_turn_over,  $limit_open_position, $limit_daily_losses,   $limit_7day_turnover,
         $limit_7day_losses, $limit_session_duration, $limit_exclude_until, $limit_30day_turnover, $limit_30day_losses,
+        $limit_timeout_until,
     );
     my $self_exclusion = $client->get_self_exclusion;
     my $se_map         = '{}';
@@ -47,6 +48,15 @@ sub get_self_exclusion_form {
                 undef $limit_exclude_until;
             }
         }
+        $limit_timeout_until    = $self_exclusion->timeout_until;
+        if ($limit_timeout_until) {
+            $limit_timeout_until = Date::Utility->new($limit_timeout_until);
+            if (Date::Utility::today->days_between($limit_timeout_until) < 0) {
+                $limit_timeout_until = $limit_timeout_until->epoch;
+            } else {
+                undef $limit_timeout_until;
+            }
+        }
 
         $se_map = {
             'MAXCASHBAL'         => $limit_max_ac_bal       // '',
@@ -59,6 +69,7 @@ sub get_self_exclusion_form {
             '30DAYTURNOVERLIMIT' => $limit_30day_turnover   // '',
             'SESSIONDURATION'    => $limit_session_duration // '',
             'EXCLUDEUNTIL'       => $limit_exclude_until    // '',
+            'TIMEOUTUNTIL'       => $limit_timeout_until    // '',
         };
         $se_map = to_json($se_map);
 
@@ -330,6 +341,31 @@ sub get_self_exclusion_form {
             'class' => 'hint',
             'text'  => localize('Please enter date in the format YYYY-MM-DD.')}};
 
+    my $input_field_timeout_me = {
+        'label' => {
+            'text' => localize('Timeout from the website until'),
+            'for'  => 'TIMEOUTUNTIL',
+        },
+        'input' => {
+            'id'    => 'TIMEOUTUNTIL',
+            'name'  => 'TIMEOUTUNTIL',
+            'type'  => 'text',
+            'value' => $limit_timeout_until,
+        },
+        'validation' => [{
+                'type'    => 'regexp',
+                'regexp'  => '^(\d*)$',
+                'err_msg' => localize('Please enter an integer value.'),
+            },
+        ],
+        'error' => {
+            'id'    => 'errorTIMEOUTUNTIL',
+            'class' => 'errorfield',
+        },
+        'comment' => {
+            'class' => 'hint',
+            'text'  => localize('Please enter an epoch time.')}};
+
     my $input_hidden_fields = {
         'input' => [{
                 'type'  => 'hidden',
@@ -390,6 +426,7 @@ sub get_self_exclusion_form {
     $fieldset->add_field($input_field_maximum_number_open_positions);
     $fieldset->add_field($input_field_session_duration);
     $fieldset->add_field($input_field_exclude_me);
+    $fieldset->add_field($input_field_timeout_me);
 
     $fieldset->add_field($input_hidden_fields);
     $fieldset->add_field($input_submit_button);
@@ -405,6 +442,7 @@ sub get_self_exclusion_form {
         my $max_open_position   = $form_self_exclusion->get_field_value('MAXOPENPOS')         // '';
         my $session_duration    = $form_self_exclusion->get_field_value('SESSIONDURATION')    // '';
         my $exclude_until       = $form_self_exclusion->get_field_value('EXCLUDEUNTIL')       // '';
+        my $timeout_until       = $form_self_exclusion->get_field_value('TIMEOUTUNTIL')       // '';
 
         # This check is done both for BO and UI
         if (not $form_self_exclusion->is_error_found_in('SESSIONDURATION') and $session_duration and $session_duration > 1440 * 42) {
@@ -431,6 +469,18 @@ sub get_self_exclusion_form {
             #server side checking for the exclude until date could not be more than 5 years
             elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
                 $form_self_exclusion->set_field_error_message('EXCLUDEUNTIL', localize('Exclude time cannot be for more than five years.'));
+            }
+        }
+
+        if ($timeout_until
+            and not $form_self_exclusion->is_error_found_in('TIMEOUTUNTIL'))
+        {
+            my $now           = Date::Utility->new;
+            my $exclusion_end = Date::Utility->new($timeout_until);
+
+            #server side checking for the exclude until date which must be larger than today's date
+            if (not $exclusion_end->is_after($now)) {
+                $form_self_exclusion->set_field_error_message('TIMEOUTUNTIL', localize('Exclude time must be after now.'));
             }
         }
     };
