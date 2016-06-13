@@ -156,12 +156,6 @@ sub ticks_history {
     return;
 }
 
-sub proposal {
-    my ($c, $args) = @_;
-
-    BOM::WebSocketAPI::v3::Wrapper::Pricer::price_stream($c, $args, 'proposal');
-}
-
 sub pricing_table {
     my ($c, $args) = @_;
 
