@@ -8,7 +8,7 @@ use Test::NoWarnings;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
-use BOM::MarketData::VolSurface::Utils;
+use Quant::Framework::VolSurface::Utils;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::Underlying;
 initialize_realtime_ticks_db();
@@ -85,7 +85,7 @@ subtest 'vol_cutoff_during_early_close' => sub {
 
 sub compare_cut_off {
     my ($date_start, $no_of_day, $pricing_param, $calendar) = @_;
-    my $vol_utils = BOM::MarketData::VolSurface::Utils->new;
+    my $vol_utils = Quant::Framework::VolSurface::Utils->new;
 
     for (my $i = -1; $i < $no_of_day * 24; $i++) {
         my $date_pricing  = $date_start->plus_time_interval($i . 'h');
