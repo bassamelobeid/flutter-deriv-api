@@ -14,12 +14,15 @@ while (1) {
     my $sleep = 1 - ($t - int($t));
     Time::HiRes::usleep($sleep * 1_000_000);
 
-    my $keys = $redis->scan_all(MATCH=>'PRICER_KEYS::*', COUNT=>20000);
+    my $keys = $redis->scan_all(
+        MATCH => 'PRICER_KEYS::*',
+        COUNT => 20000
+    );
 
     DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.size', (scalar @$keys));
     DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.not_processed', $redis->llen('pricer_jobs'));
 
     $redis->del('pricer_jobs');
-    $redis->lpush('pricer_jobs', @{$keys}) if scalar @{$keys}>0;
+    $redis->lpush('pricer_jobs', @{$keys}) if scalar @{$keys} > 0;
 }
 

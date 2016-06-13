@@ -17,7 +17,13 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Data::Dumper;
 
 use Quant::Framework::CorporateAction;
+use Quant::Framework::StorageAccessor;
 use Quant::Framework::Utils::Test;
+
+my $storage_accessor = Quant::Framework::StorageAccessor->new(
+    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+);
 
 my $email  = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -107,13 +113,8 @@ subtest 'get_corporate_actions' => sub {
             type           => 'DVD_STOCK',
         }};
 
-    Quant::Framework::Utils::Test::create_doc(
-        'corporate_action',
-        {
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-            actions          => $two_actions,
-        });
+   Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $starting)
+      ->update($two_actions, $starting)->save;
 
     my $result = $c->call_ok('get_corporate_actions', $params)->has_no_system_error->has_no_error->result;
 
