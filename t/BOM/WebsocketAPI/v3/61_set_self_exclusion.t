@@ -193,7 +193,8 @@ ok $res->{error}->{message} =~ /after today/;
 
 # good one
 my $exclude_until = DateTime->now()->add(months => 7)->ymd;
-my $timeout_until = DateTime->now()->add(days => 2) $t = $t->send_ok({
+my $timeout_until = DateTime->now()->add(days   => 2);
+$t = $t->send_ok({
         json => {
             set_self_exclusion     => 1,
             max_balance            => 9998,
