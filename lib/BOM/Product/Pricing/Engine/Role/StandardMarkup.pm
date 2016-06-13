@@ -20,7 +20,7 @@ use Math::Function::Interpolator;
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Product::Pricing::Greeks::BlackScholes;
-use BOM::MarketData::VolSurface::Utils;
+use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Platform::Static::Config;
 
@@ -54,7 +54,7 @@ sub _build_eod_market_risk_markup {
     my $bet      = $self->bet;
     my $eod_base = 0;
 
-    my $ny_1700 = BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($bet->date_start);
+    my $ny_1700 = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($bet->date_start);
     my $ny_1600 = $ny_1700->minus_time_interval('1h');
 
     if (
@@ -102,7 +102,7 @@ sub _build_vol_spread_markup {
     my $vol_spread = Math::Util::CalculatedValue::Validatable->new({
             name        => 'vol_spread',
             description => 'The vol spread for this time',
-            set_by      => 'BOM::MarketData::VolSurface',
+            set_by      => 'Quant::Framework::VolSurface',
             base_amount => $bet->volsurface->get_spread({
                     sought_point => $spread_type,
                     day          => $bet->timeindays->amount
