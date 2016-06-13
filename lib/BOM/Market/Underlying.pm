@@ -43,6 +43,7 @@ use BOM::Platform::Static::Config;
 use Quant::Framework::Asset;
 use Quant::Framework::Currency;
 use Quant::Framework::ExpiryConventions;
+use Quant::Framework::StorageAccessor;
 use Quant::Framework::Utils::UnderlyingConfig;
 use Quant::Framework::Utils::Builder;
 use BOM::System::Chronicle;
@@ -1044,13 +1045,13 @@ has intraday_interval => (
 
 The general rule to determine which currency's rate should be implied are as below:
 
-1) One of the currencies is Metal - imply Metal depo. 
+1) One of the currencies is Metal - imply Metal deposit rate.
 
-2. One of the currencies is USD - imply non-USD depo (for offshore market). 
+2. One of the currencies is USD - imply non-USD depo (for offshore market).
 
-3. One of the currencies is JPY - imply non-JPY depo. 
+3. One of the currencies is JPY - imply non-JPY depo.
 
-4. One of the currencies is EUR - imply non-EUR depo. 
+4. One of the currencies is EUR - imply non-EUR depo.
 
 5) The second currency in the currency pair will be imply
 
@@ -1920,10 +1921,14 @@ sub _build_corporate_actions {
 
     return [] if not $self->market->affected_by_corporate_actions;
 
-    my $corp = Quant::Framework::CorporateAction->new(
-        symbol           => $self->symbol,
+    my $storage_accessor = Quant::Framework::StorageAccessor->new(
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    );
+
+    my $corp = Quant::Framework::CorporateAction::load($storage_accessor, $self->symbol);
+    # no corporate actions in Chronicle
+    return [] unless $corp;
 
     my $available_actions = $corp->actions;
     my %grouped_by_date;
