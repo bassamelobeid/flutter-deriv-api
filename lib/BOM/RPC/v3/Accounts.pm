@@ -459,8 +459,8 @@ sub reset_password {
                     code              => "DateOfBirthMissing",
                     message_to_client => localize("Date of birth is required.")});
         }
-        my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;
-        my $db_dob   = $clients[0]->date_of_birth =~ s/-0/-/gr;
+        my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;        # / (dummy ST3)
+        my $db_dob   = $clients[0]->date_of_birth =~ s/-0/-/gr;    # /
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => "DateOfBirthMismatch",
@@ -700,6 +700,13 @@ sub _get_self_exclusion_details {
                 $get_self_exclusion->{exclude_until} = $until->date;
             }
         }
+
+        if (my $until = $self_exclusion->timeout_until) {
+            $until = Date::Utility->new($until);
+            if (Date::Utility::today->days_between($until) < 0) {
+                $get_self_exclusion->{timeout_until} = $until->epoch;
+            }
+        }
     }
 
     return $get_self_exclusion;
@@ -778,6 +785,19 @@ sub set_self_exclusion {
         delete $args{exclude_until};
     }
 
+    my $timeout_until = $args{timeout_until};
+    if (defined $timeout_until and $timeout_until =~ /^\d+$/) {
+        my $now           = Date::Utility->new;
+        my $exclusion_end = Date::Utility->new($timeout_until);
+
+        # checking for the exclude until date which must be larger than today's date
+        if (not $exclusion_end->is_after($now)) {
+            return $error_sub->(localize('Timeout time must be after today.'), 'timeout_until');
+        }
+    } else {
+        delete $args{timeout_until};
+    }
+
     my $message = '';
     if ($args{max_open_bets}) {
         my $ret = $client->set_exclusion->max_open_bets($args{max_open_bets});
@@ -818,6 +838,10 @@ sub set_self_exclusion {
     if ($args{exclude_until}) {
         my $ret = $client->set_exclusion->exclude_until($args{exclude_until});
         $message .= "- Exclude from website until: $ret\n";
+    }
+    if ($args{timeout_until}) {
+        my $ret = $client->set_exclusion->timeout_until($args{timeout_until});
+        $message .= "- Timeout from website until: $ret\n";
     }
 
     if ($message) {
