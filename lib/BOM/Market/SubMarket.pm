@@ -17,6 +17,7 @@ use Moose;
 use BOM::Market::Registry;
 use BOM::Market::Types;
 use BOM::Platform::Context qw(request localize);
+use JSON qw(from_json);
 
 =head1 ATTRIBUTES
 
@@ -194,7 +195,12 @@ has always_available => (
     default => 0,
 );
 
-has base_commission => (
+has risk_profile => (
+    is      => 'ro',
+    default => undef,
+);
+
+has [qw(base_commission)] => (
     is         => 'ro',
     lazy_build => 1,
 );

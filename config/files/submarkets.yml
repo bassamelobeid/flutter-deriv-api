@@ -80,6 +80,7 @@ major_pairs:
     is_OTC: 1
     explanation: 'The most widely traded and liquid forex pairs.'
     base_commission: 0.025
+    risk_profile: 'medium_risk'
 minor_pairs:
     name: minor_pairs
     display_name: "Minor Pairs"
@@ -88,6 +89,7 @@ minor_pairs:
     market: forex
     explanation: 'Forex pairs of interest, but with less liquid international markets.'
     base_commission: 0.05
+    risk_profile: 'high_risk'
 smart_fx:
     name: smart_fx
     display_name: 'Smart FX'
@@ -98,6 +100,7 @@ smart_fx:
     asset_type: 'currency'
     explanation: 'Smart FX indices'
     base_commission: 0.025
+    risk_profile: 'high_risk'
 metals:
     name: metals
     display_name: "Metals"

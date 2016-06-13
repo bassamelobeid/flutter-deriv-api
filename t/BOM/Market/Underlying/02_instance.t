@@ -520,16 +520,6 @@ subtest 'all methods on a selection of underlyings' => sub {
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig_buy);
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades($orig_trades);
 
-    my $orig_newly_added = BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added;
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added([]);
-    is($EURUSD->is_newly_added, 0, 'Underlying is not newly_added');
-
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added(['frxEURUSD']);
-    $EURUSD->clear_is_newly_added;
-    is($EURUSD->is_newly_added, 1, 'Underlying is now newly_added');
-
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added($orig_newly_added);
-
     my $eu_symbol       = $EURUSD->symbol;
     my $looks_like_euff = qr%$eu_symbol/\d{1,2}-[A-Z]{1}[a-z]{2}-\d{1,2}(?:-fullfeed\.csv|\.fullfeed)%;
 
@@ -801,6 +791,14 @@ subtest 'forward_starts_on' => sub {
         }
         eq_or_diff([map { $_->epoch } (@{$underlying->forward_starts_on($date)})], $expected_starts, "Got Correct starts");
     };
+};
+
+subtest 'risk type' => sub {
+    is (BOM::Market::Underlying->new('frxUSDJPY')->risk_profile, 'medium_risk', 'USDJPY is medium risk');
+    is (BOM::Market::Underlying->new('frxAUDCAD')->risk_profile, 'high_risk', 'AUDCAD is high risk');
+    is (BOM::Market::Underlying->new('AEX')->risk_profile, 'medium_risk', 'AEX is medium risk');
+    is (BOM::Market::Underlying->new('frxXAUUSD')->risk_profile, 'high_risk', 'XAUUSD is high risk');
+    is (BOM::Market::Underlying->new('R_100')->risk_profile, 'low_risk', 'R_100 is low risk');
 };
 
 done_testing;

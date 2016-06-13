@@ -17,6 +17,7 @@ my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 use open qw[ :encoding(UTF-8) ];
 use BOM::Market::Types;
 
+use JSON qw(from_json);
 use List::MoreUtils qw( any );
 use List::Util qw( first max min);
 use Scalar::Util qw( looks_like_number );
@@ -1179,7 +1180,7 @@ has '_recheck_appconfig' => (
     default => sub { return time; },
 );
 
-my $appconfig_attrs = [qw(is_newly_added is_buying_suspended is_trading_suspended)];
+my $appconfig_attrs = [qw(is_buying_suspended is_trading_suspended)];
 has $appconfig_attrs => (
     is         => 'ro',
     lazy_build => 1,
@@ -1198,12 +1199,6 @@ before $appconfig_attrs => sub {
     }
 
 };
-
-sub _build_is_newly_added {
-    my $self = shift;
-
-    return grep { $_ eq $self->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added});
-}
 
 =head2 is_buying_suspended
 
@@ -2052,7 +2047,12 @@ sub _build_resets_at_open {
     return $self->submarket->resets_at_open;
 }
 
-has always_available => (
+has risk_profile_setter => (
+    is      => 'rw',
+    default => 'underlying_symbol',
+);
+
+has [qw(always_available risk_profile base_commission)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -2062,10 +2062,20 @@ sub _build_always_available {
     return $self->submarket->always_available;
 }
 
-has base_commission => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+sub _build_risk_profile {
+    my $self = shift;
+
+    my $rp;
+    if ($self->submarket->risk_profile) {
+        $rp = $self->submarket->risk_profile;
+        $self->risk_profile_setter('submarket');
+    } else {
+        $rp = $self->market->risk_profile;
+        $self->risk_profile_setter('market');
+    }
+
+    return $rp;
+}
 
 sub _build_base_commission {
     my $self = shift;
