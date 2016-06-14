@@ -91,23 +91,6 @@ has 'country_code' => (
     lazy_build => 1,
 );
 
-has 'loginid' => (
-    is         => 'ro',
-    isa        => 'Maybe[Str]',
-    lazy_build => 1,
-);
-
-has 'email' => (
-    is         => 'ro',
-    isa        => 'Maybe[Str]',
-    lazy_build => 1,
-);
-
-has 'session_cookie' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has 'bo_cookie' => (
     is         => 'ro',
     lazy_build => 1,
@@ -465,28 +448,6 @@ sub _build_default_currency {
 
     #Give the first available.
     return $self->available_currencies->[0];
-}
-
-sub _build_loginid {
-    my $self = shift;
-
-    if ($self->session_cookie) {
-        return $self->session_cookie->loginid;
-    }
-
-    # not logged in
-    return;
-}
-
-sub _build_email {
-    my $self = shift;
-
-    if ($self->session_cookie) {
-        return $self->session_cookie->email;
-    }
-
-    # not logged in
-    return;
 }
 
 sub _build_bo_cookie {

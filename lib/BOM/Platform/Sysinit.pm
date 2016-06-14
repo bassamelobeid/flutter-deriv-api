@@ -59,20 +59,15 @@ sub init {
         };
         alarm($timeout);
 
-        # used for logging
-        $ENV{BOM_ACCOUNT} = request()->loginid;    ## no critic
-
         $http_handler->register_cleanup(
             sub {
-                delete @ENV{qw/BOM_ACCOUNT AUDIT_STAFF_NAME AUDIT_STAFF_IP/};    ## no critic
+                delete @ENV{qw/AUDIT_STAFF_NAME AUDIT_STAFF_IP/};    ## no critic
                 BOM::Database::Rose::DB->db_cache->finish_request_cycle;
                 alarm 0;
             });
 
         if (my $bo_cookie = request()->bo_cookie) {
             $ENV{AUDIT_STAFF_NAME} = $bo_cookie->clerk;                          ## no critic
-        } else {
-            $ENV{AUDIT_STAFF_NAME} = request()->loginid;                         ## no critic
         }
         $ENV{AUDIT_STAFF_IP} = request()->client_ip;                             ## no critic
 
