@@ -58,7 +58,7 @@ subtest 'asian' => sub {
         }
         $args->{date_pricing} = $now->plus_time_interval('5s');
         $c = produce_contract($args);
-        ok !$c->barrier, 'barrier undef if not enough ticks';
+        is $c->barrier->as_absolute+0, 100, 'barrier is the average';
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch + 5,
