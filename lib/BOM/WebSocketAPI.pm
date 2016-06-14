@@ -62,7 +62,7 @@ sub startup {
             my $c = shift;
 
             my $lang = defang_lite($c->param('l'));
-            if ($lang =~ /^\D{2}(_{1}\D{2})?$/) {
+            if ($lang =~ /^\D{2}(_\D{2})?$/) {
                 $c->stash(language => uc $lang);
                 $c->res->headers->header('Content-Language' => lc $lang);
             }
