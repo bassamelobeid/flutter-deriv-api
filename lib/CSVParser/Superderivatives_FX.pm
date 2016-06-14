@@ -67,9 +67,11 @@ sub _build_records {
 
     my $surface_data = $self->_get_surface_data($vol_lines, $underlying, $spot, $rate);
 
-    my $surface = BOM::MarketData::VolSurface::Delta->new(
-        underlying    => $underlying,
+    my $surface = Quant::Framework::VolSurface::Delta->new(
+        underlying_config    => $underlying->config,
         recorded_date => $date_start,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         surface       => $surface_data,
         cutoff        => 'New York 10:00',
         deltas        => [25, 50, 75],

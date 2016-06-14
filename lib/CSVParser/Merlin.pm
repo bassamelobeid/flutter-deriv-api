@@ -14,7 +14,7 @@ information in our various internal format.
 use Moose;
 use Text::CSV::Slurp;
 
-use BOM::MarketData::VolSurface::Delta;
+use Quant::Framework::VolSurface::Delta;
 
 =head1 ATTRIBUTES
 
@@ -171,8 +171,10 @@ sub _build_records {
         my $surface_data = $self->_set_surface_data([@smile_data]);
         my $surface_date = Date::Utility->new($record{date_start}->truncate_to_day->epoch + 14 * 3600);
 
-        $record{surface} = BOM::MarketData::VolSurface::Delta->new(
-            underlying      => $record{underlying},
+        $record{surface} = Quant::Framework::VolSurface::Delta->new(
+            underlying_config      => $record{underlying}->config,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             recorded_date   => $surface_date,
             surface         => $surface_data,
             print_precision => undef,
