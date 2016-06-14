@@ -19,7 +19,6 @@ use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Product::Transaction;
-#use Data::Dumper;
 
 my $now = Date::Utility->new;
 initialize_realtime_ticks_db();
