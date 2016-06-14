@@ -489,22 +489,6 @@ sub _build_email {
     return;
 }
 
-sub _build_session_cookie {
-    my $self = shift;
-
-    my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
-
-    my $session_cookie;
-    # if the user logged in.
-    if (my $cookie = $self->cookie($cookie_name)) {
-        $session_cookie = BOM::Platform::SessionCookie->new({token => $cookie});
-    } elsif (my $as_param = $self->param('login')) {
-        $session_cookie = BOM::Platform::SessionCookie->new({token => $as_param});
-    }
-    return $session_cookie;
-
-}
-
 sub _build_bo_cookie {
     my $self = shift;
 
