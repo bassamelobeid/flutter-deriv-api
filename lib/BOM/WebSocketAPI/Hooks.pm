@@ -212,7 +212,6 @@ sub output_validation {
 
     return unless $req_storage;
 
-    my $args = $req_storage->{args};
     if ($req_storage->{out_validator}) {
         my $output_validation_result = $req_storage->{out_validator}->validate($api_response);
         if (not $output_validation_result) {
