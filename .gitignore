@@ -1,3 +1,5 @@
+id_dsa
+id_rsa
 /blib/
 /.build/
 _build/
