@@ -18,7 +18,7 @@ use BOM::System::Config;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
-if (not $ENV{'HTTP_USER_AGENT'} =~ /Chrome\/(\d+\.\d+\.\d+)\./ or $1 lt '49.0.2623') {
+if (not $ENV{'HTTP_USER_AGENT'} =~ /Chrome\/(\d+\.\d+\.\d+)\./ or $1 lt '51.0.2704') {
     print "Only newest Chrome browser is supported in backoffice.";
     code_exit_BO();
 }
