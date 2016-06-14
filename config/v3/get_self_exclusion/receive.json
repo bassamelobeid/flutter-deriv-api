@@ -54,7 +54,7 @@
         },
         "timeout_until":{
           "type": "integer",
-          "description": "Timeout me from the website until (Epoch)"
+          "description": "Exclude me from the website until (epoch time)"
         }
       }
     },
