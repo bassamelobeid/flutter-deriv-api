@@ -46,12 +46,15 @@ sub _build_supplied_barrier {
                 start_time => $self->date_start->epoch + 1,
                 limit      => $hmt,
             })};
-    my $supp;
-    if (@ticks_since_start == $hmt and $hmt != 0) {
-        my $sum = 0;
-        map { $sum += $_->quote } @ticks_since_start;
-        $supp = $sum / $hmt;
+
+    return unless @ticks_since_start;
+
+    my $sum = 0;
+    for (@ticks_since_start) {
+        $sum += $_->quote;
     }
+
+    my $supp = $sum / @ticks_since_start;
 
     return $supp;
 }
