@@ -159,9 +159,11 @@ sub _setup_quanto_volsurface {
         };
         $surface_data{$term}->{vol_spread} = {50 => 0.12};
     }
-    my $volsurface = BOM::MarketData::VolSurface::Delta->new(
+    my $volsurface = Quant::Framework::VolSurface::Delta->new(
         surface       => \%surface_data,
-        underlying    => $underlying,
+        underlying_config    => $underlying->config,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         recorded_date => $date,
     );
 

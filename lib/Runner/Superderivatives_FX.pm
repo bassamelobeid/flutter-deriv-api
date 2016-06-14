@@ -12,7 +12,6 @@ use Carp;
 use CSVParser::Superderivatives_FX;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
-use BOM::MarketData::VolSurface::Utils;
 has suite => (
     is      => 'ro',
     isa     => 'Str',

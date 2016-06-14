@@ -13,7 +13,6 @@ use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw( produce_contract );
 use SetupDatasetTestFixture;
 use Date::Utility;
-use BOM::MarketData::VolSurface;
 
 has file => (
     is       => 'ro',
