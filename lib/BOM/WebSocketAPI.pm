@@ -65,6 +65,10 @@ sub startup {
             if ($lang =~ /^\D{2}(_\D{2})?$/) {
                 $c->stash(language => uc $lang);
                 $c->res->headers->header('Content-Language' => lc $lang);
+            } else {
+                # default to English if not valid language
+                $c->stash(language => 'EN');
+                $c->res->headers->header('Content-Language' => 'en');
             }
 
             if ($c->req->param('debug')) {
