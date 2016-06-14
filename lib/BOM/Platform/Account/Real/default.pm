@@ -272,7 +272,7 @@ sub get_financial_input_mapping {
             'label'           => 'Net Annual Income',
             'possible_answer' => {
                 'Less than $25,000'   => 0,
-                '$25,001 - $50,000'   => 1,
+                '$25,000 - $50,000'   => 1,
                 '$50,001 - $100,000'  => 2,
                 '$100,001 - $500,000' => 3,
                 'Over $500,000'       => 4
@@ -282,7 +282,7 @@ sub get_financial_input_mapping {
             'label'           => 'Estimated Net Worth',
             'possible_answer' => {
                 'Less than $100,000'    => 0,
-                '$100,001 - $250,000'   => 1,
+                '$100,000 - $250,000'   => 1,
                 '$250,001 - $500,000'   => 2,
                 '$500,001 - $1,000,000' => 3,
                 'Over $1,000,000'       => 4
