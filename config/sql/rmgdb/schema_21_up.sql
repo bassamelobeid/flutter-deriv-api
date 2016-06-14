@@ -92,7 +92,6 @@ CREATE INDEX fmbo_purchase_time_idx ON financial_market_bet_open USING btree (pu
 * Trying to cover all the bases here as table permissions, at this time, differ between QA box and production.
 */
 REVOKE UPDATE,DELETE,TRUNCATE ON TABLE bet.financial_market_bet FROM postgres;
-REVOKE UPDATE,DELETE,TRUNCATE ON TABLE bet.financial_market_bet FROM update_on_betonmarkets;
 REVOKE UPDATE,DELETE,TRUNCATE ON TABLE bet.financial_market_bet FROM read;
 REVOKE UPDATE,DELETE,TRUNCATE ON TABLE bet.financial_market_bet FROM write;
 DROP TRIGGER prevent_action ON bet.financial_market_bet;
