@@ -10,7 +10,6 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::SessionCookie;
 
 sub authorize {
     my $params = shift;
@@ -41,7 +40,7 @@ sub authorize {
 
     my $account = $client->default_account;
 
-    my $token_type = 'session_token';
+    my $token_type;
     if (length $token == 15) {
         $token_type = 'api_token';
     } elsif (length $token == 32 && $token =~ /^a1-/) {
@@ -106,12 +105,6 @@ sub logout {
                 BOM::System::AuditLog::log("user logout", join(',', $email, $loginid // ''));
             }
         }
-    }
-
-    # Invalidates token, but we can only do this if we have a session token
-    if ($params->{token_type} && $params->{token_type} eq 'session_token') {
-        my $session = BOM::Platform::SessionCookie->new({token => $params->{token}});
-        $session->end_session if $session;
     }
     return {status => 1};
 }
