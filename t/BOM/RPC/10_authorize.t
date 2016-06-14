@@ -132,8 +132,6 @@ subtest 'self_exclusion timeout' => sub {
         language => 'en',
         token    => $token
     };
-    # This is how long I think binary.com can survive using Perl in its concurrency paradigm era.
-    # If this test ever failed because of setting this date too short, we might be in bigger troubles than a failing test.
     my $timeout_until = Date::Utility->new->plus_time_interval('1d');
     $test_client->set_exclusion->timeout_until($timeout_until->epoch);
     $test_client->save();
