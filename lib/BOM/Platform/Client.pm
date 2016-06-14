@@ -833,14 +833,15 @@ sub siblings {
 sub login_error {
     my $client = shift;
 
+    my $self_exclusion;
     if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
         return localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif ($client->get_status('disabled')) {
         return localize('This account is unavailable. For any questions please contact Customer Support.');
-    } elsif ($client->get_min_self_exclusion_until
-        && Date::Utility->new->is_before($client->get_min_self_exclusion_until))
+    } elsif ($self_exclusion = $client->get_min_self_exclusion_until
+        and Date::Utility->new->is_before($self_exclusion))
     {
-        return localize('Sorry, you have excluded yourself until [_1].', $client->get_min_self_exclusion_until->date);
+        return localize('Sorry, you have excluded yourself until [_1].', $self_exclusion->date);
     }
     return;
 }
