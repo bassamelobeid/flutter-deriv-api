@@ -8,9 +8,6 @@ BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
 
  my $cookie = BOM::Platform::SessionCookie(token => $token, email => $email);
  my $loginid = $cookie->loginid;
- if ($cookie->validate_session()){
-    # we can trade
- };
 
 =cut
 
@@ -119,20 +116,6 @@ sub new {    ## no critic RequireArgUnpack
     return bless $self, $package;
 }
 
-=head1 METHODS
-
-=head2 validate_session();
-
-=cut
-
-sub validate_session {
-    my $self = shift;
-    if ($self->{token}) {
-        return 1;
-    }
-    return;
-}
-
 =head2 end_session
 
 Deletes from redis
@@ -146,37 +129,6 @@ sub end_session {    ## no critic
     my $key = md5_hex($self->{email});
     BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION::' . $self->{token});
     BOM::System::RedisReplicated::redis_write()->srem('LOGIN_SESSION_COLLECTION::' . $key, $self->{token});
-}
-
-sub end_other_sessions {
-    my $self = shift;
-    return unless $self->{token};
-
-    ## no critic
-    BOM::System::RedisReplicated::redis_write()->eval(<<LUA_SCRIPT, 0, "LOGIN_SESSION_COLLECTION::" . md5_hex($self->{email}), $self->{token});
-for k,v in pairs(redis.call("SMEMBERS", ARGV[1])) do
-    if v ~= ARGV[2] then
-        redis.call("DEL", "LOGIN_SESSION::" .. v)
-        redis.call("SREM", ARGV[1], v)
-    end
-end
-LUA_SCRIPT
-
-    return;
-}
-
-sub have_multiple_sessions {
-    my $self = shift;
-    return unless $self->{token};
-
-    ## no critic
-    return BOM::System::RedisReplicated::redis_read()->eval(<<LUA_SCRIPT, 0, "LOGIN_SESSION_COLLECTION::" . md5_hex($self->{email}), $self->{token});
-for k,v in pairs(redis.call("SMEMBERS", ARGV[1])) do
-    if v ~= ARGV[2] and redis.call("GET", "LOGIN_SESSION::" .. v)then
-       return 1;
-    end
-end
-LUA_SCRIPT
 }
 
 sub _clear_session_collection {
