@@ -2,11 +2,13 @@ use strict;
 use warnings;
 use Test::MockTime::HiRes;
 use Guard;
+use JSON;
 
 use Test::More (tests => 4);
 use Test::Exception;
 use Test::Warn;
 use Test::MockModule;
+use BOM::Platform::Client;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
@@ -117,6 +119,9 @@ subtest 'create account' => sub {
         if ($broker eq 'MLT') {
             lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
             is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
+            my $cl = BOM::Platform::Client->new({loginid => $real_acc->{client}->loginid});
+            my $data = from_json $cl->financial_assessment()->data;
+            is $data->{total_score}, 20, "got the total score";
         } else {
             warning_like { $real_acc = create_mf_acc($real_client, $user); } qr/maltainvest acc opening err/, "failed to create MF acc";
             is($real_acc->{error}, 'invalid', "$broker client can't open MF acc");
