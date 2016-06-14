@@ -287,11 +287,7 @@ sub __login {
             email   => $client->email,
             loginat => $r->session_cookie && $r->session_cookie->loginat,
             scopes  => [qw(price chart trade password cashier)]});
-    my $session_token = $session->token;
-    $c->cookie(
-        $app_config->cgi->cookie_name->login => url_escape($session_token),
-        $options
-    );
+
     $c->cookie(
         loginid => $client->loginid,
         $options
@@ -319,12 +315,12 @@ sub __login {
                 {
                     send_email({
                             from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                            to      => $session->email,
+                            to      => $email,
                             subject => localize('New Sign-In Activity Detected'),
                             message => [
                                 localize(
                                     'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                                    $session->email, $r->client_ip, $country_code, $user_agent
+                                    $email, $r->client_ip, $country_code, $user_agent
                                 )
                             ],
                             use_email_template => 1,
