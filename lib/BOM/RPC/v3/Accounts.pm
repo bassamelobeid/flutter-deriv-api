@@ -21,7 +21,6 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Static::Config;
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::SessionCookie;
 use BOM::Platform::Token::Verification;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
@@ -269,9 +268,8 @@ sub change_password {
     my $client = $params->{client};
     my ($token_type, $client_ip, $args) = @{$params}{qw/token_type client_ip args/};
 
-    # allow session token & OAuth token
-    $token_type //= '';
-    unless (grep { $token_type eq $_ } ('session_token', 'oauth_token')) {
+    # allow OAuth token
+    unless (($token_type // '') eq 'oauth_token') {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
@@ -299,10 +297,6 @@ sub change_password {
         if ($token_type eq 'oauth_token') {
             $oauth->revoke_tokens_by_loginid($c1->loginid);
         }
-    }
-
-    if ($token_type eq 'session_token') {
-        BOM::Platform::SessionCookie->new({token => $params->{token}})->end_other_sessions();
     }
 
     BOM::System::AuditLog::log('password has been changed', $client->email);
