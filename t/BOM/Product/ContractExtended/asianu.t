@@ -62,7 +62,6 @@ subtest 'asian' => sub {
         $args->{date_pricing} = $now->plus_time_interval('5m1s');
         $c = produce_contract($args);
         ok $c->is_after_expiry, 'after expiry';
-        $DB::single = 1;
         ok !$c->barrier, 'barrier undef if not enough ticks after expiry';
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
