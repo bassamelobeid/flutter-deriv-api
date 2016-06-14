@@ -51,6 +51,7 @@ if ($broker and $id) {
         login_id    => $details->{loginid},
         trans_id    => $id,
         short_code  => $contract->shortcode,
+        payout      => $contract->payout,
         description => $contract->longcode,
         ccy         => $details->{currency_code},
         ask_price   => $contract->ask_price,
