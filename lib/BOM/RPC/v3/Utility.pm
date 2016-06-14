@@ -10,7 +10,6 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
-use BOM::Platform::SessionCookie;
 use BOM::Platform::Token::Verification;
 
 sub get_token_details {
