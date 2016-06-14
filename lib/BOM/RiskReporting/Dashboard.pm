@@ -23,7 +23,6 @@ extends 'BOM::RiskReporting::Base';
 use Cache::RedisDB;
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::CustomClientLimits;
 use Format::Util::Numbers qw(roundnear);
 use BOM::Database::Model::Account;
 use BOM::Database::ClientDB;
@@ -57,12 +56,6 @@ sub _build_start {
     return shift->end->minus_time_interval('1d');
 }
 
-has _limitlist => (
-    is      => 'ro',
-    isa     => 'BOM::Product::CustomClientLimits',
-    default => sub { return BOM::Product::CustomClientLimits->new; },
-);
-
 has _affiliate_info => (
     is      => 'ro',
     isa     => 'HashRef',
@@ -80,8 +73,9 @@ sub _do_name_plus {
         };
     }
 
-    $href->{custom_limits} =
-        $self->_limitlist->client_limit_list($href->{loginid});
+    my $app_config = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
+    my $reason = $app_config->{$href->{loginid}}->{reason} // '';
+    $href->{being_watched_for} = $reason;
     return $href;
 }
 
@@ -373,11 +367,11 @@ sub _payment_and_profit_report {
             if ($losers[$i] and $losers[$i]->{usd_profit} < 0);
     }
     my %all_watched =
-        map { $_ => 1 } (keys %{$self->_limitlist->full_list});
+        map { $_ => 1 } (keys %{from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles)});
 
     foreach my $mover (@movers) {
         $self->_do_name_plus($mover);
-        if ($self->_limitlist->watched($mover->{loginid})) {
+        if ($all_watched{$mover->{loginid}}) {
             push @watched, $mover;
             delete $all_watched{$mover->{loginid}};
         }
