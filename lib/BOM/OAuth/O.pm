@@ -102,8 +102,9 @@ sub authorize {
     {
         $client = $c->__login($app) or return;
         $c->session('__is_logined', 1);
+        $c->session('__loginid', $client->loginid);
     } elsif ($c->req->method eq 'POST' and $c->session('__is_logined')) {
-        # we force login no matter user is in or not
+        # get loginid from Mojo Session
         $client = $c->__get_client;
     }
 
@@ -197,6 +198,7 @@ sub authorize {
 
     ## clear session
     delete $c->session->{__is_logined};
+    delete $c->session->{__loginid};
     delete $c->session->{__is_app_approved};
 
     $c->redirect_to($uri);
@@ -262,7 +264,6 @@ sub __login {
         return;
     }
 
-    ## set session cookie?
     state $app_config = BOM::Platform::Runtime->instance->app_config;
     my $r       = $c->stash('request');
     my $options = {
@@ -282,12 +283,6 @@ sub __login {
     );
     $c->__set_reality_check_cookie($user, $options);
 
-    my $session = BOM::Platform::SessionCookie->new({
-            loginid => $client->loginid,
-            email   => $client->email,
-            loginat => $r->session_cookie && $r->session_cookie->loginat,
-            scopes  => [qw(price chart trade password cashier)]});
-
     $c->cookie(
         loginid => $client->loginid,
         $options
@@ -298,8 +293,10 @@ sub __login {
     );
 
     my @app_scopes = @{$app->{scopes}};
-    # send when token has scope other than read (as we impersonate from backoffice using read only tokens) and have multiple sessions
-    if ($session->have_multiple_sessions and not(scalar @app_scopes == 1 and grep { $_ eq 'read' } @app_scopes)) {
+
+    # send when token has scope other than read (as we impersonate from backoffice using read only tokens) and client already have login session(s)
+    if (not (scalar @app_scopes == 1 and $app_scopes[0] eq 'read')
+        and __oauth_model()->already_have_logins($client->loginid)) {
         try {
             if ($last_login and exists $last_login->{environment}) {
                 my ($old_env, $user_agent, $r) =
@@ -372,11 +369,7 @@ sub __login_env {
 sub __get_client {
     my $c = shift;
 
-    my $request        = $c->stash('request');       # from before_dispatch
-    my $session_cookie = $request->session_cookie;
-    return unless $session_cookie and $session_cookie->token;
-
-    my $client = BOM::Platform::Client->new({loginid => $session_cookie->loginid});
+    my $client = BOM::Platform::Client->new({ loginid => $c->session('__loginid') });
     return if $client->get_status('disabled');
 
     if ($client->get_self_exclusion and $client->get_self_exclusion->exclude_until) {
