@@ -88,8 +88,8 @@ my %financial_data = (
     employment_industry                  => 'Finance',
     education_level                      => 'Secondary',
     income_source                        => 'Self-Employed',
-    net_income                           => 'Less than $25,000',
-    estimated_worth                      => 'Less than $100,000',
+    net_income                           => '$50,001 - $100,000',
+    estimated_worth                      => '$250,001 - $500,000',
 );
 
 subtest 'create account' => sub {
