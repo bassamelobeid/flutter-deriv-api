@@ -133,7 +133,7 @@ sub _build_countries_list {
 
 sub financial_company_for_country {
     my ($self, $country) = @_;
-    my $config = $self->countries_list->{$country};
+    my $config = $country && $self->countries_list->{$country};
     return if (not $config or $config->{financial_company} eq 'none');
 
     return $config->{financial_company};
@@ -141,7 +141,7 @@ sub financial_company_for_country {
 
 sub gaming_company_for_country {
     my ($self, $country) = @_;
-    my $config = $self->countries_list->{$country};
+    my $config = $country && $self->countries_list->{$country};
     return if (not $config or $config->{gaming_company} eq 'none');
 
     return $config->{gaming_company};
@@ -149,7 +149,7 @@ sub gaming_company_for_country {
 
 sub virtual_company_for_country {
     my ($self, $country) = @_;
-    my $config = $self->countries_list->{$country};
+    my $config = $country && $self->countries_list->{$country};
     return unless $config;
 
     my $company = ($config->{virtual_company}) ? $config->{virtual_company} : 'fog';
@@ -158,7 +158,7 @@ sub virtual_company_for_country {
 
 sub restricted_country {
     my ($self, $country) = @_;
-    my $config = $self->countries_list->{$country};
+    my $config = $country && $self->countries_list->{$country};
     return 1 unless ($config);
 
     return ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'none');
@@ -166,7 +166,7 @@ sub restricted_country {
 
 sub volidx_restricted_country {
     my ($self, $country) = @_;
-    my $config = $self->countries_list->{$country};
+    my $config = $country && $self->countries_list->{$country};
     return 1 unless ($config);
 
     return ($config->{gaming_company} eq 'none');

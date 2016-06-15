@@ -1,3 +1,5 @@
+id_dsa
+id_rsa
 /blib/
 /.build/
 _build/
@@ -18,3 +20,4 @@ nytprof.out
 *.bs
 /_eumm/
 *.swp
+*.bak

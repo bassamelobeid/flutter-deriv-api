@@ -143,7 +143,11 @@ sub _after_register_client {
     if ($client->landing_company->short eq 'iom'
         and (length $client->first_name < 3 or length $client->last_name < 3))
     {
-        $emailmsg .= join("\n\t\t", $client->first_name, $client->last_name, Locale::Country::code2country($client->residence));
+        $emailmsg = "$client_loginid - first name or last name less than 3 characters \n\n\n\t\t";
+        $emailmsg .= join("\n\t\t",
+            'first name: ' . $client->first_name,
+            'last name: ' . $client->last_name,
+            'residence: ' . Locale::Country::code2country($client->residence));
         $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$emailmsg\n");
     }
 
@@ -240,7 +244,7 @@ sub get_financial_input_mapping {
             'possible_answer' => {
                 'Construction' => 0,
                 'Education'    => 0,
-                'Finance'      => 23,
+                'Finance'      => 15,
                 'Health'       => 0,
                 'Tourism'      => 0,
                 'Other'        => 0
@@ -268,9 +272,10 @@ sub get_financial_input_mapping {
             'label'           => 'Net Annual Income',
             'possible_answer' => {
                 'Less than $25,000'   => 0,
-                '$25,000 - $100,000'  => 1,
-                '$100,000 - $500,000' => 2,
-                'Over $500,000'       => 3
+                '$25,000 - $50,000'   => 1,
+                '$50,001 - $100,000'  => 2,
+                '$100,001 - $500,000' => 3,
+                'Over $500,000'       => 4
             }
         },
         estimated_worth => {
@@ -278,8 +283,9 @@ sub get_financial_input_mapping {
             'possible_answer' => {
                 'Less than $100,000'    => 0,
                 '$100,000 - $250,000'   => 1,
-                '$250,000 - $1,000,000' => 2,
-                'Over $1,000,000'       => 3
+                '$250,001 - $500,000'   => 2,
+                '$500,001 - $1,000,000' => 3,
+                'Over $1,000,000'       => 4
             }}};
     return $financial_mapping;
 }
