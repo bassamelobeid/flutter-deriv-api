@@ -1647,7 +1647,6 @@ sub __validate_payout_limit {
 
     return if $contract->is_spread;
 
-    my $client = $self->client;
     my $payout = $self->payout;
     my $rp     = $self->contract->risk_profile;
 
