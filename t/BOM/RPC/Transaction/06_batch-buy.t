@@ -39,18 +39,40 @@ push @cl, BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my @token;
 for (@cl) {
     $_->deposit_virtual_funds;
-    push @token, BOM::RPC::v3::Accounts::api_token({
+    my $t=BOM::RPC::v3::Accounts::api_token({
         client => $_,
         args   => {
             new_token        => 'Test Token',
             new_token_scopes => ['trade'],
         },
     })->{tokens}->[0]->{token};
+    push @token, $t if $t;
 }
+is 0+@token, 2, 'got 2 tokens';
 
 note explain \@token;
 
-ok 1;
+my $contract = BOM::Test::Data::Utility::Product::create_contract();
+
+my $result=BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
+    client_loginid => $clm->loginid,
+    tokens => \@token,
+    source => 1,
+    contract_params => {
+        "proposal"      => 1,
+        "amount"        => "100",
+        "basis"         => "payout",
+        "contract_type" => "CALL",
+        "currency"      => "USD",
+        "duration"      => "120",
+        "duration_unit" => "s",
+        "symbol"        => "R_50",
+    },
+    args => {price => $contract->ask_price},
+};
+
+note explain $result;
+
 done_testing;
 
 __END__
