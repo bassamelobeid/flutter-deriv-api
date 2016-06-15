@@ -301,9 +301,9 @@ sub calculate_limits {
     $limits{max_balance} = $client->get_limit_for_account_balance;
 
     if (not $contract->tick_expiry) {
-        $limits->{max_open_bets}        = $client->get_limit_for_open_positions;
-        $limits->{max_payout_open_bets} = $client->get_limit_for_payout;
-        $limits->{max_payout_per_symbol_and_bet_type} =
+        $limits{max_open_bets}        = $client->get_limit_for_open_positions;
+        $limits{max_payout_open_bets} = $client->get_limit_for_payout;
+        $limits{max_payout_per_symbol_and_bet_type} =
             $static_config->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
     }
 
@@ -319,13 +319,13 @@ sub calculate_limits {
     defined($lim = $client->get_limit_for_30day_losses)
         and $limits{max_30day_losses} = $lim;
 
-    $limits->{max_turnover} = $client->get_limit_for_daily_turnover;
+    $limits{max_turnover} = $client->get_limit_for_daily_turnover;
 
     if ($contract->is_spread) {
         # limits are calculated differently for spreads
-        $limits->{spread_bet_profit_limit} = $static_config->{risk_profile}{$contract->risk_profile->get_risk_profile}{turnover}{$currency};
+        $limits{spread_bet_profit_limit} = $static_config->{risk_profile}{$contract->risk_profile->get_risk_profile}{turnover}{$currency};
     } else {
-        push @{$limits->{specific_turnover_limits}}, @{$self->contract->risk_profile->get_turnover_limit_parameters};
+        push @{$limits{specific_turnover_limits}}, @{$self->contract->risk_profile->get_turnover_limit_parameters};
     }
 
     return \%limits;
