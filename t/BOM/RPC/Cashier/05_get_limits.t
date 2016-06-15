@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::BOM::RPC::Client;
+use BOM::RPC::v3::Cashier;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -66,8 +67,8 @@ subtest 'CR' => sub {
         my $expected_result = {
             'account_balance'                     => $client->get_limit_for_account_balance,
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'daily_turnover'                      => $client->get_limit_for_daily_turnover,
             'payout'                              => $client->get_limit_for_payout,
+            'market_specific'                     => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
             'num_of_days'                         => $limits->for_days,
             'num_of_days_limit'                   => $limits->limit_for_days,
             'lifetime_limit'                      => $limits->lifetime_limit,
@@ -95,8 +96,8 @@ subtest 'CR' => sub {
         my $expected_result = {
             'account_balance'   => $client->get_limit_for_account_balance,
             'open_positions'    => $client->get_limit_for_open_positions,
-            'daily_turnover'    => $client->get_limit_for_daily_turnover,
             'payout'            => $client->get_limit_for_payout,
+            'market_specific'   => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
             'num_of_days'       => $limits->for_days,
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
@@ -143,8 +144,8 @@ subtest 'JP' => sub {
         my $expected_result = {
             'account_balance'                     => $client->get_limit_for_account_balance,
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'daily_turnover'                      => $client->get_limit_for_daily_turnover,
             'payout'                              => $client->get_limit_for_payout,
+            'market_specific'                     => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
             'num_of_days'                         => $limits->for_days,
             'num_of_days_limit'                   => $limits->limit_for_days,
             'lifetime_limit'                      => $limits->lifetime_limit,
@@ -175,8 +176,8 @@ subtest 'JP' => sub {
         my $expected_result = {
             'account_balance'   => $client->get_limit_for_account_balance,
             'open_positions'    => $client->get_limit_for_open_positions,
-            'daily_turnover'    => $client->get_limit_for_daily_turnover,
             'payout'            => $client->get_limit_for_payout,
+            'market_specific'   => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
             'num_of_days'       => $limits->for_days,
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
@@ -209,8 +210,8 @@ subtest 'MLT' => sub {
         my $expected_result = {
             'account_balance'                     => $client->get_limit_for_account_balance,
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'daily_turnover'                      => $client->get_limit_for_daily_turnover,
             'payout'                              => $client->get_limit_for_payout,
+            'market_specific'                     => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
             'num_of_days'                         => $limits->for_days,
             'num_of_days_limit'                   => $limits->limit_for_days,
             'lifetime_limit'                      => $limits->lifetime_limit,
@@ -241,8 +242,8 @@ subtest 'MLT' => sub {
         my $expected_result = {
             'account_balance'   => $client->get_limit_for_account_balance,
             'open_positions'    => $client->get_limit_for_open_positions,
-            'daily_turnover'    => $client->get_limit_for_daily_turnover,
             'payout'            => $client->get_limit_for_payout,
+            'market_specific'   => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
             'num_of_days'       => $limits->for_days,
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',
@@ -275,8 +276,8 @@ subtest 'MX' => sub {
         my $expected_result = {
             'account_balance'                     => $client->get_limit_for_account_balance,
             'open_positions'                      => $client->get_limit_for_open_positions,
-            'daily_turnover'                      => $client->get_limit_for_daily_turnover,
             'payout'                              => $client->get_limit_for_payout,
+            'market_specific'                     => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
             'num_of_days'                         => $limits->for_days,
             'num_of_days_limit'                   => $limits->limit_for_days,
             'lifetime_limit'                      => $limits->lifetime_limit,
@@ -307,8 +308,8 @@ subtest 'MX' => sub {
         my $expected_result = {
             'account_balance'   => $client->get_limit_for_account_balance,
             'open_positions'    => $client->get_limit_for_open_positions,
-            'daily_turnover'    => $client->get_limit_for_daily_turnover,
             'payout'            => $client->get_limit_for_payout,
+            'market_specific'   => BOM::RPC::v3::Cashier::_get_market_limit_profile($client),
             'num_of_days'       => $limits->for_days,
             'num_of_days_limit' => '99999999',
             'lifetime_limit'    => '99999999',

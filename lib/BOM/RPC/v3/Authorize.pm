@@ -97,15 +97,16 @@ sub logout {
             }
 
             unless ($skip_login_history) {
+                $params->{country} = $params->{country_code} if $params->{country_code};
                 $user->add_login_history({
-                    environment => _login_env($params),
+                    environment => BOM::RPC::v3::Utility::login_env($params),
                     successful  => 't',
                     action      => 'logout',
                 });
                 $user->save;
+                BOM::System::AuditLog::log("user logout", join(',', $email, $loginid // ''));
             }
         }
-        BOM::System::AuditLog::log("user logout", "$email,$loginid");
     }
 
     # Invalidates token, but we can only do this if we have a session token
@@ -114,18 +115,6 @@ sub logout {
         $session->end_session if $session;
     }
     return {status => 1};
-}
-
-sub _login_env {
-    my $params = shift;
-
-    my $now                = Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
-    my $ip_address         = $params->{client_ip} || '';
-    my $ip_address_country = uc $params->{country_code} || '';
-    my $lang               = uc $params->{language} || '';
-    my $ua                 = $params->{user_agent} || '';
-    my $environment        = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
-    return $environment;
 }
 
 1;
