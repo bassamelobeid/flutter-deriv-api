@@ -5,10 +5,18 @@ use warnings;
 
 use Test::More;
 use BOM::RPC::v3::Transaction;
+use BOM::RPC::v3::Accounts;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::Product;
+
+{
+    use BOM::Database::Model::AccessToken;
+
+    # cleanup
+    BOM::Database::Model::AccessToken->new->dbh->do('DELETE FROM auth.access_token');
+}
 
 my $clm = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -28,6 +36,7 @@ push @cl, BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     email       => 'test-cl1@binary.com',
 });
 
+my @token;
 for (@cl) {
     $_->deposit_virtual_funds;
     push @token, BOM::RPC::v3::Accounts::api_token({
@@ -36,7 +45,7 @@ for (@cl) {
             new_token        => 'Test Token',
             new_token_scopes => ['trade'],
         },
-    })->{new_token};
+    })->{tokens}->[0]->{token};
 }
 
 note explain \@token;
