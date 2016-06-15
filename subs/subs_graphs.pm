@@ -4,7 +4,7 @@ use POSIX;
 use Path::Tiny;
 use BOM::Backoffice::GNUPlot;
 use Date::Utility;
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Market::Data::DatabaseAPI;
@@ -35,13 +35,13 @@ sub graph_setup {
     my $gif_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif;
     if (not $gif_dir) {
         print "[graph_setup] Error - system.directory.tmp_gif is undefined ";
-        BOM::Platform::Sysinit::code_exit();
+        BOM::Backoffice::Sysinit::code_exit();
     }
     if (not -d $gif_dir) {
         Path::Tiny::path($gif_dir)->mkpath;
         if (not -d $gif_dir) {
             print "[graph_setup] Error - $gif_dir could not be created";
-            BOM::Platform::Sysinit::code_exit();
+            BOM::Backoffice::Sysinit::code_exit();
         }
     }
 

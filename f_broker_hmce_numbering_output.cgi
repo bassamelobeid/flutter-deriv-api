@@ -6,10 +6,10 @@ use f_brokerincludeall;
 use BOM::Database::DataMapper::Transaction;
 use Try::Tiny;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_excel );
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::Product::ContractFactory qw( simple_contract_info );
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 local $\ = "\n";
 

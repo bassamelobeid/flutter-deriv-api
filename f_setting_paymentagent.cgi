@@ -9,8 +9,8 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Client::PaymentAgent;
 use BOM::Backoffice::Form;
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Payment Agent Setting');

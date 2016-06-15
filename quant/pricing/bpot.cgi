@@ -19,8 +19,8 @@ use f_brokerincludeall;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::PricingDetails;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Bet Price Over Time');

@@ -17,8 +17,8 @@ use BOM::Platform::Context;
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
 use BOM::Platform::Static::Config;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
@@ -46,7 +46,6 @@ my $DCcode       = delete $params{DCcode};
 my $range        = delete $params{range};
 
 BOM::Backoffice::Auth0::can_access(['Payments']);
-my $token = BOM::Platform::Context::request()->bo_cookie->token;
 my $staff = BOM::Backoffice::Auth0::from_cookie();
 my $clerk = $staff->{nickname};
 

@@ -6,12 +6,12 @@ use f_brokerincludeall;
 use BOM::Market::UnderlyingDB;
 use BOM::Backoffice::GNUPlot;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use subs::subs_graphs;
 
 use String::UTF8::MD5;
 
-BOM::Platform::Sysinit::init;
+BOM::Backoffice::Sysinit::init;
 PrintContentType();
 BrokerPresentation("Plot Graph");
 BOM::Backoffice::Auth0::can_access(['Quants']);

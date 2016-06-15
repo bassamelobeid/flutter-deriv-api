@@ -7,10 +7,10 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Database::ClientDB;
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 
 use f_brokerincludeall;
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 my $broker = request()->broker->code;
 BOM::Backoffice::Auth0::can_access();
@@ -143,5 +143,5 @@ foreach my $ref (@$open_contracts) {
 close $fh;
 
 PrintContentType_XSendfile($filename, 'application/octet-stream');
-BOM::Platform::Sysinit::code_exit();
+BOM::Backoffice::Sysinit::code_exit();
 

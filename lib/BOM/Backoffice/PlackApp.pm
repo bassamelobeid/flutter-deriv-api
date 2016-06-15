@@ -3,7 +3,7 @@ package BOM::Backoffice::PlackApp;
 use strict;
 use warnings;
 
-use Try::Tiny::Except ();    # preload: see BOM::Platform::Sysinit
+use Try::Tiny::Except ();    # preload: see BOM::Backoffice::Sysinit
 use Plack::Builder;
 use Plack::App::CGIBin::Streaming;
 use Time::HiRes ();

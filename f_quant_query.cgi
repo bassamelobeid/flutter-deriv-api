@@ -8,10 +8,10 @@ use Date::Utility;
 use BOM::Platform::Client;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 
 use f_brokerincludeall;
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 my $loginID = uc(request()->param('loginID'));
 

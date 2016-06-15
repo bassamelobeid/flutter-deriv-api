@@ -4,14 +4,14 @@ package main;
 use strict;
 use warnings;
 
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 use BOM::Platform::Transaction;
 use BOM::Platform::CurrencyConverter qw(in_USD);
 use BOM::Product::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("RESCIND LIST OF ACCOUNTS");

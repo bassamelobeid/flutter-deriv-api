@@ -9,8 +9,8 @@ use Text::CSV;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_excel );
 
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 my %params = %{request()->params};
 

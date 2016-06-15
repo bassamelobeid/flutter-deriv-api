@@ -8,8 +8,8 @@ use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::MarketData::Display::VolatilitySurface;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 

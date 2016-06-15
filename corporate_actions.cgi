@@ -12,8 +12,8 @@ use BOM::Platform::Runtime;
 use JSON qw(to_json);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_JSON );
 use CGI;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 my $cgi     = CGI->new;
 my $symbol  = $cgi->param('symbol');

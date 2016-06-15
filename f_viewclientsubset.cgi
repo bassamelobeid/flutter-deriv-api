@@ -13,8 +13,8 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 
 use Path::Tiny;
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 my $show = request()->param('show');
 if (request()->param('action') ne 'DOWNLOAD CSV') {

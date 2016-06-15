@@ -7,8 +7,8 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
 
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("Setting Client Self Exclusion");

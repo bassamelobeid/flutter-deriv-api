@@ -7,8 +7,8 @@ use open qw[ :encoding(UTF-8) ];
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Quant::Framework::InterestRate;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BOM::Backoffice::Auth0::can_access(['Quants']);

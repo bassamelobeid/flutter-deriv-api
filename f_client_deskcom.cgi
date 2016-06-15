@@ -13,9 +13,9 @@ use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Platform::Client;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("SHOW CLIENT DESK CASES");
 

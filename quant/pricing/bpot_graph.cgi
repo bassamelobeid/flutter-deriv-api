@@ -25,8 +25,8 @@ use perlchartdir;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_image );
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 # Set Chart Director license key here
 perlchartdir::setLicenseCode('RDST-2556-FV5X-NX9G-BD82-E751');

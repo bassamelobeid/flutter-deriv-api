@@ -18,8 +18,8 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
 use BOM::System::AuditLog;
 use BOM::Platform::Static::Config;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Batch Credit/Debit to Clients Accounts');

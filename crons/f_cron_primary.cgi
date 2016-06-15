@@ -8,12 +8,12 @@ BEGIN {
 
 use Date::Utility;
 use BOM::Platform::Runtime;
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 
 use subs::subs_backoffice_removeexpired;
 use subs::subs_backoffice_reports;
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 my $now  = Date::Utility->new;
 my $hour = $now->hour;

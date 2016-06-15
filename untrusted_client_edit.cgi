@@ -6,8 +6,8 @@ use strict 'vars';
 use BOM::Database::Model::OAuth;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 use BOM::System::RedisReplicated;
 

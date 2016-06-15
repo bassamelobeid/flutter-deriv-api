@@ -8,7 +8,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Market::Registry;
 use BOM::ContractInfo;
@@ -16,7 +16,7 @@ use BOM::ContractInfo;
 use Performance::Probability qw(get_performance_probability);
 
 use f_brokerincludeall;
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 my $loginID = uc(request()->param('loginID'));
 

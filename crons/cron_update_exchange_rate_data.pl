@@ -4,14 +4,14 @@ package main;
 use strict;
 use warnings;
 
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::Database::Model::ExchangeRate;
 use BOM::Database::ClientDB;
 use BOM::Market::Underlying;
 use BOM::Market::UnderlyingDB;
 use Date::Utility;
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 my @all_currencies = ('USD', 'GBP', 'EUR', 'AUD', 'JPY');
 
