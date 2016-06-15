@@ -12,6 +12,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Japan::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
+use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
@@ -155,24 +156,6 @@ sub ticks_history {
     return;
 }
 
-sub proposal {
-    my ($c, $args) = @_;
-
-    my $symbol   = $args->{symbol};
-    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
-    if ($response and exists $response->{error}) {
-        return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
-    } else {
-        my $id;
-        if (not $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args)) {
-            return $c->new_error('proposal',
-                'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
-        }
-        send_ask($c, $id, $args);
-    }
-    return;
-}
-
 sub pricing_table {
     my ($c, $args) = @_;
 
@@ -192,30 +175,6 @@ sub pricing_table {
     my $msg = BOM::RPC::v3::Japan::Contract::get_table($args);
     send_pricing_table($c, $id, $args, $msg);
 
-    return;
-}
-
-sub send_ask {
-    my ($c, $id, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'send_ask',
-        sub {
-            my $response = shift;
-            if ($response and exists $response->{error}) {
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-                my $err = $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
-                $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
-                return $err;
-            }
-            return {
-                msg_type => 'proposal',
-                proposal => {($id ? (id => $id) : ()), %$response}};
-        },
-        {args => $args},
-        'proposal'
-    );
     return;
 }
 
@@ -261,13 +220,6 @@ sub process_realtime_events {
         } elsif ($type =~ /^pricing_table:/) {
             if ($chan eq BOM::RPC::v3::Japan::Contract::get_channel_name($arguments)) {
                 send_pricing_table($c, $feed_channels_type->{$channel}->{uuid}, $arguments, $message);
-            }
-        } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
-            if (exists $arguments->{subscribe} and $arguments->{subscribe} eq '1') {
-                return unless $c->tx;
-                send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments) if not _skip_streaming($arguments);
-            } else {
-                return;
             }
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
             BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
