@@ -31,7 +31,7 @@ push @cl, BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 for (@cl) {
     $_->deposit_virtual_funds;
     push @token, BOM::RPC::v3::Accounts::api_token({
-        client => $client,
+        client => $_,
         args   => {
             new_token        => 'Test Token',
             new_token_scopes => ['trade'],
