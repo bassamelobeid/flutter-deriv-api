@@ -76,6 +76,15 @@ sub buy {
     return $response;
 }
 
+my %_allowed_result_members_on_success;
+@_allowed_result_members_on_success{qw/
+    token transaction_id contract_id purchase_time buy_price
+    start_time longcode shortcode paypout stop_loss_level
+    stop_profit_level amount_per_point/}=();
+
+my %_allowed_result_members_on_error;
+@_allowed_result_members_on_error{qw/token code error/}=();
+
 sub buy_contract_for_multiple_accounts {
     my $params = shift;
 
@@ -144,27 +153,15 @@ sub buy_contract_for_multiple_accounts {
         });
     }
 
-    ...;
-
-    my $response = {
-        transaction_id => $trx->transaction_id,
-        contract_id    => $trx->contract_id,
-        balance_after  => $trx->balance_after,
-        purchase_time  => $trx->purchase_date->epoch,
-        buy_price      => $trx->price,
-        start_time     => $contract->date_start->epoch,
-        longcode       => $contract->longcode,
-        shortcode      => $contract->shortcode,
-        payout         => $contract->payout
-    };
-
-    if ($contract->is_spread) {
-        $response->{stop_loss_level}   = $contract->stop_loss_level;
-        $response->{stop_profit_level} = $contract->stop_profit_level;
-        $response->{amount_per_point}  = $contract->amount_per_point;
+    for my $el (@result) {
+        if (exists $el->{code}) {
+            delete @{$el}{grep {!exists $_allowed_result_members_on_error{$_}} keys %$el};
+        } else {
+            delete @{$el}{grep {!exists $_allowed_result_members_on_success{$_}} keys %$el};
+        }
     }
 
-    return $response;
+    return \@result;
 }
 
 sub sell {
