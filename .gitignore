@@ -1,3 +1,5 @@
+id_dsa
+id_rsa
 *.tidyup
 *.bak
 *.sw?
