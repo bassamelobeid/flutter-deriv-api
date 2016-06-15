@@ -959,11 +959,10 @@ SKIP: {
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
                 expiry_daily => 1,
-                limits => {
+                limits       => {
                     max_turnover             => 100,
                     max_losses               => 100,
-                    specific_turnover_limits => [
-                        {    # fails
+                    specific_turnover_limits => [{    # fails
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 20 - 0.01,
@@ -993,8 +992,7 @@ SKIP: {
                 limits => {
                     max_turnover             => 100,
                     max_losses               => 100,
-                    specific_turnover_limits => [
-                        {    # passes
+                    specific_turnover_limits => [{    # passes
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
                             limit    => 100 - 0.01,
