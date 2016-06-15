@@ -15,7 +15,7 @@ has 'account_data' => (
 
 has 'bet' => (
     is  => 'rw',
-#    isa => 'BOM::Database::Model::FinancialMarketBetOpen', ... we could be receiving either an FMB -or- an FMBO
+    isa => 'union([qw/BOM::Database::Model::FinancialMarketBetOpen BOM::Database::Model::FinancialMarketBet/])'
 );
 
 has 'bet_data' => (
