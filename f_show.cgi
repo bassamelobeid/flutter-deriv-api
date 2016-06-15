@@ -5,8 +5,8 @@ use strict 'vars';
 use f_brokerincludeall;
 use Path::Tiny;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 my $language = request()->language;
 my $show     = request()->param('show');

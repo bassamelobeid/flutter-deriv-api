@@ -8,15 +8,16 @@ use Cache::RedisDB;
 
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::System::AuditLog;
 use BOM::DualControl;
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Cookie;
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");
 BOM::Backoffice::Auth0::can_access(['Payments']);
-my $clerk = BOM::Platform::Context::request()->bo_cookie->clerk;
+my $staff = BOM::Backoffice::Cookie::get_staff();
 
 Bar("Make dual control code");
 
@@ -63,13 +64,13 @@ if ($input->{'dcctype'} eq 'file_content') {
     my $lines         = join("\n", @lines);
 
     $code = BOM::DualControl->new({
-            staff           => $clerk,
+            staff           => $staff,
             transactiontype => $input->{'transtype'}})->batch_payment_control_code(scalar @lines);
 
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
     $message =
-          "The dual control code created by $clerk for "
+          "The dual control code created by $staff for "
         . $input->{'purpose'}
         . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
 
@@ -80,7 +81,7 @@ if ($input->{'dcctype'} eq 'file_content') {
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
         ->append($now->datetime
-            . "GMT $clerk MAKES DUAL CONTROL CODE FOR "
+            . "GMT $staff MAKES DUAL CONTROL CODE FOR "
             . $input->{'transtype'}
             . " AMOUNT="
             . $input->{'currency'}
@@ -91,13 +92,13 @@ if ($input->{'dcctype'} eq 'file_content') {
             . $input->{'reminder'});
 } else {
     $code = BOM::DualControl->new({
-            staff           => $clerk,
+            staff           => $staff,
             transactiontype => $input->{'transtype'}})->payment_control_code($input->{'clientloginid'}, $input->{'currency'}, $input->{'amount'});
 
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
     $message =
-          "The dual control code created by $clerk for an amount of "
+          "The dual control code created by $staff for an amount of "
         . $input->{'currency'}
         . $input->{'amount'}
         . " (for a "
@@ -106,7 +107,7 @@ if ($input->{'dcctype'} eq 'file_content') {
         . $input->{'clientloginid'}
         . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
 
-    BOM::System::AuditLog::log($message, '', $clerk);
+    BOM::System::AuditLog::log($message, '', $staff);
 
     print $message;
     print "<p>Note: " . $input->{'clientloginid'} . " is " . $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
@@ -115,7 +116,7 @@ if ($input->{'dcctype'} eq 'file_content') {
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
         ->append($now->datetime
-            . "GMT $clerk MAKES DUAL CONTROL CODE FOR "
+            . "GMT $staff MAKES DUAL CONTROL CODE FOR "
             . $input->{'transtype'}
             . " AMOUNT="
             . $input->{'currency'}

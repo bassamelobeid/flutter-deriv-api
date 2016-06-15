@@ -41,16 +41,18 @@ sub login {
 }
 
 sub from_cookie {
-    my $cookie = shift || BOM::Platform::Context::request()->bo_cookie;
-    if ($cookie and $cookie->clerk and my $user = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $cookie->clerk)) {
+    my $staff = BOM::Backoffice::Cookie::get_staff;
+
+    if ($staff and $user = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff)) {
         return JSON->new->utf8->decode($user);
     }
     return;
 }
 
 sub loggout {
-    my $cookie = BOM::Platform::Context::request()->bo_cookie;
-    if ($cookie and my $user = BOM::System::RedisReplicated::redis_write->del("BINARYBOLOGIN::" . $cookie->clerk)) {
+    my $staff = BOM::Backoffice::Cookie::get_staff;
+
+    if ($staff and BOM::System::RedisReplicated::redis_write->del("BINARYBOLOGIN::" . $staff)) {
         print 'you are logged out.';
     }
     print 'no login found.';
@@ -69,23 +71,25 @@ sub can_access {
 
 sub has_authorisation {
     my $groups = shift;
+    my $staff = BOM::Backoffice::Cookie::get_staff();
+    return unless $staff;
 
-    my $cookie = BOM::Platform::Context::request()->bo_cookie;
-    my $cache  = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $cookie->clerk);
+    my $cache  = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff);
     my $user;
-    if ($cookie and $cache and $user = JSON->new->utf8->decode($cache) and $user->{token} = $cookie->{auth_token}) {
-        BOM::System::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $cookie->clerk, 24 * 3600);
+    if ($cache and $user = JSON->new->utf8->decode($cache) and $user->{token} = $cookie->{auth_token}) {
+        BOM::System::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $staff, 24 * 3600);
         if (not $groups or not BOM::Platform::Runtime->instance->app_config->system->on_production) {
             return 1;
         }
         foreach my $g (@{$user->{groups}}) {
             if (grep { /^$g$/ } @{$groups}) {
-                BOM::System::AuditLog::log('successful request for ' . join(',', @{$groups}), '', $cookie->clerk);
+                BOM::System::AuditLog::log('successful request for ' . join(',', @{$groups}), '', $staff);
                 return 1;
             }
         }
     }
-    BOM::System::AuditLog::log('failed request for ' . join(',', @{$groups}), '', $cookie->clerk);
+    BOM::System::AuditLog::log('failed request for ' . join(',', @{$groups}), '', $staff);
     return;
 }
+
 1;
