@@ -221,7 +221,7 @@ sub _build_barrier_type {
 
 has 'volsurface' => (
     is      => 'rw',
-    isa     => 'Maybe[Quant::Framework::VolSurface::Delta]',
+    isa     => 'Maybe[BOM::MarketData::VolSurface::Delta]',
     default => undef
 );
 
@@ -706,10 +706,8 @@ sub get_volsurface {
     my $surface_data  = $data->{surface_data};
     my $recorded_date = $data->{recorded_date};
     my $cutoff        = $data->{cutoff};
-    my $surface       = Quant::Framework::VolSurface::Delta->new(
-        underlying_config      => BOM::Market::Underlying->new($underlying_symbol)->config,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    my $surface       = BOM::MarketData::VolSurface::Delta->new(
+        underlying      => BOM::Market::Underlying->new($underlying_symbol),
         recorded_date   => Date::Utility->new($recorded_date),
         surface         => $surface_data,
         print_precision => undef,

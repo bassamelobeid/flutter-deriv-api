@@ -112,6 +112,7 @@ sub get_bet_results {
     my $csv = Text::CSV->new();
     my $analysis_results;
     foreach my $record (@$records) {
+
         my $date_start   = $record->{date_start};
         my $date_expiry  = $record->{date_expiry};
         my $underlying   = $record->{underlying};
@@ -130,6 +131,8 @@ sub get_bet_results {
             surface => $vol_surface,
             cutoff  => $cutoff_str,
         });
+        $surface->underlying_config->{spot} = $spot;
+
         my $currency = ($base_or_num eq 'base') ? $record->{base_currency} : $record->{numeraire_currency};
         my $bet_type = $record->{bet_type};
         my $bet_args = {
