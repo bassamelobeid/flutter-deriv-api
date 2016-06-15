@@ -1,6 +1,6 @@
 language: perl
 perl:
-    - "5.14.2"
+    - "5.14.2-thr"
 env:
     - TEST_SUITE=unit_test_platform_client
     - TEST_SUITE=unit_test_platform_all
@@ -13,6 +13,9 @@ addons:
     postgresql: "9.3"
 cache: apt
 before_install:
+    - git clone git://github.com/travis-perl/helpers ~/travis-perl-helpers
+    - source ~/travis-perl-helpers/init
+    - build-perl
     - git clone https://6b8b5139b6cfaf61ea0b34834b62c275b500fa8b@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
     - /tmp/travis-scripts/fixHostName.sh
