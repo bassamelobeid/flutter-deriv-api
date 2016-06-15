@@ -13,9 +13,9 @@ has 'account_data' => (
     isa => 'HashRef|ArrayRef',
 );
 
+# this will end up being either a BOM::Database::Model::FinancialMarketBetOpen or a BOM::Database::Model::FinancialMarketBet
 has 'bet' => (
     is  => 'rw',
-    isa => 'union([qw/BOM::Database::Model::FinancialMarketBetOpen BOM::Database::Model::FinancialMarketBet/])'
 );
 
 has 'bet_data' => (
