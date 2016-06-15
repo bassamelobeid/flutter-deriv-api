@@ -91,11 +91,6 @@ has 'country_code' => (
     lazy_build => 1,
 );
 
-has 'bo_cookie' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has 'ui_settings' => (
     is         => 'ro',
     lazy_build => 1,
@@ -448,20 +443,6 @@ sub _build_default_currency {
 
     #Give the first available.
     return $self->available_currencies->[0];
-}
-
-sub _build_bo_cookie {
-    my $self = shift;
-
-    my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login_bo;
-    # if the user logged in.
-    if (my $cookie = $self->cookie($cookie_name)) {
-        return BOM::Platform::SessionCookie->new({token => $cookie});
-    } elsif (my $as_param = $self->param('staff')) {
-        return BOM::Platform::SessionCookie->new({token => $as_param});
-    }
-
-    return;
 }
 
 sub _build_ui_settings {
