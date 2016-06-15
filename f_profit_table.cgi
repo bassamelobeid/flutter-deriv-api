@@ -87,7 +87,7 @@ if (defined $do_calculation) {
             push @bet_type,          $contract->{bet_type};
             push @underlying_symbol, $contract->{underlying_symbol};
 
-            $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy-price});
+            $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy_price});
         }
     }
 
