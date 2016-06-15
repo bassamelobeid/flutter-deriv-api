@@ -89,6 +89,11 @@ sub _include_forex_holidays {
         $new_year  => "New Year\'s Day",
     };
 
+    $data->{METAL} = {
+        $christmas => 'Christmas Day',
+        $new_year  => "New Year\'s Day",
+    };
+
     return;
 }
 
