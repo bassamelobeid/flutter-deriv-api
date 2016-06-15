@@ -1069,6 +1069,14 @@ sub _validate_sell_pricing_adjustment {
         return;
     }
 
+    if ($self->contract->is_expired) {
+        return Error::Base->cuss(
+            -type              => 'BetExpired',
+            -mesg              => 'Contract expired with a new price',
+            -message_to_client => BOM::Platform::Context::localize('The contract has expired'),
+        );
+    }
+
     my $contract = $self->contract;
     my $currency = $contract->currency;
 
@@ -1085,13 +1093,7 @@ sub _validate_sell_pricing_adjustment {
 
     if ($move != 0) {
         my $final_value;
-        if ($contract->is_expired) {
-            return Error::Base->cuss(
-                -type              => 'BetExpired',
-                -mesg              => 'Bet expired with a new price[' . $recomputed_amount . '] (old price[' . $amount . '])',
-                -message_to_client => BOM::Platform::Context::localize('The contract has expired'),
-            );
-        } elsif ($allowed_move == 0) {
+        if ($allowed_move == 0) {
             $final_value = $recomputed_amount;
         } elsif ($move < -$allowed_move) {
             my $market_moved = BOM::Platform::Context::localize('The underlying market has moved too much since you priced the contract. ');
