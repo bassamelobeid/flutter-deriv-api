@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::NoWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -20,19 +20,19 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(USD JPY);
+    }) for qw(USD AUD AUD-USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
+        symbol        => 'frxAUDUSD',
         recorded_date => $now
     });
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
+    underlying => 'frxAUDUSD',
     epoch      => $now->epoch
 });
 my $bet_params = {
-    underlying   => 'frxUSDJPY',
+    underlying   => 'frxAUDUSD',
     bet_type     => 'CALL',
     currency     => 'USD',
     payout       => 100,
@@ -102,12 +102,28 @@ subtest 'invalid underlying - contract type combination' => sub {
 
 subtest 'disable underlying due to corporate action' => sub {
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions;
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['frxUSDJPY']);
-    $bet_params->{underlying} = 'frxUSDJPY';
+    BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['frxAUDUSD']);
+    $bet_params->{underlying} = 'frxAUDUSD';
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->{message}, qr/suspended due to corporate actions/, 'Underlying suspended due to corporate action');
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions($orig);
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
+};
+
+subtest 'custom suspend trading' => sub {
+    my $orig = BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;
+    BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"xxx": {"market": "forex", "contract_category":"callput", "expiry_type": "tick", "risk_profile": "no_business"}}');
+    $bet_params->{underlying} = 'frxUSDJPY';
+    $bet_params->{bet_type}   = 'CALL', $bet_params->{duration} = '5t';
+    $bet_params->{barrier}    = 'S0P';
+
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like($c->primary_validation_error->message, qr/manually disabled by quants/, 'throws error');
+    $bet_params->{underlying} = 'R_100';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy for random';
 };

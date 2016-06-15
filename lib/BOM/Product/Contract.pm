@@ -10,9 +10,11 @@ use Quant::Framework::Currency;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time);
 use List::Util qw(min max first);
-use List::MoreUtils qw(none);
+use List::MoreUtils qw(none all);
 use Scalar::Util qw(looks_like_number);
+use JSON qw(from_json);
 use BOM::Product::Contract::Helper;
+use BOM::Product::RiskProfile;
 
 use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
@@ -23,12 +25,12 @@ use Quant::Framework::CorrelationMatrix;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise;
 use BOM::Product::Types;
-use BOM::MarketData::VolSurface::Utils;
+use Quant::Framework::VolSurface::Utils;
 use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
-use BOM::Product::Offerings qw( get_contract_specifics );
+use BOM::Product::Offerings qw( get_contract_specifics get_offerings_flyby);
 use BOM::Platform::Static::Config;
 use BOM::System::Chronicle;
 
@@ -402,7 +404,7 @@ has empirical_volsurface => (
 
 has [qw(volsurface)] => (
     is         => 'rw',
-    isa        => 'BOM::MarketData::VolSurface',
+    isa        => 'Quant::Framework::VolSurface',
     lazy_build => 1,
 );
 
@@ -492,10 +494,10 @@ sub _build_pricing_engine_name {
     } elsif (
         $self->is_intraday and not $self->is_forward_starting and grep {
             $self->market->name eq $_
-        } qw(forex indices)
+        } qw(forex indices commodities)
         )
     {
-        my $func = $self->market->name eq 'forex' ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
+        my $func = (first { $self->market->name eq $_ } qw(forex commodities)) ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
         my @symbols = BOM::Market::UnderlyingDB->instance->$func;
         if (_match_symbol(\@symbols, $self->underlying->symbol) and my $loc = $self->offering_specifics->{historical}) {
             my $duration = $self->remaining_time;
@@ -652,7 +654,7 @@ sub _build_timeindays {
     # If market is Forex, We go with integer days as per the market convention
     if ($self->market->integer_number_of_day and not $self->priced_with_intraday_model) {
         my $recorded_date = $self->volsurface->recorded_date;
-        my $utils         = BOM::MarketData::VolSurface::Utils->new;
+        my $utils         = Quant::Framework::VolSurface::Utils->new;
         my $days_between  = $self->date_expiry->days_between($recorded_date);
         $atid = $utils->is_before_rollover($recorded_date) ? ($days_between + 1) : $days_between;
         if ($recorded_date->day_of_week >= 5 or ($recorded_date->day_of_week == 4 and not $utils->is_before_rollover($recorded_date))) {
@@ -761,7 +763,7 @@ sub _build_volsurface {
         major_pairs => 1,
         minor_pairs => 1
     );
-    my $vol_utils = BOM::MarketData::VolSurface::Utils->new;
+    my $vol_utils = Quant::Framework::VolSurface::Utils->new;
     my $cutoff_str;
     if ($submarkets{$self->underlying->submarket->name}) {
         my $calendar       = $self->calendar;
@@ -1477,7 +1479,7 @@ has sell_tick => (
     default => undef,
 );
 
-has offering_specifics => (
+has [qw(offering_specifics barrier_category)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -1490,26 +1492,23 @@ sub _build_offering_specifics {
         contract_category => $self->category->code,
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
+        barrier_category  => $self->barrier_category,
     };
 
-    if ($self->category->code eq 'callput') {
-        $filter->{barrier_category} = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
-    } else {
-        $filter->{barrier_category} = $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
-    }
     return get_contract_specifics($filter);
 }
 
-=head2 _payout_limit
+sub _build_barrier_category {
+    my $self = shift;
 
-Returns a limit for the payout if one exists on the contract
+    my $barrier_category;
+    if ($self->category->code eq 'callput') {
+        $barrier_category = ($self->is_atm_bet) ? 'euro_atm' : 'euro_non_atm';
+    } else {
+        $barrier_category = $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0];
+    }
 
-=cut
-
-sub _payout_limit {
-    my ($self) = @_;
-
-    return $self->offering_specifics->{payout_limit}->{$self->currency};    # Even if not valid, make it 100k.
+    return $barrier_category;
 }
 
 has 'staking_limits' => (
@@ -1524,14 +1523,10 @@ sub _build_staking_limits {
     my $underlying = $self->underlying;
     my $curr       = $self->currency;
 
-    my @possible_payout_maxes = ($self->_payout_limit);
-
-    my $bet_limits = BOM::Platform::Static::Config::quants->{bet_limits};
-    push @possible_payout_maxes, $bet_limits->{maximum_payout}->{$curr};
-    push @possible_payout_maxes, $bet_limits->{maximum_payout_on_new_markets}->{$curr}
-        if ($underlying->is_newly_added);
-    push @possible_payout_maxes, $bet_limits->{maximum_payout_on_less_than_7day_indices_call_put}->{$curr}
-        if ($self->underlying->market->name eq 'indices' and not $self->is_atm_bet and $self->timeindays->amount < 7);
+    my $static                    = BOM::Platform::Static::Config::quants;
+    my $bet_limits                = $static->{bet_limits};
+    my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
+    my @possible_payout_maxes     = ($bet_limits->{maximum_payout}->{$curr}, $per_contract_payout_limit);
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $payout_min =
@@ -1634,12 +1629,12 @@ sub _market_convention {
     return {
         calculate_expiry => sub {
             my ($start, $expiry) = @_;
-            my $utils = BOM::MarketData::VolSurface::Utils->new;
+            my $utils = Quant::Framework::VolSurface::Utils->new;
             return $utils->effective_date_for($expiry)->days_between($utils->effective_date_for($start));
         },
         get_rollover_time => sub {
             my $when = shift;
-            return BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($when);
+            return Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($when);
         },
     };
 }
@@ -2053,10 +2048,12 @@ sub _build_exit_tick {
 sub _validate_offerings {
     my $self = shift;
 
+    my $message_to_client = localize('This trade is temporarily unavailable.');
+
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->trading) {
         return {
             message           => 'All trading suspended on system',
-            message_to_client => localize("Trading is suspended at the moment."),
+            message_to_client => $message_to_client,
         };
     }
 
@@ -2066,7 +2063,7 @@ sub _validate_offerings {
     if ($underlying->is_trading_suspended) {
         return {
             message           => "Underlying trades suspended [symbol: " . $underlying->symbol . "]",
-            message_to_client => localize('Trading is suspended at the moment.'),
+            message_to_client => $message_to_client,
         };
     }
 
@@ -2076,14 +2073,21 @@ sub _validate_offerings {
     if (@$suspend_claim_types and first { $contract_code eq $_ } @{$suspend_claim_types}) {
         return {
             message           => "Trading suspended for contract type [code: " . $contract_code . "]",
-            message_to_client => localize("Trading is suspended at the moment."),
+            message_to_client => $message_to_client,
         };
     }
 
     if (first { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions}) {
         return {
             message           => "Underlying trades suspended due to corporate actions [symbol: " . $underlying->symbol . "]",
-            message_to_client => localize('Trading is suspended at the moment.'),
+            message_to_client => $message_to_client,
+        };
+    }
+
+    if ($self->risk_profile->get_risk_profile eq 'no_business') {
+        return {
+            message           => 'manually disabled by quants',
+            message_to_client => $message_to_client,
         };
     }
 
@@ -2296,7 +2300,7 @@ sub _build_date_start_blackouts {
 
     # Due to uncertainty in volsurface rollover time, we will stay out.
     if ($self->market->name eq 'forex' and not $self->is_atm_bet and $self->timeindays->amount <= 3) {
-        my $rollover_date = BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start);
+        my $rollover_date = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start);
         push @periods, [$rollover_date->minus_time_interval('1h')->epoch, $rollover_date->plus_time_interval('1h')->epoch];
     }
 
@@ -2562,6 +2566,22 @@ sub confirm_validity {
         return 0 if ($self->primary_validation_error);
     }
 
+    # Should have included this in one of the validation subroutines but it will screw with existing tests.
+    # Since this is a temporary solution and we will work on a proper fix, this is acceptable for now.
+    my $announcement_date = Date::Utility->new('2016-06-16');
+    if (    $self->market->name eq 'forex'
+        and not $self->is_atm_bet
+        and $self->date_expiry->is_before($announcement_date)
+        and $self->underlying->symbol =~ /JPY/)
+    {
+        my $err = {
+            message           => 'stay out for Japan economic announcement',
+            message_to_client => localize('This trade is temporarily unavailable.'),
+        };
+        $self->add_error($err);
+        return 0;
+    }
+
     return 1;
 }
 
@@ -2607,6 +2627,23 @@ has is_sold => (
     isa     => 'Bool',
     default => 0
 );
+
+has [qw(risk_profile)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_risk_profile {
+    my $self = shift;
+
+    return BOM::Product::RiskProfile->new(
+        underlying        => $self->underlying,
+        contract_category => $self->category_code,
+        expiry_type       => $self->expiry_type,
+        start_type        => $self->start_type,
+        currency          => $self->currency,
+    );
+}
 
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
