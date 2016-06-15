@@ -441,6 +441,8 @@ subtest 'market_risk blackouts' => sub {
         payout       => 10,
         duration     => '59m59s',
         current_tick => $xauusd_tick,
+        pricing_vol  => 0.1,
+        news_adjusted_pricing_vol => 0.1,
     };
     my $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
@@ -453,5 +455,6 @@ subtest 'market_risk blackouts' => sub {
     $bet_params->{current_tick} = $xauusd_tick;
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
+    $DB::single=1;
     like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 21:00:00 to 23:59:59/, 'throws error');
 };
