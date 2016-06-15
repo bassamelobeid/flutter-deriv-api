@@ -1072,7 +1072,7 @@ sub _validate_sell_pricing_adjustment {
     if ($self->contract->is_expired) {
         return Error::Base->cuss(
             -type              => 'BetExpired',
-            -mesg              => 'Bet expired with a new price',
+            -mesg              => 'Contract expired with a new price',
             -message_to_client => BOM::Platform::Context::localize('The contract has expired'),
         );
     }
