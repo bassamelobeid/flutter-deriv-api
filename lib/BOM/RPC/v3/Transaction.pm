@@ -77,13 +77,15 @@ sub buy {
 }
 
 my %_allowed_result_members_on_success;
-@_allowed_result_members_on_success{qw/
-    token transaction_id contract_id purchase_time buy_price
-    start_time longcode shortcode paypout stop_loss_level
-    stop_profit_level amount_per_point/}=();
+@_allowed_result_members_on_success{
+    qw/
+        token transaction_id contract_id purchase_time buy_price
+        start_time longcode shortcode paypout stop_loss_level
+        stop_profit_level amount_per_point/
+} = ();
 
 my %_allowed_result_members_on_error;
-@_allowed_result_members_on_error{qw/token code error/}=();
+@_allowed_result_members_on_error{qw/token code error/} = ();
 
 sub buy_contract_for_multiple_accounts {
     my $params = shift;
@@ -155,9 +157,9 @@ sub buy_contract_for_multiple_accounts {
 
     for my $el (@result) {
         if (exists $el->{code}) {
-            delete @{$el}{grep {!exists $_allowed_result_members_on_error{$_}} keys %$el};
+            delete @{$el}{grep { !exists $_allowed_result_members_on_error{$_} } keys %$el};
         } else {
-            delete @{$el}{grep {!exists $_allowed_result_members_on_success{$_}} keys %$el};
+            delete @{$el}{grep { !exists $_allowed_result_members_on_success{$_} } keys %$el};
         }
     }
 
