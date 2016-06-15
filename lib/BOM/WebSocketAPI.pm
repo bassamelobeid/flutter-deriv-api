@@ -4,6 +4,7 @@ use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
 use Try::Tiny;
+use Format::Util::Strings qw( defang_lite );
 
 # pre-load controlleres to have more shared code among workers (COW)
 use BOM::WebSocketAPI::Websocket_v3();
@@ -60,9 +61,14 @@ sub startup {
         before_dispatch => sub {
             my $c = shift;
 
-            if (my $lang = $c->param('l')) {
+            my $lang = defang_lite($c->param('l'));
+            if ($lang =~ /^\D{2}(_\D{2})?$/) {
                 $c->stash(language => uc $lang);
                 $c->res->headers->header('Content-Language' => lc $lang);
+            } else {
+                # default to English if not valid language
+                $c->stash(language => 'EN');
+                $c->res->headers->header('Content-Language' => 'en');
             }
 
             if ($c->req->param('debug')) {
@@ -70,7 +76,7 @@ sub startup {
             }
 
             if ($c->req->param('app_id')) {
-                my $app_id = $c->req->param('app_id');
+                my $app_id = defang_lite($c->req->param('app_id'));
 
                 my $error;
                 APP_ID:
