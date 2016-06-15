@@ -244,7 +244,7 @@ sub get_financial_input_mapping {
             'possible_answer' => {
                 'Construction' => 0,
                 'Education'    => 0,
-                'Finance'      => 23,
+                'Finance'      => 15,
                 'Health'       => 0,
                 'Tourism'      => 0,
                 'Other'        => 0
@@ -272,9 +272,10 @@ sub get_financial_input_mapping {
             'label'           => 'Net Annual Income',
             'possible_answer' => {
                 'Less than $25,000'   => 0,
-                '$25,000 - $100,000'  => 1,
-                '$100,000 - $500,000' => 2,
-                'Over $500,000'       => 3
+                '$25,000 - $50,000'   => 1,
+                '$50,001 - $100,000'  => 2,
+                '$100,001 - $500,000' => 3,
+                'Over $500,000'       => 4
             }
         },
         estimated_worth => {
@@ -282,8 +283,9 @@ sub get_financial_input_mapping {
             'possible_answer' => {
                 'Less than $100,000'    => 0,
                 '$100,000 - $250,000'   => 1,
-                '$250,000 - $1,000,000' => 2,
-                'Over $1,000,000'       => 3
+                '$250,001 - $500,000'   => 2,
+                '$500,001 - $1,000,000' => 3,
+                'Over $1,000,000'       => 4
             }}};
     return $financial_mapping;
 }
