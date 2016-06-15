@@ -10,7 +10,9 @@ use BOM::RPC::v3::Contract;
 use sigtrap qw/handler signal_handler normal-signals/;
 
 my $workers = 4;
-GetOptions ("workers=i" => \$workers,) ;
+GetOptions(
+    "workers=i" => \$workers,
+);
 
 my $pm = new Parallel::ForkManager($workers);
 
@@ -22,18 +24,17 @@ $pm->run_on_start(
         push @running_forks, $pid;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks));
         warn "Started a new fork [$pid]\n";
-    }
-);
+    });
 $pm->run_on_finish(
     sub {
         my ($pid, $exit_code) = @_;
-        @running_forks = grep {$_ != $pid } @running_forks;
+        @running_forks = grep { $_ != $pid } @running_forks;
         DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks));
         warn "Fork [$pid] ended with exit code [$exit_code]\n";
-    }
-);
+    });
+
 sub signal_handler {
-    kill KILL=>@running_forks;
+    kill KILL => @running_forks;
     exit 0;
 }
 
@@ -42,24 +43,27 @@ while (1) {
 
     my $redis = BOM::System::RedisReplicated::redis_pricer;
 
-    my $tv = [Time::HiRes::gettimeofday];
+    my $tv                    = [Time::HiRes::gettimeofday];
+    my $pricing_count         = 0;
+    my $current_pricing_epoch = time;
     while (my $key = $redis->brpop("pricer_jobs", 0)) {
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.idle.time', 1000 * Time::HiRes::tv_interval($tv));
         $tv = [Time::HiRes::gettimeofday];
 
         my $next = $key->[1];
         $next =~ s/^PRICER_KEYS:://;
-        my $payload  = JSON::XS::decode_json($next);
-        my $params   = {@{$payload}};
-        my $trigger  = $params->{symbol};
+        my $payload = JSON::XS::decode_json($next);
+        my $params  = {@{$payload}};
+        my $trigger = $params->{symbol};
 
-        my $current_time = time;
+        my $current_time    = time;
         my $current_spot_ts = BOM::Market::Underlying->new($params->{symbol})->spot_tick->epoch;
-        my $last_price_ts = $redis->get($next) || 0;
+        my $last_price_ts   = $redis->get($next) || 0;
 
-        next if ($current_spot_ts==$last_price_ts and $current_time - $last_price_ts<=10 );
+        next if ($current_spot_ts == $last_price_ts and $current_time - $last_price_ts <= 10);
 
         $redis->set($next, $current_time);
+        $redis->expire($next, 300);
         my $response = BOM::RPC::v3::Contract::send_ask({args => $params}, 1);
 
         DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.price.call');
@@ -72,6 +76,14 @@ while (1) {
         }
         DataDog::DogStatsd::Helper::stats_count('pricer_daemon.queue.subscribers', $subsribers_count);
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.time', 1000 * Time::HiRes::tv_interval($tv));
+        my $end_time = Time::HiRes::time;
+        DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.process.end_time', 1000 * ($end_time - int($end_time)));
+        $pricing_count++;
+        if ($current_pricing_epoch != time) {
+            DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.price.count_per_second', $pricing_count);
+            $pricing_count = 0;
+            $current_pricing_epoch = time;
+        }
         $tv = [Time::HiRes::gettimeofday];
     }
     $pm->finish;
