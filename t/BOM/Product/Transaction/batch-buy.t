@@ -279,9 +279,6 @@ subtest 'batch-buy success', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            BOM::Platform::Runtime->instance->app_config->quants
-                    ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
-
             ExpiryQueue::queue_flush;
             note explain +ExpiryQueue::queue_status;
             $txn->batch_buy;
@@ -346,9 +343,6 @@ subtest 'batch-buy success 2', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            BOM::Platform::Runtime->instance->app_config->quants
-                    ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
-
             $txn->batch_buy;
         };
 
@@ -405,9 +399,6 @@ subtest 'contract already started', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-
-            BOM::Platform::Runtime->instance->app_config->quants
-                    ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
 
             $txn->batch_buy;
         };
@@ -472,9 +463,6 @@ subtest 'single contract fails in database', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-
-            BOM::Platform::Runtime->instance->app_config->quants
-                    ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
 
             ExpiryQueue::queue_flush;
             note explain +ExpiryQueue::queue_status;
@@ -554,9 +542,6 @@ subtest 'batch-buy multiple databases and datadog', sub {
             $mock_transaction->mock(
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-
-            BOM::Platform::Runtime->instance->app_config->quants
-                    ->client_limits->tick_expiry_engine_daily_turnover->USD(1000);
 
             ExpiryQueue::queue_flush;
             # note explain +ExpiryQueue::queue_status;
