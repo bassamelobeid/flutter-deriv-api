@@ -5,10 +5,8 @@ use warnings;
 
 use utf8;
 use Test::BOM::RPC::Client;
-use Test::Most;
+use Test::More;
 use Test::Mojo;
-use Test::MockModule;
-use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -52,7 +50,7 @@ subtest 'buy' => sub {
                 tokens => ['DUMMY1', 'DUMMY2'],
             },
         })->has_no_system_error->has_no_error->result;
-    note explain $result;
+    # note explain $result;
     $result = $result->{result};
     is_deeply $result, [
         {
