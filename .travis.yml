@@ -1,6 +1,6 @@
 language: perl
 perl:
-    - "5.14.2-thr"
+    - "5.14.2"
 env:
     - TEST_SUITE=unit_test_platform_client
     - TEST_SUITE=unit_test_platform_all
@@ -15,72 +15,42 @@ cache: apt
 before_install:
     - git clone https://6b8b5139b6cfaf61ea0b34834b62c275b500fa8b@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
-    - echo $AUTHOR_TESTING
     - git clone git://github.com/travis-perl/helpers ~/travis-perl-helpers
-    - echo $AUTHOR_TESTING
     - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
-    - echo $AUTHOR_TESTING
     - PREBUILT_REPO="git@github.com:chylli/test-perl.git" build-perl
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/fixHostName.sh
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/postgres.sh
-    - echo $AUTHOR_TESTING
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
-    - echo $AUTHOR_TESTING
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
-    - echo $AUTHOR_TESTING
 
     - /tmp/travis-scripts/postgres_restart.sh
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/redis.sh
-    - echo $AUTHOR_TESTING
     - sudo mkdir -p /etc/rmg/
-    - echo $AUTHOR_TESTING
     - sudo touch /etc/rmg/version
-    - echo $AUTHOR_TESTING
     - sudo chown $(id -u) /etc/rmg/version
 
 install:
-    - echo $AUTHOR_TESTING
     - source /tmp/travis-scripts/devbox_path.sh
-    - echo $AUTHOR_TESTING
     - sudo ln -s $PWD /home/git/regentmarkets/bom-platform
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/devbox.sh *.yml
-    - echo $AUTHOR_TESTING
 
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/remove_postgresdb_config.sh
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/setup_clientdb.sh
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/setup_feeddb.sh
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/setup_authdb.sh
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/setup_usersdb.sh
-    - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/setup_chronicledb.sh
-    - echo $AUTHOR_TESTING
 
     - /tmp/travis-scripts/setup_logs.sh
-    - echo $AUTHOR_TESTING
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
-    - echo $AUTHOR_TESTING
     - make $TEST_SUITE
     - sudo service binary_pgbouncer status
 
