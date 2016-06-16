@@ -162,6 +162,7 @@ sub get_bet_results {
         $bet_args->{volsurface}->underlying_config->{spot} = $bet_args->{current_spot};
 
         my $bet = produce_contract($bet_args);
+
         my $bom_mid =
               $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
             ? $bet->pricing_engine->theo_probability

@@ -13,6 +13,7 @@ use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw( produce_contract );
 use SetupDatasetTestFixture;
 use Date::Utility;
+use Data::Dumper;
 
 has file => (
     is       => 'ro',
@@ -177,6 +178,7 @@ sub _get_records_for {
         push @all_records, $params;
     }
 
+
     return \@all_records;
 }
 
@@ -189,14 +191,14 @@ sub _convert_sd_mid_to_numeraire {
     my $barrier        = $args->{barrier};
     my $bet_type       = $args->{bet_type};
     my $initial_sd_mid = $args->{initial_mid};
-
+    
     my %pricing_param = (
         underlying   => $underlying,
         barrier      => $barrier,
         barrier2     => $args->{barrier2},
         date_start   => $args->{date_start},
         date_expiry  => $args->{date_expiry},
-        volsurface   => $args->{volsurface},
+        volsurface   => $args->{volsurface}->clone(),
         payout       => $args->{payout},
         currency     => $args->{currency},
         date_pricing => $args->{date_start},
