@@ -107,6 +107,8 @@ for my $k (@equal) {
     is   $result->[0]->{$k}, $result->[1]->{$k}, 'and they equal';
 }
 
+is $result->[2]->{code}, 'InsufficientBalance', 'token[2]: InsufficientBalance';
+
 is_deeply [sort keys %{$result->[0]}], [sort 'token', @differing, @equal], 'got only expected keys for [0]';
 is_deeply [sort keys %{$result->[1]}], [sort 'token', @differing, @equal], 'got only expected keys for [1]';
 is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys], 'got only expected keys for [2]';
