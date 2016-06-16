@@ -6,6 +6,7 @@ use warnings;
 use Test::More;
 use BOM::RPC::v3::Transaction;
 use BOM::RPC::v3::Accounts;
+use BOM::RPC::v3::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -25,6 +26,16 @@ my $clm = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $clm->set_default_account('USD'); # the manager needs an account record but no money.
 $clm->save;
 
+my $clm_token = BOM::RPC::v3::Accounts::api_token({
+    client => $clm,
+    args   => {
+        new_token        => 'Test Token',
+        new_token_scopes => ['trade'],
+    },
+})->{tokens}->[0]->{token};
+
+my $clm_token_details = BOM::RPC::v3::Utility::get_token_details($clm_token);
+
 my @cl;
 push @cl, BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -39,7 +50,7 @@ push @cl, BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my @token;
 for (@cl) {
     $_->deposit_virtual_funds;
-    my $t=BOM::RPC::v3::Accounts::api_token({
+    my $t = BOM::RPC::v3::Accounts::api_token({
         client => $_,
         args   => {
             new_token        => 'Test Token',

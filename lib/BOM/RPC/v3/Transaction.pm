@@ -90,10 +90,13 @@ my %_allowed_result_members_on_error;
 sub buy_contract_for_multiple_accounts {
     my $params = shift;
 
-    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    my $token_details = $params->{token_details};
+    return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
-    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization.
-    #       All checks are done again in BOM::Product::Transaction
+    my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
+
+    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
+    #       are done again in BOM::Product::Transaction
     return BOM::RPC::v3::Utility::create_error({
             code              => 'AuthorizationRequired',
             message_to_client => localize('Please log in.')}) unless $client;
@@ -103,8 +106,9 @@ sub buy_contract_for_multiple_accounts {
 
     my $msg = BOM::Platform::Context::localize('Invalid token');
     for my $t (@{$params->{tokens} || []}) {
-        my $loginid = BOM::RPC::v3::Utility::token_to_loginid($_);
-        unless ($loginid) {
+        my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+        my $loginid;
+        unless ($token_details and $loginid = $token_details->{loginid}) {
             push @result,
                 +{
                 token => $t,
