@@ -72,11 +72,12 @@ sub can_access {
 sub has_authorisation {
     my $groups = shift;
     my $staff = BOM::Backoffice::Cookie::get_staff();
-    return unless $staff;
+    my $auth_token = BOM::Backoffice::Cookie::get_auth_token();
+    return unless ($staff and $auth_token);
 
-    my $cache  = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff);
+    my $cache = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff);
     my $user;
-    if ($cache and $user = JSON->new->utf8->decode($cache) and $user->{token} = $cookie->{auth_token}) {
+    if ($cache and $user = JSON->new->utf8->decode($cache) and $user->{token} = $auth_token) {
         BOM::System::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $staff, 24 * 3600);
         if (not $groups or not BOM::Platform::Runtime->instance->app_config->system->on_production) {
             return 1;
