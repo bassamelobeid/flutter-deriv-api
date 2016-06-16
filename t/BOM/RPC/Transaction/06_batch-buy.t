@@ -68,51 +68,52 @@ for (@cl) {
 }
 is 0+@token, 3, 'got 3 tokens';
 
-note explain \@token;
+# note explain \@token;
 
-my $contract = BOM::Test::Data::Utility::Product::create_contract();
+subtest 'normal contract', sub {
+    my $contract = BOM::Test::Data::Utility::Product::create_contract();
 
-my $result=BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
-    token_details => $clm_token_details,
-    tokens => \@token,
-    source => 1,
-    contract_parameters => {
-        "proposal"      => 1,
-        "amount"        => "100",
-        "basis"         => "payout",
-        "contract_type" => "CALL",
-        "currency"      => "USD",
-        "duration"      => "120",
-        "duration_unit" => "s",
-        "symbol"        => "R_50",
-    },
-    args => {price => $contract->ask_price},
+    my $result=BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
+        token_details => $clm_token_details,
+        tokens => \@token,
+        source => 1,
+        contract_parameters => {
+            "proposal"      => 1,
+            "amount"        => "100",
+            "basis"         => "payout",
+            "contract_type" => "CALL",
+            "currency"      => "USD",
+            "duration"      => "120",
+            "duration_unit" => "s",
+            "symbol"        => "R_50",
+        },
+        args => {price => $contract->ask_price},
+    };
+
+    is_deeply \@token, [map {$_->{token}} @$result], 'result is in order';
+
+    my @differing  = (qw/contract_id transaction_id/);
+    my @equal      = (qw/purchase_time buy_price start_time longcode shortcode payout/);
+    my @error_keys = (qw/code message_to_client/);
+
+    for my $k (@differing) {
+        isnt $result->[0]->{$k}, undef, "got 1st $k";
+        isnt $result->[1]->{$k}, undef, "got 2nd $k";
+        isnt $result->[0]->{$k}, $result->[1]->{$k}, 'and they differ';
+    }
+
+    for my $k (@equal) {
+        isnt $result->[0]->{$k}, undef, "got 1st $k";
+        isnt $result->[1]->{$k}, undef, "got 2nd $k";
+        is   $result->[0]->{$k}, $result->[1]->{$k}, 'and they equal';
+    }
+
+    is $result->[2]->{code}, 'InsufficientBalance', 'token[2]: InsufficientBalance';
+
+    is_deeply [sort keys %{$result->[0]}], [sort 'token', @differing, @equal], 'got only expected keys for [0]';
+    is_deeply [sort keys %{$result->[1]}], [sort 'token', @differing, @equal], 'got only expected keys for [1]';
+    is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys], 'got only expected keys for [2]';
 };
-
-is_deeply \@token, [map {$_->{token}} @$result], 'result is in order';
-
-my @differing  = (qw/contract_id transaction_id/);
-my @equal      = (qw/purchase_time buy_price start_time longcode shortcode payout/);
-my @error_keys = (qw/code message_to_client/);
-
-for my $k (@differing) {
-    isnt $result->[0]->{$k}, undef, "got 1st $k";
-    isnt $result->[1]->{$k}, undef, "got 2nd $k";
-    isnt $result->[0]->{$k}, $result->[1]->{$k}, 'and they differ';
-}
-
-for my $k (@equal) {
-    isnt $result->[0]->{$k}, undef, "got 1st $k";
-    isnt $result->[1]->{$k}, undef, "got 2nd $k";
-    is   $result->[0]->{$k}, $result->[1]->{$k}, 'and they equal';
-}
-
-is $result->[2]->{code}, 'InsufficientBalance', 'token[2]: InsufficientBalance';
-
-is_deeply [sort keys %{$result->[0]}], [sort 'token', @differing, @equal], 'got only expected keys for [0]';
-is_deeply [sort keys %{$result->[1]}], [sort 'token', @differing, @equal], 'got only expected keys for [1]';
-is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys], 'got only expected keys for [2]';
-
 
 note explain $result;
 
