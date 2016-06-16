@@ -91,8 +91,9 @@ my $result=BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
 
 is_deeply \@token, [map {$_->{token}} @$result], 'result is in order';
 
-my @differing = (qw/contract_id transaction_id/);
-my @equal     = (qw/purchase_time buy_price start_time longcode shortcode payout/);
+my @differing  = (qw/contract_id transaction_id/);
+my @equal      = (qw/purchase_time buy_price start_time longcode shortcode payout/);
+my @error_keys = (qw/code message_to_client/);
 
 for my $k (@differing) {
     isnt $result->[0]->{$k}, undef, "got 1st $k";
@@ -106,7 +107,9 @@ for my $k (@equal) {
     is   $result->[0]->{$k}, $result->[1]->{$k}, 'and they equal';
 }
 
-is_deeply [sort keys %{$result->[0]}], [sort 'token', @differing, @equal], 'got only expected keys';
+is_deeply [sort keys %{$result->[0]}], [sort 'token', @differing, @equal], 'got only expected keys for [0]';
+is_deeply [sort keys %{$result->[1]}], [sort 'token', @differing, @equal], 'got only expected keys for [1]';
+is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys], 'got only expected keys for [2]';
 
 
 note explain $result;
