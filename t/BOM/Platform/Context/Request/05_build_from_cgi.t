@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 10);
+use Test::More (tests => 7);
 use Test::Deep;
 use Test::Exception;
 use Test::NoWarnings;
@@ -145,6 +145,42 @@ subtest 'cookie_parsing' => sub {
         ok !$request->cookie('a'), 'Cookie a not present';
     };
 };
+
+
+sub mock_cgi_for {
+    my $params     = shift || {};
+    my $url_params = shift || {};
+    my $method     = shift || 'GET';
+
+    my $request_mock = Test::MockObject->new();
+    $request_mock->set_always('request_method', $method);
+    $request_mock->set_always('script_name',    'test.cgi');
+    $request_mock->mock(
+        'url_param',
+        sub {
+            my $self = shift;
+            my $name = shift;
+            if ($name) {
+                return $url_params->{$name};
+            }
+
+            return keys %{$url_params};
+        });
+    $request_mock->mock(
+        'param',
+        sub {
+            my $self = shift;
+            my $name = shift;
+            if ($name) {
+                return $params->{$name};
+            }
+
+            return keys %{$params};
+        });
+
+    return $request_mock;
+}
+
 
 END {
 }
