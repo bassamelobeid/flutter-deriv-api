@@ -58,7 +58,7 @@ $cl[-1]->set_default_account('USD');
 $cl[-1]->save;
 
 sub balances {
-    return map { $_->default_account->load->balance } @_;
+    return map { 0+$_->default_account->load->balance } @_;
 }
 
 my @token;
