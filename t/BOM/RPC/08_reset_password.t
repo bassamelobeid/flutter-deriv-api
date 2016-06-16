@@ -7,7 +7,6 @@ use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
-use BOM::Platform::SessionCookie;
 use utf8;
 use BOM::Platform::Token::Verification;
 
