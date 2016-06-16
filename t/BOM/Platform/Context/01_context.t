@@ -37,9 +37,6 @@ subtest 'app_config' => sub {
     ok(BOM::Platform::Context::request($request), 'new request');
     is(scalar @{BOM::Platform::Context::app_config()->cgi->allowed_languages}, 3, 'new settings');
 
-    use Data::Dumper;
-    print Dumper(BOM::Platform::Context::app_config()->cgi->allowed_languages);
-
     BOM::Platform::Context::request_completed();
 };
 
