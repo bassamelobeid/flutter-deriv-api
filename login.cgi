@@ -11,7 +11,6 @@ use Auth::DuoWeb;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( http_redirect PrintContentType );
-use BOM::Platform::SessionCookie;
 use BOM::Platform::Context qw(request);
 use BOM::StaffPages;
 use BOM::System::Config;
