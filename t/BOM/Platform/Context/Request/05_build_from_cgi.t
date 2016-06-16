@@ -19,7 +19,6 @@ use Carp;
 }
 
 use BOM::Platform::Context::Request;
-use BOM::Platform::SessionCookie;
 
 subtest 'base build' => sub {
     my $request = BOM::Platform::Context::Request::from_cgi({

@@ -347,10 +347,6 @@ sub _build_broker_code {
         return BOM::Platform::Runtime->instance->broker_codes->get($input_broker)->code;
     }
 
-    if ($self->loginid and BOM::Platform::Runtime->instance->broker_codes->get($self->loginid)->code) {
-        return BOM::Platform::Runtime->instance->broker_codes->get($self->loginid)->code;
-    }
-
     return $self->real_account_broker->code;
 }
 
