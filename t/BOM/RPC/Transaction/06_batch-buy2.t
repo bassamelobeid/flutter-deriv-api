@@ -53,6 +53,19 @@ subtest 'buy' => sub {
             },
         })->has_no_system_error->has_no_error->result;
     note explain $result;
+    $result = $result->{result};
+    is_deeply $result, [
+        {
+            token => 'DUMMY1',
+            code  => 'InvalidToken',
+            message_to_client => 'Invalid token',
+        },
+        {
+            token => 'DUMMY2',
+            code  => 'InvalidToken',
+            message_to_client => 'Invalid token',
+        },
+    ], 'got expected result';
 };
 
 done_testing();
