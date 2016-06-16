@@ -213,7 +213,7 @@ support@binary.com', $jp_client->last_name, $jp_client->first_name
             subject            => localize('Kindly send us your documents for verification.'),
             message            => [$email_content],
             use_email_template => 1,
-            loginid            => $client->loginid,
+            template_loginid   => $client->loginid,
         });
         BOM::System::AuditLog::log('Japan Knowledge Test pass for ' . $jp_client->loginid . ' . System email sent to request for docs',
             $client->loginid);

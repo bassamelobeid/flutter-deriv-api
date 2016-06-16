@@ -613,7 +613,7 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
         'subject'            => localize('Acknowledgement of Money Transfer'),
         'message'            => [$emailcontent],
         'use_email_template' => 1,
-        'loginid'            => $loginid_to
+        'template_loginid'   => $loginid_to
     });
 
     return {
@@ -872,7 +872,7 @@ sub paymentagent_withdraw {
         subject            => localize('Acknowledgement of Withdrawal Request'),
         message            => $emailcontent,
         use_email_template => 1,
-        loginid            => $pa_client->loginid,
+        template_loginid   => $pa_client->loginid,
     });
 
     return {

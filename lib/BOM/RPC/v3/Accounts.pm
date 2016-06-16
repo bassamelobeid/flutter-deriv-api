@@ -312,7 +312,7 @@ sub change_password {
                 )
             ],
             use_email_template  => 1,
-            loginid             => $client->loginid,
+            template_loginid    => $client->loginid,
         });
 
     return {status => 1};
@@ -376,7 +376,7 @@ sub cashier_password {
                         )
                     ],
                     'use_email_template' => 1,
-                    loginid              => $client->loginid,
+                    template_loginid     => $client->loginid,
                 });
             return {status => 1};
         }
@@ -402,7 +402,7 @@ sub cashier_password {
                         )
                     ],
                     'use_email_template' => 1,
-                    loginid              => $client->loginid,
+                    template_loginid     => $client->loginid,
                 });
 
             return $error_sub->(localize('Sorry, you have entered an incorrect cashier password'));
@@ -424,7 +424,7 @@ sub cashier_password {
                         )
                     ],
                     'use_email_template' => 1,
-                    loginid              => $client->loginid,
+                    template_loginid     => $client->loginid,
                 });
             BOM::System::AuditLog::log('cashier unlocked', $client->loginid);
             return {status => 0};
@@ -493,7 +493,7 @@ sub reset_password {
                 )
             ],
             use_email_template => 1,
-            loginid            => $client->loginid,
+            template_loginid   => $client->loginid,
         });
 
     return {status => 1};
@@ -656,7 +656,7 @@ sub set_settings {
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
         use_email_template => 1,
-        loginid            => $client->loginid,
+        template_loginid   => $client->loginid,
     });
     BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
