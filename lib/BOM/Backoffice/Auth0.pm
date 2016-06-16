@@ -41,7 +41,7 @@ sub login {
 }
 
 sub from_cookie {
-    my $staff = BOM::Backoffice::Cookie::get_staff;
+    my $staff = BOM::Backoffice::Cookie::get_staff();
 
     if ($staff and $user = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff)) {
         return JSON->new->utf8->decode($user);
@@ -50,7 +50,7 @@ sub from_cookie {
 }
 
 sub loggout {
-    my $staff = BOM::Backoffice::Cookie::get_staff;
+    my $staff = BOM::Backoffice::Cookie::get_staff();
 
     if ($staff and BOM::System::RedisReplicated::redis_write->del("BINARYBOLOGIN::" . $staff)) {
         print 'you are logged out.';

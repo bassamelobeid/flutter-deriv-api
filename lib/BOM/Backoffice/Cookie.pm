@@ -2,8 +2,11 @@ package BOM::Backoffice::Cookie;
 
 use warnings;
 use strict;
+
 use CGI::Cookie;
 use CGI::Util;
+use BOM::Platform::Context qw(request);
+
 
 sub build_cookies {
     my $args = shift;
@@ -54,16 +57,23 @@ sub expire_cookies {
 }
 
 sub get_staff {
-    my %bo_cookies = CGI::Cookie->fetch;
-
-    my $staff;
-    if ($bo_cookies->{staff}) {
-        $staff = CGI::Util::escape($bo_cookies{staff}->value);
-    }
-    return $staff;
+    return __get_cookie('staff');
 }
 
-sub set_staff_cookie {
+sub get_auth_token {
+    return __get_cookie('auth_token');
+}
+
+sub __get_cookie {
+    my $name = shift;
+
+    my %bo_cookies = CGI::Cookie->fetch;
+    my $value;
+
+    if ($bo_cookies->{$name}) {
+        $value = CGI::Util::escape($bo_cookies{$name}->value);
+    }
+    return $value;
 }
 
 1;
