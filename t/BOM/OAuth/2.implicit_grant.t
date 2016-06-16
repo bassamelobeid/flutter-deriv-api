@@ -5,7 +5,6 @@ use Test::Mojo;
 use Test::MockModule;
 use BOM::System::Password;
 use BOM::Platform::User;
-use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Database::Model::OAuth;
