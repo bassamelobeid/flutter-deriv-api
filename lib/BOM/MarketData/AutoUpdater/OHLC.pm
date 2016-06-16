@@ -213,8 +213,7 @@ sub verify_ohlc_update {
         my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 
         next if $underlying->has_holiday_on($now);
-        next if (not $underlying->use_official_ohlc or $underlying->submarket->name eq 'otc_index' or $underlying->submarket->name eq 'otc_stock');
-
+        next if ($underlying->submarket->is_OTC);
         if (my @filelines = read_file($db_file)) {
             $self->_check_file($underlying, @filelines);
         } else {
