@@ -9,7 +9,7 @@ use utf8;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::System::Password;
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
@@ -48,23 +48,16 @@ $user->save;
 my $method = 'reality_check';
 $c->call_ok($method, {token => 12345})->has_error->error_message_is('The token is invalid.', 'check invalid token');
 
-my $session = BOM::Platform::SessionCookie->new(
-    loginid => $test_client_vr->loginid,
-    email   => $email
-);
-my $token = $session->token;
+my $oauth = BOM::Database::Model::OAuth->new;
+my ($token, $creation_time) = $oauth->store_access_token_only(1, $test_client_vr->loginid);
 
 my $result = $c->call_ok($method, {token => $token})->result;
 is_deeply $result, {}, 'empty record for client that has no reality check';
 
-$session = BOM::Platform::SessionCookie->new(
-    loginid => $test_client_mlt->loginid,
-    email   => $email
-);
-$token = $session->token;
+($token, $creation_time) = $oauth->store_access_token_only(1, $test_client_mlt->loginid);
 
 $result = $c->call_ok($method, {token => $token})->result;
-is $result->{start_time}, $session->{loginat}, 'Start time matches session login time';
+is $result->{start_time}, $creation_time, 'Start time matches session login time';
 is $result->{loginid}, $test_client_mlt->loginid, 'Contains correct loginid';
 is $result->{open_contract_count}, 0, 'zero open contracts';
 

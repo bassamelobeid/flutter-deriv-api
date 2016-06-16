@@ -5,7 +5,7 @@ use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -29,14 +29,10 @@ $test_client_vr->set_default_account('USD');
 $test_client_vr->save;
 my $test_loginid = $test_client->loginid;
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $test_loginid,
-    email   => $email
-)->token;
-my $token_vr = BOM::Platform::SessionCookie->new(
-    loginid => $test_client_vr->loginid,
-    email   => $email
-)->token;
+my $oauth = BOM::Database::Model::OAuth->new;
+my ($token, undef) = $oauth->store_access_token_only(1, $test_loginid);
+my ($token_vr, undef) = $oauth->store_access_token_only(1, $test_client_vr->loginid);
+
 my $account     = $test_client_vr->default_account;
 my $old_balance = $account->balance;
 
