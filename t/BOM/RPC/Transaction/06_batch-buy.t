@@ -82,19 +82,21 @@ subtest 'normal contract', sub {
 
     my $result=BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
         token_details => $clm_token_details,
-        tokens => \@token,
         source => 1,
         contract_parameters => {
-            "proposal"      => 1,
-            "amount"        => "100",
-            "basis"         => "payout",
-            "contract_type" => "CALL",
-            "currency"      => "USD",
-            "duration"      => "120",
-            "duration_unit" => "s",
-            "symbol"        => "R_50",
+            proposal      => 1,
+            amount        => "100",
+            basis         => "payout",
+            contract_type => "CALL",
+            currency      => "USD",
+            duration      => "120",
+            duration_unit => "s",
+            symbol        => "R_50",
         },
-        args => {price => $contract->ask_price},
+        args => {
+            price  => $contract->ask_price,
+            tokens => \@token,
+        },
     };
 
     is_deeply \@token, [map {$_->{token}} @$result], 'result is in order';
@@ -134,21 +136,23 @@ subtest 'spread bet', sub {
 
     my $result=BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
         token_details => $clm_token_details,
-        tokens => \@token,
         source => 1,
         contract_parameters => {
-            "proposal"         => 1,
-            "amount"           => "100",
-            "basis"            => "payout",
-            "contract_type"    => "SPREADU",
-            "currency"         => "USD",
-            "stop_profit"      => "10",
-            "stop_type"        => "point",
-            "amount_per_point" => "1",
-            "stop_loss"        => "10",
-            "symbol"           => "R_50",
+            proposal         => 1,
+            amount           => "100",
+            basis            => "payout",
+            contract_type    => "SPREADU",
+            currency         => "USD",
+            stop_profit      => "10",
+            stop_type        => "point",
+            amount_per_point => "1",
+            stop_loss        => "10",
+            symbol           => "R_50",
         },
-        args => {price => $contract->ask_price},
+        args => {
+            price  => $contract->ask_price,
+            tokens => \@token,
+        },
     };
 
     is_deeply \@token, [map {$_->{token}} @$result], 'result is in order';
