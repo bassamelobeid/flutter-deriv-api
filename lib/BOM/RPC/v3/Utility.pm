@@ -18,7 +18,7 @@ sub get_token_details {
     return unless $token;
 
     my ($loginid, $creation_time, $epoch, @scopes);
-    if (length $token == 15) {                     # access token
+    if (length $token == 15) {    # access token
         my $m = BOM::Database::Model::AccessToken->new;
         ($loginid, $creation_time) = $m->get_loginid_by_token($token);
         return unless $loginid;
