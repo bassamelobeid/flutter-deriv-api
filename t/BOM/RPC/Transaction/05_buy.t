@@ -11,6 +11,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::Product;
+use BOM::Database::Model::OAuth;
 
 my $email  = 'test@binary.com';
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -19,10 +20,7 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 my $loginid = $client->loginid;
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $loginid,
-    email   => $email
-)->token;
+my ($token, undef) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $client->deposit_virtual_funds;
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);

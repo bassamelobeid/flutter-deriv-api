@@ -30,6 +30,9 @@ sub get_token_details {
         return unless $loginid;
         $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
         @scopes = $m->get_scopes_by_access_token($token);
+    } else {
+        # invalid token type
+        return;
     }
 
     return {
