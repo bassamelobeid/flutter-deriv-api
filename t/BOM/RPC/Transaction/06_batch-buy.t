@@ -66,7 +66,7 @@ note explain \@token;
 my $contract = BOM::Test::Data::Utility::Product::create_contract();
 
 my $result=BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
-    client_loginid => $clm->loginid,
+    token_details => $clm_token_details,
     tokens => \@token,
     source => 1,
     contract_params => {

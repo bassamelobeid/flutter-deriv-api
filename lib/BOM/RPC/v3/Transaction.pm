@@ -91,6 +91,7 @@ sub buy_contract_for_multiple_accounts {
     my $params = shift;
 
     my $token_details = $params->{token_details};
+    Test::More::note Test::More::explain $token_details;
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
 
     my $client = BOM::Platform::Client->new({loginid => $token_details->{loginid}});
