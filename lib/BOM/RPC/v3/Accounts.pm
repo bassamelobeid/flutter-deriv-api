@@ -311,7 +311,8 @@ sub change_password {
                     $client_ip
                 )
             ],
-            use_email_template => 1,
+            use_email_template  => 1,
+            loginid             => $client->loginid,
         });
 
     return {status => 1};
@@ -375,6 +376,7 @@ sub cashier_password {
                         )
                     ],
                     'use_email_template' => 1,
+                    loginid              => $client->loginid,
                 });
             return {status => 1};
         }
@@ -400,6 +402,7 @@ sub cashier_password {
                         )
                     ],
                     'use_email_template' => 1,
+                    loginid              => $client->loginid,
                 });
 
             return $error_sub->(localize('Sorry, you have entered an incorrect cashier password'));
@@ -421,6 +424,7 @@ sub cashier_password {
                         )
                     ],
                     'use_email_template' => 1,
+                    loginid              => $client->loginid,
                 });
             BOM::System::AuditLog::log('cashier unlocked', $client->loginid);
             return {status => 0};
@@ -446,15 +450,18 @@ sub reset_password {
                 message_to_client => localize("Sorry, an error occurred while processing your account.")});
     }
     @clients = $user->clients;
+
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
-    unless ($clients[0]->is_virtual) {
+    my $client = $clients[0];
+
+    unless ($client->is_virtual) {
         unless ($args->{date_of_birth}) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => "DateOfBirthMissing",
                     message_to_client => localize("Date of birth is required.")});
         }
         my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;
-        my $db_dob   = $clients[0]->date_of_birth =~ s/-0/-/gr;
+        my $db_dob   = $client->date_of_birth =~ s/-0/-/gr;
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => "DateOfBirthMismatch",
@@ -486,6 +493,7 @@ sub reset_password {
                 )
             ],
             use_email_template => 1,
+            loginid            => $client->loginid,
         });
 
     return {status => 1};
@@ -648,6 +656,7 @@ sub set_settings {
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
         use_email_template => 1,
+        loginid            => $client->loginid,
     });
     BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
