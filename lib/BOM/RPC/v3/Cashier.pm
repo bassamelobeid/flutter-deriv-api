@@ -226,8 +226,8 @@ sub cashier {
             my $field = $1;
 
             # map to our form fields
-            $field = "Postcode"     if $field eq 'pcode';
-            $field = "AddressLine1" if $field eq 'street';
+            $field = "postcode"     if $field eq 'pcode';
+            $field = "addressline1" if $field eq 'street';
             $field = "residence"    if $field eq 'country';
 
             return BOM::RPC::v3::Utility::create_error({
