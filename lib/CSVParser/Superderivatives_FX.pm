@@ -66,11 +66,7 @@ sub _build_records {
 
     my $surface_data = $self->_get_surface_data($vol_lines, $underlying, $spot, $rate);
 
-
     my $underlying_config = $underlying->config;
-    #update underlying_config with correct spot which is $spot
-    $underlying_config->{spot} = $spot;
-
 
     my $surface = Quant::Framework::VolSurface::Delta->new(
         underlying_config    => $underlying_config,
