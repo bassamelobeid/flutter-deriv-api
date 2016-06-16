@@ -26,7 +26,7 @@ my $token = BOM::Platform::SessionCookie->new(
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
 $req = {
-    "price_stream"  => 1,
+    "proposal"      => 1,
     "subscribe"     => 1,
     "amount"        => 640,
     "basis"         => "payout",
@@ -39,6 +39,6 @@ $req = {
 
 $t->send_ok({json => $req})->message_ok;
 $res = decode_json($t->message->[1]);
-ok $res->{price_stream}->{id}, 'Should return id';
+ok $res->{proposal}->{id}, 'Should return id';
 
 done_testing();
