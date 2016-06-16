@@ -6,7 +6,7 @@ use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use utf8;
 use Data::Dumper;
 
@@ -23,20 +23,16 @@ my $user = BOM::Platform::User->create(
 $user->add_loginid({loginid => $test_client->loginid});
 $user->save;
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $test_client->loginid,
-    email   => $email
-)->token;
+my $oauth = BOM::Database::Model::OAuth->new;
+my ($token, undef) = $oauth->store_access_token_only(1, $test_client->loginid);
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
 });
 $test_client_vr->email($email);
 $test_client_vr->save;
-my $token_vr = BOM::Platform::SessionCookie->new(
-    loginid => $test_client_vr->loginid,
-    email   => $email
-)->token;
+
+my ($token_vr, undef) = $oauth->store_access_token_only(1, $test_client_vr->loginid);
 
 is $test_client->default_account, undef, 'new client has no default account';
 
@@ -54,11 +50,11 @@ subtest $method => sub {
     my $expected_result = {
         'stash' => {
             'email'                => 'dummy@binary.com',
-            'scopes'               => ['read', 'trade', 'admin', 'payments'],
+            'scopes'               => ['read', 'admin', 'trade', 'payments'],
             'country'              => 'id',
             'loginid'              => $test_client->loginid,
             'token'                => $token,
-            'token_type'           => 'session_token',
+            'token_type'           => 'oauth_token',
             'account_id'           => '',
             'currency'             => '',
             'landing_company_name' => 'costarica',
@@ -66,7 +62,7 @@ subtest $method => sub {
         },
         'currency'             => '',
         'email'                => 'dummy@binary.com',
-        'scopes'               => ['read', 'trade', 'admin', 'payments'],
+        'scopes'               => ['read', 'admin', 'trade', 'payments'],
         'balance'              => '0',
         'landing_company_name' => 'costarica',
         'fullname'             => $test_client->full_name,
@@ -93,10 +89,7 @@ subtest $method => sub {
 
 subtest 'logout' => sub {
 
-    my $new_token = BOM::Platform::SessionCookie->new(
-        loginid => $test_client->loginid,
-        email   => $email
-    )->token;
+    my ($new_token, undef) = $oauth->store_access_token_only(1, $test_client->loginid);
 
     my $params = {
         email        => $email,
@@ -104,7 +97,7 @@ subtest 'logout' => sub {
         country_code => 'id',
         language     => 'EN',
         ua           => 'firefox',
-        token_type   => 'session_token',
+        token_type   => 'oauth_token',
         token        => $new_token
     };
     $c->call_ok('logout', $params)->has_no_error->result_is_deeply({status => 1});
@@ -123,7 +116,7 @@ subtest 'logout' => sub {
         {
             language => 'EN',
             token    => $new_token
-        })->has_error->error_message_is('The token is invalid.', 'session token is invalid after logout');
+        })->has_error->error_message_is('The token is invalid.', 'oauth token is invalid after logout');
 
 };
 
