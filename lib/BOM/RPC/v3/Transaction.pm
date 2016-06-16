@@ -156,7 +156,7 @@ sub buy_contract_for_multiple_accounts {
             $new->{token} = $el->{token};
             $new->{transaction_id} = $el->{txn}->{id};
             $new->{contract_id} = $el->{fmb}->{id};
-            $new->{purchase_time} = $el->{fmb}->{purchase_time};
+            $new->{purchase_time} = Date::Utility->new($el->{fmb}->{purchase_time})->epoch;
             $new->{buy_price} = $el->{fmb}->{buy_price};
             $new->{start_time} = Date::Utility->new($el->{fmb}->{start_time})->epoch;
             $new->{short_code} = $contract->longcode;
