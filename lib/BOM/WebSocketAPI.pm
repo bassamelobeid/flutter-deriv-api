@@ -154,8 +154,7 @@ sub startup {
 
         ['ticks',         {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks}],
         ['ticks_history', {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history}],
-        ['proposal',      {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal}],
-        ['price_stream',  {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::price_stream}],
+        ['proposal',      {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal}],
         ['pricing_table', {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::pricing_table}],
         ['forget',        {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget}],
         ['forget_all',    {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all}],
