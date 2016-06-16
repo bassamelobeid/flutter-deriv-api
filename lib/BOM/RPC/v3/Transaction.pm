@@ -115,7 +115,7 @@ sub buy_contract_for_multiple_accounts {
         $found_at_least_one = 1;
     }
 
-    return \@result unless $found_at_least_one;
+    return +{result => \@result} unless $found_at_least_one;
 
     # NOTE: we rely here on BOM::Product::Transaction to perform all the
     #       client validations like client_status and self_exclusion.
@@ -172,7 +172,7 @@ sub buy_contract_for_multiple_accounts {
         $el = $new;
     }
 
-    return \@result;
+    return +{result => \@result};
 }
 
 sub sell {

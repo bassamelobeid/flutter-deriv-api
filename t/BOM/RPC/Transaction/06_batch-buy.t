@@ -98,6 +98,7 @@ subtest 'normal contract', sub {
             tokens => \@token,
         },
     };
+    $result = $result->{result};
 
     is_deeply \@token, [map {$_->{token}} @$result], 'result is in order';
 
@@ -154,6 +155,7 @@ subtest 'spread bet', sub {
             tokens => \@token,
         },
     };
+    $result = $result->{result};
 
     is_deeply \@token, [map {$_->{token}} @$result], 'result is in order';
 
