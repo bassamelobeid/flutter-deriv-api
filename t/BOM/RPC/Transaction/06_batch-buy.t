@@ -100,7 +100,7 @@ for my $k (qw/contract_id transaction_id/) {
 for my $k (qw/purchase_time buy_price start_time longcode shortcode payout/) {
     isnt $result->[0]->{$k}, undef, "got 1st $k";
     isnt $result->[1]->{$k}, undef, "got 2nd $k";
-    isnt $result->[0]->{$k}, $result->[1]->{$k}, 'and they equal';
+    is $result->[0]->{$k}, $result->[1]->{$k}, 'and they equal';
 }
 
 
