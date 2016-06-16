@@ -25,9 +25,6 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
-my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
-$requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
-
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',

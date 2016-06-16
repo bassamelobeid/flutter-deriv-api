@@ -19,9 +19,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Format::Util::Numbers qw(roundnear);
 
-my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
-$requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
-
 initialize_realtime_ticks_db;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
