@@ -1,6 +1,6 @@
 language: perl
 perl:
-    - "5.14.2-thr"
+    - "5.14.2"
 env:
     - TEST_SUITE=unit_test_platform_client
     - TEST_SUITE=unit_test_platform_all
