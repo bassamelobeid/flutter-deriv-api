@@ -41,15 +41,22 @@ push @cl, BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
     email       => 'test-cl0@binary.com',
 });
+$cl[-1]->deposit_virtual_funds;
 
 push @cl, BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
     email       => 'test-cl1@binary.com',
 });
+$cl[-1]->deposit_virtual_funds;
+
+push @cl, BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+    email       => 'test-cl2@binary.com',
+});
+# no funding here ==> error
 
 my @token;
 for (@cl) {
-    $_->deposit_virtual_funds;
     my $t = BOM::RPC::v3::Accounts::api_token({
         client => $_,
         args   => {
@@ -59,7 +66,7 @@ for (@cl) {
     })->{tokens}->[0]->{token};
     push @token, $t if $t;
 }
-is 0+@token, 2, 'got 2 tokens';
+is 0+@token, 3, 'got 3 tokens';
 
 note explain \@token;
 
@@ -81,6 +88,8 @@ my $result=BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
     },
     args => {price => $contract->ask_price},
 };
+
+is_deeply \@token, [map {$_->{token}} @$result], 'result is in order';
 
 note explain $result;
 

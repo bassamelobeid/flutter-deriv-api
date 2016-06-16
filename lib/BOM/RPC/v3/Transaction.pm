@@ -159,8 +159,8 @@ sub buy_contract_for_multiple_accounts {
             $new->{purchase_time} = Date::Utility->new($el->{fmb}->{purchase_time})->epoch;
             $new->{buy_price} = $el->{fmb}->{buy_price};
             $new->{start_time} = Date::Utility->new($el->{fmb}->{start_time})->epoch;
-            $new->{short_code} = $contract->longcode;
-            $new->{short_code} = $el->{fmb}->{short_code};
+            $new->{longcode} = $contract->longcode;
+            $new->{shortcode} = $el->{fmb}->{short_code};
             $new->{payout} = $el->{fmb}->{payout_price};
 
             if ($contract->is_spread) {
