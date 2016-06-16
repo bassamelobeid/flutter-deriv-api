@@ -29,7 +29,7 @@ sub send_email {
     my $attachment         = $args_ref->{'attachment'};
     my $ctype              = $args_ref->{'att_type'} // 'text/plain';
     my $skip_text2html     = $args_ref->{'skip_text2html'};
-    my $template_loginid   = $args_ref->{loginid};
+    my $template_loginid   = $args_ref->{template_loginid};
 
     die 'No email provided' unless $email;
 
