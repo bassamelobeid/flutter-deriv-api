@@ -148,7 +148,7 @@ EOM
         subject            => $ce_subject,
         message            => [$ce_body],
         use_email_template => 1,
-        template_loginid   => $client->loginid,
+        loginid            => $client->loginid,
     });
 }
 
