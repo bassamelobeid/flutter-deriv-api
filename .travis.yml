@@ -51,7 +51,8 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
-    - make $TEST_SUITE
+    - echo $AUTHOR_TESTING
+    - AUTHOR_TESTING= make $TEST_SUITE
     - sudo service binary_pgbouncer status
 
 after_script:
