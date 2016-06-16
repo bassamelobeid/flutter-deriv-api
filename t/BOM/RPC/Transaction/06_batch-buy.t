@@ -113,9 +113,10 @@ subtest 'normal contract', sub {
     is_deeply [sort keys %{$result->[0]}], [sort 'token', @differing, @equal], 'got only expected keys for [0]';
     is_deeply [sort keys %{$result->[1]}], [sort 'token', @differing, @equal], 'got only expected keys for [1]';
     is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys], 'got only expected keys for [2]';
+
+    # note explain $result;
 };
 
-note explain $result;
 
 done_testing;
 
