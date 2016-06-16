@@ -279,7 +279,7 @@ sub revoke_tokens_by_loginid_app {
     return 1;
 }
 
-sub already_have_logins {
+sub has_other_login_sessions {
     my ($self, $loginid) = @_;
 
     my $dbh = $self->dbh;
