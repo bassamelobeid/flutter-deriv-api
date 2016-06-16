@@ -47,7 +47,7 @@ install:
     - /tmp/travis-scripts/setup_postfix.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
-    - echo $PERL5LIB
+    - export PERL5LIB=$PERL5LIB:/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi
     - prove --timer -lr -It/lib t/
 
 after_script:
