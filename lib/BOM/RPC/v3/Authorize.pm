@@ -87,7 +87,7 @@ sub logout {
                 my $app_id = $oauth->get_app_id_by_token($params->{token});
 
                 # need to skip as we impersonate from backoffice using read only token
-                $skip_login_history = 1 if ($scopes and scalar(@$scopes) == 1 and grep { $_ eq 'read' } @$scopes);
+                $skip_login_history = 1 if ($scopes and scalar(@$scopes) == 1 and $scopes->[0] eq 'read');
 
                 foreach my $c1 ($user->clients) {
                     $oauth->revoke_tokens_by_loginid_app($c1->loginid, $app_id);
