@@ -42,10 +42,12 @@ install:
     - /tmp/travis-scripts/setup_chronicledb.sh
 
     - /tmp/travis-scripts/setup_logs.sh
+    - echo $PERL5LIB
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - /tmp/travis-scripts/setup_postfix.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
+    - echo $PERL5LIB
     - prove --timer -lr -It/lib t/
 
 after_script:
