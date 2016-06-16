@@ -574,12 +574,13 @@ subtest 'all methods on a selection of underlyings' => sub {
       });
 
     my $today = Date::Utility->today;
-    foreach my $ul ($AS51, $EURUSD) {
+    my $audusd = BOM::Market::Underlying->new('frxAUDUSD');
+    foreach my $ul ($AS51, $audusd) {
         my $prev_weight = 0;
         my $builder = Quant::Framework::Utils::Builder->new({
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-            underlying_config => Quant::Framework::Utils::Test::create_underlying_config($ul->symbol),
+            underlying_config => $ul->config,
           });
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
