@@ -49,7 +49,7 @@ subtest 'buy' => sub {
             },
             args => {
                 price  => $contract->ask_price,
-                tokens => ['DUMMY1', 'DUMMY2', $token],
+                tokens => ['DUMMY1', 'DUMMY2'],
             },
         })->has_no_system_error->has_no_error->result;
     note explain $result;
