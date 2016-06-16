@@ -42,11 +42,6 @@ require BOM::Product::Pricing::Greeks::BlackScholes;
 
 sub is_spread { return 0 }
 
-has amount_type => (
-    is      => 'ro',
-    default => 'payout',
-);
-
 has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
     is      => 'ro',
     default => undef,
@@ -1109,15 +1104,14 @@ sub _build_ask_price {
 sub _build_payout {
     my $self = shift;
 
-    my $commission = $self->commission_from_stake + $self->app_markup->amount;
-    my $payout = max($self->ask_price, $self->_calculate_payout($commission));
+    my $payout = max($self->ask_price, $self->_calculate_payout($self->commission_from_stake));
     return roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $payout);
 }
 
 sub _calculate_payout {
     my ($self, $base_commission) = @_;
 
-    return $self->ask_price / ($self->theo_probability->amount + $base_commission * $self->commission_scaling_factor->amount);
+    return $self->ask_price / ($self->theo_probability->amount + $base_commission);
 }
 
 my $commission_base_multiplier = 1;
@@ -1149,26 +1143,29 @@ has commission_from_stake => (
 sub _build_commission_from_stake {
     my $self = shift;
 
-    my $theo_probability = $self->theo_probability->amount;
-    my $ask_price        = $self->ask_price;
-    my $base_commission  = $self->base_commission;
+    my $theo_probability    = $self->theo_probability->amount;
+    my $ask_price           = $self->ask_price;
+    my $base_commission     = $self->base_commission;
+    my $app_commission      = $self->app_markup->amount;
+    my $combined_commission = $base_commission + $app_commission;
 
     # payout calculated with base commission.
-    my $initial_payout = $self->_calculate_payout($base_commission);
+    my $initial_payout = $self->_calculate_payout($combined_commission);
     if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
         # a minimum of 2 cents please, payout could be zero.
         my $minimum_commission = $initial_payout ? 0.02 / $initial_payout : 0.02;
-        return max($minimum_commission, $base_commission);
+        return max($minimum_commission, $combined_commission);
     }
 
     # payout calculated with 2 times base commission.
-    $initial_payout = $self->_calculate_payout($base_commission * 2);
+    $combined_commission = $base_commission * 2 + $app_commission;
+    $initial_payout      = $self->_calculate_payout($combined_commission);
     if ($self->commission_multiplier($initial_payout) == $commission_max_multiplier) {
-        return $base_commission * 2;
+        return $combined_commission;
     }
 
     my $a = $base_commission * $commission_slope * sqrt($theo_probability * (1 - $theo_probability));
-    my $b = $theo_probability + $base_commission - $base_commission * $commission_min_std * $commission_slope;
+    my $b = ($theo_probability + $base_commission - $base_commission * $commission_min_std * $commission_slope) + $app_commission;
     my $c = -$ask_price;
 
     # sets it to zero first.
@@ -1184,7 +1181,7 @@ sub _build_commission_from_stake {
     # die if we could not get a positive payout value.
     die 'Could not calculate a payout' unless $initial_payout;
 
-    return $base_commission * $self->commission_multiplier($initial_payout);
+    return $base_commission * $self->commission_multiplier($initial_payout) + $app_commission;
 }
 
 sub _build_theo_probability {
@@ -1234,16 +1231,7 @@ sub _build_app_markup {
 sub _build_app_markup_dollar_amount {
     my $self = shift;
 
-    my $amount;
-    if ($self->amount_type eq 'stake') {
-        # can't use payout directly here, because payout is adjusted by app_markup.
-        my $orig_payout = $self->_calculate_payout($self->commission_from_stake);
-        $amount = $self->app_markup->amount * $orig_payout;
-    } else {
-        $amount = $self->app_markup->amount * $self->payout;
-    }
-
-    return roundnear(0.01, $amount);
+    return roundnear(0.01, $self->app_markup->amount * $self->payout);
 }
 
 sub _build_bs_probability {
@@ -1297,7 +1285,12 @@ sub _build_risk_markup {
 sub _build_base_commission {
     my $self = shift;
 
-    return $self->underlying->base_commission;
+    my $minimum        = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100;
+    my $maximum        = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100;
+    my $scaling_factor = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
+    $scaling_factor = max($minimum, min($maximum, $scaling_factor));
+
+    return $self->underlying->base_commission * $scaling_factor;
 }
 
 sub _build_commission_markup {
@@ -1314,32 +1307,9 @@ sub _build_commission_markup {
         %min,
     });
 
-    $commission_cv->include_adjustment('multiply', $self->commission_scaling_factor);
-    $commission_cv->include_adjustment('add',      $self->app_markup);
+    $commission_cv->include_adjustment('add', $self->app_markup);
 
     return $commission_cv;
-}
-
-has commission_scaling_factor => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_commission_scaling_factor {
-    my $self = shift;
-
-    my $minimum    = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100;
-    my $maximum    = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100;
-    my $adjustment = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_scaling_factor',
-        description => 'global commission scaling factor',
-        set_by      => __PACKAGE__,
-        base_amount => $adjustment,
-        minimum     => $minimum,
-        maximum     => $maximum,
-    });
 }
 
 sub _build_theo_price {
