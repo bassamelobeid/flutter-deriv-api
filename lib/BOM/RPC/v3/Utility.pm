@@ -18,7 +18,7 @@ sub get_token_details {
 
     return unless $token;
 
-    my ($loginid, $creation_time, $epoch);
+    my ($loginid, $creation_time, $epoch, $ua_fingerprint);
     my @scopes = qw/read trade admin payments/;    # scopes is everything for session token
     if (length $token == 15) {                     # access token
         my $m = BOM::Database::Model::AccessToken->new;
@@ -28,7 +28,7 @@ sub get_token_details {
         @scopes = $m->get_scopes_by_access_token($token);
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         my $m = BOM::Database::Model::OAuth->new;
-        ($loginid, $creation_time) = $m->get_loginid_by_access_token($token);
+        ($loginid, $creation_time, $ua_fingerprint) = $m->get_loginid_by_access_token($token);
         return unless $loginid;
         $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
         @scopes = $m->get_scopes_by_access_token($token);
@@ -40,9 +40,10 @@ sub get_token_details {
     }
 
     return {
-        loginid => $loginid,
-        scopes  => \@scopes,
-        epoch   => $epoch,
+        loginid        => $loginid,
+        scopes         => \@scopes,
+        epoch          => $epoch,
+        ua_fingerprint => $ua_fingerprint,
     };
 }
 
