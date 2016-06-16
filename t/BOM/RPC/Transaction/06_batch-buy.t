@@ -54,6 +54,8 @@ push @cl, BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     email       => 'test-cl2@binary.com',
 });
 # no funding here ==> error
+$cl[-1]->set_default_account('USD');
+$cl[-1]->save;
 
 sub balances {
     return map { $_->default_account->load->balance } @_;
