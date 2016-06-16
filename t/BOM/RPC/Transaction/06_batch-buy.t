@@ -154,7 +154,7 @@ subtest 'spread bet', sub {
     is_deeply \@token, [map {$_->{token}} @$result], 'result is in order';
 
     my @differing  = (qw/contract_id transaction_id/);
-    my @equal      = (qw/purchase_time buy_price start_time longcode shortcode payout/);
+    my @equal      = (qw/purchase_time buy_price start_time longcode shortcode payout stop_loss_level stop_profit_level amount_per_point/);
     my @error_keys = (qw/code message_to_client/);
 
     for my $k (@differing) {
