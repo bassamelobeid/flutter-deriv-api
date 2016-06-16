@@ -153,15 +153,15 @@ sub buy_contract_for_multiple_accounts {
         if (exists $el->{code}) {
             @{$new}{qw/token code message_to_client/} = @{$el}{qw/token code error/};
         } else {
-            $new->{token} = $el->{token};
+            $new->{token}          = $el->{token};
             $new->{transaction_id} = $el->{txn}->{id};
-            $new->{contract_id} = $el->{fmb}->{id};
-            $new->{purchase_time} = Date::Utility->new($el->{fmb}->{purchase_time})->epoch;
-            $new->{buy_price} = $el->{fmb}->{buy_price};
-            $new->{start_time} = Date::Utility->new($el->{fmb}->{start_time})->epoch;
-            $new->{longcode} = $contract->longcode;
-            $new->{shortcode} = $el->{fmb}->{short_code};
-            $new->{payout} = $el->{fmb}->{payout_price};
+            $new->{contract_id}    = $el->{fmb}->{id};
+            $new->{purchase_time}  = Date::Utility->new($el->{fmb}->{purchase_time})->epoch;
+            $new->{buy_price}      = $el->{fmb}->{buy_price};
+            $new->{start_time}     = Date::Utility->new($el->{fmb}->{start_time})->epoch;
+            $new->{longcode}       = $contract->longcode;
+            $new->{shortcode}      = $el->{fmb}->{short_code};
+            $new->{payout}         = $el->{fmb}->{payout_price};
 
             if ($contract->is_spread) {
                 $new->{stop_loss_level}   = $contract->stop_loss_level;
