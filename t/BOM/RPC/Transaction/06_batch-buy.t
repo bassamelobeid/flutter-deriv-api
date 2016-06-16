@@ -91,6 +91,20 @@ my $result=BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts {
 
 is_deeply \@token, [map {$_->{token}} @$result], 'result is in order';
 
+for my $k (qw/contract_id transaction_id/) {
+    isnt $result->[0]->{$k}, undef, "got 1st $k";
+    isnt $result->[1]->{$k}, undef, "got 2nd $k";
+    isnt $result->[0]->{$k}, $result->[1]->{$k}, 'and they differ';
+}
+
+for my $k (qw/purchase_time buy_price start_time longcode shortcode payout/) {
+    isnt $result->[0]->{$k}, undef, "got 1st $k";
+    isnt $result->[1]->{$k}, undef, "got 2nd $k";
+    isnt $result->[0]->{$k}, $result->[1]->{$k}, 'and they equal';
+}
+
+
+
 note explain $result;
 
 done_testing;
