@@ -20,6 +20,7 @@ before_install:
     - echo $AUTHOR_TESTING
     - source ~/travis-perl-helpers/init
     - echo $AUTHOR_TESTING
+    - export AUTHOR_TESTING=
     - PREBUILT_REPO="git@github.com:chylli/test-perl.git" build-perl
     - echo $AUTHOR_TESTING
     - /tmp/travis-scripts/fixHostName.sh
