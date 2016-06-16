@@ -123,7 +123,7 @@ sub error_api_response {
 
     my $msg_type             = $params->{msg_type};
     my $rpc_response_handler = $params->{response};
-    my $api_response         = $c->new_error($msg_type, $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
+    my $api_response         = $c->new_error($msg_type, $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client}, $rpc_response->{error}->{details});
 
     # TODO Should be removed after RPC's answers will be standardized
     my $custom_response;
