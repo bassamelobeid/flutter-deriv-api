@@ -107,7 +107,7 @@ sub buy_contract_for_multiple_accounts {
 
     my $msg = BOM::Platform::Context::localize('Invalid token');
     for my $t (@{$params->{tokens} || []}) {
-        my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+        my $token_details = BOM::RPC::v3::Utility::get_token_details($t);
         my $loginid;
         unless ($token_details and $loginid = $token_details->{loginid}) {
             push @result,
