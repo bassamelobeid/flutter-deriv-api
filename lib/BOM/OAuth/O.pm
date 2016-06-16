@@ -321,6 +321,7 @@ sub __login {
                                 )
                             ],
                             use_email_template => 1,
+                            loginid            => $client->loginid,
                         });
                 }
             }
