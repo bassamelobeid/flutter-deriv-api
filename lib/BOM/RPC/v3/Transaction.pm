@@ -76,17 +76,6 @@ sub buy {
     return $response;
 }
 
-my %_allowed_result_members_on_success;
-@_allowed_result_members_on_success{
-    qw/
-        token transaction_id contract_id purchase_time buy_price
-        start_time longcode shortcode paypout stop_loss_level
-        stop_profit_level amount_per_point/
-} = ();
-
-my %_allowed_result_members_on_error;
-@_allowed_result_members_on_error{qw/token code error/} = ();
-
 sub buy_contract_for_multiple_accounts {
     my $params = shift;
 
@@ -111,9 +100,9 @@ sub buy_contract_for_multiple_accounts {
         unless ($token_details and $loginid = $token_details->{loginid}) {
             push @result,
                 +{
-                token => $t,
-                code  => 'InvalidToken',
-                error => $msg,
+                token             => $t,
+                code              => 'InvalidToken',
+                message_to_client => $msg,
                 };
             next;
         }
@@ -160,11 +149,27 @@ sub buy_contract_for_multiple_accounts {
     }
 
     for my $el (@result) {
+        my $new = {};
         if (exists $el->{code}) {
-            delete @{$el}{grep { !exists $_allowed_result_members_on_error{$_} } keys %$el};
+            @{$new}{qw/token code message_to_client/} = @{$el}{qw/token code error/};
         } else {
-            delete @{$el}{grep { !exists $_allowed_result_members_on_success{$_} } keys %$el};
+            $new->{token} = $el->{token};
+            $new->{transaction_id} = $el->{txn}->{id};
+            $new->{contract_id} = $el->{fmb}->{id};
+            $new->{purchase_time} = $el->{fmb}->{purchase_time};
+            $new->{buy_price} = $el->{fmb}->{buy_price};
+            $new->{start_time} = Date::Utility->new($el->{fmb}->{start_time})->epoch;
+            $new->{short_code} = $contract->longcode;
+            $new->{short_code} = $el->{fmb}->{short_code};
+            $new->{payout} = $el->{fmb}->{payout_price};
+
+            if ($contract->is_spread) {
+                $new->{stop_loss_level}   = $contract->stop_loss_level;
+                $new->{stop_profit_level} = $contract->stop_profit_level;
+                $new->{amount_per_point}  = $contract->amount_per_point;
+            }
         }
+        $el = $new;
     }
 
     return \@result;
