@@ -148,7 +148,7 @@ $t = $t->send_ok({
             "employment_industry"                  => "Finance",
             "education_level"                      => "Secondary",
             "income_source"                        => "Self-Employed",
-            "net_income"                           => '$25,000 - $100,000',
+            "net_income"                           => '$25,000 - $50,000',
             "estimated_worth"                      => '$100,000 - $250,000',
         }})->message_ok;
 $res = decode_json($t->message->[1]);
