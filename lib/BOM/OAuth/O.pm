@@ -296,7 +296,7 @@ sub __login {
 
     # send when token has scope other than read (as we impersonate from backoffice using read only tokens) and client already have login session(s)
     if (not (scalar @app_scopes == 1 and $app_scopes[0] eq 'read')
-        and __oauth_model()->already_have_logins($client->loginid)) {
+        and __oauth_model()->has_other_login_sessions($client->loginid)) {
         try {
             if ($last_login and exists $last_login->{environment}) {
                 my ($old_env, $user_agent, $r) =
