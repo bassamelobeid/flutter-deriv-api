@@ -72,7 +72,19 @@ for (@cl) {
     })->{tokens}->[0]->{token};
     push @token, $t if $t;
 }
-is 0+@token, 3, 'got 3 tokens';
+
+{
+    my $t = BOM::RPC::v3::Accounts::api_token({
+        client => $cl[0],
+        args   => {
+            new_token        => 'Read Token',
+            new_token_scopes => ['read'],
+        },
+    })->{tokens}->[0]->{token};
+    push @token, $t if $t;
+}
+
+is 0+@token, 4, 'got 4 tokens';
 
 # note explain \@token;
 
@@ -119,6 +131,7 @@ subtest 'normal contract', sub {
     }
 
     is $result->[2]->{code}, 'InsufficientBalance', 'token[2]: InsufficientBalance';
+    is $result->[3]->{code}, 'PermissionDenied', 'token[3]: PermissionDenied';
 
     $balances[0] -= $result->[0]->{buy_price};
     $balances[1] -= $result->[1]->{buy_price};
@@ -127,6 +140,7 @@ subtest 'normal contract', sub {
     is_deeply [sort keys %{$result->[0]}], [sort 'token', @differing, @equal], 'got only expected keys for [0]';
     is_deeply [sort keys %{$result->[1]}], [sort 'token', @differing, @equal], 'got only expected keys for [1]';
     is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys], 'got only expected keys for [2]';
+    is_deeply [sort keys %{$result->[3]}], [sort 'token', @error_keys], 'got only expected keys for [3]';
 
     # note explain $result;
 };
@@ -176,6 +190,7 @@ subtest 'spread bet', sub {
     }
 
     is $result->[2]->{code}, 'InsufficientBalance', 'token[2]: InsufficientBalance';
+    is $result->[3]->{code}, 'PermissionDenied', 'token[3]: PermissionDenied';
 
     $balances[0] -= $result->[0]->{buy_price};
     $balances[1] -= $result->[1]->{buy_price};
@@ -184,6 +199,7 @@ subtest 'spread bet', sub {
     is_deeply [sort keys %{$result->[0]}], [sort 'token', @differing, @equal], 'got only expected keys for [0]';
     is_deeply [sort keys %{$result->[1]}], [sort 'token', @differing, @equal], 'got only expected keys for [1]';
     is_deeply [sort keys %{$result->[2]}], [sort 'token', @error_keys], 'got only expected keys for [2]';
+    is_deeply [sort keys %{$result->[3]}], [sort 'token', @error_keys], 'got only expected keys for [3]';
 
     # note explain $result;
 };

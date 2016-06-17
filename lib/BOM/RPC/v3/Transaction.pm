@@ -129,7 +129,7 @@ sub buy_contract_for_multiple_accounts {
             +{
             token             => $t,
             code              => 'InvalidToken',
-            message_to_client => $msg,
+            message_to_client => $msg1,
             };
     }
 
