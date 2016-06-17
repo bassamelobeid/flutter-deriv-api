@@ -118,7 +118,7 @@ sub startup {
                 client_ip      => $client_ip,
                 country_code   => $c->country_code,
                 user_agent     => $user_agent,
-                ua_fingerprint => md5_hex(($client_ip // '') . ($user_agent // '')),
+                ua_fingerprint => md5_hex($app_id . ($client_ip // '') . ($user_agent // '')),
             );
         });
 
