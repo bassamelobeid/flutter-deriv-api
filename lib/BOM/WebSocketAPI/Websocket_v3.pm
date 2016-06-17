@@ -244,6 +244,12 @@ my @dispatch = (
             before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
         }
     ],
+    [
+        'buy_contract_for_multiple_accounts', '', 1, 'trade',
+        {
+            before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
+        }
+    ],
     ['transaction', '', 1, 'read', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction}],
     ['portfolio',   '', 1, 'read'],
     [
@@ -330,27 +336,28 @@ for my $order (0 .. @dispatch - 1) {
 }
 
 my %rate_limit_map = (
-    ping_real                      => '',
-    time_real                      => '',
-    portfolio_real                 => 'websocket_call_expensive',
-    statement_real                 => 'websocket_call_expensive',
-    profit_table_real              => 'websocket_call_expensive',
-    proposal_real                  => 'websocket_real_pricing',
-    pricing_table_real             => 'websocket_real_pricing',
-    proposal_open_contract_real    => 'websocket_real_pricing',
-    verify_email_real              => 'websocket_call_email',
-    buy_real                       => 'websocket_real_pricing',
-    sell_real                      => 'websocket_real_pricing',
-    reality_check_real             => 'websocket_call_expensive',
-    ping_virtual                   => '',
-    time_virtual                   => '',
-    portfolio_virtual              => 'websocket_call_expensive',
-    statement_virtual              => 'websocket_call_expensive',
-    profit_table_virtual           => 'websocket_call_expensive',
-    proposal_virtual               => 'websocket_call_pricing',
-    pricing_table_virtual          => 'websocket_call_pricing',
-    proposal_open_contract_virtual => 'websocket_call_pricing',
-    verify_email_virtual           => 'websocket_call_email',
+    ping_real                               => '',
+    time_real                               => '',
+    portfolio_real                          => 'websocket_call_expensive',
+    statement_real                          => 'websocket_call_expensive',
+    profit_table_real                       => 'websocket_call_expensive',
+    proposal_real                           => 'websocket_real_pricing',
+    pricing_table_real                      => 'websocket_real_pricing',
+    proposal_open_contract_real             => 'websocket_real_pricing',
+    verify_email_real                       => 'websocket_call_email',
+    buy_real                                => 'websocket_real_pricing',
+    buy_contract_for_multiple_accounts_real => 'websocket_real_pricing',
+    sell_real                               => 'websocket_real_pricing',
+    reality_check_real                      => 'websocket_call_expensive',
+    ping_virtual                            => '',
+    time_virtual                            => '',
+    portfolio_virtual                       => 'websocket_call_expensive',
+    statement_virtual                       => 'websocket_call_expensive',
+    profit_table_virtual                    => 'websocket_call_expensive',
+    proposal_virtual                        => 'websocket_call_pricing',
+    pricing_table_virtual                   => 'websocket_call_pricing',
+    proposal_open_contract_virtual          => 'websocket_call_pricing',
+    verify_email_virtual                    => 'websocket_call_email',
 );
 
 sub _reached_limit_check {
