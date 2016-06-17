@@ -6,6 +6,7 @@ use BOM::RPC::v3::Cashier;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use Test::MockModule;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);

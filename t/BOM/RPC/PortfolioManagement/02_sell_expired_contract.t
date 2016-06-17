@@ -13,6 +13,7 @@ use Test::BOM::RPC::Client;
 
 use BOM::Market::Data::DatabaseAPI;
 use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
