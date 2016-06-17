@@ -12,11 +12,6 @@ tidy:
 unit_test:
 	prove --timer -l -I./t -r t/
 
-data_js:
-	rm -f statics/javascript/data/*
-	if [ ! -d "statics/javascript/data" ]; then mkdir -p statics/javascript/data; fi;
-	perl -I ./lib -I ./bin -MGenerateStaticData -e "GenerateStaticData->generate_data_files('statics/javascript/data')"
-
 i18n:
 	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 \
 		--output=messages.pot --output-dir=/home/git/binary-com/translations-websockets-api/src/locales   --directory=/home/git/regentmarkets/bom-backoffice/   --directory=/home/git/regentmarkets/bom-platform/ --directory=/home/git/regentmarkets/bom/ --directory=/home/git/regentmarkets/bom-websocket-api/ --directory=/home/git/regentmarkets/bom-rpc/
