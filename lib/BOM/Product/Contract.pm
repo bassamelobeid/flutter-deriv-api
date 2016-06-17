@@ -1552,8 +1552,6 @@ sub _build_pricing_spot {
     my $initial_spot;
     if ($self->current_tick) {
         $initial_spot = $self->current_tick->quote;
-        # take note of this only when we are trying to sell a contract
-        $self->sell_tick($self->current_tick) if $self->for_sale;
     } else {
         # If we could not get the correct spot to price, we will take the latest available spot at pricing time.
         # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
@@ -1575,17 +1573,6 @@ sub _build_pricing_spot {
 
     return $initial_spot;
 }
-
-=head2 sell_tick
-
-The tick that we sold the contract at.
-
-=cut
-
-has sell_tick => (
-    is      => 'rw',
-    default => undef,
-);
 
 has [qw(offering_specifics barrier_category)] => (
     is         => 'ro',
