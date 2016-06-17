@@ -76,8 +76,9 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
+            my $app_id;
             if ($c->req->param('app_id')) {
-                my $app_id = defang_lite($c->req->param('app_id'));
+                $app_id = defang_lite($c->req->param('app_id'));
 
                 my $error;
                 APP_ID:
