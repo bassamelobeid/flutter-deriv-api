@@ -81,8 +81,10 @@ sub store_access_token_only {
         undef, $access_token, $app_id, $loginid, $expires_time);
     $dbh->do("DELETE FROM oauth.ua_fingerprint WHERE app_id = ? AND loginid = ?",
         undef, $app_id, $loginid);
-    $dbh->do("INSERT INTO oauth.ua_fingerprint (app_id, loginid, ua_fingerprint) VALUES (?, ?, ?)",
-        undef, $app_id, $loginid, $ua_fingerprint);
+    if ($ua_fingerprint) {
+        $dbh->do("INSERT INTO oauth.ua_fingerprint (app_id, loginid, ua_fingerprint) VALUES (?, ?, ?)",
+            undef, $app_id, $loginid, $ua_fingerprint);
+    }
 
     return ($access_token, $expires_in);
 }
