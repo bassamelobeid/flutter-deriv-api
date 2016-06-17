@@ -107,7 +107,7 @@ sub get_loginid_by_access_token {
         FROM oauth.ua_fingerprint
         WHERE loginid = ? AND app_id = ?
     ", undef, $loginid, $app_id);
-    return ($loginid, $creation_time, $ua_fingerprint);
+    return wantarray ? ($loginid, $creation_time, $ua_fingerprint) : $loginid;
 
 }
 
@@ -236,7 +236,7 @@ sub delete_app {
     my $dbh = $self->dbh;
 
     ## delete real delete
-    foreach my $table ('user_scope_confirm', 'access_token') {
+    foreach my $table ('ua_fingerprint', 'user_scope_confirm', 'access_token') {
         $dbh->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id);
     }
 
