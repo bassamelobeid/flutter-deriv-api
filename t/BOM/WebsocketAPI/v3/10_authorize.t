@@ -10,6 +10,7 @@ use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 # Hack to get stash values, can't use hook after dispatch, because we should check value after wss message
 my $stash  = {};

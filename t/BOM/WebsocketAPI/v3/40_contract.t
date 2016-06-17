@@ -9,6 +9,8 @@ use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
 

@@ -11,6 +11,7 @@ use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Transaction;
 

@@ -10,6 +10,7 @@ use TestHelper qw/test_schema build_mojo_test/;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 # cleanup
 use BOM::Database::Model::AccessToken;

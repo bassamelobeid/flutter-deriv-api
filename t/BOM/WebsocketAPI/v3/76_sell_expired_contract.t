@@ -11,6 +11,7 @@ use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 my $t = build_mojo_test();
 
