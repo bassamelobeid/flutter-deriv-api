@@ -69,8 +69,8 @@ sub _send_ask {
             }
 
             return {
-                msg_type   => $api_name,
-                $api_name  => {($uuid ? (id => $uuid) : ()), %$response}};
+                msg_type => $api_name,
+                $api_name => {($uuid ? (id => $uuid) : ()), %$response}};
         },
         {args => $args},
         $api_name,
@@ -171,8 +171,8 @@ sub process_pricing_events {
                 $results = $err;
             } else {
                 $results = {
-                    msg_type   => $api_name,
-                    $api_name  => {
+                    msg_type  => $api_name,
+                    $api_name => {
                         id       => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
                         longcode => $pricing_channel->{$serialized_args}->{$amount}->{longcode},
                         %$adjusted_results,
