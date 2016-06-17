@@ -20,7 +20,7 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 my $loginid = $client->loginid;
 
-my ($token, undef) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $client->deposit_virtual_funds;
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);

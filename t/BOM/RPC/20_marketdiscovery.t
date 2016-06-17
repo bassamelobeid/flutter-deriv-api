@@ -82,7 +82,7 @@ subtest $method => sub {
     $test_client->email($email);
     $test_client->save;
 
-    my ($token, undef) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
     $params->{token} = $token;
     $result = $c->call_ok($method, $params)->has_no_system_error->result;

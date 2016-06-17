@@ -34,7 +34,7 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $client->deposit_virtual_funds;
 
-my ($token, undef) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

@@ -43,7 +43,7 @@ subtest 'CR' => sub {
     $client->save;
     my $loginid = $client->loginid;
 
-    my ($token, undef) = $oauth->store_access_token_only(1, $loginid);
+    my ($token) = $oauth->store_access_token_only(1, $loginid);
 
     my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->costarica;
 
@@ -131,7 +131,7 @@ subtest 'JP' => sub {
     $client->save;
     my $loginid = $client->loginid;
 
-    my ($token, undef) = $oauth->store_access_token_only(1, $loginid);
+    my ($token) = $oauth->store_access_token_only(1, $loginid);
 
     $params->{token} = $token;
 
@@ -195,7 +195,7 @@ subtest 'MLT' => sub {
     $client->save;
     my $loginid = $client->loginid;
 
-    my ($token, undef) = $oauth->store_access_token_only(1, $loginid);
+    my ($token) = $oauth->store_access_token_only(1, $loginid);
     $params->{token} = $token;
 
     my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->malta;
@@ -258,7 +258,7 @@ subtest 'MX' => sub {
     $client->save;
     my $loginid = $client->loginid;
 
-    my ($token, undef) = $oauth->store_access_token_only(1, $loginid);
+    my ($token) = $oauth->store_access_token_only(1, $loginid);
     $params->{token} = $token;
 
     my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->iom;
@@ -319,7 +319,7 @@ subtest "VR no get_limits" => sub {
     $client_vr->email($email);
     $client_vr->save;
 
-    my ($token_vr, undef) = $oauth->store_access_token_only(1, $client_vr->loginid);
+    my ($token_vr) = $oauth->store_access_token_only(1, $client_vr->loginid);
 
     $params->{token} = $token_vr;
     $c->call_ok($method, $params)->has_error->error_message_is('Sorry, this feature is not available.', 'invalid token');

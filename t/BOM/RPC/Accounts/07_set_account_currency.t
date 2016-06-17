@@ -19,7 +19,7 @@ $test_client->save;
 
 is $test_client->default_account, undef, 'new client has no default account';
 
-my ($token, undef) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 

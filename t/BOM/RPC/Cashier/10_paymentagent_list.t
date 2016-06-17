@@ -20,7 +20,7 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client->email($email);
 $test_client->save;
 
-my ($token, undef) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
 my $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',

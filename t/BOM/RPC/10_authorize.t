@@ -24,7 +24,7 @@ $user->add_loginid({loginid => $test_client->loginid});
 $user->save;
 
 my $oauth = BOM::Database::Model::OAuth->new;
-my ($token, undef) = $oauth->store_access_token_only(1, $test_client->loginid);
+my ($token) = $oauth->store_access_token_only(1, $test_client->loginid);
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -32,7 +32,7 @@ my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client_vr->email($email);
 $test_client_vr->save;
 
-my ($token_vr, undef) = $oauth->store_access_token_only(1, $test_client_vr->loginid);
+my ($token_vr) = $oauth->store_access_token_only(1, $test_client_vr->loginid);
 
 is $test_client->default_account, undef, 'new client has no default account';
 
@@ -88,8 +88,7 @@ subtest $method => sub {
 };
 
 subtest 'logout' => sub {
-
-    my ($new_token, undef) = $oauth->store_access_token_only(1, $test_client->loginid);
+    ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
     my $params = {
         email        => $email,
@@ -98,15 +97,16 @@ subtest 'logout' => sub {
         language     => 'EN',
         ua           => 'firefox',
         token_type   => 'oauth_token',
-        token        => $new_token
+        token        => $token
     };
     $c->call_ok('logout', $params)->has_no_error->result_is_deeply({status => 1});
 
     #check login history
+    my ($new_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
     my $history_records = $c->call_ok(
         'login_history',
         {
-            token => $token,
+            token => $new_token,
             args  => {limit => 1}})->has_no_error->result->{records};
     is($history_records->[0]{action}, 'logout', 'the last history is logout');
     like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=EN/, 'environment is correct');
@@ -115,15 +115,16 @@ subtest 'logout' => sub {
         'authorize',
         {
             language => 'EN',
-            token    => $new_token
+            token    => $token
         })->has_error->error_message_is('The token is invalid.', 'oauth token is invalid after logout');
 
 };
 
 subtest 'self_exclusion' => sub {
+    my ($new_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
     my $params = {
         language => 'en',
-        token    => $token
+        token    => $new_token
     };
     # This is how long I think binary.com can survive using Perl in its concurrency paradigm era.
     # If this test ever failed because of setting this date too short, we might be in bigger troubles than a failing test.

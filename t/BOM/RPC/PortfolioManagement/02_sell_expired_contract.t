@@ -53,7 +53,7 @@ subtest 'Initialization' => sub {
         $client_token  = $m->create_token($client->loginid,  'test token');
         $vclient_token = $m->create_token($vclient->loginid, 'test token');
 
-        ($oauth_token, undef) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+        ($oauth_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
     }
     'Initial clients';
 
