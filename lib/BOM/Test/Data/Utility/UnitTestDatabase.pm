@@ -314,9 +314,6 @@ sub import {
 
         require BOM::Test::Data::Utility::UserTestDatabase;
         BOM::Test::Data::Utility::UserTestDatabase->import(':init');
-
-        require BOM::Test::Data::Utility::AuthTestDatabase;
-        BOM::Test::Data::Utility::AuthTestDatabase->import(':init');
     }
     return;
 }
