@@ -176,7 +176,7 @@ sub authorize {
         );
     }
 
-    my $ua_fingerprint = md5_hex(($c->stash('request')->client_ip // '') . ($c->req->headers->header('User-Agent') // '')); 
+    my $ua_fingerprint = md5_hex($app_id . ($c->stash('request')->client_ip // '') . ($c->req->headers->header('User-Agent') // ''));
 
     ## create tokens for all loginids
     my $i = 1;
