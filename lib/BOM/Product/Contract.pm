@@ -1444,8 +1444,6 @@ sub _build_pricing_spot {
     my $initial_spot;
     if ($self->current_tick) {
         $initial_spot = $self->current_tick->quote;
-        # take note of this only when we are trying to sell a contract
-        $self->sell_tick($self->current_tick) if $self->for_sale;
     } else {
         # If we could not get the correct spot to price, we will take the latest available spot at pricing time.
         # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
@@ -1467,17 +1465,6 @@ sub _build_pricing_spot {
 
     return $initial_spot;
 }
-
-=head2 sell_tick
-
-The tick that we sold the contract at.
-
-=cut
-
-has sell_tick => (
-    is      => 'rw',
-    default => undef,
-);
 
 has [qw(offering_specifics barrier_category)] => (
     is         => 'ro',
@@ -2568,14 +2555,14 @@ sub confirm_validity {
 
     # Should have included this in one of the validation subroutines but it will screw with existing tests.
     # Since this is a temporary solution and we will work on a proper fix, this is acceptable for now.
-    my $announcement_date = Date::Utility->new('2016-06-16');
+    my $announcement_date = Date::Utility->new('2016-06-25');
     if (    $self->market->name eq 'forex'
         and not $self->is_atm_bet
         and $self->date_expiry->is_before($announcement_date)
-        and $self->underlying->symbol =~ /JPY/)
+        and $self->underlying->symbol =~ /(EUR|GBP)/)
     {
         my $err = {
-            message           => 'stay out for Japan economic announcement',
+            message           => 'stay out for Brexit',
             message_to_client => localize('This trade is temporarily unavailable.'),
         };
         $self->add_error($err);
