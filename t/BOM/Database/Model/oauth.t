@@ -10,6 +10,7 @@ my $test_loginid = 'CR10002';
 my $test_user_id = 999;
 
 ## clear
+$m->dbh->do("DELETE FROM oauth.ua_fingerprint");
 $m->dbh->do("DELETE FROM oauth.access_token");
 $m->dbh->do("DELETE FROM oauth.user_scope_confirm");
 $m->dbh->do("DELETE FROM oauth.apps");
