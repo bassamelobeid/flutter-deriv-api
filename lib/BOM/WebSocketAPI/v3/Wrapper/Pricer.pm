@@ -114,7 +114,11 @@ sub _pricing_channel {
     my $uuid = Data::UUID->new->create_str();
 
     # subscribe if it is not already subscribed
-    if (not $pricing_channel->{$serialized_args} and not BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args) and $args->{subscribe} and $args->{subscribe} == 1) {
+    if (    not $pricing_channel->{$serialized_args}
+        and not BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args)
+        and $args->{subscribe}
+        and $args->{subscribe} == 1)
+    {
         BOM::System::RedisReplicated::redis_pricer->set($serialized_args, 1);
         $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
