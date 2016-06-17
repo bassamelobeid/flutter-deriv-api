@@ -79,6 +79,8 @@ sub store_access_token_only {
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
     $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires) VALUES (?, ?, ?, ?)",
         undef, $access_token, $app_id, $loginid, $expires_time);
+    $dbh->do("DELETE FROM oauth.ua_fingerprint WHERE app_id = ? AND loginid = ?",
+        undef, $app_id, $loginid);
     $dbh->do("INSERT INTO oauth.ua_fingerprint (app_id, loginid, ua_fingerprint) VALUES (?, ?, ?)",
         undef, $app_id, $loginid, $ua_fingerprint);
 
