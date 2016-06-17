@@ -21,7 +21,7 @@ sub _build__connection_parameters {
         port           => '5435',
         user           => 'postgres',
         password       => 'mRX1E3Mi00oS8LG',
-        pgbouncer_port => '6435',
+        pgbouncer_port => '6432',
     };
 }
 
