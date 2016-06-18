@@ -51,22 +51,47 @@ isnt $proposal->{proposal}->{id}, undef, 'got proposal id';
 isnt $proposal->{proposal}->{ask_price}, undef, 'got ask_price';
 test_schema('proposal', $proposal);
 
-sleep 1;
+my $ask_price = $proposal->{proposal}->{ask_price} || 0;
 
-my $ask_price = $proposal->{proposal}->{ask_price};
+select undef, undef, undef, 0.1;
+
+subtest "first try: no tokens => invalid input", sub {
+    $t = $t->send_ok({
+            json => {
+                buy_contract_for_multiple_accounts => $proposal->{proposal}->{id},
+                price                              => $ask_price,
+            }});
+
+    ## skip proposal
+    my $res;
+    for (my $i=0; $i<100; $i++) {   # prevent infinite loop
+        $t = $t->message_ok;
+        $res = decode_json($t->message->[1]);
+        note explain $res;
+        last unless $res->{msg_type} eq 'proposal';
+        $proposal = decode_json($t->message->[1]);
+        $ask_price = $proposal->{proposal}->{ask_price} || 0;
+    }
+    isa_ok $res->{error}, 'HASH';
+    is $res->{error}->{code}, 'InputValidationFailed', 'got InputValidationFailed';
+};
+
+#
 $t = $t->send_ok({
         json => {
             buy_contract_for_multiple_accounts => $proposal->{proposal}->{id},
-            price                              => $ask_price || 0
+            price                              => $ask_price,
         }});
 
-## skip proposal until we meet buy
+## skip proposal
 my $res;
 for (my $i=0; $i<100; $i++) {   # prevent infinite loop
     $t = $t->message_ok;
     $res = decode_json($t->message->[1]);
     note explain $res;
     last unless $res->{msg_type} eq 'proposal';
+    $proposal = decode_json($t->message->[1]);
+    $ask_price = $proposal->{proposal}->{ask_price} || 0;
 }
 isa_ok $res->{buy}, 'HASH';
 isnt $res->{buy}->{contract_id}, undef, 'got contract_id';
