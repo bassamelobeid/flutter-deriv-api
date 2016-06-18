@@ -1,6 +1,5 @@
 #!perl
 
-use 5.010;                       # state
 use Test::More;
 use JSON;
 use Data::Dumper;
@@ -82,16 +81,24 @@ sub filter_proposal {
     return $res;
 }
 
-sub get_token {
-    state $cnt = 0;
-    $t = $t->send_ok({
-            json => {
-                api_token        => 1,
-                new_token        => 'Test Token ' . $cnt++,
-                new_token_scopes => ['trade']}})->message_ok;
-    my $res = decode_json($t->message->[1]);
-    note explain $res;
-    return $res->{api_token}->{tokens}->[0]->{token};
+{
+    my %t;
+    sub get_token {
+        my $cnt = keys %t;
+        $t = $t->send_ok({
+                json => {
+                    api_token        => 1,
+                    new_token        => 'Test Token ' . $cnt,
+                    new_token_scopes => ['trade']}})->message_ok;
+        my $res = decode_json($t->message->[1]);
+        note explain $res;
+        for my $x (@{$res->{api_token}->{tokens}}) {
+            next if exists $t{$x};
+            $t{$x} = 1;
+            return $x;
+        }
+        return;
+    }
 }
 
 subtest "1st try: no tokens => invalid input", sub {
