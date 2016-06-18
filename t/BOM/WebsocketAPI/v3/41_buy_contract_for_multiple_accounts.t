@@ -165,13 +165,22 @@ subtest "3rd try: the real thing => success", sub {
     my $res = filter_proposal;
     isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
 
-    note explain $res;
+    # note explain $res;
     test_schema('buy_contract_for_multiple_accounts', $res);
 
     $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
     my $forget = decode_json($t->message->[1]);
     # note explain $forget;
     is $forget->{forget}, 0, 'buying a proposal deletes the stream';
+
+    # checking statement
+    $t = $t->send_ok({
+            json => {
+                statement => 1,
+                limit     => 3
+            }});
+    $res = filter_proposal;
+    note explain $res;
 };
 
 $t->finish_ok;
