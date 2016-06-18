@@ -129,13 +129,14 @@ subtest "2nd try: dummy tokens => success", sub {
 
     $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
     my $forget = decode_json($t->message->[1]);
-    note explain $forget;
+    # note explain $forget;
     is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 };
 
 subtest "3rd try: the real thing => success", sub {
     my @tokens = map { get_token } (1,2);
     push @tokens, $token;       # add the login token as well
+    note explain \@tokens;
     get_proposal;
     $t = $t->send_ok({
             json => {
@@ -165,7 +166,7 @@ subtest "3rd try: the real thing => success", sub {
 
     $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
     my $forget = decode_json($t->message->[1]);
-    note explain $forget;
+    # note explain $forget;
     is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 };
 
