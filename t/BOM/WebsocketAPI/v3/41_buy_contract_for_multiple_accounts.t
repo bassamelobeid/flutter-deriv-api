@@ -26,8 +26,8 @@ my $token = BOM::Platform::SessionCookie->new(
 # login
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
-is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
-is $authorize->{authorize}->{loginid}, 'CR2002';
+is $authorize->{authorize}->{email},   'sy@regentmarkets.com', 'login result: email';
+is $authorize->{authorize}->{loginid}, 'CR2002', 'login result: loginid';
 
 my %contractParameters = (
     "amount"        => "5",
