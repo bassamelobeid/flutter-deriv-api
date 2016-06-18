@@ -17,15 +17,24 @@ sub buy_get_contract_params {
     # 2. Calling forget_buy_proposal instead of forget_one as we need args for contract proposal
     if ($args->{parameters}) {
         $params->{call_params}->{contract_parameters} = $args->{parameters};
-    } elsif (my $p = BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $args->{buy})) {
-        $params->{call_params}->{contract_parameters} = $p;
-    } elsif ($c->stash('pricing_channel') and $c->stash('pricing_channel')->{uuid} and $c->stash('pricing_channel')->{uuid}->{$args->{buy}}) {
-        $params->{call_params}->{contract_parameters} = $c->stash('pricing_channel')->{uuid}->{$args->{buy}}->{args};
-        BOM::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $args->{buy});
-    } else {
-        return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
+        return;
     }
-    return;
+
+    if (my $proposal_id = $args->{buy} // $args->{buy_contract_for_multiple_accounts}) {
+        if (my $p = BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $proposal_id)) {
+            $params->{call_params}->{contract_parameters} = $p;
+            return;
+        }
+
+        if ($c->stash('pricing_channel') and $c->stash('pricing_channel')->{uuid} and $c->stash('pricing_channel')->{uuid}->{$proposal_id}) {
+            $params->{call_params}->{contract_parameters} = $c->stash('pricing_channel')->{uuid}->{$proposal_id}->{args};
+            BOM::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $proposal_id);
+            return;
+        }
+    }
+
+    return $c->new_error(($args->{buy_contract_for_multiple_accounts} ? 'buy_contract_for_multiple_accounts' : 'buy'),
+                         'InvalidContractProposal', $c->l("Unknown contract proposal"));
 }
 
 sub transaction {

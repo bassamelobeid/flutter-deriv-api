@@ -108,6 +108,7 @@ subtest "3rd try: dummy tokens and new proposal => success", sub {
     BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998049;443.6824;');
     $t->message_ok;
     $proposal = decode_json($t->message->[1]);
+    note explain $proposal;
     isnt $proposal->{proposal}->{id}, undef, 'got proposal id';
     isnt $proposal->{proposal}->{ask_price}, undef, 'got ask_price';
     test_schema('proposal', $proposal);
