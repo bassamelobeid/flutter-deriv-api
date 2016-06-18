@@ -133,6 +133,7 @@ sub buy_contract_for_multiple_accounts {
             };
     }
 
+    my $contract;
     if ($found_at_least_one) {
         # NOTE: we rely here on BOM::Product::Transaction to perform all the
         #       client validations like client_status and self_exclusion.
@@ -144,7 +145,7 @@ sub buy_contract_for_multiple_accounts {
         my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
         $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
 
-        my $contract = try { produce_contract({%$contract_parameters}) }
+        $contract = try { produce_contract({%$contract_parameters}) }
             || return BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => localize('Cannot create contract')});
