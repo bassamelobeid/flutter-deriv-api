@@ -152,8 +152,8 @@ subtest "3rd try: the real thing => success", sub {
     # are not going to test all possible variations. In particular,
     # all the tokens used belong to the same account.
     my @tokens = map { get_token 'trade' } (1,2);
-    push @tokens, get_token 'read';
-    push @tokens, $token;       # add the login token as well
+    push @tokens, get_token 'read'; # generates an error
+    push @tokens, $token;           # add the login token as well
     # note explain \@tokens;
     get_proposal;
     $t = $t->send_ok({

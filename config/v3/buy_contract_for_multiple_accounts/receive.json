@@ -12,6 +12,7 @@
       "type": "object",
       "title": "Receipt confirmation",
       "description": "Receipt confirmation for the purchase",
+      "additionalProperties": false,
       "properties": {
         "result": {
           "type": "array",
@@ -21,6 +22,7 @@
               {
                 "type": "object",
                 "description": "Receipt for one contract",
+                "additionalProperties": false,
                 "properties": {
                   "token": {
                     "type": "string",
@@ -84,6 +86,7 @@
               {
                 "type": "object",
                 "description": "Error message",
+                "additionalProperties": false,
                 "properties": {
                   "token": {
                     "type": "string",
