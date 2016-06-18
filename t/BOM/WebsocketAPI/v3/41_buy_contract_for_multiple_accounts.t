@@ -94,7 +94,7 @@ sub filter_proposal {
         # note explain $res;
         for my $x (@{$res->{api_token}->{tokens}}) {
             next if exists $t{$x->{token}};
-            $t{$x} = 1;
+            $t{$x->{token}} = 1;
             return $x->{token};
         }
         return;
