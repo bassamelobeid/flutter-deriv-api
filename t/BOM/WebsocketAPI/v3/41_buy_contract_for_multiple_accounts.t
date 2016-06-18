@@ -89,7 +89,9 @@ sub get_token {
                 api_token        => 1,
                 new_token        => 'Test Token ' . $cnt++,
                 new_token_scopes => ['trade']}})->message_ok;
-    return decode_json($t->message->[1])->{api_token}->{tokens}->[0]->{token};
+    my $res = decode_json($t->message->[1]);
+    note explain $res;
+    return $res->{api_token}->{tokens}->[0]->{token};
 }
 
 subtest "1st try: no tokens => invalid input", sub {
