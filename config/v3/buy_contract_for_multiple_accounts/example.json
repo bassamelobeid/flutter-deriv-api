@@ -1,5 +1,10 @@
 {
-    "tokens": ["wkD0Cxm4blUlxg6", "8GNUx9I7Od1z5lh", "3mItPjPnduXBE7e"],
-    "buy": "uw2mk7no3oktoRVVsB4Dz7TQnFfABuFDgO95dlxfMxRuPUsz",
-    "price": 100.00
+  "buy_contract_for_multiple_accounts": "AE79667A-3561-11E6-880B-19CE0BCBE464",
+  "price": 2.57,
+  "tokens": [
+    "uz6OSIcFIcPKK5T",
+    "oSpp7ohpGf50tP6",
+    "ONqj76yAnVKnPtc",
+    "EWHdv7feGJRmMf1kqv79lgfPiGjLLGV9GHTZFQ345FzJSfNE"
+  ]
 }
