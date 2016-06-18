@@ -117,9 +117,9 @@ sub buy_contract_for_multiple_accounts {
             # here we got a valid token but with insufficient privileges
             push @result,
                 +{
-                token             => $t,
-                code              => 'PermissionDenied',
-                message_to_client => $msg2,
+                token => $t,
+                code  => 'PermissionDenied',
+                error => $msg2,
                 };
             next;
 
@@ -127,9 +127,9 @@ sub buy_contract_for_multiple_accounts {
 
         push @result,
             +{
-            token             => $t,
-            code              => 'InvalidToken',
-            message_to_client => $msg1,
+            token => $t,
+            code  => 'InvalidToken',
+            error => $msg1,
             };
     }
 
