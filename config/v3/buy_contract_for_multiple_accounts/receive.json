@@ -15,7 +15,7 @@
       "properties": {
         "result": {
           "type": "array",
-          "required": "1"
+          "required": "1",
           "items": {
             "type": "object",
             "description": "Receipt for one contract or error message",
@@ -70,7 +70,8 @@
               },
               "stop_loss_level": {
                 "type": "number",
-                "description":"[For spread contracts only] Stop loss level (spot plus/minus stop loss amount)"
+                "description":"[For spread contracts only] Stop loss level (spot plus/minus stop loss amount)",
+                "required": "1"
               },
               "payout": {
                 "type": "number",
