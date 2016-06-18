@@ -180,7 +180,7 @@ subtest "3rd try: the real thing => success", sub {
                 limit     => 3
             }});
     my $stmt = filter_proposal;
-    note explain $stmt;
+    # note explain $stmt;
 
     is_deeply ([sort {$a->[0] <=> $b->[0]}
                 map {[$_->{contract_id}, $_->{transaction_id}, -$_->{amount}]}
