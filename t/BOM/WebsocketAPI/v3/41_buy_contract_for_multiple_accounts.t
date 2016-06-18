@@ -91,11 +91,11 @@ sub filter_proposal {
                     new_token        => 'Test Token ' . $cnt,
                     new_token_scopes => ['trade']}})->message_ok;
         my $res = decode_json($t->message->[1]);
-        note explain $res;
+        # note explain $res;
         for my $x (@{$res->{api_token}->{tokens}}) {
-            next if exists $t{$x};
+            next if exists $t{$x->{token}};
             $t{$x} = 1;
-            return $x;
+            return $x->{token};
         }
         return;
     }
