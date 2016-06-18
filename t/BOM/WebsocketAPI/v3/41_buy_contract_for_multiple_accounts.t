@@ -76,28 +76,49 @@ subtest "first try: no tokens => invalid input", sub {
     is $res->{error}->{code}, 'InputValidationFailed', 'got InputValidationFailed';
 };
 
-#
-$t = $t->send_ok({
-        json => {
-            buy_contract_for_multiple_accounts => $proposal->{proposal}->{id},
-            price                              => $ask_price,
-        }});
+subtest "second try: dummy tokens => success", sub {
+    $t = $t->send_ok({
+            json => {
+                buy_contract_for_multiple_accounts => $proposal->{proposal}->{id},
+                price                              => $ask_price,
+                tokens                             => ['DUMMY0', 'DUMMY1'],
+            }});
 
-## skip proposal
-my $res;
-for (my $i=0; $i<100; $i++) {   # prevent infinite loop
-    $t = $t->message_ok;
-    $res = decode_json($t->message->[1]);
-    note explain $res;
-    last unless $res->{msg_type} eq 'proposal';
-    $proposal = decode_json($t->message->[1]);
-    $ask_price = $proposal->{proposal}->{ask_price} || 0;
-}
-isa_ok $res->{buy}, 'HASH';
-isnt $res->{buy}->{contract_id}, undef, 'got contract_id';
-ok $res->{buy}->{purchase_time};
+    ## skip proposal
+    my $res;
+    for (my $i=0; $i<100; $i++) {   # prevent infinite loop
+        $t = $t->message_ok;
+        $res = decode_json($t->message->[1]);
+        note explain $res;
+        last unless $res->{msg_type} eq 'proposal';
+        $proposal = decode_json($t->message->[1]);
+        $ask_price = $proposal->{proposal}->{ask_price} || 0;
+    }
+    isa_ok $res->{buy}, 'HASH';
+};
 
-test_schema('buy', $res);
+# #
+# $t = $t->send_ok({
+#         json => {
+#             buy_contract_for_multiple_accounts => $proposal->{proposal}->{id},
+#             price                              => $ask_price,
+#         }});
+
+# ## skip proposal
+# my $res;
+# for (my $i=0; $i<100; $i++) {   # prevent infinite loop
+#     $t = $t->message_ok;
+#     $res = decode_json($t->message->[1]);
+#     note explain $res;
+#     last unless $res->{msg_type} eq 'proposal';
+#     $proposal = decode_json($t->message->[1]);
+#     $ask_price = $proposal->{proposal}->{ask_price} || 0;
+# }
+# isa_ok $res->{buy}, 'HASH';
+# isnt $res->{buy}->{contract_id}, undef, 'got contract_id';
+# ok $res->{buy}->{purchase_time};
+
+# test_schema('buy', $res);
 
 $t = $t->send_ok({json => {forget => $proposal->{proposal}->{id}}})->message_ok;
 my $forget = decode_json($t->message->[1]);
