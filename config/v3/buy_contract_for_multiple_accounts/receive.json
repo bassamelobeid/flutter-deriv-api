@@ -70,8 +70,7 @@
               },
               "stop_loss_level": {
                 "type": "number",
-                "description":"[For spread contracts only] Stop loss level (spot plus/minus stop loss amount)",
-                "required": "1"
+                "description":"[For spread contracts only] Stop loss level (spot plus/minus stop loss amount)"
               },
               "payout": {
                 "type": "number",
