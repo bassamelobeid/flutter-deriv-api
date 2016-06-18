@@ -1,6 +1,6 @@
 #!perl
 
-use 5.10;                       # state
+use 5.010;                       # state
 use Test::More;
 use JSON;
 use Data::Dumper;
