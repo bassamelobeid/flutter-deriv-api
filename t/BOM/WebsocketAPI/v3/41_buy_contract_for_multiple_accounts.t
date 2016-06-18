@@ -44,7 +44,7 @@ $t = $t->send_ok({
             "subscribe" => 1,
             %contractParameters
         }});
-BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
+#BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 $t->message_ok;
 my $proposal = decode_json($t->message->[1]);
 isnt $proposal->{proposal}->{id}, undef, 'got proposal id';
@@ -52,8 +52,6 @@ isnt $proposal->{proposal}->{ask_price}, undef, 'got ask_price';
 test_schema('proposal', $proposal);
 
 my $ask_price = $proposal->{proposal}->{ask_price} || 0;
-
-#select undef, undef, undef, 0.1;
 
 subtest "1st try: no tokens => invalid input", sub {
     $t = $t->send_ok({
