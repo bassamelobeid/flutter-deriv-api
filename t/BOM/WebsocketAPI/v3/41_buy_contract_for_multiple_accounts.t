@@ -84,12 +84,13 @@ sub filter_proposal {
 {
     my %t;
     sub get_token {
+        my @scopes = @_;
         my $cnt = keys %t;
         $t = $t->send_ok({
                 json => {
                     api_token        => 1,
                     new_token        => 'Test Token ' . $cnt,
-                    new_token_scopes => ['trade']}})->message_ok;
+                    new_token_scopes => [@scopes]}})->message_ok;
         my $res = decode_json($t->message->[1]);
         # note explain $res;
         for my $x (@{$res->{api_token}->{tokens}}) {
@@ -138,6 +139,8 @@ subtest "2nd try: dummy tokens => success", sub {
         ],
     }, 'got expected result';
 
+    test_schema('buy_contract_for_multiple_accounts', $res);
+
     $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
     my $forget = decode_json($t->message->[1]);
     # note explain $forget;
@@ -148,7 +151,8 @@ subtest "3rd try: the real thing => success", sub {
     # Here we trust that the function in bom-rpc works correctly. We
     # are not going to test all possible variations. In particular,
     # all the tokens used belong to the same account.
-    my @tokens = map { get_token } (1,2);
+    my @tokens = map { get_token 'trade' } (1,2);
+    push @tokens, get_token 'read';
     push @tokens, $token;       # add the login token as well
     # note explain \@tokens;
     get_proposal;
@@ -163,21 +167,6 @@ subtest "3rd try: the real thing => success", sub {
 
     note explain $res;
     test_schema('buy_contract_for_multiple_accounts', $res);
-
-    # is_deeply $res->{buy_contract_for_multiple_accounts}, {
-    #     'result' => [
-    #         {
-    #             'code' => 'InvalidToken',
-    #             'message_to_client' => 'Invalid token',
-    #             'token' => 'DUMMY0'
-    #         },
-    #         {
-    #             'code' => 'InvalidToken',
-    #             'message_to_client' => 'Invalid token',
-    #             'token' => 'DUMMY1'
-    #         }
-    #     ],
-    # }, 'got expected result';
 
     $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
     my $forget = decode_json($t->message->[1]);
