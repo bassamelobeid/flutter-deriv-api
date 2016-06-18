@@ -29,47 +29,59 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'sy@regentmarkets.com', 'login result: email';
 is $authorize->{authorize}->{loginid}, 'CR2002', 'login result: loginid';
 
-my %contractParameters = (
-    "amount"        => "5",
-    "basis"         => "payout",
-    "contract_type" => "CALL",
-    "currency"      => "USD",
-    "symbol"        => "R_50",
-    "duration"      => "2",
-    "duration_unit" => "m",
-);
-$t = $t->send_ok({
-        json => {
-            "proposal"  => 1,
-            "subscribe" => 1,
-            %contractParameters
-        }});
-#BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
-$t->message_ok;
-my $proposal = decode_json($t->message->[1]);
-isnt $proposal->{proposal}->{id}, undef, 'got proposal id';
-isnt $proposal->{proposal}->{ask_price}, undef, 'got ask_price';
-test_schema('proposal', $proposal);
+my ($price, $proposal_id);
+sub get_proposal {
+    #BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 
-my $ask_price = $proposal->{proposal}->{ask_price} || 0;
-
-subtest "1st try: no tokens => invalid input", sub {
+    my %contractParameters = (
+        "amount"        => "5",
+        "basis"         => "payout",
+        "contract_type" => "CALL",
+        "currency"      => "USD",
+        "symbol"        => "R_50",
+        "duration"      => "2",
+        "duration_unit" => "m",
+    );
     $t = $t->send_ok({
             json => {
-                buy_contract_for_multiple_accounts => $proposal->{proposal}->{id},
-                price                              => $ask_price,
+                "proposal"  => 1,
+                "subscribe" => 1,
+                %contractParameters
             }});
+    $t->message_ok;
+    my $proposal = decode_json($t->message->[1]);
+    isnt $proposal->{proposal}->{id}, undef, 'got proposal id';
+    isnt $proposal->{proposal}->{ask_price}, undef, 'got ask_price';
 
+    $proposal_id = $proposal->{proposal}->{id};
+    $price       = $proposal->{proposal}->{ask_price};
+
+    return;
+}
+
+sub filter_proposal {
     ## skip proposal
     my $res;
     for (my $i=0; $i<100; $i++) {   # prevent infinite loop
         $t = $t->message_ok;
         $res = decode_json($t->message->[1]);
         note explain $res;
-        last unless $res->{msg_type} eq 'proposal';
-        $proposal = decode_json($t->message->[1]);
-        $ask_price = $proposal->{proposal}->{ask_price} || 0;
+        return  unless $res->{msg_type} eq 'proposal';
+        $proposal    = decode_json($t->message->[1]);
+        $proposal_id = $proposal->{proposal}->{id};
+        $price       = $proposal->{proposal}->{ask_price} || 0;
     }
+    return;
+}
+
+subtest "1st try: no tokens => invalid input", sub {
+    get_proposal;
+    $t = $t->send_ok({
+            json => {
+                buy_contract_for_multiple_accounts => $proposal_id,
+                price                              => $price,
+            }});
+    filter_proposal;
     isa_ok $res->{error}, 'HASH';
     is $res->{error}->{code}, 'InputValidationFailed', 'got InputValidationFailed';
 };
@@ -77,21 +89,11 @@ subtest "1st try: no tokens => invalid input", sub {
 subtest "2nd try: dummy tokens => success", sub {
     $t = $t->send_ok({
             json => {
-                buy_contract_for_multiple_accounts => $proposal->{proposal}->{id},
-                price                              => $ask_price,
+                buy_contract_for_multiple_accounts => $proposal_id,
+                price                              => $price,
                 tokens                             => ['DUMMY0', 'DUMMY1'],
             }});
-
-    ## skip proposal
-    my $res;
-    for (my $i=0; $i<100; $i++) {   # prevent infinite loop
-        $t = $t->message_ok;
-        $res = decode_json($t->message->[1]);
-        note explain $res;
-        last unless $res->{msg_type} eq 'proposal';
-        $proposal = decode_json($t->message->[1]);
-        $ask_price = $proposal->{proposal}->{ask_price} || 0;
-    }
+    filter_proposal;
     isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
 
     is_deeply $res->{buy_contract_for_multiple_accounts}, {
@@ -109,7 +111,38 @@ subtest "2nd try: dummy tokens => success", sub {
         ],
     }, 'got expected result';
 
-    $t = $t->send_ok({json => {forget => $proposal->{proposal}->{id}}})->message_ok;
+    $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
+    my $forget = decode_json($t->message->[1]);
+    note explain $forget;
+    is $forget->{forget}, 0, 'buying a proposal deletes the stream';
+};
+
+subtest "3rd try: the real thing => success", sub {
+    $t = $t->send_ok({
+            json => {
+                buy_contract_for_multiple_accounts => $proposal_id,
+                price                              => $price,
+                tokens                             => ['DUMMY0', 'DUMMY1'],
+            }});
+    filter_proposal;
+    isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
+
+    is_deeply $res->{buy_contract_for_multiple_accounts}, {
+        'result' => [
+            {
+                'code' => 'InvalidToken',
+                'message_to_client' => 'Invalid token',
+                'token' => 'DUMMY0'
+            },
+            {
+                'code' => 'InvalidToken',
+                'message_to_client' => 'Invalid token',
+                'token' => 'DUMMY1'
+            }
+        ],
+    }, 'got expected result';
+
+    $t = $t->send_ok({json => {forget => $proposal_id}})->message_ok;
     my $forget = decode_json($t->message->[1]);
     note explain $forget;
     is $forget->{forget}, 0, 'buying a proposal deletes the stream';
