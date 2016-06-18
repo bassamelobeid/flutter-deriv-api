@@ -179,8 +179,16 @@ subtest "3rd try: the real thing => success", sub {
                 statement => 1,
                 limit     => 3
             }});
-    $res = filter_proposal;
-    note explain $res;
+    my $stmt = filter_proposal;
+    note explain $stmt;
+
+    is_deeply ([sort {$a->[0] <=> $b->[0]}
+                map {[$_->{contract_id}, $_->{transaction_id}, -$_->{amount}]}
+                @{$stmt->{statement}->{transactions}}],
+               [sort {$a->[0] <=> $b->[0]}
+                map {$_->{code} ? () : [$_->{contract_id}, $_->{transaction_id}, $_->{buy_price}]}
+                @{$res->{buy_contract_for_multiple_accounts}->{result}}],
+               'got all 3 contracts via statement call');
 };
 
 $t->finish_ok;
