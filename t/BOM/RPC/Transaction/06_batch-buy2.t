@@ -56,12 +56,12 @@ subtest 'buy' => sub {
         {
             token => 'DUMMY1',
             code  => 'InvalidToken',
-            message_to_client => 'Invalid token',
+            error => 'Invalid token',
         },
         {
             token => 'DUMMY2',
             code  => 'InvalidToken',
-            message_to_client => 'Invalid token',
+            error => 'Invalid token',
         },
     ], 'got expected result';
 };
