@@ -165,6 +165,7 @@ subtest "3rd try: the real thing => success", sub {
     my $res = filter_proposal;
     isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
 
+    $res->{buy_contract_for_multiple_accounts}->{blub}=19;
     note explain $res;
     test_schema('buy_contract_for_multiple_accounts', $res);
 
