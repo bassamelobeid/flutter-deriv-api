@@ -66,12 +66,12 @@ sub filter_proposal {
         $t = $t->message_ok;
         $res = decode_json($t->message->[1]);
         note explain $res;
-        return  unless $res->{msg_type} eq 'proposal';
+        return $res unless $res->{msg_type} eq 'proposal';
         $proposal    = decode_json($t->message->[1]);
         $proposal_id = $proposal->{proposal}->{id};
         $price       = $proposal->{proposal}->{ask_price} || 0;
     }
-    return;
+    return $res;
 }
 
 subtest "1st try: no tokens => invalid input", sub {
@@ -81,7 +81,7 @@ subtest "1st try: no tokens => invalid input", sub {
                 buy_contract_for_multiple_accounts => $proposal_id,
                 price                              => $price,
             }});
-    filter_proposal;
+    my $res = filter_proposal;
     isa_ok $res->{error}, 'HASH';
     is $res->{error}->{code}, 'InputValidationFailed', 'got InputValidationFailed';
 };
@@ -93,7 +93,7 @@ subtest "2nd try: dummy tokens => success", sub {
                 price                              => $price,
                 tokens                             => ['DUMMY0', 'DUMMY1'],
             }});
-    filter_proposal;
+    my $res = filter_proposal;
     isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
 
     is_deeply $res->{buy_contract_for_multiple_accounts}, {
@@ -124,7 +124,7 @@ subtest "3rd try: the real thing => success", sub {
                 price                              => $price,
                 tokens                             => ['DUMMY0', 'DUMMY1'],
             }});
-    filter_proposal;
+    my $res = filter_proposal;
     isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
 
     is_deeply $res->{buy_contract_for_multiple_accounts}, {
