@@ -82,10 +82,11 @@ sub filter_proposal {
 }
 
 sub get_token {
+    state $cnt = 0;
     $t = $t->send_ok({
             json => {
                 api_token        => 1,
-                new_token        => 'Test Token',
+                new_token        => 'Test Token ' . $cnt++,
                 new_token_scopes => ['trade']}})->message_ok;
     return decode_json($t->message->[1])->{api_token}->{tokens}->[0]->{token};
 }
