@@ -145,9 +145,12 @@ subtest "2nd try: dummy tokens => success", sub {
 };
 
 subtest "3rd try: the real thing => success", sub {
+    # Here we trust that the function in bom-rpc works correctly. We
+    # are not going to test all possible variations. In particular,
+    # all the tokens used belong to the same account.
     my @tokens = map { get_token } (1,2);
     push @tokens, $token;       # add the login token as well
-    note explain \@tokens;
+    # note explain \@tokens;
     get_proposal;
     $t = $t->send_ok({
             json => {
@@ -159,6 +162,7 @@ subtest "3rd try: the real thing => success", sub {
     isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
 
     note explain $res;
+    test_schema('buy_contract_for_multiple_accounts', $res);
 
     # is_deeply $res->{buy_contract_for_multiple_accounts}, {
     #     'result' => [
