@@ -34,7 +34,7 @@ sub buy_get_contract_params {
     }
 
     return $c->new_error(($args->{buy_contract_for_multiple_accounts} ? 'buy_contract_for_multiple_accounts' : 'buy'),
-                         'InvalidContractProposal', $c->l("Unknown contract proposal"));
+        'InvalidContractProposal', $c->l("Unknown contract proposal"));
 }
 
 sub transaction {
