@@ -56,8 +56,8 @@ sleep 1;
 my $ask_price = $proposal->{proposal}->{ask_price};
 $t = $t->send_ok({
         json => {
-            buy   => $proposal->{proposal}->{id},
-            price => $ask_price || 0
+            buy_contract_for_multiple_accounts => $proposal->{proposal}->{id},
+            price                              => $ask_price || 0
         }});
 
 ## skip proposal until we meet buy
