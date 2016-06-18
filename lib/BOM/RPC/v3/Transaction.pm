@@ -133,37 +133,37 @@ sub buy_contract_for_multiple_accounts {
             };
     }
 
-    return +{result => \@result} unless $found_at_least_one;
+    if ($found_at_least_one) {
+        # NOTE: we rely here on BOM::Product::Transaction to perform all the
+        #       client validations like client_status and self_exclusion.
 
-    # NOTE: we rely here on BOM::Product::Transaction to perform all the
-    #       client validations like client_status and self_exclusion.
+        my $source              = $params->{source};
+        my $contract_parameters = $params->{contract_parameters};
+        my $args                = $params->{args};
 
-    my $source              = $params->{source};
-    my $contract_parameters = $params->{contract_parameters};
-    my $args                = $params->{args};
+        my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
+        $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
 
-    my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
-    $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
+        my $contract = try { produce_contract({%$contract_parameters}) }
+            || return BOM::RPC::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => localize('Cannot create contract')});
 
-    my $contract = try { produce_contract({%$contract_parameters}) }
-        || return BOM::RPC::v3::Utility::create_error({
-            code              => 'ContractCreationFailure',
-            message_to_client => localize('Cannot create contract')});
-
-    my $trx = BOM::Product::Transaction->new({
-        client        => $client,
-        multiple      => \@result,
-        contract      => $contract,
-        price         => ($args->{price} || 0),
-        purchase_date => $purchase_date,
-        source        => $source,
-    });
-
-    if (my $err = $trx->batch_buy) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => $err->get_type,
-            message_to_client => $err->{-message_to_client},
+        my $trx = BOM::Product::Transaction->new({
+            client        => $client,
+            multiple      => \@result,
+            contract      => $contract,
+            price         => ($args->{price} || 0),
+            purchase_date => $purchase_date,
+            source        => $source,
         });
+
+        if (my $err = $trx->batch_buy) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => $err->get_type,
+                message_to_client => $err->{-message_to_client},
+            });
+        }
     }
 
     for my $el (@result) {
