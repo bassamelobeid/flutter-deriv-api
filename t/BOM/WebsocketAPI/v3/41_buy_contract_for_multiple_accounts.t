@@ -47,8 +47,8 @@ $t = $t->send_ok({
 BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 $t->message_ok;
 my $proposal = decode_json($t->message->[1]);
-ok $proposal->{proposal}->{id};
-ok $proposal->{proposal}->{ask_price};
+isnt $proposal->{proposal}->{id}, undef, 'got proposal id';
+isnt $proposal->{proposal}->{ask_price}, undef, 'got ask_price';
 test_schema('proposal', $proposal);
 
 sleep 1;
@@ -68,8 +68,8 @@ for (my $i=0; $i<100; $i++) {   # prevent infinite loop
     note explain $res;
     last unless $res->{msg_type} eq 'proposal';
 }
-ok $res->{buy};
-ok $res->{buy}->{contract_id};
+isa_ok $res->{buy}, 'HASH';
+isnt $res->{buy}->{contract_id}, undef, 'got contract_id';
 ok $res->{buy}->{purchase_time};
 
 test_schema('buy', $res);
