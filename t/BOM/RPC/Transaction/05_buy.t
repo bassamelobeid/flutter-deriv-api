@@ -233,8 +233,8 @@ subtest 'app_markup_transaction' => sub {
         purchase_date => $now
     });
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
-    is $txn->app_markup, sprintf('%.2f', $payout * $app_markup_percentage / 100),
-        "in case of stake contract, app_markup is app_markup_percentage of actual payout would have been";
+    is $txn->app_markup, sprintf('%.2f', $txn->payout * $app_markup_percentage / 100),
+        "in case of stake contract, app_markup is app_markup_percentage of final payout i.e transaction payout";
     cmp_ok $txn->payout, "<", $payout, "payout after app_markup_percentage is less than actual payout";
 
     $contract = BOM::Test::Data::Utility::Product::create_contract(
