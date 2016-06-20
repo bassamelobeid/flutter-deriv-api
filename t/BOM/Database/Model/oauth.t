@@ -133,6 +133,10 @@ subtest 'revoke tokens by loginid and app_id' => sub {
         }
     }
 
+    # setup BO app, id = 4
+    my $sql = 'INSERT INTO oauth.apps (id, name, binary_user_id, redirect_uri, scopes) VALUES (?,?,?,?,?)';
+    $m->dbh->do($sql, undef, 4, 'Binary.com backoffice', 1, 'https://www.binary.com/en/logged_inws.html', '{read}');
+
     foreach my $loginid (@loginids) {
         my @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
         is $cnt[0], 3, "access tokens [$loginid]";
@@ -148,6 +152,12 @@ subtest 'revoke tokens by loginid and app_id' => sub {
         is $cnt[0], 0, "revoked access tokens [$loginid]";
 
         isnt $m->has_other_login_sessions($loginid), 1, "$loginid has NO oauth token";
+
+        # Backoffice impersonate app id = 4, exclude in ->has_other_login_sessions
+        my ($bo_token) = $m->store_access_token_only(4, $loginid);
+        @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
+        is $cnt[0], 1, "BO access tokens [$loginid]";
+        isnt $m->has_other_login_sessions($loginid), 1, "$loginid has NO oauth token, beside for BO impersonate";
     }
 };
 
