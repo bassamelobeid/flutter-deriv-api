@@ -193,7 +193,7 @@ subtest 'Login to self timeouted client' => sub {
         $client->set_exclusion->timeout_until($timeout_until->epoch);
         $client->save;
 
-        my $res = $client->login_error;
+        my $res                = $client->login_error;
         my $timeout_until_date = $timeout_until->date;
         ok $res =~ /Sorry, you have excluded yourself until $timeout_until_date/, 'It should return until date in message error';
     }

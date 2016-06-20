@@ -547,8 +547,8 @@ sub get_limit_for_open_positions {
     return $excl && $excl < 60 ? $excl : 60;
 }
 
-# return undef or Date::Utility object
-sub get_min_self_exclusion_until {
+# return undef or an exclusion date string
+sub get_self_exclusion_until_dt {
     my $self = shift;
 
     my $excl = $self->get_self_exclusion;
@@ -558,15 +558,24 @@ sub get_min_self_exclusion_until {
     my $timeout_until = $excl->timeout_until;
 
     # undef if expired
-    undef $exclude_until if $exclude_until and
-        Date::Utility::today->days_between( Date::Utility->new($exclude_until) ) >= 0;
-    undef $timeout_until if $timeout_until and
-        Date::Utility->new()->days_between( Date::Utility->new($timeout_until) ) >= 0;
+    undef $exclude_until
+        if $exclude_until
+        and Date::Utility::today->days_between(Date::Utility->new($exclude_until)) >= 0;
+    undef $timeout_until
+        if $timeout_until and Date::Utility->new($timeout_until)->is_after(Date::Utility->new);
 
     return unless $exclude_until || $timeout_until;
-    return Date::Utility->new(List::Util::min(Date::Utility->new($exclude_until)->epoch, Date::Utility->new($timeout_until)->epoch))
-        if $exclude_until && $timeout_until;
-    return Date::Utility->new($exclude_until || $timeout_until);
+
+    if ($exclude_until && $timeout_until) {
+        my $exclude_until_dt = Date::Utility->new($exclude_until);
+        my $timeout_until_dt = Date::Utility->new($timeout_until);
+
+        return $exclude_until_dt->date if $exclude_until_dt->epoch < $timeout_until_dt->epoch;
+        return $timeout_until_dt->datetime_ddmmmyy_hhmmss;
+    }
+
+    return Date::Utility->new($exclude_until)->date if $exclude_until;
+    return Date::Utility->new($timeout_until)->datetime_ddmmmyy_hhmmss;
 }
 
 sub get_limit_for_payout {
@@ -840,15 +849,12 @@ sub siblings {
 sub login_error {
     my $client = shift;
 
-    my $self_exclusion;
     if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
         return localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif ($client->get_status('disabled')) {
         return localize('This account is unavailable. For any questions please contact Customer Support.');
-    } elsif ($self_exclusion = $client->get_min_self_exclusion_until
-        and Date::Utility->new->is_before($self_exclusion))
-    {
-        return localize('Sorry, you have excluded yourself until [_1].', $self_exclusion->date);
+    } elsif (my $self_exclusion_dt = $client->get_self_exclusion_dt) {
+        return localize('Sorry, you have excluded yourself until [_1].', $self_exclusion_dt);
     }
     return;
 }
