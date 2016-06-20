@@ -45,7 +45,7 @@ if ($try_to_login and my $staff = BOM::Backoffice::Auth0::login(request()->param
     my $expire_cookies = BOM::Backoffice::Cookie::expire_cookies();
     PrintContentType({ 'cookies' => $expire_cookies });
 
-    BOM::Backoffice::Auth0::loggout();
+    BOM::Backoffice::Auth0::logout();
     print '<script>window.location = "' . request()->url_for('backoffice/login.cgi') . '"</script>';
     code_exit_BO();
 } elsif (not BOM::Backoffice::Auth0::from_cookie()) {
