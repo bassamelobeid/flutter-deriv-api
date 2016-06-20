@@ -25,6 +25,7 @@ has [qw(id display_name sentiment other_side_code)] => (is => 'ro');
 
 # Actual methods for introspection purposes.
 sub is_spread           { return 1 }
+sub is_legacy           { return 0 }
 sub is_atm_bet          { return 0 }
 sub is_intraday         { return 0 }
 sub is_forward_starting { return 0 }
