@@ -294,9 +294,7 @@ sub change_password {
         $c1->password($new_password);
         $c1->save;
 
-        if ($token_type eq 'oauth_token') {
-            $oauth->revoke_tokens_by_loginid($c1->loginid);
-        }
+        $oauth->revoke_tokens_by_loginid($c1->loginid);
     }
 
     BOM::System::AuditLog::log('password has been changed', $client->email);
