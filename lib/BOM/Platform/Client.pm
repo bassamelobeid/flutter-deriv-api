@@ -852,7 +852,7 @@ sub login_error {
         return localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif ($client->get_status('disabled')) {
         return localize('This account is unavailable. For any questions please contact Customer Support.');
-    } elsif (my $self_exclusion_dt = $client->get_self_exclusion_dt) {
+    } elsif (my $self_exclusion_dt = $client->get_self_exclusion_until_dt) {
         return localize('Sorry, you have excluded yourself until [_1].', $self_exclusion_dt);
     }
     return;
