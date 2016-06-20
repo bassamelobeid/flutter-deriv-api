@@ -102,7 +102,7 @@ sub authorize {
     {
         $client = $c->__login($app) or return;
         $c->session('__is_logined', 1);
-        $c->session('__loginid', $client->loginid);
+        $c->session('__loginid',    $client->loginid);
     } elsif ($c->req->method eq 'POST' and $c->session('__is_logined')) {
         # get loginid from Mojo Session
         $client = $c->__get_client;
@@ -292,11 +292,8 @@ sub __login {
         $options
     );
 
-    my @app_scopes = @{$app->{scopes}};
-
-    # send when token has scope other than read (as we impersonate from backoffice using read only tokens) and client already have login session(s)
-    if (not (scalar @app_scopes == 1 and $app_scopes[0] eq 'read')
-        and __oauth_model()->has_other_login_sessions($client->loginid)) {
+    # send when client already has login session(s) and its not backoffice (app_id = 4, as we impersonate from backoffice using read only tokens)
+    if ($app->{id} ne 4 and __oauth_model()->has_other_login_sessions($client->loginid)) {
         try {
             if ($last_login and exists $last_login->{environment}) {
                 my ($old_env, $user_agent, $r) =
@@ -310,19 +307,25 @@ sub __login {
                 if (($old_ip ne $new_ip or $old_env->{country} ne $country_code)
                     and $old_env->{user_agent} ne $user_agent)
                 {
+                    my $message;
+                    if ($app->{id} eq '1') {
+                        $message = localize(
+                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
+                            $session->email, $r->client_ip, $country_code, $user_agent);
+                    } else {
+                        $message = localize(
+                            'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
+                            $session->email, $r->client_ip, $country_code, $user_agent, $app->{name});
+                    }
+
                     send_email({
-                            from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                            to      => $email,
-                            subject => localize('New Sign-In Activity Detected'),
-                            message => [
-                                localize(
-                                    'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                                    $email, $r->client_ip, $country_code, $user_agent
-                                )
-                            ],
-                            use_email_template => 1,
-                            template_loginid   => $client->loginid,
-                        });
+                        from               => BOM::Platform::Static::Config::get_customer_support_email(),
+                        to                 => $session->email,
+                        subject            => localize('New Sign-In Activity Detected'),
+                        message            => [$message],
+                        use_email_template => 1,
+                        template_loginid   => $client->loginid,
+                    });
                 }
             }
         };
@@ -370,7 +373,7 @@ sub __login_env {
 sub __get_client {
     my $c = shift;
 
-    my $client = BOM::Platform::Client->new({ loginid => $c->session('__loginid') });
+    my $client = BOM::Platform::Client->new({loginid => $c->session('__loginid')});
     return if $client->get_status('disabled');
 
     if ($client->get_self_exclusion and $client->get_self_exclusion->exclude_until) {
