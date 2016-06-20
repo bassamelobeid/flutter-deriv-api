@@ -63,6 +63,7 @@ while (1) {
         next if ($current_spot_ts == $last_price_ts and $current_time - $last_price_ts <= 10);
 
         $redis->set($next, $current_time);
+        $redis->expire($next, 300);
         my $response = BOM::RPC::v3::Contract::send_ask({args => $params}, 1);
 
         DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.price.call');

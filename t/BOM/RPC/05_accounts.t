@@ -904,7 +904,7 @@ subtest $method => sub {
         "employment_industry"                  => "Finance",
         "education_level"                      => "Secondary",
         "income_source"                        => "Self-Employed",
-        "net_income"                           => '$25,000 - $100,000',
+        "net_income"                           => '$25,000 - $50,000',
         "estimated_worth"                      => '$100,000 - $250,000'
     };
 
@@ -944,7 +944,7 @@ subtest $method => sub {
             args  => $args,
             token => $token1
         });
-    cmp_ok($res->{score}, "==", 38, "Got correct score");
+    cmp_ok($res->{score}, "==", 30, "Got correct score");
     is $res->{education_level}, 'Secondary', 'Got correct answer for assessment key';
 };
 
