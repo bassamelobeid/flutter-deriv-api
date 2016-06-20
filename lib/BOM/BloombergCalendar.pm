@@ -139,7 +139,7 @@ sub _include_early_closes {
     foreach my $exchange_name (keys %$data) {
         foreach my $date (keys %{$data->{$exchange_name}}) {
 
-            my $calendar = Quant::Framework::TradingCalendar->new($symbol, BOM::System::Chronicle::get_chronicle_reader());
+            my $calendar = Quant::Framework::TradingCalendar->new($exchange_name, BOM::System::Chronicle::get_chronicle_reader());
             my $description =
                   $calendar->is_in_dst_at($date)
                 ? $calendar->market_times->{partial_trading}{dst_close}
