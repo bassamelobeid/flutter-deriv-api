@@ -68,7 +68,7 @@ mini:
                 avg: 0.0226
                 max: 0.1333
             NOTOUCH:
-                avg: 0.0138
+                avg: 0.0139
                 max: 0.0565
             CALL:
                 avg: 0.0056
@@ -87,7 +87,7 @@ mini:
                 avg: 0.0087
                 max: 0.0358
             PUT:
-                avg: 0.0080
+                avg: 0.0081
                 max: 0.0410
     sdeq:
         DJI:
