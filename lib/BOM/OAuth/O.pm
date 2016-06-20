@@ -382,12 +382,7 @@ sub __get_client {
 
     my $client = BOM::Platform::Client->new({loginid => $session_cookie->loginid});
     return if $client->get_status('disabled');
-
-    if (my $limit_excludeuntil = $client->get_min_self_exclusion_until) {
-        if (Date::Utility->new->is_before($limit_excludeuntil)) {
-            return;
-        }
-    }
+    return if $client->get_self_exclusion_until_dt;    # Excluded
 
     return $client;
 }
