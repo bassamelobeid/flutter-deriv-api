@@ -160,7 +160,7 @@ my $args = {
     "employment_industry"                  => "Finance",
     "education_level"                      => "Secondary",
     "income_source"                        => "Self-Employed",
-    "net_income"                           => '$25,000 - $100,000'
+    "net_income"                           => '$25,000 - $50,000'
 };
 
 $t = $t->send_ok({json => $args})->message_ok;
@@ -171,7 +171,7 @@ $args->{estimated_worth} = '$100,000 - $250,000';
 $t = $t->send_ok({json => $args})->message_ok;
 $res = decode_json($t->message->[1]);
 cmp_ok($res->{set_financial_assessment}->{score}, "<", 60, "Correct score");
-is($res->{set_financial_assessment}->{is_professional}, 0, "Marked correctly as is_professional");
+is($res->{set_financial_assessment}->{is_professional}, 0, "is_professional flag is set correctly");
 
 $t->finish_ok;
 

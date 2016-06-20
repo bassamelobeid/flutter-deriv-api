@@ -53,8 +53,8 @@ my $mf_details = {
     employment_industry                  => 'Construction',
     education_level                      => 'Secondary',
     income_source                        => 'Investments & Dividends',
-    net_income                           => '$25,000 - $100,000',
-    estimated_worth                      => '$250,000 - $1,000,000',
+    net_income                           => '$25,000 - $50,000',
+    estimated_worth                      => '$250,001 - $500,000',
     accept_risk                          => 1
 };
 

@@ -182,7 +182,7 @@ my @dispatch = (
     ['active_symbols',          '',                                                        0, '', {stash_params => [qw/ token /]}],
     ['ticks',                   \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks,         0],
     ['ticks_history',           \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history, 0],
-    ['proposal',                \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,      0],
+    ['proposal',                \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal,        0],
     ['price_stream',            \&BOM::WebSocketAPI::v3::Wrapper::Pricer::price_stream,    0],
     ['pricing_table',           \&BOM::WebSocketAPI::v3::Wrapper::Streamer::pricing_table, 0],
     ['forget',                  \&BOM::WebSocketAPI::v3::Wrapper::System::forget,          0],
