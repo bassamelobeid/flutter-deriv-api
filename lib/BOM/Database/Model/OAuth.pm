@@ -77,14 +77,8 @@ sub store_access_token_only {
     my $access_token = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
-    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires) VALUES (?, ?, ?, ?)",
-        undef, $access_token, $app_id, $loginid, $expires_time);
-    $dbh->do("DELETE FROM oauth.ua_fingerprint WHERE app_id = ? AND loginid = ?",
-        undef, $app_id, $loginid);
-    if ($ua_fingerprint) {
-        $dbh->do("INSERT INTO oauth.ua_fingerprint (app_id, loginid, ua_fingerprint) VALUES (?, ?, ?)",
-            undef, $app_id, $loginid, $ua_fingerprint);
-    }
+    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires, ua_fingerprint) VALUES (?, ?, ?, ?, ?)",
+        undef, $access_token, $app_id, $loginid, $expires_time, $ua_fingerprint);
 
     return ($access_token, $expires_in);
 }
@@ -100,15 +94,8 @@ sub get_loginid_by_access_token {
         UPDATE oauth.access_token
         SET last_used=NOW(), expires=?
         WHERE access_token = ? AND expires > NOW()
-        RETURNING loginid, app_id, creation_time
+        RETURNING loginid, creation_time, ua_fingerprint
     ", undef, $expires_time, $token);
-    my $ua_fingerprint = $self->dbh->selectrow_array("
-        SELECT ua_fingerprint
-        FROM oauth.ua_fingerprint
-        WHERE loginid = ? AND app_id = ?
-    ", undef, $loginid, $app_id);
-    return wantarray ? ($loginid, $creation_time, $ua_fingerprint) : $loginid;
-
 }
 
 sub get_scopes_by_access_token {
@@ -236,7 +223,7 @@ sub delete_app {
     my $dbh = $self->dbh;
 
     ## delete real delete
-    foreach my $table ('ua_fingerprint', 'user_scope_confirm', 'access_token') {
+    foreach my $table ('user_scope_confirm', 'access_token') {
         $dbh->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id);
     }
 
@@ -273,7 +260,7 @@ sub revoke_app {
     my ($self, $app_id, $loginid) = @_;
 
     my $dbh = $self->dbh;
-    foreach my $table ('ua_fingerprint', 'user_scope_confirm', 'access_token') {
+    foreach my $table ('user_scope_confirm', 'access_token') {
         $dbh->do("DELETE FROM oauth.$table WHERE app_id = ? AND loginid = ?", undef, $app_id, $loginid);
     }
 
@@ -282,14 +269,12 @@ sub revoke_app {
 
 sub revoke_tokens_by_loginid {
     my ($self, $loginid) = @_;
-    $self->dbh->do("DELETE FROM oauth.ua_fingerprint WHERE loginid = ?", undef, $loginid);
     $self->dbh->do("DELETE FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
     return 1;
 }
 
 sub revoke_tokens_by_loginid_app {
     my ($self, $loginid, $app_id) = @_;
-    $self->dbh->do("DELETE FROM oauth.ua_fingerprint WHERE loginid = ? AND app_id = ?", undef, $loginid, $app_id);
     $self->dbh->do("DELETE FROM oauth.access_token WHERE loginid = ? AND app_id = ?", undef, $loginid, $app_id);
     return 1;
 }
