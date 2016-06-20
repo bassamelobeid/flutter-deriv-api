@@ -50,7 +50,7 @@ sub from_cookie {
     return;
 }
 
-sub loggout {
+sub logout {
     my $staff = BOM::Backoffice::Cookie::get_staff();
 
     if ($staff and BOM::System::RedisReplicated::redis_write->del("BINARYBOLOGIN::" . $staff)) {
