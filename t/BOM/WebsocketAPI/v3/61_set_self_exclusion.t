@@ -189,7 +189,7 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code},  'SetSelfExclusionError';
 is $res->{error}->{field}, 'timeout_until';
-ok $res->{error}->{message} =~ /after today/;
+ok $res->{error}->{message} =~ /greater than current time/;
 
 # good one
 my $exclude_until = DateTime->now()->add(months => 7)->ymd;
