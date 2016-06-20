@@ -311,16 +311,16 @@ sub __login {
                     if ($app->{id} eq '1') {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                            $session->email, $r->client_ip, $country_code, $user_agent);
+                            $client->email, $r->client_ip, $country_code, $user_agent);
                     } else {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                            $session->email, $r->client_ip, $country_code, $user_agent, $app->{name});
+                            $client->email, $r->client_ip, $country_code, $user_agent, $app->{name});
                     }
 
                     send_email({
                         from               => BOM::Platform::Static::Config::get_customer_support_email(),
-                        to                 => $session->email,
+                        to                 => $client->email,
                         subject            => localize('New Sign-In Activity Detected'),
                         message            => [$message],
                         use_email_template => 1,
