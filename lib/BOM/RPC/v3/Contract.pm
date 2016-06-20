@@ -158,11 +158,18 @@ sub get_bid {
     my $response;
     try {
         my $tv = [Time::HiRes::gettimeofday];
-
         my $bet_params = shortcode_to_parameters($short_code, $currency);
         $bet_params->{is_sold}               = $is_sold;
         $bet_params->{app_markup_percentage} = $app_markup_percentage;
         my $contract = produce_contract($bet_params);
+
+        if ($contract->is_legacy) {
+            $response = BOM::RPC::v3::Utility::create_error({
+                message_to_client => $contract->longcode,
+                code              => "GetProposalFailure"
+            });
+            return $response;
+        }
 
         $response = {
             ask_price           => sprintf('%.2f', $contract->ask_price),
