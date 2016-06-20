@@ -10,7 +10,6 @@ use TestHelper qw/test_schema build_mojo_test/;
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Platform::Email;
 use BOM::Platform::Client;
 use Date::Utility;
 use DateTime;
@@ -19,9 +18,6 @@ use DateTime;
 use Test::MockModule;
 my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
 $client_mocked->mock('add_note', sub { return 1 });
-
-my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
-$email_mocked->mock('send_email', sub { return 1 });
 
 my $t = build_mojo_test();
 
