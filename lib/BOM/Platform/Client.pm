@@ -556,6 +556,13 @@ sub get_min_self_exclusion_until {
 
     my $exclude_until = $excl->exclude_until;
     my $timeout_until = $excl->timeout_until;
+
+    # undef if expired
+    undef $exclude_until if $exclude_until and
+        Date::Utility::today->days_between( Date::Utility->new($exclude_until) ) >= 0;
+    undef $timeout_until if $timeout_until and
+        Date::Utility->new()->days_between( Date::Utility->new($timeout_until) ) >= 0;
+
     return unless $exclude_until || $timeout_until;
     return Date::Utility->new(List::Util::min(Date::Utility->new($exclude_until)->epoch, Date::Utility->new($timeout_until)->epoch))
         if $exclude_until && $timeout_until;
