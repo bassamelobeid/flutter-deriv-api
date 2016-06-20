@@ -12,7 +12,6 @@ use Carp;
 use CSVParser::Superderivatives_FX;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
-use BOM::MarketData::VolSurface::Utils;
 has suite => (
     is      => 'ro',
     isa     => 'Str',
@@ -113,6 +112,7 @@ sub get_bet_results {
     my $csv = Text::CSV->new();
     my $analysis_results;
     foreach my $record (@$records) {
+
         my $date_start   = $record->{date_start};
         my $date_expiry  = $record->{date_expiry};
         my $underlying   = $record->{underlying};
@@ -131,6 +131,9 @@ sub get_bet_results {
             surface => $vol_surface,
             cutoff  => $cutoff_str,
         });
+
+        die "Invalid spot" if $surface->underlying_config->spot != $raw_surface->underlying_config->spot;
+
         my $currency = ($base_or_num eq 'base') ? $record->{base_currency} : $record->{numeraire_currency};
         my $bet_type = $record->{bet_type};
         my $bet_args = {
@@ -156,7 +159,10 @@ sub get_bet_results {
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start}->epoch,
         );
+        $bet_args->{volsurface}->underlying_config->{spot} = $bet_args->{current_spot};
+
         my $bet = produce_contract($bet_args);
+
         my $bom_mid =
               $bet->pricing_engine_name eq 'Pricing::Engine::EuropeanDigitalSlope'
             ? $bet->pricing_engine->theo_probability
