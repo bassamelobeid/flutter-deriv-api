@@ -70,7 +70,7 @@ sub __get_cookie {
     my %bo_cookies = CGI::Cookie->fetch;
     my $value;
 
-    if ($bo_cookies->{$name}) {
+    if ($bo_cookies{$name}) {
         $value = CGI::Util::escape($bo_cookies{$name}->value);
     }
     return $value;
