@@ -45,10 +45,10 @@ sub parse_calendar {
     my @holiday_data;
     my @early_closes;
     if ($calendar_type eq 'exchange_holiday') {
-        @holiday_data      = grep { defined $_->{Trading} and ($_->{Trading} =~ /No/  or $_->{Trading} =~ /Partial/)} @$csv;
+        @holiday_data = grep { defined $_->{Trading} and ($_->{Trading} =~ /No/ or $_->{Trading} =~ /Partial/) } @$csv;
     } elsif ($calendar_type eq 'country_holiday') {
         @holiday_data = grep { defined $_->{Settle} and $_->{Settle} =~ /No/ } @$csv;
-
+    }
     my $data = _process(@holiday_data);
     # don't have to include synthetics for country holidays
     if ($calendar_type ne 'country_holiday') {
@@ -57,19 +57,11 @@ sub parse_calendar {
     }
     # convert to proper calendar format
     my $calendar;
+
     foreach my $exchange_name (keys %$data) {
         foreach my $date (keys %{$data->{$exchange_name}}) {
-            my $description;
-            if ($calendar_type eq 'early_closes') {
-                my $calendar = Quant::Framework::TradingCalendar->new($exchange_name, BOM::System::Chronicle::get_chronicle_reader());
-                $description =
-                      $calendar->is_in_dst_at($date)
-                    ? $calendar->market_times->{partial_trading}{dst_close}
-                    : $calendar->market_times->{partial_trading}{standard_close};
-            } else {
-                $description = $data->{$exchange_name}{$date};
-            }
-            push @{$calendar->{$date}{$description}}, $exchange_name;
+
+            push @{$calendar->{$date}{$data->{$exchange_name}{$date}}}, $exchange_name;
         }
     }
 
@@ -130,6 +122,15 @@ sub _process {
         next if not $calendar_code_mapper->{$calendar_code};
         my @affected_symbols = @{$calendar_code_mapper->{$calendar_code}};
         foreach my $symbol (@affected_symbols) {
+
+            if ($data->{'Trading'} eq 'partial') {
+
+                my $calendar = Quant::Framework::TradingCalendar->new($symbol, BOM::System::Chronicle::get_chronicle_reader());
+                $description =
+                      $calendar->is_in_dst_at($date)
+                    ? $calendar->market_times->{partial_trading}{dst_close}
+                    : $calendar->market_times->{partial_trading}{standard_close};
+            }
             $output->{$symbol}{$date->date_ddmmmyyyy} = $description;
         }
     }
