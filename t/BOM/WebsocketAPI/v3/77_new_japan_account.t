@@ -1,3 +1,4 @@
+#!perl
 use strict;
 use warnings;
 use Test::More tests => 6;
@@ -99,7 +100,11 @@ subtest 'new JP real account' => sub {
             });
         is $call_params->{token}, $token;
         is $res->{msg_type},      'jp_knowledge_test';
-        ok $res->{jp_knowledge_test};
+        if ($res->{error}) {
+            is $res->{error}->{code}, 'TestUnavailableNow', 'TestUnavailableNow';
+        } else {
+            ok $res->{jp_knowledge_test};
+        }
     };
 
     subtest 'no duplicate account - same email' => sub {

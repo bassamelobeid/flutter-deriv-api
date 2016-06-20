@@ -49,7 +49,7 @@ sub register {
                 code    => $code,
                 message => $message
             };
-            $error->{details} = $details if (keys %$details);
+            $error->{details} = $details if $details;
 
             return {
                 msg_type => $msg_type,
