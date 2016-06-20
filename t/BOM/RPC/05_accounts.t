@@ -1191,7 +1191,7 @@ subtest 'get and set self_exclusion' => sub {
     is_deeply(
         $c->tcall($method, $params)->{error},
         {
-            'message_to_client' => "Timeout time must be great than current time.",
+            'message_to_client' => "Timeout time must be greater than current time.",
             'details'           => 'timeout_until',
             'code'              => 'SetSelfExclusionError'
         });

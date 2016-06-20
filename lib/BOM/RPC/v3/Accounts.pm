@@ -792,7 +792,7 @@ sub set_self_exclusion {
 
         # checking for the exclude until date which must be larger than today's date
         if (not $exclusion_end->is_after($now)) {
-            return $error_sub->(localize('Timeout time must be great than current time.'), 'timeout_until');
+            return $error_sub->(localize('Timeout time must be greater than current time.'), 'timeout_until');
         }
     } else {
         delete $args{timeout_until};
