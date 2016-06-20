@@ -54,7 +54,7 @@ sub _send_ask {
             }
 
             my $uuid;
-            if ($args->{subscribe} and $args->{subscribe} == 1 and not $uuid = _pricing_channel($c, 'subscribe', $args, $api_name)) {
+            if (not $uuid = _pricing_channel($c, 'subscribe', $args, $api_name)) {
                 return $c->new_error($api_name,
                     'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
             }
@@ -114,7 +114,11 @@ sub _pricing_channel {
     my $uuid = Data::UUID->new->create_str();
 
     # subscribe if it is not already subscribed
-    if (not $pricing_channel->{$serialized_args} and not BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args)) {
+    if (    not $pricing_channel->{$serialized_args}
+        and not BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args)
+        and $args->{subscribe}
+        and $args->{subscribe} == 1)
+    {
         BOM::System::RedisReplicated::redis_pricer->set($serialized_args, 1);
         $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
