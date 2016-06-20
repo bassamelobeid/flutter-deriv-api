@@ -132,8 +132,6 @@ sub _get_pricing_parameter_from_IH_pricer {
 
     $pricing_parameters->{commission_markup} = {
         base_commission => $contract->base_commission * $contract->commission_multiplier($contract->payout),
-        scaling_factor  => $contract->commission_scaling_factor->amount,
-
     };
 
     my $risk_markup = $pe->risk_markup;
@@ -189,8 +187,6 @@ sub _get_pricing_parameter_from_slope_pricer {
 
     $pricing_parameters->{commission_markup} = {
         base_commission => $contract->base_commission * $contract->commission_multiplier($contract->payout),
-        scaling_factor  => $contract->commission_scaling_factor->amount,
-
     };
 
     return $pricing_parameters;
