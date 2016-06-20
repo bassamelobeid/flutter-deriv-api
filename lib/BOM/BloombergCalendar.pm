@@ -135,24 +135,26 @@ sub _process {
 
 sub _include_early_closes {
     my $data = shift;
-    my $calendar;
+    my $calendar_data;
     foreach my $exchange_name (keys %$data) {
         foreach my $date (keys %{$data->{$exchange_name}}) {
 
+            my $epoch = Date::Utility->new($date)->epoch;
             my $calendar = Quant::Framework::TradingCalendar->new($exchange_name, BOM::System::Chronicle::get_chronicle_reader());
+
             my $description =
-                  $calendar->is_in_dst_at($date)
-                ? $calendar->market_times->{partial_trading}{dst_close}
-                : $calendar->market_times->{partial_trading}{standard_close};
+                  $calendar->is_in_dst_at($epoch)
+                ? $calendar->market_times->{partial_trading}{dst_close}->interval
+                : $calendar->market_times->{partial_trading}{standard_close}->interval;
+            push @{$calendar_data->{$date}{$description}}, $exchange_name;
         }
-        push @{$calendar->{$date}{$description}}, $exchange_name;
     }
     my $updated = Quant::Framework::PartialTrading->new(
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         recorded_date    => Date::Utility->new,
         type             => 'early_closes',
-        calendar         => $calendar,
+        calendar         => $calendar_data,
     )->save;
     return;
 
