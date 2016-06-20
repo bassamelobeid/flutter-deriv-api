@@ -222,19 +222,18 @@ sub cashier {
             );
         }
 
-        my @errorfields;
-        push @errorfields, 'AddressState'    if ($errortext =~ /province/);
-        push @errorfields, 'residence'       if ($errortext =~ /country/);
-        push @errorfields, 'AddressTown'     if ($errortext =~ /city/);
-        push @errorfields, 'Address1'        if ($errortext =~ /street/);
-        push @errorfields, 'AddressPostcode' if ($errortext =~ /pcode/);
-        push @errorfields, 'Tel'             if ($errortext =~ /phone/);
-        push @errorfields, 'Email'           if ($errortext =~ /email/);
+        if ($errortext =~ /(province|country|city|street|pcode|phone|email)/) {
+            my $field = $1;
 
-        if (@errorfields) {
+            # map to our form fields
+            $field = "postcode"     if $field eq 'pcode';
+            $field = "addressline1" if $field eq 'street';
+            $field = "residence"    if $field eq 'country';
+
             return BOM::RPC::v3::Utility::create_error({
-                code              => 'ASK_FIX_ADDRESS',
-                message_to_client => localize('There was a problem validating your address.'),
+                code              => 'ASK_FIX_DETAILS',
+                message_to_client => localize('There was a problem validating your personal details.'),
+                details           => $field
             });
         }
 
