@@ -43,6 +43,7 @@ require Pricing::Engine::TickExpiry;
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
 sub is_spread { return 0 }
+sub is_legacy { return 0 }
 
 has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
     is      => 'ro',
