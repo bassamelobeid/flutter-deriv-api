@@ -60,7 +60,8 @@ sub _send_ask {
                 my $uuid;
                 if (not $uuid = _pricing_channel($c, 'subscribe', $args, $api_name)) {
                     return $c->new_error($api_name,
-                        'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+                        'AlreadySubscribedOrLimit',
+                        $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
                 }
 
                 # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
