@@ -19,14 +19,13 @@ use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
 
 initialize_realtime_ticks_db();
-my $now    = Date::Utility->new('2005-09-21 06:46:00');
-my $email  = 'test@binary.com';
+my $now   = Date::Utility->new('2005-09-21 06:46:00');
+my $email = 'test@binary.com';
 
 my $storage_accessor = Quant::Framework::StorageAccessor->new(
     chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
     chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
 );
-
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -249,7 +248,7 @@ subtest 'send_ask' => sub {
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys = [
-        sort {$a cmp $b} (
+        sort { $a cmp $b } (
             qw(longcode spot display_value ask_price spot_time date_start rpc_time payout base_commission theo_probability probability_threshold minimum_stake maximum_payout)
         )];
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
@@ -534,9 +533,7 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
             type           => 'STOCK_SPLT',
         }};
 
-    Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $opening)
-      ->update($action, $opening)
-      ->save;
+    Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $opening)->update($action, $opening)->save;
 
     my $contract = create_contract(
         client        => $client,
