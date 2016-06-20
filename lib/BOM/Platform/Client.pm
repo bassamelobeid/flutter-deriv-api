@@ -559,10 +559,9 @@ sub get_self_exclusion_until_dt {
 
     # undef if expired
     undef $exclude_until
-        if $exclude_until
-        and Date::Utility::today->days_between(Date::Utility->new($exclude_until)) >= 0;
+        if $exclude_until and Date::Utility->new($exclude_until)->is_before(Date::Utility->new);
     undef $timeout_until
-        if $timeout_until and Date::Utility->new($timeout_until)->is_after(Date::Utility->new);
+        if $timeout_until and Date::Utility->new($timeout_until)->is_before(Date::Utility->new);
 
     return unless $exclude_until || $timeout_until;
 
