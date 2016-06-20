@@ -29,7 +29,6 @@ $proposal_param->{contract_type} = 'EXPIRYMISS';
 $proposal_param->{barrier2}      = '-13.12';
 is(BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($proposal_param), undef, "Streams EXPIRYMISS");
 
-
 $proposal_param->{contract_type} = 'CALL';
 delete $proposal_param->{barrier};
 delete $proposal_param->{barrier2};
