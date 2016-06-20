@@ -160,6 +160,15 @@ sub get_bid {
     try {
         my $tv = [Time::HiRes::gettimeofday];
         my $contract = produce_contract($short_code, $currency, $is_sold);
+
+        if ($contract->is_legacy) {
+            $response = BOM::RPC::v3::Utility::create_error({
+                message_to_client => $contract->longcode,
+                code              => "GetProposalFailure"
+            });
+            return $response;
+        }
+
         $response = {
             ask_price           => sprintf('%.2f', $contract->ask_price),
             bid_price           => sprintf('%.2f', $contract->bid_price),
