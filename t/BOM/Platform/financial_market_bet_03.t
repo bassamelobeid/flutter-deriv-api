@@ -17,7 +17,8 @@ sub db {
 
 subtest 'check daily_aggregates' => sub {
 
-    my $res = db->dbh->selectrow_hashref(qq{
+    my $res = db->dbh->selectrow_hashref(
+        qq{
         SELECT
             count(*) as cnt,
             sum(
@@ -82,7 +83,8 @@ subtest 'check daily_aggregates' => sub {
                 ) AS fmb7
                     ON (fmb7.account_id = a.id)
         ) AS res
-    });
+    }
+    );
 
     isnt($res->{cnt}, 0, "No rows in daily_aggregate and agg select");
     is($res->{unequal}, 0, "No difference between daily_aggregate and agg select");
