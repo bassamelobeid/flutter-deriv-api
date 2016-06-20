@@ -23,6 +23,10 @@ sub get_customer_support_email {
     return 'support@binary.com';
 }
 
+sub get_allowed_broker_codes {
+    return ['MX', 'MF', 'MLT', 'CR', 'JP', 'VRTC', 'VRTJ', 'FOG'];
+}
+
 sub read_config {
     my $flag = 0;
     my $static_hash;
