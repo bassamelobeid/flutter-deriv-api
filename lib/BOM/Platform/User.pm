@@ -92,8 +92,10 @@ sub login {
     {
         # If all accounts are self excluded - show error
         # Print the earliest time until user has excluded himself
-        my ($min_dt) = sort { Date::Utility->new($a)->epoch <=> Date::Utility->new($b)->epoch } @self_excluded;
-        $error = localize('Sorry, you have excluded yourself until [_1].', $min_dt);
+        my ($client) =
+            sort { Date::Utility->new($a->get_self_exclusion_until_dt)->epoch <=> Date::Utility->new($b->get_self_exclusion_until_dt)->epoch }
+            @self_excluded;
+        $error = localize('Sorry, you have excluded yourself until [_1].', $client->get_self_exclusion_until_dt);
         BOM::System::AuditLog::log('Account self excluded', $self->email);
     }
 
