@@ -51,7 +51,7 @@ sub get_self_exclusion_form {
         $limit_timeout_until    = $self_exclusion->timeout_until;
         if ($limit_timeout_until) {
             $limit_timeout_until = Date::Utility->new($limit_timeout_until);
-            if (Date::Utility::today->days_between($limit_timeout_until) < 0) {
+            if ($limit_timeout_until->is_after(Date::Utility->new)) {
                 $limit_timeout_until = $limit_timeout_until->epoch;
             } else {
                 undef $limit_timeout_until;
