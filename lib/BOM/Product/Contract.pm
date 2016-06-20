@@ -43,6 +43,7 @@ require Pricing::Engine::TickExpiry;
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
 sub is_spread { return 0 }
+sub is_legacy { return 0 }
 
 has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
     is      => 'ro',
@@ -727,8 +728,8 @@ sub _build_opposite_contract {
                 }
             }
             # We should be looking to move forward in time to a bet starting now.
-            $opp_parameters{date_start}   = $self->date_pricing;
-            $opp_parameters{date_pricing} = $self->date_pricing;
+            $opp_parameters{date_start}  = $self->date_pricing;
+            $opp_parameters{pricing_new} = 1;
             # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
             # Currently, 'sell at market' button will appear when current spot == barrier when the duration
             # of the contract is less than the minimum duration of non ATM contract.
