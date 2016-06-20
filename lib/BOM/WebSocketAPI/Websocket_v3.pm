@@ -624,7 +624,8 @@ sub log_call_timing {
         'bom_websocket_api.v_3.rpc.call.timing',
         1000 * Time::HiRes::tv_interval($params->{tv}),
         {tags => ["rpc:$params->{method}"]});
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$params->{method}"]});
+    my $app_name = $c->stash('app_name') || '';
+    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$params->{method}", "app_name:$app_name"]});
     return;
 }
 
