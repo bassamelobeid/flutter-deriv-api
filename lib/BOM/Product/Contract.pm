@@ -43,6 +43,7 @@ require Pricing::Engine::TickExpiry;
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
 sub is_spread { return 0 }
+sub is_legacy { return 0 }
 
 has [qw(id pricing_code display_name sentiment other_side_code payout_type payouttime)] => (
     is      => 'ro',
@@ -727,8 +728,8 @@ sub _build_opposite_contract {
                 }
             }
             # We should be looking to move forward in time to a bet starting now.
-            $opp_parameters{date_start}   = $self->date_pricing;
-            $opp_parameters{date_pricing} = $self->date_pricing;
+            $opp_parameters{date_start}  = $self->date_pricing;
+            $opp_parameters{pricing_new} = 1;
             # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
             # Currently, 'sell at market' button will appear when current spot == barrier when the duration
             # of the contract is less than the minimum duration of non ATM contract.
@@ -2555,11 +2556,13 @@ sub confirm_validity {
 
     # Should have included this in one of the validation subroutines but it will screw with existing tests.
     # Since this is a temporary solution and we will work on a proper fix, this is acceptable for now.
-    my $announcement_date = Date::Utility->new('2016-06-25');
+    my $announcement_date = Date::Utility->new('2016-07-02');
+    # needed this to avoid having to fix tests
+    my $disable_date = Date::Utility->new('2016-06-20');
     if (    $self->market->name eq 'forex'
         and not $self->is_atm_bet
         and $self->date_expiry->is_before($announcement_date)
-        and $self->underlying->symbol =~ /(EUR|GBP)/)
+        and $self->date_start->is_after($disable_date))
     {
         my $err = {
             message           => 'stay out for Brexit',
