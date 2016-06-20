@@ -5,7 +5,8 @@ extends 'BOM::Product::Contract';
 
 use BOM::Platform::Context qw(localize);
 
-sub value { return 0; }
+sub value     { return 0 }
+sub is_legacy { return 1 }
 
 # it is just here to show which type is invalid
 has bet_type => (
