@@ -137,6 +137,8 @@ subtest 'revoke tokens by loginid and app_id' => sub {
         my @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
         is $cnt[0], 3, "access tokens [$loginid]";
 
+        is $m->has_other_login_sessions($loginid), 1, "$loginid has other oauth token";
+
         is $m->revoke_tokens_by_loginid_app($loginid, $app1->{app_id}), 1, 'revoke_tokens_by_loginid_app';
         @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
         is $cnt[0], 2, "access tokens [$loginid]";
@@ -144,6 +146,8 @@ subtest 'revoke tokens by loginid and app_id' => sub {
         is $m->revoke_tokens_by_loginid($loginid), 1, 'revoke_tokens_by_loginid';
         @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
         is $cnt[0], 0, "revoked access tokens [$loginid]";
+
+        isnt $m->has_other_login_sessions($loginid), 1, "$loginid has NO oauth token";
     }
 };
 
