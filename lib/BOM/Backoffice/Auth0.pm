@@ -43,6 +43,7 @@ sub login {
 sub from_cookie {
     my $staff = BOM::Backoffice::Cookie::get_staff();
 
+    my $user;
     if ($staff and $user = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $staff)) {
         return JSON->new->utf8->decode($user);
     }
