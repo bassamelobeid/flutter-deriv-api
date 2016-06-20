@@ -43,13 +43,11 @@ sub parse_calendar {
 
     my $csv = Text::CSV::Slurp->load(file => $file);
     my @holiday_data;
+    my @early_closes;
     if ($calendar_type eq 'exchange_holiday') {
-        @holiday_data = grep { defined $_->{Trading} and $_->{Trading} =~ /No/ } @$csv;
+        @holiday_data      = grep { defined $_->{Trading} and ($_->{Trading} =~ /No/  or $_->{Trading} =~ /Partial/)} @$csv;
     } elsif ($calendar_type eq 'country_holiday') {
         @holiday_data = grep { defined $_->{Settle} and $_->{Settle} =~ /No/ } @$csv;
-    } elsif ($calendar_type eq 'early_closes') {
-        @holiday_data = grep { defined $_->{Trading} and $_->{Trading} =~ /Partial/ } @$csv;
-    }
 
     my $data = _process(@holiday_data);
     # don't have to include synthetics for country holidays
