@@ -551,15 +551,6 @@ sub _country_specific_currency {
     return;
 }
 
-sub is_from_office {
-    my $self       = shift;
-    my $ip         = $self->client_ip;
-    my @office_ips = ('175.136.239.229', '211.24.127.133',);
-    return 1 if grep { $_ eq $ip } @office_ips;
-
-    return;
-}
-
 sub BUILD {
     my $self = shift;
     if ($self->http_method and not grep { $_ eq $self->http_method } qw/GET POST HEAD OPTIONS/) {
