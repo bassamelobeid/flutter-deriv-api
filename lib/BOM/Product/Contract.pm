@@ -1170,6 +1170,7 @@ sub _build_commission_from_stake {
 
     # sets it to zero first.
     $initial_payout = 0;
+    # We solve for payout as a quadratic function.
     for my $w (1, -1) {
         my $estimated_payout = (-$b + $w * sqrt($b**2 - 4 * $a * $c)) / (2 * $a);
         if ($estimated_payout > 0) {
