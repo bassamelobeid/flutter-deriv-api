@@ -85,16 +85,15 @@ sub login {
         BOM::System::AuditLog::log('Account disabled', $self->email);
     } elsif (
         @self_excluded = grep {
-            $_->get_min_self_exclusion_until
-                and Date::Utility->new->is_before($_->get_min_self_exclusion_until)
+            $_->get_self_exclusion_until_dt
         } @clients
         and @self_excluded == @clients
         )
     {
         # If all accounts are self excluded - show error
         # Print the earliest time until user has excluded himself
-        my ($client) = sort { $a->get_min_self_exclusion_until->epoch <=> $b->get_min_self_exclusion_until->epoch } @self_excluded;
-        $error = localize('Sorry, you have excluded yourself until [_1].', $client->get_min_self_exclusion_until->date);
+        my ($min_dt) = sort { Date::Utility->new($a)->epoch <=> Date::Utility->new($b)->epoch } @self_excluded;
+        $error = localize('Sorry, you have excluded yourself until [_1].', $min_dt);
         BOM::System::AuditLog::log('Account self excluded', $self->email);
     }
 
