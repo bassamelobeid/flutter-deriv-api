@@ -31,11 +31,13 @@ sub authorize {
     }
 
     if ($client->get_self_exclusion and $client->get_self_exclusion->exclude_until) {
-        my $limit_excludeuntil = $client->get_self_exclusion->exclude_until;
-        if (Date::Utility->new->is_before(Date::Utility->new($limit_excludeuntil))) {
+        my $exclude_date = Date::Utility->new($client->get_self_exclusion->exclude_until);
+        if (Date::Utility->new->is_before($exclude_date)) {
             return BOM::RPC::v3::Utility::create_error({
-                    code              => 'SelfExclusion',
-                    message_to_client => BOM::Platform::Context::localize("Sorry, you have excluded yourself until [_1].", $limit_excludeuntil)});
+                    code => 'SelfExclusion',
+                    message_to_client =>
+                        BOM::Platform::Context::localize("Sorry, you have excluded yourself until [_1].", $exclude_date->datetime_yyyymmdd_hhmmss_TZ)}
+            );
         }
     }
 
