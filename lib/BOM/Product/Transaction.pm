@@ -1575,7 +1575,7 @@ BEGIN {_create_validator '_validate_iom_withdrawal_limit'}
 
 # This validation should always come after _validate_trade_pricing_adjustment
 # because we recompute the price and that's the price that we going to transact with!
-sub __validate_stake_limit {
+sub ___validate_stake_limit {
     my $self   = shift;
     my $client = shift;
 
@@ -1603,6 +1603,7 @@ sub __validate_stake_limit {
     }
     return;
 }
+BEGIN {_create_validator '__validate_stake_limit'}
 
 sub _validate_stake_limit {
     my $self = shift;
@@ -1610,20 +1611,7 @@ sub _validate_stake_limit {
     # spread stake validation is within its module.
     # spread bet won't be offered to maltainvest.
     return if $self->contract->is_spread;
-
-    if ($self->multiple) {
-        for my $m (@{$self->multiple}) {
-            next if $m->{code};
-            my $res = $self->__validate_stake_limit($m->{client});
-            if ($res) {
-                $m->{code}  = $res->{-type};
-                $m->{error} = $res->{-message_to_client};
-            }
-        }
-        return;
-    } else {
-        return $self->__validate_stake_limit($self->client);
-    }
+    return $self->__validate_stake_limit;
 }
 
 =head2 $self->_validate_payout_limit
