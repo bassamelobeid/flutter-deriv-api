@@ -14,6 +14,8 @@ use BOM::Database::ClientDB;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use YAML::XS;
 
+use IO::Select;
+
 my $connection_builder;
 my ($acc1, $acc2, $acc3, $acc4);
 
@@ -70,6 +72,10 @@ sub db {
 sub test_notify {
     my @tests = @_;
 
+    my $sel = IO::Select->new;
+    $sel->add($listener->{pg_socket});
+    $sel->can_read(10);
+
     my %notifications;
     while (my $notify = $listener->pg_notifies) {
         my $n = {};
@@ -98,6 +104,10 @@ sub test_notify {
 
 sub test_payment_notify {
     my @tests = @_;
+
+    my $sel = IO::Select->new;
+    $sel->add($listener->{pg_socket});
+    $sel->can_read(10);
 
     my %notifications;
     while (my $notify = $listener->pg_notifies) {
