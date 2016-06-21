@@ -17,6 +17,7 @@ my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 use open qw[ :encoding(UTF-8) ];
 use BOM::Market::Types;
 
+use JSON qw(from_json);
 use List::MoreUtils qw( any );
 use List::Util qw( first max min);
 use Scalar::Util qw( looks_like_number );
@@ -42,6 +43,7 @@ use BOM::Platform::Static::Config;
 use Quant::Framework::Asset;
 use Quant::Framework::Currency;
 use Quant::Framework::ExpiryConventions;
+use Quant::Framework::StorageAccessor;
 use Quant::Framework::Utils::UnderlyingConfig;
 use Quant::Framework::Utils::Builder;
 use BOM::System::Chronicle;
@@ -265,6 +267,9 @@ sub _build_config {
         $default_dividend_rate = pop @rates;
     }
 
+    my $default_vol_duration = undef;
+    $default_vol_duration = 2 / 86400 if $self->submarket->name eq 'random_daily';
+
     my $default_interest_rate = undef;
 
     # list of markets that have zero rate
@@ -280,7 +285,6 @@ sub _build_config {
         market_name                           => $self->market->name,
         market_prefer_discrete_dividend       => $self->market->prefer_discrete_dividend,
         quanto_only                           => $self->quanto_only,
-        submarket_name                        => $self->submarket->name,
         rate_to_imply_from                    => $self->rate_to_imply_from,
         volatility_surface_type               => $self->volatility_surface_type,
         exchange_name                         => $self->exchange_name,
@@ -295,6 +299,7 @@ sub _build_config {
         asset_class                           => $asset_class,
         default_interest_rate                 => $default_interest_rate,
         default_dividend_rate                 => $default_dividend_rate,
+        default_volatility_duration           => $default_vol_duration,
     });
 }
 
@@ -1040,13 +1045,13 @@ has intraday_interval => (
 
 The general rule to determine which currency's rate should be implied are as below:
 
-1) One of the currencies is Metal - imply Metal depo. 
+1) One of the currencies is Metal - imply Metal deposit rate.
 
-2. One of the currencies is USD - imply non-USD depo (for offshore market). 
+2. One of the currencies is USD - imply non-USD depo (for offshore market).
 
-3. One of the currencies is JPY - imply non-JPY depo. 
+3. One of the currencies is JPY - imply non-JPY depo.
 
-4. One of the currencies is EUR - imply non-EUR depo. 
+4. One of the currencies is EUR - imply non-EUR depo.
 
 5) The second currency in the currency pair will be imply
 
@@ -1175,7 +1180,7 @@ has '_recheck_appconfig' => (
     default => sub { return time; },
 );
 
-my $appconfig_attrs = [qw(is_newly_added is_buying_suspended is_trading_suspended)];
+my $appconfig_attrs = [qw(is_buying_suspended is_trading_suspended)];
 has $appconfig_attrs => (
     is         => 'ro',
     lazy_build => 1,
@@ -1194,12 +1199,6 @@ before $appconfig_attrs => sub {
     }
 
 };
-
-sub _build_is_newly_added {
-    my $self = shift;
-
-    return grep { $_ eq $self->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added});
-}
 
 =head2 is_buying_suspended
 
@@ -1311,83 +1310,6 @@ sub is_in_quiet_period {
     }
 
     return $quiet;
-}
-
-=head2 weighted_days_in_period
-
-Returns the sum of the weights we apply to each day in the requested period.
-
-=cut
-
-sub weighted_days_in_period {
-    my ($self, $begin, $end) = @_;
-
-    $end = $end->truncate_to_day;
-    my $current = $begin->truncate_to_day->plus_time_interval('1d');
-    my $days    = 0.0;
-
-    while (not $current->is_after($end)) {
-        $days += $self->weight_on($current);
-        $current = $current->plus_time_interval('1d');
-    }
-
-    return $days;
-}
-
-# weighted_days_in_period() is called a lot with the same arguments, memoize it.
-# See also the comment on Exchange::_normalize_on_dates()
-Memoize::memoize(
-    'weighted_days_in_period',
-    NORMALIZER => sub {
-        my ($self, $begin, $end) = @_;
-
-        return $self->symbol . ',' . $begin->days_since_epoch . ',' . $end->days_since_epoch . ',' . $self->closed_weight;
-    });
-
-=head2 weight_on
-
-Returns the weight for a given day (given as a Date::Utility object).
-Returns our closed weight for days when the market is closed.
-
-=cut
-
-sub weight_on {
-    my ($self, $date) = @_;
-
-    my $weight = $self->calendar->weight_on($date) || $self->closed_weight;
-    if ($self->market->name eq 'forex') {
-        my $base      = $self->asset;
-        my $numeraire = $self->quoted_currency;
-        my $currency_weight =
-            0.5 * ($base->weight_on($date) + $numeraire->weight_on($date));
-
-        # If both have a holiday, set to 0.25
-        if (!$currency_weight) {
-            $currency_weight = 0.25;
-        }
-
-        $weight = min($weight, $currency_weight);
-    }
-
-    return $weight;
-}
-
-=head2 closed_weight
-
-The weight given to a day when the underlying is closed.
-
-=cut
-
-has closed_weight => (
-    is         => 'rw',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-sub _build_closed_weight {
-    my $self = shift;
-
-    return ($self->market->name eq 'indices') ? 0.55 : 0.06;
 }
 
 =head1 REALTIME TICK METHODS
@@ -1999,10 +1921,14 @@ sub _build_corporate_actions {
 
     return [] if not $self->market->affected_by_corporate_actions;
 
-    my $corp = Quant::Framework::CorporateAction->new(
-        symbol           => $self->symbol,
+    my $storage_accessor = Quant::Framework::StorageAccessor->new(
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    );
+
+    my $corp = Quant::Framework::CorporateAction::load($storage_accessor, $self->symbol);
+    # no corporate actions in Chronicle
+    return [] unless $corp;
 
     my $available_actions = $corp->actions;
     my %grouped_by_date;
@@ -2121,7 +2047,12 @@ sub _build_resets_at_open {
     return $self->submarket->resets_at_open;
 }
 
-has always_available => (
+has risk_profile_setter => (
+    is      => 'rw',
+    default => 'underlying_symbol',
+);
+
+has [qw(always_available risk_profile base_commission)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -2131,10 +2062,20 @@ sub _build_always_available {
     return $self->submarket->always_available;
 }
 
-has base_commission => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+sub _build_risk_profile {
+    my $self = shift;
+
+    my $rp;
+    if ($self->submarket->risk_profile) {
+        $rp = $self->submarket->risk_profile;
+        $self->risk_profile_setter('submarket');
+    } else {
+        $rp = $self->market->risk_profile;
+        $self->risk_profile_setter('market');
+    }
+
+    return $rp;
+}
 
 sub _build_base_commission {
     my $self = shift;

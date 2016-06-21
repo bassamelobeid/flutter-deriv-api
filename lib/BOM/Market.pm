@@ -398,6 +398,12 @@ has spread_divisor => (
     default => 1,
 );
 
+# if you did not define this, I assume you don't offer it.
+has risk_profile => (
+    is      => 'ro',
+    default => 'no_business',
+);
+
 has base_commission => (
     is      => 'ro',
     default => 0.05,

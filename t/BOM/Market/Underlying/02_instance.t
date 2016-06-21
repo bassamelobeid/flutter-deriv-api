@@ -238,9 +238,9 @@ subtest 'all attributes on a variety of underlyings' => sub {
         is((scalar grep { exists $underlying->market_convention->{$_} } qw(delta_style delta_premium_adjusted)),
             2, ' with at least the minimal key set');
 
-        ok(looks_like_number($underlying->closed_weight), 'Closed weight is numeric');
-        cmp_ok($underlying->closed_weight, '>=', 0, ' nonnegative');
-        cmp_ok($underlying->closed_weight, '<',  1, ' and smaller than 1');
+        ok(looks_like_number($underlying->_builder->closed_weight), 'Closed weight is numeric');
+        cmp_ok($underlying->_builder->closed_weight, '>=', 0, ' nonnegative');
+        cmp_ok($underlying->_builder->closed_weight, '<',  1, ' and smaller than 1');
 
         my $license = $underlying->feed_license;
         is((scalar grep { $license eq $_ } qw(chartonly delayed daily realtime)), 1, 'Feed license is exactly one of our allowed values');
@@ -520,16 +520,6 @@ subtest 'all methods on a selection of underlyings' => sub {
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig_buy);
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades($orig_trades);
 
-    my $orig_newly_added = BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added;
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added([]);
-    is($EURUSD->is_newly_added, 0, 'Underlying is not newly_added');
-
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added(['frxEURUSD']);
-    $EURUSD->clear_is_newly_added;
-    is($EURUSD->is_newly_added, 1, 'Underlying is now newly_added');
-
-    BOM::Platform::Runtime->instance->app_config->quants->underlyings->newly_added($orig_newly_added);
-
     my $eu_symbol       = $EURUSD->symbol;
     my $looks_like_euff = qr%$eu_symbol/\d{1,2}-[A-Z]{1}[a-z]{2}-\d{1,2}(?:-fullfeed\.csv|\.fullfeed)%;
 
@@ -574,21 +564,29 @@ subtest 'all methods on a selection of underlyings' => sub {
         ok($worm->is_in_quiet_period, $worm->symbol . ' is quiet after New York closes');
     }
 
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'volsurface_delta',
-        {
-            symbol        => 'frxEURUSD',
-            recorded_date => Date::Utility->new,
-        });
+    Quant::Framework::Utils::Test::create_doc(
+      'volsurface_delta',
+      {
+        underlying_config        => BOM::Market::Underlying->new('frxEURUSD')->config,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        recorded_date => Date::Utility->new,
+      });
 
     my $today = Date::Utility->today;
-    foreach my $ul ($AS51, $EURUSD) {
+    my $audusd = BOM::Market::Underlying->new('frxAUDUSD');
+    foreach my $ul ($AS51, $audusd) {
         my $prev_weight = 0;
+        my $builder = Quant::Framework::Utils::Builder->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+            underlying_config => $ul->config,
+          });
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
-            my $day_weight    = $ul->weight_on($test_day);
-            my $period_weight = $ul->weighted_days_in_period($today, $test_day);
-            cmp_ok($day_weight, '>=', $ul->closed_weight,
+            my $day_weight    = $builder->weight_on($test_day);
+            my $period_weight = $builder->weighted_days_in_period($today, $test_day);
+            cmp_ok($day_weight, '>=', $builder->closed_weight,
                 $ul->display_name . ' weight for ' . $test_day->date . ' is at least as big as the closed weight');
             cmp_ok($day_weight, '<=', 1, 'And no larger than 1');
             cmp_ok(
@@ -794,6 +792,14 @@ subtest 'forward_starts_on' => sub {
         }
         eq_or_diff([map { $_->epoch } (@{$underlying->forward_starts_on($date)})], $expected_starts, "Got Correct starts");
     };
+};
+
+subtest 'risk type' => sub {
+    is (BOM::Market::Underlying->new('frxUSDJPY')->risk_profile, 'medium_risk', 'USDJPY is medium risk');
+    is (BOM::Market::Underlying->new('frxAUDCAD')->risk_profile, 'high_risk', 'AUDCAD is high risk');
+    is (BOM::Market::Underlying->new('AEX')->risk_profile, 'medium_risk', 'AEX is medium risk');
+    is (BOM::Market::Underlying->new('frxXAUUSD')->risk_profile, 'high_risk', 'XAUUSD is high risk');
+    is (BOM::Market::Underlying->new('R_100')->risk_profile, 'low_risk', 'R_100 is low risk');
 };
 
 done_testing;
