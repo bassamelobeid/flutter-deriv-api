@@ -55,8 +55,12 @@ sub parse_calendar {
     my $early_closes_data = _process(@early_closes);
     # don't have to include synthetics for country holidays
     if ($calendar_type ne 'country_holiday') {
-        _save_early_closes_calendar($early_closes_data);
         _include_forex_holidays($data);
+        _include_metal_holidays_and_early_closes({
+            holidays     => $data,
+            early_closes => $early_closes_data
+        });
+        _save_early_closes_calendar($early_closes_data);
     }
     # convert to proper calendar format
     my $calendar;
@@ -82,10 +86,23 @@ sub _include_forex_holidays {
         $new_year  => "New Year\'s Day",
     };
 
-    $data->{METAL} = {
+    return;
+}
+
+sub _include_metal_holidays_and_early_closes {
+    my $param        = shift;
+    my $holidays     = $param->{holidays};
+    my $early_closes = $param->{early_closes};
+
+    my $year      = Date::Utility->new->year;
+    my $christmas = Date::Utility->new("$year-12-25")->epoch;
+    my $new_year  = Date::Utility->new(($year + 1) . "-01-01")->epoch;
+    $holidays->{METAL} = {
         $christmas => 'Christmas Day',
         $new_year  => "New Year\'s Day",
     };
+
+    $early_closes->{METAL} = $holidays->{NYSE};
 
     return;
 }
