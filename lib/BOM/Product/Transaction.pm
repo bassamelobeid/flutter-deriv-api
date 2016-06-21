@@ -1145,7 +1145,7 @@ sub _validate_available_currency {
 }
 
 sub _create_validator {
-    my $name = shift;
+    my $name   = shift;
     my $method = "_$name";
 
     my $sub = sub {
@@ -1166,7 +1166,7 @@ sub _create_validator {
         }
     };
 
-    no warnings 'redefine';
+    no warnings 'redefine';    ## no critic
     no strict 'refs';
     *{$name} = $sub;
 
@@ -1196,7 +1196,7 @@ sub __validate_currency {
     }
     return;
 }
-BEGIN {_create_validator '_validate_currency'}
+BEGIN { _create_validator '_validate_currency' }
 
 sub _build_pricing_comment {
     my $args = shift;
@@ -1571,7 +1571,7 @@ sub __validate_iom_withdrawal_limit {
     }
     return;
 }
-BEGIN {_create_validator '_validate_iom_withdrawal_limit'}
+BEGIN { _create_validator '_validate_iom_withdrawal_limit' }
 
 # This validation should always come after _validate_trade_pricing_adjustment
 # because we recompute the price and that's the price that we going to transact with!
@@ -1603,7 +1603,7 @@ sub ___validate_stake_limit {
     }
     return;
 }
-BEGIN {_create_validator '__validate_stake_limit'}
+BEGIN { _create_validator '__validate_stake_limit' }
 
 sub _validate_stake_limit {
     my $self = shift;
@@ -1650,7 +1650,7 @@ sub __validate_payout_limit {
 
     return;
 }
-BEGIN {_create_validator '_validate_payout_limit'}
+BEGIN { _create_validator '_validate_payout_limit' }
 
 =head2 $self->_validate_jurisdictional_restrictions
 
@@ -1715,7 +1715,7 @@ sub __validate_jurisdictional_restrictions {
 
     return;
 }
-BEGIN {_create_validator '_validate_jurisdictional_restrictions'}
+BEGIN { _create_validator '_validate_jurisdictional_restrictions' }
 
 =head2 $self->_validate_client_status
 
@@ -1738,7 +1738,7 @@ sub __validate_client_status {
 
     return;
 }
-BEGIN {_create_validator '_validate_client_status'}
+BEGIN { _create_validator '_validate_client_status' }
 
 =head2 $self->_validate_client_self_exclusion
 
@@ -1766,7 +1766,7 @@ sub __validate_client_self_exclusion {
 
     return;
 }
-BEGIN {_create_validator '_validate_client_self_exclusion'}
+BEGIN { _create_validator '_validate_client_self_exclusion' }
 
 =head2 sell_expired_contracts
 
