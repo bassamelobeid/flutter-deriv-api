@@ -5,7 +5,10 @@ use warnings;
 
 use Quant::Framework::Holiday;
 use Quant::Framework::PartialTrading;
+use Quant::Framework::StorageAccessor;
+
 use BOM::Platform::Context;
+use BOM::System::Chronicle;
 use Try::Tiny;
 use Text::CSV::Slurp;
 use Date::Utility;
@@ -19,12 +22,14 @@ sub save_calendar {
     my $recorded_date = Date::Utility->new;
     my $updated;
     if ($calendar_type eq 'exchange_holiday' or $calendar_type eq 'country_holiday') {
-        $updated = Quant::Framework::Holiday->new(
-            recorded_date    => $recorded_date,
-            calendar         => $calendar,
+        my $storage_accessor = Quant::Framework::StorageAccessor->new(
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-        )->save;
+        );
+        my $holiday = Quant::Framework::Holiday->load($storage_accessor, $recorded_date)
+            || Quant::Framework::Holiday->create($storage_accessor, $recorded_date);
+        $updated = $holiday->update($calendar, $recorded_date);
+        $updated->save;
     } else {
         $updated = Quant::Framework::PartialTrading->new(
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
