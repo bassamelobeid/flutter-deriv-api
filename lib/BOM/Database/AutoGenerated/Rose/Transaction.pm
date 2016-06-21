@@ -22,7 +22,6 @@ __PACKAGE__->meta->setup(
         quantity                => { type => 'integer', default => 1 },
         balance_after           => { type => 'numeric', precision => 4, scale => 14 },
         source                  => { type => 'bigint' },
-        app_markup              => { type => 'numeric' },
     ],
 
     primary_key_columns => [ 'id' ],
