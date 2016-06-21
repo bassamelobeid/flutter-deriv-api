@@ -219,7 +219,7 @@ sub produce_contract {
 
             #if this is an asisn tick expiry contract and also a barrier is specified, reject the request
             if (defined $input_params{tick_expiry} and defined $possible and $input_params{bet_type} =~ /^ASIAN/ and $possible ne 'S0P') {
-                    die 'Tick expiry contracts cannot have barrier values';
+                die 'Tick expiry contracts cannot have barrier values';
             }
 
             if (ref($possible) !~ /BOM::Product::Contract::Strike/) {
