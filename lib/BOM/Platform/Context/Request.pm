@@ -436,14 +436,9 @@ sub _build_website {
 }
 
 sub _build_available_currencies {
-    my $self      = shift;
-    my $available = $self->broker->landing_company->legal_allowed_currencies;
+    my $self = shift;
 
-    if (scalar @{$self->website->filtered_currencies} > 0) {
-        $available = [grep { $self->broker->landing_company->is_currency_legal($_) } @{$self->website->filtered_currencies}];
-    }
-
-    return $available;
+    return $self->broker->landing_company->legal_allowed_currencies;
 }
 
 sub _build_default_currency {
