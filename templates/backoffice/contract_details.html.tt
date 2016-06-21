@@ -15,6 +15,7 @@
         <p><b>DESCRIPTION = [% contract_details.description  %]</b></p>
         <p><b>CCY = [% contract_details.ccy  %]</b></p>
         <p><b>ASK_PRICE = [% contract_details.ask_price  %]</b></p>
+        <p><b>PAYOUT = [% contract_details.payout  %]</b></p>
         <table id="dtr" border="1" cellpadding="1" cellspacing="0">
                 <tr><b> Contract's ask probability </br></tr>
                 [% FOREACH ask_key =pricing_parameters.ask_probability.keys.sort%]
