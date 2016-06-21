@@ -570,11 +570,11 @@ sub get_self_exclusion_until_dt {
         my $timeout_until_dt = Date::Utility->new($timeout_until);
 
         return $exclude_until_dt->date if $exclude_until_dt->epoch < $timeout_until_dt->epoch;
-        return $timeout_until_dt->datetime_yyyymmdd_hhmmss;
+        return $timeout_until_dt->datetime_yyyymmdd_hhmmss_TZ;
     }
 
     return Date::Utility->new($exclude_until)->date if $exclude_until;
-    return Date::Utility->new($timeout_until)->datetime_yyyymmdd_hhmmss;
+    return Date::Utility->new($timeout_until)->datetime_yyyymmdd_hhmmss_TZ;
 }
 
 sub get_limit_for_payout {

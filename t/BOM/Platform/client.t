@@ -194,7 +194,7 @@ subtest 'Login to self timeouted client' => sub {
         $client->save;
 
         my $res                = $client->login_error;
-        my $timeout_until_date = $timeout_until->datetime_yyyymmdd_hhmmss;
+        my $timeout_until_date = $timeout_until->datetime_yyyymmdd_hhmmss_TZ;
         ok $res =~ /Sorry, you have excluded yourself until $timeout_until_date/, 'It should return until date in message error';
     }
     'create client';
