@@ -24,9 +24,10 @@ PrintContentType();
 BrokerPresentation('Product Management');
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
-my $staff         = BOM::Backoffice::Auth0::from_cookie()->{nickname};
-my $r             = request();
-my $limit_profile = BOM::Platform::Static::Config::quants->{risk_profile};
+my $staff          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
+my $r              = request();
+my $limit_profile  = BOM::Platform::Static::Config::quants->{risk_profile};
+my %known_profiles = map { $_ => 1 } keys %$limit_profile;
 
 if ($r->param('update_limit')) {
     my @known_keys = qw(contract_category market submarket underlying_symbol start_type expiry_type);
@@ -44,19 +45,21 @@ if ($r->param('update_limit')) {
         }
     }
 
-    my $p = $r->param('risk_profile');
     my $uniq_key = substr(md5_hex(join('_', sort { $a cmp $b } values %ref)), 0, 16);
 
+    # if we just want to add client into watchlist, custom conditions is not needed
+    my $has_custom_conditions = keys %ref;
     if (my $custom_name = $r->param('custom_name')) {
         $ref{name} = $custom_name;
-    } else {
+    } elsif ($has_custom_conditions) {
         print "Name is required";
         code_exit_BO();
     }
 
-    if ($p and first { $p eq $_ } keys %$limit_profile) {
+    my $p = $r->param('risk_profile');
+    if ($p and $known_profiles{$p}) {
         $ref{risk_profile} = $p;
-    } else {
+    } elsif ($has_custom_conditions) {
         print "Unrecognize risk profile.";
         code_exit_BO();
     }
@@ -64,10 +67,10 @@ if ($r->param('update_limit')) {
     if (my $id = $r->param('client_loginid')) {
         my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
         my $comment = $r->param('comment');
-        $current->{$id}->{custom_limits}->{$uniq_key} = \%ref;
-        $current->{$id}->{reason}     = $comment if $comment;
-        $current->{$id}->{updated_by} = $staff;
-        $current->{$id}->{updated_on} = Date::Utility->new->date;
+        $current->{$id}->{custom_limits}->{$uniq_key} = \%ref    if $has_custom_conditions;
+        $current->{$id}->{reason}                     = $comment if $comment;
+        $current->{$id}->{updated_by}                 = $staff;
+        $current->{$id}->{updated_on}                 = Date::Utility->new->date;
         BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(to_json($current));
     } else {
         my $current = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
@@ -165,7 +168,8 @@ foreach my $client_loginid (keys %$custom_client_limits) {
         updated_by     => $updated_by,
         updated_on     => $updated_on,
         @output ? (output => \@output) : (),
-        } if @output;
+        }
+        if @output;
 }
 
 BOM::Platform::Context::template->process(
