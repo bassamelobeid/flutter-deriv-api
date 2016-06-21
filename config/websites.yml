@@ -1,128 +1,86 @@
 ---
 BackOffice:
   primary_url: _HOST_.binary.com
-  default_language: EN
 Binaryqa01:
   primary_url: www.binaryqa01.com
-  default_language: EN
 Binaryqa02:
   primary_url: www.binaryqa02.com
-  default_language: EN
 Binaryqa03:
   primary_url: www.binaryqa03.com
-  default_language: EN
 Binaryqa04:
   primary_url: www.binaryqa04.com
-  default_language: EN
 Binaryqa05:
   primary_url: www.binaryqa05.com
-  default_language: EN
 Binaryqa06:
   primary_url: www.binaryqa06.com
-  default_language: EN
 Binaryqa07:
   primary_url: www.binaryqa07.com
-  default_language: EN
 Binaryqa08:
   primary_url: www.binaryqa08.com
-  default_language: EN
 Binaryqa09:
   primary_url: www.binaryqa09.com
-  default_language: EN
 Binaryqa10:
   primary_url: www.binaryqa10.com
-  default_language: EN
 Binaryqa11:
   primary_url: www.binaryqa11.com
-  default_language: EN
 Binaryqa12:
   primary_url: www.binaryqa12.com
-  default_language: EN
 Binaryqa13:
   primary_url: www.binaryqa13.com
-  default_language: EN
 Binaryqa14:
   primary_url: www.binaryqa14.com
-  default_language: EN
 Binaryqa15:
   primary_url: www.binaryqa15.com
-  default_language: EN
 Binaryqa16:
   primary_url: www.binaryqa16.com
-  default_language: EN
 Binaryqa17:
   primary_url: www.binaryqa17.com
-  default_language: EN
 Binaryqa18:
   primary_url: www.binaryqa18.com
-  default_language: EN
 Binaryqa19:
   primary_url: www.binaryqa19.com
-  default_language: EN
 Binaryqa20:
   primary_url: www.binaryqa20.com
-  default_language: EN
 Binaryqa21:
   primary_url: www.binaryqa21.com
-  default_language: EN
 Binaryqa22:
   primary_url: www.binaryqa22.com
-  default_language: EN
 Binaryqa23:
   primary_url: www.binaryqa23.com
-  default_language: EN
 Binaryqa24:
   primary_url: www.binaryqa24.com
-  default_language: EN
 Binaryqa25:
   primary_url: www.binaryqa25.com
-  default_language: EN
 Binaryqa26:
   primary_url: www.binaryqa26.com
-  default_language: EN
 Binaryqa27:
   primary_url: www.binaryqa27.com
-  default_language: EN
 Binaryqa28:
   primary_url: www.binaryqa28.com
-  default_language: EN
 Binaryqa29:
   primary_url: www.binaryqa29.com
-  default_language: EN
 Binaryqa30:
   primary_url: www.binaryqa30.com
-  default_language: EN
 Binaryqa31:
   primary_url: www.binaryqa31.com
-  default_language: EN
 Binaryqa32:
   primary_url: www.binaryqa32.com
-  default_language: EN
 Binaryqa33:
   primary_url: www.binaryqa33.com
-  default_language: EN
 Binaryqa34:
   primary_url: www.binaryqa34.com
-  default_language: EN
 Binaryqa35:
   primary_url: www.binaryqa35.com
-  default_language: EN
 Binaryqa36:
   primary_url: www.binaryqa36.com
-  default_language: EN
 Binaryqa37:
   primary_url: www.binaryqa37.com
-  default_language: EN
 Binaryqa38:
   primary_url: www.binaryqa38.com
-  default_language: EN
 Binaryqa39:
   primary_url: www.binaryqa39.com
-  default_language: EN
 Binaryqa40:
   primary_url: www.binaryqa40.com
-  default_language: EN
 Binary:
   primary_url: www.binary.com
-  default_language: EN
   default: 1
