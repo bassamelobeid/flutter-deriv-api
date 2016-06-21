@@ -217,8 +217,8 @@ sub produce_contract {
         foreach my $barrier_name (grep { defined $input_params{$_} } @barriers) {
             my $possible = $input_params{$barrier_name};
 
-            #if this is a tick expiry contract and also a barrier is specified, reject the request
-            if (defined $input_params{tick_expiry} and defined $possible and $input_params{bet_type} =~ /^ASIAN/) {
+            #if this is an asisn tick expiry contract and also a barrier is specified, reject the request
+            if (defined $input_params{tick_expiry} and defined $possible and $input_params{bet_type} =~ /^ASIAN/ and $possible ne 'S0P') {
                     die 'Tick expiry contracts cannot have barrier values';
             }
 
