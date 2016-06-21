@@ -137,7 +137,7 @@ subtest 'self_exclusion timeout' => sub {
     $test_client->save();
 
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('Sorry, you have excluded yourself until ' . $timeout_until->datetime_yyyymmdd_hhmmss . '.',
+        ->has_error->error_message_is('Sorry, you have excluded yourself until ' . $timeout_until->datetime_yyyymmdd_hhmmss_TZ . '.',
         'check if authorize check self exclusion');
 };
 
