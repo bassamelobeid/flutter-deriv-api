@@ -55,7 +55,6 @@ sub parse_calendar {
     my $early_closes_data = _process(@early_closes);
     # don't have to include synthetics for country holidays
     if ($calendar_type ne 'country_holiday') {
-        _include_synthetic($data);
         _include_early_closes($early_closes_data);
         _include_forex_holidays($data);
     }
@@ -165,27 +164,4 @@ sub _include_early_closes {
 
 }
 
-sub _include_synthetic {
-    my $calendar = shift;
-
-    my %mapper = (
-        SYNSTOXX    => [qw(STOXX EUREX)],
-        SYNEURONEXT => [qw(EURONEXT EEI_AM)],
-        SYNLSE      => [qw(LSE ICE_LIFFE)],
-        SYNBSE      => [qw(BSE BSE)],
-        SYNNYSE_DJI => [qw(NYSE CME)],
-        SYNFSE      => [qw(FSE EUREX)],
-        SYNHKSE     => [qw(HKSE HKF)],
-        SYNTSE      => [qw(TSE CME)],
-        SYNSWX      => [qw(SWX EUREX_SWISS)],
-        SYNNYSE_SPC => [qw(NYSE_SPC CME)],
-    );
-    # take care of synthetic holidays now
-    foreach my $syn_exchange (keys %mapper) {
-        my %syn_data = map { (exists $calendar->{$_}) ? %{$calendar->{$_}} : () } @{$mapper{$syn_exchange}};
-        $calendar->{$syn_exchange} = \%syn_data;
-    }
-
-    return;
-}
 1;
