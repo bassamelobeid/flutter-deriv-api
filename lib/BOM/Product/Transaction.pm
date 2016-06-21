@@ -1144,6 +1144,35 @@ sub _validate_available_currency {
     return;
 }
 
+sub _create_validator {
+    my $name = shift;
+    my $method = "_$name";
+
+    my $sub = sub {
+        my $self = shift;
+
+        if ($self->multiple) {
+            for my $m (@{$self->multiple}) {
+                next if $m->{code};
+                my $res = $self->$method($m->{client});
+                if ($res) {
+                    $m->{code}  = $res->{-type};
+                    $m->{error} = $res->{-message_to_client};
+                }
+            }
+            return;
+        } else {
+            return $self->$method($self->client);
+        }
+    };
+
+    no warnings 'redefine';
+    no strict 'refs';
+    *{$name} = $sub;
+
+    return;
+}
+
 sub __validate_currency {
     my $self     = shift;
     my $client   = shift;
@@ -1167,24 +1196,7 @@ sub __validate_currency {
     }
     return;
 }
-
-sub _validate_currency {
-    my $self = shift;
-
-    if ($self->multiple) {
-        for my $m (@{$self->multiple}) {
-            next if $m->{code};
-            my $res = $self->__validate_currency($m->{client});
-            if ($res) {
-                $m->{code}  = $res->{-type};
-                $m->{error} = $res->{-message_to_client};
-            }
-        }
-        return;
-    } else {
-        return $self->__validate_currency($self->client);
-    }
-}
+BEGIN {_create_validator '_validate_currency'}
 
 sub _build_pricing_comment {
     my $args = shift;
@@ -1559,24 +1571,7 @@ sub __validate_iom_withdrawal_limit {
     }
     return;
 }
-
-sub _validate_iom_withdrawal_limit {
-    my $self = shift;
-
-    if ($self->multiple) {
-        for my $m (@{$self->multiple}) {
-            next if $m->{code};
-            my $res = $self->__validate_iom_withdrawal_limit($m->{client});
-            if ($res) {
-                $m->{code}  = $res->{-type};
-                $m->{error} = $res->{-message_to_client};
-            }
-        }
-        return;
-    } else {
-        return $self->__validate_iom_withdrawal_limit($self->client);
-    }
-}
+BEGIN {_create_validator '_validate_iom_withdrawal_limit'}
 
 # This validation should always come after _validate_trade_pricing_adjustment
 # because we recompute the price and that's the price that we going to transact with!
@@ -1667,24 +1662,7 @@ sub __validate_payout_limit {
 
     return;
 }
-
-sub _validate_payout_limit {
-    my $self = shift;
-
-    if ($self->multiple) {
-        for my $m (@{$self->multiple}) {
-            next if $m->{code};
-            my $res = $self->__validate_payout_limit($m->{client});
-            if ($res) {
-                $m->{code}  = $res->{-type};
-                $m->{error} = $res->{-message_to_client};
-            }
-        }
-        return;
-    } else {
-        return $self->__validate_payout_limit($self->client);
-    }
-}
+BEGIN {_create_validator '_validate_payout_limit'}
 
 =head2 $self->_validate_jurisdictional_restrictions
 
@@ -1749,24 +1727,7 @@ sub __validate_jurisdictional_restrictions {
 
     return;
 }
-
-sub _validate_jurisdictional_restrictions {
-    my $self = shift;
-
-    if ($self->multiple) {
-        for my $m (@{$self->multiple}) {
-            next if $m->{code};
-            my $res = $self->__validate_jurisdictional_restrictions($m->{client});
-            if ($res) {
-                $m->{code}  = $res->{-type};
-                $m->{error} = $res->{-message_to_client};
-            }
-        }
-        return;
-    } else {
-        return $self->__validate_jurisdictional_restrictions($self->client);
-    }
-}
+BEGIN {_create_validator '_validate_jurisdictional_restrictions'}
 
 =head2 $self->_validate_client_status
 
@@ -1789,24 +1750,7 @@ sub __validate_client_status {
 
     return;
 }
-
-sub _validate_client_status {
-    my $self = shift;
-
-    if ($self->multiple) {
-        for my $m (@{$self->multiple}) {
-            next if $m->{code};
-            my $res = $self->__validate_client_status($m->{client});
-            if ($res) {
-                $m->{code}  = $res->{-type};
-                $m->{error} = $res->{-message_to_client};
-            }
-        }
-        return;
-    } else {
-        return $self->__validate_client_status($self->client);
-    }
-}
+BEGIN {_create_validator '_validate_client_status'}
 
 =head2 $self->_validate_client_self_exclusion
 
@@ -1834,24 +1778,7 @@ sub __validate_client_self_exclusion {
 
     return;
 }
-
-sub _validate_client_self_exclusion {
-    my $self = shift;
-
-    if ($self->multiple) {
-        for my $m (@{$self->multiple}) {
-            next if $m->{code};
-            my $res = $self->__validate_client_self_exclusion($m->{client});
-            if ($res) {
-                $m->{code}  = $res->{-type};
-                $m->{error} = $res->{-message_to_client};
-            }
-        }
-        return;
-    } else {
-        return $self->__validate_client_self_exclusion($self->client);
-    }
-}
+BEGIN {_create_validator '_validate_client_self_exclusion'}
 
 =head2 sell_expired_contracts
 
