@@ -42,7 +42,7 @@ sub get_token_details {
     return {
         loginid => $loginid,
         scopes  => \@scopes,
-        epoch   => $epoch
+        epoch   => $epoch,
     };
 }
 
