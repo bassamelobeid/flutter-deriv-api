@@ -15,14 +15,15 @@ sub register {
     my $user    = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
-    my $args         = $params->{args};
-    my $name         = $args->{name};
-    my $scopes       = $args->{scopes};
-    my $homepage     = $args->{homepage} // '';
-    my $github       = $args->{github} // '';
-    my $appstore     = $args->{appstore} // '';
-    my $googleplay   = $args->{googleplay} // '';
-    my $redirect_uri = $args->{redirect_uri} // '';
+    my $args                  = $params->{args};
+    my $name                  = $args->{name};
+    my $scopes                = $args->{scopes};
+    my $homepage              = $args->{homepage} // '';
+    my $github                = $args->{github} // '';
+    my $appstore              = $args->{appstore} // '';
+    my $googleplay            = $args->{googleplay} // '';
+    my $redirect_uri          = $args->{redirect_uri} // '';
+    my $app_markup_percentage = $args->{app_markup_percentage} // 0;
 
     my $error_sub = sub {
         my ($error) = @_;
@@ -41,14 +42,15 @@ sub register {
         if $oauth->is_name_taken($user_id, $name);
 
     my $app = $oauth->create_app({
-        user_id      => $user_id,
-        name         => $name,
-        scopes       => $scopes,
-        homepage     => $homepage,
-        github       => $github,
-        appstore     => $appstore,
-        googleplay   => $googleplay,
-        redirect_uri => $redirect_uri,
+        user_id               => $user_id,
+        name                  => $name,
+        scopes                => $scopes,
+        homepage              => $homepage,
+        github                => $github,
+        appstore              => $appstore,
+        googleplay            => $googleplay,
+        redirect_uri          => $redirect_uri,
+        app_markup_percentage => $app_markup_percentage
     });
 
     return $app;
@@ -61,15 +63,16 @@ sub update {
     my $user    = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
-    my $args         = $params->{args};
-    my $app_id       = $args->{app_update};
-    my $name         = $args->{name};
-    my $scopes       = $args->{scopes};
-    my $homepage     = $args->{homepage} // '';
-    my $github       = $args->{github} // '';
-    my $appstore     = $args->{appstore} // '';
-    my $googleplay   = $args->{googleplay} // '';
-    my $redirect_uri = $args->{redirect_uri} // '';
+    my $args                  = $params->{args};
+    my $app_id                = $args->{app_update};
+    my $name                  = $args->{name};
+    my $scopes                = $args->{scopes};
+    my $homepage              = $args->{homepage} // '';
+    my $github                = $args->{github} // '';
+    my $appstore              = $args->{appstore} // '';
+    my $googleplay            = $args->{googleplay} // '';
+    my $redirect_uri          = $args->{redirect_uri} // '';
+    my $app_markup_percentage = $args->{app_markup_percentage} // 0;
 
     ## do some validation
     my $error_sub = sub {
@@ -97,13 +100,14 @@ sub update {
     $app = $oauth->update_app(
         $app_id,
         {
-            name         => $name,
-            scopes       => $scopes,
-            homepage     => $homepage,
-            github       => $github,
-            appstore     => $appstore,
-            googleplay   => $googleplay,
-            redirect_uri => $redirect_uri,
+            name                  => $name,
+            scopes                => $scopes,
+            homepage              => $homepage,
+            github                => $github,
+            appstore              => $appstore,
+            googleplay            => $googleplay,
+            redirect_uri          => $redirect_uri,
+            app_markup_percentage => $app_markup_percentage
         });
 
     return $app;
