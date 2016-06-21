@@ -701,10 +701,10 @@ sub _get_self_exclusion_details {
             }
         }
 
-        if (my $until = $self_exclusion->timeout_until) {
-            $until = Date::Utility->new($until);
-            if (Date::Utility::today->days_between($until) < 0) {
-                $get_self_exclusion->{timeout_until} = $until->epoch;
+        if (my $timeout_until = $self_exclusion->timeout_until) {
+            $timeout_until = Date::Utility->new($timeout_until);
+            if ($timeout_until->is_after(Date::Utility->new)) {
+                $get_self_exclusion->{timeout_until} = $timeout_until->epoch;
             }
         }
     }
@@ -789,10 +789,15 @@ sub set_self_exclusion {
     if (defined $timeout_until and $timeout_until =~ /^\d+$/) {
         my $now           = Date::Utility->new;
         my $exclusion_end = Date::Utility->new($timeout_until);
+        my $six_week      = Date::Utility->new(time() + 6 * 7 * 86400);
 
-        # checking for the exclude until date which must be larger than today's date
-        if (not $exclusion_end->is_after($now)) {
+        # checking for the timeout until which must be larger than current time
+        if ($exclusion_end->is_before($now)) {
             return $error_sub->(localize('Timeout time must be greater than current time.'), 'timeout_until');
+        }
+
+        if ($exclusion_end->is_after($six_week)) {
+            return $error_sub->(localize('Timeout time cannot be more than 6 weeks.'), 'timeout_until');
         }
     } else {
         delete $args{timeout_until};

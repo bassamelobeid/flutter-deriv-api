@@ -1196,6 +1196,22 @@ subtest 'get and set self_exclusion' => sub {
             'code'              => 'SetSelfExclusionError'
         });
 
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9999,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440,
+        timeout_until          => time() + 86400 * 7 * 10,    # max is 6 weeks
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "Timeout time cannot be more than 6 weeks.",
+            'details'           => 'timeout_until',
+            'code'              => 'SetSelfExclusionError'
+        });
+
     my $exclude_until = DateTime->now()->add(months => 7)->ymd;
     my $timeout_until = DateTime->now()->add(days   => 1);
     $params->{args} = {
