@@ -248,7 +248,7 @@ subtest 'app_markup_transaction' => sub {
         price         => $contract->ask_price,
         purchase_date => $now
     });
-    is $txn->app_markup, 0, "no app markup for spread contracts";
+    is $txn->app_markup, 0, "no app markup for spread contracts as of now, may be added in future";
 };
 
 done_testing();
