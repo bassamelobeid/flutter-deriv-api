@@ -17,7 +17,7 @@ initialize_realtime_ticks_db;
 
 my $weekday             = Date::Utility->new('2016-03-29');
 my $usdjpy_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
+    underlying => 'frxAUDUSD',
     epoch      => $weekday->epoch
 });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -25,7 +25,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $weekday
-    }) for qw(USD JPY HKD);
+    }) for qw(USD JPY HKD AUD-USD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
@@ -37,7 +37,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $weekday
-    }) for qw(frxUSDJPY frxUSDHKD);
+    }) for qw(frxAUDUSD frxUSDHKD frxAUDHKD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
@@ -70,11 +70,11 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }}});
 
 subtest 'date start blackouts' => sub {
-    note('Testing date_start blackouts for frxUSDJPY');
+    note('Testing date_start blackouts for frxAUDUSD');
     my $one_second_since_open = $weekday->plus_time_interval('1s');
     my $bet_params            = {
         bet_type     => 'CALL',
-        underlying   => 'frxUSDJPY',
+        underlying   => 'frxAUDUSD',
         currency     => 'USD',
         payout       => 10,
         barrier      => 'S0P',
@@ -93,9 +93,9 @@ subtest 'date start blackouts' => sub {
         {
             symbol        => $_,
             recorded_date => $one_second_before_close,
-        }) for qw(frxUSDJPY frxUSDHKD);
+        }) for qw(frxAUDUSD frxUSDHKD);
     $usdjpy_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
+        underlying => 'frxAUDUSD',
         quote      => 100,
         epoch      => $one_second_before_close->epoch
     });
@@ -105,20 +105,20 @@ subtest 'date start blackouts' => sub {
     ok !$c->underlying->eod_blackout_start, 'no end of day blackout';
     ok $c->is_valid_to_buy, 'valid to buy';
 
-    note('Testing date_start blackouts for frxUSDJPY tick expiry contract');
+    note('Testing date_start blackouts for frxAUDUSD tick expiry contract');
     my $few_second_before_close = $weekday->plus_time_interval('2d')->minus_time_interval('2m');
 
     use Test::MockModule;
     my $mock = Test::MockModule->new('Pricing::Engine::TickExpiry');
     $mock->mock('probability', sub { 0.5 });
     my $usdjpy_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
+        underlying => 'frxAUDUSD',
         quote      => 100,
         epoch      => $few_second_before_close->epoch
     });
     $bet_params = {
         bet_type     => 'CALL',
-        underlying   => 'frxUSDJPY',
+        underlying   => 'frxAUDUSD',
         currency     => 'USD',
         barrier      => 'S0P',
         payout       => 10,
@@ -150,11 +150,11 @@ subtest 'date start blackouts' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
-            symbol        => 'frxUSDJPY',
+            symbol        => 'frxAUDUSD',
             recorded_date => $_,
         }) for ($ten_minute_before_friday_close, $three_minute_before_friday_close);
     my $usdjpy_friday_ten_minute_before_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
+        underlying => 'frxAUDUSD',
         epoch      => $ten_minute_before_friday_close->epoch
     });
     $bet_params->{date_pricing} = $bet_params->{date_start} = $ten_minute_before_friday_close;
@@ -163,7 +163,7 @@ subtest 'date start blackouts' => sub {
     ok $c->is_valid_to_buy, 'valid to buy at 10 min before friday close';
 
     my $usdjpy_friday_three_minute_before_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
+        underlying => 'frxAUDUSD',
         epoch      => $three_minute_before_friday_close->epoch
     });
     $bet_params->{date_pricing} = $bet_params->{date_start} = $three_minute_before_friday_close;
@@ -172,7 +172,7 @@ subtest 'date start blackouts' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy at 3 mins before friday close';
     like(($c->primary_validation_error)[0]->{message_to_client}, qr/Trading is not available from 20:55:00 to 21:00:00/, 'throws error');
 
-    note('Testing date_start blackouts for frxUSDJPY on Monday ');
+    note('Testing date_start blackouts for frxAUDUSD on Monday ');
 
     $bet_params->{date_start} = Date::Utility->new('2016-04-04');
     $bet_params->{duration}   = '10m';
@@ -191,7 +191,7 @@ subtest 'date start blackouts' => sub {
 
     my $one_second_after_monday             = Date::Utility->new('2016-04-04 00:00:00');
     my $usdjpy_one_second_after_monday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
+        underlying => 'frxAUDUSD',
         epoch      => $one_second_after_monday->epoch
     });
     $bet_params->{date_pricing} = $bet_params->{date_start} = $one_second_after_monday;
@@ -262,8 +262,8 @@ subtest 'date start blackouts' => sub {
         {
             symbol        => $_,
             recorded_date => $hour_before_close
-        }) for qw(frxUSDJPY frxUSDHKD);
-    $bet_params->{underlying} = 'frxUSDJPY';
+        }) for qw(frxAUDUSD frxUSDHKD);
+    $bet_params->{underlying} = 'frxAUDUSD';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
     $bet_params->{date_start} = $bet_params->{date_pricing} = $hour_before_close->epoch - 1;
@@ -272,7 +272,7 @@ subtest 'date start blackouts' => sub {
 
     Cache::RedisDB->flushall;
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
-    my $rollover    = BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on(Date::Utility->new($weekday));
+    my $rollover    = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on(Date::Utility->new($weekday));
     my $date_start  = $rollover->minus_time_interval('59m59s');
     my $valid_start = $rollover->minus_time_interval('1h1s');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -280,14 +280,14 @@ subtest 'date start blackouts' => sub {
         {
             symbol        => $_,
             recorded_date => $valid_start,
-        }) for qw(frxUSDJPY frxUSDHKD);
-    $bet_params->{underlying}   = 'frxUSDJPY';
+        }) for qw(frxAUDUSD frxUSDHKD);
+    $bet_params->{underlying}   = 'frxAUDUSD';
     $bet_params->{duration}     = '1d';
     $bet_params->{barrier}      = 'S10P';
     $bet_params->{bet_type}     = 'CALL';
     $bet_params->{date_start}   = $bet_params->{date_pricing} = $date_start;
     $bet_params->{current_tick} = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
+        underlying => 'frxAUDUSD',
         epoch      => $valid_start->epoch
     });
     $c = produce_contract($bet_params);
@@ -340,21 +340,21 @@ subtest 'date_expiry blackouts' => sub {
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like(($c->primary_validation_error)[0]->{message_to_client}, qr/between 07:39:00 and 07:40:00/, 'throws error');
 
-    my $usdjpy_close = BOM::Market::Underlying->new('frxUSDJPY')->calendar->closing_on($new_week);
+    my $usdjpy_close = BOM::Market::Underlying->new('frxAUDUSD')->calendar->closing_on($new_week);
     my $pricing_date = $usdjpy_close->minus_time_interval('6h');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => $_,
             recorded_date => $pricing_date,
-        }) for qw(frxUSDJPY frxUSDHKD);
+        }) for qw(frxAUDUSD frxUSDHKD);
     my $usdjpy_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxUSDJPY',
+        underlying => 'frxAUDUSD',
         epoch      => $pricing_date->epoch,
     });
     $bet_params->{date_pricing} = $bet_params->{date_start} = $pricing_date;
     $bet_params->{duration}     = '5h59m1s';
-    $bet_params->{underlying}   = 'frxUSDJPY';
+    $bet_params->{underlying}   = 'frxAUDUSD';
     $bet_params->{current_tick} = $usdjpy_tick;
     $c                          = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
@@ -401,8 +401,8 @@ subtest 'date expiry blackout - year end holidays for equity' => sub {
         {
             symbol        => $_,
             recorded_date => $date_start
-        }) for qw(frxUSDJPY frxUSDHKD);
-    $bet_params->{underlying} = 'frxUSDJPY';
+        }) for qw(frxAUDUSD frxUSDHKD);
+    $bet_params->{underlying} = 'frxAUDUSD';
     $bet_params->{duration}   = '5d';
     $c                        = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for Forex during holiday blackout period';
@@ -441,6 +441,8 @@ subtest 'market_risk blackouts' => sub {
         payout       => 10,
         duration     => '59m59s',
         current_tick => $xauusd_tick,
+        pricing_vol  => 0.1,
+        news_adjusted_pricing_vol => 0.1,
     };
     my $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
@@ -453,5 +455,6 @@ subtest 'market_risk blackouts' => sub {
     $bet_params->{current_tick} = $xauusd_tick;
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
+    $DB::single=1;
     like(($c->primary_validation_error)[0]->{message_to_client}, qr/from 21:00:00 to 23:59:59/, 'throws error');
 };

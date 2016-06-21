@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 4);
+use Test::More (tests => 5);
 use Test::FailWarnings;
 use Test::Exception;
 use Test::MockModule;
@@ -173,6 +173,14 @@ subtest 'invalid contracts does not die' => sub {
         my @info = simple_contract_info($invalid_shortcode, 'GBP');
         like($info[0], qr/Legacy contract. No further information is available/, 'legacy longcode');
     } 'simple_contract_info for legacy shortcode lives';
+};
+
+subtest 'unknown shortcode does not die' => sub {
+    my $unknown = 'INTRADD_FRXUSDJPY_20_12_JAN_07_4_6';
+    lives_ok {
+        my $contract = produce_contract($unknown, 'GBP');
+        isa_ok $contract, 'BOM::Product::Contract::Invalid';
+    } 'unknown shortcode';
 };
 
 1;

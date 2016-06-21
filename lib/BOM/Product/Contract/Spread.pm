@@ -17,6 +17,7 @@ use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
 use BOM::Product::Types;
 use BOM::Platform::Static::Config;
+use BOM::Product::RiskProfile;
 
 with 'MooseX::Role::Validatable';
 
@@ -24,6 +25,7 @@ has [qw(id display_name sentiment other_side_code)] => (is => 'ro');
 
 # Actual methods for introspection purposes.
 sub is_spread           { return 1 }
+sub is_legacy           { return 0 }
 sub is_atm_bet          { return 0 }
 sub is_intraday         { return 0 }
 sub is_forward_starting { return 0 }
@@ -454,6 +456,15 @@ sub _validate_quote {
     my $self = shift;
 
     my @err;
+
+    if ($self->risk_profile->get_risk_profile eq 'no_business') {
+        push @err,
+            +{
+            message           => 'manually disabled by quants',
+            message_to_client => localize('This trade is temporarily unavailable.'),
+            };
+    }
+
     if ($self->date_pricing->epoch - $self->underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch) {
         push @err,
             {
@@ -560,6 +571,23 @@ sub _get_min_max_unit {
     }
 
     return (roundnear(0.01, $min), roundnear(0.01, $max), $unit);
+}
+
+has risk_profile => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_risk_profile {
+    my $self = shift;
+
+    return BOM::Product::RiskProfile->new(
+        underlying        => $self->underlying,
+        contract_category => $self->category_code,
+        expiry_type       => 'intraday',             # making this intraday.
+        start_type        => 'spot',
+        currency          => $self->currency,
+    );
 }
 
 no Moose;

@@ -23,13 +23,6 @@ my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/co
 my $cache_namespace = 'OFFERINGS';
 
 # Keep these in sync with reality.
-our $DEFAULT_MAX_PAYOUT = {
-    USD => 100_000,
-    EUR => 100_000,
-    GBP => 100_000,
-    AUD => 100_000,
-    JPY => 10_000_000,
-};
 our $BARRIER_CATEGORIES = {
     callput      => ['euro_atm', 'euro_non_atm'],
     endsinout    => ['euro_non_atm'],
@@ -42,7 +35,6 @@ our $BARRIER_CATEGORIES = {
 my %record_map = (
     min_contract_duration          => 'min',
     max_contract_duration          => 'max',
-    payout_limit                   => 'payout_limit',
     min_historical_pricer_duration => 'historical_pricer_min',
     max_historical_pricer_duration => 'historical_pricer_max',
 );
@@ -166,15 +158,13 @@ sub get_contract_specifics {
     my $to_format = ($args->{expiry_type} eq 'tick') ? sub { $_[0]; } : sub { Time::Duration::Concise->new(interval => $_[0]) };
     my $ul = BOM::Market::Underlying->new($args->{underlying_symbol});
 
-    my $result = {payout_limit => $DEFAULT_MAX_PAYOUT};
-
+    my $result = {};
     if (my $allowed = _exists_value($ul->contracts, $args)) {
         foreach my $side (grep { exists $allowed->{$_} } (qw(min max historical_pricer_min historical_pricer_max))) {
             my $shortened = $side;
             $shortened =~ s/^historical_pricer_//;
             $result->{($shortened eq $side) ? 'permitted' : 'historical'}{$shortened} = $to_format->($allowed->{$side});
         }
-        $result->{payout_limit} = $allowed->{payout_limit} if (defined $allowed->{payout_limit});
     }
 
     return $result;
