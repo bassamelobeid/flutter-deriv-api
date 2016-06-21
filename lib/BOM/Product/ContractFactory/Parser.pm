@@ -140,13 +140,13 @@ sub shortcode_to_parameters {
     );
     $test_bet_name = $OVERRIDE_LIST{$test_bet_name} if exists $OVERRIDE_LIST{$test_bet_name};
 
-    if (not exists $AVAILABLE_CONTRACTS{$test_bet_name} or $shortcode =~ /_\d+H\d+/) {
-        return {
-            bet_type   => 'Invalid',    # it doesn't matter what it is if it is a legacy
-            underlying => 'config',
-            currency   => $currency,
-        };
-    }
+    my $legacy_params = {
+        bet_type   => 'Invalid',    # it doesn't matter what it is if it is a legacy
+        underlying => 'config',
+        currency   => $currency,
+    };
+
+    return $legacy_params if (not exists $AVAILABLE_CONTRACTS{$test_bet_name} or $shortcode =~ /_\d+H\d+/);
 
     if ($shortcode =~ /^(SPREADU|SPREADD)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d*.?\d*)_(\d*.?\d*)_(DOLLAR|POINT)/) {
         return {
@@ -217,7 +217,7 @@ sub shortcode_to_parameters {
             $how_many_ticks = $5;
         }
     } else {
-        die 'Unknown shortcode ' . $shortcode;
+        return $legacy_params;
     }
 
     my $underlying = BOM::Market::Underlying->new($underlying_symbol);
