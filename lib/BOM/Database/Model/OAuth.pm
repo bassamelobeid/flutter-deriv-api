@@ -90,7 +90,7 @@ sub get_loginid_by_access_token {
     my $expires_in = 5184000;
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
 
-    my ($loginid, $app_id, $creation_time) = $self->dbh->selectrow_array("
+    return $self->dbh->selectrow_array("
         UPDATE oauth.access_token
         SET last_used=NOW(), expires=?
         WHERE access_token = ? AND expires > NOW()
