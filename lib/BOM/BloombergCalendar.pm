@@ -56,7 +56,7 @@ sub parse_calendar {
     # don't have to include synthetics for country holidays
     if ($calendar_type ne 'country_holiday') {
         _include_synthetic($data);
-        _include_early_closes($early_closes_data);
+        _save_early_closes_calendar($early_closes_data);
         _include_forex_holidays($data);
     }
     # convert to proper calendar format
@@ -133,7 +133,7 @@ sub _process {
     return $output;
 }
 
-sub _include_early_closes {
+sub _save_early_closes_calendar {
     my $data = shift;
     my $calendar_data;
     foreach my $exchange_name (keys %$data) {
