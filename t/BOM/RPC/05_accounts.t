@@ -487,7 +487,7 @@ subtest $method => sub {
         $c->tcall($method, {token => $token1}),
         {
             status              => [],
-            risk_classification => 'low'
+            risk_classification => ''
         },
         'status empty'
     );
@@ -497,7 +497,7 @@ subtest $method => sub {
         $c->tcall($method, {token => $token1}),
         {
             status              => [],
-            risk_classification => 'low'
+            risk_classification => ''
         },
         'tnc_approval is excluded, still status is empty'
     );
@@ -508,7 +508,7 @@ subtest $method => sub {
         $c->tcall($method, {token => $token1}),
         {
             status              => ['authenticated'],
-            risk_classification => 'low'
+            risk_classification => ''
         },
         'ok, authenticated'
     );
