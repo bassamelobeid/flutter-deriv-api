@@ -44,7 +44,7 @@ sub proposal_open_contract {
                         # we don't want to leak account_id to client
                         $details->{account_id} = delete $response->{$contract_id}->{account_id};
 
-                        # these keys needs to be deleted from args (check send_proposal_open_contract)
+                        # these keys needs to be deleted from args (check send_proposal)
                         # populating here cos we stash them in redis channel
                         $details->{short_code}      = $response->{$contract_id}->{shortcode};
                         $details->{contract_id}     = $contract_id;
@@ -91,7 +91,7 @@ sub proposal_open_contract {
     return;
 }
 
-sub send_proposal_open_contract {
+sub send_proposal {
     my ($c, $id, $args) = @_;
 
     my $details         = {%$args};
