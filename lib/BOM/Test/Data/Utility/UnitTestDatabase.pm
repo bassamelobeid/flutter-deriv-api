@@ -212,7 +212,7 @@ sub create_fmb {
         return $fmb;
     }
 
-    my $rec = $fmb->can('financial_market_bet_open_record') ? $fmb->financial_market_bet_open_record : $fmb->financial_market_bet_record;
+    my $rec  = $fmb->financial_market_bet_open_record;
     my @cols = $rec->meta->columns;
 
     my %bet = map {
