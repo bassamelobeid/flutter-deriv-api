@@ -481,11 +481,11 @@ sub get_self_exclusion_form {
 
             #server side checking for the exclude until date which must be larger than today's date
             if (not $exclusion_end->is_after($now)) {
-                $form_self_exclusion->set_field_error_message('TIMEOUTUNTIL', localize('Exclude time must be greater than current time.'));
+                $form_self_exclusion->set_field_error_message('TIMEOUTUNTIL', localize('Timeout time must be greater than current time.'));
             }
 
             if ($exclusion_end->is_after($six_week)) {
-                $form_self_exclusion->set_field_error_message('TIMEOUTUNTIL', localize('Exclude time cannot be more than 6 weeks.'));
+                $form_self_exclusion->set_field_error_message('TIMEOUTUNTIL', localize('Timeout time cannot be more than 6 weeks.'));
             }
         }
     };
