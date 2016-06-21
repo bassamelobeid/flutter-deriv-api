@@ -144,4 +144,14 @@ subtest 'asian' => sub {
         cmp_ok $c->barrier->as_absolute, '==', 101.50000, 'correct barrier with one more decimal in pip size';
     }
     'build from shortcode'; 
+
+    dies_ok {
+        produce_contract('ASIANU_R_50_100_1466496619_5T_S5P_0', 'USD');
+    }
+    'build from shortcode with relative barrier fails'; 
+
+    dies_ok {
+        produce_contract('ASIANU_R_50_100_1466496590_5T_1002000000_0', 'USD');
+    }
+    'build from shortcode with absolute barrier fails'; 
 };
