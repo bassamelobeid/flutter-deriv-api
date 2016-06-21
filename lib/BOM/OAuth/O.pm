@@ -176,7 +176,12 @@ sub authorize {
         );
     }
 
-    my $ua_fingerprint = md5_hex($app_id . ($c->stash('request')->client_ip // '') . ($c->req->headers->header('User-Agent') // ''));
+    my $client_ip = $c->client_ip;
+    if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
+        $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
+    }
+
+    my $ua_fingerprint = md5_hex($app_id . ($client_ip // '') . ($c->req->headers->header('User-Agent') // ''));
 
     ## create tokens for all loginids
     my $i = 1;

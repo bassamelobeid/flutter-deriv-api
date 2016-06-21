@@ -20,6 +20,7 @@ sub startup {
 
     $app->plugin(charset => {charset => 'utf-8'});
     $app->plugin('DefaultHelpers');
+    $app->plugin('ClientIP');
     $app->secrets([BOM::System::Config::aes_keys->{web_secret}{1}]);
 
     $app->helper(
