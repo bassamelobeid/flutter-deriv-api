@@ -42,7 +42,7 @@ sub _send_ask {
 
             my $uuid;
 
-            if (not $uuid = _pricing_channel($c, 'subscribe', $args, $api_name)) {
+            if (not $uuid = _pricing_channel($c, 'subscribe', $args)) {
                 return $c->new_error('proposal',
                     'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
             }
