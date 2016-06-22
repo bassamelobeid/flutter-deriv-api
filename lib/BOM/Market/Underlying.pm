@@ -1128,19 +1128,19 @@ Get the interest rate for this underlying over a given time period (expressed in
 sub interest_rate_for {
     my ($self, $tiy) = @_;
 
-    return $self->_builder->interest_rate_for($tiy);
+    return $self->_builder->build_interest_rate->interest_rate_for($tiy);
 }
 
 sub get_discrete_dividend_for_period {
     my ($self, $args) = @_;
 
-    return $self->_builder->get_discrete_dividend_for_period($args);
+    return $self->_builder->build_dividend->get_discrete_dividend_for_period($args);
 }
 
 sub dividend_adjustments_for_period {
     my ($self, $args) = @_;
 
-    return $self->_builder->dividend_adjustments_for_period($args);
+    return $self->_builder->build_dividend->dividend_adjustments_for_period($args);
 }
 
 sub uses_implied_rate {
