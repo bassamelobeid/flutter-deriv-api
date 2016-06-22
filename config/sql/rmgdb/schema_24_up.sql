@@ -1,6 +1,6 @@
 BEGIN;
 
-ALTER TABLE transaction.transaction ADD COLUMN app_markup NUMERIC;
-GRANT INSERT (app_markup) ON TABLE transaction.transaction TO read, write;
+ALTER TABLE betonmarkets.self_exclusion ADD COLUMN timeout_until NUMERIC;
+ALTER TABLE audit.self_exclusion ADD COLUMN timeout_until NUMERIC;
 
 COMMIT;
