@@ -12,6 +12,12 @@ SET client_min_messages = warning;
 
 SET search_path = bet, pg_catalog;
 
+CREATE INDEX fmb_is_not_sold_idx
+ON bet.financial_market_bet
+ USING btree
+ (account_id)
+ WHERE is_sold = false;
+
 CREATE OR REPLACE FUNCTION ensure_fmb_id_exists()
   RETURNS trigger AS
 $BODY$BEGIN
@@ -81,6 +87,14 @@ CREATE INDEX fmbo_account_id_purchase_time_id_idx ON financial_market_bet_open U
 CREATE INDEX fmbo_ready_to_sell_idx ON financial_market_bet_open USING btree (expiry_time);
 
 CREATE INDEX fmbo_purchase_time_idx ON financial_market_bet_open USING btree (purchase_time);
+
+/* With our conventional fkeys going away, we need to make sure there are no deletions on fmb, and we are going to do it with conventional methods.
+* Trying to cover all the bases here as table permissions, at this time, differ between QA box and production.
+*/
+REVOKE UPDATE,DELETE,TRUNCATE ON TABLE bet.financial_market_bet FROM postgres;
+REVOKE UPDATE,DELETE,TRUNCATE ON TABLE bet.financial_market_bet FROM read;
+REVOKE UPDATE,DELETE,TRUNCATE ON TABLE bet.financial_market_bet FROM write;
+DROP TRIGGER prevent_action ON bet.financial_market_bet;
 
 /* this next set of statements drops the fkey looking at fmb.id and replaces it with a check upon record insertion.
  * Ultimately permissions on fmb will deny deletions/updates, addressing those facets of a traditional fkey.
