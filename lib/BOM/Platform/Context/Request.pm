@@ -436,14 +436,9 @@ sub _build_website {
 }
 
 sub _build_available_currencies {
-    my $self      = shift;
-    my $available = $self->broker->landing_company->legal_allowed_currencies;
+    my $self = shift;
 
-    if (scalar @{$self->website->filtered_currencies} > 0) {
-        $available = [grep { $self->broker->landing_company->is_currency_legal($_) } @{$self->website->filtered_currencies}];
-    }
-
-    return $available;
+    return $self->broker->landing_company->legal_allowed_currencies;
 }
 
 sub _build_default_currency {
@@ -547,15 +542,6 @@ sub _country_specific_currency {
     if    (' fr dk de at be cz fi gr ie it lu li mc nl no pl se sk  ' =~ / $country /i) { return 'EUR'; }
     elsif (' au nz cx cc nf ki nr tv ' =~ / $country /i)                                { return 'AUD'; }
     elsif (' gb uk ' =~ / $country /i)                                                  { return 'GBP'; }
-
-    return;
-}
-
-sub is_from_office {
-    my $self       = shift;
-    my $ip         = $self->client_ip;
-    my @office_ips = ('175.136.239.229', '211.24.127.133',);
-    return 1 if grep { $_ eq $ip } @office_ips;
 
     return;
 }
