@@ -94,30 +94,6 @@ has reality_check_interval => (
     default => 60,
 );
 
-=head2 preferred_for_countries
-
-The list of countries for whom we have to show this website instead of the other subset.
-
-=cut
-
-has preferred_for_countries => (
-    is      => 'ro',
-    isa     => 'ArrayRef[Str]',
-    default => sub { [] },
-);
-
-=head2 filtered_currencies
-
-This list defines the list of currencies supported by this website.
-
-=cut
-
-has filtered_currencies => (
-    is      => 'ro',
-    isa     => 'ArrayRef[Str]',
-    default => sub { [] },
-);
-
 has domain => (
     is      => 'ro',
     isa     => 'Str',

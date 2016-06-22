@@ -10,7 +10,7 @@ use BOM::Platform::Client;
 my $login_id = 'CR0009';
 
 subtest 'Almost all accessor/modifiers' => sub {
-    plan tests => 39;
+    plan tests => 41;
 
     my $client;
     lives_ok { $client = BOM::Platform::Client::get_instance({'loginid' => $login_id}); }
@@ -64,9 +64,14 @@ subtest 'Almost all accessor/modifiers' => sub {
 
     is($client->self_exclusion->max_balance, 200000, "the client maximum acbal number is 200000 as it is changed.");
 
-    Test::Exception::lives_ok { $client->set_exclusion->exclude_until('2009-09-06') } "can set the maxopenorders_limit client attribute";
+    Test::Exception::lives_ok { $client->set_exclusion->exclude_until('2009-09-06') } "can set the exclude_until client attribute";
 
     is($client->self_exclusion->exclude_until, '2009-09-06T00:00:00', "the client limit exclude until number is 2009-09-06.");
+
+    my $timeout_until = time() + 86400;
+    Test::Exception::lives_ok { $client->set_exclusion->timeout_until($timeout_until) } "can set the timeout_until client attribute";
+
+    is($client->self_exclusion->timeout_until, $timeout_until, "the client limit timeout until number is right.");
 
     Test::Exception::lives_ok { $client->set_exclusion->session_duration_limit(20) } "can set the client session duration attribute";
 

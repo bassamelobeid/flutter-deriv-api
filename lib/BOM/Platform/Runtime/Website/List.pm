@@ -4,6 +4,7 @@ use Moose;
 use namespace::autoclean;
 use Sys::Hostname qw(hostname);
 
+use BOM::Platform::Static::Config;
 use BOM::Platform::Runtime::Website;
 
 =head1 NAME
@@ -123,7 +124,7 @@ sub _build__websites {
         my $website_definition = $self->definitions->{$website};
 
         $website_definition->{name}         = $website;
-        $website_definition->{broker_codes} = $self->_broker_objects($website_definition->{broker_codes});
+        $website_definition->{broker_codes} = $self->_broker_objects(BOM::Platform::Static::Config::get_allowed_broker_codes());
 
         if ($website_definition->{primary_url}) {
             my $hostname = hostname;
