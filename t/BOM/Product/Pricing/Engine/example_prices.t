@@ -40,7 +40,7 @@ my $expected_result = $config_data->{expected_result};
 my $date_start   = 1398152636;
 my $date_pricing = $date_start;
 
-my $recorded_date = Date::Utility->new($date_start)->minus_time_interval('30d');
+my $recorded_date = Date::Utility->new($date_start);
 # This test are benchmarked againsts market rates.
 # The intermittent failure of the test is due to the switching between implied and market rates in app settings.
 my $u_c = Test::MockModule->new('Quant::Framework::Utils::UnderlyingConfig');
