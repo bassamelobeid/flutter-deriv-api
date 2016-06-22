@@ -1520,11 +1520,7 @@ sub _validate_client_self_exclusion {
     my $self   = shift;
     my $client = $self->client;
 
-    my $limit_excludeuntil;
-    if (    $limit_excludeuntil = $client->get_self_exclusion
-        and $limit_excludeuntil = $limit_excludeuntil->exclude_until
-        and Date::Utility->new->is_before(Date::Utility->new($limit_excludeuntil)))
-    {
+    if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
         return Error::Base->cuss(
             -type => 'ClientSelfExcluded',
             -mesg => 'your account is not authorised for any further contract purchases.',
