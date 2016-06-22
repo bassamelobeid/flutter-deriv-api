@@ -63,7 +63,10 @@ sub parse_calendar {
         foreach my $date (keys %{$data->{$exchange_name}}) {
             my $description;
             if ($calendar_type eq 'early_closes') {
-                my $calendar = Quant::Framework::TradingCalendar->new($exchange_name, BOM::System::Chronicle::get_chronicle_reader());
+                my $calendar = Quant::Framework::TradingCalendar->new({
+                        symbol => $exchange_name, 
+                        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                    });
                 $description =
                       $calendar->is_in_dst_at($date)
                     ? $calendar->market_times->{partial_trading}{dst_close}
