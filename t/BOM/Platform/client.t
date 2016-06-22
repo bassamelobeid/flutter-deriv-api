@@ -181,4 +181,23 @@ subtest 'Login to self excluded client' => sub {
     'create client';
 };
 
+subtest 'Login to self timeouted client' => sub {
+    my ($client);
+    my $new_email = 'test' . rand . '@binary.com';
+    lives_ok {
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => $new_email,
+        });
+        my $timeout_until = Date::Utility->new()->plus_time_interval('1d');
+        $client->set_exclusion->timeout_until($timeout_until->epoch);
+        $client->save;
+
+        my $res                = $client->login_error;
+        my $timeout_until_date = $timeout_until->datetime_yyyymmdd_hhmmss_TZ;
+        ok $res =~ /Sorry, you have excluded yourself until $timeout_until_date/, 'It should return until date in message error';
+    }
+    'create client';
+};
+
 done_testing;
