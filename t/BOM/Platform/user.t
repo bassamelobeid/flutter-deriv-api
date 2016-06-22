@@ -222,6 +222,22 @@ subtest 'User Login' => sub {
                 'It should return the earlist until date in message error';
         };
 
+        subtest 'cannot login if he has all self timeouted account' => sub {
+            my $timeout_until_3  = Date::Utility->new()->plus_time_interval('2d');
+            my $timeout_until_31 = Date::Utility->new()->plus_time_interval('1d');
+
+            $cr_3->set_exclusion->timeout_until($timeout_until_3->epoch);
+            $cr_3->save;
+            $cr_31->set_exclusion->timeout_until($timeout_until_31->epoch);
+            $cr_31->save;
+
+            $status = $user3->login(%pass);
+
+            my $timeout_until_31_date = $timeout_until_31->date;
+            ok $status->{error} =~ /Sorry, you have excluded yourself until $timeout_until_31_date/,
+                'It should return the earlist until date in message error';
+        };
+
         subtest 'if user has vr account and other accounts is self excluded' => sub {
             $user3->add_loginid({loginid => $vr_3->loginid});
             $user3->save;
