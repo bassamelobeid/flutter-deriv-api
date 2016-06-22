@@ -43,18 +43,28 @@ lives_ok { $auth_result = BOM::RPC::v3::Utility::check_authorization($client) } 
 
 is $auth_result->{error}->{code}, 'DisabledClient', 'It should return error: DisabledClient';
 
-my $date_until = Date::Utility->new->plus_time_interval('1d')->date_yyyymmdd;
+my $timeout_until      = Date::Utility->new->plus_time_interval('1d');
+my $timeout_until_date = $timeout_until->date;
 lives_ok {
     $client->clr_status('disabled');
+    $client->set_exclusion->timeout_until($timeout_until->epoch);
+    $client->save;
+}
+'Enable client and exclude him until tomorrow';
+lives_ok { $auth_result = BOM::RPC::v3::Utility::check_authorization($client) } 'Should return result of check';
+is $auth_result->{error}->{code}, 'ClientSelfExclusion', 'It should return error: ClientSelfExclusion';
+ok $auth_result->{error}->{message_to_client} =~ /$timeout_until_date/, 'It should return date until excluded';
+
+my $date_until = Date::Utility->new->plus_time_interval('2d')->date_yyyymmdd;
+lives_ok {
+    $client->clr_status('disabled');
+    $client->set_exclusion->timeout_until(0);
     $client->set_exclusion->exclude_until($date_until);
     $client->save;
 }
 'Enable client and exclude him until tomorrow';
-
 lives_ok { $auth_result = BOM::RPC::v3::Utility::check_authorization($client) } 'Should return result of check';
-
 is $auth_result->{error}->{code}, 'ClientSelfExclusion', 'It should return error: ClientSelfExclusion';
-
 ok $auth_result->{error}->{message_to_client} =~ /$date_until/, 'It should return date until excluded';
 
 done_testing();

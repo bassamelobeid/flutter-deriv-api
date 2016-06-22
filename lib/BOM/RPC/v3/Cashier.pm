@@ -999,7 +999,7 @@ sub transfer_between_accounts {
             push @accounts,
                 {
                 loginid  => $account->loginid,
-                balance  => $account->default_account ? $account->default_account->balance : 0,
+                balance  => $account->default_account ? to_monetary_number_format($account->default_account->balance) : 0,
                 currency => $account->default_account ? $account->default_account->currency_code : '',
                 };
         }

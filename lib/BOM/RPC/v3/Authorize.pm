@@ -30,13 +30,10 @@ sub authorize {
                 message_to_client => BOM::Platform::Context::localize("Account is disabled.")});
     }
 
-    if ($client->get_self_exclusion and $client->get_self_exclusion->exclude_until) {
-        my $limit_excludeuntil = $client->get_self_exclusion->exclude_until;
-        if (Date::Utility->new->is_before(Date::Utility->new($limit_excludeuntil))) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'SelfExclusion',
-                    message_to_client => BOM::Platform::Context::localize("Sorry, you have excluded yourself until [_1].", $limit_excludeuntil)});
-        }
+    if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'SelfExclusion',
+                message_to_client => BOM::Platform::Context::localize("Sorry, you have excluded yourself until [_1].", $limit_excludeuntil)});
     }
 
     my $account = $client->default_account;
