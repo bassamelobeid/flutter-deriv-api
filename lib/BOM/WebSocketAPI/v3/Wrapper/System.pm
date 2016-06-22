@@ -25,7 +25,7 @@ sub forget_all {
         if ($type eq 'balance' or $type eq 'transaction' or $type eq '1') {
             $removed_ids = _forget_transaction_subscription($c, $type);
         }
-        if ($type eq 'proposal' or $type eq 'price_stream' or $type eq '1') {
+        if ($type eq 'proposal' or $type eq '1') {
             $removed_ids = _forget_all_pricing_subscriptions($c);
         }
         $removed_ids = _forget_feed_subscription($c, $type);
