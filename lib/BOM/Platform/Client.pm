@@ -547,6 +547,36 @@ sub get_limit_for_open_positions {
     return $excl && $excl < 60 ? $excl : 60;
 }
 
+# return undef or an exclusion date string
+sub get_self_exclusion_until_dt {
+    my $self = shift;
+
+    my $excl = $self->get_self_exclusion;
+    return unless $excl;
+
+    my $exclude_until = $excl->exclude_until;
+    my $timeout_until = $excl->timeout_until;
+
+    # undef if expired
+    undef $exclude_until
+        if $exclude_until and Date::Utility->new($exclude_until)->is_before(Date::Utility->new);
+    undef $timeout_until
+        if $timeout_until and Date::Utility->new($timeout_until)->is_before(Date::Utility->new);
+
+    return unless $exclude_until || $timeout_until;
+
+    if ($exclude_until && $timeout_until) {
+        my $exclude_until_dt = Date::Utility->new($exclude_until);
+        my $timeout_until_dt = Date::Utility->new($timeout_until);
+
+        return $exclude_until_dt->date if $exclude_until_dt->epoch < $timeout_until_dt->epoch;
+        return $timeout_until_dt->datetime_yyyymmdd_hhmmss_TZ;
+    }
+
+    return Date::Utility->new($exclude_until)->date if $exclude_until;
+    return Date::Utility->new($timeout_until)->datetime_yyyymmdd_hhmmss_TZ;
+}
+
 sub get_limit_for_payout {
     my $self = shift;
 
@@ -822,11 +852,8 @@ sub login_error {
         return localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif ($client->get_status('disabled')) {
         return localize('This account is unavailable. For any questions please contact Customer Support.');
-    } elsif ($client->get_self_exclusion
-        && $client->get_self_exclusion->exclude_until
-        && Date::Utility->new->is_before(Date::Utility->new($client->get_self_exclusion->exclude_until)))
-    {
-        return localize('Sorry, you have excluded yourself until [_1].', $client->get_self_exclusion->exclude_until);
+    } elsif (my $self_exclusion_dt = $client->get_self_exclusion_until_dt) {
+        return localize('Sorry, you have excluded yourself until [_1].', $self_exclusion_dt);
     }
     return;
 }
