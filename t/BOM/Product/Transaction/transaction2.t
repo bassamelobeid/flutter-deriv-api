@@ -544,13 +544,15 @@ subtest 'intraday_spot_index_turnover_limit', sub {
         $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
         $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
+        my $date_start =  Date::Utility->new('2016-06-22 09:00:00');
         my $daily_contract = produce_contract({
             underlying   => $underlying_GDAXI,
             bet_type     => 'CALL',
             currency     => 'USD',
             payout       => 100,
-            date_start   => $now->epoch,
-            duration     => '2d',
+            date_start   => $date_start->epoch,
+            date_pricing => $date_start->epoch,
+            duration     => '1d',
             current_tick => $tick,
             barrier      => 'S0P',
         });
