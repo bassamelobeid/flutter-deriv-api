@@ -1116,7 +1116,7 @@ Get the dividend rate for this underlying over a given time period (expressed in
 sub dividend_rate_for {
     my ($self, $tiy) = @_;
 
-    return $self->_builder->dividend_rate_for($tiy);
+    return $self->_builder->build_dividend->dividend_rate_for($tiy);
 }
 
 =head2 interest_rate_for
