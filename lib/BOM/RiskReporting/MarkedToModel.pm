@@ -217,7 +217,7 @@ sub sell_expired_contracts {
 
         my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
 
-        my $fmb = BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])->[0];
+        my $fmb = BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])->[0]->financial_market_bet_record;
 
         my $bet = try { produce_contract($fmb, $currency) };
         if (not $bet) {
