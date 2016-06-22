@@ -27,7 +27,7 @@ subtest 'financial_market_bet_to_parameters' => sub {
     throws_ok {
         financial_market_bet_to_parameters('NotAFMBInstance.', 'USD');
     }
-    qr/Expected BOM::Database::Model::FinancialMarketBet instance/;
+    qr/Can't locate object method/;
 
     my $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
         type    => 'fmb_range_bet',
