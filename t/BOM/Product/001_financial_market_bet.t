@@ -237,7 +237,7 @@ $mock->mock('_validate_volsurface', sub { () });
 $contract_5 = produce_contract($p_5);
 set_absolute_time($start_time_5);
 my $transaction_5 = BOM::Product::Transaction->new({
-    price         => 53.14,
+    price         => 70,
     client        => $new_client,
     contract      => $contract_5,
     purchase_date => $start_time_5,

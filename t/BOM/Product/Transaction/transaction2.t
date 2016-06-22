@@ -550,7 +550,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             currency     => 'USD',
             payout       => 100,
             date_start   => $now->epoch,
-            duration     => '1d',
+            duration     => '2d',
             current_tick => $tick,
             barrier      => 'S0P',
         });
