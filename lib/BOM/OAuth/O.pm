@@ -353,12 +353,11 @@ sub __set_reality_check_cookie {
     # set this cookie only once
     return if $r->cookie('reality_check');
 
-    my %rck_brokers = map { $_->code => 1 } @{$r->website->reality_check_broker_codes};
-    return unless any { $rck_brokers{$_->broker_code} } $user->clients;
+    return unless any { BOM::Platform::Runtime->instance->broker_codes->landing_company_for($_->broker_code)->has_reality_check } $user->clients;
 
-    my $rck_interval = $r->website->reality_check_interval;
+    my $default_reality_check_interval_in_minutes = 60;
     $c->cookie(
-        'reality_check' => url_escape($rck_interval . ',' . time),
+        'reality_check' => url_escape($default_reality_check_interval_in_minutes . ',' . time),
         $options
     );
 
