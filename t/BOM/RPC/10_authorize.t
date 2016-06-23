@@ -88,6 +88,7 @@ subtest $method => sub {
     is($c->call_ok($method, $params)->has_no_error->result->{is_virtual}, 1, "is_virtual is true if client is virtual");
 };
 
+my $new_token;
 subtest 'logout' => sub {
     ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
@@ -103,7 +104,7 @@ subtest 'logout' => sub {
     $c->call_ok('logout', $params)->has_no_error->result_is_deeply({status => 1});
 
     #check login history
-    my ($new_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
+    ($new_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
     my $history_records = $c->call_ok(
         'login_history',
         {
@@ -121,6 +122,8 @@ subtest 'logout' => sub {
 
 };
 
+$token = $new_token;
+
 subtest 'self_exclusion timeout' => sub {
     my $params = {
         language => 'en',
@@ -136,10 +139,9 @@ subtest 'self_exclusion timeout' => sub {
 };
 
 subtest 'self_exclusion' => sub {
-    my ($new_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
     my $params = {
         language => 'en',
-        token    => $new_token
+        token    => $token
     };
     # This is how long I think binary.com can survive using Perl in its concurrency paradigm era.
     # If this test ever failed because of setting this date too short, we might be in bigger troubles than a failing test.
