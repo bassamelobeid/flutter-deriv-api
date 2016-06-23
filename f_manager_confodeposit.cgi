@@ -17,8 +17,8 @@ use BOM::Platform::Context;
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
 use BOM::Platform::Static::Config;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 

@@ -8,10 +8,10 @@ use Cache::RedisDB;
 
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::System::AuditLog;
 use BOM::DualControl;
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");

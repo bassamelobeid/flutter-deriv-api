@@ -10,8 +10,8 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_XML );
 use BOM::JavascriptConfig;
 
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 $YAML::XS::QuoteNumericStrings = 0;
 

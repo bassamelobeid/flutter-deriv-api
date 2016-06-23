@@ -17,8 +17,8 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 use BOM::Platform::Context qw(request);
 
 PrintContentType();

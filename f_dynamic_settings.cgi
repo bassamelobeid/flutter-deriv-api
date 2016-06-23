@@ -11,8 +11,8 @@ use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use HTML::Entities;
 use Data::Compare;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
