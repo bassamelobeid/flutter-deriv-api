@@ -401,10 +401,10 @@ subtest 'get_sold' => sub {
         currency_code  => $account->currency_code
     });
 
-    cmp_deeply([map { $_->{id} } @{$bet_mapper->get_sold()}], [map { $_->financial_market_bet_record->id } @bets], 'Got all bets');
+    cmp_deeply([map { $_->{id} } @{$bet_mapper->get_sold()}], [map { $_->id } @bets], 'Got all bets');
     cmp_deeply(
         [map { $_->{id} } @{$bet_mapper->get_sold({after => '2014-07-01 02:00:00'})}],
-        [map { $_->financial_market_bet_record->id } @bets[0 .. 3]],
+        [map { $_->id } @bets[0 .. 3]],
         'Got bets after 02:00:00'
     );
     cmp_deeply([
@@ -414,12 +414,12 @@ subtest 'get_sold' => sub {
                         limit => 2
                     })}
         ],
-        [map { $_->financial_market_bet_record->id } @bets[2 .. 3]],
+        [map { $_->id } @bets[2 .. 3]],
         'Got 2 bets after 02:00:00'
     );
     cmp_deeply(
         [map { $_->{id} } @{$bet_mapper->get_sold({before => '2014-07-01 04:02:00'})}],
-        [map { $_->financial_market_bet_record->id } @bets[1 .. 4]],
+        [map { $_->id } @bets[1 .. 4]],
         'Got bets before 04:02:00'
     );
     cmp_deeply([
@@ -429,7 +429,7 @@ subtest 'get_sold' => sub {
                         before => '2014-07-01 04:02:00'
                     })}
         ],
-        [map { $_->financial_market_bet_record->id } @bets[1 .. 3]],
+        [map { $_->id } @bets[1 .. 3]],
         'Got bets between 02:00:00 and 04:02:00'
     );
     is scalar @{$bet_mapper->get_sold({after  => '2014-07-02 00:00:00'})}, 0, "No bets after 2014-07-02";
