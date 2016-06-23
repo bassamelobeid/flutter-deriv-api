@@ -133,7 +133,8 @@ sub statement {
             action_type    => $txn->{action_type},
             balance_after  => $txn->{balance_after},
             contract_id    => $txn->{financial_market_bet_id},
-            payout         => $txn->{payout_price}};
+            payout         => $txn->{payout_price},
+            app_id         => $txn->{source}};
 
         my $txn_time;
         if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
