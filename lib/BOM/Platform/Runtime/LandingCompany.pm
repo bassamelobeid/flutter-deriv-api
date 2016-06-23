@@ -37,7 +37,7 @@ has broker_codes => (
     is      => 'ro',
     isa     => 'ArrayRef[Str]',
     default => sub { [] },
-)
+);
 
 =head2 short
 
