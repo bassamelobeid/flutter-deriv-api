@@ -205,6 +205,7 @@ sub create_fmb {
         data_object_params => $fmb_data,
         db                 => $connection_builder->db,
     });
+
     $fmb->save;
 
     if (!$buy_bet) {
