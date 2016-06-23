@@ -10,7 +10,6 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
-use BOM::Platform::SessionCookie;
 use BOM::Platform::Token::Verification;
 
 sub get_token_details {
@@ -18,9 +17,8 @@ sub get_token_details {
 
     return unless $token;
 
-    my ($loginid, $creation_time, $epoch);
-    my @scopes = qw/read trade admin payments/;    # scopes is everything for session token
-    if (length $token == 15) {                     # access token
+    my ($loginid, $creation_time, $epoch, @scopes);
+    if (length $token == 15) {    # access token
         my $m = BOM::Database::Model::AccessToken->new;
         ($loginid, $creation_time) = $m->get_loginid_by_token($token);
         return unless $loginid;
@@ -33,10 +31,8 @@ sub get_token_details {
         $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
         @scopes = $m->get_scopes_by_access_token($token);
     } else {
-        my $session = BOM::Platform::SessionCookie->new(token => $token);
-        return unless $session and $session->validate_session;
-        $loginid = $session->loginid;
-        $epoch   = $session->{loginat};
+        # invalid token type
+        return;
     }
 
     return {

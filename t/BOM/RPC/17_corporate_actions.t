@@ -9,11 +9,13 @@ use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::MarketDiscovery;
 use BOM::Platform::Context qw (request);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::System::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Database::Model::OAuth;
 use Data::Dumper;
 
 use Quant::Framework::CorporateAction;
@@ -32,10 +34,7 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $client->deposit_virtual_funds;
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $client->loginid,
-    email   => $email
-)->token;
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
 #Create_doc for symbol USAAPL
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

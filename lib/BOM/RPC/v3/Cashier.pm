@@ -871,6 +871,7 @@ sub paymentagent_withdraw {
         subject            => localize('Acknowledgement of Withdrawal Request'),
         message            => $emailcontent,
         use_email_template => 1,
+        template_loginid   => $pa_client->loginid,
     });
 
     return {

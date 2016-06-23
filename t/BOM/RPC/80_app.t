@@ -5,6 +5,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use TestHelper qw/create_test_user/;
 use Test::MockModule;
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::AccessToken;
 use Test::BOM::RPC::Client;
