@@ -56,7 +56,6 @@ sub _split_txn_by_landing_company {
     my @account_transactions = @_;
     my $txn_for              = {};
 
-    my @allow_broker = map { $_->code } @{request()->website->broker_codes};
     foreach my $transaction (@account_transactions) {
         my $loginid = _get_loginid_from_txn($transaction);
 
@@ -64,12 +63,8 @@ sub _split_txn_by_landing_company {
         # that we can't process, so that I can report them as erroneous later. The naming
         # doesn't quite fit the underlying concept, but works.
         my $company = 'LOGIN_EXTRACTION_ERRORS';
-        if ($loginid =~ /^([A-Z]+)\d+$/) {
-            my $broker = $1;
-            if (any { $broker eq $_ } @allow_broker) {
-                $company = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($broker)->short;
-            }
-        }
+        $loginid =~ /^([A-Z]+)\d+$/
+        $company = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($1)->short;
 
         if (not ref $txn_for->{$company}) {
             $txn_for->{$company} = [];
