@@ -67,6 +67,8 @@ my $contract   = produce_contract({
 
 subtest 'validate legal allowed contract categories' => sub {
     my $cr = BOM::Platform::Client->new({loginid => 'CR2002'});
+    my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
+    $mocked_client->mock('residence', sub {return 'al'});
 
     my $loginid  = $cr->loginid;
     my $currency = 'USD';
@@ -86,6 +88,7 @@ subtest 'validate legal allowed contract categories' => sub {
         client   => $cr,
         contract => $c,
     });
+
     ok !$transaction->_validate_jurisdictional_restrictions, 'no error for CR';
 
     my $mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
