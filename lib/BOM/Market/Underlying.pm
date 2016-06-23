@@ -741,10 +741,10 @@ sub _build_calendar {
 
     $self->_exchange_refreshed(time);
     return Quant::Framework::TradingCalendar->new({
-        symbol => $self->exchange_name,
+        symbol           => $self->exchange_name,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-        locale => BOM::Platform::Context::request()->language,
-        for_date => $self->for_date
+        locale           => BOM::Platform::Context::request()->language,
+        for_date         => $self->for_date
     });
 }
 
@@ -1274,10 +1274,10 @@ sub is_in_quiet_period {
     state $exchanges = {
         map {
             $_ => Quant::Framework::TradingCalendar->new({
-                symbol => $_,
-                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-                locale => BOM::Platform::Context::request()->language,
-                for_date => $self->for_date
+                    symbol           => $_,
+                    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+                    locale           => BOM::Platform::Context::request()->language,
+                    for_date         => $self->for_date
                 })
         } (qw(NYSE FSE LSE TSE SES ASX))};
 
