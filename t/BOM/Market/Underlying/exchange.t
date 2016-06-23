@@ -80,7 +80,6 @@ my $LSE = Quant::Framework::TradingCalendar->new({
         symbol => 'LSE', 
         underlying_config => $ul_LSE->config,
         chronicle_reader => $chronicle_r, 
-        locale => 'EN', 
         for_date => $date});
 
 is $ul_LSE->exchange->symbol, $LSE->symbol, "This underlying's exchange is what we expect";
