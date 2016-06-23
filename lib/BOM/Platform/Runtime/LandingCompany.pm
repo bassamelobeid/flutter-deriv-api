@@ -29,6 +29,16 @@ use namespace::autoclean;
 
 use URI;
 
+=head2 broker_codes
+A list of broker_codes allowed on a particular landing company
+=cut
+
+has broker_codes => (
+    is      => 'ro',
+    isa     => 'ArrayRef[Str]',
+    default => sub { [] },
+)
+
 =head2 short
 
 Short name for the landing company

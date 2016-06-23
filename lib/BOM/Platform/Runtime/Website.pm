@@ -111,16 +111,6 @@ sub broker_for_new_financial {
     return $broker;
 }
 
-sub broker_for_new_virtual {
-    my ($self, $country_code) = @_;
-
-    my $vr_broker;
-    if (my $vr_company = BOM::Platform::Runtime->instance->virtual_company_for_country($country_code)) {
-        $vr_broker = first { $_->landing_company->short eq $vr_company } @{$self->broker_codes};
-    }
-    return $vr_broker;
-}
-
 sub _build_display_name {
     return ucfirst(shift->domain);
 }

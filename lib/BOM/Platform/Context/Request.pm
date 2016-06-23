@@ -150,24 +150,6 @@ has cookie_domain => (
     builder => '_build_cookie_domain'
 );
 
-has 'real_account_broker' => (
-    is         => 'ro',
-    isa        => 'BOM::Platform::Runtime::Broker',
-    lazy_build => 1,
-);
-
-has 'virtual_account_broker' => (
-    is         => 'ro',
-    isa        => 'BOM::Platform::Runtime::Broker',
-    lazy_build => 1,
-);
-
-has 'financial_account_broker' => (
-    is         => 'ro',
-    isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
-    lazy_build => 1,
-);
-
 has 'available_currencies' => (
     is         => 'ro',
     lazy_build => 1,
@@ -349,30 +331,7 @@ sub _build_broker_code {
         return BOM::Platform::Runtime->instance->broker_codes->get($self->loginid)->code;
     }
 
-    return $self->real_account_broker->code;
-}
-
-sub _build_broker {
-    my $self = shift;
-    return BOM::Platform::Runtime->instance->broker_codes->get($self->broker_code);
-}
-
-sub _build_virtual_account_broker {
-    my $self = shift;
-    return unless ($self->website);
-    return $self->website->broker_for_new_virtual($self->country_code);
-}
-
-sub _build_real_account_broker {
-    my $self = shift;
-    return unless ($self->website);
-    return $self->website->broker_for_new_account($self->country_code);
-}
-
-sub _build_financial_account_broker {
-    my $self = shift;
-    return unless ($self->website);
-    return $self->website->broker_for_new_financial($self->country_code);
+    die 'can not determine broker code';
 }
 
 sub _build_language {
@@ -392,10 +351,6 @@ sub _build_language {
 
     if ($language and grep { $_ eq uc $language } @{BOM::Platform::Runtime->instance->app_config->cgi->allowed_languages}) {
         return uc $language;
-    }
-
-    if ($self->website) {
-        return $self->website->default_language;
     }
 
     return 'EN';
