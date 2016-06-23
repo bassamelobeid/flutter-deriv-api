@@ -8,8 +8,9 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use Test::MockModule;
 
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::System::Password;
 use BOM::Platform::User;
@@ -41,10 +42,7 @@ $user->save;
 $user->add_loginid({loginid => $cr_1});
 $user->save;
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $cr_1,
-    email   => $email,
-)->token;
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
