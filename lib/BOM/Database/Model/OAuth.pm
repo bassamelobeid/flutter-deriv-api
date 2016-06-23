@@ -279,6 +279,17 @@ sub revoke_tokens_by_loginid_app {
     return 1;
 }
 
+sub has_other_login_sessions {
+    my ($self, $loginid) = @_;
+
+    my $dbh = $self->dbh;
+    # "Binary.com backoffice" app has id = 4, we use it to create token for BO impersonate. So should be excluded here.
+    my $login_cnt = $self->dbh->selectrow_array(
+        "SELECT count(*) FROM oauth.access_token WHERE loginid = ? AND expires > now() AND app_id <> 4",
+        undef, $loginid);
+    return ($login_cnt >= 1);
+}
+
 sub get_app_id_by_token {
     my ($self, $token) = @_;
 
