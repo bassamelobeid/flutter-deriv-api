@@ -72,7 +72,7 @@ foreach my $loginid (@approved, @rejected) {
                 amount        => $amount,
                 support_email => BOM::Platform::Static::Config::get_customer_support_email(),
                 tac_url       => $tac_url,
-                website_name  => $website->name,
+                website_name  => 'Binary.com',
             },
             \$email_content
             )
@@ -92,7 +92,7 @@ foreach my $loginid (@approved, @rejected) {
             {
                 name         => $client_name,
                 tac_url      => $tac_url,
-                website_name => $website->name,
+                website_name => 'Binary.com',
             },
             \$email_content
         ) || die "rejecting promocode for $client: " . BOM::Platform::Context::template->error;
