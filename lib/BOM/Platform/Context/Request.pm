@@ -58,11 +58,6 @@ has 'untainter' => (
     lazy_build => 1
 );
 
-has 'is_pjax' => (
-    is         => 'ro',
-    lazy_build => 1
-);
-
 has 'domain_name' => (
     is         => 'ro',
     isa        => 'Str',
@@ -88,7 +83,7 @@ has 'country' => (
 
 has 'country_code' => (
     is         => 'ro',
-    lazy_build => 1,
+    default    => 'aq',
 );
 
 has 'loginid' => (
@@ -312,29 +307,9 @@ sub _build_http_path {
     return "UNKNOWN";
 }
 
-sub _build_is_pjax {
-    my $self = shift;
-    if (exists $self->params->{_pjax}) {
-        return 1;
-    }
-
-    return;
-}
-
 sub _build_country {
     my $self = shift;
     return BOM::Platform::Runtime->instance->countries->country_from_code($self->country_code);
-}
-
-sub _build_country_code {
-    my $self = shift;
-
-    my $ip = $self->client_ip;
-    if (($ip =~ /^99\.99\.99\./) or ($ip =~ /^192\.168\./) or ($ip eq '127.0.0.1')) {
-        return 'aq';
-    }
-
-    return;
 }
 
 sub _build_cookie_domain {

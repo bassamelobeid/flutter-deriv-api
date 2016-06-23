@@ -98,14 +98,6 @@ subtest 'param builds' => sub {
             is $request->broker_code, 'CR', "Not read from w param";
         };
     };
-
-    subtest 'is_pjax' => sub {
-        my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/")});
-        ok !$request->is_pjax, "Is not a pjax page";
-
-        $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/?_pjax")});
-        ok $request->is_pjax, "Is a pjax page";
-    };
 };
 
 subtest 'cookie builds' => sub {

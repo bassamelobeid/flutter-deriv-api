@@ -201,19 +201,6 @@ subtest 'param builds' => sub {
         };
     };
 
-    subtest 'is_pjax' => sub {
-        my $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {},
-            cgi     => mock_cgi_for(),
-        });
-        ok !$request->is_pjax, "Is not a pjax page";
-
-        $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {},
-            cgi     => mock_cgi_for({_pjax => 1}),
-        });
-        ok $request->is_pjax, "Is a pjax page";
-    };
 };
 
 subtest 'cookie_parsing' => sub {

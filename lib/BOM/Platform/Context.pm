@@ -128,9 +128,7 @@ sub _configure_template_stash_for {
         language                  => $request->language,
         broker                    => $request->broker,
         request                   => $request,
-        broker_name               => $request->website->display_name,
-        website                   => $request->website,
-        'is_pjax_request'         => $request->is_pjax,
+        broker_name               => 'Binary.com',
         l                         => \&localize,
         to_monetary_number_format => \&Format::Util::Numbers::to_monetary_number_format,
     });
