@@ -98,12 +98,11 @@ sub _include_metal_holidays_and_early_closes {
     my $christmas   = Date::Utility->new("$year-12-25")->epoch;
     my $new_year    = Date::Utility->new(($year + 1) . "-01-01")->epoch;
     my %us_holidays = $data->{NYSE};
-    my $good_friday = grep { $us_holidays{$_} =~ /Good Friday/ } keys %us_holidays;
+    my $data->{METAL} = map { $_ => 'Good Friday' } grep { $us_holidays{$_} =~ /Good Friday/ } keys %us_holidays;
 
-    $data->{METAL} = {
-        $christmas   => 'Christmas Day',
-        $new_year    => "New Year\'s Day",
-        $good_friday => "Good Friday",
+    $data->{METAL} .= {
+        $christmas => 'Christmas Day',
+        $new_year  => "New Year\'s Day",
     };
 
     $early_closes_data->{METAL} = %us_holidays;
