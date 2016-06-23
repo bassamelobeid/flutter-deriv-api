@@ -88,6 +88,11 @@ my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote => 100,
 });
 
+# Spread is calculated base on spot of the underlying.
+# In this case, we mocked the spot to 100.
+my $mocked_underlying = Test::MockModule->new('BOM::Market::Underlying');
+$mocked_underlying->mock('spot', sub {100});
+
 my $underlying      = BOM::Market::Underlying->new('R_50');
 my $underlying_r100 = BOM::Market::Underlying->new('R_100');
 
@@ -2538,6 +2543,7 @@ subtest 'sell_expired_contracts', sub {
 
 # see further transaction2.t: special turnover limits
 #             transaction3.t: intraday fx action
+$mocked_underlying->unmock_all;
 
 Test::NoWarnings::had_no_warnings;
 
