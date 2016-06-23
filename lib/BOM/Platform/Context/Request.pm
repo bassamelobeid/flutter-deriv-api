@@ -81,8 +81,8 @@ has 'country' => (
 );
 
 has 'country_code' => (
-    is         => 'ro',
-    default    => 'aq',
+    is      => 'ro',
+    default => 'aq',
 );
 
 has 'ui_settings' => (

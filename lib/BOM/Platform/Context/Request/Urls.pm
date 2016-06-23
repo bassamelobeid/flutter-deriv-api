@@ -80,7 +80,7 @@ sub url_for {
 }
 
 sub domain_for {
-    my $self        = shift;
+    my $self = shift;
 
     my $server_name = BOM::System::Localhost::name();
 

@@ -144,7 +144,6 @@ subtest 'cookie_parsing' => sub {
     };
 };
 
-
 sub mock_cgi_for {
     my $params     = shift || {};
     my $url_params = shift || {};
@@ -178,7 +177,6 @@ sub mock_cgi_for {
 
     return $request_mock;
 }
-
 
 END {
 }

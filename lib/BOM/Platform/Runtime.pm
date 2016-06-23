@@ -12,18 +12,15 @@ use YAML::XS;
 use Locale::Country::Extra;
 use Locale::Country;
 
-
 has 'app_config' => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-
 has 'broker_codes' => (
     is         => 'ro',
     lazy_build => 1,
 );
-
 
 has 'landing_companies' => (
     is         => 'ro',
