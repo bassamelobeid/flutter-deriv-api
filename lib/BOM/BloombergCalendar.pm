@@ -90,19 +90,23 @@ sub _include_forex_holidays {
 }
 
 sub _include_metal_holidays_and_early_closes {
-    my $param        = shift;
-    my $holidays     = $param->{holidays};
-    my $early_closes = $param->{early_closes};
+    my $param             = shift;
+    my $data              = $param->{holidays};
+    my $early_closes_data = $param->{early_closes};
 
-    my $year      = Date::Utility->new->year;
-    my $christmas = Date::Utility->new("$year-12-25")->epoch;
-    my $new_year  = Date::Utility->new(($year + 1) . "-01-01")->epoch;
-    $holidays->{METAL} = {
-        $christmas => 'Christmas Day',
-        $new_year  => "New Year\'s Day",
+    my $year        = Date::Utility->new->year;
+    my $christmas   = Date::Utility->new("$year-12-25")->epoch;
+    my $new_year    = Date::Utility->new(($year + 1) . "-01-01")->epoch;
+    my %us_holidays = $data->{NYSE};
+    my $good_friday = grep { $us_holidays{$_} =~ /Good Friday/ } keys %us_holidays;
+
+    $data->{METAL} = {
+        $christmas   => 'Christmas Day',
+        $new_year    => "New Year\'s Day",
+        $good_friday => "Good Friday",
     };
 
-    $early_closes->{METAL} = $holidays->{NYSE};
+    $early_closes_data->{METAL} = %us_holidays;
 
     return;
 }
@@ -158,15 +162,20 @@ sub _save_early_closes_calendar {
     my $data = shift;
     my $calendar_data;
     foreach my $exchange_name (keys %$data) {
+        my $calendar = Quant::Framework::TradingCalendar->new($exchange_name, BOM::System::Chronicle::get_chronicle_reader());
+        my $partial_trading = $calendar->market_times->{partial_trading};
+        if (not $partial_trading) {
+            print "$exchange_name does not have partial trading configuration but it has early closes. Please check. \n";
+            next;
+        }
+
         foreach my $date (keys %{$data->{$exchange_name}}) {
 
             my $epoch = Date::Utility->new($date)->epoch;
-            my $calendar = Quant::Framework::TradingCalendar->new($exchange_name, BOM::System::Chronicle::get_chronicle_reader());
-
             my $description =
                   $calendar->is_in_dst_at($epoch)
-                ? $calendar->market_times->{partial_trading}{dst_close}->interval
-                : $calendar->market_times->{partial_trading}{standard_close}->interval;
+                ? $partial_trading->{dst_close}->interval
+                : $partial_trading->{standard_close}->interval;
             push @{$calendar_data->{$date}{$description}}, $exchange_name;
         }
     }
