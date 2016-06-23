@@ -46,7 +46,6 @@ my $DCcode       = delete $params{DCcode};
 my $range        = delete $params{range};
 
 BOM::Backoffice::Auth0::can_access(['Payments']);
-my $token = BOM::Platform::Context::request()->bo_cookie->token;
 my $staff = BOM::Backoffice::Auth0::from_cookie();
 my $clerk = $staff->{nickname};
 

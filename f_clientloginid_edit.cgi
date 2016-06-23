@@ -11,7 +11,6 @@ use Data::Dumper;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
-use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Platform::User;
 use BOM::Platform::Client::IDAuthentication;

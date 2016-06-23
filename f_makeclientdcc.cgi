@@ -5,6 +5,7 @@ use strict 'vars';
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Cookie;
 use BOM::System::AuditLog;
 use BOM::DualControl;
 BOM::Backoffice::Sysinit::init();
@@ -12,7 +13,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");
 BOM::Backoffice::Auth0::can_access(['CS']);
-my $clerk = BOM::Platform::Context::request()->bo_cookie->clerk;
+my $clerk = BOM::Backoffice::Cookie::get_staff();
 
 Bar("Make client dual control code");
 

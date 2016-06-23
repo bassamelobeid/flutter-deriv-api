@@ -7,6 +7,7 @@ use Time::HiRes ();
 use Guard;
 use File::Copy;
 use Plack::App::CGIBin::Streaming;
+use BOM::Backoffice::Cookie;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Static::Config;    # called here as we generate hash for static files as it does not change on every request
@@ -28,8 +29,8 @@ sub init {
             undef ${"main::input"}
         }
         my $http_handler = Plack::App::CGIBin::Streaming->request;
-        # 30 minute timeout for backoffice scripts, 1 minute for client requests.
-        my $timeout = (request()->backoffice or $0 =~ /backend/) ? 1800 : 60;
+
+        my $timeout = 1800;
 
         $SIG{ALRM} = sub {    ## no critic
             my $runtime = time - $^T;
@@ -56,22 +57,17 @@ sub init {
         };
         alarm($timeout);
 
-        # used for logging
-        $ENV{BOM_ACCOUNT} = request()->loginid;    ## no critic
 
         $http_handler->register_cleanup(
             sub {
-                delete @ENV{qw/BOM_ACCOUNT AUDIT_STAFF_NAME AUDIT_STAFF_IP/};    ## no critic
+                delete @ENV{qw/AUDIT_STAFF_NAME AUDIT_STAFF_IP/};    ## no critic
                 BOM::Database::Rose::DB->db_cache->finish_request_cycle;
                 alarm 0;
             });
 
-        if (my $bo_cookie = request()->bo_cookie) {
-            $ENV{AUDIT_STAFF_NAME} = $bo_cookie->clerk;                          ## no critic
-        } else {
-            $ENV{AUDIT_STAFF_NAME} = request()->loginid;                         ## no critic
-        }
-        $ENV{AUDIT_STAFF_IP} = request()->client_ip;                             ## no critic
+
+        $ENV{AUDIT_STAFF_NAME} = BOM::Backoffice::Cookie::get_staff();  ## no critic
+        $ENV{AUDIT_STAFF_IP} = request()->client_ip;                    ## no critic
 
         request()->http_handler($http_handler);
     } else {
@@ -82,32 +78,13 @@ sub init {
 
     log_bo_access();
 
-    if (BOM::Platform::Runtime->instance->app_config->system->suspend->system and request()->from_ui and not request()->backoffice) {
-        local $\ = '';
-        my $http_handler = request()->http_handler;
-        $http_handler->print_content_type("text/html; charset=UTF-8");
-        $http_handler->print_header(
-            'Cache-control' => "no-cache, no-store, private, must-revalidate, max-age=0, max-stale=0, post-check=0, pre-check=0",
-            'Pragma'        => "no-cache",
-            'Expires'       => "0",
-        );
-        $http_handler->status(200);
-        print 'System is under maintenance.';
-        BOM::Backoffice::Sysinit::code_exit();
-    }
-
     return;
 }
 
 sub build_request {
     if (Plack::App::CGIBin::Streaming->request) {    # is web server ?
-        if ($0 =~ /(bom-backoffice|contact)/) {
-            $CGI::POST_MAX        = 8000 * 1024;     # max 8MB posts
-            $CGI::DISABLE_UPLOADS = 0;
-        } else {
-            $CGI::DISABLE_UPLOADS = 1;               # no uploads
-        }
-
+        $CGI::POST_MAX        = 8000 * 1024;     # max 8MB posts
+        $CGI::DISABLE_UPLOADS = 0;
         return request(
             BOM::Platform::Context::Request::from_cgi({
                     cgi         => CGI->new,
@@ -118,36 +95,35 @@ sub build_request {
 }
 
 sub log_bo_access {
-    if (BOM::Platform::Context::request()->backoffice) {
-        $ENV{'REMOTE_ADDR'} = request()->client_ip;    ## no critic
 
-        # log it
-        my $l;
-        foreach my $k (keys %{request()->params}) {
-            if ($k =~ /pass/) {
-                next;
-            }
-            my $v = request()->param($k);
-            $v =~ s/[\r\n\f\t]/ /g;
-            $v =~ s/[^\w\s\,\.\-\+\"\'\=\+\-\*\%\$\#\@\!\~\?\/\>\<]/ /gm;
+    $ENV{'REMOTE_ADDR'} = request()->client_ip;    ## no critic
 
-            if (length $v > 50) {
-                $l .= "$k=" . substr($v, 0, 50) . "... ";
-            } else {
-                $l .= "$k=$v ";
-            }
+    # log it
+    my $l;
+    foreach my $k (keys %{request()->params}) {
+        if ($k =~ /pass/) {
+            next;
         }
-        $l //= '(no parameters)';
-        my $staffname = request()->bo_cookie;
-        $staffname = $staffname ? $staffname->clerk : 'unauthenticated';
-        $staffname ||= 'unauthenticated';
-        my $s = $0;
-        $s =~ s/^\/home\/website\/www//;
-        if ((-s "/var/log/fixedodds/staff-$staffname.log" or 0) > 750000) {
-            File::Copy::move("/var/log/fixedodds/staff-$staffname.log", "/var/log/fixedodds/staff-$staffname.log.1");
+        my $v = request()->param($k);
+        $v =~ s/[\r\n\f\t]/ /g;
+        $v =~ s/[^\w\s\,\.\-\+\"\'\=\+\-\*\%\$\#\@\!\~\?\/\>\<]/ /gm;
+
+        if (length $v > 50) {
+            $l .= "$k=" . substr($v, 0, 50) . "... ";
+        } else {
+            $l .= "$k=$v ";
         }
-        Path::Tiny::path("/var/log/fixedodds/staff-$staffname.log")->append(Date::Utility->new->datetime . " $s $l\n");
     }
+    $l //= '(no parameters)';
+    my $staffname = BOM::Backoffice::Cookie::get_staff();
+    $staffname ||= 'unauthenticated';
+    my $s = $0;
+    $s =~ s/^\/home\/website\/www//;
+    if ((-s "/var/log/fixedodds/staff-$staffname.log" or 0) > 750000) {
+        File::Copy::move("/var/log/fixedodds/staff-$staffname.log", "/var/log/fixedodds/staff-$staffname.log.1");
+    }
+    Path::Tiny::path("/var/log/fixedodds/staff-$staffname.log")->append(Date::Utility->new->datetime . " $s $l\n");
+
     return;
 }
 
