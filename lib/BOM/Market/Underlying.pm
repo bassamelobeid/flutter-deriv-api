@@ -739,12 +739,12 @@ sub _build_calendar {
     my $self = shift;
 
     $self->_exchange_refreshed(time);
-    return Quant::Framework::TradingCalendar->new(
-        $self->exchange_name,
-        BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-        BOM::Platform::Context::request()->language,
-        $self->for_date
-    );
+    return Quant::Framework::TradingCalendar->new({
+        symbol           => $self->exchange_name,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+        locale           => BOM::Platform::Context::request()->language,
+        for_date         => $self->for_date
+    });
 }
 
 has exchange => (
@@ -1115,7 +1115,7 @@ Get the dividend rate for this underlying over a given time period (expressed in
 sub dividend_rate_for {
     my ($self, $tiy) = @_;
 
-    return $self->_builder->dividend_rate_for($tiy);
+    return $self->_builder->build_dividend->dividend_rate_for($tiy);
 }
 
 =head2 interest_rate_for
@@ -1127,19 +1127,19 @@ Get the interest rate for this underlying over a given time period (expressed in
 sub interest_rate_for {
     my ($self, $tiy) = @_;
 
-    return $self->_builder->interest_rate_for($tiy);
+    return $self->_builder->build_interest_rate->interest_rate_for($tiy);
 }
 
 sub get_discrete_dividend_for_period {
     my ($self, $args) = @_;
 
-    return $self->_builder->get_discrete_dividend_for_period($args);
+    return $self->_builder->build_dividend->get_discrete_dividend_for_period($args);
 }
 
 sub dividend_adjustments_for_period {
     my ($self, $args) = @_;
 
-    return $self->_builder->dividend_adjustments_for_period($args);
+    return $self->_builder->build_dividend->dividend_adjustments_for_period($args);
 }
 
 sub uses_implied_rate {
@@ -1272,12 +1272,12 @@ sub is_in_quiet_period {
     # The times should not reasonably change in a process-lifetime
     state $exchanges = {
         map {
-            $_ => Quant::Framework::TradingCalendar->new(
-                $_,
-                BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-                BOM::Platform::Context::request()->language,
-                $self->for_date
-                )
+            $_ => Quant::Framework::TradingCalendar->new({
+                    symbol           => $_,
+                    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+                    locale           => BOM::Platform::Context::request()->language,
+                    for_date         => $self->for_date
+                })
         } (qw(NYSE FSE LSE TSE SES ASX))};
 
     if ($self->market->name eq 'forex') {
