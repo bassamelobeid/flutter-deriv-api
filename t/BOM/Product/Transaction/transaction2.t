@@ -342,7 +342,6 @@ subtest 'asian_daily_turnover_limit', sub {
             tick_expiry  => 1,
             tick_count   => 5,
             current_tick => $tick,
-            barrier      => 'S0P',
         });
 
         my $txn = BOM::Product::Transaction->new({
@@ -550,7 +549,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             currency     => 'USD',
             payout       => 100,
             date_start   => $now->epoch,
-            duration     => '1d',
+            duration     => '2d',
             current_tick => $tick,
             barrier      => 'S0P',
         });

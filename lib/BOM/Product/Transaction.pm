@@ -146,19 +146,6 @@ has transaction_parameters => (
     default => sub { {}; },
 );
 
-has app_markup => (
-    is         => 'ro',
-    isa        => 'Maybe[Num]',
-    lazy_build => 1
-);
-
-sub _build_app_markup {
-    my $self = shift;
-
-    return 0 if $self->contract->is_spread;
-    return $self->contract->app_markup_dollar_amount;
-}
-
 sub BUILDARGS {
     my ($class, $args) = @_;
 
@@ -404,7 +391,6 @@ sub prepare_bet_data_for_buy {
             transaction_data => {
                 staff_loginid => $self->staff,
                 source        => $self->source,
-                app_markup    => $self->app_markup
             },
             bet_data     => $bet_params,
             account_data => {
@@ -1534,11 +1520,7 @@ sub _validate_client_self_exclusion {
     my $self   = shift;
     my $client = $self->client;
 
-    my $limit_excludeuntil;
-    if (    $limit_excludeuntil = $client->get_self_exclusion
-        and $limit_excludeuntil = $limit_excludeuntil->exclude_until
-        and Date::Utility->new->is_before(Date::Utility->new($limit_excludeuntil)))
-    {
+    if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
         return Error::Base->cuss(
             -type => 'ClientSelfExcluded',
             -mesg => 'your account is not authorised for any further contract purchases.',
