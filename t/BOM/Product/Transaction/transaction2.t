@@ -340,7 +340,6 @@ subtest 'asian_daily_turnover_limit', sub {
             tick_expiry  => 1,
             tick_count   => 5,
             current_tick => $tick,
-            barrier      => 'S0P',
         });
 
         my $txn = BOM::Product::Transaction->new({

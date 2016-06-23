@@ -216,6 +216,12 @@ sub produce_contract {
         my @barriers = qw(barrier high_barrier low_barrier);
         foreach my $barrier_name (grep { defined $input_params{$_} } @barriers) {
             my $possible = $input_params{$barrier_name};
+
+            #if this is an asisn tick expiry contract and also a barrier is specified, reject the request
+            if (defined $input_params{tick_expiry} and defined $possible and $input_params{bet_type} =~ /^ASIAN/) {
+                die 'Asian tick-expiry contracts cannot have barrier values';
+            }
+
             if (ref($possible) !~ /BOM::Product::Contract::Strike/) {
                 # Some sort of string which Strike can presumably use.
                 $input_params{'supplied_' . $barrier_name} = $possible;
