@@ -21,7 +21,6 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Static::Config;
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::SessionCookie;
 use BOM::Platform::Token::Verification;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
@@ -269,9 +268,8 @@ sub change_password {
     my $client = $params->{client};
     my ($token_type, $client_ip, $args) = @{$params}{qw/token_type client_ip args/};
 
-    # allow session token & OAuth token
-    $token_type //= '';
-    unless (grep { $token_type eq $_ } ('session_token', 'oauth_token')) {
+    # allow OAuth token
+    unless (($token_type // '') eq 'oauth_token') {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
@@ -296,13 +294,7 @@ sub change_password {
         $c1->password($new_password);
         $c1->save;
 
-        if ($token_type eq 'oauth_token') {
-            $oauth->revoke_tokens_by_loginid($c1->loginid);
-        }
-    }
-
-    if ($token_type eq 'session_token') {
-        BOM::Platform::SessionCookie->new({token => $params->{token}})->end_other_sessions();
+        $oauth->revoke_tokens_by_loginid($c1->loginid);
     }
 
     BOM::System::AuditLog::log('password has been changed', $client->email);
@@ -318,6 +310,7 @@ sub change_password {
                 )
             ],
             use_email_template => 1,
+            template_loginid   => $client->loginid,
         });
 
     return {status => 1};
@@ -381,6 +374,7 @@ sub cashier_password {
                         )
                     ],
                     'use_email_template' => 1,
+                    template_loginid     => $client->loginid,
                 });
             return {status => 1};
         }
@@ -406,6 +400,7 @@ sub cashier_password {
                         )
                     ],
                     'use_email_template' => 1,
+                    template_loginid     => $client->loginid,
                 });
 
             return $error_sub->(localize('Sorry, you have entered an incorrect cashier password'));
@@ -427,6 +422,7 @@ sub cashier_password {
                         )
                     ],
                     'use_email_template' => 1,
+                    template_loginid     => $client->loginid,
                 });
             BOM::System::AuditLog::log('cashier unlocked', $client->loginid);
             return {status => 0};
@@ -452,15 +448,18 @@ sub reset_password {
                 message_to_client => localize("Sorry, an error occurred while processing your account.")});
     }
     @clients = $user->clients;
+
     # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
-    unless ($clients[0]->is_virtual) {
+    my $client = $clients[0];
+
+    unless ($client->is_virtual) {
         unless ($args->{date_of_birth}) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => "DateOfBirthMissing",
                     message_to_client => localize("Date of birth is required.")});
         }
-        my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;        # / (dummy ST3)
-        my $db_dob   = $clients[0]->date_of_birth =~ s/-0/-/gr;    # /
+        my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;    # / (dummy ST3)
+        my $db_dob   = $client->date_of_birth =~ s/-0/-/gr;    # /
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => "DateOfBirthMismatch",
@@ -492,6 +491,7 @@ sub reset_password {
                 )
             ],
             use_email_template => 1,
+            template_loginid   => $client->loginid,
         });
 
     return {status => 1};
@@ -654,6 +654,7 @@ sub set_settings {
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
         use_email_template => 1,
+        template_loginid   => $client->loginid,
     });
     BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
