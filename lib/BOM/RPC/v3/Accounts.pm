@@ -849,6 +849,8 @@ sub set_self_exclusion {
     }
     if ($args{timeout_until}) {
         my $ret = $client->set_exclusion->timeout_until($args{timeout_until});
+        ## convert epoch to datetime string for email
+        $ret = Date::Utility->new($ret)->datetime_yyyymmdd_hhmmss_TZ if $ret;
         $message .= "- Timeout from website until: $ret\n";
     }
 
