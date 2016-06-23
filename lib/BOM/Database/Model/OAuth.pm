@@ -181,7 +181,9 @@ sub update_app {
     if ($old_scopes
         and join('-', sort @$old_scopes) ne join('-', sort @{$app->{scopes}}))
     {
-        $self->dbh->do("DELETE FROM oauth.user_scope_confirm WHERE app_id = ?", undef, $app_id);
+        foreach my $table ('user_scope_confirm', 'access_token') {
+            $self->dbh->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id);
+        }
     }
 
     return {
