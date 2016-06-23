@@ -104,10 +104,7 @@ sub site_limits {
 sub website_name {
     my $server_name = shift;
 
-    my $external_domain = 'binary' . ($server_name =~ /^qa\d+$/ ? $server_name : '') . '.com';
-    my $domain_name = $server_name . '.' . $external_domain;
-
-    return BOM::Platform::Runtime->instance->website_list->choose_website({domain_name => $domain_name})->display_name;
+    return 'Binary' . ($server_name =~ /^qa\d+$/ ? $server_name : '') . '.com';
 }
 
 sub check_authorization {
