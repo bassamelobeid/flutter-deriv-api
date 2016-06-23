@@ -59,41 +59,6 @@ has broker_codes => (
     isa => 'ArrayRef[BOM::Platform::Runtime::Broker]',
 );
 
-=head2 reality_check_broker_codes
-
-The list of broker codes that is subject to reality check on this website
-
-=cut
-
-has reality_check_broker_codes => (
-    is         => 'ro',
-    isa        => 'ArrayRef[BOM::Platform::Runtime::Broker]',
-    lazy_build => 1,
-);
-
-sub _build_reality_check_broker_codes {
-    my $self = shift;
-
-    my %matches;
-    for my $br (@{$self->broker_codes}) {
-        $matches{$br->code} = $br if $br->landing_company->has_reality_check;
-    }
-
-    return [values %matches];
-}
-
-=head2 reality_check_interval
-
-The reality check interval in minutes on this website
-
-=cut
-
-has reality_check_interval => (
-    is      => 'ro',
-    isa     => 'Int',
-    default => 60,
-);
-
 has domain => (
     is      => 'ro',
     isa     => 'Str',
