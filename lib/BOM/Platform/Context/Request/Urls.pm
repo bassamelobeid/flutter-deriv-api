@@ -81,23 +81,10 @@ sub url_for {
 
 sub domain_for {
     my $self        = shift;
-    my $domain_type = shift;
 
-    my $domain = $self->website->primary_url;
-    if (defined $domain_type) {
-        if ($domain_type->{dealing}) {
-            $domain = $self->_dealing_domain;
-        } elsif ($domain_type->{localhost}) {
-            $domain = $self->_localhost_domain;
-        } elsif ($domain_type->{bo} or $self->backoffice) {
-            $domain = $self->domain_name;
-        }
-    }
+    my $server_name = BOM::System::Localhost::name();
 
-    if (BOM::System::Config::node->{node}->{www2}) {
-        $domain = 'www2.binary.com';
-    }
-    return $domain;
+    return $server_name . '.binary' . ($server_name =~ /^qa\d+$/ ? $server_name : '') . '.com';
 }
 
 memoize('_get_domain_type');

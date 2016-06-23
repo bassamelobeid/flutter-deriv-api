@@ -132,12 +132,6 @@ has 'language' => (
     lazy_build => 1,
 );
 
-has 'website' => (
-    is         => 'ro',
-    isa        => 'BOM::Platform::Runtime::Website',
-    lazy_build => 1,
-);
-
 has 'broker' => (
     is         => 'ro',
     isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
@@ -354,15 +348,6 @@ sub _build_language {
     }
 
     return 'EN';
-}
-
-sub _build_website {
-    my $self = shift;
-
-    my $parameters = {};
-    $parameters->{domain_name} = $self->domain_name;
-    $parameters->{backoffice} = 1 if ($self->backoffice);
-    return BOM::Platform::Runtime->instance->website_list->choose_website($parameters);
 }
 
 sub _build_available_currencies {
