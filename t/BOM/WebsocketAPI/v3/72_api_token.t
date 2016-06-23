@@ -8,8 +8,9 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 # cleanup
 use BOM::Database::Model::AccessToken;
@@ -19,10 +20,23 @@ BOM::Database::Model::AccessToken->new->dbh->do("
 
 my $t = build_mojo_test();
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => "CR0021",
-    email   => 'shuwnyuan@regentmarkets.com',
-)->token;
+# prepare client
+my $email  = 'test-binary@binary.com';
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$client->email($email);
+$client->save;
+
+my $loginid = $client->loginid;
+my $user = BOM::Platform::User->create(
+    email    => $email,
+    password => '1234',
+);
+$user->add_loginid({loginid => $loginid});
+$user->save;
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
@@ -77,15 +91,6 @@ $res = decode_json($t->message->[1]);
 ok $res->{error}->{message} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
 test_schema('api_token', $res);
 
-# $t = $t->send_ok({
-#         json => {
-#             api_token => 1,
-#             new_token => 'Test'
-#         }})->message_ok;
-# $res = decode_json($t->message->[1]);
-# ok $res->{error}->{message} =~ /new_token_scopes/, 'new_token_scopes is required';
-# test_schema('api_token', $res);
-
 $t = $t->send_ok({
         json => {
             api_token        => 1,
@@ -104,7 +109,7 @@ $t->finish_ok;
 $t   = build_mojo_test();
 $t   = $t->send_ok({json => {authorize => $test_token->{token}}})->message_ok;
 $res = decode_json($t->message->[1]);
-is $res->{authorize}->{email}, 'shuwnyuan@regentmarkets.com';
+is $res->{authorize}->{email}, $email;
 
 $t = $t->send_ok({json => {api_token => 1}})->message_ok;
 $res = decode_json($t->message->[1]);

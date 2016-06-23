@@ -9,24 +9,45 @@ use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 
-use BOM::Platform::SessionCookie;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
 
 build_test_R_50_data();
 my $t = build_mojo_test();
 
-my $token = BOM::Platform::SessionCookie->new(
-    client_id       => 1,
-    loginid         => "CR2002",
-    email           => 'sy@regentmarkets.com',
-    expiration_time => time() + 600,
-    scopes          => ['price', 'trade'],
-)->token;
+# prepare client
+my $email  = 'test-binary@binary.com';
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$client->email($email);
+$client->save;
+
+my $loginid = $client->loginid;
+my $user = BOM::Platform::User->create(
+    email    => $email,
+    password => '1234',
+);
+$user->add_loginid({loginid => $loginid});
+$user->save;
+
+$client->set_default_account('USD');
+$client->smart_payment(
+    currency     => 'USD',
+    amount       => +100,
+    payment_type => 'external_cashier',
+    remark       => 'test deposit'
+);
+
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
-is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
-is $authorize->{authorize}->{loginid}, 'CR2002';
+is $authorize->{authorize}->{email},   $email;
+is $authorize->{authorize}->{loginid}, $loginid;
 
 my %contractParameters = (
     "amount"        => "5",
