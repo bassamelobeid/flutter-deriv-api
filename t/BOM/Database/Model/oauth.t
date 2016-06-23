@@ -49,14 +49,12 @@ $app1 = $m->update_app(
     $test_appid,
     {
         name         => 'App 1',
-        scopes       => ['read', 'payments', 'trade', 'admin'],
+        scopes       => ['read', 'payments', 'trade'],
         redirect_uri => 'https://www.example.com/callback',
         homepage     => 'http://www.example2.com/',
     });
-@scopes = $m->get_scopes_by_access_token($access_token);
-is_deeply([sort @scopes], ['admin', 'payments', 'read', 'trade'], 'scopes are updated');
 is $app1->{redirect_uri}, 'https://www.example.com/callback', 'redirect_uri is updated';
-is $app1->{homepage}, 'http://www.example2.com/', 'homepage is updated';
+is $app1->{homepage},     'http://www.example2.com/',         'homepage is updated';
 
 ### get app_register/app_list/app_get
 my $get_app = $m->get_app($test_user_id, $app1->{app_id});
@@ -80,7 +78,7 @@ is_deeply($get_apps, [$app1], 'delete app ok');
 my $used_apps = $m->get_used_apps_by_loginid($test_loginid);
 is scalar(@{$used_apps}), 1;
 is $used_apps->[0]->{app_id}, $test_appid, 'app_id 1';
-is_deeply([sort @{$used_apps->[0]->{scopes}}], ['admin', 'payments', 'read', 'trade'], 'scopes are right');
+is_deeply([sort @{$used_apps->[0]->{scopes}}], ['payments', 'read', 'trade'], 'scopes are right');
 ok $used_apps->[0]->{last_used}, 'last_used ok';
 
 ok $m->revoke_app($test_appid, $test_loginid);
@@ -144,6 +142,48 @@ subtest 'revoke tokens by loginid and app_id' => sub {
         @cnt = $m->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ?", undef, $loginid);
         is $cnt[0], 0, "revoked access tokens [$loginid]";
     }
+};
+
+subtest 'remove user confirm on scope changes' => sub {
+    my $app1 = $m->create_app({
+        name         => 'App 1 Change',
+        scopes       => ['read', 'trade'],
+        user_id      => $test_user_id,
+        redirect_uri => 'https://www.example.com',
+    });
+    my $test_appid = $app1->{app_id};
+
+    my $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
+    is $is_confirmed, 0, 'not confirmed';
+
+    ok $m->confirm_scope($test_appid, $test_loginid), 'confirm scope';
+    $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
+    is $is_confirmed, 1, 'confirmed after confirm_scope';
+
+    ## update app without scope change
+    $app1 = $m->update_app(
+        $test_appid,
+        {
+            name         => 'App 1 Change 2',
+            scopes       => ['read', 'trade'],
+            redirect_uri => 'https://www.example.com/callback',
+        });
+    $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
+    is $is_confirmed, 1, 'is still confirmed if scope is not changed';
+
+    $app1 = $m->update_app(
+        $test_appid,
+        {
+            name         => 'App 1 Change 2',
+            scopes       => ['read', 'trade', 'admin'],
+            redirect_uri => 'https://www.example.com/callback',
+        });
+    $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
+    is $is_confirmed, 0, 'is not confirmed if scope is changed';
+
+    my ($access_token) = $m->store_access_token_only($test_appid, $test_loginid);
+    my @scopes = $m->get_scopes_by_access_token($access_token);
+    is_deeply([sort @scopes], ['admin', 'read', 'trade'], 'scopes are updated');
 };
 
 done_testing();
