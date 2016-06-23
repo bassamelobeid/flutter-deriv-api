@@ -1292,6 +1292,19 @@ sub _build_base_commission {
     my $scaling_factor = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
     $scaling_factor = max($minimum, min($maximum, $scaling_factor));
 
+    my $announcement_date = Date::Utility->new('2016-07-02');
+    my $disable_date      = Date::Utility->new('2016-06-20');
+    # Every forex pair expiry after 2-July should have normal commission in place.
+    # Very hacky solution but we will need more time to code up a proper one.
+    # This should be removed after Brexit.
+    return 0.05 * $scaling_factor
+        if ((
+               $self->market->name eq 'forex'
+            or $self->market->name eq 'indices'
+        )
+        and $self->date_start->is_after($disable_date)
+        and $self->date_expiry->is_after($announcement_date));
+
     return $self->underlying->base_commission * $scaling_factor;
 }
 
