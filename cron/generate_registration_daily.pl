@@ -4,14 +4,12 @@ package main;
 use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Sysinit ();
 
 run() unless caller;
 
 sub run {
     use Getopt::Long;
     su_nobody();
-    BOM::Platform::Sysinit::init();
 
     my $to;
     GetOptions('to=s' => \$to);

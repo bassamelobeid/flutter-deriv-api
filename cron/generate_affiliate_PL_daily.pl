@@ -9,10 +9,7 @@ use Date::Utility;
 use BOM::System::Localhost;
 use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::ActivityReporter;
-use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;
-
-BOM::Platform::Sysinit::init();
 
 my ($from_date_str, $to_date_str);
 my $optres = GetOptions(
