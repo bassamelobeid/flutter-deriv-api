@@ -14,19 +14,6 @@ use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
-sub price_stream {
-    my ($c, $args) = @_;
-
-    my $symbol   = $args->{symbol};
-    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
-    if ($response and exists $response->{error}) {
-        return $c->new_error('price_stream', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
-    } else {
-        _send_ask($c, $args, 'price_stream');
-    }
-    return;
-}
-
 sub proposal {
     my ($c, $args) = @_;
 
@@ -41,7 +28,7 @@ sub proposal {
 }
 
 sub _send_ask {
-    my ($c, $args, $api_name) = @_;
+    my ($c, $args) = @_;
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
@@ -49,14 +36,15 @@ sub _send_ask {
         sub {
             my $response = shift;
             if ($response and exists $response->{error}) {
-                my $err = $c->new_error($api_name, $response->{error}->{code}, $response->{error}->{message_to_client});
+                my $err = $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
                 $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
                 return $err;
             }
 
             my $uuid;
-            if (not $uuid = _pricing_channel($c, 'subscribe', $args, $api_name)) {
-                return $c->new_error($api_name,
+
+            if (not $uuid = _pricing_channel($c, 'subscribe', $args)) {
+                return $c->new_error('proposal',
                     'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
             }
 
@@ -70,11 +58,11 @@ sub _send_ask {
             }
 
             return {
-                msg_type => $api_name,
-                $api_name => {($uuid ? (id => $uuid) : ()), %$response}};
+                msg_type   => 'proposal',
+                'proposal' => {($uuid ? (id => $uuid) : ()), %$response}};
         },
         {args => $args},
-        $api_name,
+        'proposal',
     );
     return;
 }
@@ -89,7 +77,7 @@ sub _serialized_args {
 }
 
 sub _pricing_channel {
-    my ($c, $subs, $args, $api_name) = @_;
+    my ($c, $subs, $args) = @_;
 
     my %args_hash = %{$args};
 
@@ -124,13 +112,11 @@ sub _pricing_channel {
         $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
 
-    $pricing_channel->{$serialized_args}->{$amount}->{uuid}     = $uuid;
-    $pricing_channel->{$serialized_args}->{$amount}->{args}     = $args;
-    $pricing_channel->{$serialized_args}->{$amount}->{api_name} = $api_name;
-    $pricing_channel->{uuid}->{$uuid}->{serialized_args}        = $serialized_args;
-    $pricing_channel->{uuid}->{$uuid}->{amount}                 = $amount;
-    $pricing_channel->{uuid}->{$uuid}->{args}                   = $args;
-    $pricing_channel->{uuid}->{$uuid}->{api_name}               = $api_name;
+    $pricing_channel->{$serialized_args}->{$amount}->{uuid} = $uuid;
+    $pricing_channel->{$serialized_args}->{$amount}->{args} = $args;
+    $pricing_channel->{uuid}->{$uuid}->{serialized_args}    = $serialized_args;
+    $pricing_channel->{uuid}->{$uuid}->{amount}             = $amount;
+    $pricing_channel->{uuid}->{$uuid}->{args}               = $args;
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
@@ -151,7 +137,6 @@ sub process_pricing_events {
 
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
         my $results;
-        my $api_name = $pricing_channel->{$serialized_args}->{$amount}->{api_name};
 
         if ($response and exists $response->{error}) {
             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$serialized_args}->{$amount}->{uuid});
@@ -163,7 +148,7 @@ sub process_pricing_events {
                 $response->{error}->{message_to_client} = $c->l($response->{error}->{message_to_client});
             }
 
-            my $err = $c->new_error($api_name, $response->{error}->{code}, $response->{error}->{message_to_client});
+            my $err = $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
@@ -171,13 +156,13 @@ sub process_pricing_events {
             my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
 
             if (my $ref = $adjusted_results->{error}) {
-                my $err = $c->new_error($api_name, $ref->{code}, $ref->{message_to_client});
+                my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
                 $results = $err;
             } else {
                 $results = {
-                    msg_type  => $api_name,
-                    $api_name => {
+                    msg_type   => 'proposal',
+                    'proposal' => {
                         id       => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
                         longcode => $pricing_channel->{$serialized_args}->{$amount}->{longcode},
                         %$adjusted_results,
@@ -197,7 +182,7 @@ sub process_pricing_events {
         if ($c->stash('debug')) {
             $results->{debug} = {
                 time   => $results->{price_stream}->{rpc_time},
-                method => $api_name,
+                method => 'proposal',
             };
         }
 
