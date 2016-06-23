@@ -740,12 +740,12 @@ sub _build_calendar {
     my $self = shift;
 
     $self->_exchange_refreshed(time);
-    return Quant::Framework::TradingCalendar->new(
-        $self->exchange_name,
-        BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-        BOM::Platform::Context::request()->language,
-        $self->for_date
-    );
+    return Quant::Framework::TradingCalendar->new({
+        symbol => $self->exchange_name,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+        locale => BOM::Platform::Context::request()->language,
+        for_date => $self->for_date
+    });
 }
 
 has exchange => (
@@ -1273,12 +1273,12 @@ sub is_in_quiet_period {
     # The times should not reasonably change in a process-lifetime
     state $exchanges = {
         map {
-            $_ => Quant::Framework::TradingCalendar->new(
-                $_,
-                BOM::System::Chronicle::get_chronicle_reader($self->for_date),
-                BOM::Platform::Context::request()->language,
-                $self->for_date
-                )
+            $_ => Quant::Framework::TradingCalendar->new({
+                symbol => $_,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+                locale => BOM::Platform::Context::request()->language,
+                for_date => $self->for_date
+                })
         } (qw(NYSE FSE LSE TSE SES ASX))};
 
     if ($self->market->name eq 'forex') {
