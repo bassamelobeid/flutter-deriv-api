@@ -37,7 +37,6 @@ sub init {
 
             warn("Panic timeout after $runtime seconds");
 
-            my $website = request()->website;
             print '<div id="page_timeout_notice" class="aligncenter">'
                 . '<p class="normalfonterror">'
                 . $timenow . ' '
@@ -50,8 +49,6 @@ sub init {
                 . localize('Reload page')
                 . '</b></a> '
                 . ' <a href="http://'
-                . $website->primary_url . '">'
-                . $website->primary_url . '</a> '
                 . localize('homepage') . '</p>'
                 . '</div>';
             BOM::Platform::Context::request_completed();
