@@ -588,7 +588,7 @@ subtest 'all methods on a selection of underlyings' => sub {
           });
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
-            my $day_weight    = $builder->build_trading_calendar->extended_weight_on($test_day);
+            my $day_weight    = $builder->build_trading_calendar->weight_on($test_day);
             my $period_weight = $builder->build_trading_calendar->weighted_days_in_period($today, $test_day);
             cmp_ok($day_weight, '>=', $builder->build_trading_calendar->closed_weight,
                 $ul->display_name . ' weight for ' . $test_day->date . ' is at least as big as the closed weight');
