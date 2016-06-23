@@ -207,6 +207,7 @@ sub profit_table {
         $trx{payout}         = $row->{payout_price};
         $trx{purchase_time}  = Date::Utility->new($row->{purchase_time})->epoch;
         $trx{sell_time}      = Date::Utility->new($row->{sell_time})->epoch;
+        $trx{app_id}         = $row->{source};
 
         if ($and_description) {
             $trx{shortcode} = $row->{short_code};
