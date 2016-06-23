@@ -6,8 +6,8 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Data::Validate::Sanctions qw/is_sanctioned/;
 use Path::Tiny;
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('INVESTIGATIVE TOOLS');
