@@ -7,9 +7,10 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::System::Password;
 
 my $email       = 'raunak@binary.com';
@@ -35,15 +36,13 @@ $user->add_login_history({
 });
 $user->save;
 
-my $t     = build_mojo_test();
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $test_loginid,
-    email   => $email
-)->token;
+my $t = build_mojo_test();
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_loginid);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $res = decode_json($t->message->[1]);
-is $res->{authorize}->{email}, 'raunak@binary.com', 'Correct email for session cookie token';
+is $res->{authorize}->{email}, 'raunak@binary.com', 'Correct email for oauth token';
 test_schema('authorize', $res);
 
 $t = $t->send_ok({json => {login_history => 1}})->message_ok;
@@ -53,7 +52,7 @@ ok $res->{login_history}->[0]->{action},      'login history record has action k
 ok $res->{login_history}->[0]->{environment}, 'login history record has environment key';
 ok $res->{login_history}->[0]->{time},        'login history record has time key';
 
-# clear session token
+# clear oauth token
 $t = $t->send_ok({json => {logout => 1}})->message_ok;
 
 done_testing();
