@@ -7,8 +7,9 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::System::Password;
 use BOM::Platform::User;
@@ -22,7 +23,7 @@ my $oauth = BOM::Database::Model::OAuth->new;
 my $dbh   = $oauth->dbh;
 $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
-$dbh->do("DELETE FROM oauth.apps");
+$dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
 
 my $email     = 'abc@binary.com';
 my $password  = 'jskjd8292922';
@@ -42,10 +43,8 @@ $user->save;
 $user->add_loginid({loginid => $cr_1});
 $user->save;
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $cr_1,
-    email   => $email,
-)->token;
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);
+
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   $email;
@@ -64,6 +63,7 @@ my $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'app_register';
 test_schema('app_register', $res);
 my $app1   = $res->{app_register};
+
 my $app_id = $app1->{app_id};
 is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
 is $app1->{redirect_uri}, 'https://www.example.com/',  'redirect_uri is right';

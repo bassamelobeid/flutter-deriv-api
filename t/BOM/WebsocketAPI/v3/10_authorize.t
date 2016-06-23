@@ -8,8 +8,9 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use Test::MockModule;
 
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 # Hack to get stash values, can't use hook after dispatch, because we should check value after wss message
 my $stash  = {};
@@ -42,24 +43,37 @@ is $authorize->{error}->{code}, 'InvalidToken';
 test_schema('authorize', $authorize);
 
 ## test with good one
-my $token = BOM::Platform::SessionCookie->new(
-    client_id       => 1,
-    loginid         => "CR2002",
-    email           => 'sy@regentmarkets.com',
-    expiration_time => time() + 600,
-)->token;
+
+# prepare client
+my $email  = 'test-binary@binary.com';
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$client->email($email);
+$client->save;
+$client->set_default_account('USD');
+
+my $loginid = $client->loginid;
+my $user = BOM::Platform::User->create(
+    email    => $email,
+    password => '1234',
+);
+$user->add_loginid({loginid => $loginid});
+$user->save;
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 $authorize = decode_json($t->message->[1]);
 is $authorize->{msg_type}, 'authorize';
-is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
-is $authorize->{authorize}->{loginid}, 'CR2002';
+is $authorize->{authorize}->{email},   $email;
+is $authorize->{authorize}->{loginid}, $loginid;
 test_schema('authorize', $authorize);
-is $stash->{loginid}, "CR2002", 'Test stash data';
-is $stash->{email}, 'sy@regentmarkets.com', 'Should store email to stash';
+is $stash->{loginid}, $loginid, 'Test stash data';
+is $stash->{email}, $email, 'Should store email to stash';
 is $stash->{token}, $token, 'Should store token to stash';
-is $stash->{token_type}, 'session_token', 'Should store token_type to stash';
-is_deeply $stash->{scopes}, [qw/read trade admin payments/], 'Should store token_scopes to stash';    # scopes is everything for session token
+is $stash->{token_type}, 'oauth_token', 'Should store token_type to stash';
+is_deeply $stash->{scopes}, [qw/read admin trade payments/], 'Should store token_scopes to stash';
 ok $stash->{account_id},           'Should store to account_id stash';
 ok $stash->{country},              'Should store country to stash';
 ok $stash->{currency},             'Should store currency to stash';
