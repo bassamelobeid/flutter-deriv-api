@@ -175,17 +175,16 @@ sub new_account_real {
     my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
 
     my $company = $countries_list->{$args->{residence}}->{gaming_company};
-    $company = $countries_list->{$args->{residence}}->{financial_company}  if (not $company or $company eq 'none');
+    $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
 
     if (not $company) {
         return BOM::RPC::v3::Utility::create_error({
-            code              => 'NoLandingCompany',
-            message_to_client => $error_map->{'No landing company for this country'}});
+                code              => 'NoLandingCompany',
+                message_to_client => $error_map->{'No landing company for this country'}});
     }
     my $broker = BOM::Platform::Runtime::LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
-    my $details_ref =
-        _get_client_details($params, $client, $broker);
+    my $details_ref = _get_client_details($params, $client, $broker);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
@@ -297,12 +296,12 @@ sub new_account_japan {
     }
 
     my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
-    my $company = $countries_list->{'jp'}->{financial_company};
+    my $company        = $countries_list->{'jp'}->{financial_company};
 
     if (not $company) {
         return BOM::RPC::v3::Utility::create_error({
-            code              => 'NoLandingCompany',
-            message_to_client => $error_map->{'No landing company for this country'}});
+                code              => 'NoLandingCompany',
+                message_to_client => $error_map->{'No landing company for this country'}});
     }
     my $broker = BOM::Platform::Runtime::LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
