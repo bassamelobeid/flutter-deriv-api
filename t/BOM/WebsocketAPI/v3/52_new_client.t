@@ -7,8 +7,9 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::System::Password;
 use BOM::Platform::User;
@@ -43,10 +44,7 @@ $user->add_loginid({loginid => $vr_1});
 $user->add_loginid({loginid => $cr_1});
 $user->save;
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $vr_1,
-    email   => $email,
-)->token;
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
