@@ -72,7 +72,7 @@ sub send_email {
     }
 
     if ($fromemail eq BOM::Platform::Static::Config::get_customer_support_email()) {
-        $fromemail = '"' . request()->website->display_name . "\" <$fromemail>";
+        $fromemail = "\"Binary.com\" <$fromemail>";
     }
 
     my $message = join("\n", @message);
