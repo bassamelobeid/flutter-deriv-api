@@ -8,7 +8,6 @@ use Data::Dumper;
 use BOM::Platform::Runtime::AppConfig;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Runtime::Broker::Codes;
-use BOM::Platform::Runtime::Website::List;
 use YAML::XS;
 use Locale::Country::Extra;
 use Locale::Country;
@@ -32,17 +31,6 @@ Returns an reference to an BOM::Platform::Runtime::AppConfig object.
 =cut
 
 has 'app_config' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-=head2 website_list
-
-Returns an reference to an BOM::Platform::Runtime::Website::List object.
-
-=cut
-
-has 'website_list' => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -175,20 +163,6 @@ sub volidx_restricted_country {
 sub _build_app_config {
     my $self = shift;
     return BOM::Platform::Runtime::AppConfig->new();
-}
-
-my $websites;
-
-BEGIN {
-    $websites = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml');
-}
-
-sub _build_website_list {
-    my $self = shift;
-    return BOM::Platform::Runtime::Website::List->new(
-        broker_codes => $self->broker_codes,
-        definitions  => $websites
-    );
 }
 
 my $broker_codes;
