@@ -20,3 +20,5 @@ nytprof.out
 *.o
 *.bs
 /_eumm/
+id_rsa
+id_dsa
