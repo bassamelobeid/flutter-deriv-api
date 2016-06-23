@@ -301,7 +301,7 @@ sub _build_broker_code {
     my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
 
     my $company = $countries_list->{$self->country_code}->{gaming_company};
-    $company = $countries_list->{$self->country_code}->{financial_company} if (not $company or $company = 'none');
+    $company = $countries_list->{$self->country_code}->{financial_company} if (not $company or $company eq 'none');
 
     return BOM::Platform::Runtime::LandingCompany::Registry->new->get($company)->broker_codes->[0]
 
