@@ -40,37 +40,3 @@ subtest 'app_config' => sub {
     BOM::Platform::Context::request_completed();
 };
 
-subtest 'template' => sub {
-    subtest 'request driven' => sub {
-        my $output;
-        my $template = "[% website.name %]";
-        ok(BOM::Platform::Context::template, 'default');
-        BOM::Platform::Context::template->process(\$template, {}, \$output);
-        like($output, '/^Binaryqa/', 'correct default');
-
-        my $request = BOM::Platform::Context::Request->new(
-            domain_name => 'www.binary.com',
-            backoffice  => 1
-        );
-        ok(BOM::Platform::Context::request($request), 'new request');
-
-        $output = '';
-        BOM::Platform::Context::template->process(\$template, {}, \$output);
-        is($output, 'BackOffice', 'now processing Backoffice');
-
-        BOM::Platform::Context::request_completed();
-
-        $output = '';
-        BOM::Platform::Context::template->process(\$template, {}, \$output);
-        like($output, '/^Binaryqa/', 'back to default');
-
-    };
-
-    subtest 'stash' => sub {
-        my $output;
-        my $template = "[% website.name %][% stashed_value %]";
-        ok(BOM::Platform::Context::template, 'default');
-        BOM::Platform::Context::template->process(\$template, {}, \$output);
-        like($output, '/^Binaryqa/', 'correct default');
-    };
-};
