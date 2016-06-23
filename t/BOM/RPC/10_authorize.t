@@ -127,6 +127,20 @@ subtest 'logout' => sub {
 
 };
 
+subtest 'self_exclusion timeout' => sub {
+    my $params = {
+        language => 'en',
+        token    => $token
+    };
+    my $timeout_until = Date::Utility->new->plus_time_interval('1d');
+    $test_client->set_exclusion->timeout_until($timeout_until->epoch);
+    $test_client->save();
+
+    $c->call_ok($method, $params)
+        ->has_error->error_message_is('Sorry, you have excluded yourself until ' . $timeout_until->datetime_yyyymmdd_hhmmss_TZ . '.',
+        'check if authorize check self exclusion');
+};
+
 subtest 'self_exclusion' => sub {
     my $params = {
         language => 'en',
@@ -134,11 +148,12 @@ subtest 'self_exclusion' => sub {
     };
     # This is how long I think binary.com can survive using Perl in its concurrency paradigm era.
     # If this test ever failed because of setting this date too short, we might be in bigger troubles than a failing test.
+    $test_client->set_exclusion->timeout_until(0);
     $test_client->set_exclusion->exclude_until('2020-01-01');
     $test_client->save();
 
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01 00:00:00GMT.', 'check if authorize check self exclusion');
+        ->has_error->error_message_is('Sorry, you have excluded yourself until 2020-01-01.', 'check if authorize check self exclusion');
 };
 
 done_testing();

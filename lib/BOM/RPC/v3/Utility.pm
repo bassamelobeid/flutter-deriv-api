@@ -122,12 +122,7 @@ sub check_authorization {
             code              => 'DisabledClient',
             message_to_client => localize('This account is unavailable.')}) if $client->get_status('disabled');
 
-    my $self_excl = $client->get_self_exclusion;
-    my $lim;
-    if (    $self_excl
-        and $lim = $self_excl->exclude_until
-        and Date::Utility->new->is_before(Date::Utility->new($lim)))
-    {
+    if (my $lim = $client->get_self_exclusion_until_dt) {
         return create_error({
                 code              => 'ClientSelfExclusion',
                 message_to_client => localize('Sorry, you have excluded yourself until [_1].', $lim)});
