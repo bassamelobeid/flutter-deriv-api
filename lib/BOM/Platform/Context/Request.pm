@@ -328,6 +328,11 @@ sub _build_broker_code {
     die 'can not determine broker code';
 }
 
+sub _build_broker {
+    my $self = shift;
+    return BOM::Platform::Runtime->instance->broker_codes->get($self->broker_code);
+}
+
 sub _build_language {
     my $self = shift;
 
