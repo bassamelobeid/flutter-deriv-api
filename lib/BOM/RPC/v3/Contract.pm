@@ -5,6 +5,7 @@ use warnings;
 
 use Try::Tiny;
 use List::MoreUtils qw(none);
+use Data::Dumper;
 
 use BOM::RPC::v3::Utility;
 use BOM::Market::Underlying;
@@ -131,6 +132,10 @@ sub _get_ask {
                 $response->{probability_threshold} = $contract->market->deep_otm_threshold;
                 $response->{minimum_stake}         = $contract->staking_limits->{min};
                 $response->{maximum_payout}        = $contract->staking_limits->{max};
+            } elsif (not $contract->is_spread) {
+                # All contracts other than spreads should go through pricer daemon.
+                # Trying to find what are the exceptions.
+                warn "potential bug: " . Data::Dumper->Dumper($p2);
             }
 
             if ($contract->underlying->feed_license eq 'realtime') {
