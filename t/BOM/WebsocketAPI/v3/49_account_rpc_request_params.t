@@ -9,20 +9,35 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use Test::MockModule;
 
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 my $t = build_mojo_test({language => 'EN'});
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => "CR0021",
-    email   => 'shuwnyuan@regentmarkets.com',
-)->token;
+# prepare client
+my $email  = 'test-binary@binary.com';
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$client->email($email);
+$client->save;
+$client->set_default_account('USD');
+
+my $loginid = $client->loginid;
+my $user = BOM::Platform::User->create(
+    email    => $email,
+    password => '1234',
+);
+$user->add_loginid({loginid => $loginid});
+$user->save;
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
-is $authorize->{authorize}->{email},   'shuwnyuan@regentmarkets.com';
-is $authorize->{authorize}->{loginid}, 'CR0021';
+is $authorize->{authorize}->{email},   $email;
+is $authorize->{authorize}->{loginid}, $loginid;
 
 my ($rpc_caller, $rpc_method, $call_params, $res, $rpc_response);
 $rpc_response = {ok => 1};

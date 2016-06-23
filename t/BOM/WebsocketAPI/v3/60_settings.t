@@ -7,8 +7,9 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Client;
 
@@ -22,10 +23,8 @@ my $t = build_mojo_test();
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $test_client->loginid,
-    email   => $test_client->email,
-)->token;
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
 # test account status
 my $reason = "test to set unwelcome login";
@@ -80,10 +79,8 @@ test_schema('get_settings', $res);
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
 });
-$token = BOM::Platform::SessionCookie->new(
-    loginid => $test_client_vr->loginid,
-    email   => $test_client_vr->email,
-)->token;
+
+($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client_vr->loginid);
 
 # authorize ok
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
@@ -123,10 +120,7 @@ my $client_jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $client_jp->residence('jp');
 $client_jp->save;
 
-$token = BOM::Platform::SessionCookie->new(
-    loginid => $client_jp->loginid,
-    email   => $client_jp->email,
-)->token;
+($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_jp->loginid);
 
 # authorize ok
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
