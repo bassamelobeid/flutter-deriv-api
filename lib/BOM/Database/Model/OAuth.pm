@@ -145,7 +145,7 @@ sub create_app {
         scopes       => $app->{scopes},
         redirect_uri => $app->{redirect_uri},
         homepage     => $app->{homepage} || '',
-        github       => $app->{github}   || '',
+        github       => $app->{github} || '',
         appstore     => $app->{appstore} || '',
         googleplay   => $app->{googleplay} || '',
     };
@@ -154,7 +154,15 @@ sub create_app {
 sub update_app {
     my ($self, $app_id, $app) = @_;
 
+    # get old scopes
     my $sth = $self->dbh->prepare("
+        SELECT scopes FROM oauth.apps WHERE id = ?
+    ");
+    $sth->execute($app_id);
+    my $old_scopes = $sth->fetchrow_array;
+    $old_scopes = __parse_array($old_scopes);
+
+    $sth = $self->dbh->prepare("
         UPDATE oauth.apps SET
             name = ?, scopes = ?, homepage = ?, github = ?,
             appstore = ?, googleplay = ?, redirect_uri = ?
@@ -169,13 +177,22 @@ sub update_app {
         $app->{redirect_uri} || '', $app_id
     );
 
+    ## revoke user_scope_confirm on scope changes
+    if ($old_scopes
+        and join('-', sort @$old_scopes) ne join('-', sort @{$app->{scopes}}))
+    {
+        foreach my $table ('user_scope_confirm', 'access_token') {
+            $self->dbh->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id);
+        }
+    }
+
     return {
         app_id       => $app_id,
         name         => $app->{name},
         scopes       => $app->{scopes},
         redirect_uri => $app->{redirect_uri},
         homepage     => $app->{homepage} || '',
-        github       => $app->{github}   || '',
+        github       => $app->{github} || '',
         appstore     => $app->{appstore} || '',
         googleplay   => $app->{googleplay} || '',
     };
@@ -277,6 +294,17 @@ sub revoke_tokens_by_loginid_app {
     my ($self, $loginid, $app_id) = @_;
     $self->dbh->do("DELETE FROM oauth.access_token WHERE loginid = ? AND app_id = ?", undef, $loginid, $app_id);
     return 1;
+}
+
+sub has_other_login_sessions {
+    my ($self, $loginid) = @_;
+
+    my $dbh = $self->dbh;
+    # "Binary.com backoffice" app has id = 4, we use it to create token for BO impersonate. So should be excluded here.
+    my $login_cnt = $self->dbh->selectrow_array(
+        "SELECT count(*) FROM oauth.access_token WHERE loginid = ? AND expires > now() AND app_id <> 4",
+        undef, $loginid);
+    return ($login_cnt >= 1);
 }
 
 sub get_app_id_by_token {
