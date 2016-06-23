@@ -288,7 +288,6 @@ sub _build_config {
         rate_to_imply_from                    => $self->rate_to_imply_from,
         volatility_surface_type               => $self->volatility_surface_type,
         exchange_name                         => $self->exchange_name,
-        locale                                => BOM::Platform::Context::request()->language,
         uses_implied_rate_for_asset           => $self->uses_implied_rate($self->asset_symbol) // '',
         uses_implied_rate_for_quoted_currency => $self->uses_implied_rate($self->quoted_currency_symbol) // '',
         spot                                  => $self->spot,
