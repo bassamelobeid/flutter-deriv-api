@@ -2087,6 +2087,8 @@ sub _build_base_commission {
 sub calculate_spread {
     my ($self, $volatility) = @_;
 
+    die 'volatility is zero for ' . $self->symbol if $volatility == 0;
+
     my $spread_multiplier = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{spread_multiplier};
     # since it is only vol indices
     my $spread  = $self->spot * sqrt($volatility**2 * 2 / (365 * 86400)) * $spread_multiplier;
