@@ -7,10 +7,11 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
 use BOM::Platform::Client;
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::System::Password;
 
 my $email       = 'dummy@binary.com';
@@ -24,11 +25,9 @@ $test_client->save;
 
 is $test_client->default_account, undef, 'new client has no default account';
 
-my $t     = build_mojo_test();
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $test_client->loginid,
-    email   => $email
-)->token;
+my $t = build_mojo_test();
+
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $res = decode_json($t->message->[1]);
@@ -56,7 +55,7 @@ $test_client = BOM::Platform::Client->new({loginid => $test_client->loginid});
 ok $test_client->default_account, 'Default account set correctly';
 is $test_client->currency, 'EUR', 'Got correct client currency after setting account';
 
-# clear session token
+# clear oauth token
 $t = $t->send_ok({json => {logout => 1}})->message_ok;
 
 done_testing();

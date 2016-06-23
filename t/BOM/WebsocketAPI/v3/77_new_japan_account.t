@@ -8,7 +8,9 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
+use BOM::Database::Model::OAuth;
 
 ## do not send email
 use Test::MockModule;
@@ -73,10 +75,8 @@ subtest 'new JP real account' => sub {
     like($vr_client->loginid, qr/^VRTJ\d+$/, "got VRTJ Virtual client " . $vr_client->loginid);
 
     # authorize
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $vr_client->loginid,
-        email   => $vr_client->email,
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
@@ -142,10 +142,7 @@ subtest 'new JP real account' => sub {
             residence       => 'jp',
         });
         # authorize
-        my $token = BOM::Platform::SessionCookie->new(
-            loginid => $vr_client->loginid,
-            email   => $vr_client->email,
-        )->token;
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
         # create CR acc
@@ -165,10 +162,7 @@ subtest 'Japan a/c jp residence only' => sub {
         residence       => 'jp',
     });
     # authorize
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $vr_client->loginid,
-        email   => $vr_client->email,
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     # create JP real acc
@@ -198,10 +192,7 @@ subtest 'VR Residence check' => sub {
         $vr_client->save();
 
         # authorize
-        my $token = BOM::Platform::SessionCookie->new(
-            loginid => $vr_client->loginid,
-            email   => $vr_client->email,
-        )->token;
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
         # create JP real acc
@@ -226,10 +217,7 @@ subtest 'VR Residence check' => sub {
             residence       => 'au',
         });
         # authorize
-        my $token = BOM::Platform::SessionCookie->new(
-            loginid => $vr_client->loginid,
-            email   => $vr_client->email,
-        )->token;
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
         # create JP real acc
