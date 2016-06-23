@@ -4,14 +4,15 @@ package main;
 use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Sysinit ();
+
+local $SIG{ALRM} = sub { die "alarm\n" };
+alarm 1800;
 
 run() unless caller;
 
 sub run {
     use Getopt::Long;
     su_nobody();
-    BOM::Platform::Sysinit::init();
 
     my $to;
     GetOptions('to=s' => \$to);

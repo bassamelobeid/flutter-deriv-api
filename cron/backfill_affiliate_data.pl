@@ -8,10 +8,10 @@ use Date::Utility;
 use BOM::System::Localhost;
 use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::BackfillManager;
-use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;
 
-BOM::Platform::Sysinit::init();
+local $SIG{ALRM} = sub { die "alarm\n" };
+alarm 1800;
 
 my $runtime = Date::Utility->new;
 
