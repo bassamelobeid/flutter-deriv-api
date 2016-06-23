@@ -17,8 +17,8 @@ use List::Util qw(first);
 use Digest::MD5 qw(md5_hex);
 use Date::Utility;
 
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Product Management');
