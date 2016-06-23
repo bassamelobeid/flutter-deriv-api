@@ -13,7 +13,7 @@ cache: apt
 before_install:
     - git clone https://6b8b5139b6cfaf61ea0b34834b62c275b500fa8b@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
-    - git clone git://github.com/travis-perl/helpers ~/travis-perl-helpers
+    - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
     - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
     - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
     - dpkg -l | grep postgres
