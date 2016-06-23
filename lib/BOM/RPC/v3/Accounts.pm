@@ -458,8 +458,8 @@ sub reset_password {
                     code              => "DateOfBirthMissing",
                     message_to_client => localize("Date of birth is required.")});
         }
-        my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;
-        my $db_dob   = $client->date_of_birth =~ s/-0/-/gr;
+        my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;    # / (dummy ST3)
+        my $db_dob   = $client->date_of_birth =~ s/-0/-/gr;    # /
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => "DateOfBirthMismatch",
@@ -701,6 +701,13 @@ sub _get_self_exclusion_details {
                 $get_self_exclusion->{exclude_until} = $until->date;
             }
         }
+
+        if (my $timeout_until = $self_exclusion->timeout_until) {
+            $timeout_until = Date::Utility->new($timeout_until);
+            if ($timeout_until->is_after(Date::Utility->new)) {
+                $get_self_exclusion->{timeout_until} = $timeout_until->epoch;
+            }
+        }
     }
 
     return $get_self_exclusion;
@@ -779,6 +786,24 @@ sub set_self_exclusion {
         delete $args{exclude_until};
     }
 
+    my $timeout_until = $args{timeout_until};
+    if (defined $timeout_until and $timeout_until =~ /^\d+$/) {
+        my $now           = Date::Utility->new;
+        my $exclusion_end = Date::Utility->new($timeout_until);
+        my $six_week      = Date::Utility->new(time() + 6 * 7 * 86400);
+
+        # checking for the timeout until which must be larger than current time
+        if ($exclusion_end->is_before($now)) {
+            return $error_sub->(localize('Timeout time must be greater than current time.'), 'timeout_until');
+        }
+
+        if ($exclusion_end->is_after($six_week)) {
+            return $error_sub->(localize('Timeout time cannot be more than 6 weeks.'), 'timeout_until');
+        }
+    } else {
+        delete $args{timeout_until};
+    }
+
     my $message = '';
     if ($args{max_open_bets}) {
         my $ret = $client->set_exclusion->max_open_bets($args{max_open_bets});
@@ -819,6 +844,10 @@ sub set_self_exclusion {
     if ($args{exclude_until}) {
         my $ret = $client->set_exclusion->exclude_until($args{exclude_until});
         $message .= "- Exclude from website until: $ret\n";
+    }
+    if ($args{timeout_until}) {
+        my $ret = $client->set_exclusion->timeout_until($args{timeout_until});
+        $message .= "- Timeout from website until: $ret\n";
     }
 
     if ($message) {

@@ -1178,7 +1178,42 @@ subtest 'get and set self_exclusion' => sub {
             'details'           => 'exclude_until',
             'code'              => 'SetSelfExclusionError'
         });
+
+    # timeout_until
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9999,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440,
+        timeout_until          => time() - 86400,
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "Timeout time must be greater than current time.",
+            'details'           => 'timeout_until',
+            'code'              => 'SetSelfExclusionError'
+        });
+
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9999,
+        max_turnover           => 1000,
+        max_open_bets          => 100,
+        session_duration_limit => 1440,
+        timeout_until          => time() + 86400 * 7 * 10,    # max is 6 weeks
+    };
+    is_deeply(
+        $c->tcall($method, $params)->{error},
+        {
+            'message_to_client' => "Timeout time cannot be more than 6 weeks.",
+            'details'           => 'timeout_until',
+            'code'              => 'SetSelfExclusionError'
+        });
+
     my $exclude_until = DateTime->now()->add(months => 7)->ymd;
+    my $timeout_until = DateTime->now()->add(days   => 1);
     $params->{args} = {
         set_self_exclusion     => 1,
         max_balance            => 9998,
@@ -1186,6 +1221,7 @@ subtest 'get and set self_exclusion' => sub {
         max_open_bets          => 100,
         session_duration_limit => 1440,
         exclude_until          => $exclude_until,
+        timeout_until          => $timeout_until->epoch,
     };
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
 
@@ -1200,6 +1236,7 @@ subtest 'get and set self_exclusion' => sub {
     my $self_excl = $test_client->get_self_exclusion;
     is $self_excl->max_balance, 9998, 'set correct in db';
     is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
+    is $self_excl->timeout_until, $timeout_until->epoch, 'timeout_until is right';
     is $self_excl->session_duration_limit, 1440, 'all good';
 
 };
