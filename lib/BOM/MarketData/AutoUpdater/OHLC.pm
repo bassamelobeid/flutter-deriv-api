@@ -210,7 +210,10 @@ sub verify_ohlc_update {
 
         next if (-M $db_file and -M $db_file >= 20);    # do only those that were modified in last 20 days (others are junk/tests)
 
-        my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+        # we are checking back past 10 day OHLC, so start to look back calendar from that day
+        my $underlying = BOM::Market::Underlying->new({
+                symbol   => $underlying_symbol,
+                for_date => $now->minus_time_interval('10d')});
 
         next if $underlying->has_holiday_on($now);
         next if ($underlying->submarket->is_OTC);
