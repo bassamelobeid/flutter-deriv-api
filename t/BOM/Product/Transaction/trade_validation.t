@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 11;
+use Test::Most tests => 10;
 use Test::NoWarnings;
 use File::Spec;
 use JSON qw(decode_json);
@@ -20,9 +20,6 @@ use Math::Util::CalculatedValue::Validatable;
 
 use Test::MockTime qw(set_absolute_time);
 use Test::MockModule;
-
-my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
-$requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
 
 initialize_realtime_ticks_db();
 
@@ -795,6 +792,8 @@ subtest 'Purchase Sell Contract' => sub {
 
     my $client = BOM::Platform::Client->new({loginid => 'CR2002'});
     $client = BOM::Platform::Client::get_instance({'loginid' => $client->loginid});
+    my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
+    $mocked_client->mock('residence', sub {return 'al'});
     my $currency = 'USD';
     $client->set_default_account($currency);
 
@@ -867,17 +866,6 @@ subtest 'Purchase Sell Contract' => sub {
         })->sell;
 
     is($error, undef, 'Able to sell the contract successfully');
-};
-
-subtest 'Validate  Request Method' => sub {
-
-    BOM::Platform::Context::request(BOM::Platform::Context::Request->new(http_method => 'POST'));
-
-    is(BOM::Product::Transaction::validate_request_method(), undef, "Request method as POST pass");
-
-    BOM::Platform::Context::request(BOM::Platform::Context::Request->new(http_method => 'GET'));
-    my $error = BOM::Product::Transaction::validate_request_method();
-    is($error->{-message_to_client}, "Sorry, this page cannot be refreshed.", "Request Method as GET gives proper error");
 };
 
 subtest 'validate stake limit' => sub {
