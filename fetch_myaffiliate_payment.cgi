@@ -9,12 +9,12 @@ use BOM::MyAffiliates::PaymentToAccountManager;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 use Fcntl qw/:flock O_RDWR O_CREAT/;
 use Try::Tiny;
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Myaffiliate Payment');
 
