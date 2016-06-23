@@ -6,7 +6,9 @@ use Test::Most;
 use Test::Mojo;
 use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::SessionCookie;
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Database::Model::OAuth;
+
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 my $method = 'trading_times';
@@ -81,10 +83,7 @@ subtest $method => sub {
     $test_client->email($email);
     $test_client->save;
 
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $test_client->loginid,
-        email   => $email
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
 
     $params->{token} = $token;
     $result = $c->call_ok($method, $params)->has_no_system_error->result;

@@ -13,13 +13,15 @@ use Test::BOM::RPC::Client;
 
 use BOM::Market::Data::DatabaseAPI;
 use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
+use BOM::Database::Model::OAuth;
 use BOM::Database::ClientDB;
 
 use utf8;
 
-my ($vclient, $vclient_token, $client, $client_token, $session);
+my ($vclient, $vclient_token, $client, $client_token, $oauth_token);
 my ($t, $rpc_ct);
 my $method = 'sell_expired';
 
@@ -52,10 +54,7 @@ subtest 'Initialization' => sub {
         $client_token  = $m->create_token($client->loginid,  'test token');
         $vclient_token = $m->create_token($vclient->loginid, 'test token');
 
-        $session = BOM::Platform::SessionCookie->new(
-            loginid => $client->loginid,
-            email   => $client->email,
-        )->token;
+        ($oauth_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
     }
     'Initial clients';
 
@@ -107,9 +106,9 @@ subtest 'Auth client' => sub {
 
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using token');
 
-    $params[1]->{token} = $session;
+    $params[1]->{token} = $oauth_token;
 
-    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using session');
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using oauth token');
 };
 
 subtest 'Sell expired contract' => sub {

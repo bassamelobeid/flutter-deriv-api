@@ -8,6 +8,7 @@ use Test::MockModule;
 use BOM::RPC::v3::Contract;
 use BOM::Platform::Context qw (request);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -17,6 +18,7 @@ use Data::Dumper;
 use Quant::Framework::Utils::Test;
 use Quant::Framework::CorporateAction;
 use Quant::Framework::StorageAccessor;
+use BOM::Database::Model::OAuth;
 
 initialize_realtime_ticks_db();
 my $now   = Date::Utility->new('2005-09-21 06:46:00');
@@ -33,10 +35,8 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $client->deposit_virtual_funds;
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $client->loginid,
-    email   => $email
-)->token;
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',

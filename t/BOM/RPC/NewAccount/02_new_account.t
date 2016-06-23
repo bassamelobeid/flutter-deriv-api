@@ -13,6 +13,7 @@ use POSIX qw/ ceil /;
 
 use Test::BOM::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token::Verification;
 
 use utf8;
