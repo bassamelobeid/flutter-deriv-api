@@ -170,7 +170,7 @@ has [qw(value point_value)] => (
 );
 
 # spread_divisor - needed to reproduce the digit corresponding to one point
-has [qw(spread spread_divisor spread_multiplier half_spread current_tick current_spot translated_display_name)] => (
+has [qw(spread spread_divisor half_spread current_tick current_spot translated_display_name)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -185,11 +185,6 @@ sub _build_spread {
 sub _build_spread_divisor {
     my $self = shift;
     return $self->underlying->spread_divisor;
-}
-
-sub _build_spread_multiplier {
-    my $self = shift;
-    return BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{spread_multiplier};
 }
 
 sub _build_half_spread {
