@@ -298,7 +298,13 @@ sub _build_broker_code {
         return BOM::Platform::Runtime->instance->broker_codes->get($input_broker)->code;
     }
 
-    return 'CR';
+    my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+
+    my $company = $countries_list->{$self->country_code}->{gaming_company};
+    $company //= $countries_list->{$self->country_code}->{financial_company};
+
+    return BOM::Platform::Runtime::LandingCompany::Registry->new->get($company)->broker_codes->[0]
+
 }
 
 sub _build_broker {
