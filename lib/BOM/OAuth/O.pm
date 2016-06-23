@@ -103,8 +103,9 @@ sub authorize {
     {
         $client = $c->__login($app) or return;
         $c->session('__is_logined', 1);
+        $c->session('__loginid',    $client->loginid);
     } elsif ($c->req->method eq 'POST' and $c->session('__is_logined')) {
-        # we force login no matter user is in or not
+        # get loginid from Mojo Session
         $client = $c->__get_client;
     }
 
@@ -205,6 +206,7 @@ sub authorize {
 
     ## clear session
     delete $c->session->{__is_logined};
+    delete $c->session->{__loginid};
     delete $c->session->{__is_app_approved};
 
     $c->redirect_to($uri);
@@ -270,7 +272,6 @@ sub __login {
         return;
     }
 
-    ## set session cookie?
     state $app_config = BOM::Platform::Runtime->instance->app_config;
     my $r       = $c->stash('request');
     my $options = {
@@ -290,16 +291,6 @@ sub __login {
     );
     $c->__set_reality_check_cookie($user, $options);
 
-    my $session = BOM::Platform::SessionCookie->new({
-            loginid => $client->loginid,
-            email   => $client->email,
-            loginat => $r->session_cookie && $r->session_cookie->loginat,
-            scopes  => [qw(price chart trade password cashier)]});
-    my $session_token = $session->token;
-    $c->cookie(
-        $app_config->cgi->cookie_name->login => url_escape($session_token),
-        $options
-    );
     $c->cookie(
         loginid => $client->loginid,
         $options
@@ -309,8 +300,8 @@ sub __login {
         $options
     );
 
-    # send when user have multiple sessions and its not backoffice (app_id = 4, as we impersonate from backoffice using read only tokens)
-    if ($session->have_multiple_sessions and $app->{id} ne '4') {
+    # send when client already has login session(s) and its not backoffice (app_id = 4, as we impersonate from backoffice using read only tokens)
+    if ($app->{id} ne '4' and __oauth_model()->has_other_login_sessions($client->loginid)) {
         try {
             if ($last_login and exists $last_login->{environment}) {
                 my ($old_env, $user_agent, $r) =
@@ -328,19 +319,20 @@ sub __login {
                     if ($app->{id} eq '1') {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3] and browser: [_4]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                            $session->email, $r->client_ip, $country_code, $user_agent);
+                            $client->email, $r->client_ip, $country_code, $user_agent);
                     } else {
                         $message = localize(
                             'An additional sign-in has just been detected on your account [_1] from the following IP address: [_2], country: [_3], browser: [_4] and app: [_5]. If this additional sign-in was not performed by you, and / or you have any related concerns, please contact our Customer Support team.',
-                            $session->email, $r->client_ip, $country_code, $user_agent, $app->{name});
+                            $client->email, $r->client_ip, $country_code, $user_agent, $app->{name});
                     }
 
                     send_email({
                         from               => BOM::Platform::Static::Config::get_customer_support_email(),
-                        to                 => $session->email,
+                        to                 => $client->email,
                         subject            => localize('New Sign-In Activity Detected'),
                         message            => [$message],
                         use_email_template => 1,
+                        template_loginid   => $client->loginid,
                     });
                 }
             }
@@ -389,11 +381,7 @@ sub __login_env {
 sub __get_client {
     my $c = shift;
 
-    my $request        = $c->stash('request');       # from before_dispatch
-    my $session_cookie = $request->session_cookie;
-    return unless $session_cookie and $session_cookie->token;
-
-    my $client = BOM::Platform::Client->new({loginid => $session_cookie->loginid});
+    my $client = BOM::Platform::Client->new({loginid => $c->session('__loginid')});
     return if $client->get_status('disabled');
     return if $client->get_self_exclusion_until_dt;    # Excluded
 
