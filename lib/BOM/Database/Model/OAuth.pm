@@ -157,7 +157,15 @@ sub create_app {
 sub update_app {
     my ($self, $app_id, $app) = @_;
 
+    # get old scopes
     my $sth = $self->dbh->prepare("
+        SELECT scopes FROM oauth.apps WHERE id = ?
+    ");
+    $sth->execute($app_id);
+    my $old_scopes = $sth->fetchrow_array;
+    $old_scopes = __parse_array($old_scopes);
+
+    $sth = $self->dbh->prepare("
         UPDATE oauth.apps SET
             name = ?, scopes = ?, homepage = ?, github = ?,
             appstore = ?, googleplay = ?, redirect_uri = ?, app_markup_percentage = ?
@@ -174,6 +182,15 @@ sub update_app {
         $app->{app_markup_percentage} || 0,
         $app_id
     );
+
+    ## revoke user_scope_confirm on scope changes
+    if ($old_scopes
+        and join('-', sort @$old_scopes) ne join('-', sort @{$app->{scopes}}))
+    {
+        foreach my $table ('user_scope_confirm', 'access_token') {
+            $self->dbh->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id);
+        }
+    }
 
     return {
         app_id                => $app_id,
@@ -289,9 +306,8 @@ sub has_other_login_sessions {
 
     my $dbh = $self->dbh;
     # "Binary.com backoffice" app has id = 4, we use it to create token for BO impersonate. So should be excluded here.
-    my $login_cnt = $self->dbh->selectrow_array(
-        "SELECT count(*) FROM oauth.access_token WHERE loginid = ? AND expires > now() AND app_id <> 4",
-        undef, $loginid);
+    my $login_cnt =
+        $self->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ? AND expires > now() AND app_id <> 4", undef, $loginid);
     return ($login_cnt >= 1);
 }
 
