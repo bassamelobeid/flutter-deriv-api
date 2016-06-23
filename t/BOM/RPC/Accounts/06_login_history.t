@@ -4,9 +4,10 @@ use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::System::Password;
 use utf8;
 use Data::Dumper;
@@ -40,10 +41,7 @@ $user->add_login_history({
 });
 $user->save;
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $test_loginid,
-    email   => $email
-)->token;
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_loginid);
 
 ################################################################################
 # start test
