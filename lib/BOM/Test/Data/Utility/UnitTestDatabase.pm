@@ -205,13 +205,14 @@ sub create_fmb {
         data_object_params => $fmb_data,
         db                 => $connection_builder->db,
     });
+
     $fmb->save;
 
     if (!$buy_bet) {
         return $fmb;
     }
 
-    my $rec  = $fmb->financial_market_bet_record;
+    my $rec  = $fmb->financial_market_bet_open_record;
     my @cols = $rec->meta->columns;
 
     my %bet = map {
@@ -243,7 +244,7 @@ sub create_fmb {
             db               => $connection_builder->db,
         });
     my ($fmb_rec, $trx_rec) = $fmb_helper->buy_bet;
-    $fmb->financial_market_bet_record(ref($fmb->financial_market_bet_record)->new(%$fmb_rec));
+    $fmb->financial_market_bet_open_record(ref($fmb->financial_market_bet_open_record)->new(%$fmb_rec));
     $fmb->financial_market_bet_id($fmb_rec->{id});
 
     if ($must_sell) {
