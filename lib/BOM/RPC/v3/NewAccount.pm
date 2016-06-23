@@ -171,8 +171,21 @@ sub new_account_real {
     }
 
     my $args = $params->{args};
+
+    my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+
+    my $company = $countries_list->{$args->{residence}}->{gaming_company};
+    $company //= $countries_list->{$args->{residence}}->{financial_company};
+
+    if (not $company) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoLandingCompany',
+            message_to_client => $error_map->{'No landing company for this country'}});
+    }
+    my $broker = BOM::Platform::Runtime::LandingCompany::Registry->new->get($company)->broker_codes->[0]
+
     my $details_ref =
-        _get_client_details($params, $client, BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code);
+        _get_client_details($params, $client, $broker);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
@@ -283,8 +296,18 @@ sub new_account_japan {
                 message_to_client => $error_map->{'invalid'}});
     }
 
+    my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+    my $company = $countries_list->{'jp'}->{financial_company};
+
+    if (not $company) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoLandingCompany',
+            message_to_client => $error_map->{'No landing company for this country'}});
+    }
+    my $broker = BOM::Platform::Runtime::LandingCompany::Registry->new->get($company)->broker_codes->[0]
+
     my $args = $params->{args};
-    my $details_ref = _get_client_details($params, $client, BOM::Platform::Context::Request->new(country_code => 'jp')->real_account_broker->code);
+    my $details_ref = _get_client_details($params, $client, $broker);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
