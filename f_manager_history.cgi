@@ -8,8 +8,8 @@ use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Context;
 use BOM::ContractInfo;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 my $loginID = uc(request()->param('loginID'));
 

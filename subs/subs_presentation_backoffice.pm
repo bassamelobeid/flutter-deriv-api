@@ -11,7 +11,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use Mojo::URL;
 use BOM::JavascriptConfig;
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Auth0;
 
 our ($vk_BarIsDoneOnce, $vk_didBOtopPRES,);
@@ -301,6 +301,6 @@ sub code_exit_BO {
     if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
     undef ${"main::vk_BarIsDoneOnce"};
     undef ${"main::vk_didBOtopPRES"};
-    BOM::Platform::Sysinit::code_exit();
+    BOM::Backoffice::Sysinit::code_exit();
 }
 1;

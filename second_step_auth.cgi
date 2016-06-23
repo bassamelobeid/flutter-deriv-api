@@ -8,10 +8,10 @@ use Auth::DuoWeb;
 use BOM::System::Config;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::JavascriptConfig;
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
 my $access_token = request()->param('token');

@@ -15,14 +15,13 @@ use BOM::Platform::User;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
-use BOM::Platform::Email qw(send_email);
+use BOM::Backoffice::Sysinit ();
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
 use BOM::DualControl;
 use BOM::System::AuditLog;
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("Client's Email Details");
