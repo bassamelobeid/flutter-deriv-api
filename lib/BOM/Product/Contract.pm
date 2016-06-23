@@ -728,8 +728,8 @@ sub _build_opposite_contract {
                 }
             }
             # We should be looking to move forward in time to a bet starting now.
-            $opp_parameters{date_start}  = $self->effective_start;
-            $opp_parameters{pricing_new} = 1;
+            $opp_parameters{date_start} = $self->effective_start;
+            #       $opp_parameters{pricing_new} = 1;
             # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
             # Currently, 'sell at market' button will appear when current spot == barrier when the duration
             # of the contract is less than the minimum duration of non ATM contract.
