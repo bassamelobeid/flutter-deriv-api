@@ -10,12 +10,12 @@ use Getopt::Long;
 
 use Date::Utility;
 use BOM::System::Localhost;
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime;
 use BOM::DailySummaryReport;
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 my ($jobs, $currencies, $brokercodes, $for_date);
 my $optres = GetOptions(

@@ -14,8 +14,8 @@ use BOM::Backoffice::Auth0;
 use BOM::StaffPages;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Market::Registry;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 if (not BOM::Backoffice::Auth0::from_cookie()) {
     PrintContentType();
