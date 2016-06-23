@@ -14,7 +14,6 @@ use Format::Util::Strings qw( defang_lite );
 use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use BOM::Platform::Runtime::Website;
-use BOM::Platform::SessionCookie;
 use BOM::Platform::Untaint;
 
 use Plack::App::CGIBin::Streaming::Request;
@@ -87,28 +86,6 @@ has 'country' => (
 );
 
 has 'country_code' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has 'loginid' => (
-    is         => 'ro',
-    isa        => 'Maybe[Str]',
-    lazy_build => 1,
-);
-
-has 'email' => (
-    is         => 'ro',
-    isa        => 'Maybe[Str]',
-    lazy_build => 1,
-);
-
-has 'session_cookie' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has 'bo_cookie' => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -370,10 +347,6 @@ sub _build_broker_code {
         return BOM::Platform::Runtime->instance->broker_codes->get($input_broker)->code;
     }
 
-    if ($self->loginid and BOM::Platform::Runtime->instance->broker_codes->get($self->loginid)->code) {
-        return BOM::Platform::Runtime->instance->broker_codes->get($self->loginid)->code;
-    }
-
     return $self->real_account_broker->code;
 }
 
@@ -460,58 +433,6 @@ sub _build_default_currency {
 
     #Give the first available.
     return $self->available_currencies->[0];
-}
-
-sub _build_loginid {
-    my $self = shift;
-
-    if ($self->session_cookie) {
-        return $self->session_cookie->loginid;
-    }
-
-    # not logged in
-    return;
-}
-
-sub _build_email {
-    my $self = shift;
-
-    if ($self->session_cookie) {
-        return $self->session_cookie->email;
-    }
-
-    # not logged in
-    return;
-}
-
-sub _build_session_cookie {
-    my $self = shift;
-
-    my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
-
-    my $session_cookie;
-    # if the user logged in.
-    if (my $cookie = $self->cookie($cookie_name)) {
-        $session_cookie = BOM::Platform::SessionCookie->new({token => $cookie});
-    } elsif (my $as_param = $self->param('login')) {
-        $session_cookie = BOM::Platform::SessionCookie->new({token => $as_param});
-    }
-    return $session_cookie;
-
-}
-
-sub _build_bo_cookie {
-    my $self = shift;
-
-    my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login_bo;
-    # if the user logged in.
-    if (my $cookie = $self->cookie($cookie_name)) {
-        return BOM::Platform::SessionCookie->new({token => $cookie});
-    } elsif (my $as_param = $self->param('staff')) {
-        return BOM::Platform::SessionCookie->new({token => $as_param});
-    }
-
-    return;
 }
 
 sub _build_ui_settings {

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 10);
+use Test::More (tests => 7);
 use Test::Deep;
 use Test::Exception;
 use Test::NoWarnings;
@@ -19,7 +19,6 @@ use Carp;
 }
 
 use BOM::Platform::Context::Request;
-use BOM::Platform::SessionCookie;
 
 subtest 'base build' => sub {
     my $request = BOM::Platform::Context::Request::from_cgi({
@@ -126,95 +125,6 @@ subtest 'param' => sub {
 };
 
 my $email = 'abc@binary.com';
-subtest 'param builds' => sub {
-    subtest 'session_cookie' => sub {
-        my $lc = BOM::Platform::SessionCookie->new(
-            loginid => 'CR1001',
-            email   => $email,
-        );
-
-        my $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {},
-            cgi     => mock_cgi_for({login => $lc->token}),
-        });
-        is $request->session_cookie->loginid, 'CR1001', "Valid Client";
-        is $request->session_cookie->email, $email, "Valid email";
-
-        $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {},
-            cgi     => mock_cgi_for({login => ''}),
-        });
-        ok !$request->session_cookie, "not a valid cookie";
-
-    };
-
-    subtest 'loginid and email' => sub {
-        my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
-        my $lc          = BOM::Platform::SessionCookie->new(
-            loginid => 'CR1001',
-            email   => $email,
-        );
-
-        my $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {},
-            cgi     => mock_cgi_for({login => $lc->token}),
-        });
-        is $request->loginid, 'CR1001', "Valid Client and loginid";
-        is $request->email, $email, "Valid email";
-    };
-
-    subtest 'broker_code' => sub {
-        subtest 'frontend' => sub {
-            subtest 'loginid inputs' => sub {
-                my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
-                my $lc          = BOM::Platform::SessionCookie->new(
-                    loginid => 'MX1001',
-                    email   => $email,
-                );
-
-                my $request = BOM::Platform::Context::Request::from_cgi({
-                    cookies => {},
-                    cgi     => mock_cgi_for({login => $lc->token}),
-                });
-                is $request->broker_code, 'MX', "Valid broker";
-            };
-
-            subtest 'broker inputs' => sub {
-                my $request = BOM::Platform::Context::Request::from_cgi({
-                    cookies => {},
-                    cgi     => mock_cgi_for({broker => "MX"}),
-                });
-                is $request->broker_code, 'MX', "Valid broker from broker param";
-
-                $request = BOM::Platform::Context::Request::from_cgi({
-                    cookies => {},
-                    cgi     => mock_cgi_for({broker => "MESA"}),
-                });
-                throws_ok { $request->broker_code } qr/Unknown broker code or loginid \[MESA\]/, "not a valid broker";
-
-                $request = BOM::Platform::Context::Request::from_cgi({
-                    cookies => {},
-                    cgi     => mock_cgi_for({w => "MX"}),
-                });
-                is $request->broker_code, 'CR', "Not read from w param";
-            };
-        };
-    };
-
-    subtest 'is_pjax' => sub {
-        my $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {},
-            cgi     => mock_cgi_for(),
-        });
-        ok !$request->is_pjax, "Is not a pjax page";
-
-        $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {},
-            cgi     => mock_cgi_for({_pjax => 1}),
-        });
-        ok $request->is_pjax, "Is a pjax page";
-    };
-};
 
 subtest 'cookie_parsing' => sub {
     subtest 'Valid http_cookie' => sub {
@@ -236,126 +146,6 @@ subtest 'cookie_parsing' => sub {
     };
 };
 
-subtest 'cookie_builds' => sub {
-    subtest 'session_cookie' => sub {
-        my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
-        my $lc          = BOM::Platform::SessionCookie->new(
-            loginid => 'CR1001',
-            email   => $email,
-        );
-
-        my $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {$cookie_name => $lc->token},
-            cgi     => mock_cgi_for(),
-        });
-        is $request->session_cookie->loginid, 'CR1001', "Valid Client";
-        is $request->session_cookie->email, $email, "Valid email";
-
-        $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {$cookie_name => ''},
-            cgi     => mock_cgi_for(),
-        });
-        ok !$request->session_cookie, "not a valid cookie";
-
-    };
-
-    subtest 'loginid and email' => sub {
-        my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
-        my $lc          = BOM::Platform::SessionCookie->new(
-            loginid => 'CR1001',
-            email   => $email,
-        );
-
-        my $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {$cookie_name => $lc->token},
-            cgi     => mock_cgi_for(),
-        });
-        is $request->loginid, 'CR1001', "Valid Client and loginid";
-        is $request->email, $email, "Valid email";
-    };
-
-    subtest 'broker_code' => sub {
-        my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
-        my $lc          = BOM::Platform::SessionCookie->new(
-            loginid => 'CR1001',
-            email   => $email,
-        );
-
-        my $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {$cookie_name => $lc->token},
-            cgi     => mock_cgi_for(),
-        });
-        is $request->broker_code, 'CR', "Valid login id and broker";
-    };
-
-    subtest 'bo_cookie' => sub {
-        local %ENV;
-        my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login_bo;
-        my $lc          = BOM::Platform::SessionCookie->new(
-            loginid => 'CR1001',
-            clerk   => 'arun',
-            email   => $email,
-        );
-
-        my $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {$cookie_name => $lc->token},
-            cgi     => mock_cgi_for(),
-        });
-        is $request->bo_cookie->loginid, 'CR1001', "Valid Client";
-        is $request->bo_cookie->email, $email, "Valid Email";
-
-        $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {$cookie_name => ''},
-            cgi     => mock_cgi_for(),
-        });
-        ok !$request->bo_cookie, "not a valid cookie";
-    };
-};
-
-subtest 'cookie preferred' => sub {
-    subtest 'session_cookie' => sub {
-        my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
-        my $lc          = BOM::Platform::SessionCookie->new(
-            loginid => 'CR1001',
-            email   => $email,
-        );
-
-        my $lc2 = BOM::Platform::SessionCookie->new(
-            loginid => 'CR1002',
-            email   => $email,
-        );
-
-        my $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {$cookie_name       => $lc->token},
-            cgi     => mock_cgi_for({login => $lc2->token}),
-        });
-        is $request->session_cookie->loginid, 'CR1001', "Valid Client";
-        is $request->session_cookie->email, $email, "Valid Email";
-    };
-
-    subtest 'bo_cookie' => sub {
-        local %ENV;
-        my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login_bo;
-        my $lc          = BOM::Platform::SessionCookie->new(
-            loginid => 'CR1001',
-            clerk   => 'arun',
-            email   => $email,
-        );
-
-        my $lc2 = BOM::Platform::SessionCookie->new(
-            loginid => 'CR1002',
-            clerk   => 'arun',
-            email   => $email,
-        );
-
-        my $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {$cookie_name       => $lc->token},
-            cgi     => mock_cgi_for({staff => $lc2->token}),
-        });
-        is $request->bo_cookie->loginid, 'CR1001', "Valid Client";
-        is $request->bo_cookie->email, $email, "Valid Email";
-    };
-};
 
 sub mock_cgi_for {
     my $params     = shift || {};
@@ -390,6 +180,7 @@ sub mock_cgi_for {
 
     return $request_mock;
 }
+
 
 END {
 }
