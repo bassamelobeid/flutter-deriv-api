@@ -298,7 +298,7 @@ sub _build_broker_code {
         return BOM::Platform::Runtime->instance->broker_codes->get($input_broker)->code;
     }
 
-    die 'can not determine broker code';
+    return 'CR';
 }
 
 sub _build_broker {
