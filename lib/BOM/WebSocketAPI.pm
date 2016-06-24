@@ -5,6 +5,7 @@ use Mojo::Redis2;
 use Mojo::IOLoop;
 use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
+use Digest::MD5 qw(md5_hex);
 
 # pre-load controlleres to have more shared code among workers (COW)
 use BOM::WebSocketAPI::Websocket_v3();
@@ -75,8 +76,9 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
+            my $app_id;
             if ($c->req->param('app_id')) {
-                my $app_id = defang_lite($c->req->param('app_id'));
+                $app_id = defang_lite($c->req->param('app_id'));
 
                 my $error;
                 APP_ID:
@@ -111,11 +113,13 @@ sub startup {
                 $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
             }
 
+            my $user_agent = $c->req->headers->header('User-Agent');
             $c->stash(
-                server_name  => $c->server_name,
-                client_ip    => $client_ip,
-                country_code => $c->country_code,
-                user_agent   => $c->req->headers->header('User-Agent'),
+                server_name    => $c->server_name,
+                client_ip      => $client_ip,
+                country_code   => $c->country_code,
+                user_agent     => $user_agent,
+                ua_fingerprint => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
             );
         });
 

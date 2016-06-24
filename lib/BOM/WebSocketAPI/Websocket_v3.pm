@@ -162,7 +162,7 @@ sub entry_point {
 
 # [param key, sub, require auth]
 my @dispatch = (
-    ['authorize', '', 0, ''],
+    ['authorize', '', 0, '', {stash_params => [qw/ ua_fingerprint /]}],
     [
         'logout', '', 0, '',
         {
