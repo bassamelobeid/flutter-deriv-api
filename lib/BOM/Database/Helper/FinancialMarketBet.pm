@@ -182,7 +182,7 @@ sub batch_buy_bet {
 
     # NOTE, the parens around v_fmb and v_trans in the SQL statement
     #       are necessary.
-    my $stmt = $self->db->dbh->prepare('
+    my $tmpsql = '
 WITH
 acc(loginid, limits) AS (VALUES
     ' . join(",\n    ", map { '($' . ($_ * 2 + 22) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 23) . '::JSON)'; } 0 .. @acclim / 2 - 1) . ')
@@ -193,7 +193,8 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
                                 $5::NUMERIC, $6::TIMESTAMP, $7::TIMESTAMP, $8::TIMESTAMP, $9::BOOLEAN,
                                 $10::VARCHAR(30), $11::VARCHAR(30), $12::VARCHAR(800), $13::VARCHAR(255),
                                 $14::BOOLEAN, $15::INT, $16::JSON, $17::TIMESTAMP, $18::VARCHAR(24),
-                                $19::VARCHAR(800), $20::BIGINT, $21::NUMERIC, $22::JSON, acc.limits) b');
+                                $19::VARCHAR(800), $20::BIGINT, $21::NUMERIC, $22::JSON, acc.limits) b';
+    my $stmt = $self->db->dbh->prepare($tmpsql);
     my %bet = (
         expiry_daily => 0,
         is_expired   => 0,
@@ -226,6 +227,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
     );
     use Data::Dumper;
     open my $fh, ">>", "/tmp/error.txt";
+    print $fh "sql is $tmpsql\n";
     print $fh Dumper([@param, @acclim]);
     close $fh;
     $stmt->execute(@param, @acclim);
