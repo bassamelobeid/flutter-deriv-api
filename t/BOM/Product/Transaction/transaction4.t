@@ -1,3 +1,6 @@
+use strict;
+use warnings;
+
 use Test::Most;
 use Test::FailWarnings;
 use Test::MockModule;
@@ -5,13 +8,15 @@ use File::Spec;
 use JSON qw(decode_json);
 use Test::MockModule;
 use Test::MockObject::Extends;
+use Crypt::NamedKeys;
+Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use YAML::XS;
 use Cache::RedisDB;
 use BOM::Test::Runtime qw(:normal);
 use BOM::Market::AggTicks;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Platform::Client;
 use BOM::Platform::Runtime;
@@ -22,21 +27,14 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 
 initialize_realtime_ticks_db();
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/USD JPY JPY-USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -66,6 +64,144 @@ my $contract   = produce_contract({
     current_tick => $tick,
     barrier      => 'S0P',
 });
+
+subtest 'validate legal allowed contract categories' => sub {
+    my $cr = BOM::Platform::Client->new({loginid => 'CR2002'});
+    my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
+    $mocked_client->mock('residence', sub {return 'al'});
+
+    my $loginid  = $cr->loginid;
+    my $currency = 'USD';
+    my $account  = $cr->default_account;
+    my $c        = produce_contract({
+        underlying       => 'R_100',
+        bet_type         => 'SPREADU',
+        currency         => $currency,
+        date_start       => $now,
+        amount_per_point => 1,
+        stop_loss        => 10,
+        stop_profit      => 10,
+        stop_type        => 'point',
+        spread           => 2,
+    });
+    my $transaction = BOM::Product::Transaction->new({
+        client   => $cr,
+        contract => $c,
+    });
+
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for CR';
+
+    my $mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
+    $loginid     = $mlt->loginid;
+    $account     = $mlt->default_account;
+    $transaction = BOM::Product::Transaction->new({
+        client   => $mlt,
+        contract => $c,
+    });
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for MLT';
+
+    my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
+    $loginid     = $mf->loginid;
+    $account     = $mf->default_account;
+    $transaction = BOM::Product::Transaction->new({
+        client   => $mf,
+        contract => $c,
+    });
+    my $error = $transaction->_validate_jurisdictional_restrictions;
+    is $error->{'-type'}, 'NotLegalContractCategory', 'error for MF';
+};
+
+subtest 'Validate legal_allowed_underlyings' => sub {
+    my $jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'JP'});
+
+    my $loginid       = $jp->loginid;
+    my $account       = $jp->default_account;
+    my $contract_args = {
+        underlying => 'frxUSDJPY',
+        bet_type   => 'CALLE',
+        currency   => 'JPY',
+        date_start => $now,
+        duration   => '5h',
+        payout     => 10,
+        barrier    => 'S0P',
+    };
+    my $c           = produce_contract($contract_args);
+    my $transaction = BOM::Product::Transaction->new({
+        client   => $jp,
+        contract => $c,
+    });
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for frxUSDJPY for JP account';
+
+    $contract_args->{underlying} = 'frxAUDCAD';
+    $c                           = produce_contract($contract_args);
+    $transaction                 = BOM::Product::Transaction->new({
+        client   => $jp,
+        contract => $c,
+    });
+    my $error = $transaction->_validate_jurisdictional_restrictions;
+    is $error->{'-type'}, 'NotLegalUnderlying', 'error for frxAUDCAD for JP account';
+
+    my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $cr->default_account;
+    $contract_args->{currency} = 'USD';
+    $contract_args->{bet_type} = 'CALL';
+    $c                         = produce_contract($contract_args);
+    $transaction               = BOM::Product::Transaction->new({
+        client   => $cr,
+        contract => $c,
+    });
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for frxUSDJPY for CR account';
+};
+
+subtest 'Validate legal allowed contract types' => sub {
+    my $jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'JP'});
+
+    my $loginid       = $jp->loginid;
+    my $account       = $jp->default_account;
+    my $contract_args = {
+        underlying => 'frxUSDJPY',
+        bet_type   => 'CALLE',
+        currency   => 'JPY',
+        date_start => $now,
+        duration   => '5h',
+        payout     => 10,
+        barrier    => 'S0P',
+    };
+    my $c           = produce_contract($contract_args);
+    my $transaction = BOM::Product::Transaction->new({
+        client   => $jp,
+        contract => $c,
+    });
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for CALLE for JP account';
+
+    $contract_args->{bet_type} = 'CALL';
+    $c                         = produce_contract($contract_args);
+    $transaction               = BOM::Product::Transaction->new({
+        client   => $jp,
+        contract => $c,
+    });
+    my $error = $transaction->_validate_jurisdictional_restrictions;
+    is $error->{'-type'}, 'NotLegalContractCategory', 'error for CALL for JP account';
+
+    my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $cr->default_account;
+    $contract_args->{currency} = 'USD';
+    $c                         = produce_contract($contract_args);
+    $transaction               = BOM::Product::Transaction->new({
+        client   => $cr,
+        contract => $c,
+    });
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for CALL for CR account';
+
+    $contract_args->{bet_type} = 'CALLE';
+    $c                         = produce_contract($contract_args);
+    $transaction               = BOM::Product::Transaction->new({
+        client   => $cr,
+        contract => $c,
+    });
+    $error = $transaction->_validate_jurisdictional_restrictions;
+    is $error->{'-type'}, 'NotLegalContractCategory', 'error for CALLE for CR account';
+};
 
 subtest 'Validate Jurisdiction Restriction' => sub {
     plan tests => 27;
@@ -108,7 +244,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     is($error->get_type, 'RandomRestrictedCountry', 'Germany clients are not allowed to place Random contracts as their country is restricted.');
     like(
         $error->{-message_to_client},
-        qr/Sorry, contracts on Random Indices are not available in your country of residence/,
+        qr/Sorry, contracts on Volatility Indices are not available in your country of residence/,
         'Germany clients are not allowed to place Random contracts as their country is restricted due to vat regulations'
     );
 

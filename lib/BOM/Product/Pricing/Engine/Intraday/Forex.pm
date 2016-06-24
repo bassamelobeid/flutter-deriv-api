@@ -2,25 +2,19 @@ package BOM::Product::Pricing::Engine::Intraday::Forex;
 
 use Moose;
 extends 'BOM::Product::Pricing::Engine::Intraday';
-with 'BOM::Product::Pricing::Engine::Role::EuroTwoBarrier';
 
 use JSON qw(from_json);
 use List::Util qw(max min sum);
-use YAML::CacheLoader;
+use Sereal qw(decode_sereal);
+use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
-
-sub BUILD {
-    my $self = shift;
-
-    is_compatible($self->bet);
-
-    return;
-}
+use BOM::Platform::Static::Config;
+use Math::Function::Interpolator;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -30,7 +24,14 @@ sub clone {
     });
 }
 
-has [qw(average_tick_count long_term_prediction)] => (
+my $coefficient = LoadFile('/home/git/regentmarkets/bom/config/files/intraday_trend_calibration.yml');
+
+has coefficients => (
+    is      => 'ro',
+    default => sub { $coefficient },
+);
+
+has [qw(long_term_prediction)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -42,10 +43,6 @@ has [qw(pricing_vol news_adjusted_pricing_vol)] => (
 
 sub _build_news_adjusted_pricing_vol {
     return shift->bet->pricing_args->{iv_with_news};
-}
-
-sub _build_average_tick_count {
-    return shift->bet->pricing_args->{average_tick_count};
 }
 
 sub _build_long_term_prediction {
@@ -65,18 +62,16 @@ has _supported_types => (
     isa     => 'HashRef',
     default => sub {
         return {
-            CALL        => 1,
-            PUT         => 1,
-            EXPIRYMISS  => 1,
-            EXPIRYRANGE => 1,
-            ONETOUCH    => 1,
-            NOTOUCH     => 1,
+            CALL     => 1,
+            PUT      => 1,
+            ONETOUCH => 1,
+            NOTOUCH  => 1,
         };
     },
 );
 
 has [
-    qw(probability intraday_bounceback intraday_delta intraday_vega delta_correction vega_correction short_term_prediction  economic_events_markup intraday_trend intraday_mu intraday_vanilla_delta commission_markup risk_markup)
+    qw(base_probability probability intraday_delta_correction short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta risk_markup)
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -88,12 +83,20 @@ has [qw(_delta_formula _vega_formula)] => (
     lazy_build => 1,
 );
 
-sub is_compatible {
-    my $bet = shift;
+sub _build_base_probability {
+    my $self = shift;
 
-    my %ref = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->symbols_for_intraday_fx;
+    my $base_probability = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'base_probability',
+        description => 'BS pricing based on realized vols',
+        set_by      => __PACKAGE__,
+        base_amount => $self->formula->($self->_formula_args),
+    });
 
-    return (defined $ref{$bet->underlying->symbol} and BOM::Product::Pricing::Engine::Intraday::is_compatible($bet));
+    $base_probability->include_adjustment('add', $self->intraday_delta_correction);
+    $base_probability->include_adjustment('add', $self->intraday_vega_correction);
+
+    return $base_probability;
 }
 
 =head1 probability
@@ -108,85 +111,18 @@ sub _build_probability {
     my $bet  = $self->bet;
     my $args = $bet->pricing_args;
 
-    my $ifx_prob;
-    if ($bet->two_barriers and not $bet->is_path_dependent) {
-        $ifx_prob = $self->euro_two_barrier_probability;
+    my $ifx_prob = Math::Util::CalculatedValue::Validatable->new({
+        name        => lc($bet->code) . '_theoretical_probability',
+        description => 'BS pricing based on realized vols',
+        set_by      => __PACKAGE__,
+        minimum     => 0.1,                                           # anything lower than 0.1, we will just sell you at 0.1.
+        maximum     => 1,
+    });
 
-        my @ordered_from_atm =
-            sort { abs(0.5 - $b) <=> abs(0.5 - $a) }
-            map  { $_->peek_amount('intraday_vanilla_delta') }
-            map  { $ifx_prob->peek($_ . '_theoretical_probability') } qw(call put);
-
-        my $dbe_delta = Math::Util::CalculatedValue::Validatable->new({
-            language    => request()->language,
-            name        => 'intraday_vanilla_delta',
-            description => 'A replaced value for the two barrier bet, representing the furthest from ATM for the two barriers',
-            set_by      => __PACKAGE__,
-            base_amount => $ordered_from_atm[0],
-        });
-        $ifx_prob->replace_adjustment($dbe_delta);
-    } else {
-        $ifx_prob = Math::Util::CalculatedValue::Validatable->new({
-            name        => lc($bet->code) . '_theoretical_probability',
-            description => 'BS pricing based on realized vols',
-            set_by      => __PACKAGE__,
-            minimum     => 0,
-            maximum     => 1,
-            base_amount => $self->formula->($self->_formula_args),
-        });
-
-        $ifx_prob->include_adjustment('add', $self->delta_correction);
-        if ($bet->is_path_dependent) {
-            $ifx_prob->include_adjustment('add', $self->vega_correction);
-        } else {
-            $ifx_prob->include_adjustment('subtract', $self->vega_correction);
-        }
-
-        $ifx_prob->include_adjustment('info', $self->intraday_vanilla_delta);
-        $ifx_prob->include_adjustment('info', $self->intraday_mu);
-    }
-
-    if ($ifx_prob->amount < 0.1) {
-        $ifx_prob->add_errors({
-            message           => 'Theo probability [' . $ifx_prob->amount . '] is below the minimum acceptable range [0.1]',
-            message_to_client => localize('Barrier outside acceptable range.'),
-        });
-    }
+    $ifx_prob->include_adjustment('reset', $self->base_probability);
+    $ifx_prob->include_adjustment('add',   $self->risk_markup);
 
     return $ifx_prob;
-}
-
-=head1 intraday_bounceback
-
-The 'expected' bounceback for mean-reversion in spot.  We use
-different values for customers and BOM to keep our risk in check.
-
-Math::Util::CalculatedValue::Validatable
-
-=cut
-
-sub _build_intraday_bounceback {
-    my $self = shift;
-
-    my $bet      = $self->bet;
-    my $how_long = $bet->remaining_time->minutes;
-
-# The bounceback value is based on emprical studies which suggest a bounce back over the duration
-# Zeroes out in very short-term (under 15 minutes) and very long-term (over 10 hours)
-# It is currently impossible to buildthis engine outside of these ranges, but the condition remains for posterity
-    my $sides = from_json(BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_bounceback);
-    my $bb    = {};
-    my $type  = ($bet->is_path_dependent) ? 'path' : 'euro';
-    foreach my $which (keys %{$sides}) {
-        $bb->{$which} = Math::Util::CalculatedValue::Validatable->new({
-            name => join('_', ('bounceback', $which, $type)),
-            description => 'expect mean reversion over the next ' . $how_long . ' minutes',
-            set_by      => 'quants.commission.intraday.historical_bounceback',
-            base_amount => $sides->{$which}->{$type} * min(0.5 * $how_long, ((600 - $how_long) / 600)),
-        });
-    }
-
-    return $bb;
 }
 
 sub _build__delta_formula {
@@ -214,40 +150,6 @@ sub _build_intraday_delta {
     });
 
     return $idd;
-}
-
-=head1 delta_correction
-
-The correction for uncertainty of spot, formed from the intraday_delta, intraday_trend and intraday_bounceback.
-
-Math::Util::CalculatedValue::Validatable
-
-=cut
-
-sub _build_delta_correction {
-    my $self = shift;
-    my $bet  = $self->bet;
-    # This is for preventing FLASHU/FLASHD delta correction in World Indices to go lower than 2%.
-    # Since these contracts are similar to coin toss any price far away from 50% on the lower side can have potential for expolit.
-    # We will revisit the delta correction again to remove this flooring
-    my @min =
-          ($self->bet->underlying->submarket->name eq 'smart_fx')
-        ? (minimum => -0.02)
-        : ();
-
-    my $dc = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'delta_correction',
-        description => 'correction for uncertianty of spot',
-        set_by      => __PACKAGE__,
-        base_amount => -1,
-        @min,
-    });
-
-    $dc->include_adjustment('multiply', $self->intraday_delta);
-    $dc->include_adjustment('multiply', $self->intraday_trend);
-    my $which_bounce = ($dc->amount < 0) ? 'client' : 'BOM';
-    $dc->include_adjustment('multiply', $self->intraday_bounceback->{$which_bounce . '_favor'});
-    return $dc;
 }
 
 sub _build__vega_formula {
@@ -279,32 +181,6 @@ sub _build_intraday_vega {
     return $idv;
 }
 
-=head1 vega_correction
-
-The correction to apply to the theorteical price for uncertaity of vol.  Based on
-long_term_vol and intraday_vega.
-
-Math::Util::CalculatedValue::Validatable
-
-=cut
-
-sub _build_vega_correction {
-    my $self = shift;
-
-    my $vmr = BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_vol_meanrev;
-    my $vc  = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'vega_correction',
-        description => 'correction for uncertianty of vol',
-        set_by      => 'quants.commission.intraday.historical_vol_meanrev',
-        base_amount => $vmr,
-    });
-
-    $vc->include_adjustment('multiply', $self->intraday_vega);
-    $vc->include_adjustment('multiply', $self->long_term_prediction);
-
-    return $vc;
-}
-
 sub _build_economic_events_markup {
     my $self = shift;
 
@@ -321,7 +197,34 @@ sub _build_economic_events_markup {
     return $markup;
 }
 
+has ticks_for_trend => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_ticks_for_trend {
+    my $self = shift;
+
+    my $bet              = $self->bet;
+    my $duration_in_secs = $bet->timeindays->amount * 86400;
+    my $lookback_secs    = $duration_in_secs * 2;              # lookback twice the duratiom
+    my $period_start     = $bet->date_pricing->epoch;
+
+    my $remaining_interval = Time::Duration::Concise::Localize->new(interval => $lookback_secs);
+
+    return $self->tick_source->retrieve({
+        underlying   => $bet->underlying,
+        interval     => $remaining_interval,
+        ending_epoch => $bet->date_pricing->epoch,
+        fill_cache   => !$bet->backtest,
+        aggregated   => $self->more_than_short_term_cutoff,
+    });
+
+}
+
 =head1 intraday_trend
+
+ASSUMPTIONS: If there's no ticks to calculate trend, we will assume there's no trend. But we will not sell since volatility calculation (which uses the same set of ticks), will fail.
 
 The current observed trend in the market movements.  Math::Util::CalculatedValue::Validatable
 
@@ -330,41 +233,163 @@ The current observed trend in the market movements.  Math::Util::CalculatedValue
 sub _build_intraday_trend {
     my $self = shift;
 
-    my $ticks_period = $self->_trend_interval;
+    my $bet              = $self->bet;
+    my $duration_in_secs = $bet->timeindays->amount * 86400;
 
-    my $trend = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'intraday_trend',
-        description => 'trend over the last ' . $ticks_period->as_string,
+    my @ticks    = @{$self->ticks_for_trend};
+    my $average  = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->pricing_args->{spot};
+    my $avg_spot = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'average_spot',
+        description => 'mean of spot over 2 * duration of the contract',
         set_by      => __PACKAGE__,
-        base_amount => 0,
+        base_amount => $average,
     });
 
-    $trend->include_adjustment('reset',    $self->period_closing_value);
-    $trend->include_adjustment('subtract', $self->period_opening_value);
+    my $trend            = (($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($duration_in_secs);
+    my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
+    my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'intraday_trend',
+        description => 'Intraday trend based on historical data',
+        minimum     => $calibration_coef->{trend_min},
+        maximum     => $calibration_coef->{trend_max},
+        set_by      => __PACKAGE__,
+        base_amount => $trend,
+    });
+    $trend_cv->include_adjustment('info', $avg_spot);
 
-    return $trend;
+    return $trend_cv;
 }
 
-=head1 intraday_mu
+has more_than_short_term_cutoff => (
+    is         => 'ro',
+    lazy_build => 1,
+);
 
-The drift to use in pricing.  Math::Util::CalculatedValue::Validatable
-
-Presently always set to 0, but included for completeness.
-
-=cut
-
-sub _build_intraday_mu {
+sub _build_more_than_short_term_cutoff {
     my $self = shift;
 
+    return ($self->bet->get_time_to_expiry->minutes >= 15) ? 1 : 0;
+}
+
+sub calculate_intraday_bounceback {
+    my ($self, $t_mins, $st_or_lt) = @_;
+
+    my @coef_name = map { $_ . $st_or_lt } qw(A B C D);
+    my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
+    my ($coef_A, $coef_B, $coef_C, $coef_D) = map { $calibration_coef->{$_} } @coef_name;
+    my $coef_D_multiplier = ($st_or_lt eq '_lt') ? 1 : 1 / $coef_D;
+
+    my $duration_in_secs = $t_mins * 60;
+    my $bounceback_base =
+        $coef_A /
+        ($coef_D * $coef_D_multiplier) *
+        $duration_in_secs**$coef_B *
+        (1 / (1 + exp($coef_C * $self->intraday_trend->amount * $coef_D)) - 0.5);
+
+    if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
+        $bounceback_base = ($self->bet->code eq 'CALL') ? $bounceback_base : $bounceback_base * -1;
+    }
+
+    return $bounceback_base;
+}
+
+sub calculate_expected_spot {
+    my ($self, $t) = @_;
+
     my $bet = $self->bet;
-    my $mu  = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'intraday_mu',
-        description => 'Intraday drift from historical data.',
+    my $expected_spot =
+        $self->calculate_intraday_bounceback($t, "_lt") * $self->intraday_trend->peek_amount('average_spot') * sqrt($t * 60) +
+        $bet->pricing_args->{spot};
+    return $expected_spot;
+}
+
+sub _get_short_term_delta_correction {
+    my $self = shift;
+
+    return $self->calculate_intraday_bounceback(min($self->bet->get_time_to_expiry->minutes, 15), "_st");
+}
+
+sub _get_long_term_delta_correction {
+    my $self = shift;
+
+    my $bet           = $self->bet;
+    my $args          = $bet->pricing_args;
+    my $pricing_spot  = $args->{spot};
+    my $duration_mins = $args->{t} * 365 * 24 * 60;
+    $duration_mins = max($duration_mins, 15);
+    my $duration_t = $duration_mins / (365 * 24 * 60);                    #convert back to year's fraction
+    my $expected_spot = $self->calculate_expected_spot($duration_mins);
+
+    my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
+    my $spot_tv =
+        $self->formula->($pricing_spot, @barrier_args, $duration_t, $bet->discount_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
+    my $spot_tv_cv = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'tv_priced_with_current_spot',
+        description => 'bs probability priced with current spot',
         set_by      => __PACKAGE__,
-        base_amount => 0,
+        base_amount => $spot_tv,
+    });
+    my $expected_spot_tv =
+        $self->formula->($expected_spot, @barrier_args, $duration_t, $bet->discount_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
+
+    my $delta_cv = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'intraday_bounceback',
+        description => 'Intraday bounceback based on historical data',
+        set_by      => __PACKAGE__,
+        base_amount => $expected_spot_tv,
+    });
+    $delta_cv->include_adjustment('subtract', $spot_tv_cv);
+
+    return $delta_cv->amount;
+}
+
+sub _build_intraday_delta_correction {
+    my $self = shift;
+
+    my $delta_c;
+    my @info_cv;
+
+    if ($self->bet->get_time_to_expiry->minutes < 10) {
+        $delta_c = $self->_get_short_term_delta_correction;
+    } elsif ($self->bet->get_time_to_expiry->minutes > 20) {
+        $delta_c = $self->_get_long_term_delta_correction;
+    } else {
+        my $t     = $self->bet->get_time_to_expiry->minutes;
+        my $alpha = (20 - $t) / 10;
+        my $beta  = ($t - 10) / 10;
+
+        my $short_term = $self->_get_short_term_delta_correction;
+        my $long_term  = $self->_get_long_term_delta_correction;
+
+        $delta_c = ($alpha * $short_term) + ($beta * $long_term);
+
+        push @info_cv,
+            Math::Util::CalculatedValue::Validatable->new({
+                name        => 'delta_correction_short_term_value',
+                description => 'delta_correction_short_term_value',
+                set_by      => __PACKAGE__,
+                base_amount => $short_term
+            });
+
+        push @info_cv,
+            Math::Util::CalculatedValue::Validatable->new({
+                name        => 'delta_correction_long_term_value',
+                description => 'delta_correction_long_term_value',
+                set_by      => __PACKAGE__,
+                base_amount => $long_term
+            });
+    }
+
+    my $delta_cv = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'intraday_delta_correction',
+        description => 'Intraday delta correction based on historical data',
+        set_by      => __PACKAGE__,
+        base_amount => $delta_c,
     });
 
-    return $mu;
+    $delta_cv->include_adjustment('info', $_) for @info_cv;
+
+    return $delta_cv;
 }
 
 =head1 intraday_vanilla_delta
@@ -397,112 +422,12 @@ sub _build_intraday_vanilla_delta {
     });
 }
 
-=head1 commission_markup
-
-Fixed commission for the bet
-
-=cut
-
-sub _build_commission_markup {
-    my $self = shift;
-
-    my $bet = $self->bet;
-    my $comm_base_amount =
-        ($self->bet->built_with_bom_parameters)
-        ? BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor
-        : 1;
-
-    my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_scaling_factor',
-        description => 'A scaling factor to control commission',
-        set_by      => __PACKAGE__,
-        base_amount => $comm_base_amount,
+my $iv_risk_interpolator = Math::Function::Interpolator->new(
+    points => {
+        0.05 => 0.15,
+        0.5  => 0,
+        0.95 => 0.15,
     });
-
-    my $comm_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_markup',
-        description => 'fixed commission markup',
-        set_by      => __PACKAGE__,
-    });
-
-    my $fixed_comm = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'intraday_historical_fixed',
-        description => 'fixed commission markup for Intraday::Forex pricer',
-        set_by      => __PACKAGE__,
-        base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_fixed,
-    });
-
-    $comm_markup->include_adjustment('info',  $comm_scale);
-    $comm_markup->include_adjustment('reset', $fixed_comm);
-
-    my $stitch = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'stitching_adjustment',
-        description => 'to smooth transitions when we change engines',
-        set_by      => __PACKAGE__,
-        minimum     => 0,
-        base_amount => 0,
-    });
-    my $standard         = $self->digital_spread_markup;
-    my $spread_to_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'spread_to_markup',
-        description => 'Apply half of spread to each side',
-        set_by      => __PACKAGE__,
-        base_amount => 2,
-    });
-
-    $stitch->include_adjustment('reset',    $standard);
-    $stitch->include_adjustment('divide',   $spread_to_markup);
-    $stitch->include_adjustment('subtract', $fixed_comm);
-    my $duration_factor = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'Factor to adjust for bet duration',
-        description => 'to smooth transition',
-        set_by      => __PACKAGE__,
-        base_amount => $bet->remaining_time->minutes / 400,
-    });
-
-    $stitch->include_adjustment('multiply', $duration_factor);
-
-    $comm_markup->include_adjustment('add', $stitch);
-
-    my $open_at_start = $bet->underlying->exchange->is_open_at($bet->date_start);
-
-    if (    $open_at_start
-        and defined $self->average_tick_count
-        and $self->average_tick_count < 4)
-    {
-        my $extra_uncertainty = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_uncertainty_markup',
-            description => 'Factor to apply when backtesting was uncertain',
-            set_by      => __PACKAGE__,
-            base_amount => 2,
-        });
-        $extra_uncertainty->include_adjustment('info', $self->long_term_vol);
-
-        $comm_markup->include_adjustment('multiply', $extra_uncertainty);
-    }
-    if ($open_at_start and $bet->underlying->is_in_quiet_period) {
-        my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'quiet_period_markup',
-            description => 'Intraday::Forex markup factor for underlyings in the quiet period',
-            set_by      => __PACKAGE__,
-            base_amount => 0.01,
-        });
-        $comm_markup->include_adjustment('add', $quiet_period_markup);
-    }
-    if ($bet->is_path_dependent) {
-        my $path_dependent_markup_factor = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'path_dependent_markup',
-            description => 'Intraday::Forex markup factor for path dependent contracts',
-            set_by      => __PACKAGE__,
-            base_amount => 2,
-        });
-        $comm_markup->include_adjustment('multiply', $path_dependent_markup_factor);
-    }
-
-    $comm_markup->include_adjustment('multiply', $comm_scale);
-
-    return $comm_markup;
-}
 
 =head1 risk_markup
 
@@ -522,17 +447,29 @@ sub _build_risk_markup {
     });
 
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
-    $risk_markup->include_adjustment('add', $self->eod_market_risk_markup);
+    $risk_markup->include_adjustment('add', $self->eod_market_risk_markup) if not $bet->is_atm_bet;
 
-    if (not $bet->is_atm_bet) {
+    if ($bet->is_path_dependent) {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
             name        => 'intraday_historical_iv_risk',
             description => 'Intraday::Forex markup for IV contracts only.',
-            set_by      => 'quants.commission.intraday.historical_iv_risk',
-            base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_iv_risk / 100,
+            set_by      => __PACKAGE__,
+            base_amount => $iv_risk_interpolator->linear($self->intraday_vanilla_delta->amount),
         });
         $risk_markup->include_adjustment('add', $iv_risk);
     }
+    my $open_at_start = $bet->underlying->calendar->is_open_at($bet->date_start);
+
+    if ($open_at_start and $bet->underlying->is_in_quiet_period) {
+        my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'quiet_period_markup',
+            description => 'Intraday::Forex markup factor for underlyings in the quiet period',
+            set_by      => __PACKAGE__,
+            base_amount => 0.01,
+        });
+        $risk_markup->include_adjustment('add', $quiet_period_markup);
+    }
+
     if ($bet->market->name eq 'commodities') {
         my $illiquid_market_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'illiquid_market_markup',
@@ -555,11 +492,31 @@ sub _build_risk_markup {
     return $risk_markup;
 }
 
-sub _build__attrs_safe_for_eq_ticks_reuse {
+has [qw(intraday_vega_correction intraday_vega)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
 
-# This is not a comprehensive list of safe attributes, but includes the ones which
-# are slow enough to make use want to reuse them
-    return [qw(ticks_for_trend pricing_vol news_adjusted_pricing_vol)];
+has [qw(_vega_formula _delta_formula)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_intraday_vega_correction {
+    my $self = shift;
+
+    my $vmr = BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_vol_meanrev};
+    my $vc  = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'vega_correction',
+        description => 'correction for uncertianty of vol',
+        set_by      => 'quants.commission.intraday.historical_vol_meanrev',
+        base_amount => $vmr,
+    });
+
+    $vc->include_adjustment('multiply', $self->intraday_vega);
+    $vc->include_adjustment('multiply', $self->long_term_prediction);
+
+    return $vc;
 }
 
 has economic_events_volatility_risk_markup => (
@@ -573,8 +530,11 @@ sub _build_economic_events_volatility_risk_markup {
     my $markup_base_amount = 0;
     # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
     if ($self->pricing_vol != $self->news_adjusted_pricing_vol) {
-        my $tv_without_news = $self->probability->amount;
-        my $tv_with_news = $self->clone({pricing_vol => $self->news_adjusted_pricing_vol})->probability->amount;
+        my $tv_without_news = $self->base_probability->amount;
+        my $tv_with_news    = $self->clone({
+                pricing_vol    => $self->news_adjusted_pricing_vol,
+                intraday_trend => $self->intraday_trend,
+            })->base_probability->amount;
         $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
     }
 

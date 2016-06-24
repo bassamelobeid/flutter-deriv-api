@@ -1,10 +1,9 @@
 use strict;
 use warnings;
-use Test::MockTime qw( set_fixed_time restore_time );
 use Test::Most (tests => 20);
 use Test::NoWarnings;
 use Test::MockModule;
-
+use Test::MockTime::HiRes;
 use Test::Exception;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Model::Account;
@@ -17,154 +16,37 @@ use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Format::Util::Numbers qw(roundnear);
-
-my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
-$requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
 
 initialize_realtime_ticks_db;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol                   => 'FSE',
-        delay_amount             => 0,
-        offered                  => 'yes',
-        display_name             => 'FSE',
-        trading_timezone         => 'UTC',
-        tenfore_trading_timezone => 'NA',
-        open_on_weekends         => 1,
-        currency                 => 'NA',
-        bloomberg_calendar_code  => 'NA',
-        holidays                 => {},
-        market_times             => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol                   => 'RANDOM',
-        delay_amount             => 0,
-        offered                  => 'yes',
-        display_name             => 'Randoms',
-        trading_timezone         => 'UTC',
-        tenfore_trading_timezone => 'NA',
-        open_on_weekends         => 1,
-        currency                 => 'NA',
-        bloomberg_calendar_code  => 'NA',
-        holidays                 => {},
-        market_times             => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol                   => 'FOREX',
-        delay_amount             => 0,
-        offered                  => 'yes',
-        display_name             => 'Forex',
-        trading_timezone         => 'UTC',
-        tenfore_trading_timezone => 'NA',
-        open_on_weekends         => 1,
-        currency                 => 'NA',
-        bloomberg_calendar_code  => 'NA',
-        holidays                 => {},
-        market_times             => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol                   => 'FSE-LSE',
-        delay_amount             => 0,
-        offered                  => 'yes',
-        display_name             => 'FSE-LSE',
-        trading_timezone         => 'UTC',
-        tenfore_trading_timezone => 'NA',
-        open_on_weekends         => 1,
-        currency                 => 'NA',
-        bloomberg_calendar_code  => 'NA',
-        holidays                 => {},
-        market_times             => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        date   => Date::Utility->new
+        symbol        => $_,
+        recorded_date => Date::Utility->new
     }) for qw(EUR USD);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw( USD EUR );
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => $_,
-        recorded_date => Date::Utility->new,
-    }) for qw/R_50 R_75/;
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'GDAXI',
         recorded_date => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxEURUSD',
         recorded_date => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',
     {
         recorded_date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => $_,
@@ -230,7 +112,6 @@ my $transaction = BOM::Product::Transaction->new({
     price         => $contract->ask_price,
     client        => $new_client,
     contract      => $contract,
-    comment       => '',
     purchase_date => $contract->date_start,
 });
 isnt $transaction->buy, 'undef', 'successful buy';
@@ -254,7 +135,6 @@ my $transaction_2 = BOM::Product::Transaction->new({
     price    => $contract_2->ask_price,
     client   => $new_client,
     contract => $contract_2,
-    comment  => ''
 });
 isnt $transaction_2->buy, 'undef', 'successful buy';
 
@@ -275,7 +155,6 @@ my $transaction_3 = BOM::Product::Transaction->new({
     price         => $contract_3->ask_price,
     client        => $new_client,
     contract      => $contract_3,
-    comment       => '',
     purchase_date => $contract_3->date_start,
 });
 isnt $transaction_3->buy, 'undef', 'successful buy';
@@ -297,39 +176,72 @@ my $transaction_4 = BOM::Product::Transaction->new({
     price         => $contract_4->ask_price,
     client        => $new_client,
     contract      => $contract_4,
-    comment       => '',
     purchase_date => $contract_4->date_start,
 });
 isnt $transaction_4->buy, 'undef', 'successful buy';
+my $start_time_5 = Date::Utility->new('2015-11-10 08:30:00')->epoch;
 
-my $start_time_5 = Date::Utility->new->epoch;
-my $end_time_5   = $start_time_5 + 900;
-my $contract_5   = produce_contract('FLASHU_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
-my $p_5          = $contract_5->build_parameters;
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'correlation_matrix',
+    {
+        recorded_date => Date::Utility->new($start_time_5),
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => Date::Utility->new($start_time_5),
+    }) for qw(EUR USD);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        recorded_date => Date::Utility->new($start_time_5),
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => 'GDAXI',
+        recorded_date => Date::Utility->new($start_time_5),
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxEURUSD',
+        recorded_date => Date::Utility->new($start_time_5),
+    });
+
+my $end_time_5 = $start_time_5 + 900;
+my $contract_5 = produce_contract('FLASHU_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
+my $p_5        = $contract_5->build_parameters;
 
 my $tick_params_5 = {
     symbol => 'not_checked',
     epoch  => $start_time_5,
     quote  => 100
 };
-
 my $tick_5 = BOM::Market::Data::Tick->new($tick_params_5);
 $p_5->{date_pricing} = $start_time_5;
 $p_5->{current_tick} = $tick_5;
 $p_5->{pricing_vol}  = 0.151867027083599;
 my $mock = Test::MockModule->new('BOM::Product::Contract');
 # we need a vol for this.
+$mock->mock('_validate_input_parameters', sub { () });
 $mock->mock('_validate_volsurface', sub { () });
 $contract_5 = produce_contract($p_5);
-local $ENV{REQUEST_STARTTIME} = $start_time_5;
+set_absolute_time($start_time_5);
 my $transaction_5 = BOM::Product::Transaction->new({
-    price    => 53.14,
-    client   => $new_client,
-    contract => $contract_5,
-    comment  => '',
+    price         => 70,
+    client        => $new_client,
+    contract      => $contract_5,
+    purchase_date => $start_time_5,
 });
-isnt $transaction_5->buy, 'undef', 'successful buy';
 
+isnt $transaction_5->buy, 'undef', 'successful buy';
+restore_time;
 my $start_time_6 = Date::Utility->new->epoch;
 my $end_time_6   = $start_time_6 + 900;
 my $contract_6   = produce_contract('FLASHU_WLDEUR_100_' . $start_time_6 . '_7T_S0P_0', 'USD');
@@ -350,7 +262,6 @@ my $transaction_6 = BOM::Product::Transaction->new({
     price    => 51.88,
     client   => $new_client,
     contract => $contract_6,
-    comment  => '',
 });
 isnt $transaction_6->buy(skip_validation => 1), 'undef', 'successful buy';
 
@@ -481,6 +392,7 @@ subtest 'get_sold' => sub {
                 transaction_time => $start_date,
                 start_time       => $start_date,
                 expiry_time      => $end_date,
+                settlement_time  => $end_date,
             });
     }
 

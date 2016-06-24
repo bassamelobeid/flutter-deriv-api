@@ -15,29 +15,11 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::Runtime;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'RANDOM',
-        open_on_weekends => 1,
-        holidays         => {},
-        market_times     => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
         symbol => 'R_100',
@@ -135,6 +117,9 @@ subtest 'asian' => sub {
     lives_ok {
         my $time = Date::Utility->new(1310631887);
         my $c = produce_contract('ASIANU_R_75_5_1310631887_2T', 'USD');
+        my $params = $c->build_parameters;
+        $params->{date_pricing} = $c->date_start->epoch + 299;
+        $c = produce_contract($params);
         is $c->code, 'ASIANU', 'extracted the right bet type from shortcode';
         is $c->underlying->symbol, 'R_75', 'extracted the right symbol from shortcode';
         is $c->payout, 5, 'correct payout from shortcode';
@@ -158,5 +143,15 @@ subtest 'asian' => sub {
         is $c->underlying->pip_size, 0.0001, 'underlying pip size';
         cmp_ok $c->barrier->as_absolute, '==', 101.50000, 'correct barrier with one more decimal in pip size';
     }
-    'build from shortcode';
+    'build from shortcode'; 
+
+    dies_ok {
+        produce_contract('ASIANU_R_50_100_1466496619_5T_S5P_0', 'USD');
+    }
+    'build from shortcode with relative barrier fails'; 
+
+    dies_ok {
+        produce_contract('ASIANU_R_50_100_1466496590_5T_1002000000_0', 'USD');
+    }
+    'build from shortcode with absolute barrier fails'; 
 };

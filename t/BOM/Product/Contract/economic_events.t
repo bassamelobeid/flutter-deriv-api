@@ -7,9 +7,10 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
+use Cache::RedisDB;
 use Date::Utility;
 use BOM::Market::Data::Tick;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
@@ -17,37 +18,42 @@ use BOM::Product::ContractFactory qw( produce_contract );
 
 my $now = Date::Utility->new('7-Jan-14 12:00');
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        date   => $now,
-    }) for (qw/JPY USD/);
+        symbol        => $_,
+        recorded_date => $now->minus_time_interval('10m'),
+    }) for (qw/JPY USD JPY-USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date => $now,
+        recorded_date => $now->minus_time_interval('10m'),
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+$mocked->mock(
+    '_get_economic_events',
+    sub {
+        [{
+                'bias'         => 0.010000,
+                'duration'     => 60.000000,
+                'magnitude'    => 1.000000,
+                'release_time' => 1389096000,
+            }];
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
     {
-        symbol       => 'USD',
-        release_date => $now,
-        date         => Date::Utility->new(),
+        symbol           => 'USD',
+        release_date     => $now,
+        recorded_date    => Date::Utility->new(),
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
     },
 );
 
-my $bet = produce_contract({
+my $params = {
     bet_type     => 'CALL',
     underlying   => 'frxUSDJPY',
     current_spot => 100,
@@ -57,10 +63,16 @@ my $bet = produce_contract({
     currency     => 'USD',
     payout       => 100,
     date_pricing => $now->minus_time_interval('10m'),
-});
+};
+my $bet = produce_contract($params);
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
-is($bet->pricing_engine->economic_events_spot_risk_markup->amount,       0.0198959999973886, 'correct spot risk markup');
-is($bet->pricing_engine->economic_events_volatility_risk_markup->amount, 0.0053098701861965, 'vol risk markup is lower than higher range');
-is($bet->pricing_engine->economic_events_markup->amount, 0.0198959999973886, 'economic events markup is max of spot or vol risk markup');
+is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.15, 'correct spot risk markup');
+cmp_ok(
+    $bet->pricing_engine->economic_events_volatility_risk_markup->amount,
+    '<',
+    $bet->pricing_engine->economic_events_spot_risk_markup->amount,
+    'vol risk markup is lower than higher range'
+);
+is($bet->pricing_engine->economic_events_markup->amount, 0.15, 'economic events markup is max of spot or vol risk markup');
 
 done_testing;

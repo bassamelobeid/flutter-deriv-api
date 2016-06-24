@@ -1,20 +1,16 @@
 #!/usr/bin/env perl
 
-use Test::Most (tests => 2);
-use Test::NoWarnings;
+use strict;
+use warnings;
+
+use Test::Most (tests => 1);
+use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 use BOM::Test::Runtime qw(:normal);
 use BOM::Product::ContractFactory qw( simple_contract_info );
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/FOREX RANDOM BSE ASX/);
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 subtest 'Proper form' => sub {
     my @shortcodes = (
@@ -50,16 +46,17 @@ subtest 'Proper form' => sub {
             ~
     );
     my @currencies = ('USD', 'EUR', 'RUR');    # Inexhaustive, incorrect list: just to be sure the currency is not accidentally hard-coded.
-    plan tests => scalar @shortcodes * scalar @currencies;
+    plan tests => 2 * scalar @shortcodes * scalar @currencies;
 
     foreach my $currency (@currencies) {
-        my $expected_standard_form =
-            qr/$currency <strong>(?:\d*\.?\d+)<\/strong> payout if .*\.$/;    # Simplified standard form to which all should adhere.
-                                                                              # Can this be improved further?
+        my $expected_standard_form = qr/Win payout if .*\.$/;    # Simplified standard form to which all should adhere.
+                                                                                     # Can this be improved further?
         my $params;
         foreach my $shortcode (@shortcodes) {
             my ($description) = simple_contract_info($shortcode, $currency);
-            like($description, $expected_standard_form, 'Contract long code meets expectations as to form.');
+            my ($again)       = simple_contract_info($shortcode, $currency);
+            like($description, $expected_standard_form, $shortcode . ' => long code form appears ok');
+            cmp_ok $again, 'eq', $description, '... and second invocation returns the same result';
         }
     }
 };

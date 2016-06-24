@@ -5,21 +5,14 @@ extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
 # Static methods
-sub id              { return 20; }
-sub code            { return 'PUT'; }
-sub pricing_code    { return 'PUT'; }
-sub category_code   { return 'callput'; }
-sub display_name    { return 'lower'; }
-sub sentiment       { return 'down'; }
-sub other_side_code { return 'CALL'; }
+sub code { return 'PUT'; }
 
 sub localizable_description {
     return +{
-        tick =>
-            '[_1] <strong>[_2]</strong> payout if [_3] after <strong>[_5] ticks</strong> is strictly <strong>lower</strong> than <strong>[_6]</strong>.',
-        daily    => '[_1] <strong>[_2]</strong> payout if [_3] is strictly <strong>lower</strong> than <strong>[_6]</strong> at [_5].',
-        intraday => '[_1] <strong>[_2]</strong> payout if [_3] is strictly <strong>lower</strong> than <strong>[_6]</strong> at [_5] after [_4].',
-        intraday_fixed_expiry => '[_1] <strong>[_2]</strong> payout if [_3] is strictly <strong>lower</strong> than <strong>[_6]</strong> at [_5].',
+        tick                  => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is strictly lower than [_6].',
+        daily                 => 'Win payout if [_3] is strictly lower than [_6] at [_5].',
+        intraday              => 'Win payout if [_3] is strictly lower than [_6] at [_5] after [_4].',
+        intraday_fixed_expiry => 'Win payout if [_3] is strictly lower than [_6] at [_5].',
     };
 }
 

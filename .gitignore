@@ -1,3 +1,5 @@
+id_dsa
+id_rsa
 *.tidyup
 *.bak
 *.sw?
@@ -5,7 +7,6 @@
 *~
 .#*
 *.lock
-*.appcache
 api/api_server.log
 cover_db
 .sass-cache

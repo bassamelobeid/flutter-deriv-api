@@ -6,7 +6,7 @@ use warnings;
 use Test::More tests => 3;
 use Test::Exception;
 use Test::NoWarnings;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
@@ -15,19 +15,13 @@ use BOM::Product::ContractFactory qw(produce_contract);
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        date   => Date::Utility->new
-    }) for ('USD', 'JPY');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        symbol        => $_,
+        recorded_date => $now
+    }) for ('USD', 'JPY', 'JPY-USD');
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -61,7 +55,7 @@ subtest 'expiry miss' => sub {
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
@@ -114,28 +108,28 @@ subtest 'expiry range' => sub {
         ok $c->sentiment,    'low_vol';
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'index',
         {
-            symbol => 'RANDOM',
+            symbol => 'R_100',
+            recorded_date   => $now,
+        });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'index',
+        {
+            symbol => 'R_100',
             date   => Date::Utility->new
         });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol => 'USD',
             date   => Date::Utility->new
-        });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'volsurface_flat',
-        {
-            symbol        => 'R_100',
-            recorded_date => $now
         });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
@@ -150,7 +144,7 @@ subtest 'expiry range' => sub {
         $args->{high_barrier} = 'S10P';
         my $c = produce_contract($args);
         ok $c->is_intraday;
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
         ok $c->high_barrier;
         cmp_ok $c->high_barrier->as_absolute, '==', 100.10, 'correct high barrier';
         ok $c->low_barrier;

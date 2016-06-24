@@ -165,10 +165,38 @@ sub _build_probability {
         maximum     => 1,
     });
 
-    $ctv->include_adjustment('reset', $self->bs_probability);
-    $ctv->include_adjustment('add',   $self->market_supplement);
+    $ctv->include_adjustment('reset', $self->base_probability);
+    $ctv->include_adjustment('add',   $self->risk_markup);
 
     return $ctv;
+}
+
+has base_probability => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_base_probability {
+    my $self = shift;
+
+    my $base_probability = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'base_probability',
+        description => 'Corrected theoretical value per our Vanna-Volga',
+        set_by      => 'BOM::Product::Pricing::Engine::VannaVolga',
+        minimum     => 0,
+        maximum     => 1,
+    });
+
+    # If the market supplement would absolutely drive us out of [0,1]
+    # Then it is nonsense to be ignored.
+    if ($self->market_supplement->amount <= -0.5 || $self->market_supplement->amount >= 1) {
+        $base_probability->include_adjustment('reset', $self->no_business_probability);
+    } else {
+        $base_probability->include_adjustment('reset', $self->bs_probability);
+        $base_probability->include_adjustment('add',   $self->market_supplement);
+    }
+
+    return $base_probability;
 }
 
 override '_build_bs_probability' => sub {

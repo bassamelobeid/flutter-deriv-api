@@ -20,68 +20,10 @@ use JSON qw(decode_json);
 use BOM::Test::Runtime qw(:normal);
 use BOM::Product::ContractFactory qw( produce_contract );
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis;
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol       => 'LSE',
-        market_times => {
-            dst => {
-                daily_close      => '15h30m',
-                daily_open       => '7h',
-                daily_settlement => '18h30m',
-            },
-            standard => {
-                daily_close      => '16h30m',
-                daily_open       => '8h',
-                daily_settlement => '19h30m',
-            },
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/GBP JPY USD/);
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency',
-    {
-        symbol => 'JPY',
-        rates  => {
-            1   => 0.2,
-            2   => 0.15,
-            7   => 0.18,
-            32  => 0.25,
-            62  => 0.2,
-            92  => 0.18,
-            186 => 0.1,
-            365 => 0.13,
-        },
-        date         => Date::Utility->new,
-        type         => 'implied',
-        implied_from => 'USD'
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw( GBP JPY USD );
 
 my $FRW_frxUSDJPY_ON = BOM::Market::Underlying->new('FRW_frxUSDJPY_ON');
 my $FRW_frxUSDJPY_TN = BOM::Market::Underlying->new('FRW_frxUSDJPY_TN');
@@ -143,12 +85,12 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-01-11 10:00:00'),
         date_expiry => Date::Utility->new('13-Jan-12')->plus_time_interval('21h'),
     );
-    is($bet->timeindays->amount, 2, 'Wed -> Fri FX bet (expiry: 21:00, rollover: 22:00).');
+    is($bet->timeindays->amount, 3, 'Wed -> Fri FX bet (expiry: 21:00, rollover: 22:00).');
     cmp_ok(
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                days   => 2,
+                days   => 3,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
                 r_rate => $bet->r_rate,
@@ -201,12 +143,12 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-03-09 10:00:00'),
         date_expiry => Date::Utility->new('29-Mar-12')->plus_time_interval('23h59m59s'),
     );
-    is($bet->timeindays->amount, 21, 'Three week FX bet in summer.');
+    is($bet->timeindays->amount, 20, 'Three week FX bet in summer.');
     cmp_ok(
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                days   => 21,
+                days   => 20,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
                 r_rate => $bet->r_rate,
@@ -220,12 +162,12 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-03-09 10:00:00'),
         date_expiry => Date::Utility->new('30-Mar-12')->plus_time_interval('23h59m59s'),
     );
-    is($bet->timeindays->amount, 22, 'Three week FX bet in summer ending on Friday.');
+    is($bet->timeindays->amount, 21, 'Three week FX bet in summer ending on Friday.');
     cmp_ok(
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                days   => 22,
+                days   => 21,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
                 r_rate => $bet->r_rate,
@@ -243,6 +185,34 @@ subtest Forex => sub {
     cmp_ok($bet->timeindays->amount, '==', 1 / 24, 'Intraday bet: does not follow integer days convnetion.');
 };
 
+subtest 'Forex date start after cutoff' => sub {
+
+    note('Daylight Savings (DST) for 2012 is from March 11th to November 4th.');
+    note('DST rollover time 21:00GMT, non DST 22:00GMT');
+
+    my $bet = _sample_bet(
+        date_start  => Date::Utility->new('2012-03-12 21:00:01'),
+        date_expiry => Date::Utility->new('2012-03-16 21:00:00'),
+    );
+    cmp_ok($bet->timeindays->amount, '==', 4, 'timeindays is 4 days after rollover in DST.');
+    $bet = _sample_bet(
+        date_start  => Date::Utility->new('2012-03-12 20:59:59'),
+        date_expiry => Date::Utility->new('2012-03-16 21:00:00'),
+    );
+    cmp_ok($bet->timeindays->amount, '==', 5, 'timeindays is 5 days before rollover in DST.');
+
+    $bet = _sample_bet(
+        date_start  => Date::Utility->new('2012-03-05 22:00:01'),
+        date_expiry => Date::Utility->new('2012-03-09 21:00:00'),
+    );
+    cmp_ok($bet->timeindays->amount, '==', 4, 'timeindays is 4 days after rollover in non DST.');
+    $bet = _sample_bet(
+        date_start  => Date::Utility->new('2012-03-05 21:59:59'),
+        date_expiry => Date::Utility->new('2012-03-09 21:00:00'),
+    );
+    cmp_ok($bet->timeindays->amount, '==', 5, 'timeindays is 5 days before rollover in non DST.');
+};
+
 subtest Equity => sub {
     plan tests => 1;
 
@@ -251,7 +221,7 @@ subtest Equity => sub {
     my $bet        = _sample_bet(
         underlying  => $underlying,
         date_start  => Date::Utility->new('2012-01-11 10:30:00'),
-        date_expiry => $underlying->exchange->closing_on(Date::Utility->new('18-Jan-12')),
+        date_expiry => $underlying->calendar->closing_on(Date::Utility->new('18-Jan-12')),
     );
     cmp_ok($bet->timeindays->amount, '==', 7.25, 'One week EQ bet: does not follow integer days concept.');
 };
@@ -264,9 +234,41 @@ sub _sample_bet {
 
     $overrides{date_pricing} ||= $overrides{date_start};
 
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'currency',
+        {
+            symbol        => $_,
+            recorded_date => $overrides{date_pricing},
+        }) for (qw/GBP JPY USD JPY-USD/);
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'currency',
+        {
+            symbol => 'JPY',
+            rates  => {
+                1   => 0.2,
+                2   => 0.15,
+                7   => 0.18,
+                32  => 0.25,
+                62  => 0.2,
+                92  => 0.18,
+                186 => 0.1,
+                365 => 0.13,
+            },
+            recorded_date => $overrides{date_pricing},
+            type          => 'implied',
+            implied_from  => 'USD'
+        });
+
     $underlying->set_combined_realtime({
         epoch => $overrides{date_pricing}->epoch,
         quote => 99.840
+    });
+
+    my $current_tick = BOM::Market::Data::Tick->new({
+        underlying => $underlying,
+        epoch => $overrides{date_pricing}->epoch,
+        quote => 100,
     });
 
     my $start_epoch = Date::Utility->new($overrides{date_start})->epoch;
@@ -276,13 +278,13 @@ sub _sample_bet {
             payout       => 100,
             currency     => 'USD',
             barrier      => 100,
-            current_spot => 100,
+            current_tick => $current_tick,
         ),
         %overrides,
     );
 
     # Let's add a vol surface to DB so that the bet can be priced.
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             underlying    => $underlying,

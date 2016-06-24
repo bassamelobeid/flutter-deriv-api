@@ -8,18 +8,11 @@ use BOM::Product::Pricing::Engine::Asian;
 use BOM::Product::Pricing::Greeks::Asian;
 
 # Static methods.
-sub id              { return 230; }
-sub code            { return 'ASIANU'; }
-sub pricing_code    { return 'CALL'; }
-sub category_code   { return 'asian'; }
-sub display_name    { return 'asian up'; }
-sub sentiment       { return 'up'; }
-sub other_side_code { return 'ASIAND'; }
+sub code { return 'ASIANU'; }
 
 sub localizable_description {
     return +{
-        tick =>
-            '[_1] <strong>[_2]</strong> payout if the <strong>last tick</strong> of [_3] is strictly <strong>higher</strong> than the <strong>average</strong> of the <strong>[_5] ticks</strong>.',
+        tick => 'Win payout if the last tick of [_3] is strictly higher than the average of the [plural,_5,%d tick,%d ticks].',
     };
 }
 
@@ -53,12 +46,16 @@ sub _build_supplied_barrier {
                 start_time => $self->date_start->epoch + 1,
                 limit      => $hmt,
             })};
-    my $supp;
-    if (@ticks_since_start == $hmt and $hmt != 0) {
-        my $sum = 0;
-        map { $sum += $_->quote } @ticks_since_start;
-        $supp = $sum / $hmt;
+
+    return unless @ticks_since_start;
+    return if $self->is_after_expiry and $hmt != @ticks_since_start;
+
+    my $sum = 0;
+    for (@ticks_since_start) {
+        $sum += $_->quote;
     }
+
+    my $supp = $sum / @ticks_since_start;
 
     return $supp;
 }
@@ -78,7 +75,7 @@ sub _build_barrier {
 sub check_expiry_conditions {
     my $self = shift;
 
-    if ($self->exit_tick) {
+    if ($self->exit_tick and $self->barrier) {
         my $value = ($self->exit_tick->quote > $self->barrier->as_absolute) ? $self->payout : 0;
         $self->value($value);
     }

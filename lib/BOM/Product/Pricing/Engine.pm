@@ -16,7 +16,6 @@ extends 'BOM::Product::Pricing::Engine';
 
 =cut
 
-use Carp qw(croak);
 use Moose;
 use Math::Business::BlackScholes::Binaries;
 use Math::Util::CalculatedValue::Validatable;
@@ -50,32 +49,17 @@ has _supported_types => (
     },
 );
 
-has [qw(model_markup bs_probability probability d2)] => (
+has [qw(bs_probability probability d2)] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
 );
 
-# A list of the attributes which can be safely reused when doing a check
-# for equal ticks probability.
-
-has _attrs_safe_for_eq_ticks_reuse => (
-    is         => 'ro',
-    isa        => 'ArrayRef',
-    init_arg   => undef,
-    lazy_build => 1,
-);
-
-sub _build__attrs_safe_for_eq_ticks_reuse {
-    # If the subclass does not override this, assume we need to recompute everything.
-    return [];
-}
-
 sub BUILD {
     my $self = shift;
 
     my $claimtype = $self->bet->pricing_code;
-    croak 'Invalid claimtype[' . $claimtype . '] for engine.' unless $self->_supported_types->{$claimtype};
+    die 'Invalid claimtype[' . $claimtype . '] for engine.' unless $self->_supported_types->{$claimtype};
 
     return;
 }
@@ -102,7 +86,7 @@ sub _build_bs_probability {
     my $args = $bet->pricing_args;
 
     my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
-    my $tv = $self->formula->($args->{spot}, @barrier_args, $args->{t}, $bet->quanto_rate, $bet->mu, $args->{iv}, $args->{payouttime_code});
+    my $tv = $self->formula->($args->{spot}, @barrier_args, $args->{t}, $bet->discount_rate, $bet->mu, $args->{iv}, $args->{payouttime_code});
 
     my @max = ($bet->payout_type eq 'binary') ? (maximum => 1) : ();
     my $bs_prob = Math::Util::CalculatedValue::Validatable->new({
@@ -113,7 +97,29 @@ sub _build_bs_probability {
         @max,
         base_amount => $tv,
     });
+
+    # If BS is very high, we don't want that business, even if it makes sense.
+    if ($tv > 0.999) {
+        $bs_prob->include_adjustment('add', $self->no_business_probability);
+    }
+
     return $bs_prob;
+}
+
+has no_business_probability => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_no_business_probability',
+);
+
+sub _build_no_business_probability {
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'no_business',
+        description => 'setting probability to 1',
+        set_by      => 'BOM::Product::Pricing::Engine::VannaVolga',
+        base_amount => 1,
+    });
+
 }
 
 sub _build_d2 {
@@ -122,7 +128,7 @@ sub _build_d2 {
     my $bet  = $self->bet;
     my $args = $bet->pricing_args;
 
-    my $d2 = Math::Business::BlackScholes::Binaries::d2($args->{spot}, $args->{barrier1}, $args->{t}, $bet->quanto_rate, $bet->mu, $args->{iv});
+    my $d2 = Math::Business::BlackScholes::Binaries::d2($args->{spot}, $args->{barrier1}, $args->{t}, $bet->discount_rate, $bet->mu, $args->{iv});
 
     my $d2_ret = Math::Util::CalculatedValue::Validatable->new({
         name        => 'd2',
@@ -132,35 +138,6 @@ sub _build_d2 {
     });
 
     return $d2_ret;
-}
-
-=head2 model_markup
-
-The commission from model we should apply for this bet.
-
-=cut
-
-sub _build_model_markup {
-    my $self = shift;
-
-    my $model = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'model_markup',
-        description => 'The markup calculated by this engine.',
-        set_by      => 'BOM::Product::Pricing::Engine',
-        minimum     => 0,
-        maximum     => 100,
-        base_amount => 0,
-    });
-    my $standard = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'standard_rate',
-        description => 'Our standard markup',
-        set_by      => 'BOM::Product::Pricing::Engine',
-        base_amount => 0.10,
-    });
-
-    $model->include_adjustment('add', $standard);
-
-    return $model;
 }
 
 =head2 probability

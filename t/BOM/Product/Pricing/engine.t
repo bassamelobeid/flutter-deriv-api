@@ -11,45 +11,41 @@ use JSON qw(decode_json);
 use Date::Utility;
 use BOM::Test::Runtime qw(:normal);
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
+use Pricing::Engine::EuropeanDigitalSlope;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/FOREX LSE/);
+my $date_pricing = 1352344145;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/GBP JPY USD AUD EUR/);
+        symbol        => $_,
+        recorded_date => Date::Utility->new($date_pricing),
+    }) for (qw/GBP JPY USD AUD EUR JPY-USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'FTSE',
-        date   => Date::Utility->new,
+        symbol        => 'FTSE',
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
-        recorded_date => Date::Utility->new,
+        recorded_date => Date::Utility->new($date_pricing),
     }) for qw/frxUSDJPY frxGBPJPY frxGBPUSD/;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'FTSE',
-        recorded_date => Date::Utility->new,
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'GBP',
@@ -63,12 +59,12 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             186 => 0.1,
             365 => 0.13,
         },
-        type         => 'implied',
-        implied_from => 'USD',
-        date         => Date::Utility->new,
+        type          => 'implied',
+        implied_from  => 'USD',
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'JPY',
@@ -82,12 +78,12 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             186 => 0.1,
             365 => 0.13,
         },
-        type         => 'implied',
-        implied_from => 'USD',
-        date         => Date::Utility->new,
+        type          => 'implied',
+        implied_from  => 'USD',
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => 'AUD',
@@ -101,18 +97,23 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             186 => 0.1,
             365 => 0.13,
         },
-        type         => 'implied',
-        implied_from => 'EUR',
-        date         => Date::Utility->new,
+        type          => 'implied',
+        implied_from  => 'EUR',
+        recorded_date => Date::Utility->new($date_pricing),
     });
 
+my $current_tick = BOM::Market::Data::Tick->new({
+    underlying => 'frxUSDJPY',
+    epoch => 1352344145,
+    quote => 76,
+});
 my %bet_params = (
     bet_type     => 'CALL',
     date_pricing => '1352344145',
     date_start   => '1352344145',
     date_expiry  => '12-Nov-12',
     underlying   => 'frxUSDJPY',
-    current_spot => 76,
+    current_tick => $current_tick,
     payout       => 100,
     currency     => 'GBP',
 );
@@ -189,24 +190,29 @@ subtest 'Intraday::Forex' => sub {
 
     my $engine = BOM::Product::Pricing::Engine::Intraday::Forex->new(bet => $short_term);
 
-    isa_ok($engine->delta_correction, 'Math::Util::CalculatedValue::Validatable', 'delta_correction');
-    isa_ok($engine->vega_correction,  'Math::Util::CalculatedValue::Validatable', 'vega_correction');
-    isa_ok($engine->probability,      'Math::Util::CalculatedValue::Validatable', 'probability');
+    isa_ok($engine->intraday_delta_correction, 'Math::Util::CalculatedValue::Validatable', 'intraday_delta_correction');
+    isa_ok($engine->intraday_vega_correction,  'Math::Util::CalculatedValue::Validatable', 'intraday_vega_correction');
+    isa_ok($engine->probability,               'Math::Util::CalculatedValue::Validatable', 'probability');
 
 };
 
 subtest 'Slope' => sub {
-    plan tests => 2;
+    plan tests => 6;
 
-    my $engine = BOM::Product::Pricing::Engine::Slope->new(bet => $expiry_range);
+    my %params = map { $_ => $expiry_range->_pricing_parameters->{$_} } @{Pricing::Engine::EuropeanDigitalSlope->required_args};
+    my $engine = Pricing::Engine::EuropeanDigitalSlope->new(%params);
 
-    isa_ok($engine->probability, 'Math::Util::CalculatedValue::Validatable', 'Slope prob is a CalcVal.');
-    isa_ok($engine->skew,        'Math::Util::CalculatedValue::Validatable', 'Slope skew is a CalcVal.');
+    ok $engine->theo_probability > 0, 'probability > 0';
+    ok $engine->theo_probability < 1, 'probability < 1';
+    is scalar keys %{$engine->debug_information}, 3;
+    ok exists $engine->debug_information->{CALL};
+    ok exists $engine->debug_information->{PUT};
+    ok exists $engine->debug_information->{discounted_probability};
 };
 
 sub _surface_with_10_deltas {
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol  => 'frxEURAUD',

@@ -3,8 +3,6 @@ package BOM::Product::ContractFactory::Parser;
 use strict;
 use warnings;
 
-use Carp;
-
 use Exporter 'import';
 our @EXPORT_OK = qw(
     shortcode_to_parameters
@@ -27,6 +25,8 @@ use Date::Utility;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
 use BOM::Database::Model::Constants;
+use BOM::Platform::Runtime::LandingCompany::Registry;
+use List::MoreUtils qw(uniq);
 
 =head2 financial_market_bet_to_parameters
 
@@ -34,17 +34,17 @@ Convert an FMB into parameters suitable for creating a BOM::Product::Contract
 
 =cut
 
-my %AVAILABLE_CONTRACTS = map { $_ => 1 } get_offerings_with_filter('contract_type');
+my @available_contracts =
+    map { get_offerings_with_filter('contract_type', {landing_company => $_->short}) } BOM::Platform::Runtime::LandingCompany::Registry->new->all;
+my %AVAILABLE_CONTRACTS = map { $_ => 1 } uniq(@available_contracts);
 
 sub financial_market_bet_to_parameters {
     my $fmb      = shift;
     my $currency = shift;
-    croak 'Expected BOM::Database::Model::FinancialMarketBet instance.'
-        if not $fmb->isa('BOM::Database::Model::FinancialMarketBet');
 
     # don't bother to get legacy parameters; rather we can just use shortcode
     if ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_LEGACY_BET) {
-        return shortcode_to_parameters($fmb->short_code, $currency);
+        return shortcode_to_parameters($fmb->short_code, $currency, $fmb->is_sold);
     }
 
     my $underlying     = BOM::Market::Underlying->new($fmb->underlying_symbol);
@@ -54,6 +54,7 @@ sub financial_market_bet_to_parameters {
         amount_type => 'payout',
         amount      => $fmb->payout_price,
         currency    => $currency,
+        is_sold     => $fmb->is_sold
     };
 
     my $purchase_time       = Date::Utility->new($fmb->purchase_time);
@@ -61,10 +62,10 @@ sub financial_market_bet_to_parameters {
     # since a forward starting contract needs to start 5 minutes in the future,
     # 5 seconds is a safe mark.
     if ($contract_start_time->epoch - $purchase_time->epoch > 5) {
-        $bet_parameters->{is_forward_starting} = 1;
+        $bet_parameters->{starts_as_forward_starting} = 1;
     }
-    $bet_parameters->{date_start}  = $contract_start_time;
-    $bet_parameters->{date_expiry} = $fmb->expiry_time;
+    $bet_parameters->{date_start} = $contract_start_time;
+    $bet_parameters->{date_expiry} = Date::Utility->new($fmb->expiry_time->epoch) if $fmb->expiry_time;
 
     if ($fmb->tick_count) {
         $bet_parameters->{tick_expiry} = 1;
@@ -93,6 +94,8 @@ sub financial_market_bet_to_parameters {
               $fmb->relative_barrier
             ? $fmb->relative_barrier
             : $fmb->absolute_barrier;
+    } elsif ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
+        $bet_parameters->{$_} = $fmb->$_ for qw(amount_per_point stop_type stop_loss stop_profit spread);
     }
 
     return $bet_parameters;
@@ -105,7 +108,7 @@ Convert a shortcode and currency pair into parameters suitable for creating a BO
 =cut
 
 sub shortcode_to_parameters {
-    my ($shortcode, $currency) = @_;
+    my ($shortcode, $currency, $is_sold) = @_;
 
     my (
         $bet_type, $underlying_symbol, $payout,       $date_start,  $date_expiry,    $barrier,
@@ -134,10 +137,26 @@ sub shortcode_to_parameters {
     );
     $test_bet_name = $OVERRIDE_LIST{$test_bet_name} if exists $OVERRIDE_LIST{$test_bet_name};
 
-    if (not exists $AVAILABLE_CONTRACTS{$test_bet_name} or $shortcode =~ /_\d+H\d+/ or $shortcode =~ /_\d\d?_\w\w\w_\d\d_\d\d?_/) {
+    my $legacy_params = {
+        bet_type   => 'Invalid',    # it doesn't matter what it is if it is a legacy
+        underlying => 'config',
+        currency   => $currency,
+    };
+
+    return $legacy_params if (not exists $AVAILABLE_CONTRACTS{$test_bet_name} or $shortcode =~ /_\d+H\d+/);
+
+    if ($shortcode =~ /^(SPREADU|SPREADD)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d*.?\d*)_(\d*.?\d*)_(DOLLAR|POINT)/) {
         return {
-            bet_type => 'Invalid',    # it doesn't matter what it is if it is a legacy
-            currency => $currency,
+            shortcode        => $shortcode,
+            bet_type         => $1,
+            underlying       => BOM::Market::Underlying->new($2),
+            amount_per_point => $3,
+            date_start       => $4,
+            stop_loss        => $5,
+            stop_profit      => $6,
+            stop_type        => lc $7,
+            currency         => $currency,
+            is_sold          => $is_sold
         };
     }
 
@@ -195,17 +214,17 @@ sub shortcode_to_parameters {
             $how_many_ticks = $5;
         }
     } else {
-        croak 'Unknown shortcode ' . $shortcode;
+        return $legacy_params;
     }
 
     my $underlying = BOM::Market::Underlying->new($underlying_symbol);
     if (Date::Utility::is_ddmmmyy($date_expiry)) {
-        my $exchange = $underlying->exchange;
+        my $calendar = $underlying->calendar;
         $date_expiry = Date::Utility->new($date_expiry);
-        if (my $closing = $exchange->closing_on($date_expiry)) {
+        if (my $closing = $calendar->closing_on($date_expiry)) {
             $date_expiry = $closing->epoch;
         } else {
-            my $regular_close = $exchange->closing_on($exchange->regular_trading_day_after($date_expiry));
+            my $regular_close = $calendar->closing_on($calendar->regular_trading_day_after($date_expiry));
             $date_expiry = Date::Utility->new($date_expiry->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
         }
     }
@@ -235,7 +254,8 @@ sub shortcode_to_parameters {
         fixed_expiry => $fixed_expiry,
         tick_expiry  => $tick_expiry,
         tick_count   => $how_many_ticks,
-        ($forward_start) ? (is_forward_starting => $forward_start) : (),
+        is_sold      => $is_sold,
+        ($forward_start) ? (starts_as_forward_starting => $forward_start) : (),
         %barriers,
     };
 

@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 11;
+use Test::Most tests => 10;
 use Test::NoWarnings;
 use File::Spec;
 use JSON qw(decode_json);
@@ -10,82 +10,31 @@ use Test::MockObject::Extends;
 use Format::Util::Numbers qw(roundnear);
 use BOM::Test::Runtime qw(:normal);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Math::Util::CalculatedValue::Validatable;
-use BOM::MarketData::VolSurface::Flat;
 
 use Test::MockTime qw(set_absolute_time);
 use Test::MockModule;
 
-my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
-$requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
-
 initialize_realtime_ticks_db();
 
-foreach my $symbol (qw(NYSE FSE LSE TSE SES ASX FOREX)) {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol => $symbol,
-            date   => Date::Utility->new,
-        });
-}
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/USD JPY GBP JPY-USD/);
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_delta',
     {
         symbol        => $_,
         recorded_date => Date::Utility->new,
-    }) for qw/frxUSDJPY frxGBPJPY frxGBPUSD/;
+    }) for (qw/USD JPY GBP JPY-USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol                   => 'RANDOM',
-        delay_amount             => 0,
-        offered                  => 'yes',
-        display_name             => 'Randoms',
-        trading_timezone         => 'UTC',
-        tenfore_trading_timezone => 'NA',
-        open_on_weekends         => 1,
-        currency                 => 'NA',
-        bloomberg_calendar_code  => 'NA',
-        holidays                 => {},
-        market_times             => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'R_50',
-        recorded_date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'randomindex',
     {
-        symbol => 'R_50',
-        date   => Date::Utility->new
+        symbol        => 'R_50',
+        recorded_date => Date::Utility->new
     });
 
 my $now         = Date::Utility->new;
@@ -99,6 +48,13 @@ my $currency   = 'GBP';
 my $account    = $client->default_account;
 my $loginid    = $client->loginid;
 my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => Date::Utility->new($now->epoch - 100),
+    }) for qw/frxUSDJPY frxGBPJPY frxGBPUSD/;
 
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
@@ -174,62 +130,8 @@ subtest 'IOM withdrawal limit' => sub {
     );
 };
 
-subtest 'custom client payout limit' => sub {
-    plan tests => 7;
-
-    my $custom_list = BOM::Platform::CustomClientLimits->new;
-    ok(
-        $custom_list->update({
-                loginid       => $client->loginid,
-                market        => 'forex',
-                contract_kind => 'all',
-                payout_limit  => 500,
-                comment       => 'test',
-                staff         => 'test',
-            }
-        ),
-        'Added ' . $client->loginid
-    );
-
-    my $error;
-    lives_ok {
-        my $transaction = BOM::Product::Transaction->new({
-            client   => $client,
-            contract => $contract,
-        });
-        $error = $transaction->_validate_payout_limit;
-    }
-    'validate payout limit';
-
-    is($error->get_type, 'PayoutLimitExceeded', 'Exceeded client payout limit');
-    like($error->{-message_to_client}, qr/This contract is limited to 500.00 payout on this account/, 'payout limit msg to client');
-
-    ok(
-        $custom_list->update({
-                loginid       => $client->loginid,
-                market        => 'forex',
-                contract_kind => 'all',
-                payout_limit  => 2000,
-                comment       => 'test',
-                staff         => 'test',
-            }
-        ),
-        'Added ' . $client->loginid
-    );
-    lives_ok {
-        my $transaction = BOM::Product::Transaction->new({
-            client   => $client,
-            contract => $contract,
-        });
-        $error = $transaction->_validate_payout_limit;
-    }
-    'validate payout limit';
-
-    is($error, undef, 'Not exceeded client payout limit');
-};
-
 subtest 'Is contract valid to buy' => sub {
-    plan tests => 3;
+    plan tests => 2;
 
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('is_valid_to_buy', sub { 1 });
@@ -254,7 +156,7 @@ subtest 'Is contract valid to buy' => sub {
 
     $mock_contract->unmock_all;
 
-    $contract1->add_errors({
+    $contract1->add_error({
         severity          => 1,
         message           => 'Adding error message',
         message_to_client => 'Error message to be sent to client',
@@ -263,20 +165,10 @@ subtest 'Is contract valid to buy' => sub {
     my $error = $transaction->_is_valid_to_buy;
     is($error->get_type, 'InvalidtoBuy', 'Contract is invalid to buy as it contains errors: _is_valid_to_buy - error type');
 
-    SKIP: {
-        skip 'because the exchange is not trading today', 1
-            unless $underlying->exchange->trades_on($now)
-            and $underlying->exchange->trades_on(Date::Utility->new($now->epoch + 500));
-        like(
-            $error->{-message_to_client},
-            qr/Error message to be sent to client/,
-            'contract is invalid to buy as it contains errors: _is_valid_to_buy - error message'
-        );
-    }
 };
 
 subtest 'Is contract valid to sell' => sub {
-    plan tests => 3;
+    plan tests => 2;
 
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('is_valid_to_sell', sub { 1 });
@@ -311,23 +203,20 @@ subtest 'Is contract valid to sell' => sub {
     my $error = $transaction->_is_valid_to_sell;
     is($error->get_type, 'InvalidtoSell', 'Contract is invalid to sell as expiry is too low: _is_valid_to_sell - error type');
 
-    SKIP: {
-        skip 'because the exchange is not trading today', 1
-            unless $underlying->exchange->trades_on($now)
-            and $underlying->exchange->trades_on(Date::Utility->new($now->epoch + 10));
-        like(
-            $error->{-message_to_client},
-            qr/Resale of this contract is not offered with/,
-            'Contract is invalid to sell as expiry is too low: _is_valid_to_sell - error message'
-        );
-    }
-
 };
 
 subtest 'contract date pricing Validation' => sub {
     plan tests => 3;
 
-    my $now      = Date::Utility->new;
+    my $now = Date::Utility->new;
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'currency',
+        {
+            symbol        => $_,
+            recorded_date => Date::Utility->new($now->epoch + 300),
+        }) for (qw/USD JPY GBP JPY-USD/);
+
     my $contract = produce_contract({
         underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
         bet_type     => 'FLASHU',
@@ -360,6 +249,13 @@ subtest 'valid currency test' => sub {
     subtest 'invalid currency' => sub {
         $mock_contract->mock('currency', sub { 'ABC' });
 
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'currency',
+            {
+                symbol        => $_,
+                recorded_date => Date::Utility->new($now->epoch - 100),
+            }) for (qw/USD JPY GBP JPY-USD/);
+
         my $contract = produce_contract({
             underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
             bet_type     => 'FLASHU',
@@ -384,6 +280,13 @@ subtest 'valid currency test' => sub {
 
     subtest 'illegal currency for landing company' => sub {
         $mock_contract->mock('currency', sub { 'AUD' });
+
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'currency',
+            {
+                symbol        => $_,
+                recorded_date => Date::Utility->new($now->epoch - 100),
+            }) for (qw/USD JPY GBP JPY-USD/);
 
         my $contract = produce_contract({
             underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
@@ -415,6 +318,13 @@ subtest 'valid currency test' => sub {
     };
 
     subtest 'not default currency for client' => sub {
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'currency',
+            {
+                symbol        => $_,
+                recorded_date => Date::Utility->new($now->epoch - 100),
+            }) for (qw/USD JPY GBP JPY-USD/);
+
         my $contract = produce_contract({
             underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
             bet_type     => 'FLASHU',
@@ -446,36 +356,37 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
     subtest 'do not allow move if recomputed is 1' => sub {
         $mock_contract->mock('ask_price', sub { 100 });
-        my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_markup',
-            description => 'fake model markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
+        $mock_contract->mock('commission_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0.01,
+            });
         });
-        my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'fake commission markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0.01,
+        $mock_contract->mock('risk_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'risk_markup',
+                description => 'fake risk markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0,
+            });
         });
-        my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup',
-            description => 'fake risk markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
-        });
-        $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
-        $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
-        $mock_contract->mock('model_markup', sub { $fake_model_markup });
         my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
             description => 'fake ask prov',
             set_by      => 'BOM::Product::Contract',
             base_amount => 1
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         my $allowed_move = 0.01 * 0.50;
+
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'currency',
+            {
+                symbol        => $_,
+                recorded_date => Date::Utility->new($now->epoch - 100),
+            }) for (qw/USD JPY GBP JPY-USD/);
 
         my $contract = produce_contract({
             underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
@@ -503,34 +414,28 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
     subtest 'check price move' => sub {
         $mock_contract->mock('ask_price', sub { 10 });
-        my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_markup',
-            description => 'fake model markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
+        $mock_contract->mock('commission_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0.01,
+            });
         });
-        my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'fake commission markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0.01,
+        $mock_contract->mock('risk_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'risk_markup',
+                description => 'fake risk markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0,
+            });
         });
-        my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup',
-            description => 'fake risk markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
-        });
-        $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
-        $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
-        $mock_contract->mock('model_markup', sub { $fake_model_markup });
         my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
             description => 'fake ask prov',
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
 
         my $allowed_move = 0.01 * 0.50;
@@ -592,27 +497,22 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
     subtest 'check payout move' => sub {
         $mock_contract->mock('payout', sub { 100 });
-        my $fake_model_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'model_markup',
-            description => 'fake model markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
+        $mock_contract->mock('commission_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0.01,
+            });
         });
-        my $fake_commission_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'fake commission markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0.01,
+        $mock_contract->mock('risk_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'risk_markup',
+                description => 'fake risk markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0,
+            });
         });
-        my $fake_risk_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup',
-            description => 'fake risk markup',
-            set_by      => 'BOM::Product::Contract',
-            base_amount => 0,
-        });
-        $fake_model_markup->include_adjustment('reset', $fake_commission_markup);
-        $fake_model_markup->include_adjustment('add',   $fake_risk_markup);
-        $mock_contract->mock('model_markup', sub { $fake_model_markup });
         my $allowed_move = 0.01 * 0.50;
         my $ask_cv       = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
@@ -620,7 +520,6 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 + $allowed_move + 0.001,
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
@@ -658,7 +557,6 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 + $allowed_move - 0.001,
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
@@ -681,7 +579,6 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 - $allowed_move + 0.001,
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('payout',          sub { 10 / $ask_cv->amount });
 
@@ -704,7 +601,6 @@ subtest 'BUY - trade pricing adjustment' => sub {
             set_by      => 'BOM::Product::Contract',
             base_amount => 0.1 - $allowed_move - 0.001,
         });
-        $ask_cv->include_adjustment('info', $fake_model_markup);
         $mock_contract->mock('ask_probability', sub { $ask_cv });
         $mock_contract->mock('payout', sub { roundnear(0.001, 10 / $ask_cv->amount) });
 
@@ -726,11 +622,178 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
 };
 
+subtest 'SELL - sell pricing adjustment' => sub {
+    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+
+    subtest 'do not allow move if recomputed is 0' => sub {
+        $mock_contract->mock('bid_price', sub { 100 });
+        $mock_contract->mock('commission_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0.01,
+            });
+        });
+        $mock_contract->mock('risk_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'risk_markup',
+                description => 'fake risk markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0,
+            });
+        });
+        my $ask_cv = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'bid_probability',
+            description => 'fake ask prov',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 1
+        });
+        $mock_contract->mock('bid_probability', sub { $ask_cv });
+        my $allowed_move = 0.01 * 0.80;
+
+        my $contract = produce_contract({
+            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            bet_type     => 'CALL',
+            currency     => 'GBP',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $now->epoch + 300,
+            date_pricing => Date::Utility->new($now->epoch - 100),
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $price = $contract->bid_price - ($allowed_move * $contract->payout) + 0.1;
+        my $transaction = BOM::Product::Transaction->new({
+            client   => $client,
+            contract => $contract,
+            action   => 'SELL',
+            price    => $price,
+        });
+        my $error = $transaction->_validate_sell_pricing_adjustment;
+        is($error, undef, 'no error');
+        cmp_ok($transaction->price, '==', 100, 'SELL at the recomputed price');
+    };
+
+    subtest 'check price move' => sub {
+        $mock_contract->mock('bid_price', sub { 10 });
+        $mock_contract->mock('commission_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0.01,
+            });
+        });
+        $mock_contract->mock('risk_markup', sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'risk_markup',
+                description => 'fake risk markup',
+                set_by      => 'BOM::Product::Contract',
+                base_amount => 0,
+            });
+        });
+        my $bid_cv = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'bid_probability',
+            description => 'fake ask prov',
+            set_by      => 'BOM::Product::Contract',
+            base_amount => 0.1
+        });
+        $mock_contract->mock('bid_probability', sub { $bid_cv });
+
+        my $allowed_move = 0.01 * 0.80;
+
+        my $contract = produce_contract({
+            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            bet_type     => 'FLASHU',
+            currency     => 'GBP',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $now->epoch + 300,
+            date_pricing => Date::Utility->new($now->epoch - 100),
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        # amount_type = payout, sell price increase > allowed move
+        my $transaction = BOM::Product::Transaction->new({
+            client   => $client,
+            contract => $contract,
+            action   => 'SELL',
+            price    => $contract->bid_price + ($allowed_move * $contract->payout + 0.1),
+        });
+
+        my $error = $transaction->_validate_sell_pricing_adjustment;
+        is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
+        like(
+            $error->{-message_to_client},
+            qr/The underlying market has moved too much since you priced the contract. The contract sell price has changed from GBP10.90 to GBP10.00./,
+            'price move - msg to client'
+        );
+
+        # amount_type = payout, sell price decrease < allowed move
+        my $price = $contract->bid_price + ($allowed_move * $contract->payout - 0.1);
+        $transaction = BOM::Product::Transaction->new({
+            client   => $client,
+            contract => $contract,
+            action   => 'SELL',
+            price    => $price,
+        });
+
+        $error = $transaction->_validate_sell_pricing_adjustment;
+        is($error, undef, 'SELL price descrease within allowable move');
+        cmp_ok($transaction->price, '==', $price, 'SELL with original price');
+
+        # amount_type = payout, sell price increase => better execution price
+        $price = $contract->bid_price - ($allowed_move * $contract->payout * 2);
+        $transaction = BOM::Product::Transaction->new({
+            client   => $client,
+            contract => $contract,
+            action   => 'SELL',
+            price    => $price,
+        });
+        $error = $transaction->_validate_sell_pricing_adjustment;
+        is($error, undef, 'SELL price increase, better execution price');
+        cmp_ok($transaction->price, '>', $price, 'SELL with higher price');
+
+        $mock_contract->unmock_all;
+    };
+
+    subtest 'price is undefined' => sub {
+        my $mocked = Test::MockModule->new('BOM::Product::Contract');
+        $mocked->mock('bid_price', sub {return 50});
+        my $contract = produce_contract({
+            underlying   => BOM::Market::Underlying->new('frxUSDJPY'),
+            bet_type     => 'CALL',
+            currency     => 'GBP',
+            payout       => 100,
+            date_start   => $now,
+            date_expiry  => $now->epoch + 300,
+            date_pricing => Date::Utility->new($now->epoch - 100),
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $transaction = BOM::Product::Transaction->new({
+            client   => $client,
+            contract => $contract,
+            action   => 'SELL',
+            price    => undef,
+        });
+        my $error = $transaction->_validate_sell_pricing_adjustment;
+        is($error, undef, 'no error');
+        cmp_ok($transaction->price, '==', 50, 'SELL at the recomputed price');
+    };
+};
+
 subtest 'Purchase Sell Contract' => sub {
     plan tests => 4;
 
     my $client = BOM::Platform::Client->new({loginid => 'CR2002'});
     $client = BOM::Platform::Client::get_instance({'loginid' => $client->loginid});
+    my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
+    $mocked_client->mock('residence', sub {return 'al'});
     my $currency = 'USD';
     $client->set_default_account($currency);
 
@@ -785,12 +848,16 @@ subtest 'Purchase Sell Contract' => sub {
         payout       => 100,
         date_start   => $now,
         date_expiry  => $expiry,
-        date_pricing => $now,
+        # Opposite contract can now be used to purchase. To simulate sellback behaviour,
+        # set date_pricing to date_start + 1
+        date_pricing => $now->epoch + 1,
         entry_tick   => $current_tick,
         current_tick => $current_tick,
         exit_tick    => $current_tick,
         barrier      => 'S0P',
     });
+    my $mocked = Test::MockModule->new('BOM::Product::Transaction');
+    $mocked->mock('_validate_sell_pricing_adjustment', sub { });
     $error = BOM::Product::Transaction->new({
             client      => $client,
             contract    => $contract,
@@ -799,17 +866,6 @@ subtest 'Purchase Sell Contract' => sub {
         })->sell;
 
     is($error, undef, 'Able to sell the contract successfully');
-};
-
-subtest 'Validate  Request Method' => sub {
-
-    BOM::Platform::Context::request(BOM::Platform::Context::Request->new(http_method => 'POST'));
-
-    is(BOM::Product::Transaction::validate_request_method(), undef, "Request method as POST pass");
-
-    BOM::Platform::Context::request(BOM::Platform::Context::Request->new(http_method => 'GET'));
-    my $error = BOM::Product::Transaction::validate_request_method();
-    is($error->{-message_to_client}, "Sorry, this page cannot be refreshed.", "Request Method as GET gives proper error");
 };
 
 subtest 'validate stake limit' => sub {

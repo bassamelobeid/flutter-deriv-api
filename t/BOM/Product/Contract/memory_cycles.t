@@ -4,6 +4,7 @@ use warnings;
 use Test::Exception;
 use Test::Memory::Cycle;
 use Test::More qw( no_plan );
+use Test::NoWarnings;
 use Test::Warn;
 use Test::MockModule;
 use File::Spec;
@@ -11,28 +12,31 @@ use JSON qw(decode_json);
 
 use Data::Hash::DotNotation;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
 my $recorded_date = Date::Utility->new;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol        => 'FOREX',
-        recorded_date => $recorded_date,
-        date          => Date::Utility->new,
-    });
+#Cycle test will complain because of data types it cannot handle (Redis's Socket has these data types)
+#So we just ignore those complaints here
+$SIG{__WARN__} = sub { my $w = shift; return if $w =~ /^Unhandled type: GLOB/; die $w; };
 
 subtest 'Check BOM::Product::Contract for memory cycles' => sub {
     use_ok('BOM::Product::Contract');
     my $params = {
         underlying => 'frxEURUSD',
-        duration   => '10d',
+        duration   => '10t',
         bet_type   => 'CALL',
         barrier    => 'S0P',
         payout     => 100,
         currency   => 'USD',
     };
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxEURUSD',
+            recorded_date => Date::Utility->new(),
+        });
 
     my $bet = produce_contract($params);
 

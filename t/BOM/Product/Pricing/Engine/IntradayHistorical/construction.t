@@ -9,24 +9,17 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Market::UnderlyingDB;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/FOREX FSE EURONEXT/);
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
         date   => Date::Utility->new,
     }) for (qw/USD JPY EUR/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'N150',
@@ -72,7 +65,7 @@ $bet_params->{duration} = '1d';
 
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example DOUBLEDOWN bet';
 ok $bet->expiry_daily;
-ok !BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($bet), 'daily bet incompatible with IH engine';
+is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'expiry_daily contract uses slope pricer';
 
 delete $bet_params->{date_start};
 $bet_params->{bet_type} = 'RANGE';
@@ -90,14 +83,14 @@ $bet_params->{date_pricing} = $now - 300;
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example INTRADD bet';
 ok !$bet->expiry_daily;
 ok $bet->is_forward_starting;
-ok !BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($bet), 'forward starting bet incompatible with IH';
+is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'forward starting bet incompatible with IH';
 
 delete $bet_params->{date_start};
 $bet_params->{bet_type}   = 'FLASHU';
 $bet_params->{underlying} = 'N150';
 
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example N150 bet';
-ok !BOM::Product::Pricing::Engine::Intraday::Index::is_compatible($bet), 'unsupported symbol';
+is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'unsupported symbol';
 
 delete $bet_params->{date_start};
 delete $bet_params->{date_pricing};
@@ -109,11 +102,11 @@ $bet_params->{underlying} = 'frxUSDJPY';
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example 14m59s bet';
 ok !$bet->is_forward_starting;
 ok !$bet->expiry_daily;
-ok !BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($bet), 'incompatible duration (14m59s)';
+is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'slope pricer for duration (14m59s)';
 $bet_params->{duration} = '15m';
 $bet = produce_contract($bet_params);
-ok BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($bet), 'incompatible duration (14m59s)';
+is $bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'intraday historical forex pricer for duration (15m)';
 $bet_params->{duration} = '5h1s';
 $bet = produce_contract($bet_params);
-ok !BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($bet), 'incompatible duration (5h1s)';
+is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'slope pricer for duration (5h1s)';
 done_testing;

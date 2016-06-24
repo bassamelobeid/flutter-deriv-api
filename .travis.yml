@@ -1,19 +1,25 @@
 language: perl
 perl:
-    - "5.14.2"
+    - "5.14.2-thr"
 env:
     - TEST_SUITE=unit_test_product_contract
+    - TEST_SUITE=unit_test_product_contract_extended
     - TEST_SUITE=unit_test_product_all
-    - TEST_SUITE=syntax_lib
-    - TEST_SUITE=unit_test_marketdata
-    - TEST_SUITE=unit_test_market
+    - TEST_SUITE=unit_test_validation
+    - TEST_SUITE=unit_test_pricing
+    - TEST_SUITE=unit_test_intraday
+
 services:
     - redis-server
 addons:
     postgresql: "9.3"
 cache: apt
 before_install:
-    - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone https://6b8b5139b6cfaf61ea0b34834b62c275b500fa8b@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - /tmp/travis-scripts/setup_ssh.sh
+    - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
+    - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
+    - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
     - /tmp/travis-scripts/fixHostName.sh
     - dpkg -l | grep postgres
     - pg_lsclusters
@@ -21,15 +27,12 @@ before_install:
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
 
-    - /tmp/travis-scripts/couchdb.sh
-
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-web
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-app
-    - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
+    - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
 
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
@@ -44,8 +47,13 @@ install:
     - /tmp/travis-scripts/setup_feeddb.sh
     - /tmp/travis-scripts/setup_authdb.sh
     - /tmp/travis-scripts/setup_usersdb.sh
+    - /tmp/travis-scripts/setup_chronicledb.sh
 
     - /tmp/travis-scripts/setup_logs.sh
+    - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
     - make $TEST_SUITE
+
+after_script:
+    - /tmp/travis-scripts/wait_for_ssh.sh

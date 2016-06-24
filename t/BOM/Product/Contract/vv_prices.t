@@ -3,8 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 9;
-use Test::NoWarnings;
+use Test::More tests => 12;
+use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 
@@ -12,27 +12,20 @@ use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 my $now = Date::Utility->new('2014-11-11');
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => $_,
-        rates  => {8 => 0},
-        date   => $now,
+        symbol        => $_,
+        rates         => {8 => 0},
+        recorded_date => $now,
     }) for (qw/JPY USD JPY-USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
@@ -64,13 +57,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             },
         }});
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw( JPY USD );
-
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch - 2,
@@ -86,8 +72,8 @@ my $params = {
     currency     => 'USD',
     barrier      => 98,
 };
-
 my $c = produce_contract($params);
+like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 is roundnear(0.0001, $c->bs_probability->amount), 0.1496, 'correct bs probability for FX contract';
 is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0381, 'correct market supplement';
 
@@ -97,28 +83,23 @@ $c = produce_contract({
     high_barrier => 101,
     low_barrier  => 99,
 });
+like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 is roundnear(0.0001, $c->bs_probability->amount), 0.1106, 'correct bs probability for FX contract';
 is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0299, 'correct market supplement';
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'AEX',
-        date   => Date::Utility->new,
+        symbol        => 'AEX',
+        recorded_date => Date::Utility->new($params->{date_pricing}),
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => 'EUR',
-        date   => Date::Utility->new,
+        symbol        => 'EUR',
+        recorded_date => $now,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'EURONEXT',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'AEX',
@@ -135,8 +116,9 @@ $c = produce_contract({
     underlying => 'AEX',
     currency   => 'EUR',
 });
-is roundnear(0.0001, $c->bs_probability->amount), 0.5992, 'correct bs probability for indices contract';
-is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), -0.0251, 'correct market supplement';
+like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
+is roundnear(0.0001, $c->bs_probability->amount), 0.6241, 'correct bs probability for indices contract';
+is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), -0.0247, 'correct market supplement';
 
 $c = produce_contract({
     %$params,
@@ -146,5 +128,6 @@ $c = produce_contract({
     underlying   => 'AEX',
     currency     => 'EUR',
 });
-is roundnear(0.0001, $c->bs_probability->amount), 0.263, 'correct bs probability for indices contract';
-is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0173, 'correct market supplement';
+like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
+is roundnear(0.0001, $c->bs_probability->amount), 0.2154, 'correct bs probability for indices contract';
+is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0139, 'correct market supplement';

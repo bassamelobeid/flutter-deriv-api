@@ -10,12 +10,13 @@ use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
 
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
+
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
 
 use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use JSON qw( from_json to_json decode_json );
 
@@ -25,17 +26,11 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now,
     quote      => 1
 });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol        => 'FOREX',
-        recorded_date => Date::Utility->new,
-    });
 
 my %bet_params = (
     bet_type     => 'NOTOUCH',
     date_start   => $now,
-    date_expiry  => '20-Jan-2012',
+    date_expiry  => '2012-01-20 23:59:59',
     underlying   => 'frxEURUSD',
     payout       => 100,
     current_tick => $tick,
@@ -161,7 +156,7 @@ my %historical = (
                 recorded_date => '2012-01-19T00:00:00Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.01},
                         smile      => {
                             25 => 0.1615,
@@ -173,7 +168,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:20:01Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.04},
                         smile      => {
                             25 => 0.1715,
@@ -185,7 +180,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:40:01Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.03},
                         smile      => {
                             25 => 0.1515,
@@ -198,7 +193,7 @@ my %historical = (
                 recorded_date => '2012-01-19T00:00:00Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.061},
                         smile      => {
                             25 => 0.0975,
@@ -210,7 +205,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:15:01Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.05},
                         smile      => {
                             25 => 0.0875,
@@ -222,7 +217,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:30:01Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.10},
                         smile      => {
                             25 => 0.1075,
@@ -235,7 +230,7 @@ my %historical = (
                 recorded_date => '2012-01-19T00:00:00Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.025},
                         smile      => {
                             25 => 0.155,
@@ -247,7 +242,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:18:01Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.05},
                         smile      => {
                             25 => 0.255,
@@ -259,7 +254,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:48:02Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.03},
                         smile      => {
                             25 => 0.165,
@@ -271,7 +266,7 @@ my %historical = (
     },
 );
 
-# Now we'll muck up any historical data in the couch unit test DB and
+# Now we'll muck up any historical data in the chronicle unit test DB and
 # replace it with our own crazy values.
 foreach my $fixture_type (keys %historical) {
     while (my ($symbol, $fixtures) = each %{$historical{$fixture_type}}) {
@@ -281,8 +276,7 @@ foreach my $fixture_type (keys %historical) {
                 $fixture->{$date_key} = Date::Utility->new($fixture->{$date_key})
                     if exists $fixture->{$date_key};
             }
-
-            BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+            BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 $fixture_type,
                 {
                     symbol => $fixture->{symbol},
@@ -337,6 +331,7 @@ my $end   = Date::Utility->new('2012-01-19T02:00:00Z');
 for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
     my $when = Date::Utility->new($time);
     $bet_params{date_pricing} = $when;
+
     my $bet        = produce_contract(\%bet_params);
     my $price_date = $bet->date_pricing->datetime_iso8601;
     my %current    = (
@@ -362,7 +357,7 @@ for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
         },
         AUD => {
             date  => $bet->forqqq->{underlying}->quoted_currency->interest->recorded_date->datetime_iso8601,
-            value => $bet->quanto_rate,
+            value => $bet->discount_rate,
         },
     );
 
@@ -377,7 +372,7 @@ for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
     }
     # This is mostly here so that if the integral days thing changes we'll notice.
     # It will break other tests later, if not.
-    is($bet->timeindays->amount, 1, 'One day long bet.');
+    is($bet->timeindays->amount, 2, 'One day long bet.');
 }
 
 foreach my $symbol (sort keys %previous) {

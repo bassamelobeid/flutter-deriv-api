@@ -3,7 +3,6 @@ package BOM::Product::Contract::Strike;
 use Moose;
 use namespace::autoclean;
 
-use Carp qw( croak );
 use POSIX qw( floor );
 use Scalar::Util qw(looks_like_number);
 use Readonly;
@@ -12,7 +11,6 @@ use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::Platform::Context qw(localize);
 use Format::Util::Numbers qw(roundnear);
-use BOM::Product::Types;
 use feature "state";
 
 with 'MooseX::Role::Validatable';
@@ -26,12 +24,6 @@ has supplied_barrier => (
 has custom_pipsize => (
     is      => 'ro',
     default => undef,
-);
-
-has round_to_pipsize => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => 1,
 );
 
 has underlying => (
@@ -134,7 +126,7 @@ sub _build_as_absolute {
         if ($value <= 0) {
             $self->add_errors({
                 severity          => 100,
-                message           => 'Non-positive barrier provided [' . $value . ']',
+                message           => "Non-positive barrier [value: $value]",
                 message_to_client => localize('Contract barrier must be positive.'),
             });
             $value = 10 * $underlying->pip_size;
@@ -200,7 +192,7 @@ sub _build_for_shortcode {
 
     while ($strike->has_adjustments) {
         # Keep on down the rabbit hole until we find the bottom which is unadjusted.
-        $strike = $self->adjustment->{prev_obj};
+        $strike = $strike->adjustment->{prev_obj};
     }
 
     return $strike->as_relative if ($strike->supplied_type eq 'relative' or $strike->supplied_type eq 'difference');
@@ -237,7 +229,7 @@ sub _build_display_text {
     my $strike = $self;
     while ($strike->has_adjustments) {
         # Keep on down the rabbit hole until we find the bottom which is unadjusted.
-        $strike = $self->adjustment->{prev_obj};
+        $strike = $strike->adjustment->{prev_obj};
     }
 
     if ($barrier_type eq 'absolute') {
@@ -294,7 +286,7 @@ my %modifiers = (
 sub adjust {
     my ($self, $args) = @_;
 
-    croak 'Adjust requires a proper modifier, numeric amount and reason string'
+    die 'Adjust requires a proper modifier, numeric amount and reason string'
         unless ($args->{reason} and looks_like_number($args->{amount}) and (my $modifier = $modifiers{$args->{modifier}}));
 
     # We have to do this here to retain barrier type of a contract.
@@ -321,21 +313,6 @@ sub adjust {
     );
 }
 
-sub list_adjustment_descriptions {
-    my $self = shift;
-
-    my @adjustment_descriptions;
-
-    my $strike = $self;
-
-    while ($strike->has_adjustments) {
-        push @adjustment_descriptions, $self->adjustment->{desc};
-        $strike = $self->adjustment->{prev_obj};
-    }
-
-    return @adjustment_descriptions;
-}
-
 sub strike_string {
     my ($class, $string, $underlying, $bet_type_code, $when) = @_;
 
@@ -350,14 +327,7 @@ sub strike_string {
 
 sub _proper_value {
     my ($self, $value) = @_;
-
-    my $proper_val = $value;
-    if ($self->round_to_pipsize) {
-        $proper_val =
-            ($self->custom_pipsize) ? $self->underlying->pipsized_value($value, $self->custom_pipsize) : $self->underlying->pipsized_value($value);
-    }
-
-    return $proper_val;
+    return $self->underlying->pipsized_value($value, $self->custom_pipsize);
 }
 
 sub _forex_barrier_multiplier {

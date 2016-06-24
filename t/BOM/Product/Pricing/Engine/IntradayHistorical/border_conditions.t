@@ -7,34 +7,25 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-use BOM::Test::Runtime qw(:normal);
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Market::AggTicks;
+
+use BOM::Test::Runtime qw(:normal);
 use Date::Utility;
 use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::MarketData::VolSurface::Utils;
-
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use Quant::Framework::VolSurface::Utils;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 BOM::Market::AggTicks->new->flush;
-
-foreach my $symbol (qw(NYSE LSE TSE FSE ASX FOREX SES)) {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol => $symbol,
-            date   => Date::Utility->new,
-        });
-}
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 
 my $test_date = Date::Utility->new('8-Nov-12');
-my $util      = BOM::MarketData::VolSurface::Utils->new();
+my $util      = Quant::Framework::VolSurface::Utils->new();
 # If this moves, the test might be otherwise wonky.
 my $ro_epoch = $util->NY1700_rollover_date_on($test_date)->epoch;
 is($ro_epoch, 1352412000, 'Correct rollover time');
@@ -50,23 +41,20 @@ my $first_day = Date::Utility->new($date_start)->truncate_to_day;
 my $next_day = Date::Utility->new($date_start + (3600 * 9));
 
 foreach my $day ($first_day, $next_day) {
-
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
             symbol        => $_,
             recorded_date => $day,
-            date          => Date::Utility->new,
-        }) for (qw/GBP JPY USD AUD EUR SGD/);
+        }) for (qw/GBP JPY USD AUD EUR SGD JPY-USD/);
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
             symbol        => $_,
             recorded_date => $day,
         }) for qw( frxUSDJPY frxGBPJPY frxGBPUSD );
 }
-
 my $bet_params = {
     bet_type     => $bet_type,
     date_pricing => $date_start,

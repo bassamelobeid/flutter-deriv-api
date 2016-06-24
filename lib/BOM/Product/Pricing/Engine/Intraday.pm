@@ -22,50 +22,6 @@ use BOM::Platform::Context qw(request localize);
 use Format::Util::Numbers qw( roundnear );
 use Time::Duration::Concise;
 
-=head2 is_compatible
-
-A static method which will tell you if a bet is compatible with this engine.
-
-=cut
-
-# Should be expanded to Pricing::Engine allowing us to cycle through and find the correct engine.
-sub is_compatible {
-    my $bet = shift;
-
-    my $underlying = $bet->underlying;
-    my $symbol     = $underlying->system_symbol;
-    my $submarket  = $underlying->submarket->name;
-    my $cat        = $bet->category->code;
-
-    my $error_cond;
-    if ($bet->is_forward_starting) {
-        $error_cond = 'Bet type [' . $bet->code . ']';
-    } elsif ($bet->expiry_daily) {
-        $error_cond = 'Daily expiry bet';
-    } else {
-        my $duration       = $bet->remaining_time;
-        my $duration_error = 'Unsupported duration [' . $duration->as_concise_string . ']';
-        $error_cond = $duration_error;
-        my $loc = $bet->offering_specifics->{historical};
-        if (defined $loc->{min} && defined $loc->{max}) {
-            $error_cond = undef if ($duration->seconds <= $loc->{max}->seconds && $duration->seconds >= $loc->{min}->seconds);
-        }
-    }
-
-    return $error_cond ? 0 : 1;
-}
-
-=head2 chunk_count
-
-How many sub-chunks to use for vol computation.
-
-=cut
-
-has chunk_count => (
-    is      => 'ro',
-    default => 1
-);
-
 =head2 tick_source
 
 The source of the ticks used for this pricing.  BOM::Market::AggTicks
@@ -77,7 +33,7 @@ has tick_source => (
     default => sub { BOM::Market::AggTicks->new },
 );
 
-has [qw(period_opening_value period_closing_value ticks_for_trend long_term_vol)] => (
+has [qw(period_opening_value period_closing_value long_term_vol)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -88,32 +44,6 @@ has [qw(_vol_interval _trend_interval)] => (
     is         => 'ro',
     lazy_build => 1,
 );
-
-=head2 period_opening_value
-
-The first tick of our aggregation period, reenvisioned as a Math::Util::CalculatedValue::Validatable
-
-=cut
-
-sub _build_period_opening_value {
-    my $self = shift;
-
-    return $self->ticks_for_trend->{first};
-}
-
-=head2 period_closing_value
-
-The final tick of our aggregation period, reenvisioned as a Math::Util::CalculatedValue::Validatable.
-
-For contracts which we are pricing now, it's the latest spot.
-
-=cut
-
-sub _build_period_closing_value {
-    my $self = shift;
-
-    return $self->ticks_for_trend->{last};
-}
 
 sub _build__vol_interval {
     my $self = shift;
@@ -152,43 +82,6 @@ sub _build_long_term_vol {
                 }
             ),
         });
-}
-
-sub _build_ticks_for_trend {
-    my $self = shift;
-
-    my $bet        = $self->bet;
-    my $underlying = $bet->underlying;
-    my $at         = $self->tick_source;
-    my $how_long   = $self->_trend_interval;
-
-    my @unchunked_ticks = @{
-        $at->retrieve({
-                underlying   => $underlying,
-                interval     => $how_long,
-                ending_epoch => $bet->date_pricing->epoch,
-                fill_cache   => !$bet->backtest,
-            })};
-
-    my ($iov, $icv) = (@unchunked_ticks) ? ($unchunked_ticks[0]{value}, $unchunked_ticks[-1]{value}) : ($bet->current_spot, $bet->current_spot);
-    my $iot = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'period_opening_value',
-        description => 'First tick in intraday aggregated ticks',
-        set_by      => __PACKAGE__,
-        base_amount => $iov,
-    });
-
-    my $ict = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'period_closing_value',
-        description => 'Last tick in intraday aggregated ticks',
-        set_by      => __PACKAGE__,
-        base_amount => $icv,
-    });
-
-    return +{
-        first => $iot,
-        last  => $ict
-    };
 }
 
 sub _formula_args {

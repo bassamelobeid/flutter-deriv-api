@@ -10,18 +10,18 @@ sub BUILD {
 
     if (my $barrier2 = $self->low_barrier and my $barrier1 = $self->high_barrier) {
         if ($barrier2->as_absolute > $barrier1->as_absolute) {
-            $self->add_errors({
+            $self->add_error({
                 severity          => 5,
-                message           => 'High and low barriers inverted [' . $barrier1->as_absolute . ', ' . $barrier2->as_absolute . ']',
-                message_to_client => localize('The barriers are improperly entered for this contract.'),
+                message           => 'High and low barriers inverted',
+                message_to_client => localize('High barrier must be higher than low barrier.'),
             });
             $self->low_barrier($barrier1);
             $self->high_barrier($barrier2);
         } elsif ($barrier1->as_absolute == $barrier2->as_absolute) {
-            $self->add_errors({
+            $self->add_error({
                 severity          => 100,
-                message           => 'High and low barriers must be different [' . $barrier1->as_absolute . ', ' . $barrier2->as_absolute . ']',
-                message_to_client => localize('The barriers are improperly entered for this contract.'),
+                message           => 'High and low barriers must be different',
+                message_to_client => localize('High and low barriers must be different.'),
             });
             $self->low_barrier(
                 $barrier1->adjust({
@@ -43,33 +43,52 @@ sub BUILD {
 
 has [qw(supplied_high_barrier supplied_low_barrier)] => (is => 'ro');
 
-has [qw(high_barrier low_barrier)] => (
-    is         => 'rw',
-    isa        => 'Maybe[BOM::Product::Contract::Strike]',
-    lazy_build => 1,
+has [qw(original_high_barrier original_low_barrier)] => (
+    is  => 'rw',
+    isa => 'Maybe[BOM::Product::Contract::Strike]'
+);
+
+has high_barrier => (
+    is      => 'rw',
+    isa     => 'Maybe[BOM::Product::Contract::Strike]',
+    lazy    => 1,
+    builder => '_build_high_barrier',
 );
 
 sub _build_high_barrier {
     my $self = shift;
-    return $self->make_barrier($self->supplied_high_barrier);
+
+    my $high_barrier = $self->make_barrier($self->supplied_high_barrier);
+    $self->original_high_barrier($self->initial_barrier) if defined $self->initial_barrier;
+    return $high_barrier;
 }
+
+has low_barrier => (
+    is      => 'rw',
+    isa     => 'Maybe[BOM::Product::Contract::Strike]',
+    lazy    => 1,
+    builder => '_build_low_barrier',
+);
 
 sub _build_low_barrier {
     my $self = shift;
-    return $self->make_barrier($self->supplied_low_barrier);
-}
 
-sub _barriers_for_pricing {
+    my $low_barrier = $self->make_barrier($self->supplied_low_barrier);
+    $self->original_low_barrier($self->initial_barrier) if defined $self->initial_barrier;
+    return $low_barrier;
+}
+has barriers_for_pricing => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_barriers_for_pricing',
+);
+
+sub _build_barriers_for_pricing {
     my $self = shift;
     return {
         barrier1 => $self->_apply_barrier_adjustment($self->high_barrier->as_absolute),
         barrier2 => $self->_apply_barrier_adjustment($self->low_barrier->as_absolute),
     };
-}
-
-sub _barriers_for_shortcode {
-    my $self = shift;
-    return ($self->high_barrier and $self->low_barrier) ? ($self->high_barrier->for_shortcode, $self->low_barrier->for_shortcode) : ();
 }
 
 sub _validate_barrier {
@@ -79,67 +98,76 @@ sub _validate_barrier {
     my $low_barrier  = $self->low_barrier;
     my $current_spot = $self->current_spot;
 
-    my @errors;
-    push @errors, $high_barrier->all_errors if not $high_barrier->confirm_validity;
-    push @errors, $low_barrier->all_errors  if not $low_barrier->confirm_validity;
+    return ($high_barrier->all_errors)[0] if not $high_barrier->confirm_validity;
+    return ($low_barrier->all_errors)[0]  if not $low_barrier->confirm_validity;
     if (not defined $high_barrier or not defined $low_barrier) {
-        push @errors,
-            {
+        return {
             severity          => 100,
-            message           => 'At least of barrier is undefined on double barrier contract.',
+            message           => 'At least one barrier is undefined on double barrier contract.',
             message_to_client => localize('The barriers are improperly entered for this contract.'),
-            };
+        };
     }
     if ($high_barrier->supplied_type ne $low_barrier->supplied_type) {
-        push @errors,
-            {
+        return {
             severity          => 5,
             message           => 'Mixed absolute and relative barriers',
             message_to_client => localize('Proper barriers could not be determined.'),
-            };
+        };
     }
     if ($self->is_path_dependent) {
         my $high_pip_move = $self->high_barrier->pip_difference;
         my $low_pip_move  = $self->low_barrier->pip_difference;
         my $min_allowed   = $self->minimum_allowable_move;
         if ($high_barrier->as_absolute <= $current_spot or $low_barrier->as_absolute >= $current_spot) {
-            push @errors,
-                {
-                message => 'Barriers should straddle the spot ['
-                    . $high_barrier->as_absolute . ', '
-                    . $current_spot . ', '
-                    . $low_barrier->as_absolute . ']',
+            return {
+                message => 'Barriers should straddle the spot '
+                    . "[spot: "
+                    . $current_spot . "] "
+                    . "[high: "
+                    . $high_barrier->as_absolute . "] "
+                    . "[low: "
+                    . $low_barrier->as_absolute . "]",
                 severity          => 1,
                 message_to_client => localize('Barriers must be on either side of the spot.'),
-                };
+            };
         } elsif (abs($high_pip_move) < $min_allowed or abs($low_pip_move) < $min_allowed) {
-            push @errors,
-                {
-                message => 'Relative barrier path dependents must move a minimum of '
-                    . $min_allowed
-                    . "pips. Moved[high:$high_pip_move, low:$low_pip_move]",
+            return {
+                message => 'Relative barrier path dependent move below minimum '
+                    . "[high move: "
+                    . $high_pip_move . "] "
+                    . "[low move: "
+                    . $low_pip_move . "] "
+                    . "[min: "
+                    . $min_allowed . "]",
                 severity          => 1,
                 message_to_client => localize('Barrier must be at least ' . $min_allowed . ' pips away from the spot.'),
-                };
+            };
         }
     }
-    if ($low_barrier->as_absolute > 2.5 * $current_spot or $low_barrier->as_absolute < 0.25 * $current_spot) {
-        push @errors,
-            {
-            message           => 'Lower barrier is outside of range of 25% to 250% of spot',
-            severity          => 91,
-            message_to_client => localize('Low barrier is out of acceptable range. Please adjust the low barrier.'),
+    my ($min_move, $max_move) = (0.25, 2.5);
+    foreach my $pair (['low' => $low_barrier], ['high' => $high_barrier]) {
+        my ($label, $barrier) = @$pair;
+        next unless $barrier;
+        my $abs_barrier = $barrier->as_absolute;
+        if ($abs_barrier > $max_move * $current_spot or $abs_barrier < $min_move * $current_spot) {
+            return {
+                message => 'Barrier too far from spot '
+                    . "[move: "
+                    . ($abs_barrier / $current_spot) . "] "
+                    . "[min: "
+                    . $min_move . "] "
+                    . "[max: "
+                    . $max_move . "]",
+                severity          => 91,
+                message_to_client => ($label eq 'low')
+                ? localize('Low barrier is out of acceptable range. Please adjust the low barrier.')
+                : localize('High barrier is out of acceptable range. Please adjust the high barrier.'),
+                ,
             };
-    }
-    if ($high_barrier->as_absolute > 2.5 * $current_spot or $high_barrier->as_absolute < 0.25 * $current_spot) {
-        push @errors,
-            {
-            message           => 'High barrier is outside of range of 25% to 250% of spot',
-            severity          => 91,
-            message_to_client => localize('High barrier is out of acceptable range. Please adjust the high barrier.'),
-            };
+        }
     }
 
-    return @errors;
+    return;
 }
+
 1;

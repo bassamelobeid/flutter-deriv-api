@@ -24,8 +24,9 @@ subtest 'get_offerings_flyby' => sub {
                 'exchange_name',                  'sentiment',
                 'start_type',                     'submarket',
                 'underlying_symbol',              'min_contract_duration',
-                'max_contract_duration',          'payout_limit',
+                'max_contract_duration',
                 'min_historical_pricer_duration', 'max_historical_pricer_duration',
+                'contract_category_display'
             )
         ],
         'Matching key list'
@@ -33,10 +34,10 @@ subtest 'get_offerings_flyby' => sub {
     eq_or_diff([$fb->values_for_key('expiry_type')], [qw( daily intraday tick )], '..with, at least, the expected values for expiry_type');
     subtest 'example queries' => sub {
         is(scalar $fb->query('"start_type" IS "forward" -> "market"'),          5,  'Forward-starting is offered on 6 markets.');
-        is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 28, 'Tick expiries are offered on 28 underlyings.');
-        is(scalar $fb->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'), 12, 'Twelve callput options on frxUSDJPY');
-        is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 8,  'Eight underlyings trade on the RANDOM exchange');
-        is(scalar $fb->query('"market" IS "random" -> "underlying_symbol"'),        12, '...out of 12 total random market symbols.');
+        is(scalar $fb->query('"expiry_type" IS "tick" -> "underlying_symbol"'), 24, 'Tick expiries are offered on 24 underlyings.');
+        is(scalar get_offerings_flyby('iom')->query('"contract_category" IS "callput" AND "underlying_symbol" IS "frxUSDJPY"'), 12, '12 callput options on frxUSDJPY');
+        is(scalar $fb->query('"exchange_name" IS "RANDOM" -> "underlying_symbol"'), 6,  'Six underlyings trade on the RANDOM exchange');
+        is(scalar $fb->query('"market" IS "volidx" -> "underlying_symbol"'),        6, '...out of 6 total random market symbols.');
     };
 };
 
@@ -59,13 +60,13 @@ subtest 'get_offerings_with_filter' => sub {
     delete $filtration->{contract_category};
     eq_or_diff(
         [sort(get_offerings_with_filter($to, $filtration))],
-        [sort qw(CALL PUT EXPIRYMISS EXPIRYRANGE ONETOUCH NOTOUCH RANGE UPORDOWN)],
+        [sort qw(CALL PUT EXPIRYRANGE EXPIRYMISS ONETOUCH NOTOUCH RANGE SPREADD SPREADU UPORDOWN)],
         '... explodes without a contract category'
     );
     $filtration->{expiry_type} = 'tick';
     eq_or_diff(
         [sort(get_offerings_with_filter($to, $filtration))],
-        [sort qw(CALL PUT ASIAND ASIANU DIGITMATCH DIGITDIFF )],
+        [sort qw(CALL PUT ASIAND ASIANU DIGITMATCH DIGITDIFF DIGITODD DIGITEVEN DIGITOVER DIGITUNDER)],
         '... and switches up for tick expiries.'
     );
 
@@ -76,7 +77,7 @@ subtest 'get_permitted_expiries' => sub {
     my $r100 = get_permitted_expiries({underlying_symbol => 'R_100'});
 
     eq_or_diff(get_permitted_expiries(), {}, 'Get an empty result when no guidance is provided.');
-    eq_or_diff($r100, get_permitted_expiries({market => 'random'}), 'R_100 has the broadest offering, so it matches with the random market');
+    eq_or_diff($r100, get_permitted_expiries({market => 'volidx'}), 'R_100 has the broadest offering, so it matches with the random market');
     is $r100->{tick}->{min}, 5, "R_100 has something with 5 tick expiries";
     is $r100->{daily}->{max}->days, 365, "... all the way out to a year.";
 
@@ -89,7 +90,7 @@ subtest 'get_permitted_expiries' => sub {
         contract_category => 'touchnotouch'
     });
 
-    ok exists $fx_tnt->{intraday},  'Some forex symbols have intraday touches';
+    ok !exists $fx_tnt->{intraday},  'no touchnotouch intraday on fx';
     ok !exists $mp_tnt->{intraday}, '... but not on minor_pairs';
     ok !exists $fx_tnt->{tick},     '... nor does forex have tick touches';
     ok !exists $mp_tnt->{tick},     '... especially not on minor_pairs.';
@@ -100,8 +101,6 @@ subtest 'get_permitted_expiries' => sub {
     });
     ok !exists $r100_tnt->{tick},    'None of which is surprising, since they are not on R_100, either';
     ok exists $r100_tnt->{intraday}, '... but you can play them intraday';
-    cmp_ok $r100_tnt->{intraday}->{min}->seconds, '<', $fx_tnt->{intraday}->{min}->seconds, '... for an even shorter duration than on forex.';
-    cmp_ok $r100_tnt->{intraday}->{max}->seconds, '>', $fx_tnt->{intraday}->{max}->seconds, '... or longer on the top end.';
 
     my $r100_digits_tick = get_permitted_expiries({
         underlying_symbol => 'R_100',
@@ -139,13 +138,14 @@ subtest 'get_historical_pricer_durations' => sub {
     use BOM::Market::Underlying;
     my $eu = BOM::Market::Underlying->new('frxEURUSD');
 
-    ok !exists $eu_tnt->{intraday}, 'EUR/USD touchnotouch intraday durations removed';
-    ok !exists $eu_tnt->{daily},    '... but not daily';
-    ok !exists $eu_tnt->{tick},     '... nor tick';
+    ok !exists $eu_tnt->{intraday}, 'EUR/USD touchnotouch has intraday durations';
+    ok !exists $eu_tnt->{daily},   '... but not daily';
+    ok !exists $eu_tnt->{tick},    '... nor tick';
     SKIP: {
         skip 'skip because of euro pairs offerings adjustment', 2 unless exists $eu_tnt->{intraday};
-        cmp_ok $eu_cp->{intraday}->{min}->seconds, '<', $eu_tnt->{intraday}->{min}->seconds, 'callputs have shorter minimums';
-        cmp_ok $eu_cp->{intraday}->{max}->seconds, '<', $eu_tnt->{intraday}->{max}->seconds, '... but touchnotouch can run for longer';
+        cmp_ok $eu_cp->{intraday}->{min}->seconds, '<',  $eu_tnt->{intraday}->{min}->seconds, 'callputs have shorter minimums';
+        cmp_ok $eu_cp->{intraday}->{max}->seconds, '==', 18000, '5h eu callput';
+        cmp_ok $eu_tnt->{intraday}->{max}->seconds, '==', 18000, '5h tnt';
     }
 
     my $r100_digits_tick = get_permitted_expiries({
@@ -174,24 +174,10 @@ subtest 'get_contract_specifics' => sub {
     };
     throws_ok { get_contract_specifics($params) } qr/Improper arguments/, '... ALL required parameters.';
 
-    $params->{barrier_category} = 'euro_atm';
-
-    eq_or_diff(get_contract_specifics($params), {payout_limit => 100000}, 'Non-matching parameters yield just a default payout limit');
     $params->{barrier_category} = 'american';
+    $params->{underlying_symbol} = 'R_100';
     my $result = get_contract_specifics($params);
 
-    ok exists $result->{payout_limit}, 'Things which can be sold also have the payout_limit set';
-    ok exists $result->{permitted},    'and also have permitted durations';
-    ok exists $result->{permitted}->{min}, '... including minimum';
-    ok exists $result->{permitted}->{max}, '... and maximum';
-    ok exists $result->{historical}, 'Maybe also when to use an historical pricer';
-    ok exists $result->{historical}->{min}, '... including minimum';
-    ok exists $result->{historical}->{max}, '... and maximum';
-
-    $params->{underlying_symbol} = 'R_100';
-    $result = get_contract_specifics($params);
-
-    ok exists $result->{payout_limit}, 'Randoms also have the payout_limit set';
     ok exists $result->{permitted},    'and permitted durations';
     ok exists $result->{permitted}->{min}, '... including minimum';
     ok exists $result->{permitted}->{max}, '... and maximum';

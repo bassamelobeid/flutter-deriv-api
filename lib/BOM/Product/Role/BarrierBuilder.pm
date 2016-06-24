@@ -6,10 +6,11 @@ use Try::Tiny;
 use VolSurface::Utils qw( get_strike_for_spot_delta );
 use BOM::Platform::Context qw(localize);
 use List::Util qw(max);
+use Scalar::Util::Numeric qw(isint);
 
-has do_not_round_barrier => (
-    is      => 'ro',
-    default => 0,
+has initial_barrier => (
+    is  => 'rw',
+    isa => 'Maybe[BOM::Product::Contract::Strike]',
 );
 
 sub make_barrier {
@@ -19,38 +20,52 @@ sub make_barrier {
 
     if (not defined $string_version) {
         $string_version = $self->underlying->pip_size;
-        $self->add_errors({
+        $self->add_error({
             severity          => 100,
-            message           => 'Undefined barrier for type[' . $self->code . ']',
+            message           => 'Undefined barrier',
             message_to_client => localize('We could not process this contract at this time.'),
+        });
+    }
+
+    if (    $self->underlying->market->integer_barrier
+        and not $self->for_sale
+        and $string_version !~ /^S-?\d+P$/i
+        and not isint($string_version))
+    {
+        $self->add_error({
+            severity          => 100,
+            message           => 'Barrier is not an integer',
+            message_to_client => localize('Barrier must be an integer.'),
         });
     }
 
     my $barrier = BOM::Product::Contract::Strike->new(
         underlying       => $self->underlying,
-        round_to_pipsize => !$self->do_not_round_barrier,
         basis_tick       => $self->basis_tick,
         supplied_barrier => $string_version,
         %$extra_params,,
     );
 
-    foreach my $action (@{$self->corporate_actions}) {
-        try {
-            $barrier = $barrier->adjust({
-                modifier => $action->{modifier},
-                amount   => $action->{value},
-                reason   => $action->{type} . ': ' . $action->{description} . '(' . $action->{effective_date} . ')',
-            });
+    my @corporate_actions = @{$self->corporate_actions};
+    if (@corporate_actions) {
+        $self->initial_barrier($barrier);
+        foreach my $action (@corporate_actions) {
+            try {
+                $barrier = $barrier->adjust({
+                    modifier => $action->{modifier},
+                    amount   => $action->{value},
+                    reason   => $action->{type} . ': ' . $action->{description} . '(' . $action->{effective_date} . ')',
+                });
+            }
+            catch {
+                $self->add_error({
+                    severity          => 100,
+                    message           => "Could not apply corporate action [error: $_]",
+                    message_to_client => localize('System problems prevent proper settlement at this time.'),
+                });
+            };
         }
-        catch {
-            $self->add_errors({
-                severity          => 100,
-                message           => 'Could not apply corporate action. Reason: ' . $_,
-                message_to_client => localize('System problems prevent proper settlement at this time.'),
-            });
-        };
     }
-
     return $barrier;
 }
 
@@ -104,7 +119,7 @@ sub _apply_barrier_adjustment {
     my ($self, $barrier) = @_;
 
     # We need to shift barriers for path dependent contracts to account for the discrete
-    # nature of the ticks.  For now, only on randoms, because we know the tick frequency and
+    # nature of the ticks.  For now, only on volindices, because we know the tick frequency and
     # have very very short term PD contracts.
     # We introduced a concept of barrier shift in pricing our barrier contracts. So now we shift the barrier away from the current spot by a factor.
     # This factor is an empirical number, that is estimated by reducing the errors between the continuous pricing model and the true discrete price.
@@ -112,7 +127,7 @@ sub _apply_barrier_adjustment {
     #  We don't want to indulge in that as we need fast prices and numerical methods may not converge fast enough for our automated system.
     # So the best solution is to estimate a continuous price such that its error is minimum to the true value. Broadie, Glasserman and Kou estimate this in their paper "http://www.columbia.edu/~sk75/mfBGK.pdf".
     #  This shift comes out to be : exp(0.5826 * vol * sqrt(delT))
-    # Here, delT = barrier monitoring interval (so for example, as we generate a random tick every 2 seconds right now, dltT = 2/60/60/24/365).
+    # Here, delT = barrier monitoring interval (so for example, as we generate a volidx tick every 2 seconds right now, dltT = 2/60/60/24/365).
     # The number 0.5826 is a rough estimation of : 0.5826 ~ eta(0.5) / sqrt(2*pi), where eta = Riemann zeta function (this is available on page 327 of the above mentioned paper).
     # So if the barrier is above the spot, new barrier for pricing = barrier * exp(0.5826 * vol * sqrt(delT))
     # and when it is below the barrier, new barrier = barrier / exp(0.5826 * vol * sqrt(delT))
@@ -123,7 +138,7 @@ sub _apply_barrier_adjustment {
     # So another way of looking at it is as a seller of an option, missing ticks is great if we are just selling OTs but very bad for the NTs.
     # So we need a shift that would adjust for this while monitoring barriers discretely by increasing the price of NT / DNTs and decreasing the price for OT/DOTs.
 
-    if ($self->market->name eq 'random' and $self->is_path_dependent) {
+    if ($self->market->name eq 'volidx' and $self->is_path_dependent) {
         my $used_vol            = $self->pricing_vol;
         my $generation_interval = $self->underlying->market->generation_interval->days / 365;
         my $dir                 = ($barrier > $self->current_spot) ? 1 : -1;                     # Move in same direction from spot.

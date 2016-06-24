@@ -3,10 +3,10 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use Test::NoWarnings;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
@@ -15,30 +15,24 @@ use BOM::Product::ContractFactory qw(produce_contract);
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => 'USD',
-        date   => Date::Utility->new
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        recorded_date => $now,
+        symbol        => $_,
+    }) for qw( USD JPY JPY-USD );
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol => 'JPY',
-        date   => Date::Utility->new
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        recorded_date => $now,
+        symbol        => $_,
+    }) for qw( USD AUD CAD-AUD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'frxUSDJPY',
+        symbol        => $_,
         recorded_date => $now
-    });
+    }) for qw (frxUSDJPY frxAUDCAD frxUSDCAD frxAUDUSD);
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch
@@ -47,6 +41,17 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch + 1,
     quote      => 100,
+});
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxAUDCAD',
+    epoch      => $now->epoch,
+    quote      => 0.9935
+});
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'frxAUDCAD',
+    epoch      => $now->epoch + 1,
+    quote      => 0.9936,
 });
 
 my $args = {
@@ -81,7 +86,7 @@ subtest 'call variations' => sub {
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{duration}     = '10m';
         $args->{date_pricing} = $now->plus_time_interval('10m');
@@ -89,7 +94,7 @@ subtest 'call variations' => sub {
         $c                    = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
         ok $c->is_forward_starting, 'forward starting';
-        isa_ok $c->pricing_engine,  'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine,  'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{date_pricing} = $now;
         $args->{date_start}   = $now;
@@ -102,7 +107,7 @@ subtest 'call variations' => sub {
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
     }
     'pricing engine selection';
 };
@@ -130,8 +135,8 @@ subtest 'expiry conditions' => sub {
         quote      => 101,
     });
     $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok !$c->exit_tick, 'no exit tick';
+    ok !$c->exit_tick,  'no exit tick';
+    ok !$c->is_expired, 'not expired without exit tick';
     cmp_ok $c->value, '==', 0;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
@@ -141,7 +146,8 @@ subtest 'expiry conditions' => sub {
     $c = produce_contract($args);
     ok $c->is_expired, 'expired';
     ok $c->exit_tick,  'has exit tick';
-    cmp_ok $c->value,  '==', $c->payout, 'full payout';
+    ok $c->exit_tick->quote > $c->barrier->as_absolute;
+    cmp_ok $c->value, '==', $c->payout, 'full payout';
 };
 
 subtest 'shortcodes' => sub {
@@ -150,7 +156,7 @@ subtest 'shortcodes' => sub {
             produce_contract('CALL_FRXUSDJPY_10_' . $now->plus_time_interval('10m')->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0',
             'USD');
         isa_ok $c, 'BOM::Product::Contract::Call';
-        ok $c->is_forward_starting;
+        ok $c->starts_as_forward_starting;
     }
     'builds forward starting call from shortcode';
     lives_ok {
@@ -192,3 +198,48 @@ subtest 'shortcodes' => sub {
     }
     'builds shortcode from params for spot call';
 };
+
+$args = {
+    bet_type     => 'CALL',
+    underlying   => 'frxAUDCAD',
+    date_start   => $now,
+    date_pricing => $now->plus_time_interval('1s'),
+    duration     => '10m',
+    currency     => 'USD',
+    payout       => 10,
+    barrier      => 'S0P',
+};
+
+subtest 'pips size changes' => sub {
+    lives_ok {
+        my $c = produce_contract($args);
+        isa_ok $c, 'BOM::Product::Contract::Call';
+        is $c->code,               'CALL';
+        ok $c->is_intraday,        'is intraday';
+        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
+        cmp_ok $c->barrier->as_absolute, 'eq', '0.99360', 'correct absolute barrier (it will be pipsized) ';
+        cmp_ok $c->entry_tick->quote, 'eq', '0.9936', 'correct entry tick';
+        cmp_ok $c->current_spot, 'eq', '0.99360', 'correct current spot (it will be pipsized)';
+        cmp_ok $c->ask_price, 'eq', '5.64', 'correct ask price';
+        $args->{date_pricing} = $now->plus_time_interval('10m');
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxAUDCAD',
+            epoch      => $now->epoch + 599,
+            quote      => 0.9939,
+        });
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxAUDCAD',
+            epoch      => $now->epoch + 601,
+            quote      => 0.9938,
+        });
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->exit_tick,  'has exit tick';
+        ok $c->exit_tick->quote > $c->barrier->as_absolute;
+        cmp_ok $c->value, '==', $c->payout, 'full payout';
+        cmp_ok $c->exit_tick->quote, 'eq', '0.9939', 'correct exit tick';
+
+    }
+    'variable checking';
+};
+
