@@ -3,7 +3,7 @@ package BOM::Database::ClientDB;
 use Moose;
 use feature "state";
 use BOM::Database::Rose::DB;
-use YAML::XS;
+use YAML::XS qw(LoadFile);
 
 use Carp;
 
