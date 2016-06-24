@@ -5,6 +5,7 @@ use warnings;
 
 use Try::Tiny;
 use List::MoreUtils qw(none);
+use Data::Dumper;
 
 use BOM::RPC::v3::Utility;
 use BOM::Market::Underlying;
@@ -129,6 +130,10 @@ sub _get_ask {
             # only required for non-spead contracts
             if ($p2->{from_pricer_daemon} and $p2->{amount_type}) {
                 $response->{theo_probability} = $contract->theo_probability->amount;
+            } elsif (not $contract->is_spread) {
+                # All contracts other than spreads should go through pricer daemon.
+                # Trying to find what are the exceptions.
+                warn "potential bug: " . Data::Dumper->Dumper($p2);
             }
 
             if ($contract->underlying->feed_license eq 'realtime') {
