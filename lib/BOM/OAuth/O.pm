@@ -3,6 +3,7 @@ package BOM::OAuth::O;
 use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
 use Try::Tiny;
+use Digest::MD5 qw(md5_hex);
 # login
 use Email::Valid;
 use Mojo::Util qw(url_escape);
@@ -177,13 +178,18 @@ sub authorize {
         );
     }
 
-    my $uri = Mojo::URL->new($redirect_uri);
+    my $client_ip = $c->client_ip;
+    if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
+        $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
+    }
+
+    my $ua_fingerprint = md5_hex($app_id . ($client_ip // '') . ($c->req->headers->header('User-Agent') // ''));
 
     ## create tokens for all loginids
     my $i = 1;
     my @params;
     foreach my $c1 ($user->clients) {
-        my ($access_token, $expires_in) = $oauth_model->store_access_token_only($app_id, $c1->loginid);
+        my ($access_token, $expires_in) = $oauth_model->store_access_token_only($app_id, $c1->loginid, $ua_fingerprint);
 
         # loginid
         my $key = 'acct' . $i;
@@ -195,6 +201,8 @@ sub authorize {
     }
 
     push @params, (state => $state) if defined $state;
+
+    my $uri = Mojo::URL->new($redirect_uri);
     $uri->query(\@params);
 
     ## clear session
