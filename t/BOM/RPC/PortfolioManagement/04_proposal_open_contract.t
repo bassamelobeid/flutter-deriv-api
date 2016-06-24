@@ -126,6 +126,8 @@ subtest $method => sub {
         });
 
         @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold transaction_ids /;
+        # we dont send ask_price in proposal_open_contract
+        delete $bid->{ask_price};
         push @expected_contract_fields, keys %$bid;
     }
     'Get extected data';
@@ -142,6 +144,7 @@ subtest $method => sub {
         });
 
         @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold transaction_ids /;
+        delete $bid->{ask_price};
         push @expected_contract_fields, keys %$bid;
     }
     'Get extected data';
