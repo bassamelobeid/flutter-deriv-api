@@ -279,9 +279,12 @@ sub _feed_channel {
         foreach my $k (keys $feed_channel_type) {
             $count++ if ($k =~ /^.*?;(?:proposal|pricing_table):/);
         }
-        if ($count > 5 || exists $feed_channel_type->{"$symbol;$type"}) {
+        if ($count > 5) {
+            return;
+        } elsif (exists $feed_channel_type->{"$symbol;$type"}) {
             return;
         }
+
         $uuid = Data::UUID->new->create_str();
         $feed_channel->{$symbol} += 1;
         $feed_channel_type->{"$symbol;$type"}->{args}  = $args if $args;
