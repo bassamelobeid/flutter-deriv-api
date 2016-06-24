@@ -70,15 +70,15 @@ sub is_scope_confirmed {
 }
 
 sub store_access_token_only {
-    my ($self, $app_id, $loginid) = @_;
+    my ($self, $app_id, $loginid, $ua_fingerprint) = @_;
 
     my $dbh          = $self->dbh;
     my $expires_in   = 5184000;                                                   # 60 * 86400
     my $access_token = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;
-    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires) VALUES (?, ?, ?, ?)",
-        undef, $access_token, $app_id, $loginid, $expires_time);
+    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires, ua_fingerprint) VALUES (?, ?, ?, ?, ?)",
+        undef, $access_token, $app_id, $loginid, $expires_time, $ua_fingerprint);
 
     return ($access_token, $expires_in);
 }
@@ -94,7 +94,7 @@ sub get_loginid_by_access_token {
         UPDATE oauth.access_token
         SET last_used=NOW(), expires=?
         WHERE access_token = ? AND expires > NOW()
-        RETURNING loginid, creation_time
+        RETURNING loginid, creation_time, ua_fingerprint
     ", undef, $expires_time, $token);
 }
 
