@@ -7,7 +7,10 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
+use BOM::Database::Model::OAuth;
+
 
 ## do not send email
 use Test::MockModule;
@@ -44,10 +47,7 @@ subtest 'new CR real account' => sub {
         residence       => 'au',
     });
     # authorize
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $vr_client->loginid,
-        email   => $vr_client->email,
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     subtest 'create CR account' => sub {
@@ -77,10 +77,7 @@ subtest 'new CR real account' => sub {
             residence       => 'au',
         });
         # authorize
-        my $token = BOM::Platform::SessionCookie->new(
-            loginid => $vr_client->loginid,
-            email   => $vr_client->email,
-        )->token;
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
         # create CR acc
@@ -100,10 +97,7 @@ subtest 'new MX real account' => sub {
         residence       => 'gb',
     });
     # authorize
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $vr_client->loginid,
-        email   => $vr_client->email,
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     # create real acc
@@ -138,10 +132,7 @@ subtest 'new MLT real account' => sub {
         residence       => 'nl',
     });
     # authorize
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $vr_client->loginid,
-        email   => $vr_client->email,
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     # create real acc
@@ -166,10 +157,7 @@ subtest 'create account failed' => sub {
         residence       => 'id',
     });
     # authorize
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $vr_client->loginid,
-        email   => $vr_client->email,
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     subtest 'insufficient info' => sub {

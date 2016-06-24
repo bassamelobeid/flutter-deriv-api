@@ -7,7 +7,9 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
+use BOM::Database::Model::OAuth;
 
 ## do not send email
 use Test::MockModule;
@@ -65,10 +67,8 @@ subtest 'MLT upgrade to MF account' => sub {
         client_password => 'abc123',
         residence       => 'nl',
     });
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $vr_client->loginid,
-        email   => $vr_client->email,
-    )->token;
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     subtest 'create MLT account, authorize' => sub {
@@ -80,10 +80,7 @@ subtest 'MLT upgrade to MF account' => sub {
         my $loginid = $res->{new_account_real}->{client_id};
         like($loginid, qr/^MLT\d+$/, "got MLT client $loginid");
 
-        $token = BOM::Platform::SessionCookie->new(
-            loginid => $loginid,
-            email   => $vr_client->email,
-        )->token;
+        ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
         $t = $t->send_ok({json => {authorize => $token}})->message_ok;
     };
 
@@ -110,10 +107,7 @@ subtest 'VR upgrade to MF - Germany' => sub {
         client_password => 'abc123',
         residence       => 'de',
     });
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $vr_client->loginid,
-        email   => $vr_client->email,
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     subtest 'upgrade to MF' => sub {
@@ -157,10 +151,7 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
             residence       => $map->{residence},
             client_password => 'abc123',
         });
-        my $token = BOM::Platform::SessionCookie->new(
-            loginid => $vr_client->loginid,
-            email   => $vr_client->email,
-        )->token;
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
         subtest 'create MX / CR acc, authorize' => sub {
@@ -176,10 +167,7 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
             my $loginid = $res->{new_account_real}->{client_id};
             like($loginid, qr/^$broker\d+$/, "got $broker client $loginid");
 
-            $token = BOM::Platform::SessionCookie->new(
-                loginid => $loginid,
-                email   => $vr_client->email,
-            )->token;
+            ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
             $t = $t->send_ok({json => {authorize => $token}})->message_ok;
         };
 

@@ -225,7 +225,7 @@ sub process_realtime_events {
                 send_pricing_table($c, $feed_channels_type->{$channel}->{uuid}, $arguments, $message);
             }
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
-            BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
+            BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
                 if $c->tx;
         } elsif ($m[0] eq $symbol) {
             unless ($c->tx) {
@@ -406,12 +406,10 @@ sub process_transaction_updates {
                                     rpc_response_cb => sub {
                                         my ($c, $rpc_response, $req_storage) = @_;
 
+                                        my $rpc_response = shift;
                                         if (exists $rpc_response->{error}) {
                                             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                                            return $c->new_error(
-                                                'transaction',
-                                                $rpc_response->{error}->{code},
-                                                $rpc_response->{error}->{message_to_client});
+                                            return $c->new_error('transaction', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                                         } else {
                                             $details->{$type}->{contract_id}   = $payload->{financial_market_bet_id};
                                             $details->{$type}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
@@ -442,7 +440,7 @@ sub process_transaction_updates {
                         $args->{sell_time}  = Date::Utility->new($payload->{sell_time})->epoch;
 
                         # send proposal details last time
-                        BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, undef, $args);
+                        BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, undef, $args);
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
                     _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);

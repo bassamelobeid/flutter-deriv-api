@@ -7,9 +7,10 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::Database::Model::AccessToken;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::System::Password;
 use BOM::Platform::User;
@@ -49,10 +50,7 @@ is $status->{success}, 1, 'login with correct password OK';
 $status = $user->login(password => 'mRX1E3Mi00oS8LG');
 ok !$status->{success}, 'Bad password; cannot login';
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $vr_1,
-    email   => $email,
-)->token;
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);

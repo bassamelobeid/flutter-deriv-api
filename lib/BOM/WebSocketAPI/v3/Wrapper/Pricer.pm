@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use JSON;
 use Data::UUID;
+use List::Util qw(first);
 use Format::Util::Numbers qw(roundnear);
 use BOM::RPC::v3::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::System;
@@ -13,19 +14,6 @@ use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
-sub price_stream {
-    my ($c, $req_storage) = @_;
-
-    my $symbol   = $req_storage->{args}->{symbol};
-    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
-    if ($response and exists $response->{error}) {
-        return $c->new_error('price_stream', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
-    } else {
-        _send_ask($c, $req_storage, 'price_stream');
-    }
-    return;
-}
-
 sub proposal {
     my ($c, $req_storage) = @_;
 
@@ -34,7 +22,7 @@ sub proposal {
     if ($response and exists $response->{error}) {
         return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
     } else {
-        _send_ask($c, $req_storage, 'proposal');
+        _send_ask($c, $req_storage);
     }
     return;
 }
@@ -46,22 +34,22 @@ sub _send_ask {
     $c->call_rpc({
             args            => $args,
             method          => 'send_ask',
-            msg_type        => $api_name,
+            msg_type        => 'proposal',
             rpc_response_cb => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $args = $req_storage->{args};
 
                 if ($rpc_response and exists $rpc_response->{error}) {
-                    my $err = $c->new_error($api_name, $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
+                    my $err = $c->new_error('proposal', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                     $err->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
                     return $err;
                 }
 
                 my $uuid;
-                if (not $uuid = _pricing_channel($c, 'subscribe', $args, $api_name)) {
-                    return $c->new_error($api_name,
-                        'AlreadySubscribedOrLimit',
-                        $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+
+                if (not $uuid = _pricing_channel($c, 'subscribe', $args)) {
+                    return $c->new_error('proposal',
+                        'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
                 }
 
                 # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
@@ -74,8 +62,8 @@ sub _send_ask {
                 }
 
                 return {
-                    msg_type => $api_name,
-                    $api_name => {($uuid ? (id => $uuid) : ()), %$rpc_response}};
+                    msg_type   => 'proposal',
+                    'proposal' => {($uuid ? (id => $uuid) : ()), %$rpc_response}};
             }
         });
     return;
@@ -91,7 +79,7 @@ sub _serialized_args {
 }
 
 sub _pricing_channel {
-    my ($c, $subs, $args, $api_name) = @_;
+    my ($c, $subs, $args) = @_;
 
     my %args_hash = %{$args};
 
@@ -126,13 +114,11 @@ sub _pricing_channel {
         $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
 
-    $pricing_channel->{$serialized_args}->{$amount}->{uuid}     = $uuid;
-    $pricing_channel->{$serialized_args}->{$amount}->{args}     = $args;
-    $pricing_channel->{$serialized_args}->{$amount}->{api_name} = $api_name;
-    $pricing_channel->{uuid}->{$uuid}->{serialized_args}        = $serialized_args;
-    $pricing_channel->{uuid}->{$uuid}->{amount}                 = $amount;
-    $pricing_channel->{uuid}->{$uuid}->{args}                   = $args;
-    $pricing_channel->{uuid}->{$uuid}->{api_name}               = $api_name;
+    $pricing_channel->{$serialized_args}->{$amount}->{uuid} = $uuid;
+    $pricing_channel->{$serialized_args}->{$amount}->{args} = $args;
+    $pricing_channel->{uuid}->{$uuid}->{serialized_args}    = $serialized_args;
+    $pricing_channel->{uuid}->{$uuid}->{amount}             = $amount;
+    $pricing_channel->{uuid}->{$uuid}->{args}               = $args;
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
@@ -153,7 +139,6 @@ sub process_pricing_events {
 
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
         my $results;
-        my $api_name = $pricing_channel->{$serialized_args}->{$amount}->{api_name};
 
         if ($response and exists $response->{error}) {
             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$serialized_args}->{$amount}->{uuid});
@@ -165,7 +150,7 @@ sub process_pricing_events {
                 $response->{error}->{message_to_client} = $c->l($response->{error}->{message_to_client});
             }
 
-            my $err = $c->new_error($api_name, $response->{error}->{code}, $response->{error}->{message_to_client});
+            my $err = $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
@@ -173,13 +158,13 @@ sub process_pricing_events {
             my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
 
             if (my $ref = $adjusted_results->{error}) {
-                my $err = $c->new_error($api_name, $ref->{code}, $ref->{message_to_client});
+                my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
                 $results = $err;
             } else {
                 $results = {
-                    msg_type  => $api_name,
-                    $api_name => {
+                    msg_type   => 'proposal',
+                    'proposal' => {
                         id       => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
                         longcode => $pricing_channel->{$serialized_args}->{$amount}->{longcode},
                         %$adjusted_results,
@@ -199,7 +184,7 @@ sub process_pricing_events {
         if ($c->stash('debug')) {
             $results->{debug} = {
                 time   => $results->{price_stream}->{rpc_time},
-                method => $api_name,
+                method => 'proposal',
             };
         }
 
@@ -213,51 +198,32 @@ sub _price_stream_results_adjustment {
     my $results   = shift;
     my $amount    = shift;
 
-    return $results if not $orig_args->{basis};
+    # skips for spreads
+    return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
 
-    # For non spread
-    if ($orig_args->{basis} eq 'payout') {
-        my $ask_price = BOM::RPC::v3::Contract::calculate_ask_price({
-            theo_probability      => $results->{theo_probability},
-            base_commission       => $results->{base_commission},
-            probability_threshold => $results->{probability_threshold},
-            amount                => $amount,
-        });
-        $results->{ask_price}     = sprintf('%.2f', $ask_price);
-        $results->{display_value} = sprintf('%.2f', $ask_price);
-        $results->{payout}        = sprintf('%.2f', $amount);
-    } elsif ($orig_args->{basis} eq 'stake') {
-        my $payout = BOM::RPC::v3::Contract::calculate_payout({
-            theo_probability => $results->{theo_probability},
-            base_commission  => $results->{base_commission},
-            amount           => $amount,
-        });
-        $results->{ask_price}     = sprintf('%.2f', $amount);
-        $results->{display_value} = sprintf('%.2f', $amount);
-        $results->{payout}        = sprintf('%.2f', $payout);
-    }
+    my $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($orig_args);
+    # overrides the theo_probability_value which take the most calculation time.
+    $contract_parameters->{theo_probability_value} = $results->{theo_probability};
+    $contract_parameters->{app_markup_percentage}  = $orig_args->{app_markup_percentage};
+    my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
-    if (
-        my $error = BOM::RPC::v3::Contract::validate_price({
-                ask_price         => $results->{ask_price},
-                payout            => $results->{payout},
-                minimum_ask_price => $results->{minimum_stake},
-                maximum_payout    => $results->{maximum_payout}}))
-    {
+    if (my $error = $contract->validate_price) {
         return {
             error => {
                 message_to_client => $error->{message_to_client},
                 code              => 'ContractBuyValidationError',
                 details           => {
-                    longcode      => $results->{longcode},
-                    display_value => $results->{display_value},
-                    payout        => $results->{payout},
+                    longcode      => $contract->longcode,
+                    display_value => $contract->ask_price,
+                    payout        => $contract->payout,
                 },
             }};
     }
 
-    # cleans up the response.
-    delete $results->{$_} for qw(theo_probability base_commission probability_threshold minimum_stake maximum_payout);
+    $results->{ask_price} = $results->{display_value} = $contract->ask_price;
+    $results->{payout} = $contract->payout;
+    #cleanup
+    delete $results->{theo_probability};
 
     return $results;
 }

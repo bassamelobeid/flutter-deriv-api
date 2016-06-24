@@ -20,6 +20,7 @@ use File::Slurp;
 use JSON::Schema;
 use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
+use Digest::MD5 qw(md5_hex);
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -86,8 +87,9 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
+            my $app_id;
             if ($c->req->param('app_id')) {
-                my $app_id = defang_lite($c->req->param('app_id'));
+                $app_id = defang_lite($c->req->param('app_id'));
 
                 my $error;
                 APP_ID:
@@ -106,8 +108,8 @@ sub startup {
                     }
 
                     $c->stash(
-                        source   => $app_id,
-                        app_name => $app->{name},
+                        source                => $app_id,
+                        app_markup_percentage => $app->{app_markup_percentage} // 0
                     );
                 }
 
@@ -122,11 +124,13 @@ sub startup {
                 $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
             }
 
+            my $user_agent = $c->req->headers->header('User-Agent');
             $c->stash(
-                server_name  => $c->server_name,
-                client_ip    => $client_ip,
-                country_code => $c->country_code,
-                user_agent   => $c->req->headers->header('User-Agent'),
+                server_name    => $c->server_name,
+                client_ip      => $client_ip,
+                country_code   => $c->country_code,
+                user_agent     => $user_agent,
+                ua_fingerprint => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
             );
         });
 
@@ -134,7 +138,7 @@ sub startup {
     $app->plugin('BOM::WebSocketAPI::Plugins::Helpers');
 
     my $actions = [
-        ['authorize'],
+        ['authorize', {stash_params => [qw/ ua_fingerprint /]}],
         [
             'logout',
             {
@@ -155,7 +159,6 @@ sub startup {
         ['ticks',         {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks}],
         ['ticks_history', {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history}],
         ['proposal',      {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal}],
-        ['price_stream',  {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::price_stream}],
         ['pricing_table', {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Streamer::pricing_table}],
         ['forget',        {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget}],
         ['forget_all',    {instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all}],

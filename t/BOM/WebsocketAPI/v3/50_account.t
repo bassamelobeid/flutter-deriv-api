@@ -9,8 +9,9 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 use Test::MockModule;
 
-use BOM::Platform::SessionCookie;
+use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Transaction;
 
@@ -20,10 +21,8 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
 
-my $token = BOM::Platform::SessionCookie->new(
-    loginid => $test_client->loginid,
-    email   => 'unit_test@binary.com',
-)->token;
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
+
 $test_client->payment_free_gift(
     currency => 'USD',
     amount   => 1000,
