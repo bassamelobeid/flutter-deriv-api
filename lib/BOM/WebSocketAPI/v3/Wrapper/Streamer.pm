@@ -171,16 +171,14 @@ sub pricing_table {
 
     # subscribe limit exceeded
     if (scalar @pricing > 5) {
-        return $c->new_error('pricing_table',
-            'RateLimit', $c->l('You have reached the limit for pricing table subscription.'));
+        return $c->new_error('pricing_table', 'RateLimit', $c->l('You have reached the limit for pricing table subscription.'));
     }
 
     my $symbol = $args->{symbol};
     my $id;
 
     if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args), $args)) {
-        return $c->new_error('pricing_table',
-            'AlreadySubscribed', $c->l('You are already subscribed to pricing table.'));
+        return $c->new_error('pricing_table', 'AlreadySubscribed', $c->l('You are already subscribed to pricing table.'));
     }
     my $msg = BOM::RPC::v3::Japan::Contract::get_table($args);
     send_pricing_table($c, $id, $args, $msg);
