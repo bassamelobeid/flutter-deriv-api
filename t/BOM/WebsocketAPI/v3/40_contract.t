@@ -26,7 +26,7 @@ $client->email($email);
 $client->save;
 
 my $loginid = $client->loginid;
-my $user = BOM::Platform::User->create(
+my $user    = BOM::Platform::User->create(
     email    => $email,
     password => '1234',
 );
@@ -40,7 +40,6 @@ $client->smart_payment(
     payment_type => 'external_cashier',
     remark       => 'test deposit'
 );
-
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 

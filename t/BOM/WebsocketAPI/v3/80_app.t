@@ -62,7 +62,7 @@ $t = $t->send_ok({
 my $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'app_register';
 test_schema('app_register', $res);
-my $app1   = $res->{app_register};
+my $app1 = $res->{app_register};
 
 my $app_id = $app1->{app_id};
 is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');

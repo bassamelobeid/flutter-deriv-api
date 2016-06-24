@@ -54,7 +54,7 @@ $client->save;
 $client->set_default_account('USD');
 
 my $loginid = $client->loginid;
-my $user = BOM::Platform::User->create(
+my $user    = BOM::Platform::User->create(
     email    => $email,
     password => '1234',
 );
@@ -70,8 +70,8 @@ is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
 test_schema('authorize', $authorize);
 is $stash->{loginid}, $loginid, 'Test stash data';
-is $stash->{email}, $email, 'Should store email to stash';
-is $stash->{token}, $token, 'Should store token to stash';
+is $stash->{email},   $email,   'Should store email to stash';
+is $stash->{token},   $token,   'Should store token to stash';
 is $stash->{token_type}, 'oauth_token', 'Should store token_type to stash';
 is_deeply $stash->{scopes}, [qw/read admin trade payments/], 'Should store token_scopes to stash';
 ok $stash->{account_id},           'Should store to account_id stash';

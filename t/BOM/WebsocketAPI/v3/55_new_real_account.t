@@ -11,7 +11,6 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
 use BOM::Database::Model::OAuth;
 
-
 ## do not send email
 use Test::MockModule;
 my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
