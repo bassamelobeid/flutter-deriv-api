@@ -17,7 +17,7 @@ BEGIN {
         $landing_companies{$v->{short}} = $lc;
         push @all_landing_companies, $lc;
         push @all_broker_codes, @$v->{broker_codes};
-        map {$landing_company_by_broker->{$_} = $lc} @$v->{broker_codes};
+        map {$landing_company_by_broker->{$_} = $lc} @{$v->{broker_codes}};
         @currencies{@{$v->{legal_allowed_currencies}}} = ();
     }
     @all_currencies = keys %currencies;
