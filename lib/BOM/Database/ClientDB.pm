@@ -55,15 +55,6 @@ BEGIN {
     }
 }
 
-BEGIN {
-    $environment = +{
-        map {
-            my ($bcodes, $landing_company) = @{$_}{qw/code landing_company/};
-            local $_;
-            map { $_ => $landing_company } @$bcodes;
-        } @{YAML::XS::LoadFile('/etc/rmg/broker_codes.yml')->{definitions}}};
-}
-
 sub _build_db {
     my $self = shift;
 
