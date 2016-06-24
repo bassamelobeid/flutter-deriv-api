@@ -224,9 +224,10 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
         # data_collection.quants_bet_variables
         $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
     );
-
+    open my $fh, ">>", "/tmp/error.txt";
+    print $fh Dumper([@param, @acclim]);
+    close $fh;
     $stmt->execute(@param, @acclim);
-
     my %result;
     while (my $row = $stmt->fetchrow_arrayref) {
         my ($loginid, $ecode, $edescr) = @{$row}[0, 1, 2];
