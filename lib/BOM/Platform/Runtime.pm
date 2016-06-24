@@ -17,11 +17,6 @@ has 'app_config' => (
     lazy_build => 1,
 );
 
-has 'broker_codes' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has 'landing_companies' => (
     is         => 'ro',
     lazy_build => 1,
@@ -117,19 +112,6 @@ sub _build_app_config {
     return BOM::Platform::Runtime::AppConfig->new();
 }
 
-my $broker_codes;
-
-BEGIN {
-    $broker_codes = YAML::XS::LoadFile('/etc/rmg/broker_codes.yml');
-}
-
-sub _build_broker_codes {
-    my $self = shift;
-    return BOM::Platform::Runtime::Broker::Codes->new(
-        landing_companies  => $self->landing_companies,
-        broker_definitions => $broker_codes
-    );
-}
 
 sub _build_landing_companies {
     return BOM::Platform::Runtime::LandingCompany::Registry->new();

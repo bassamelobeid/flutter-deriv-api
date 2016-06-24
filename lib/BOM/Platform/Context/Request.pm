@@ -13,7 +13,6 @@ use Format::Util::Strings qw( defang_lite );
 
 use BOM::System::Localhost;
 use BOM::Platform::Runtime;
-use BOM::Platform::Runtime::Website;
 use BOM::Platform::Untaint;
 
 use Plack::App::CGIBin::Streaming::Request;
@@ -90,28 +89,9 @@ has 'ui_settings' => (
     lazy_build => 1,
 );
 
-has 'broker_code' => (
-    is  => 'ro',
-    isa => subtype(
-        Str => where {
-            my $test = $_;
-            exists {map { $_ => 1 } qw(CR MLT MF MX VRTC FOG JP VRTJ)}->{$test}
-        } => message {
-            "Unknown broker code [$_]"
-        }
-    ),
-    lazy_build => 1,
-);
-
 has 'language' => (
     is         => 'ro',
     isa        => 'Str',
-    lazy_build => 1,
-);
-
-has 'broker' => (
-    is         => 'ro',
-    isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
     lazy_build => 1,
 );
 
@@ -283,19 +263,7 @@ sub _build_broker_code {
     my $self = shift;
 
     if ($self->backoffice) {
-        my $input_broker = $self->param('broker') || $self->param('w');
-        if ($input_broker and BOM::Platform::Runtime->instance->broker_codes->get($input_broker)->code) {
-            return $input_broker;
-        }
-
-        my $loginid = $self->param('LOGINID') || $self->param('loginID');
-        if ($loginid and BOM::Platform::Runtime->instance->broker_codes->get($loginid)->code) {
-            return BOM::Platform::Runtime->instance->broker_codes->get($loginid)->code;
-        }
-    }
-
-    if (my $input_broker = $self->param('broker')) {
-        return BOM::Platform::Runtime->instance->broker_codes->get($input_broker)->code;
+        return $self->param('broker') if $self->param('broker');
     }
 
     my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
@@ -305,11 +273,6 @@ sub _build_broker_code {
 
     return BOM::Platform::Runtime::LandingCompany::Registry->new->get($company)->broker_codes->[0]
 
-}
-
-sub _build_broker {
-    my $self = shift;
-    return BOM::Platform::Runtime->instance->broker_codes->get($self->broker_code);
 }
 
 sub _build_language {

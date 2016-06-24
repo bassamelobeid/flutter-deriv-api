@@ -8,6 +8,8 @@ use Test::Deep;
 use Test::NoWarnings;
 
 use BOM::Platform::Runtime;
+use BOM::Platform::Runtime::LandingCompany::Registry;
+
 
 my $all = [qw(
         ASIANU
@@ -59,13 +61,13 @@ my $japan = [qw(
         )];
 subtest 'legal allowed contract categories' => sub {
     for (qw(VRTC CR MLT MX)) {
-        my $cc = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($_ . '123123')->legal_allowed_contract_types;
+        my $cc = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($_ . '123123')->legal_allowed_contract_types;
         cmp_bag($cc, $all, $_ . ' has all contract categories');
     }
-    my $cc = BOM::Platform::Runtime->instance->broker_codes->landing_company_for('MF123123')->legal_allowed_contract_types;
+    my $cc = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker('MF123123')->legal_allowed_contract_types;
     cmp_bag($cc, $no_spreads, 'MF has contract categories except spreads');
     for (qw(VRTJ JP)) {
-        my $cc = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($_ . '123123')->legal_allowed_contract_types;
+        my $cc = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($_ . '123123')->legal_allowed_contract_types;
         cmp_bag($cc, $japan, $_ . ' has equal european contract categories');
     }
 };
