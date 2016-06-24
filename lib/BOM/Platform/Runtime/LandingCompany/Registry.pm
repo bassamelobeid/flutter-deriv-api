@@ -5,7 +5,7 @@ use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Runtime::LandingCompany;
 
-my (%landing_companies, $landing_company_by_broker, @all_currencies, @all_landing_companies, @all_broker_codes);
+my (%landing_companies, %landing_company_by_broker, @all_currencies, @all_landing_companies, @all_broker_codes);
 
 BEGIN {
     my $loaded_landing_companies = LoadFile('/home/git/regentmarkets/bom-platform/config/landing_companies.yml');
@@ -17,7 +17,7 @@ BEGIN {
         $landing_companies{$v->{short}} = $lc;
         push @all_landing_companies, $lc;
         push @all_broker_codes, @{$v->{broker_codes}};
-        map {$landing_company_by_broker->{$_} = $lc} @{$v->{broker_codes}};
+        map {$landing_company_by_broker{$_} = $lc} @{$v->{broker_codes}};
         @currencies{@{$v->{legal_allowed_currencies}}} = ();
     }
     @all_currencies = keys %currencies;
