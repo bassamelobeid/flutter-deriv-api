@@ -52,7 +52,7 @@ __PACKAGE__->meta->setup(
         source                                   => { type => 'varchar', length => 50 },
         remote_addr                              => { type => 'scalar' },
         occupation                               => { type => 'varchar', length => 100 },
-        aml_risk_classification                  => { type => 'enum', check_in => [ 'low', 'standard', 'high', 'manual override - low', 'manual override - standard', 'manual override - high' ], db_type => 'aml_risk_type' },
+        aml_risk_classification                  => { type => 'enum', check_in => [ 'low', 'standard', 'high', 'manual override - low', 'manual override - standard', 'manual override - high' ], db_type => 'aml_risk_type', default => 'low' },
     ],
 
     primary_key_columns => [ 'custom_max_payout' ],
