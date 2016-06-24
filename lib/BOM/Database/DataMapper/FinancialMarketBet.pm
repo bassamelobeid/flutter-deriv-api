@@ -85,7 +85,7 @@ sub get_open_bets_of_account {
     my $self = shift;
 
     my $sql = q{
-        SELECT fmb.*, t.id buy_transaction_id
+        SELECT fmb.*, t.id buy_transaction_id, t.app_markup
         FROM
             bet.financial_market_bet fmb
             JOIN transaction.transaction t on (action_type='buy' and t.financial_market_bet_id=fmb.id)
@@ -337,7 +337,7 @@ sub get_contract_details_with_transaction_ids {
     my $contract_id = shift;
 
     my $sql = q{
-        SELECT fmb.*, t.id as transaction_id, t.action_type
+        SELECT fmb.*, t.id as transaction_id, t.action_type, t.app_markup
         FROM
             bet.financial_market_bet fmb
             JOIN transaction.transaction t on t.financial_market_bet_id=fmb.id
