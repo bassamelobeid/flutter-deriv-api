@@ -739,7 +739,13 @@ sub _build_calendar {
     my $self = shift;
 
     $self->_exchange_refreshed(time);
-    return $self->_builder->build_trading_calendar;
+
+    return Quant::Framework::TradingCalendar->new({
+            symbol           => $self->exchange_name,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
+            locale           => BOM::Platform::Context::request()->language,
+            for_date         => $self->for_date
+        });
 }
 
 has exchange => (
