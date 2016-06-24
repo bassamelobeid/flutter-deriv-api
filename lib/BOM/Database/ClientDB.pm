@@ -32,6 +32,12 @@ sub BUILDARGS {
         croak "Invalid operation for DB " . $orig->{operation};
     }
 
+    # for some operations we use the collector that is aggregation of all db clusters
+    if ($orig->{broker_code} and $orig->{broker_code} eq 'FOG') {
+        $orig->{broker_code} = 'VRTC';
+        $orig->{operation}   = 'collector';
+    }
+
     if (defined($orig->{broker_code})) {
         return $orig;
     }
