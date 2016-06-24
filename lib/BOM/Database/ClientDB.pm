@@ -49,6 +49,13 @@ sub BUILDARGS {
 my $environment;
 
 BEGIN {
+    my $loaded_landing_companies = LoadFile('/home/git/regentmarkets/bom-platform/config/landing_companies.yml');
+    while (my ($k, $v) = each %$loaded_landing_companies) {
+        map {$environment->{$_} = $v->{short}} @$v->{broker_codes};
+    }
+}
+
+BEGIN {
     $environment = +{
         map {
             my ($bcodes, $landing_company) = @{$_}{qw/code landing_company/};
