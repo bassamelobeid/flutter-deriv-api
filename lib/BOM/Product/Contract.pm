@@ -1288,19 +1288,6 @@ sub _build_base_commission {
     my $scaling_factor = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
     $scaling_factor = max($minimum, min($maximum, $scaling_factor));
 
-    my $announcement_date = Date::Utility->new('2016-07-02');
-    my $disable_date      = Date::Utility->new('2016-06-20');
-    # Every forex pair expiry after 2-July should have normal commission in place.
-    # Very hacky solution but we will need more time to code up a proper one.
-    # This should be removed after Brexit.
-    return 0.05 * $scaling_factor
-        if ((
-               $self->market->name eq 'forex'
-            or $self->market->name eq 'indices'
-        )
-        and $self->date_start->is_after($disable_date)
-        and $self->date_expiry->is_after($announcement_date));
-
     return $self->underlying->base_commission * $scaling_factor;
 }
 
@@ -2718,24 +2705,6 @@ sub confirm_validity {
             $self->add_error($err);
         }
         return 0 if ($self->primary_validation_error);
-    }
-
-    # Should have included this in one of the validation subroutines but it will screw with existing tests.
-    # Since this is a temporary solution and we will work on a proper fix, this is acceptable for now.
-    my $announcement_date = Date::Utility->new('2016-07-02');
-    # needed this to avoid having to fix tests
-    my $disable_date = Date::Utility->new('2016-06-20');
-    if (    $self->market->name eq 'forex'
-        and not $self->is_atm_bet
-        and $self->date_expiry->is_before($announcement_date)
-        and $self->date_start->is_after($disable_date))
-    {
-        my $err = {
-            message           => 'stay out for Brexit',
-            message_to_client => localize('This trade is temporarily unavailable.'),
-        };
-        $self->add_error($err);
-        return 0;
     }
 
     return 1;
