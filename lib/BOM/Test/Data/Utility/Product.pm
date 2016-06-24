@@ -106,10 +106,9 @@ sub create_contract {
             # this number should be similar with the quotes in BOM::Test::Data::Utility::UnitTestRedis::get_test_realtime_ticks,
             # otherwise it will produce the error of 'Barrier too far'
             BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                    epoch => $epoch,
-                    quote => '963.3000',
-
-                    underlying => $underlying_symbol,
+                epoch      => $epoch,
+                quote      => '963.3000',
+                underlying => $underlying_symbol
             });
         }
         push @ticks, $tick;
@@ -118,18 +117,18 @@ sub create_contract {
     my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 
     my $contract_data = {
-        underlying   => $underlying,
-        bet_type     => 'CALL',
-        currency     => 'USD',
-        amount_type  => 'payout',
-        amount       => 100,
-        date_start   => $start->epoch,
-        date_expiry  => $expire->epoch,
-        current_tick => $ticks[1],
-        entry_tick   => $ticks[0],
-        exit_tick    => $ticks[-1],
-        barrier      => 'S0P',
-
+        underlying            => $underlying,
+        bet_type              => 'CALL',
+        currency              => 'USD',
+        amount_type           => $args{basis} // 'payout',
+        amount                => 100,
+        date_start            => $start->epoch,
+        date_expiry           => $expire->epoch,
+        current_tick          => $ticks[1],
+        entry_tick            => $ticks[0],
+        exit_tick             => $ticks[-1],
+        barrier               => 'S0P',
+        app_markup_percentage => $args{app_markup_percentage} // 0
     };
     if ($args{is_spread}) {
         delete $contract_data->{date_expiry};
@@ -140,7 +139,6 @@ sub create_contract {
         $contract_data->{stop_loss}        = 10;
     }
     return produce_contract($contract_data);
-
 }
 
 1;
