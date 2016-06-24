@@ -15,6 +15,7 @@ use BOM::Platform::User;
 use BOM::Platform::Static::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
+use BOM::Platform::Runtime::LandingCompany::Registry;
 
 sub __oauth_model {
     state $oauth_model = BOM::Database::Model::OAuth->new;
@@ -345,7 +346,7 @@ sub __set_reality_check_cookie {
     # set this cookie only once
     return if $r->cookie('reality_check');
 
-    return unless any { BOM::Platform::Runtime->instance->broker_codes->landing_company_for($_->broker_code)->has_reality_check } $user->clients;
+    return unless any { BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($_->broker_code)->has_reality_check } $user->clients;
 
     my $default_reality_check_interval_in_minutes = 60;
     $c->cookie(
