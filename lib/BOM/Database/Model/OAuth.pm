@@ -36,7 +36,7 @@ sub verify_app {
     my ($self, $app_id) = @_;
 
     my $app = $self->dbh->selectrow_hashref("
-        SELECT id, name, redirect_uri, scopes FROM oauth.apps WHERE id = ? AND active
+        SELECT id, name, redirect_uri, scopes, app_markup_percentage FROM oauth.apps WHERE id = ? AND active
     ", undef, $app_id);
     return unless $app;
 
@@ -123,31 +123,34 @@ sub create_app {
 
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.apps
-            (name, scopes, homepage, github, appstore, googleplay, redirect_uri, binary_user_id)
+            (name, scopes, homepage, github, appstore, googleplay, redirect_uri, app_markup_percentage, binary_user_id)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?)
+            (?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
     ");
     $sth->execute(
-        $app->{name}, $app->{scopes},
-        $app->{homepage}     || '',
-        $app->{github}       || '',
-        $app->{appstore}     || '',
-        $app->{googleplay}   || '',
-        $app->{redirect_uri} || '',
+        $app->{name},
+        $app->{scopes},
+        $app->{homepage}              || '',
+        $app->{github}                || '',
+        $app->{appstore}              || '',
+        $app->{googleplay}            || '',
+        $app->{redirect_uri}          || '',
+        $app->{app_markup_percentage} || 0,
         $app->{user_id});
 
     my @result = $sth->fetchrow_array();
 
     return {
-        app_id       => $result[0],
-        name         => $app->{name},
-        scopes       => $app->{scopes},
-        redirect_uri => $app->{redirect_uri},
-        homepage     => $app->{homepage} || '',
-        github       => $app->{github} || '',
-        appstore     => $app->{appstore} || '',
-        googleplay   => $app->{googleplay} || '',
+        app_id                => $result[0],
+        name                  => $app->{name},
+        scopes                => $app->{scopes},
+        redirect_uri          => $app->{redirect_uri},
+        homepage              => $app->{homepage} || '',
+        github                => $app->{github} || '',
+        appstore              => $app->{appstore} || '',
+        googleplay            => $app->{googleplay} || '',
+        app_markup_percentage => $app->{app_markup_percentage} || 0
     };
 }
 
@@ -165,16 +168,19 @@ sub update_app {
     $sth = $self->dbh->prepare("
         UPDATE oauth.apps SET
             name = ?, scopes = ?, homepage = ?, github = ?,
-            appstore = ?, googleplay = ?, redirect_uri = ?
+            appstore = ?, googleplay = ?, redirect_uri = ?, app_markup_percentage = ?
         WHERE id = ?
     ");
     $sth->execute(
-        $app->{name}, $app->{scopes},
-        $app->{homepage}     || '',
-        $app->{github}       || '',
-        $app->{appstore}     || '',
-        $app->{googleplay}   || '',
-        $app->{redirect_uri} || '', $app_id
+        $app->{name},
+        $app->{scopes},
+        $app->{homepage}              || '',
+        $app->{github}                || '',
+        $app->{appstore}              || '',
+        $app->{googleplay}            || '',
+        $app->{redirect_uri}          || '',
+        $app->{app_markup_percentage} || 0,
+        $app_id
     );
 
     ## revoke user_scope_confirm on scope changes
@@ -187,14 +193,15 @@ sub update_app {
     }
 
     return {
-        app_id       => $app_id,
-        name         => $app->{name},
-        scopes       => $app->{scopes},
-        redirect_uri => $app->{redirect_uri},
-        homepage     => $app->{homepage} || '',
-        github       => $app->{github} || '',
-        appstore     => $app->{appstore} || '',
-        googleplay   => $app->{googleplay} || '',
+        app_id                => $app_id,
+        name                  => $app->{name},
+        scopes                => $app->{scopes},
+        redirect_uri          => $app->{redirect_uri},
+        homepage              => $app->{homepage} || '',
+        github                => $app->{github} || '',
+        appstore              => $app->{appstore} || '',
+        googleplay            => $app->{googleplay} || '',
+        app_markup_percentage => $app->{app_markup_percentage} || 0
     };
 }
 
@@ -204,9 +211,8 @@ sub get_app {
     my $app = $self->dbh->selectrow_hashref("
         SELECT
             id as app_id, name, redirect_uri, scopes,
-            homepage, github, appstore, googleplay
-        FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
-    ", undef, $app_id, $user_id);
+            homepage, github, appstore, googleplay, app_markup_percentage
+        FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active", undef, $app_id, $user_id);
     return unless $app;
 
     $app->{scopes} = __parse_array($app->{scopes});
@@ -219,9 +225,8 @@ sub get_apps_by_user_id {
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
             id as app_id, name, redirect_uri, scopes,
-            homepage, github, appstore, googleplay
-        FROM oauth.apps WHERE binary_user_id = ? AND active ORDER BY name
-    ", {Slice => {}}, $user_id);
+            homepage, github, appstore, googleplay, app_markup_percentage
+        FROM oauth.apps WHERE binary_user_id = ? AND active ORDER BY name", {Slice => {}}, $user_id);
     return [] unless $apps;
 
     foreach (@$apps) {
@@ -254,7 +259,7 @@ sub get_used_apps_by_loginid {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            u.app_id, name, a.scopes
+            u.app_id, name, a.scopes, a.app_markup_percentage
         FROM oauth.apps a JOIN oauth.user_scope_confirm u ON a.id=u.app_id
         WHERE loginid = ? AND a.active ORDER BY a.name
     ", {Slice => {}}, $loginid);
@@ -301,9 +306,8 @@ sub has_other_login_sessions {
 
     my $dbh = $self->dbh;
     # "Binary.com backoffice" app has id = 4, we use it to create token for BO impersonate. So should be excluded here.
-    my $login_cnt = $self->dbh->selectrow_array(
-        "SELECT count(*) FROM oauth.access_token WHERE loginid = ? AND expires > now() AND app_id <> 4",
-        undef, $loginid);
+    my $login_cnt =
+        $self->dbh->selectrow_array("SELECT count(*) FROM oauth.access_token WHERE loginid = ? AND expires > now() AND app_id <> 4", undef, $loginid);
     return ($login_cnt >= 1);
 }
 

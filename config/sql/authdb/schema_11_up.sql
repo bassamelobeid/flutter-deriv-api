@@ -1,5 +1,5 @@
 BEGIN;
 
-ALTER TABLE oauth.access_token ADD COLUMN ua_fingerprint VARCHAR(32);
+ALTER TABLE oauth.apps ADD COLUMN app_markup_percentage NUMERIC DEFAULT 0;
 
 COMMIT;

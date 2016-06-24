@@ -46,7 +46,7 @@ __PACKAGE__->meta->setup(
         first_time_login                         => { type => 'boolean', default => 'true' },
         source                                   => { type => 'varchar', length => 50 },
         occupation                               => { type => 'varchar', length => 100 },
-        aml_risk_classification                  => { type => 'enum', check_in => [ 'low', 'standard', 'high', 'manual override - low', 'manual override - standard', 'manual override - high' ], db_type => 'aml_risk_type' },
+        aml_risk_classification                  => { type => 'enum', check_in => [ 'low', 'standard', 'high', 'manual override - low', 'manual override - standard', 'manual override - high' ], db_type => 'aml_risk_type', default => 'low' },
     ],
 
     primary_key_columns => [ 'loginid' ],
