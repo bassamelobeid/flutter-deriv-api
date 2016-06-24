@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use JSON;
 use Data::UUID;
+use List::Util qw(first);
 use Format::Util::Numbers qw(roundnear);
 use BOM::RPC::v3::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::System;
@@ -195,51 +196,32 @@ sub _price_stream_results_adjustment {
     my $results   = shift;
     my $amount    = shift;
 
-    return $results if not $orig_args->{basis};
+    # skips for spreads
+    return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
 
-    # For non spread
-    if ($orig_args->{basis} eq 'payout') {
-        my $ask_price = BOM::RPC::v3::Contract::calculate_ask_price({
-            theo_probability      => $results->{theo_probability},
-            base_commission       => $results->{base_commission},
-            probability_threshold => $results->{probability_threshold},
-            amount                => $amount,
-        });
-        $results->{ask_price}     = sprintf('%.2f', $ask_price);
-        $results->{display_value} = sprintf('%.2f', $ask_price);
-        $results->{payout}        = sprintf('%.2f', $amount);
-    } elsif ($orig_args->{basis} eq 'stake') {
-        my $payout = BOM::RPC::v3::Contract::calculate_payout({
-            theo_probability => $results->{theo_probability},
-            base_commission  => $results->{base_commission},
-            amount           => $amount,
-        });
-        $results->{ask_price}     = sprintf('%.2f', $amount);
-        $results->{display_value} = sprintf('%.2f', $amount);
-        $results->{payout}        = sprintf('%.2f', $payout);
-    }
+    my $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($orig_args);
+    # overrides the theo_probability_value which take the most calculation time.
+    $contract_parameters->{theo_probability_value} = $results->{theo_probability};
+    $contract_parameters->{app_markup_percentage}  = $orig_args->{app_markup_percentage};
+    my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
-    if (
-        my $error = BOM::RPC::v3::Contract::validate_price({
-                ask_price         => $results->{ask_price},
-                payout            => $results->{payout},
-                minimum_ask_price => $results->{minimum_stake},
-                maximum_payout    => $results->{maximum_payout}}))
-    {
+    if (my $error = $contract->validate_price) {
         return {
             error => {
                 message_to_client => $error->{message_to_client},
                 code              => 'ContractBuyValidationError',
                 details           => {
-                    longcode      => $results->{longcode},
-                    display_value => $results->{display_value},
-                    payout        => $results->{payout},
+                    longcode      => $contract->longcode,
+                    display_value => $contract->ask_price,
+                    payout        => $contract->payout,
                 },
             }};
     }
 
-    # cleans up the response.
-    delete $results->{$_} for qw(theo_probability base_commission probability_threshold minimum_stake maximum_payout);
+    $results->{ask_price} = $results->{display_value} = $contract->ask_price;
+    $results->{payout} = $contract->payout;
+    #cleanup
+    delete $results->{theo_probability};
 
     return $results;
 }
