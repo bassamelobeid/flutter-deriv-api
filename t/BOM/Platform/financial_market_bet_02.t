@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 29;
+use Test::More tests => 26;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use BOM::Database::Helper::FinancialMarketBet;
@@ -415,25 +415,6 @@ SKIP: {
         }
         'bought USD bet with relative_barrier=test';
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                buy_price        => '0.01',
-                relative_barrier => 'test',
-                limits           => {
-                    intraday_forex_iv_action => {
-                        turnover => 20,
-                    },
-                },
-                };
-        }
-        'cannot buy one more due to intraday_forex_iv_action.turnover';
-        is_deeply $@,
-            [
-            BI004 => 'ERROR:  maximum intraday forex turnover limit reached',
-            ],
-            'maximum intraday forex turnover limit reached';
-
         # there is currently one open bet with relative_barrier<>S0P
         # it has buy_price=20 and payout_price=200
         # let's buy one more with potential profit of 20
@@ -459,27 +440,6 @@ SKIP: {
         }
         'now we have potential_profit=200';
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                relative_barrier => 'test',
-                buy_price        => 20,
-                payout_price     => 20.01,
-                limits           => {
-                    intraday_forex_iv_action => {
-                        potential_profit => 200,
-                        turnover         => 60,
-                    },
-                },
-                };
-        }
-        'cannot buy one more due to intraday_forex_iv_action.potential_profit';
-        is_deeply $@,
-            [
-            BI005 => 'ERROR:  maximum intraday forex potential profit limit reached',
-            ],
-            'maximum intraday forex potential profit limit reached';
-
         # now we need to sell some bets
         $sell_price = 200;
         lives_ok {
@@ -494,41 +454,18 @@ SKIP: {
 
         $bal += $sell_price;
         # here we have a realized profit of 180. Let's see if that's true.
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                relative_barrier => 'test',
-                buy_price        => 20,
-                limits           => {
-                    intraday_forex_iv_action => {
-                        realized_profit => 179.99,
-                    },
-                },
-                };
-        }
-        'cannot buy one more due to intraday_forex_iv_action.realized_profit';
-        is_deeply $@,
-            [
-            BI006 => 'ERROR:  maximum intraday forex realized profit limit reached',
-            ],
-            'maximum intraday forex realized profit limit reached';
 
-        # try the same bet with a slightly higher limit
+        # try the same bet
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 relative_barrier => 'test',
-                limits           => {
-                    intraday_forex_iv_action => {
-                        realized_profit => 180,
-                    },
-                },
                 };
             $bal -= 20;
             is $balance_after + 0, $bal, 'correct balance_after';
             push @bets_to_sell, $fmbid;
         }
-        'successfully bought USD bet with sightly higher intraday_forex_iv_action.realized_profit limit';
+        'successfully bought USD bet';
     };
 }
 
