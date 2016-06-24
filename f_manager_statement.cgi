@@ -28,7 +28,7 @@ if ($outputtype eq 'csv') {
     BrokerPresentation("$loginID Portfolio");
 }
 
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^$broker/) {

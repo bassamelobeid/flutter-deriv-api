@@ -37,7 +37,7 @@ foreach my $client_loginid (@clients) {
 }
 
 my $client_data_mapper = BOM::Database::DataMapper::Client->new({
-    broker_code => request()->broker->code,
+    broker_code => request()->broker_code,
 });
 
 my $clients_list = $client_data_mapper->locked_client_list();

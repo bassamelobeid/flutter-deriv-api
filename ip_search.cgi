@@ -14,7 +14,7 @@ PrintContentType();
 my $ip = request()->param('ip');
 BrokerPresentation("IP SEARCH FOR $ip");
 BOM::Backoffice::Auth0::can_access(['CS']);
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 
 if ($ip !~ /^\d+\.\d+\.\d+\.\d+$/) {
     print "Invalid IP $ip";
