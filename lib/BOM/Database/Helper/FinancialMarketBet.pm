@@ -185,7 +185,7 @@ sub batch_buy_bet {
     my $tmpsql = '
 WITH
 acc(loginid, limits) AS (VALUES
-    ' . join(",\n    ", map { '($' . ($_ * 2 + 22) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 23) . '::JSON)'; } 0 .. @acclim / 2 - 1) . ')
+    ' . join(",\n    ", map { '($' . ($_ * 2 + 23) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 24) . '::JSON)'; } 0 .. @acclim / 2 - 1) . ')
 SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
   FROM acc
  CROSS JOIN LATERAL
