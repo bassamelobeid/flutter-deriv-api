@@ -406,7 +406,6 @@ sub process_transaction_updates {
                                     rpc_response_cb => sub {
                                         my ($c, $rpc_response, $req_storage) = @_;
 
-                                        my $rpc_response = shift;
                                         if (exists $rpc_response->{error}) {
                                             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                                             return $c->new_error(
