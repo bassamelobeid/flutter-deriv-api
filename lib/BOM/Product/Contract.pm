@@ -12,8 +12,6 @@ use Time::HiRes qw(time);
 use List::Util qw(min max first);
 use List::MoreUtils qw(none all);
 use Scalar::Util qw(looks_like_number);
-use JSON qw(from_json);
-use BOM::Product::Contract::Helper;
 use BOM::Product::RiskProfile;
 
 use BOM::Market::UnderlyingDB;
@@ -980,20 +978,25 @@ sub _build_bid_price {
 sub _build_ask_probability {
     my $self = shift;
 
-    my $base_amount = BOM::Product::Contract::Helper::calculate_ask_probability({
-        theo_probability      => $self->theo_probability->amount,
-        commission_markup     => $self->commission_markup->amount,
-        probability_threshold => $self->market->deep_otm_threshold,
-    });
-
-    my $ask_probability = Math::Util::CalculatedValue::Validatable->new({
+    my $theo_probability = $self->theo_probability;
+    my $min_ask          = $self->market->deep_otm_threshold;
+    my $ask_cv           = Math::Util::CalculatedValue::Validatable->new({
         name        => 'ask_probability',
         description => 'The price we request for this contract.',
         set_by      => 'BOM::Product::Contract',
-        base_amount => $base_amount,
+        minimum     => max($min_ask, $theo_probability->amount),
+        maximum     => 1,
     });
 
-    return $ask_probability;
+    $ask_cv->include_adjustment('reset', $self->theo_probability);
+    $ask_cv->include_adjustment('add',   $self->commission_markup);
+
+    my $max_ask = 1 - $min_ask;
+    if ($ask_cv->amount > $max_ask) {
+        $ask_cv->include_adjustment('reset', $self->default_probabilities->{ask_probability});
+    }
+
+    return $ask_cv;
 }
 
 sub is_valid_to_buy {
@@ -1102,40 +1105,135 @@ sub _build_ask_price {
 sub _build_payout {
     my $self = shift;
 
-    my $theo_prob       = $self->theo_probability->amount;
-    my $base_commission = $self->base_commission;
-    my $ask_price       = $self->ask_price;
-
-    my $commission = BOM::Product::Contract::Helper::commission({
-        theo_probability => $theo_prob,
-        stake            => $ask_price,
-        base_commission  => $base_commission,
-    });
-
-    my $payout = $ask_price / ($theo_prob + $commission * BOM::Product::Contract::Helper::global_commission_adjustment());
-    $payout = max($ask_price, $payout);
+    my $payout = max($self->ask_price, $self->_calculate_payout($self->commission_from_stake));
     return roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $payout);
+}
+
+sub _calculate_payout {
+    my ($self, $base_commission) = @_;
+
+    return $self->ask_price / ($self->theo_probability->amount + $base_commission);
+}
+
+my $commission_base_multiplier = 1;
+my $commission_max_multiplier  = 2;
+my $commission_min_std         = 500;
+my $commission_max_std         = 25000;
+my $commission_slope           = ($commission_max_multiplier - $commission_base_multiplier) / ($commission_max_std - $commission_min_std);
+
+sub commission_multiplier {
+    my ($self, $payout) = @_;
+
+    my $theo_probability = $self->theo_probability->amount;
+    my $std = $payout * sqrt($theo_probability * (1 - $theo_probability));
+
+    return $commission_base_multiplier if $std <= $commission_min_std;
+    return $commission_max_multiplier  if $std >= $commission_max_std;
+
+    my $slope      = $commission_slope;
+    my $multiplier = ($std - $commission_min_std) * $slope + 1;
+
+    return $multiplier;
+}
+
+has commission_from_stake => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_commission_from_stake {
+    my $self = shift;
+
+    my $theo_probability    = $self->theo_probability->amount;
+    my $ask_price           = $self->ask_price;
+    my $base_commission     = $self->base_commission;
+    my $app_commission      = $self->app_markup->amount;
+    my $combined_commission = $base_commission + $app_commission;
+
+    # payout calculated with base commission.
+    my $initial_payout = $self->_calculate_payout($combined_commission);
+    if ($self->commission_multiplier($initial_payout) == $commission_base_multiplier) {
+        # a minimum of 2 cents please, payout could be zero.
+        my $minimum_commission = $initial_payout ? 0.02 / $initial_payout : 0.02;
+        return max($minimum_commission, $combined_commission);
+    }
+
+    # payout calculated with 2 times base commission.
+    $combined_commission = $base_commission * 2 + $app_commission;
+    $initial_payout      = $self->_calculate_payout($combined_commission);
+    if ($self->commission_multiplier($initial_payout) == $commission_max_multiplier) {
+        return $combined_commission;
+    }
+
+    my $a = $base_commission * $commission_slope * sqrt($theo_probability * (1 - $theo_probability));
+    my $b = ($theo_probability + $base_commission - $base_commission * $commission_min_std * $commission_slope) + $app_commission;
+    my $c = -$ask_price;
+
+    # sets it to zero first.
+    $initial_payout = 0;
+    # We solve for payout as a quadratic function.
+    for my $w (1, -1) {
+        my $estimated_payout = (-$b + $w * sqrt($b**2 - 4 * $a * $c)) / (2 * $a);
+        if ($estimated_payout > 0) {
+            $initial_payout = $estimated_payout;
+            last;
+        }
+    }
+
+    # die if we could not get a positive payout value.
+    die 'Could not calculate a payout' unless $initial_payout;
+
+    return $base_commission * $self->commission_multiplier($initial_payout) + $app_commission;
 }
 
 sub _build_theo_probability {
     my $self = shift;
 
-    my $theo;
-    # Have to keep it this way until we remove CalculatedValue in Contract.
-    if ($self->new_interface_engine) {
-        $theo = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'theo_probability',
-            description => 'theorectical value of a contract',
-            set_by      => $self->pricing_engine_name,
-            minimum     => 0,
-            maximum     => 1,
-            base_amount => $self->pricing_engine->probability,
-        });
-    } else {
-        $theo = $self->pricing_engine->probability;
-    }
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theo_probability',
+        description => 'theorectical value of a contract',
+        set_by      => $self->pricing_engine_name,
+        base_amount => $self->theo_probability_value,
+        minimum     => 0,
+        maximum     => 1,
+    });
+}
 
-    return $theo;
+# Application developer's commission.
+# Defaults to 0%
+has app_markup_percentage => (
+    is      => 'ro',
+    default => 0,
+);
+
+# theo_probability_value should be removed when we get rid of CalculatedValue.
+has [qw(theo_probability_value app_markup_dollar_amount app_markup)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_theo_probability_value {
+    my $self = shift;
+
+    return $self->pricing_engine->probability if $self->new_interface_engine;
+    return $self->pricing_engine->probability->amount;
+}
+
+sub _build_app_markup {
+    my $self = shift;
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'app_markup',
+        description => 'commission markup for app developer',
+        set_by      => __PACKAGE__,
+        base_amount => $self->app_markup_percentage / 100,
+    });
+}
+
+sub _build_app_markup_dollar_amount {
+    my $self = shift;
+
+    return roundnear(0.01, $self->app_markup->amount * $self->payout);
 }
 
 sub _build_bs_probability {
@@ -1173,8 +1271,10 @@ has [qw(risk_markup commission_markup base_commission)] => (
 sub _build_risk_markup {
     my $self = shift;
 
-    my $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->theo_probability->peek_amount('risk_markup');
-    $base_amount = 0 unless defined $base_amount;
+    my $base_amount = 0;
+    if ($self->pricing_engine->can('risk_markup')) {
+        $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
+    }
 
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'risk_markup',
@@ -1187,34 +1287,44 @@ sub _build_risk_markup {
 sub _build_base_commission {
     my $self = shift;
 
+    my $minimum        = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100;
+    my $maximum        = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100;
+    my $scaling_factor = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
+    $scaling_factor = max($minimum, min($maximum, $scaling_factor));
+
     my $announcement_date = Date::Utility->new('2016-07-02');
     my $disable_date      = Date::Utility->new('2016-06-20');
     # Every forex pair expiry after 2-July should have normal commission in place.
     # Very hacky solution but we will need more time to code up a proper one.
     # This should be removed after Brexit.
-    return 0.05
+    return 0.05 * $scaling_factor
         if ((
                $self->market->name eq 'forex'
             or $self->market->name eq 'indices'
         )
         and $self->date_start->is_after($disable_date)
         and $self->date_expiry->is_after($announcement_date));
-    return $self->underlying->base_commission;
+
+    return $self->underlying->base_commission * $scaling_factor;
 }
 
 sub _build_commission_markup {
     my $self = shift;
 
-    my %min = ($self->has_payout and $self->payout != 0) ? (minimum => 0.02 / $self->payout) : ();
-    return Math::Util::CalculatedValue::Validatable->new({
+    my $base_amount   = $self->base_commission * $self->commission_multiplier($self->payout);
+    my %min           = ($self->has_payout and $self->payout != 0) ? (minimum => 0.02 / $self->payout) : ();
+    my $commission_cv = Math::Util::CalculatedValue::Validatable->new({
         name        => 'commission_markup',
         description => 'Commission markup for a pricing model',
-        set_by      => $self->pricing_engine_name,
-        base_amount => $self->base_commission *
-            BOM::Product::Contract::Helper::commission_multiplier($self->payout, $self->theo_probability->amount),
-        maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100,
+        set_by      => __PACKAGE__,
+        base_amount => $base_amount,
+        maximum     => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100,
         %min,
     });
+
+    $commission_cv->include_adjustment('add', $self->app_markup);
+
+    return $commission_cv;
 }
 
 sub _build_theo_price {
@@ -2120,16 +2230,64 @@ sub _validate_feed {
     return;
 }
 
-sub _validate_price {
+sub validate_price {
     my $self = shift;
 
-    # Extant contracts can have whatever payouts were OK then.
     return if $self->for_sale;
-    return BOM::Product::Contract::Helper::validate_price({
-            ask_price         => $self->ask_price,
-            payout            => $self->payout,
-            minimum_ask_price => $self->staking_limits->{min},
-            maximum_payout    => $self->staking_limits->{max}});
+
+    my $ask_price         = $self->ask_price;
+    my $payout            = $self->payout;
+    my $minimum_ask_price = $self->staking_limits->{min};
+    my $maximum_payout    = $self->staking_limits->{max};
+
+    if (not $ask_price) {
+        return {
+            message           => "Empty or zero stake [stake: " . $ask_price . "]",
+            message_to_client => localize("Invalid stake"),
+        };
+    }
+
+    my $message_to_client = localize(
+        'Minimum stake of [_1] and maximum payout of [_2]',
+        to_monetary_number_format($minimum_ask_price),
+        to_monetary_number_format($maximum_payout));
+    my $message_to_client_array = [
+        'Minimum stake of [_1] and maximum payout of [_2]', to_monetary_number_format($minimum_ask_price),
+        to_monetary_number_format($maximum_payout)];
+    if ($ask_price < $minimum_ask_price) {
+        return {
+            message                 => 'stake is not within limits ' . "[stake: " . $ask_price . "] " . "[min: " . $minimum_ask_price . "] ",
+            message_to_client       => $message_to_client,
+            message_to_client_array => $message_to_client_array,
+        };
+    } elsif ($payout > $maximum_payout) {
+        return {
+            message                 => 'payout amount outside acceptable range ' . "[given: " . $payout . "] " . "[max: " . $maximum_payout . "]",
+            message_to_client       => $message_to_client,
+            message_to_client_array => $message_to_client_array,
+        };
+    }
+
+    my $payout_as_string = "" . $payout;    #Just to be sure we're deailing with a string.
+    $payout_as_string =~ s/[\.0]+$//;       # Strip trailing zeroes and decimal points to be more friendly.
+
+    if ($payout =~ /\.[0-9]{3,}/) {
+        # We did the best we could to clean up looks like still too many decimals
+        return {
+            message           => 'payout amount has too many decimal places ' . "[permitted: 2] " . "[payout: " . $payout . "]",
+            message_to_client => localize('Payout may not have more than two decimal places.',),
+        };
+    }
+
+    # Compared as strings of maximum visible client currency width to avoid floating-point issues.
+    if (sprintf("%.2f", $ask_price) eq sprintf("%.2f", $payout)) {
+        return {
+            message           => 'stake same as payout',
+            message_to_client => localize('This contract offers no return.'),
+        };
+    }
+
+    return;
 }
 
 sub _validate_input_parameters {
@@ -2554,7 +2712,7 @@ sub confirm_validity {
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     # This is the default list of validations.
-    my @validation_methods = qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed _validate_price);
+    my @validation_methods = qw(_validate_input_parameters _validate_offerings _validate_lifetime  _validate_barrier _validate_feed validate_price);
 
     push @validation_methods, '_validate_volsurface' if (not $self->volsurface->type eq 'flat');
     push @validation_methods, qw(_validate_trading_times _validate_start_and_expiry_date) if not $self->underlying->always_available;
