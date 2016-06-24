@@ -182,7 +182,7 @@ sub batch_buy_bet {
 
     # NOTE, the parens around v_fmb and v_trans in the SQL statement
     #       are necessary.
-    my $tmpsql = '
+    my $stmt = $self->db->dbh->prepare('
 WITH
 acc(loginid, limits) AS (VALUES
     ' . join(",\n    ", map { '($' . ($_ * 2 + 23) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 24) . '::JSON)'; } 0 .. @acclim / 2 - 1) . ')
@@ -193,8 +193,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
                                 $5::NUMERIC, $6::TIMESTAMP, $7::TIMESTAMP, $8::TIMESTAMP, $9::BOOLEAN,
                                 $10::VARCHAR(30), $11::VARCHAR(30), $12::VARCHAR(800), $13::VARCHAR(255),
                                 $14::BOOLEAN, $15::INT, $16::JSON, $17::TIMESTAMP, $18::VARCHAR(24),
-                                $19::VARCHAR(800), $20::BIGINT, $21::NUMERIC, $22::JSON, acc.limits) b';
-    my $stmt = $self->db->dbh->prepare($tmpsql);
+                                $19::VARCHAR(800), $20::BIGINT, $21::NUMERIC, $22::JSON, acc.limits) b');
     my %bet = (
         expiry_daily => 0,
         is_expired   => 0,
@@ -225,12 +224,9 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
         # data_collection.quants_bet_variables
         $qv ? JSON::XS::encode_json(+{map { my $v = $qv->$_; defined $v ? ($_ => $v) : () } @qv_col}) : undef,
     );
-    use Data::Dumper;
-    open my $fh, ">>", "/tmp/error.txt";
-    print $fh "sql is $tmpsql\n";
-    print $fh Dumper([@param, @acclim]);
-    close $fh;
+
     $stmt->execute(@param, @acclim);
+
     my %result;
     while (my $row = $stmt->fetchrow_arrayref) {
         my ($loginid, $ecode, $edescr) = @{$row}[0, 1, 2];
