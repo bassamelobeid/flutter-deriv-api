@@ -206,9 +206,8 @@ sub create_fmb {
         db                 => $connection_builder->db,
     });
 
-    $fmb->save;
-
     if (!$buy_bet) {
+        $fmb->save;
         return $fmb;
     }
 
