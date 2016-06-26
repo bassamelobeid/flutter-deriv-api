@@ -487,7 +487,7 @@ subtest $method => sub {
         $c->tcall($method, {token => $token1}),
         {
             status              => [],
-            risk_classification => ''
+            risk_classification => 'low'
         },
         'status empty'
     );
@@ -497,7 +497,7 @@ subtest $method => sub {
         $c->tcall($method, {token => $token1}),
         {
             status              => [],
-            risk_classification => ''
+            risk_classification => 'low'
         },
         'tnc_approval is excluded, still status is empty'
     );
@@ -508,7 +508,7 @@ subtest $method => sub {
         $c->tcall($method, {token => $token1}),
         {
             status              => ['authenticated'],
-            risk_classification => ''
+            risk_classification => 'low'
         },
         'ok, authenticated'
     );
@@ -636,7 +636,7 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'need token_type');
     $params->{token_type} = 'hello';
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'need token_type');
-    $params->{token_type}         = 'session_token';
+    $params->{token_type}         = 'oauth_token';
     $params->{args}{old_password} = 'old_password';
     $params->{cs_email}           = 'cs@binary.com';
     $params->{client_ip}          = '127.0.0.1';

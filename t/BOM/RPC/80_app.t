@@ -5,6 +5,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use TestHelper qw/create_test_user/;
 use Test::MockModule;
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::AccessToken;
 use Test::BOM::RPC::Client;
@@ -51,7 +52,7 @@ my $app1 = $c->call_ok(
             name         => 'App 1',
             scopes       => ['read', 'trade'],
             redirect_uri => 'https://www.example.com/',
-            homepage     => 'https://www.homepage.com/',
+            homepage     => 'https://www.homepage.com/'
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply([sort @{$app1->{scopes}}], ['read', 'trade'], 'scopes are right');
@@ -67,7 +68,7 @@ $app1 = $c->call_ok(
             name         => 'App 1',
             scopes       => ['read', 'trade', 'admin'],
             redirect_uri => 'https://www.example.com/callback',
-            homepage     => 'https://www.homepage2.com/',
+            homepage     => 'https://www.homepage2.com/'
         },
     })->has_no_system_error->has_no_error->result;
 is_deeply([sort @{$app1->{scopes}}], ['admin', 'read', 'trade'], 'scopes are updated');
@@ -99,11 +100,27 @@ my $app2 = $c->call_ok(
     {
         token => $token,
         args  => {
-            name         => 'App 2',
-            scopes       => ['read', 'admin'],
-            redirect_uri => 'https://www.example2.com/',
+            name                  => 'App 2',
+            scopes                => ['read', 'admin'],
+            redirect_uri          => 'https://www.example2.com/',
+            app_markup_percentage => 2
         },
     })->has_no_system_error->has_no_error->result;
+is $app2->{app_markup_percentage}, 2, 'app_markup_percentage is right';
+
+$app2 = $c->call_ok(
+    'app_update',
+    {
+        token => $token,
+        args  => {
+            app_update            => $app2->{app_id},
+            name                  => 'App 2',
+            scopes                => ['read', 'admin'],
+            redirect_uri          => 'https://www.example2.com/',
+            app_markup_percentage => 4
+        },
+    })->has_no_system_error->has_no_error->result;
+is $app2->{app_markup_percentage}, 4, 'app_markup_percentage is updated';
 
 my $get_apps = $c->call_ok(
     'app_list',

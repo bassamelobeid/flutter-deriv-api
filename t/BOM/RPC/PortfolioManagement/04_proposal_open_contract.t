@@ -13,16 +13,18 @@ use Test::BOM::RPC::Client;
 
 use BOM::Market::Data::DatabaseAPI;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Database::Model::AccessToken;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Database::Model::OAuth;
 
 use utf8;
 
-my ($client, $client_token, $session);
+my ($client, $client_token, $oauth_token);
 my ($t, $rpc_ct);
 my $method = 'proposal_open_contract';
 
@@ -54,10 +56,7 @@ subtest 'Initialization' => sub {
 
         $client_token = $m->create_token($client->loginid, 'test token');
 
-        $session = BOM::Platform::SessionCookie->new(
-            loginid => $client->loginid,
-            email   => $client->email,
-        )->token;
+        ($oauth_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
     }
     'Initial clients';
 };
@@ -103,9 +102,9 @@ subtest 'Auth client' => sub {
 
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using token');
 
-    $params[1]->{token} = $session;
+    $params[1]->{token} = $oauth_token;
 
-    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using session');
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using oauth token');
 };
 
 subtest $method => sub {
@@ -127,6 +126,8 @@ subtest $method => sub {
         });
 
         @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold transaction_ids /;
+        # we dont send ask_price in proposal_open_contract
+        delete $bid->{ask_price};
         push @expected_contract_fields, keys %$bid;
     }
     'Get extected data';
@@ -143,6 +144,7 @@ subtest $method => sub {
         });
 
         @expected_contract_fields = qw/ buy_price purchase_time account_id is_sold transaction_ids /;
+        delete $bid->{ask_price};
         push @expected_contract_fields, keys %$bid;
     }
     'Get extected data';

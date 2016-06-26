@@ -61,6 +61,7 @@ sub register {
             $args->{country_code} = $params->{country} if exists $params->{country};
             $params->{token} = $params->{args}->{authorize} if !$params->{token} && $params->{args}->{authorize};
             my $token_details = BOM::RPC::v3::Utility::get_token_details($params->{token});
+
             if ($token_details and exists $token_details->{loginid} and $token_details->{loginid} =~ /^(\D+)\d+$/) {
                 $args->{broker_code} = $1;
             }

@@ -6,7 +6,8 @@ use BOM::RPC::v3::Cashier;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::SessionCookie;
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Database::Model::OAuth;
 use Test::MockModule;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use utf8;
@@ -41,10 +42,7 @@ subtest 'CR' => sub {
     $client->save;
     my $loginid = $client->loginid;
 
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $loginid,
-        email   => $email
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
     my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->costarica;
 
@@ -132,10 +130,8 @@ subtest 'JP' => sub {
     $client->save;
     my $loginid = $client->loginid;
 
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $loginid,
-        email   => $email
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
+
     $params->{token} = $token;
 
     my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->japan;
@@ -198,10 +194,7 @@ subtest 'MLT' => sub {
     $client->save;
     my $loginid = $client->loginid;
 
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $loginid,
-        email   => $email
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
     $params->{token} = $token;
 
     my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->malta;
@@ -264,10 +257,7 @@ subtest 'MX' => sub {
     $client->save;
     my $loginid = $client->loginid;
 
-    my $token = BOM::Platform::SessionCookie->new(
-        loginid => $loginid,
-        email   => $email
-    )->token;
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
     $params->{token} = $token;
 
     my $limits = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->iom;
@@ -328,10 +318,7 @@ subtest "VR no get_limits" => sub {
     $client_vr->email($email);
     $client_vr->save;
 
-    my $token_vr = BOM::Platform::SessionCookie->new(
-        loginid => $client_vr->loginid,
-        email   => $email
-    )->token;
+    my ($token_vr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
 
     $params->{token} = $token_vr;
     $c->call_ok($method, $params)->has_error->error_message_is('Sorry, this feature is not available.', 'invalid token');
