@@ -162,7 +162,7 @@ sub entry_point {
 
 # [param key, sub, require auth]
 my @dispatch = (
-    ['authorize', '', 0, ''],
+    ['authorize', '', 0, '', {stash_params => [qw/ ua_fingerprint /]}],
     [
         'logout', '', 0, '',
         {
@@ -241,6 +241,7 @@ my @dispatch = (
     [
         'buy', '', 1, 'trade',
         {
+            stash_params   => [qw/ app_markup_percentage /],
             before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
         }
     ],
@@ -257,6 +258,7 @@ my @dispatch = (
         'proposal_open_contract',
         '', 1, 'read',
         {
+            stash_params    => [qw/ app_markup_percentage /],
             rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
         }
     ],
@@ -560,9 +562,10 @@ sub rpc {
     }
     $url .= $method;
 
-    $params->{language} = $c->stash('language');
-    $params->{country}  = $c->stash('country') || $c->country_code;
-    $params->{source}   = $c->stash('source');
+    $params->{language}              = $c->stash('language');
+    $params->{country}               = $c->stash('country') || $c->country_code;
+    $params->{source}                = $c->stash('source');
+    $params->{app_markup_percentage} = $c->stash('app_markup_percentage');
 
     BOM::WebSocketAPI::CallingEngine::call_rpc(
         $c,
