@@ -100,7 +100,13 @@ sub buy_contract_for_multiple_accounts {
     # for the same case. Hence, 'trade' is passed as parameter.
     my $msg2 = BOM::Platform::Context::localize('Permission denied, requires [_1] scope.', 'trade');
 
-    for my $t (@{$params->{args}->{tokens} || []}) {
+    $params->{args}->{tokens} //= [];
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'TooManyTokens',
+            message_to_client => localize('Up to 100 tokens are allowed.')}) if @{$params->{args}->{tokens}} > 100;
+
+    for my $t (@{$params->{args}->{tokens}}) {
         my $token_details = BOM::RPC::v3::Utility::get_token_details($t);
         my $loginid;
 
