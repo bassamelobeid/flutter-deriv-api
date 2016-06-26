@@ -184,7 +184,7 @@ sub batch_buy_bet {
     #       are necessary.
     my $stmt = $self->db->dbh->prepare('
 WITH
-acc(loginid, limits) AS (VALUES
+acc(seq, loginid, limits) AS (VALUES
     ' . join(",\n    ", map { '(' . $_ . '::INT, $' . ($_ * 2 + 23) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 24) . '::JSON)'; } 0 .. @acclim / 2 - 1) . ')
 SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
   FROM acc
