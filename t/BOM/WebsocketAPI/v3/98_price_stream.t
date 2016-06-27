@@ -15,13 +15,7 @@ my ($req, $res, $start, $end);
 build_test_R_50_data();
 
 my $t     = build_mojo_test();
-my $token = BOM::Platform::SessionCookie->new(
-    client_id       => 1,
-    loginid         => "CR2002",
-    email           => 'sy@regentmarkets.com',
-    expiration_time => time() + 600,
-    scopes          => ['price', 'trade'],
-)->token;
+my $token = BOM::Database::Model::AccessToken->new->create_token("CR2002", 'Test', ['price', 'trade']);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
