@@ -37,7 +37,6 @@ $client->deposit_virtual_funds;
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -330,8 +329,15 @@ subtest 'get_bid' => sub {
             payout
             contract_type
             display_name
+            stop_loss_level
+            stop_profit_level
+            entry_level
+            exit_level
+            current_value_in_dollar
+            current_value_in_point
+            amount_per_point
             ));
-    is_deeply([sort keys %{$result}], [sort @expected_keys]);
+    cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
     $contract = create_contract(
         client => $client,
