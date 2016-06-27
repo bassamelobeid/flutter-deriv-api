@@ -174,8 +174,11 @@ sub new_account_real {
 
     my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
 
-    my $company = $countries_list->{$args->{residence}}->{gaming_company};
-    $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
+    my $company;
+    if ($args->{residence}) {
+        $company = $countries_list->{$args->{residence}}->{gaming_company};
+        $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
+    }
 
     if (not $company) {
         return BOM::RPC::v3::Utility::create_error({
