@@ -85,7 +85,7 @@ sub get_open_bets_of_account {
     my $self = shift;
 
     my $sql = q{
-        SELECT fmb.*, t.id buy_transaction_id, t.app_markup
+        SELECT fmb.*, t.id buy_transaction_id, t.app_markup, t.source
         FROM
             bet.financial_market_bet fmb
             JOIN transaction.transaction t on (action_type='buy' and t.financial_market_bet_id=fmb.id)
@@ -133,7 +133,7 @@ sub get_sold_bets_of_account {
 
     my $dbh = $self->db->dbh;
     my $sth = $dbh->prepare("
-        SELECT fmb.*, t.id txn_id
+        SELECT fmb.*, t.id txn_id, t.source,
         $sql
         ORDER BY fmb.purchase_time $sort_dir, fmb.id $sort_dir
         LIMIT ? OFFSET ?
