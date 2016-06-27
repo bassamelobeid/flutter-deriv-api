@@ -40,6 +40,10 @@ sub get {
 
 sub get_by_broker {
     my $broker = shift;
+
+    if ($broker =~ /^([A-Z]+)\d+$/) {
+        $broker = $1;
+    }
     return $landing_company_by_broker{$broker};  
 }
 
