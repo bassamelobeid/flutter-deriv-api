@@ -75,8 +75,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 
 
 my $chronicle_r = BOM::System::Chronicle::get_chronicle_reader($date);
 
-my $LSE = Quant::Framework::TradingCalendar->new('LSE', $chronicle_r, 'EN', $date);
 my $ul_LSE = BOM::Market::Underlying->new('FTSE');
+my $LSE = Quant::Framework::TradingCalendar->new({
+        symbol => 'LSE', 
+        underlying_config => $ul_LSE->config,
+        chronicle_reader => $chronicle_r, 
+        locale => 'EN', 
+        for_date => $date});
+
 is $ul_LSE->exchange->symbol, $LSE->symbol, "This underlying's exchange is what we expect";
 
 # Gold has the same exchange as FOREX.
