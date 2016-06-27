@@ -97,16 +97,13 @@ sub _include_metal_holidays_and_early_closes {
     my $year        = Date::Utility->new->year;
     my $christmas   = Date::Utility->new("$year-12-25")->epoch;
     my $new_year    = Date::Utility->new(($year + 1) . "-01-01")->epoch;
-    my %us_holidays = $data->{NYSE};
-    my $data->{METAL} = map { $_ => 'Good Friday' } grep { $us_holidays{$_} =~ /Good Friday/ } keys %us_holidays;
+    my $us_holidays = $data->{NYSE};
 
-    $data->{METAL} .= {
+    $data->{METAL} = {
         $christmas => 'Christmas Day',
         $new_year  => "New Year\'s Day",
-    };
-
-    $early_closes_data->{METAL} = %us_holidays;
-
+        map { $_ => 'Good Friday' } grep { $us_holidays->{$_} =~ /Good Friday/ } keys %{$us_holidays}};
+    $early_closes_data->{METAL} = $us_holidays;
     return;
 }
 
@@ -178,6 +175,7 @@ sub _save_early_closes_calendar {
             push @{$calendar_data->{$date}{$description}}, $exchange_name;
         }
     }
+
     my $updated = Quant::Framework::PartialTrading->new(
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
