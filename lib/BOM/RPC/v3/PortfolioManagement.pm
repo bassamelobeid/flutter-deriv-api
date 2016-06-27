@@ -38,8 +38,7 @@ sub portfolio {
             currency       => $client->currency,
             shortcode      => $row->{short_code},
             longcode       => (simple_contract_info($row->{short_code}, $client->currency))[0] // '',
-            app_idi        => $row->{source},
-        );
+            app_id         => $row->{source});
         push $portfolio->{contracts}, \%trx;
     }
 
