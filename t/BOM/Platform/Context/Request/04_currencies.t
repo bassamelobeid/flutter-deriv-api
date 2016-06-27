@@ -16,7 +16,7 @@ use BOM::Platform::Context::Request;
 subtest 'CR' => sub {
     subtest 'Default Country' => sub {
         my $request = BOM::Platform::Context::Request->new();
-        is $request()->broker_code, 'CR', 'CR broker';
+        is $request->broker_code, 'CR', 'CR broker';
         is_deeply([sort @{$request->available_currencies}], [qw(AUD EUR GBP USD)], 'available_currencies');
         is $request->country,          'Antarctica', 'We assume Antarctica as a default';
         is $request->default_currency, 'USD',        'Default currency is USD';
@@ -26,7 +26,7 @@ subtest 'CR' => sub {
         foreach my $country_code (qw(at be cz dk fi ie nl pl se sk)) {
             my $request = BOM::Platform::Context::Request->new(country_code => $country_code);
             note $country_code;
-            is $request()->broker_code, 'MLT', 'broker for ' . $country_code;
+            is $request->broker_code, 'MLT', 'broker for ' . $country_code;
             is_deeply([sort @{$request->available_currencies}], [qw(EUR GBP USD)], 'available_currencies');
             is $request->default_currency, 'EUR', 'default_currency';
         }
@@ -36,7 +36,7 @@ subtest 'CR' => sub {
         foreach my $country_code (qw(fr de gr it lu)) {
             my $request = BOM::Platform::Context::Request->new(country_code => $country_code);
             note $country_code;
-            is $request()->broker_code, 'MF', 'broker for ' . $country_code;
+            is $request->broker_code, 'MF', 'broker for ' . $country_code;
             is_deeply([sort @{$request->available_currencies}], [qw(EUR GBP USD)], 'available_currencies');
             is $request->default_currency, 'EUR', 'default_currency';
         }
@@ -46,7 +46,7 @@ subtest 'CR' => sub {
         foreach my $country_code (qw(au nz cx cc nf ki nr tv)) {
             my $request = BOM::Platform::Context::Request->new(country_code => $country_code);
             note $country_code;
-            is $request()->broker_code, 'CR', 'broker';
+            is $request->broker_code, 'CR', 'broker';
             is_deeply([sort @{$request->available_currencies}], [qw(AUD EUR GBP USD)], 'available_currencies');
             is $request->default_currency, 'AUD', 'default_currency';
         }
@@ -55,7 +55,7 @@ subtest 'CR' => sub {
     subtest 'GBP countries' => sub {
         my $request = BOM::Platform::Context::Request->new(country_code => 'gb');
         note 'gb';
-        is $request()->broker_code, 'MX', 'broker';
+        is $request->broker_code, 'MX', 'broker';
         is_deeply([sort @{$request->available_currencies}], [qw(GBP USD)], 'available_currencies');
         is $request->default_currency, 'GBP', 'default_currency';
     };
