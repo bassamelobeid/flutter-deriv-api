@@ -116,6 +116,7 @@ sub send_email {
         if ($use_email_template) {
             my $vars = {
                 email_template_loginid => $template_loginid,
+                content                => $message,
             };
             BOM::Platform::Context::template->process('common_email.html.tt', $vars, \$mail_message)
                 || die BOM::Platform::Context::template->error();
