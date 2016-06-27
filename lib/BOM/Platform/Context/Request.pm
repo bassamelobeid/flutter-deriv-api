@@ -16,6 +16,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Untaint;
 
 use Plack::App::CGIBin::Streaming::Request;
+use BOM::Platform::Runtime::LandingCompany::Registry;
 
 with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
 
@@ -313,7 +314,7 @@ sub _build_language {
 sub _build_available_currencies {
     my $self = shift;
 
-    return $self->broker->landing_company->legal_allowed_currencies;
+    return BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
 }
 
 sub _build_default_currency {
@@ -321,14 +322,14 @@ sub _build_default_currency {
 
     #First try to get a country specific currency.
     my $currency = $self->_country_specific_currency($self->country_code);
-    if ($currency and $self->broker->landing_company->is_currency_legal($currency)) {
+    if ($currency and BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->is_currency_legal($currency)) {
         if (grep { $_ eq $currency } @{$self->available_currencies}) {
             return $currency;
         }
     }
 
     #Next see if the default in landing company is available.
-    $currency = $self->broker->landing_company->legal_default_currency;
+    $currency = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_default_currency;
     if (grep { $_ eq $currency } @{$self->available_currencies}) {
         return $currency;
     }
