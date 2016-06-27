@@ -1,6 +1,6 @@
 language: perl
 perl:
-    - "5.14.2"
+    - "5.14.2-thr"
 env:
     - TEST_SUITE=unit_test_market
 services:
@@ -11,6 +11,9 @@ cache: apt
 before_install:
     - git clone https://6b8b5139b6cfaf61ea0b34834b62c275b500fa8b@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
+    - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
+    - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
+    - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
     - /tmp/travis-scripts/fixHostName.sh
     - dpkg -l | grep postgres
     - pg_lsclusters
