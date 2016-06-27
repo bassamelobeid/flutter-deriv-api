@@ -101,7 +101,6 @@ sub send_proposal_open_contract {
     my $buy_price       = delete $details->{buy_price};
     my $purchase_time   = delete $details->{purchase_time};
     my $sell_price      = delete $details->{sell_price};
-    my $buy_price       = delete $details->{buy_price};
     my $transaction_ids = delete $details->{transaction_ids};
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
