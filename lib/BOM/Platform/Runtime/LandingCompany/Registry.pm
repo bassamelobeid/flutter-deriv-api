@@ -30,6 +30,11 @@ sub new {
 
 sub get {
     my $name = shift;
+    # if calls as object method
+    if (ref $name) {
+        $name = shift;
+    }
+
     return $landing_companies{$name};
 }
 
