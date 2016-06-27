@@ -47,7 +47,7 @@ subtest 'realtime report generation' => sub {
     plan tests => 3;
 
     my $dm = BOM::Database::DataMapper::CollectorReporting->new({
-        broker_code => 'FOG',
+        broker_code => 'CR',
     });
 
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
