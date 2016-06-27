@@ -197,34 +197,49 @@ sub get_bid {
             payout              => $contract->payout,
             contract_type       => $contract->code
         };
-        my @corporate_actions;
 
-        if (not $contract->is_spread) {
-            @corporate_actions = @{$contract->corporate_actions};
-
-            my $contract_affected_by_missing_market_data = (not $contract->may_settle_automatically and $contract->missing_market_data) ? 1 : 0;
-            if ($contract_affected_by_missing_market_data) {
-                $response = BOM::RPC::v3::Utility::create_error({
+        if ($contract->is_spread) {
+            # spreads require different set of parameters.
+        } else {
+            if (not $contract->may_settle_automatically and $contract->missing_market_data) {
+                my $error = BOM::RPC::v3::Utility::create_error({
                         code              => "GetProposalFailure",
                         message_to_client => localize(
                             'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
                         )});
-                return;
+                return $error;
             }
-        }
 
-        if (not $contract->is_valid_to_sell and $contract->primary_validation_error) {
-            $response->{validation_error} = $contract->primary_validation_error->message_to_client;
-        }
+            $response->{validation_error} = $contract->primary_validation_error->message_to_client
+                if (not $contract->is_valid_to_sell and $contract->primary_validation_error);
 
-        if (not $contract->is_spread) {
-            $response->{entry_tick}      = $contract->underlying->pipsized_value($contract->entry_tick->quote) if $contract->entry_tick;
-            $response->{entry_tick_time} = $contract->entry_tick->epoch                                        if $contract->entry_tick;
-            $response->{exit_tick}       = $contract->underlying->pipsized_value($contract->exit_tick->quote)  if $contract->exit_tick;
-            $response->{exit_tick_time}  = $contract->exit_tick->epoch                                         if $contract->exit_tick;
+            $response->{has_corporate_actions} = 1 if @{$contract->corporate_actions};
+
+            if ($contract->entry_tick) {
+                my $entry_spot = $contract->underlying->pipsized_value($contract->entry_tick->quote);
+                $response->{entry_tick}      = $entry_spot;
+                $response->{entry_spot}      = $entry_spot;
+                $response->{entry_tick_time} = $contract->entry_tick->epoch;
+                if ($contract->two_barriers) {
+                    $response->{high_barrier}          = $contract->high_barrier->as_absolute;
+                    $response->{low_barrier}           = $contract->low_barrier->as_absolute;
+                    $response->{original_high_barrier} = $contract->original_high_barrier->as_absolute
+                        if defined $contract->original_high_barrier;
+                    $response->{original_low_barrier} = $contract->original_low_barrier->as_absolute if defined $contract->original_low_barrier;
+                    $response->{barrier_count} = 2;
+                } elsif ($contract->barrier) {
+                    $response->{barrier} = $contract->barrier->as_absolute;
+                    $response->{original_barrier} = $contract->original_barrier->as_absolute if defined $contract->original_barrier;
+                    $response->{barrier_count} = 1;
+                }
+            }
+
+            if ($contract->exit_tick) {
+                $response->{exit_tick} = $contract->underlying->pipsized_value($contract->exit_tick->quote);
+                $response->{exit_tick_time} = $contract->exit_tick->epoch;
+            }
+
             $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-            $response->{entry_spot} = $contract->underlying->pipsized_value($contract->entry_spot) if $contract->entry_spot;
-            $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
 
             # sell_spot and sell_spot_time are updated if the contract is sold
             # or when the contract is expired.
@@ -242,25 +257,7 @@ sub get_bid {
             if ($contract->expiry_type eq 'tick') {
                 $response->{tick_count} = $contract->tick_count;
             }
-
-            if ($contract->entry_tick) {
-                if ($contract->two_barriers) {
-                    $response->{high_barrier}          = $contract->high_barrier->as_absolute;
-                    $response->{low_barrier}           = $contract->low_barrier->as_absolute;
-                    $response->{original_high_barrier} = $contract->original_high_barrier->as_absolute if defined $contract->original_high_barrier;
-                    $response->{original_low_barrier}  = $contract->original_low_barrier->as_absolute if defined $contract->original_low_barrier;
-
-                } elsif ($contract->barrier) {
-                    $response->{barrier} = $contract->barrier->as_absolute;
-                    $response->{original_barrier} = $contract->original_barrier->as_absolute if defined $contract->original_barrier;
-
-                }
-            }
-
-            $response->{has_corporate_actions} = 1 if @corporate_actions;
-
         }
-
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
         stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
