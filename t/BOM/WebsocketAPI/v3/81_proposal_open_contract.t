@@ -14,6 +14,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
+use BOM::Database::DataMapper::FinancialMarketBet;
 
 build_test_R_50_data();
 my $t = build_mojo_test();
@@ -142,9 +143,15 @@ $fake_rpc_client->mock('call', sub { shift; $url = $_[0]; $call_params = $_[1]->
 my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
 $module->mock('new', sub { return $fake_rpc_client });
 
+my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
+    broker_code => $client->broker_code,
+    operation   => 'replica'
+});
+my $contract_details = $mapper->get_contract_details_with_transaction_ids($contract_id);
+
 my $msg = {
     action_type             => 'sell',
-    account_id              => 201079,
+    account_id              => $contract_details->[0]->{account_id},
     financial_market_bet_id => $contract_id,
     amount                  => 2500
 };
