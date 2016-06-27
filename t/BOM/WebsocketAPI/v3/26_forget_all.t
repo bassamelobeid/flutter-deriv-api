@@ -40,8 +40,14 @@ my $t = build_mojo_test();
 
 $t->send_ok({json => {ticks => 'R_50'}});
 BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
-$t->send_ok({json => {ticks => 'R_50'}})->message_ok;
+$t->send_ok({
+        json => {
+            ticks  => 'R_50',
+            req_id => 123
+        }})->message_ok;
 my $res = decode_json($t->message->[1]);
+ok $res->{echo_req};
+is $res->{req_id}, 123;
 is $res->{error}->{code}, 'AlreadySubscribed', 'Already subscribed for tick';
 
 $t->send_ok({json => {forget_all => 'ticks'}});
@@ -62,6 +68,7 @@ $t->send_ok({
             start         => $start->epoch,
             subscribe     => 1
         }});
+sleep 1;
 $t->send_ok({
         json => {
             ticks_history => 'frxUSDJPY',

@@ -25,7 +25,7 @@ $client->save;
 $client->set_default_account('USD');
 
 my $loginid = $client->loginid;
-my $user = BOM::Platform::User->create(
+my $user    = BOM::Platform::User->create(
     email    => $email,
     password => '1234',
 );
@@ -39,23 +39,18 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
 
-my ($rpc_caller, $rpc_method, $call_params, $res, $rpc_response);
+my ($rpc_caller, $call_params, $res, $rpc_response);
 $rpc_response = {ok => 1};
-$rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-$rpc_caller->mock(
-    'call_rpc',
-    sub {
-        my ($c, $params) = @_;
-        my $rpc_response_cb;
-        ($rpc_method, $rpc_response_cb, $call_params) = ($params->{method}, $params->{rpc_response_cb}, $params->{call_params});
-        $c->send({json => $rpc_response_cb->($rpc_response)});
-    });
 
-$t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
-is($res->{msg_type}, 'payout_currencies');
-ok(ref $res->{payout_currencies});
-is $call_params->{token}, $token;
+my $fake_res = Test::MockObject->new();
+$fake_res->mock('result',   sub { $rpc_response });
+$fake_res->mock('is_error', sub { '' });
+
+my $fake_rpc_client = Test::MockObject->new();
+$fake_rpc_client->mock('call', sub { shift; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
+
+my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
+$module->mock('new', sub { return $fake_rpc_client });
 
 $t = $t->send_ok({json => {landing_company => 'de'}})->message_ok;
 $res = decode_json($t->message->[1]);
@@ -171,7 +166,20 @@ is($res->{msg_type}, 'set_financial_assessment');
 ok(ref $res->{set_financial_assessment});
 is $call_params->{token}, $token;
 
-%$rpc_response = (records => [qw/ record /]);
+$rpc_response = [qw/ test /];
+$t            = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
+$res          = decode_json($t->message->[1]);
+is($res->{msg_type}, 'payout_currencies');
+ok(ref $res->{payout_currencies});
+is $call_params->{token}, $token;
+
+$rpc_response = {
+    records => [{
+            time        => 1,
+            action      => 's',
+            environment => 's',
+            status      => 1
+        }]};
 $t = $t->send_ok({
         json => {
             login_history => 1,
@@ -280,16 +288,6 @@ is($call_params->{currency},     'EUR');
 
 # Test error messages
 $rpc_response = {error => {code => 'error'}};
-$rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-$rpc_caller->mock(
-    'call_rpc',
-    sub {
-        my ($c, $params) = @_;
-        my $rpc_response_cb;
-        ($rpc_method, $rpc_response_cb, $call_params) = ($params->{method}, $params->{rpc_response_cb}, $params->{call_params});
-        $c->send({json => $rpc_response_cb->($rpc_response)});
-    });
-
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
 is($res->{msg_type}, 'payout_currencies');

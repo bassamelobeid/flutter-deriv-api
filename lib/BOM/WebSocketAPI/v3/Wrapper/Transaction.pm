@@ -11,8 +11,9 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub buy_get_contract_params {
-    my ($c, $args, $params) = @_;
+    my ($c, $req_storage) = @_;
 
+    my $args = $req_storage->{args};
     # 1. Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
     # 2. Calling forget_buy_proposal instead of forget_one as we need args for contract proposal
     if ($args->{parameters}) {
@@ -26,8 +27,9 @@ sub buy_get_contract_params {
             return;
         }
 
-        if ($c->stash('pricing_channel') and $c->stash('pricing_channel')->{uuid} and $c->stash('pricing_channel')->{uuid}->{$proposal_id}) {
-            $params->{call_params}->{contract_parameters} = $c->stash('pricing_channel')->{uuid}->{$proposal_id}->{args};
+        my $ch = $c->stash('pricing_channel');
+        if ($ch and $ch = $ch->{uuid} and $ch = $ch->{$proposal_id}) {
+            $params->{call_params}->{contract_parameters} = $ch->{args};
             BOM::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $proposal_id);
             return;
         }
@@ -38,9 +40,10 @@ sub buy_get_contract_params {
 }
 
 sub transaction {
-    my ($c, $args) = @_;
+    my ($c, $req_storage) = @_;
 
     my $id;
+    my $args       = $req_storage->{args};
     my $account_id = $c->stash('account_id');
     if ($account_id) {
         if (    exists $args->{subscribe}

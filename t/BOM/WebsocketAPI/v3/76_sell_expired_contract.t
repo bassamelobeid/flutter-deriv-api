@@ -6,7 +6,7 @@ use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
@@ -40,23 +40,17 @@ $response = decode_json($t->message->[1]);
 
 is $response->{error}->{code}, 'InputValidationFailed';
 
-my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
 my $call_params;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({json => {sell_expired => 1}})->message_ok;
+($response, $call_params) = call_mocked_client(
+    $t,
+    {
+        sell_expired => 1,
+        req_id       => 123,
+    });
 is $call_params->{token}, $token;
-$rpc_caller->unmock_all;
-
-$t = $t->send_ok({
-        json => {
-            sell_expired => 1,
-            req_id       => 'test'
-        }})->message_ok;
-$response = decode_json($t->message->[1]);
-
 is $response->{msg_type}, 'sell_expired';
 is $response->{echo_req}->{sell_expired}, 1;
-is $response->{echo_req}->{req_id},       'test';
-is $response->{req_id}, 'test';
+is $response->{echo_req}->{req_id},       123;
+is $response->{req_id}, 123;
 
 done_testing();
