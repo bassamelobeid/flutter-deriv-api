@@ -173,7 +173,7 @@ sub get_bid {
                 message_to_client => $contract->longcode,
                 code              => "GetProposalFailure"
             });
-            return $response;
+            return;
         }
 
         $response = {
@@ -202,12 +202,12 @@ sub get_bid {
             # spreads require different set of parameters.
         } else {
             if (not $contract->may_settle_automatically and $contract->missing_market_data) {
-                my $error = BOM::RPC::v3::Utility::create_error({
+                $response = BOM::RPC::v3::Utility::create_error({
                         code              => "GetProposalFailure",
                         message_to_client => localize(
                             'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.'
                         )});
-                return $error;
+                return;
             }
 
             $response->{validation_error} = $contract->primary_validation_error->message_to_client
