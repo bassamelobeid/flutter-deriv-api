@@ -427,7 +427,9 @@ sub process_transaction_updates {
 
                         $args->{is_sold}    = 1;
                         $args->{sell_price} = $payload->{amount};
-                        $args->{sell_time}  = Date::Utility->new($payload->{sell_time})->epoch;
+                        # purchase_price is needed for spreads.
+                        $args->{buy_price} = $payload->{purchase_price};
+                        $args->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
 
                         # send proposal details last time
                         BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, undef, $args);
