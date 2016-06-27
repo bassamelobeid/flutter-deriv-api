@@ -1927,8 +1927,8 @@ sub _build_corporate_actions {
     );
 
     my $corp = Quant::Framework::CorporateAction->load(
-      storage_accessor => $storage_accessor,
-      symbol           => $self->symbol,
+        storage_accessor => $storage_accessor,
+        symbol           => $self->symbol,
     );
     # no corporate actions in Chronicle
     return [] unless $corp;
