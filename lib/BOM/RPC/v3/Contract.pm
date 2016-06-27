@@ -228,14 +228,14 @@ sub get_bid {
                     $response->{original_low_barrier} = $contract->original_low_barrier->as_absolute if defined $contract->original_low_barrier;
                     $response->{barrier_count} = 2;
                 } elsif ($contract->barrier) {
-                    $response->{barrier} = $contract->barrier->as_absolute;
+                    $response->{barrier}          = $contract->barrier->as_absolute;
                     $response->{original_barrier} = $contract->original_barrier->as_absolute if defined $contract->original_barrier;
-                    $response->{barrier_count} = 1;
+                    $response->{barrier_count}    = 1;
                 }
             }
 
             if ($contract->exit_tick) {
-                $response->{exit_tick} = $contract->underlying->pipsized_value($contract->exit_tick->quote);
+                $response->{exit_tick}      = $contract->underlying->pipsized_value($contract->exit_tick->quote);
                 $response->{exit_tick_time} = $contract->exit_tick->epoch;
             }
 
