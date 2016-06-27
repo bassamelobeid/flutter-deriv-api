@@ -45,8 +45,10 @@ BOM::Market::Underlying->new({symbol => 'frxGBPINR'})->set_combined_realtime({
     quote => 100,
 });
 
-Quant::Framework::Holiday->create($storage_accessor, $fake_date)
-    ->update({
+Quant::Framework::Holiday->create(
+      storage_accessor => $storage_accessor,
+      for_date         => $fake_date
+    )->update({
         '2013-01-01' => {
             'New Year' => ['FOREX'],
         }
