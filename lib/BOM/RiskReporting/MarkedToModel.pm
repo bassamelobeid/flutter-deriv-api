@@ -220,7 +220,7 @@ sub sell_expired_contracts {
         my $fmb = BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])->[0]
             ->financial_market_bet_record;
 
-        my $bet = try { produce_contract($fmb, $currency) };
+        my $bet = try { produce_contract($fmb->{short_code}, $currency) };
         if (not $bet) {
             # Not a `catch` block, because we need to be able to 'next' the loop
             $bet_info->{shortcode} = $fmb->short_code;
