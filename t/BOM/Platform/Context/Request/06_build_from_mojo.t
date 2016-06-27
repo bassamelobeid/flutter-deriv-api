@@ -35,21 +35,6 @@ subtest 'headers vs builds' => sub {
     };
 };
 
-subtest 'param builds' => sub {
-    subtest 'broker_code' => sub {
-        subtest 'broker inputs' => sub {
-            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {broker => 'MX'})});
-            is $request->broker_code, 'MX', "Valid broker from broker param";
-
-            $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {broker => 'MESA'})});
-            throws_ok { $request->broker_code } qr/Unknown broker code or loginid \[MESA\]/, "not a valid broker";
-
-            $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {w => 'MX'})});
-            is $request->broker_code, 'CR', "Not read from w param";
-        };
-    };
-};
-
 subtest 'accepted http_methods' => sub {
     subtest 'GET|POST|HEAD' => sub {
         foreach my $method (qw/GET POST HEAD/) {
