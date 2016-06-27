@@ -211,7 +211,7 @@ sub get_bid {
                 my $pnl              = $sell_price - $buy_price;
                 my $point_from_entry = $pnl / $amount_per_point;
                 my $multiplier       = $contract->sentiment eq 'up' ? 1 : -1;
-                $response->{exit_level}              = $contract->underlying->pipsized_value($response->{entry_level} + $point_from_entry * $multiplier);
+                $response->{exit_level} = $contract->underlying->pipsized_value($response->{entry_level} + $point_from_entry * $multiplier);
                 $response->{current_value_in_dollar} = $pnl;
                 $response->{current_value_in_point}  = $pnl / $amount_per_point;
             } else {
