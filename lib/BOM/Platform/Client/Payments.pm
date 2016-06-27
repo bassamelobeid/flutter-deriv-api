@@ -147,6 +147,12 @@ sub validate_payment {
 
             # avoids obscure rounding errors after currency conversion
             if ($absamt > $wd_left + 0.001) {
+                # lock cashier and unwelcome if its MX (as per compliance, check with compliance if you want to remove it)
+                if ($lc eq 'iom') {
+                    $self->set_status('cashier_locked', 'system', 'Exceeds withdrawal limit');
+                    $self->set_status('unwelcome',      'system', 'Exceeds withdrawal limit');
+                    $self->save();
+                }
                 die sprintf "Withdrawal amount [%s %.2f] exceeds withdrawal limit [EUR %.2f] (%s %.2f).\n",
                     $currency, $absamt, $wd_eur_left, $currency, $wd_left;
             }
