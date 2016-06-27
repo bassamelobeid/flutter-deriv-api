@@ -157,8 +157,8 @@ sub _get_ask {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $app_markup_percentage) =
-        @{$params}{qw/short_code contract_id currency is_sold sell_time app_markup_percentage/};
+    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $buy_price, $sell_price, $app_markup_percentage) =
+        @{$params}{qw/short_code contract_id currency is_sold sell_time buy_price sell_price app_markup_percentage/};
 
     my $response;
     try {
@@ -200,6 +200,33 @@ sub get_bid {
 
         if ($contract->is_spread) {
             # spreads require different set of parameters.
+            my $amount_per_point = $contract->amount_per_point;
+            $response->{amount_per_point}  = $amount_per_point;
+            $response->{entry_level}       = $contract->barrier->as_absolute;
+            $response->{stop_loss_level}   = $contract->stop_loss_level;
+            $response->{stop_profit_level} = $contract->stop_profit_level;
+
+            if ($contract->is_sold and defined $sell_price and defined $buy_price) {
+                $response->{is_expired} = 1;
+                my $pnl              = $sell_price - $buy_price;
+                my $point_from_entry = $pnl / $amount_per_point;
+                my $multiplier       = $contract->sentiment eq 'up' ? 1 : -1;
+                $response->{exit_level}              = $contract->underlying->pipsized_value($entry_level + $point_from_entry * $multiplier);
+                $response->{current_value_in_dollar} = $pnl;
+                $response->{current_value_in_point}  = $pnl / $app;
+            } else {
+                if ($contract->is_expired) {
+                    $response->{is_expired}              = 1;
+                    $response->{exit_level}              = $contract->exit_level;
+                    $response->{current_value_in_dollar} = $contract->bid_price;
+                    $response->{current_value_in_point}  = $contract->point_value;
+                } else {
+                    $response->{is_expired}              = 0;
+                    $response->{current_level}           = $contract->sell_level;
+                    $response->{current_value_in_dollar} = $contract->current_value->{dollar};
+                    $response->{current_value_in_point}  = $contract->current_value->{point};
+                }
+            }
         } else {
             if (not $contract->may_settle_automatically and $contract->missing_market_data) {
                 $response = BOM::RPC::v3::Utility::create_error({
