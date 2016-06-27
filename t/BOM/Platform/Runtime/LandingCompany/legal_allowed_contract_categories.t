@@ -10,7 +10,6 @@ use Test::NoWarnings;
 use BOM::Platform::Runtime;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 
-
 my $all = [qw(
         ASIANU
         ASIAND

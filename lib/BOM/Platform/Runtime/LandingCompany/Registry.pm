@@ -16,8 +16,8 @@ BEGIN {
         $landing_companies{$k} = $lc;
         $landing_companies{$v->{short}} = $lc;
         push @all_landing_companies, $lc;
-        push @all_broker_codes, @{$v->{broker_codes}};
-        map {$landing_company_by_broker{$_} = $lc} @{$v->{broker_codes}};
+        push @all_broker_codes,      @{$v->{broker_codes}};
+        map { $landing_company_by_broker{$_} = $lc } @{$v->{broker_codes}};
         @currencies{@{$v->{legal_allowed_currencies}}} = ();
     }
     @all_currencies = keys %currencies;
@@ -44,7 +44,7 @@ sub get_by_broker {
     if ($broker =~ /^([A-Z]+)\d+$/) {
         $broker = $1;
     }
-    return $landing_company_by_broker{$broker};  
+    return $landing_company_by_broker{$broker};
 }
 
 sub all_currencies {

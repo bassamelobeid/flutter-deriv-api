@@ -195,7 +195,7 @@ sub full_name {
 
 sub landing_company {
     my $self = shift;
-    return BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker)
+    return BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker);
 }
 
 sub set_promotion {
