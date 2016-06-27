@@ -126,7 +126,6 @@ sub _configure_template_stash_for {
     return Template::Stash->new({
         runtime                   => BOM::Platform::Runtime->instance,
         language                  => $request->language,
-        broker                    => $request->broker_code,
         request                   => $request,
         broker_name               => 'Binary.com',
         l                         => \&localize,
