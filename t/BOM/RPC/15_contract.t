@@ -330,8 +330,15 @@ subtest 'get_bid' => sub {
             payout
             contract_type
             display_name
+            stop_loss_level
+            stop_profit_level
+            entry_level
+            exit_level
+            current_value_in_dollar
+            current_value_in_point
+            amount_per_point
             ));
-    is_deeply([sort keys %{$result}], [sort @expected_keys]);
+    cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
     $contract = create_contract(
         client => $client,
