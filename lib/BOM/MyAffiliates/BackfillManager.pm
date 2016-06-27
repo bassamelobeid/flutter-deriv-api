@@ -28,7 +28,6 @@ use Try::Tiny;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Runtime::LandingCompany;
 
-
 has '_available_broker_codes' => (
     is      => 'ro',
     isa     => 'ArrayRef',
