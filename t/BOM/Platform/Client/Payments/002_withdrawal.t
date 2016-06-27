@@ -302,7 +302,7 @@ subtest 'Total EUR2300 MLT limitation.' => sub {
         throws_ok { $client->validate_payment(%withdrawal_eur, amount => -2301) } qr/exceeds withdrawal limit \[EUR/,
             'Unauthed, not allowed to withdraw EUR2301.';
 
-        is $client->get_status('unwelcome'),      undef, 'Only MX client is cashier_locked after it exceeds limit';
+        is $client->get_status('unwelcome'),      undef, 'Only MX client is unwelcome after it exceeds limit';
         is $client->get_status('cashier_locked'), undef, 'Only MX client is cashier_locked after it exceeds limit';
 
         ok $client->validate_payment(%withdrawal_eur, amount => -2300), 'Unauthed, allowed to withdraw EUR2300.';
