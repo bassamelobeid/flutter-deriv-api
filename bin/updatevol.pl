@@ -17,7 +17,6 @@ use lib qw( /home/git/regentmarkets/bom/cgi );
 
 use File::Find::Rule;
 
-use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime;
 use BOM::MarketData::AutoUpdater::Forex;
 use BOM::MarketData::AutoUpdater::Indices;
