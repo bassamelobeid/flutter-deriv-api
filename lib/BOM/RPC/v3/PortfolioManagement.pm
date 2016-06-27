@@ -113,17 +113,20 @@ sub proposal_open_contract {
             my $sell_time;
             $sell_time = Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
             my $bid = BOM::RPC::v3::Contract::get_bid({
-                short_code  => $fmb->{short_code},
-                contract_id => $id,
-                currency    => $client->currency,
-                is_sold     => $fmb->{is_sold},
-                sell_time   => $sell_time
-            });
+                    short_code            => $fmb->{short_code},
+                    contract_id           => $id,
+                    currency              => $client->currency,
+                    is_sold               => $fmb->{is_sold},
+                    sell_time             => $sell_time,
+                    app_markup_percentage => $params->{app_markup_percentage}});
             if (exists $bid->{error}) {
                 $response->{$id} = $bid;
             } else {
                 my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
                 $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
+
+                # ask_price doesn't make any sense for contract that are already bought or sold
+                delete $bid->{ask_price};
 
                 $response->{$id} = {
                     transaction_ids => $transaction_ids,

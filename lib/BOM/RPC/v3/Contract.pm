@@ -5,13 +5,14 @@ use warnings;
 
 use Try::Tiny;
 use List::MoreUtils qw(none);
+use Data::Dumper;
 
 use BOM::RPC::v3::Utility;
 use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Product::Contract::Helper;
+use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Format::Util::Numbers qw(roundnear);
 use Time::HiRes;
 use DataDog::DogStatsd::Helper qw(stats_timing);
@@ -85,12 +86,14 @@ sub prepare_ask {
 }
 
 sub _get_ask {
-    my $p2 = shift;
+    my $p2                    = shift;
+    my $app_markup_percentage = shift;
 
     my $response;
     try {
-        my $tv       = [Time::HiRes::gettimeofday];
-        my $contract = produce_contract({%$p2});
+        my $tv = [Time::HiRes::gettimeofday];
+        $p2->{app_markup_percentage} = $app_markup_percentage;
+        my $contract = produce_contract($p2);
 
         if (!$contract->is_valid_to_buy) {
             my ($message_to_client, $code);
@@ -126,11 +129,11 @@ sub _get_ask {
 
             # only required for non-spead contracts
             if ($p2->{from_pricer_daemon} and $p2->{amount_type}) {
-                $response->{theo_probability}      = $contract->theo_probability->amount;
-                $response->{base_commission}       = $contract->base_commission;
-                $response->{probability_threshold} = $contract->market->deep_otm_threshold;
-                $response->{minimum_stake}         = $contract->staking_limits->{min};
-                $response->{maximum_payout}        = $contract->staking_limits->{max};
+                $response->{theo_probability} = $contract->theo_probability->amount;
+            } elsif (not $contract->is_spread) {
+                # All contracts other than spreads should go through pricer daemon.
+                # Trying to find what are the exceptions.
+                warn "potential bug: " . Data::Dumper->Dumper($p2);
             }
 
             if ($contract->underlying->feed_license eq 'realtime') {
@@ -154,12 +157,16 @@ sub _get_ask {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold, $sell_time) = @{$params}{qw/short_code contract_id currency is_sold sell_time/};
+    my ($short_code, $contract_id, $currency, $is_sold, $sell_time, $app_markup_percentage) =
+        @{$params}{qw/short_code contract_id currency is_sold sell_time app_markup_percentage/};
 
     my $response;
     try {
         my $tv = [Time::HiRes::gettimeofday];
-        my $contract = produce_contract($short_code, $currency, $is_sold);
+        my $bet_params = shortcode_to_parameters($short_code, $currency);
+        $bet_params->{is_sold}               = $is_sold;
+        $bet_params->{app_markup_percentage} = $app_markup_percentage;
+        my $contract = produce_contract($bet_params);
 
         if ($contract->is_legacy) {
             $response = BOM::RPC::v3::Utility::create_error({
@@ -282,7 +289,7 @@ sub send_ask {
             from_pricer_daemon => $from_pricer_daemon,
             %details,
         };
-        $response = _get_ask(prepare_ask($arguments));
+        $response = _get_ask(prepare_ask($arguments), $params->{app_markup_percentage});
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
@@ -302,7 +309,11 @@ sub get_contract_details {
 
     my $response;
     try {
-        my $contract = produce_contract($params->{short_code}, $params->{currency});
+        my $bet_params = shortcode_to_parameters($params->{short_code}, $params->{currency});
+        $bet_params->{app_markup_percentage} = $params->{app_markup_percentage};
+
+        my $contract = produce_contract($bet_params);
+
         $response = {
             longcode     => $contract->longcode,
             symbol       => $contract->underlying->symbol,
@@ -319,44 +330,10 @@ sub get_contract_details {
     return $response;
 }
 
-sub validate_price {
-    my $params = shift;
+sub create_contract {
+    my $contract_parameters = shift;
 
-    return BOM::Product::Contract::Helper::validate_price($params);
-}
-
-sub calculate_ask_price {
-    my $params = shift;
-
-    my $commission_markup = BOM::Product::Contract::Helper::commission({
-        theo_probability => $params->{theo_probability},
-        base_commission  => $params->{base_commission},
-        payout           => $params->{amount},
-    });
-    my $ask_probability = BOM::Product::Contract::Helper::calculate_ask_probability({
-        theo_probability      => $params->{theo_probability},
-        commission_markup     => $commission_markup,
-        probability_threshold => $params->{probability_threshold},
-    });
-
-    return roundnear(0.01, $ask_probability * $params->{amount});
-}
-
-sub calculate_payout {
-    my $params = shift;
-
-    my $commission_markup = BOM::Product::Contract::Helper::commission({
-        theo_probability => $params->{theo_probability},
-        base_commission  => $params->{base_commission},
-        stake            => $params->{amount},
-    });
-    my $payout = BOM::Product::Contract::Helper::calculate_payout({
-        theo_probability => $params->{theo_probability},
-        commission       => $commission_markup,
-        stake            => $params->{amount},
-    });
-
-    return roundnear(0.01, $payout);
+    return produce_contract($contract_parameters);
 }
 
 1;
