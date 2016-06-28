@@ -39,7 +39,6 @@ sub _send_ask {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $args = $req_storage->{args};
 
-                my $rpc_response = shift;
                 if ($rpc_response and exists $rpc_response->{error}) {
                     my $err = $c->new_error('proposal', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                     $err->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
