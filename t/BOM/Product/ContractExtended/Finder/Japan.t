@@ -30,8 +30,10 @@ subtest "predefined contracts for symbol" => sub {
     my $now = Date::Utility->new('2015-08-21 05:30:00');
     my $past =  Date::Utility->new('2014-01-01');
 
-    Quant::Framework::Holiday->create($storage_accessor, $past)
-        ->update({
+    Quant::Framework::Holiday->create(
+            storage_accessor => $storage_accessor,
+            for_date         => $past,
+        )->update({
             "01-Jan-15" => {
               "Christmas Day" => ['FOREX'],
             },

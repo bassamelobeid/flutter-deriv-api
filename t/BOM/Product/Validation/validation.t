@@ -45,8 +45,10 @@ my $tick_params = {
 my $tick = BOM::Market::Data::Tick->new($tick_params);
 
 my $past = Date::Utility->new('2011-03-29');
-Quant::Framework::Holiday->create($storage_accessor, $past)
-    ->update({
+Quant::Framework::Holiday->create(
+        storage_accessor => $storage_accessor,
+        for_date         => $past,
+    )->update({
           "25-Dec-12" => {
               "Christmas Day" => ['FSE'],
           },

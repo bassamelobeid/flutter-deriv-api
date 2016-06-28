@@ -236,8 +236,10 @@ subtest 'too many holiday for multiday indices contracts' => sub {
         });
 
 
-    Quant::Framework::Holiday->create($storage_accessor, $monday_open)
-        ->update({
+    Quant::Framework::Holiday->create(
+            storage_accessor => $storage_accessor,
+            for_date         => $monday_open,
+        )->update({
               $monday_open->plus_time_interval('2d')->date => {
                   'Test Holiday' => ['HKSE'],
               },

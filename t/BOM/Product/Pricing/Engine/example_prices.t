@@ -49,8 +49,10 @@ $u_c->mock('uses_implied_rate_for_asset', sub { return 0 });
 $u_c->mock('uses_implied_rate_for_quoted_currency', sub { return 0 });
 
 
-Quant::Framework::Holiday->create($storage_accessor, $recorded_date)
-    ->update({
+Quant::Framework::Holiday->create(
+        storage_accessor => $storage_accessor,
+        for_date         => $recorded_date,
+    )->update({
         '2014-04-18' => {
             'Good Friday' => ['EUR', 'GBP', 'USD', 'FSE', 'LSE'],
         },
