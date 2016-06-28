@@ -109,6 +109,9 @@ sub authorize {
         $client = $c->__get_client;
     }
 
+    ## setup oneall callback url
+    $c->stash('oneall_callback' => $c->url_for('/oneall/callback')->to_abs);
+
     # set session on first page visit (GET)
     # for binary.com, app id = 1
     if ($app_id eq '1' and $c->req->method eq 'GET') {
