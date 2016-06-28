@@ -14,7 +14,7 @@ my ($req, $res, $start, $end);
 
 build_test_R_50_data();
 
-my $t     = build_mojo_test();
+my $t = build_mojo_test();
 my $token = BOM::Database::Model::AccessToken->new->create_token("CR2002", 'Test', ['price', 'trade']);
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
