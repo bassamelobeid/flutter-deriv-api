@@ -11,13 +11,14 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token::Verification;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 sub get_token_details {
     my $token = shift;
 
     return unless $token;
 
-    my ($loginid, $creation_time, $epoch, @scopes);
+    my ($loginid, $creation_time, $epoch, $ua_fingerprint, @scopes);
     if (length $token == 15) {    # access token
         my $m = BOM::Database::Model::AccessToken->new;
         ($loginid, $creation_time) = $m->get_loginid_by_token($token);
@@ -26,7 +27,7 @@ sub get_token_details {
         @scopes = $m->get_scopes_by_access_token($token);
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         my $m = BOM::Database::Model::OAuth->new;
-        ($loginid, $creation_time) = $m->get_loginid_by_access_token($token);
+        ($loginid, $creation_time, $ua_fingerprint) = $m->get_loginid_by_access_token($token);
         return unless $loginid;
         $epoch = Date::Utility->new($creation_time)->epoch if $creation_time;
         @scopes = $m->get_scopes_by_access_token($token);
@@ -36,14 +37,16 @@ sub get_token_details {
     }
 
     return {
-        loginid => $loginid,
-        scopes  => \@scopes,
-        epoch   => $epoch,
+        loginid        => $loginid,
+        scopes         => \@scopes,
+        epoch          => $epoch,
+        ua_fingerprint => $ua_fingerprint,
     };
 }
 
 sub create_error {
     my $args = shift;
+    stats_inc("bom_rpc.v_3.error", {tags => ['code:' . $args->{code},]});
     return {
         error => {
             code              => $args->{code},
