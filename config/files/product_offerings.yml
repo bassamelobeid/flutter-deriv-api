@@ -396,9 +396,9 @@ WLDAUD: &smart_fx
       spot:
         euro_atm:
           historical_pricer_max: 10h
-          historical_pricer_min: 2m
+          historical_pricer_min: 1m
           max: 10h
-          min: 2m
+          min: 1m
     tick:
       spot:
         euro_atm:
@@ -444,9 +444,9 @@ frxAUDJPY: &active_fx
       spot:
         euro_atm:
           historical_pricer_max: 5h
-          historical_pricer_min: 2m
+          historical_pricer_min: 1m
           max: 1d
-          min: 2m
+          min: 1m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m

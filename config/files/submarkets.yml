@@ -42,7 +42,6 @@ europe_africa:
     display_name: "Europe/Africa"
     display_order: 2
     market: indices
-    base_commission: 0.2
 americas:
     name: americas
     display_name: "Americas"
