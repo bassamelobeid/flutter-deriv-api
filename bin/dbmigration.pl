@@ -72,7 +72,7 @@ sub options {
             name    => 'dbset',
             dispaly => 'dbset=<dbset>',
             documentation =>
-                'If dbset is rmg or feed or auth default directory,port and username will be set automactically <rmg|collector|report|feed|auth|users>',
+                'If dbset is rmg or feed or auth default directory,port and username will be set automactically <clientdb|collectordb|feeddb|authdb|userdb|chronicledb>',
             option_type => 'string',
             default     => '',
         },
@@ -91,6 +91,7 @@ sub options {
 sub script_run {
     my $self = shift;
 
+
     my $hostname = $self->getOption('hostname');
     my $username = $self->getOption('username');
     my $password = 'mRX1E3Mi00oS8LG';
@@ -98,30 +99,30 @@ sub script_run {
 
     my $database = 'regentmarkets';
     my $port     = 5432;
-    my $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/rmgdb';
+    my $dir      = '/home/git/regentmarkets/bom-postgres-clientdb/config/sql/';
 
     my $dbset = $self->getOption('dbset');
-    if ($dbset eq 'rmg') {
-        $dir = '/home/git/regentmarkets/bom-postgres/config/sql/rmgdb';
-    } elsif ($dbset eq 'collector') {
-        $dir = '/home/git/regentmarkets/bom-postgres/config/sql/collectordb';
+    if ($dbset eq 'clientdb') {
+        $dir = '/home/git/regentmarkets/bom-postgres-clientdb/config/sql/';
+    } elsif ($dbset eq 'collectordb') {
+        $dir = '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/';
 
         # version table = dbix_migration_collector
         $tablename_extension = 'collector';
-    } elsif ($dbset eq 'chronicle') {
-        $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/chronicledb';
+    } elsif ($dbset eq 'chronicledb') {
+        $dir      = '/home/git/regentmarkets/bom-postgres-chronicledb/config/sql/';
         $port     = '5437';
         $database = 'chronicle';
     } elsif ($dbset eq 'feed') {
-        $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/feeddb';
+        $dir      = '/home/git/regentmarkets/bom-postgres-feeddb/config/sql/';
         $port     = '5433';
         $database = 'feed';
-    } elsif ($dbset eq 'auth') {
-        $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/authdb';
+    } elsif ($dbset eq 'authdb') {
+        $dir      = '/home/git/regentmarkets/bom-postgres-authdb/config/sql/';
         $port     = '5435';
         $database = 'auth';
-    } elsif ($dbset eq 'users') {
-        $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/userdb';
+    } elsif ($dbset eq 'userdb') {
+        $dir      = '/home/git/regentmarkets/bom-postgres-userdb/config/sql';
         $port     = '5436';
         $database = 'users';
     }
