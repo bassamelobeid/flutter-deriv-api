@@ -248,6 +248,6 @@ is(roundnear(1e-4, $middle_east_daily->commission_markup->amount), 0.025, 'Commi
 
 my $GDAXI_intraday = produce_contract('CALL_GDAXI_10_1448013600F_1448020800_S0P_0', 'USD');
 my $GDAXI_intraday_ask = $GDAXI_intraday->ask_probability;
-is(roundnear(1e-4, $GDAXI_intraday->commission_markup->amount), 0.2, 'Commission markup for indices is 3%');
+is(roundnear(1e-4, $GDAXI_intraday->commission_markup->amount), 0.025, 'Commission markup for indices is 3%');
 
 1;

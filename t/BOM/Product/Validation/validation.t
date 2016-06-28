@@ -49,42 +49,28 @@ Quant::Framework::Holiday->create(
         storage_accessor => $storage_accessor,
         for_date         => $past,
     )->update({
-          "25-Dec-12" => {
-              "Christmas Day" => ['FSE'],
-          },
-          "26-Dec-12" => {
-              "Christmas Holiday" => ['FSE'],
-          },
-          "31-Dec-12" => {
-              " New Year's Eve" => ['FSE'],
-          },
-          "1-Jan-13" => {
-              "New Year" => ['FSE'],
-          },
-          "29-Mar-13" => {
-              "Good Friday" => ['FSE'],
-          },
-          "1-Apr-13" => {
-              "Easter Monday" => ['FSE'],
-          },
+        "25-Dec-12" => {
+            "Christmas Day" => ['FSE'],
+        },
+        "26-Dec-12" => {
+            "Christmas Holiday" => ['FSE'],
+        },
+        "31-Dec-12" => {
+            " New Year's Eve" => ['FSE'],
+        },
+        "1-Jan-13" => {
+            "New Year" => ['FSE'],
+        },
+        "29-Mar-13" => {
+            "Good Friday" => ['FSE'],
+        },
+        "1-Apr-13" => {
+            "Easter Monday" => ['FSE'],
+        },
     }, $past)
     ->save;
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'partial_trading',
-    {
-        type          => 'early_closes',
-        recorded_date => Date::Utility->new,
-        calendar      => {
-            '24-Dec-10' => {
-                '12h30m' => ['EURONEXT', 'LSE'],
-            },
-            '24-Dec-13' => {
-                '12h30m' => ['EURONEXT', 'LSE'],
-            },
-        },
-    });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+  BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
