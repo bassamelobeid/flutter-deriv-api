@@ -5,8 +5,8 @@ use strict 'vars';
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Client self exclusion report');
@@ -35,6 +35,7 @@ foreach my $login_id (keys %{$all_clients_self_exclusion_hashref}) {
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'max_turnover'}</td>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'max_balance'}</td>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'exclude_until'}</td>";
+    $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'timeout_until'}</td>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'session_duration_limit'}</td>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'last_modified_date'}</td>";
 

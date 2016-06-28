@@ -7,8 +7,8 @@ use BOM::BloombergCalendar;
 use File::Temp ();
 use File::Copy;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
 BOM::Backoffice::Auth0::can_access(['Quants']);

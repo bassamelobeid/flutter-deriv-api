@@ -11,12 +11,11 @@ use Auth::DuoWeb;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( http_redirect PrintContentType );
-use BOM::Platform::SessionCookie;
 use BOM::Platform::Context qw(request);
 use BOM::StaffPages;
 use BOM::System::Config;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 if (not $ENV{'HTTP_USER_AGENT'} =~ /Chrome\/(\d+\.\d+\.\d+)\./ or $1 lt '51.0.2704') {
     print "Only newest Chrome browser is supported in backoffice.";
@@ -36,16 +35,17 @@ if (request()->param('sig_response')) {
 }
 
 if ($try_to_login and my $staff = BOM::Backoffice::Auth0::login(request()->param('access_token'))) {
-    my $mycookie = session_cookie({
-        loginid    => BOM::Platform::Context::request()->broker->code,
-        auth_token => request()->param('access_token'),
-        clerk      => $staff->{nickname},
-        email      => request()->param('email'),
-    });
-    PrintContentType({'cookies' => $mycookie});
+    my $bo_cookies = BOM::Backoffice::Cookie::build_cookies({
+            staff       => $staff->{nickname},
+            auth_token  => request()->param('access_token'),
+        });
+
+    PrintContentType({ 'cookies' => $bo_cookies });
 } elsif (request()->param('whattodo') eq 'logout') {
-    BOM::Platform::Context::request()->bo_cookie->end_session;
-    BOM::Backoffice::Auth0::loggout();
+    my $expire_cookies = BOM::Backoffice::Cookie::expire_cookies();
+    PrintContentType({ 'cookies' => $expire_cookies });
+
+    BOM::Backoffice::Auth0::logout();
     print '<script>window.location = "' . request()->url_for('backoffice/login.cgi') . '"</script>';
     code_exit_BO();
 } elsif (not BOM::Backoffice::Auth0::from_cookie()) {
@@ -61,22 +61,3 @@ BrokerPresentation('STAFF LOGIN PAGE');
 print '<script>window.location = "' . request()->url_for('backoffice/f_broker_login.cgi') . '"</script>';
 
 code_exit_BO();
-
-sub session_cookie {
-    my $args = shift;
-    $args->{loginid} = uc $args->{loginid};
-    my $expiry     = ($args->{expires}) ? $args->{expires} : '+30d';
-    my $cookie     = BOM::Platform::SessionCookie->new($args);
-    my $cookiename = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login_bo;
-
-    my $login = CGI::cookie(
-        -name    => $cookiename,
-        -value   => $cookie->token,
-        -expires => $expiry,
-        -secure  => 1,
-        -domain  => request()->cookie_domain,
-        -path    => '/',
-    );
-
-    return [$login];
-}

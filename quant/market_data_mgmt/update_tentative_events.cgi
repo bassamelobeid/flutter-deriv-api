@@ -8,8 +8,8 @@ use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cg
 
 use BOM::TentativeEvents;
 
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 print BOM::TentativeEvents::update_event({
     id           => request()->param('id'),
