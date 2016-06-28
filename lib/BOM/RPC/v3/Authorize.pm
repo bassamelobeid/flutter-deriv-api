@@ -17,9 +17,10 @@ sub authorize {
     my $token         = $params->{token};
     my $token_details = $params->{token_details};
     return BOM::RPC::v3::Utility::invalid_token_error() unless ($token_details and exists $token_details->{loginid});
-    if ($token_details->{ua_fingerprint} && $token_details->{ua_fingerprint} ne $params->{ua_fingerprint}) {
-        return BOM::RPC::v3::Utility::invalid_token_error();
-    }
+    # temorary remove ua_fingerptint check
+    #if ($token_details->{ua_fingerprint} && $token_details->{ua_fingerprint} ne $params->{ua_fingerprint}) {
+    #    return BOM::RPC::v3::Utility::invalid_token_error();
+    #}
 
     my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
 

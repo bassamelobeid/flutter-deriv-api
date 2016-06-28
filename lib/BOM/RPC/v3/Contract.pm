@@ -92,7 +92,7 @@ sub _get_ask {
     my $response;
     try {
         my $tv = [Time::HiRes::gettimeofday];
-        $p2->{app_markup_percentage} = $app_markup_percentage;
+        $p2->{app_markup_percentage} = $app_markup_percentage // 0;
         my $contract = produce_contract($p2);
 
         if (!$contract->is_valid_to_buy) {
@@ -130,7 +130,7 @@ sub _get_ask {
             # only required for non-spead contracts
             if ($p2->{from_pricer_daemon} and $p2->{amount_type}) {
                 $response->{theo_probability} = $contract->theo_probability->amount;
-            } elsif (not $contract->is_spread) {
+            } elsif (defined $p2->{from_pricer_daemon} and not $contract->is_spread) {
                 # All contracts other than spreads should go through pricer daemon.
                 # Trying to find what are the exceptions.
                 warn "potential bug: " . Data::Dumper->Dumper($p2);
@@ -164,8 +164,8 @@ sub get_bid {
     try {
         my $tv = [Time::HiRes::gettimeofday];
         my $bet_params = shortcode_to_parameters($short_code, $currency);
-        $bet_params->{is_sold}               = $is_sold;
-        $bet_params->{app_markup_percentage} = $app_markup_percentage;
+        $bet_params->{is_sold} = $is_sold;
+        $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
         my $contract = produce_contract($bet_params);
 
         if ($contract->is_legacy) {
@@ -310,7 +310,7 @@ sub get_contract_details {
     my $response;
     try {
         my $bet_params = shortcode_to_parameters($params->{short_code}, $params->{currency});
-        $bet_params->{app_markup_percentage} = $params->{app_markup_percentage};
+        $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
 
         my $contract = produce_contract($bet_params);
 
