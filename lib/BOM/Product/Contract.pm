@@ -1218,11 +1218,14 @@ has [qw(app_markup_dollar_amount app_markup)] => (
 sub _build_app_markup {
     my $self = shift;
 
+    # app_markup_percentage could potentially be undef.
+    my $app_markup_percentage = $self->app_markup_percentage // 0;
+
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'app_markup',
         description => 'commission markup for app developer',
         set_by      => __PACKAGE__,
-        base_amount => $self->app_markup_percentage / 100,
+        base_amount => $app_markup_percentage / 100,
     });
 }
 
