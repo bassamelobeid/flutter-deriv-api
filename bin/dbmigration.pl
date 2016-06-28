@@ -99,11 +99,11 @@ sub script_run {
 
     my $database = 'regentmarkets';
     my $port     = 5432;
-    my $dir      = '/home/git/regentmarkets/bom-postgres-clientdb/config/sql/';
+    my $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/rmg';
 
     my $dbset = $self->getOption('dbset');
     if ($dbset eq 'clientdb') {
-        $dir = '/home/git/regentmarkets/bom-postgres-clientdb/config/sql/';
+        $dir = '/home/git/regentmarkets/bom-postgres/config/sql/';
     } elsif ($dbset eq 'collectordb') {
         $dir = '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/';
 
