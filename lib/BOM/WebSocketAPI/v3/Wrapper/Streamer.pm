@@ -166,11 +166,19 @@ sub pricing_table {
             $response->{error}->{code}, $c->l($response->{error}->{message}, @{$response->{error}->{params} || []}));
     }
 
+    my $feed_channel_type = $c->stash('feed_channel_type') || {};
+    my @pricing = grep { $_ =~ /^.*;pricing_table:/ } (keys $feed_channel_type);
+
+    # subscribe limit exceeded
+    if (scalar @pricing > 5) {
+        return $c->new_error('pricing_table', 'RateLimit', $c->l('You have reached the limit for pricing table subscription.'));
+    }
+
     my $symbol = $args->{symbol};
     my $id;
+
     if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args), $args)) {
-        return $c->new_error('pricing_table',
-            'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for pricing table subscription.'));
+        return $c->new_error('pricing_table', 'AlreadySubscribed', $c->l('You are already subscribed to pricing table.'));
     }
     my $msg = BOM::RPC::v3::Japan::Contract::get_table($args);
     send_pricing_table($c, $id, $args, $msg);
@@ -275,13 +283,11 @@ sub _feed_channel {
 
     my $redis = $c->stash('redis');
     if ($subs eq 'subscribe') {
-        my $count = 0;
-        foreach my $k (keys $feed_channel_type) {
-            $count++ if ($k =~ /^.*?;(?:proposal|pricing_table):/);
-        }
-        if ($count > 5 || exists $feed_channel_type->{"$symbol;$type"}) {
+        # already subscribe
+        if (exists $feed_channel_type->{"$symbol;$type"}) {
             return;
         }
+
         $uuid = Data::UUID->new->create_str();
         $feed_channel->{$symbol} += 1;
         $feed_channel_type->{"$symbol;$type"}->{args}  = $args if $args;
