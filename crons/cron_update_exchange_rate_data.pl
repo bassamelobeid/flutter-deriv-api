@@ -1,6 +1,10 @@
 #!/usr/bin/perl
 package main;
 
+BEGIN {
+    push @INC, "/home/git/regentmarkets/bom-backoffice/lib";
+}
+
 use strict;
 use warnings;
 
