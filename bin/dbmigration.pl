@@ -72,7 +72,7 @@ sub options {
             name    => 'dbset',
             dispaly => 'dbset=<dbset>',
             documentation =>
-                'If dbset is rmg or feed or auth default directory,port and username will be set automactically <clientdb|collectordb|feeddb|authdb|userdb|chronicledb>',
+                'If dbset is rmg or feed or auth default directory,port and username will be set automactically <rmg|collectordb|feeddb|authdb|userdb|chronicledb>',
             option_type => 'string',
             default     => '',
         },
@@ -102,7 +102,7 @@ sub script_run {
     my $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/rmg';
 
     my $dbset = $self->getOption('dbset');
-    if ($dbset eq 'clientdb') {
+    if ($dbset eq 'rmg') {
         $dir = '/home/git/regentmarkets/bom-postgres/config/sql/';
     } elsif ($dbset eq 'collectordb') {
         $dir = '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/';
