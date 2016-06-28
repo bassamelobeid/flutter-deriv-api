@@ -117,7 +117,7 @@ sub run {
         my $underlying     = BOM::Market::Underlying->new($symbol);
         my $raw_volsurface = $surfaces_from_file->{$symbol};
         if ($self->uses_binary_spot->{$symbol}) {
-
+        # We do not have feed of BIST100 cash index, hence it need to use the spot of OTC_BIST100
             $raw_volsurface->{spot_reference} =
                 $symbol eq 'BIST100'
                 ? BOM::Market::Underlying->new('OTC_BIST100')->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote
