@@ -120,7 +120,12 @@ sub run {
         my $underlying     = BOM::Market::Underlying->new($symbol);
         my $raw_volsurface = $surfaces_from_file->{$symbol};
         if ($self->uses_binary_spot->{$symbol}) {
-            $raw_volsurface->{spot_reference} = $underlying->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote;
+
+            $raw_volsurface->{spot_reference} =
+                $symbol eq 'BIST100'
+                ? BOM::Market::Underlying->new('OTC_BIST100')->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote
+                : $underlying->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote;
+
         }
         my $volsurface = Quant::Framework::VolSurface::Moneyness->new({
             underlying_config => $underlying->config,
