@@ -19,7 +19,7 @@ BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker;
 if ($loginID =~ /^([A-Z]+)/) {
-    my $broker = $1;
+    $broker = $1;
 }
 
 $loginID =~ s/\s//g;
