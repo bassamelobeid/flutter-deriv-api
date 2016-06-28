@@ -28,8 +28,10 @@ try {
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );
 
-    my $corp = Quant::Framework::CorporateAction->load($storage_accessor, $symbol)
-        || die("No corporate actions for '$symbol' available for update");
+    my $corp = Quant::Framework::CorporateAction->load(
+        storage_accessor => $storage_accessor,
+        symbol           => $symbol,
+    ) || die("No corporate actions for '$symbol' available for update");
 
     # creates new corporate action with new date
     $corp = $corp->update({}, Date::Utility->new);

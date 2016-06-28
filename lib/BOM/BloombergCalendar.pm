@@ -26,8 +26,12 @@ sub save_calendar {
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
-        my $holiday = Quant::Framework::Holiday->load($storage_accessor, $recorded_date)
-            || Quant::Framework::Holiday->create($storage_accessor, $recorded_date);
+        my %holiday_params = (
+            storage_accessor => $storage_accessor,
+            for_date         => $recorded_date,
+        );
+        my $holiday = Quant::Framework::Holiday->load(%holiday_params)
+            || Quant::Framework::Holiday->create(%holiday_params);
         $updated = $holiday->update($calendar, $recorded_date);
         $updated->save;
     } else {
