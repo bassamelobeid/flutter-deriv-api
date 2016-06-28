@@ -1286,9 +1286,9 @@ expected_result:
       commission_markup: 0.025
       duration: 213d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.00636992246537115
+      risk_markup: 0.0063
       spot: 9518.2
-      theo_prob: 0.415280440001439
+      theo_prob: 0.4134
       total_markup: 0.0464
   frxEURUSD:
     CALL:
@@ -1329,9 +1329,9 @@ expected_result:
       commission_markup: 0.025
       duration: 222d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.0134632640841986
+      risk_markup: 0.0132
       spot: 1.3803
-      theo_prob: 0.252794843235494
+      theo_prob: 0.2486
       total_markup: 0.0385
   frxUSDJPY:
     CALL:
