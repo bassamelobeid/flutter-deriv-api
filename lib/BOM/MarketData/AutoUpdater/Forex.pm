@@ -61,15 +61,15 @@ sub _build_file {
     }
 
     my $quanto_file;
-    my $quanto_daily_file = $loc . '/' . $day . '/quantovol.csv';
-    my $quanto_wkd_file   = $loc . '/' . $day . '/quantovol_wknd.csv';
+    my $quanto_weekday_file = $loc . '/' . $day . '/quantovol.csv';
+    my $quanto_weekend_file   = $loc . '/' . $day . '/quantovol_wknd.csv';
     if ($now->is_a_weekday) {
         $quanto_file =
-              (-e $quanto_daily_file) ? $quanto_daily_file
+              (-e $quanto_weekday_file) ? $quanto_weekday_file
             : ($now->day_of_week == 1 and $now->hour == 0) ? $loc . '/' . $previous_day . '/quantovol_wknd.csv'
             :                                                $loc . '/' . $previous_day . '/quantovol.csv';
     } else {
-        $quanto_file = (-e $quanto_wkd_file) ? $quanto_wkd_file : $loc . '/' . $previous_day . '/quantovol.csv';
+        $quanto_file = (-e $quanto_weekend_file) ? $quanto_weekend_file : $loc . '/' . $previous_day . '/quantovol.csv';
 
     }
     my @files = $file ? ($file, $quanto_file) : ($quanto_file);
