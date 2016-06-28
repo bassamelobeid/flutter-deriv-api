@@ -11,6 +11,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Token::Verification;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 sub get_token_details {
     my $token = shift;
@@ -45,6 +46,7 @@ sub get_token_details {
 
 sub create_error {
     my $args = shift;
+    stats_inc("bom_rpc.v_3.error", {tags => ['code:' . $args->{code},]});
     return {
         error => {
             code              => $args->{code},
