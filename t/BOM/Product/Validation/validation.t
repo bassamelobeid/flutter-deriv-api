@@ -37,7 +37,7 @@ my $tick = BOM::Market::Data::Tick->new($tick_params);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
     {
-        recorded_date => Date::Utility->new,
+        recorded_date => Date::Utility->new('2013-03-27'),
         calendar      => {
             "25-Dec-12" => {
                 "Christmas Day" => ['FSE'],
@@ -56,20 +56,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             },
             "1-Apr-13" => {
                 "Easter Monday" => ['FSE'],
-            },
-        },
-    });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'partial_trading',
-    {
-        type          => 'early_closes',
-        recorded_date => Date::Utility->new,
-        calendar      => {
-            '24-Dec-10' => {
-                '12h30m' => ['EURONEXT', 'LSE'],
-            },
-            '24-Dec-13' => {
-                '12h30m' => ['EURONEXT', 'LSE'],
             },
         },
     });
