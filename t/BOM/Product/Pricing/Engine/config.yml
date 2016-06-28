@@ -1286,15 +1286,15 @@ expected_result:
       commission_markup: 0.025
       duration: 213d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.00636992246537115
+      risk_markup: 0.0063
       spot: 9518.2
-      theo_prob: 0.415280440001439
+      theo_prob: 0.4134
       total_markup: 0.0464
   frxEURUSD:
     CALL:
       ask_prob: 0.4455
       barrier: 1.383
-      commission_markup: 0.05
+      commission_markup: 0.025
       duration: 8d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.00676615960996443
@@ -1305,7 +1305,7 @@ expected_result:
       ask_prob: 0.8056
       barrier: 1.445
       barrier2: 1.3210
-      commission_markup: 0.05
+      commission_markup: 0.025
       duration: 120d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0109185863437566
@@ -1315,7 +1315,7 @@ expected_result:
     NOTOUCH:
       ask_prob: 0.8633
       barrier: 1.388
-      commission_markup: 0.05
+      commission_markup: 0.025
       duration: 4d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.08154663962334
@@ -1326,12 +1326,12 @@ expected_result:
       ask_prob: 0.2778
       barrier: 1.45
       barrier2: 1.335
-      commission_markup: 0.05
+      commission_markup: 0.025
       duration: 222d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.0134632640841986
+      risk_markup: 0.0132
       spot: 1.3803
-      theo_prob: 0.252794843235494
+      theo_prob: 0.2486
       total_markup: 0.0385
   frxUSDJPY:
     CALL:

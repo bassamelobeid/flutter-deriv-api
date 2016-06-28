@@ -41,8 +41,6 @@ my %AVAILABLE_CONTRACTS = map { $_ => 1 } uniq(@available_contracts);
 sub financial_market_bet_to_parameters {
     my $fmb      = shift;
     my $currency = shift;
-    die 'Expected BOM::Database::Model::FinancialMarketBet instance.'
-        if not $fmb->isa('BOM::Database::Model::FinancialMarketBet');
 
     # don't bother to get legacy parameters; rather we can just use shortcode
     if ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_LEGACY_BET) {

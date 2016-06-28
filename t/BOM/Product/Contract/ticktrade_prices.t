@@ -62,6 +62,8 @@ is $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'correct pr
 is roundnear(0.0001, $c->bs_probability->amount), 0.5006, 'bs probability is 0.5006';
 is $c->commission_markup->amount, 0.015, 'total markup is 0.015';
 
+delete $params->{barrier};
+
 $c = produce_contract({
     %$params,
     date_start   => $now,
