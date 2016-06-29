@@ -185,6 +185,8 @@ In the next stage of our account opening process we are required to verify your 
 
 Kindly <u>reply to this email and attach a scanned copy</u> of one of the following approved forms of identity:
 
+[_3]
+
 <ul>
     <li><b>Japan Driving license</b>, front and back sides</li>
     <li><b>Health Insurance card</b>, front and back side</li>
@@ -204,7 +206,10 @@ Yours sincerely,
 Customer Support
 Binary KK
 
-support@binary.com', $jp_client->last_name, $jp_client->first_name
+support@binary.com',
+            $jp_client->last_name,
+            $jp_client->first_name,
+            'https://www.binary.com/ja/get-started-jp#identification-documents'
         );
 
         send_email({
