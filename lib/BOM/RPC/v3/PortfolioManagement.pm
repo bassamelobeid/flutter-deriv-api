@@ -39,7 +39,7 @@ sub portfolio {
             currency       => $client->currency,
             shortcode      => $row->{short_code},
             longcode       => (simple_contract_info($row->{short_code}, $client->currency))[0] // '',
-            app_id         => BOM::RPC::v3::Accounts::mask_app_id($row->{source}));
+            app_id         => BOM::RPC::v3::Accounts::mask_app_id($row->{source}, $row->{purchase_time}));
         push $portfolio->{contracts}, \%trx;
     }
 

@@ -133,21 +133,21 @@ sub statement {
             action_type    => $txn->{action_type},
             balance_after  => $txn->{balance_after},
             contract_id    => $txn->{financial_market_bet_id},
-            payout         => $txn->{payout_price},
-            app_id         => mask_app_id($txn->{source})};
+            payout         => $txn->{payout_price}};
 
         my $txn_time;
         if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
             if ($txn->{action_type} eq 'sell') {
                 $struct->{purchase_time} = Date::Utility->new($txn->{purchase_time})->epoch;
-                $txn_time = Date::Utility->new($txn->{sell_time})->epoch;
+                $txn_time = $txn->{sell_time};
             } else {
-                $txn_time = Date::Utility->new($txn->{purchase_time})->epoch;
+                $txn_time = $txn->{purchase_time};
             }
         } else {
-            $txn_time = Date::Utility->new($txn->{payment_time})->epoch;
+            $txn_time = $txn->{payment_time};
         }
-        $struct->{transaction_time} = $txn_time;
+        $struct->{transaction_time} = Date::Utility->new($txn_time)->epoch;
+        $struct->{app_id} = mask_app_id($txn->{source}, $txn_time);
 
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
@@ -207,7 +207,7 @@ sub profit_table {
         $trx{payout}         = $row->{payout_price};
         $trx{purchase_time}  = Date::Utility->new($row->{purchase_time})->epoch;
         $trx{sell_time}      = Date::Utility->new($row->{sell_time})->epoch;
-        $trx{app_id}         = mask_app_id($row->{source});
+        $trx{app_id}         = mask_app_id($row->{source}, $row->{purchase_time});
 
         if ($and_description) {
             $trx{shortcode} = $row->{short_code};
@@ -1138,14 +1138,12 @@ sub reality_check {
     return $summary;
 }
 
-# as we use oauth apps for autosell as well so we need to mask
-# them and send those app_id as 1 i.e binary's one
 sub mask_app_id {
-    my $id = shift;
+    my ($id, $time) = @_;
 
-    if ($id && ($id eq "1" || $id eq "2")) {
-        $id = 1;
-    }
+    # this is the date when we started populating source with app_id, before this
+    # there were random numbers so don't want to send them back
+    $id = "" if ($time and Date::Utility->new($time)->is_before(Date::Utility->new("2016-02-30")));
 
     return $id;
 }
