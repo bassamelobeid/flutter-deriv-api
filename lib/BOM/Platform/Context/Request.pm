@@ -286,7 +286,7 @@ sub _build_broker_code {
         return $self->param('broker') if $self->param('broker');
 
         my $loginid = $self->param('LOGINID') || $self->param('loginID');
-        if ($loginid and =~ /^([A-Z]+)\d+$/) {
+        if ($loginid and $loginid =~ /^([A-Z]+)\d+$/) {
             return $1;
         }
 
@@ -295,7 +295,7 @@ sub _build_broker_code {
     my $company = $countries_list->{$self->country_code}->{gaming_company};
     $company = $countries_list->{$self->country_code}->{financial_company} if (not $company or $company eq 'none');
 
-    return BOM::Platform::Runtime::LandingCompany::Registry::get($company)->broker_codes->[0]
+    return BOM::Platform::Runtime::LandingCompany::Registry::get($company)->broker_codes->[0];
 
 }
 
