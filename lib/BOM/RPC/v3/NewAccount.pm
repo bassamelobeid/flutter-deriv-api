@@ -26,6 +26,12 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Static::Config;
 use BOM::Database::Model::OAuth;
 
+my $countries_list;
+
+BEGIN {
+    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+}
+
 sub _create_oauth_token {
     my $loginid = shift;
     my ($access_token) = BOM::Database::Model::OAuth->new->store_access_token_only('1', $loginid);
@@ -280,12 +286,6 @@ sub new_account_maltainvest {
         landing_company_shortcode => $landing_company->short,
         oauth_token               => _create_oauth_token($new_client->loginid),
     };
-}
-
-my $countries_list;
-
-BEGIN {
-    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
 }
 
 sub new_account_japan {
