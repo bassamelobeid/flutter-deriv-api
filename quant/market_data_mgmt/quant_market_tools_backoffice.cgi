@@ -23,7 +23,7 @@ use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Platform::Context;
 use Quant::Framework::CorrelationMatrix;
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }

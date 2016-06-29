@@ -12,7 +12,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('INVESTIGATIVE TOOLS');
 BOM::Backoffice::Auth0::can_access(['CS']);
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 
 if (request()->param('whattodo') eq 'unsanctions') {
     Bar('UN Sanctions Query');

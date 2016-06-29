@@ -92,9 +92,6 @@ sub _header_set_cookie {
             my $chk = $key . '=' . CGI::Util::escape($existing_cookies{$key}->value // ' ');
             next COOKIE if $cookie =~ /^$chk;/;
         }
-        if (request()->param('_pjax')) {
-            die "Setting cookie($cookie) while serving page through pjax";
-        }
         request()->http_handler->print_header_add('Set-Cookie' => $cookie);
     }
     return;

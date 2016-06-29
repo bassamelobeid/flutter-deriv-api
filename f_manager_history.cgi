@@ -17,7 +17,10 @@ PrintContentType();
 BrokerPresentation($loginID . ' HISTORY', '', '');
 BOM::Backoffice::Auth0::can_access(['CS']);
 
-my $broker = request()->broker->code;
+my $broker;
+if ($loginID =~ /^([A-Z]+)/) {
+    $broker = $1;
+}
 
 $loginID =~ s/\s//g;
 if ($loginID !~ /^$broker/) {
