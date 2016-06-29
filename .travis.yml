@@ -11,11 +11,9 @@ addons:
     postgresql: "9.3"
 cache: apt
 before_install:
-    - git clone https://6b8b5139b6cfaf61ea0b34834b62c275b500fa8b@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - git clone https://6b8b5139b6cfaf61ea0b34834b62c275b500fa8b@github.com/chylli/travis-scripts /tmp/travis-scripts
+    - (cd /tmp/travis-scripts && git checkout chylli/prepare_new_perl)
     - /tmp/travis-scripts/setup_ssh.sh
-    - git clone git://github.com/binary-com/helpers ~/travis-perl-helpers
-    - AUTHOR_TESTING=0 source ~/travis-perl-helpers/init
-    - PREBUILT_REPO="git@github.com:binary-com/test-perl.git" build-perl
     - dpkg -l | grep postgres
     - pg_lsclusters
     - /tmp/travis-scripts/fixHostName.sh
@@ -24,6 +22,8 @@ before_install:
     - sudo mkdir -p /home/git/regentmarkets
     - sudo cp -a $HOME/build/regentmarkets/bom-postgres /home/git/regentmarkets/
 
+    - /tmp/travis-scripts/clone_branch.sh binary-com/perl
+    - export PATH=/home/git/binary-com/perl/bin:$PATH
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
