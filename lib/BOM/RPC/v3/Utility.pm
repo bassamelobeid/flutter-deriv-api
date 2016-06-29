@@ -67,14 +67,6 @@ sub permission_error {
             message_to_client => localize('Permission denied.')});
 }
 
-sub ping {
-    return 'pong';
-}
-
-sub server_time {
-    return time;
-}
-
 sub site_limits {
     my @services = RateLimitations::rate_limited_services;
     my $limits;
