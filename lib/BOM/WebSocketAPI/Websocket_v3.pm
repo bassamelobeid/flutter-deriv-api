@@ -247,8 +247,9 @@ my @dispatch = (
     ],
     ['transaction', '', 1, 'read', {before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction}],
     ['portfolio',   '', 1, 'read'],
+    ['proposal_open_contract', \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract, 1, 'read', {stash_params => [qw/ app_markup_percentage /],}],
     [
-        'proposal_open_contract',
+        'proposal_open_contract_orig',
         '', 1, 'read',
         {
             stash_params    => [qw/ app_markup_percentage /],
