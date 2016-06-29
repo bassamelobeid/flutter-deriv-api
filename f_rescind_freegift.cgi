@@ -12,7 +12,7 @@ PrintContentType();
 BrokerPresentation('RESCIND FREE GIFTS');
 BOM::Backoffice::Auth0::can_access(['Payments']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 
 my $inactivedays = request()->param('inactivedays');
 my $whattodo     = request()->param('whattodo');

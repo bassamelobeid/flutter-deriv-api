@@ -21,7 +21,7 @@ PrintContentType();
 BrokerPresentation("SHOW AUDIT TRAIL");
 BOM::Backoffice::Auth0::can_access(['CS']);
 
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 
 if ($broker eq 'FOG') {
     print "NOT RELEVANT FOR BROKER CODE FOG";

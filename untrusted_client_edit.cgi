@@ -13,7 +13,7 @@ use BOM::System::RedisReplicated;
 PrintContentType();
 BrokerPresentation("UNTRUSTED/DISABLE CLIENT");
 
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 

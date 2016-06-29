@@ -29,6 +29,7 @@ sub init {
             undef ${"main::input"}
         }
         my $http_handler = Plack::App::CGIBin::Streaming->request;
+
         my $timeout = 1800;
 
         $SIG{ALRM} = sub {    ## no critic
@@ -37,7 +38,6 @@ sub init {
 
             warn("Panic timeout after $runtime seconds");
 
-            my $website = request()->website;
             print '<div id="page_timeout_notice" class="aligncenter">'
                 . '<p class="normalfonterror">'
                 . $timenow . ' '
@@ -50,8 +50,6 @@ sub init {
                 . localize('Reload page')
                 . '</b></a> '
                 . ' <a href="http://'
-                . $website->primary_url . '">'
-                . $website->primary_url . '</a> '
                 . localize('homepage') . '</p>'
                 . '</div>';
             BOM::Platform::Context::request_completed();
@@ -59,12 +57,14 @@ sub init {
         };
         alarm($timeout);
 
+
         $http_handler->register_cleanup(
             sub {
                 delete @ENV{qw/AUDIT_STAFF_NAME AUDIT_STAFF_IP/};    ## no critic
                 BOM::Database::Rose::DB->db_cache->finish_request_cycle;
                 alarm 0;
             });
+
 
         $ENV{AUDIT_STAFF_NAME} = BOM::Backoffice::Cookie::get_staff();  ## no critic
         $ENV{AUDIT_STAFF_IP} = request()->client_ip;                    ## no critic
@@ -85,7 +85,6 @@ sub build_request {
     if (Plack::App::CGIBin::Streaming->request) {    # is web server ?
         $CGI::POST_MAX        = 8000 * 1024;     # max 8MB posts
         $CGI::DISABLE_UPLOADS = 0;
-
         return request(
             BOM::Platform::Context::Request::from_cgi({
                     cgi         => CGI->new,
@@ -96,6 +95,7 @@ sub build_request {
 }
 
 sub log_bo_access {
+
     $ENV{'REMOTE_ADDR'} = request()->client_ip;    ## no critic
 
     # log it

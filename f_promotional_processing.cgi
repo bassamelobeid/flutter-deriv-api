@@ -36,7 +36,6 @@ foreach my $loginid (@approved, @rejected) {
     my $client      = BOM::Platform::Client->new({loginid => $loginid}) || die "bad loginid $loginid";
     my $approved    = $input{"${loginid}_promo"} eq 'A';
     my $client_name = ucfirst join(' ', (BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name));
-    my $website     = BOM::Platform::Runtime->instance->website_list->get_by_broker_code($client->broker);
     my $email_subject = localize("Your bonus request - [_1]", $loginid);
     my $email_content;
 
@@ -72,7 +71,7 @@ foreach my $loginid (@approved, @rejected) {
                 amount        => $amount,
                 support_email => BOM::Platform::Static::Config::get_customer_support_email(),
                 tac_url       => $tac_url,
-                website_name  => $website->name,
+                website_name  => 'Binary.com',
             },
             \$email_content
             )
@@ -92,7 +91,7 @@ foreach my $loginid (@approved, @rejected) {
             {
                 name         => $client_name,
                 tac_url      => $tac_url,
-                website_name => $website->name,
+                website_name => 'Binary.com',
             },
             \$email_content
         ) || die "rejecting promocode for $client: " . BOM::Platform::Context::template->error;
