@@ -2,6 +2,7 @@ package WWW::OneAll;
 
 use strict;
 use warnings;
+use Carp qw/croak/;
 use Mojo::UserAgent;
 use Mojo::Util qw(b64_encode);
 
@@ -33,7 +34,7 @@ sub __ua {
     $ua->max_redirects(3);
     $ua->inactivity_timeout($self->{timeout});
     $ua->proxy->detect; # env proxy
-    $ua->cookie_jar(0);
+    # $ua->cookie_jar(0);
     $ua->max_connections(100);
     $self->{ua} = $ua;
 

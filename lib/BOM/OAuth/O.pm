@@ -111,7 +111,11 @@ sub authorize {
     }
 
     ## setup oneall callback url
-    $c->stash('oneall_callback' => $c->url_for('/oneall/callback')->to_abs);
+    my $oneall_callback = $c->url_for('/oneall/callback')->to_abs;
+    if ($c->req->url->path->parts->[0] eq 'oauth2') { # for binaryqaXX
+        $oneall_callback = $c->url_for('/oauth2/oneall/callback')->to_abs;
+    }
+    $c->stash('oneall_callback' => $oneall_callback);
 
     # set session on first page visit (GET)
     # for binary.com, app id = 1
