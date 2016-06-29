@@ -127,7 +127,7 @@ subtest "predefined trading_period" => sub {
     is(scalar(@{$got{$_}}), $expected_count{trading_period}{$_}, "Expected total trading period on $_") for (keys %{$expected_count{trading_period}});
     foreach my $bet_type (keys %expected_trading_period) {
 
-        my @got_duration = map { $got{$bet_type}[$_]{duration} } keys $got{$bet_type};
+        my @got_duration = map { $got{$bet_type}[$_]{duration} } keys @{$got{$bet_type}};
         cmp_deeply(\@got_duration, $expected_trading_period{$bet_type}{duration}, "Expected duration for $bet_type");
         my @got_date_start = map { $got{$bet_type}[$_]{date_start}{epoch} } keys $got{$bet_type};
         cmp_deeply(\@got_date_start, $expected_trading_period{$bet_type}{date_start}, "Expected date_start for $bet_type");
