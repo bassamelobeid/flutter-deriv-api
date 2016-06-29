@@ -7,6 +7,7 @@ use warnings;
 use Path::Tiny;
 
 use BOM::Platform::Runtime;
+require Locale::Maketext::Lexicon;
 
 sub handle_for {
     my $language = shift;
