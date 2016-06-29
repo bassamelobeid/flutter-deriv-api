@@ -158,7 +158,9 @@ sub _save_early_closes_calendar {
     my $data = shift;
     my $calendar_data;
     foreach my $exchange_name (keys %$data) {
-        my $calendar = Quant::Framework::TradingCalendar->new($exchange_name, BOM::System::Chronicle::get_chronicle_reader());
+        my $calendar = Quant::Framework::TradingCalendar->new({
+                symbol           => $exchange_name,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()});
         my $partial_trading = $calendar->market_times->{partial_trading};
         if (not $partial_trading) {
             print "$exchange_name does not have partial trading configuration but it has early closes. Please check. \n";
@@ -167,9 +169,9 @@ sub _save_early_closes_calendar {
 
         foreach my $date (keys %{$data->{$exchange_name}}) {
 
-            my $epoch = Date::Utility->new($date)->epoch;
+            my $epoch    = Date::Utility->new($date)->epoch;
             my $calendar = Quant::Framework::TradingCalendar->new({
-                    symbol => $exchange_name, 
+                    symbol           => $exchange_name,
                     chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()});
 
             my $description =
