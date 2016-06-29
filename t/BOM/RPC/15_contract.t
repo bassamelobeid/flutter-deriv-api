@@ -37,7 +37,6 @@ $client->deposit_virtual_funds;
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
-
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
