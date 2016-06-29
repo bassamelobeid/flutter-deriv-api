@@ -68,7 +68,7 @@ has category => (
     is      => 'ro',
     isa     => 'bom_contract_category',
     coerce  => 1,
-    handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers)],
+    handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers barrier_at_start)],
 );
 
 has category_code => (
@@ -1332,7 +1332,7 @@ sub _build_shortcode {
 
     if ($self->two_barriers) {
         push @shortcode_elements, ($self->high_barrier->for_shortcode, $self->low_barrier->for_shortcode);
-    } elsif ($self->barrier) {
+    } elsif ($self->barrier and $self->barrier_at_start) {
         # Having a hardcoded 0 for single barrier is dumb.
         # We should get rid of this legacy
         push @shortcode_elements, ($self->barrier->for_shortcode, 0);
