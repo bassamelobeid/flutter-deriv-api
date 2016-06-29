@@ -142,6 +142,62 @@ has 'symbol' => (
     required => 1,
 );
 
+
+has spot_provider => (
+    is         => 'ro',
+    lazy_build => 1,
+    handles => {
+        'set_combined_realtime' => 'set_spot_tick',
+        'pipsized_value' => 'pipsized_value',
+    }
+);
+
+sub _build_spot_provider {
+    my $self = shift;
+
+    return Finance::Sport->new({
+            symbol => $self->symbol,
+            pip_size => $self->pip_size,
+            get_tick_cr => sub {
+                return $self->tick_at(time, {allow_inconsistent => 1});
+            }
+        });
+}
+
+
+sub spot_tick {
+    my $self = shift;
+
+    return ($self->for_date)
+        ? $self->tick_at($self->for_date->epoch, {allow_inconsistent => 1})
+        : $self->spot_provider->spot_tick;
+}
+
+=head2 spot_age
+
+The age in seconds of the latest tick
+
+=cut
+
+sub spot_age {
+    my $self      = shift;
+    my $tick_time = $self->spot_time;
+    return defined $tick_time && time - $tick_time;
+}
+
+
+=head2 spot_time
+
+The epoch timestamp of the latest recorded tick in the .realtime file or undef if we can't find one.
+t
+=cut
+
+sub spot_time {
+    my $self      = shift;
+    my $last_tick = $self->spot_tick;
+    return $last_tick && $last_tick->epoch;
+}
+
 # Can not be made into an attribute to avoid the caching problem.
 
 =head2 system_symbol
@@ -1312,122 +1368,8 @@ sub is_in_quiet_period {
     return $quiet;
 }
 
-=head1 REALTIME TICK METHODS
-=head2 $self->set_combined_realtime($value)
-
-Save last tick value for symbol in Redis. Returns true if operation was
-successfull, false overwise. Tick value should be a hash reference like this:
-
-{
-    epoch => $unix_timestamp,
-    quote => $last_price,
-}
-
-=cut
-
-sub set_combined_realtime {
-    my ($self, $value) = @_;
-
-    my $tick;
-    if (ref $value eq 'BOM::Market::Data::Tick') {
-        $tick  = $value;
-        $value = $value->as_hash;
-    } else {
-        $tick = BOM::Market::Data::Tick->new($value);
-    }
-    Cache::RedisDB->set_nw('COMBINED_REALTIME', $self->symbol, $value);
-    return $tick;
-}
-
-=head2 $self->get_combined_realtime
-
-Get last tick value for symbol from Redis. It will rebuild value from
-feed db if it is not present in cache.
-
-=cut
-
-sub get_combined_realtime_tick {
-    my $self = shift;
-
-    my $value = Cache::RedisDB->get('COMBINED_REALTIME', $self->symbol);
-    my $tick;
-    if ($value) {
-        $tick = BOM::Market::Data::Tick->new($value);
-    } else {
-        $tick = $self->tick_at(time, {allow_inconsistent => 1});
-        if ($tick) {
-            $self->set_combined_realtime($tick);
-        }
-    }
-
-    return $tick;
-}
-
-sub get_combined_realtime {
-    my $self = shift;
-
-    my $tick = $self->get_combined_realtime_tick;
-
-    return ($tick) ? $tick->as_hash : undef;
-}
-
-=head2 spot
-
-What is the current spot price for this underlying?
-
-=cut
-
-# Get the last available value currently defined in realtime DB
-
-sub spot {
-    my $self = shift;
-    my $last_price;
-
-    my $last_tick = $self->spot_tick;
-    $last_price = $last_tick->quote if $last_tick;
-
-    return $self->pipsized_value($last_price);
-}
-
-=head2 spot_tick
-
-What is the current tick on this underlying
-
-=cut
-
-sub spot_tick {
-    my $self = shift;
-
-    return ($self->for_date)
-        ? $self->tick_at($self->for_date->epoch, {allow_inconsistent => 1})
-        : $self->get_combined_realtime_tick;
-}
-
-=head2 spot_time
-
-The epoch timestamp of the latest recorded tick in the .realtime file or undef if we can't find one.
-t
-=cut
-
-sub spot_time {
-    my $self      = shift;
-    my $last_tick = $self->spot_tick;
-    return $last_tick && $last_tick->epoch;
-}
-
-=head2 spot_age
-
-The age in seconds of the latest tick
-
-=cut
-
-sub spot_age {
-    my $self      = shift;
-    my $tick_time = $self->spot_time;
-    return defined $tick_time && time - $tick_time;
-}
-
 =head1 FEED METHODS
+
 =head2 tick_at
 
 What was the market tick at a given timestamp?  This will be the tick on or before the supplied timestamp.
@@ -1681,42 +1623,6 @@ has pip_size => (
     default => 0.0001,
 );
 
-=head2 display_decimals
-
-How many decimals to display for this underlying
-
-=cut
-
-has display_decimals => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-sub _build_display_decimals {
-    my $self = shift;
-
-    return log(1 / $self->pip_size) / log(10);
-}
-
-=head2 pipsized_value
-
-Resize a value to conform to the pip size of this underlying
-
-=cut
-
-sub pipsized_value {
-    my ($self, $value, $custom) = @_;
-
-    my ($pip_size, $display_decimals) =
-          ($custom)
-        ? ($custom, log(1 / $custom) / log(10))
-        : ($self->pip_size, $self->display_decimals);
-    if (defined $value and looks_like_number($value)) {
-        $value = sprintf '%.' . $display_decimals . 'f', $value;
-    }
-    return $value;
-}
 
 =head2 price_at_intervals(\%args)
 
