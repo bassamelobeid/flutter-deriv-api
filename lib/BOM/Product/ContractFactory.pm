@@ -105,6 +105,9 @@ sub produce_contract {
     # dereference here
     my %input_params = %$params_ref;
 
+    # always build shortcode
+    delete $input_params{shortcode};
+
     if (my $missing = first { not defined $input_params{$_} } (qw(bet_type currency))) {
         # Some things are required for all possible contracts
         # This list is pretty small, though!
@@ -215,12 +218,13 @@ sub produce_contract {
 
         my @barriers = qw(barrier high_barrier low_barrier);
         foreach my $barrier_name (grep { defined $input_params{$_} } @barriers) {
-            my $possible = $input_params{$barrier_name};
-
-            #if this is an asisn tick expiry contract and also a barrier is specified, reject the request
-            if (defined $input_params{tick_expiry} and defined $possible and $input_params{bet_type} =~ /^ASIAN/) {
-                die 'Asian tick-expiry contracts cannot have barrier values';
+            # if barrier is parsed by intention or by mistake, delete it.
+            if ($input_params{asian}) {
+                delete $input_params{$barrier_name};
+                next;
             }
+
+            my $possible = $input_params{$barrier_name};
 
             if (ref($possible) !~ /BOM::Product::Contract::Strike/) {
                 # Some sort of string which Strike can presumably use.
