@@ -290,6 +290,7 @@ sub _build_broker_code {
             return $1;
         }
 
+        return 'CR';
     }
 
     my $company = $countries_list->{$self->country_code}->{gaming_company};
