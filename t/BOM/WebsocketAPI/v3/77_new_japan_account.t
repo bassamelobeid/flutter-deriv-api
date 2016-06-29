@@ -5,7 +5,7 @@ use Test::More tests => 6;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -79,17 +79,10 @@ subtest 'new JP real account' => sub {
 
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
-    my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-    my $call_params;
-    $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-    $t = $t->send_ok({json => \%client_details})->message_ok;
-    is $call_params->{token}, $token;
-    $rpc_caller->unmock_all;
-
     subtest 'create JP account' => sub {
-        $t = $t->send_ok({json => \%client_details})->message_ok;
-        my $res = decode_json($t->message->[1]);
-        is $res->{msg_type}, 'new_account_japan';
+        my ($res, $call_params) = call_mocked_client($t, \%client_details);
+        is $call_params->{token}, $token;
+        is $res->{msg_type},      'new_account_japan';
         ok($res->{new_account_japan});
         test_schema('new_account_japan', $res);
 
@@ -98,27 +91,15 @@ subtest 'new JP real account' => sub {
     };
 
     subtest 'jp_knowledge_test' => sub {
-        my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-        my $call_params;
-        $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-        $t = $t->send_ok({
-                json => {
-                    "jp_knowledge_test" => 1,
-                    "score"             => 12,
-                    "status"            => "pass"
-                }})->message_ok;
+        my ($res, $call_params) = call_mocked_client(
+            $t,
+            {
+                "jp_knowledge_test" => 1,
+                "score"             => 12,
+                "status"            => "pass"
+            });
         is $call_params->{token}, $token;
-        $rpc_caller->unmock_all;
-
-        $t = $t->send_ok({
-                json => {
-                    "jp_knowledge_test" => 1,
-                    "score"             => 12,
-                    "status"            => "pass"
-                }})->message_ok;
-        my $res = decode_json($t->message->[1]);
-
-        is $res->{msg_type}, 'jp_knowledge_test';
+        is $res->{msg_type},      'jp_knowledge_test';
         if ($res->{error}) {
             is $res->{error}->{code}, 'TestUnavailableNow', 'TestUnavailableNow';
         } else {

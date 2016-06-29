@@ -7,7 +7,7 @@ use JSON;
 use Cache::RedisDB;
 
 sub asset_index_cached {
-    my ($c, $args, $params) = @_;
+    my ($c, $req_storage) = @_;
 
     my $language = $c->stash('language');
     if (my $r = Cache::RedisDB->get("WS_ASSETINDEX", $language)) {

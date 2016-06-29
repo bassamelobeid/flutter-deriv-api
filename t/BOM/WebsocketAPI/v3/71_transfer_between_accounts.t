@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 use Cache::RedisDB;
 use Test::Exception;
 
@@ -107,29 +107,16 @@ $email_mocked->mock('send_email', sub { return 1 });
     my $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'Test Token', 'read', 'payments');
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
-    my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-    my $call_params;
-    $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-    $t = $t->send_ok({
-            json => {
-                "transfer_between_accounts" => "1",
-                "account_from"              => $client_cr->loginid,
-                "account_to"                => $client_vr->loginid,
-                "currency"                  => "EUR",
-                "amount"                    => 100
-            }})->message_ok;
+    my ($res, $call_params) = call_mocked_client(
+        $t,
+        {
+            "transfer_between_accounts" => "1",
+            "account_from"              => $client_cr->loginid,
+            "account_to"                => $client_vr->loginid,
+            "currency"                  => "EUR",
+            "amount"                    => 100
+        });
     ok $call_params->{token};
-    $rpc_caller->unmock_all;
-
-    $t = $t->send_ok({
-            json => {
-                "transfer_between_accounts" => "1",
-                "account_from"              => $client_cr->loginid,
-                "account_to"                => $client_vr->loginid,
-                "currency"                  => "EUR",
-                "amount"                    => 100
-            }})->message_ok;
-    my $res = decode_json($t->message->[1]);
     is $res->{msg_type}, 'transfer_between_accounts';
     ok $res->{error}->{message} =~ /The account transfer is unavailable. Please deposit to your account/, 'Not deposited into any account yet';
 
