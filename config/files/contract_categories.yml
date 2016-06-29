@@ -71,6 +71,7 @@ asian:
     supported_expiries:
       - tick
     explanation: "Predict the ending market level relative to the average market prices throughout the course of the contract"
+    barrier_at_start: 0
     available_types:
       - ASIANU
       - ASIAND
