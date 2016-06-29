@@ -16,7 +16,6 @@ use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
-use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use utf8;
 
