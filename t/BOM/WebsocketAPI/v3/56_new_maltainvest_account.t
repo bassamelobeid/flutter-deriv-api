@@ -4,7 +4,7 @@ use Test::More tests => 5;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -85,15 +85,9 @@ subtest 'MLT upgrade to MF account' => sub {
     };
 
     subtest 'upgrade to MF' => sub {
-        my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-        my $call_params;
-        $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
+        my ($res, $call_params) = call_mocked_client($t, $mf_details);
         $t = $t->send_ok({json => $mf_details})->message_ok;
         is $call_params->{token}, $token;
-        $rpc_caller->unmock_all;
-
-        $t = $t->send_ok({json => $mf_details})->message_ok;
-        my $res = decode_json($t->message->[1]);
         is($res->{msg_type}, 'new_account_maltainvest');
         ok($res->{new_account_maltainvest});
         test_schema('new_account_maltainvest', $res);

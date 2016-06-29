@@ -5,13 +5,13 @@ use warnings;
 
 use Digest::MD5 qw(md5_hex);
 
-use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 
 sub proposal_open_contract {
-    my ($c, $args, $response) = @_;
+    my ($c, $response, $req_storage) = @_;
 
+    my $args = $req_storage->{args};
     if (exists $response->{error}) {
         return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -21,10 +21,11 @@ sub proposal_open_contract {
                 my $result = shift;
                 $c->send({
                         json => {
-                            echo_req => $args,
-                            (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                             msg_type               => 'proposal_open_contract',
-                            proposal_open_contract => {%$result}}});
+                            proposal_open_contract => {%$result}}
+                    },
+                    $req_storage
+                );
             };
             foreach my $contract_id (@contract_ids) {
                 if (exists $response->{$contract_id}->{error}) {
@@ -103,54 +104,54 @@ sub send_proposal_open_contract {
     my $sell_price      = delete $details->{sell_price};
     my $transaction_ids = delete $details->{transaction_ids};
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'get_bid',
-        sub {
-            my $response = shift;
-            if ($response) {
-                if (exists $response->{error}) {
-                    if ($id) {
-                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+    $c->call_rpc({
+            args        => $details,
+            method      => 'get_bid',
+            msg_type    => 'proposal_open_contract',
+            call_params => {
+                short_code  => delete $details->{short_code},
+                contract_id => $contract_id,
+                currency    => delete $details->{currency},
+                is_sold     => delete $details->{is_sold},
+                sell_time   => $sell_time,
+            },
+            rpc_response_cb => sub {
+                my ($c, $rpc_response, $req_storage) = @_;
+                my $args = $req_storage->{args};
+                if ($rpc_response) {
+                    if (exists $rpc_response->{error}) {
+                        if ($id) {
+                            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                            BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+                        }
+                        return $c->new_error('proposal_open_contract', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
+                    } elsif (exists $rpc_response->{is_expired} and $rpc_response->{is_expired} eq '1') {
+                        if ($id) {
+                            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                            BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+                            $id = undef;
+                        }
                     }
-                    return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
-                } elsif (exists $response->{is_expired} and $response->{is_expired} eq '1') {
-                    if ($id) {
-                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
-                        $id = undef;
-                    }
-                }
 
-                return {
-                    msg_type               => 'proposal_open_contract',
-                    proposal_open_contract => {
-                        $id ? (id => $id) : (),
-                        buy_price       => $buy_price,
-                        purchase_time   => $purchase_time,
-                        transaction_ids => $transaction_ids,
-                        (defined $sell_price) ? (sell_price => sprintf('%.2f', $sell_price)) : (),
-                        (defined $sell_time) ? (sell_time => $sell_time) : (),
-                        %$response
-                    }};
-            } else {
-                if ($id) {
-                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+                    return {
+                        msg_type               => 'proposal_open_contract',
+                        proposal_open_contract => {
+                            $id ? (id => $id) : (),
+                            buy_price       => $buy_price,
+                            purchase_time   => $purchase_time,
+                            transaction_ids => $transaction_ids,
+                            (defined $sell_price) ? (sell_price => sprintf('%.2f', $sell_price)) : (),
+                            (defined $sell_time) ? (sell_time => $sell_time) : (),
+                            %$rpc_response
+                        }};
+                } else {
+                    if ($id) {
+                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+                    }
                 }
             }
-        },
-        {
-            short_code  => delete $details->{short_code},
-            contract_id => $contract_id,
-            currency    => delete $details->{currency},
-            is_sold     => delete $details->{is_sold},
-            sell_time   => $sell_time,
-            args        => $details
-        },
-        'proposal_open_contract'
-    );
+        });
     return;
 }
 

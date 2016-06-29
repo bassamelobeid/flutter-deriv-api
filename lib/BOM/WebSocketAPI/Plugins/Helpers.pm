@@ -4,8 +4,12 @@ use base 'Mojolicious::Plugin';
 
 use strict;
 use warnings;
+use feature "state";
 use Sys::Hostname;
+use YAML::XS;
 use BOM::Platform::Context::I18N;
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
+use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 
 sub register {
     my ($self, $app) = @_;
@@ -51,6 +55,67 @@ sub register {
                 msg_type => $msg_type,
                 error    => $error,
             };
+        });
+
+    $app->helper(
+        redis => sub {
+            my $c = shift;
+
+            if (not $c->stash->{redis}) {
+                state $url = do {
+                    my $cf = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml')->{read};
+                    defined($cf->{password})
+                        ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
+                        : "redis://$cf->{host}:$cf->{port}";
+                };
+
+                my $redis = Mojo::Redis2->new(url => $url);
+                $redis->on(
+                    error => sub {
+                        my ($self, $err) = @_;
+                        warn("error: $err");
+                    });
+                $redis->on(
+                    message => sub {
+                        my ($self, $msg, $channel) = @_;
+
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg, $channel)
+                            if $channel =~ /^(?:FEED|PricingTable)::/;
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
+                            if $channel =~ /^TXNUPDATE::transaction_/;
+                    });
+                $c->stash->{redis} = $redis;
+            }
+            return $c->stash->{redis};
+        });
+
+    $app->helper(
+        redis_pricer => sub {
+            my $c = shift;
+
+            if (not $c->stash->{redis_pricer}) {
+                state $url_pricers = do {
+                    my $cf = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write};
+                    my $url = Mojo::URL->new("redis://$cf->{host}:$cf->{port}");
+                    $url->userinfo('dummy:' . $cf->{password}) if $cf->{password};
+                    $url;
+                };
+
+                my $redis_pricer = Mojo::Redis2->new(url => $url_pricers);
+                $redis_pricer->on(
+                    error => sub {
+                        my ($self, $err) = @_;
+                        warn("error: $err");
+                    });
+                $redis_pricer->on(
+                    message => sub {
+                        my ($self, $msg, $channel) = @_;
+
+                        BOM::WebSocketAPI::v3::Wrapper::Pricer::process_pricing_events($c, $msg, $channel);
+                    });
+                $c->stash->{redis_pricer} = $redis_pricer;
+            }
+            return $c->stash->{redis_pricer};
         });
 
     return;

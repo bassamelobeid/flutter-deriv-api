@@ -11,16 +11,17 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub buy_get_contract_params {
-    my ($c, $args, $params) = @_;
+    my ($c, $req_storage) = @_;
 
+    my $args = $req_storage->{args};
     # 1. Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
     # 2. Calling forget_buy_proposal instead of forget_one as we need args for contract proposal
     if ($args->{parameters}) {
-        $params->{call_params}->{contract_parameters} = $args->{parameters};
+        $req_storage->{call_params}->{contract_parameters} = $args->{parameters};
     } elsif (my $p = BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $args->{buy})) {
-        $params->{call_params}->{contract_parameters} = $p;
+        $req_storage->{call_params}->{contract_parameters} = $p;
     } elsif ($c->stash('pricing_channel') and $c->stash('pricing_channel')->{uuid} and $c->stash('pricing_channel')->{uuid}->{$args->{buy}}) {
-        $params->{call_params}->{contract_parameters} = $c->stash('pricing_channel')->{uuid}->{$args->{buy}}->{args};
+        $req_storage->{call_params}->{contract_parameters} = $c->stash('pricing_channel')->{uuid}->{$args->{buy}}->{args};
         BOM::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $args->{buy});
     } else {
         return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
@@ -29,9 +30,10 @@ sub buy_get_contract_params {
 }
 
 sub transaction {
-    my ($c, $args) = @_;
+    my ($c, $req_storage) = @_;
 
     my $id;
+    my $args       = $req_storage->{args};
     my $account_id = $c->stash('account_id');
     if ($account_id) {
         if (    exists $args->{subscribe}
