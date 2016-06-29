@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= $r->website->display_name.' : '. l('Login') %></title>
+    <title><%= l('Login') %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel='stylesheet' href='/oauth2/css/styles.css' />
     <script type="text/javascript" src="/oauth2/js/scripts.js"></script>
