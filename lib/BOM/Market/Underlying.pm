@@ -599,7 +599,7 @@ sub _build_market {
     my $market = BOM::Market->new({name => 'nonsense'});
     if ($symbol =~ /^FUT/) {
         $market = BOM::Market::Registry->instance->get('futures');
-    } elsif ($symbol eq 'HEARTB' or $symbol =~ /^I_/) {
+    } elsif ($symbol =~ /^I_/) {
         $market = BOM::Market::Registry->instance->get('config');
     } elsif (length($symbol) >= 15) {
         $market = BOM::Market::Registry->instance->get('config');
@@ -851,7 +851,7 @@ sub _build_combined_folder {
     my $underlying_symbol = $self->system_symbol;
     my $market            = $self->market;
 
-    if ($market->name eq 'config' and $underlying_symbol !~ /HEARTB/gi) {
+    if ($market->name eq 'config') {
         $underlying_symbol =~ s/^FRX/^frx/;
         return 'combined/' . $underlying_symbol . '/quant';
     }
