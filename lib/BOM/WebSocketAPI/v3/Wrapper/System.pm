@@ -54,13 +54,15 @@ sub forget_one {
 sub ping {
     return {
         msg_type => 'ping',
-        ping     => 'pong'};
+        ping     => 'pong'
+    };
 }
 
 sub server_time {
     return {
         'msg_type' => 'time',
-        'time'     => time};
+        'time'     => time
+    };
 }
 
 sub _forget_transaction_subscription {
