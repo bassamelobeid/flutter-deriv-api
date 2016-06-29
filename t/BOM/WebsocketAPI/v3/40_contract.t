@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
+use TestHelper qw/test_schema build_mojo_test build_test_R_50_data call_mocked_client/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 
@@ -26,7 +26,7 @@ $client->email($email);
 $client->save;
 
 my $loginid = $client->loginid;
-my $user = BOM::Platform::User->create(
+my $user    = BOM::Platform::User->create(
     email    => $email,
     password => '1234',
 );
@@ -40,7 +40,6 @@ $client->smart_payment(
     payment_type => 'external_cashier',
     remark       => 'test deposit'
 );
-
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
@@ -108,18 +107,15 @@ my $forget = decode_json($t->message->[1]);
 note explain $forget;
 is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
-my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-my $call_params;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({
-        json => {
-            get_corporate_actions => 1,
-            symbol                => "FPFP",
-            start                 => "2013-03-27",
-            end                   => "2013-03-30",
-        }})->message_ok;
+my (undef, $call_params) = call_mocked_client(
+    $t,
+    {
+        get_corporate_actions => 1,
+        symbol                => "FPFP",
+        start                 => "2013-03-27",
+        end                   => "2013-03-30",
+    });
 ok !$call_params->{token};
-$rpc_caller->unmock_all;
 
 $t = $t->send_ok({
         json => {
@@ -131,10 +127,8 @@ $t = $t->send_ok({
 my $corporate_actions = decode_json($t->message->[1]);
 is $corporate_actions->{msg_type}, 'get_corporate_actions';
 
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({json => {portfolio => 1}})->message_ok;
+(undef, $call_params) = call_mocked_client($t, {portfolio => 1});
 is $call_params->{token}, $token;
-$rpc_caller->unmock_all;
 
 $t = $t->send_ok({json => {portfolio => 1}})->message_ok;
 my $portfolio = decode_json($t->message->[1]);
@@ -157,18 +151,15 @@ if (exists $res->{proposal_open_contract}) {
 }
 
 sleep 1;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({
-        json => {
-            buy        => 1,
-            price      => $ask_price || 0,
-            parameters => \%contractParameters,
-        },
-    })->message_ok;
+(undef, $call_params) = call_mocked_client(
+    $t,
+    {
+        buy        => 1,
+        price      => $ask_price || 0,
+        parameters => \%contractParameters,
+    });
 is $call_params->{token}, $token;
 ok $call_params->{contract_parameters};
-$rpc_caller->unmock_all;
 
 $t = $t->send_ok({
         json => {
@@ -195,16 +186,13 @@ while (1) {
     last;
 }
 
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({
-        json => {
-            sell       => 1,
-            price      => $ask_price || 0,
-            parameters => \%contractParameters,
-        },
-    })->message_ok;
+(undef, $call_params) = call_mocked_client(
+    $t,
+    {
+        sell  => 1,
+        price => $ask_price || 0,
+    });
 is $call_params->{token}, $token;
-$rpc_caller->unmock_all;
 
 $t->finish_ok;
 

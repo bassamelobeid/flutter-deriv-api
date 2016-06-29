@@ -4,7 +4,7 @@ use Test::More tests => 7;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 use BOM::Platform::Token::Verification;
 use BOM::System::RedisReplicated;
 use List::Util qw(first);
@@ -47,24 +47,16 @@ subtest 'verify_email' => sub {
 
     my $old_token = _get_token();
 
-    # catch call params using fake RPC client object which calling real client object
-    my $call_params;
-    my $fake_rpc_client = Test::MockObject->new();
-    my $real_rpc_client = MojoX::JSON::RPC::Client->new();
-    $fake_rpc_client->mock('call', sub { shift; $call_params = $_[1]->{params}; return $real_rpc_client->call(@_) });
-
-    my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
-    $module->mock('new', sub { return $fake_rpc_client });
-    $t = $t->send_ok({
-            json => {
-                verify_email => $email,
-                type         => 'account_opening'
-            }})->message_ok;
+    my (undef, $call_params) = call_mocked_client(
+        $t,
+        {
+            verify_email => $email,
+            type         => 'account_opening'
+        });
     is $call_params->{email}, $email;
     ok $call_params->{server_name};
     ok $call_params->{code};
     ok $call_params->{type};
-    $module->unmock_all;
 
     # send this again to check if invalidates old one
     Cache::RedisDB->redis->flushall;
