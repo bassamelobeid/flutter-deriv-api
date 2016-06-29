@@ -22,7 +22,7 @@ if (request()->param('action') ne 'DOWNLOAD CSV') {
     BrokerPresentation("MONITOR $show");
 }
 
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 

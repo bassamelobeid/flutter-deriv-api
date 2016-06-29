@@ -14,6 +14,8 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime;
 use BOM::DailySummaryReport;
+use BOM::Platform::Runtime::LandingCompany;
+
 
 BOM::Backoffice::Sysinit::init();
 
@@ -32,7 +34,7 @@ if (!$optres) {
 # By default we run all brokers and currencies for today.
 $for_date ||= Date::Utility->new->date_yyyymmdd;
 
-my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : BOM::Platform::Runtime->instance->broker_codes->all_codes;
+my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : BOM::Platform::Runtime::LandingCompany::Registry::all_broker_codes;
 my @currencies  = ($currencies)  ? split(/,/, $currencies)  : BOM::Platform::Runtime->instance->landing_companies->all_currencies;
 
 # This report will now only be run on the master server
