@@ -32,7 +32,7 @@ sub proposal {
 }
 
 sub proposal_open_contract {
-    my ($c, $args) = @_;
+    my ($c, $req_storage) = @_;
     my $client = BOM::Platform::Client->new({loginid => $c->stash('loginid')}); # TODO 
 
     my @fmbs = @{__get_open_contracts($client)};
@@ -47,9 +47,10 @@ sub proposal_open_contract {
             currency    => $client->currency,
             is_sold     => $fmb->{is_sold},
             sell_time   => $sell_time,
-            args        => $args,
-            $args->{subscribe}?(subscribe=>1):(),
+            args        => $req_storage->{args},
+            $req_storage->{args}->{subscribe} ? (subscribe => 1) : (),
         };
+        #warn "_send_bid: with ".Dumper($rpc_args);
         _send_bid($c, $rpc_args, 'proposal_open_contract');
     }
     return;
@@ -59,39 +60,39 @@ sub _send_bid {
     my $id;
     my ($c, $args) = @_;
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'get_bid',
-        sub {
-            my $response = shift;
-            if ($response and exists $response->{error}) {
-                my $err = $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
-                $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
-                return $err;
-            }
+    $c->call_rpc({
+            call_params     => $args,
+            method          => 'get_bid',
+            msg_type        => 'proposal_open_contract',
+            rpc_response_cb => sub {
+                my ($c, $rpc_response, $req_storage) = @_;
+                if ($rpc_response and exists $rpc_response->{error}) {
+                    my $err = $c->new_error('proposal', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
+                    $err->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
+                    return $err;
+                }
 
-            my $uuid;
+                my $uuid;
 
-            if (not $uuid = _pricing_channel($c, 'subscribe', $args)) {
-                return $c->new_error('proposal',
-                    'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+                if (not $uuid = _pricing_channel($c, 'subscribe', $args)) {
+                    return $c->new_error('proposal',
+                        'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+                }
+                my $ret = {
+                    msg_type               => 'proposal_open_contract',
+                    proposal_open_contract => {
+                        #$id ? (id => $id) : (),
+                        #buy_price       => $buy_price,
+                        #purchase_time   => $purchase_time,
+                        #transaction_ids => $transaction_ids,
+                        #(defined $sell_price) ? (sell_price => sprintf('%.2f', $sell_price)) : (),
+                        #(defined $sell_time) ? (sell_time => $sell_time) : (),
+                        %$rpc_response
+                    }};
+                    #warn "Pricer _send_bid returns: ".Dumper($ret);
+                return $ret;
             }
-            my $ret = {
-                msg_type               => 'proposal_open_contract',
-                proposal_open_contract => {
-                    #$id ? (id => $id) : (),
-                    #buy_price       => $buy_price,
-                    #purchase_time   => $purchase_time,
-                    #transaction_ids => $transaction_ids,
-                    #(defined $sell_price) ? (sell_price => sprintf('%.2f', $sell_price)) : (),
-                    #(defined $sell_time) ? (sell_time => $sell_time) : (),
-                    %$response
-                }};
-            return $ret;
-        },
-        $args,
-        'get_bid'
-    );
+        });
     return;
 }
 
@@ -166,6 +167,7 @@ sub _pricing_channel {
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
     my $amount = $args->{amount_per_point} || $args->{amount};
+    $amount //= 0;
 
     if ($pricing_channel->{$serialized_args} and $pricing_channel->{$serialized_args}->{$amount}) {
         return;
