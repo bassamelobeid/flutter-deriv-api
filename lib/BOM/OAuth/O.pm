@@ -112,7 +112,7 @@ sub authorize {
 
     ## setup oneall callback url
     my $oneall_callback = $c->url_for('/oneall/callback')->to_abs;
-    if ($c->req->url->path->parts->[0] eq 'oauth2') { # for binaryqaXX
+    if ($c->req->url->host =~ 'binaryqa') { # for binaryqaXX
         $oneall_callback = $c->url_for('/oauth2/oneall/callback')->to_abs;
     }
     $c->stash('oneall_callback' => $oneall_callback);
