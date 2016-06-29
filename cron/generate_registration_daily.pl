@@ -5,6 +5,9 @@ use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 
+local $SIG{ALRM} = sub { die "alarm\n" };
+alarm 1800;
+
 run() unless caller;
 
 sub run {

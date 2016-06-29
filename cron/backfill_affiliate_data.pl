@@ -10,6 +10,9 @@ use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::BackfillManager;
 use BOM::Platform::Runtime;
 
+local $SIG{ALRM} = sub { die "alarm\n" };
+alarm 1800;
+
 my $runtime = Date::Utility->new;
 
 my $backfill_manager            = BOM::MyAffiliates::BackfillManager->new;

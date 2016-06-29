@@ -12,6 +12,7 @@ use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::MyAffiliates::BackfillManager;
+use BOM::Platform::Runtime::LandingCompany;
 
 has start_time => (
     is       => 'ro',
@@ -141,7 +142,7 @@ sub register_tokens {
     my $self = shift;
 
     my @overall_results;
-    foreach my $broker (BOM::Platform::Runtime->instance->broker_codes->all_codes) {
+    foreach my $broker (BOM::Platform::Runtime::LandingCompany::Registry::all_broker_codes) {
         next if ($broker eq 'FOG');
 
         my @matched_tokens = grep { $_->{'loginid'} =~ /^$broker/ } @{$self->new_clients};

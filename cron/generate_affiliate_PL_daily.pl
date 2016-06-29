@@ -11,6 +11,9 @@ use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::ActivityReporter;
 use BOM::Platform::Runtime;
 
+local $SIG{ALRM} = sub { die "alarm\n" };
+alarm 1800;
+
 my ($from_date_str, $to_date_str);
 my $optres = GetOptions(
     'from=s' => \$from_date_str,
