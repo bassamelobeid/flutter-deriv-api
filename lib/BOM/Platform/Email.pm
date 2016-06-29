@@ -72,7 +72,7 @@ sub send_email {
     }
 
     if ($fromemail eq BOM::Platform::Static::Config::get_customer_support_email()) {
-        $fromemail = '"' . request()->website->display_name . "\" <$fromemail>";
+        $fromemail = "\"Binary.com\" <$fromemail>";
     }
 
     my $message = join("\n", @message);
@@ -115,12 +115,8 @@ sub send_email {
         my $mail_message;
         if ($use_email_template) {
             my $vars = {
-                website_url            => 'https://' . request()->website->primary_url,
-                contactus_url          => request()->url_for('contact'),
-                content                => $message,
-                email_template_toemail => URL::Encode::url_encode($email),
                 email_template_loginid => $template_loginid,
-                language               => request()->language,
+                content                => $message,
             };
             BOM::Platform::Context::template->process('common_email.html.tt', $vars, \$mail_message)
                 || die BOM::Platform::Context::template->error();

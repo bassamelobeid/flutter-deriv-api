@@ -46,6 +46,8 @@
       - NOTOUCH
       - SPREADU
       - SPREADD
+    broker_codes:
+      - MX
     legal_default_currency: GBP
     has_reality_check: 1
 'Binary (Europe) Ltd':
@@ -91,6 +93,8 @@
       - NOTOUCH
       - SPREADU
       - SPREADD
+    broker_codes:
+      - MLT
     legal_default_currency: EUR
     has_reality_check: 1
 'Binary Investments (Europe) Ltd':
@@ -137,6 +141,8 @@
       - UPORDOWN
       - ONETOUCH
       - NOTOUCH
+    broker_codes:
+      - MF
     legal_default_currency: EUR
     has_reality_check: 1
 'Binary (C.R.) S.A.':
@@ -183,6 +189,8 @@
       - NOTOUCH
       - SPREADU
       - SPREADD
+    broker_codes:
+      - CR
     legal_default_currency: USD
     allows_payment_agents: 1
     payment_agents_residence_disable: jp
@@ -226,6 +234,8 @@
       - NOTOUCH
       - SPREADU
       - SPREADD
+    broker_codes:
+      - VRTC
     legal_allowed_currencies:
       - USD
 'Binary KK':
@@ -266,6 +276,8 @@
       - UPORDOWN
       - ONETOUCH
       - NOTOUCH
+    broker_codes:
+      - JP
     legal_default_currency: JPY
     has_reality_check: 0
 'Binary Virtual Japan':
@@ -300,4 +312,6 @@
       - UPORDOWN
       - ONETOUCH
       - NOTOUCH
+    broker_codes:
+      - VRTJ
     legal_default_currency: JPY
