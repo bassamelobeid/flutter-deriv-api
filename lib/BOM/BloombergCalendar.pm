@@ -170,9 +170,6 @@ sub _save_early_closes_calendar {
         foreach my $date (keys %{$data->{$exchange_name}}) {
 
             my $epoch    = Date::Utility->new($date)->epoch;
-            my $calendar = Quant::Framework::TradingCalendar->new({
-                    symbol           => $exchange_name,
-                    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()});
 
             my $description =
                   $calendar->is_in_dst_at($epoch)
