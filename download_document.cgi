@@ -9,7 +9,7 @@ use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access();
 
 # category: id_scan (Default), 192_result
