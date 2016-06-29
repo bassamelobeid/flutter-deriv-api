@@ -82,9 +82,6 @@ sub _build_symbols_to_update {
             exclude_disabled  => 1,
             submarket         => ['france', 'belgium', 'amsterdam', 'india_otc_stock', 'us_otc_stock', 'uk_otc_stock', 'ge_otc_stock', 'au_otc_stock']
         );
-        # Update vol of those plan to offer underlyings. This will be remove on yngshan/enable_stocks
-        push @symbols_to_update,
-            qw(USAAPL USAMZN USCT USFB USGOOG USMSFT USXOM UKBARC UKBATS UKHSBA DEALV DEDAI DESIE USCAT USGLDSCH USMCDON USMA USBRKSHR USBNG USIBM USALIBA USPEP USEA USJNJ USAMX USPG UKBP UKRIO UKSTAN UKLLOY UKTSCO DEBMW DENOT DESAP DEDBK DEAIR INMARUTI INRIL INTATAMOTORS INTATASTEEL INBHARTIARTL);
     }
 
     return \@symbols_to_update;
@@ -120,7 +117,12 @@ sub run {
         my $underlying     = BOM::Market::Underlying->new($symbol);
         my $raw_volsurface = $surfaces_from_file->{$symbol};
         if ($self->uses_binary_spot->{$symbol}) {
-            $raw_volsurface->{spot_reference} = $underlying->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote;
+            # We do not have feed of BIST100 cash index, hence it need to use the spot of OTC_BIST100
+            $raw_volsurface->{spot_reference} =
+                $symbol eq 'BIST100'
+                ? BOM::Market::Underlying->new('OTC_BIST100')->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote
+                : $underlying->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote;
+
         }
         my $volsurface = Quant::Framework::VolSurface::Moneyness->new({
             underlying_config => $underlying->config,
