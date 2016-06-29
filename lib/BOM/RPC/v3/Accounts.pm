@@ -1143,7 +1143,7 @@ sub mask_app_id {
 
     # this is the date when we started populating source with app_id, before this
     # there were random numbers so don't want to send them back
-    $id = "" if ($time and Date::Utility->new($time)->is_before(Date::Utility->new("2016-02-30")));
+    $id = undef if ($time and Date::Utility->new($time)->is_before(Date::Utility->new("2016-02-30")));
 
     return $id;
 }
