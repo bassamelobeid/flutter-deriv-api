@@ -284,6 +284,12 @@ sub _build_broker_code {
 
     if ($self->backoffice) {
         return $self->param('broker') if $self->param('broker');
+
+        my $loginid = $self->param('LOGINID') || $self->param('loginID');
+        if ($loginid and =~ /^([A-Z]+)\d+$/) {
+            return $1;
+        }
+
     }
 
     my $company = $countries_list->{$self->country_code}->{gaming_company};
