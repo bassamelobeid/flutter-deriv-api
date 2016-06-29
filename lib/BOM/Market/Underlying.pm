@@ -851,7 +851,7 @@ sub _build_combined_folder {
     my $underlying_symbol = $self->system_symbol;
     my $market            = $self->market;
 
-    if ($market->name eq 'config' and $underlying_symbol !~ /HEARTB/gi) {
+    if ($market->name eq 'config') {
         $underlying_symbol =~ s/^FRX/^frx/;
         return 'combined/' . $underlying_symbol . '/quant';
     }
