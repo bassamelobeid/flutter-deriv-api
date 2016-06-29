@@ -273,14 +273,18 @@ sub _build_domain_name {
     return BOM::System::Localhost::external_fqdn();
 }
 
+my $countries_list;
+
+BEGIN {
+    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml');
+}
+
 sub _build_broker_code {
     my $self = shift;
 
     if ($self->backoffice) {
         return $self->param('broker') if $self->param('broker');
     }
-
-    my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
 
     my $company = $countries_list->{$self->country_code}->{gaming_company};
     $company = $countries_list->{$self->country_code}->{financial_company} if (not $company or $company eq 'none');
