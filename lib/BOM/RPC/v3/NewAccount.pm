@@ -172,8 +172,6 @@ sub new_account_real {
 
     my $args = $params->{args};
 
-    my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
-
     my $company;
     if ($args->{residence}) {
         $company = $countries_list->{$args->{residence}}->{gaming_company};
@@ -284,6 +282,12 @@ sub new_account_maltainvest {
     };
 }
 
+my $countries_list;
+
+BEGIN {
+    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml');
+}
+
 sub new_account_japan {
     my $params = shift;
 
@@ -298,8 +302,7 @@ sub new_account_japan {
                 message_to_client => $error_map->{'invalid'}});
     }
 
-    my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
-    my $company        = $countries_list->{'jp'}->{financial_company};
+    my $company = $countries_list->{'jp'}->{financial_company};
 
     if (not $company) {
         return BOM::RPC::v3::Utility::create_error({
