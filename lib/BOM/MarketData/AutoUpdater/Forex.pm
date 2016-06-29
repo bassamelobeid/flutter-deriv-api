@@ -62,7 +62,7 @@ sub _build_file {
 
     my $quanto_file;
     my $quanto_weekday_file = $loc . '/' . $day . '/quantovol.csv';
-    my $quanto_weekend_file   = $loc . '/' . $day . '/quantovol_wknd.csv';
+    my $quanto_weekend_file = $loc . '/' . $day . '/quantovol_wknd.csv';
     if ($now->is_a_weekday) {
         $quanto_file =
               (-e $quanto_weekday_file) ? $quanto_weekday_file
