@@ -84,7 +84,10 @@ sub domain_for {
 
     my $server_name = BOM::System::Localhost::name();
 
-    return $server_name . '.binary' . ($server_name =~ /^qa\d+$/ ? $server_name : '') . '.com';
+    if ($server_name =~ /^(qa\d+)$/) {
+        return "www.binary$1.com";
+    }
+    return $server_name . '.binary.com';
 }
 
 memoize('_get_domain_type');
