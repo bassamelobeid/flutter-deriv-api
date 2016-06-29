@@ -599,7 +599,7 @@ sub _build_market {
     my $market = BOM::Market->new({name => 'nonsense'});
     if ($symbol =~ /^FUT/) {
         $market = BOM::Market::Registry->instance->get('futures');
-    } elsif ($symbol eq 'HEARTB' or $symbol =~ /^I_/) {
+    } elsif ($symbol =~ /^I_/) {
         $market = BOM::Market::Registry->instance->get('config');
     } elsif (length($symbol) >= 15) {
         $market = BOM::Market::Registry->instance->get('config');
