@@ -276,7 +276,7 @@ sub _build_domain_name {
 my $countries_list;
 
 BEGIN {
-    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml');
+    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
 }
 
 sub _build_broker_code {
