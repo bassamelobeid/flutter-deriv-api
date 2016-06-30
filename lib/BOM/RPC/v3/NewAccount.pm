@@ -26,6 +26,12 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Static::Config;
 use BOM::Database::Model::OAuth;
 
+my $countries_list;
+
+BEGIN {
+    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+}
+
 sub _create_oauth_token {
     my $loginid = shift;
     my ($access_token) = BOM::Database::Model::OAuth->new->store_access_token_only('1', $loginid);
@@ -171,8 +177,21 @@ sub new_account_real {
     }
 
     my $args = $params->{args};
-    my $details_ref =
-        _get_client_details($params, $client, BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code);
+
+    my $company;
+    if ($args->{residence}) {
+        $company = $countries_list->{$args->{residence}}->{gaming_company};
+        $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
+    }
+
+    if (not $company) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'NoLandingCompany',
+                message_to_client => $error_map->{'No landing company for this country'}});
+    }
+    my $broker = BOM::Platform::Runtime::LandingCompany::Registry->new->get($company)->broker_codes->[0];
+
+    my $details_ref = _get_client_details($params, $client, $broker);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
@@ -283,8 +302,17 @@ sub new_account_japan {
                 message_to_client => $error_map->{'invalid'}});
     }
 
+    my $company = $countries_list->{'jp'}->{financial_company};
+
+    if (not $company) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'NoLandingCompany',
+                message_to_client => $error_map->{'No landing company for this country'}});
+    }
+    my $broker = BOM::Platform::Runtime::LandingCompany::Registry->new->get($company)->broker_codes->[0];
+
     my $args = $params->{args};
-    my $details_ref = _get_client_details($params, $client, BOM::Platform::Context::Request->new(country_code => 'jp')->real_account_broker->code);
+    my $details_ref = _get_client_details($params, $client, $broker);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
