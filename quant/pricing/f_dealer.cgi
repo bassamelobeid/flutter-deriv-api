@@ -15,7 +15,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Platform::Transaction;
+use BOM::Database::Transaction;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
