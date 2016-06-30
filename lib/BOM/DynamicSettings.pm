@@ -202,6 +202,10 @@ sub get_settings_by_group {
                 marketing.myaffiliates_email
                 )
         ],
+        cs => [qw(
+                cs.email
+                )
+        ],
     };
 
     my $settings;
