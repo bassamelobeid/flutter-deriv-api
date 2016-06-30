@@ -68,7 +68,7 @@ has category => (
     is      => 'ro',
     isa     => 'bom_contract_category',
     coerce  => 1,
-    handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers)],
+    handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers barrier_at_start)],
 );
 
 has category_code => (
@@ -1192,14 +1192,18 @@ sub _build_commission_from_stake {
 sub _build_theo_probability {
     my $self = shift;
 
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'theo_probability',
-        description => 'theorectical value of a contract',
-        set_by      => $self->pricing_engine_name,
-        base_amount => $self->theo_probability_value,
-        minimum     => 0,
-        maximum     => 1,
-    });
+    if ($self->new_interface_engine) {
+        return Math::Util::CalculatedValue::Validatable->new({
+            name        => 'theo_probability',
+            description => 'theorectical value of a contract',
+            set_by      => $self->pricing_engine_name,
+            base_amount => $self->pricing_engine->probability,
+            minimum     => 0,
+            maximum     => 1,
+        });
+    }
+
+    return $self->pricing_engine->probability;
 }
 
 # Application developer's commission.
@@ -1209,18 +1213,10 @@ has app_markup_percentage => (
     default => 0,
 );
 
-# theo_probability_value should be removed when we get rid of CalculatedValue.
-has [qw(theo_probability_value app_markup_dollar_amount app_markup)] => (
+has [qw(app_markup_dollar_amount app_markup)] => (
     is         => 'ro',
     lazy_build => 1,
 );
-
-sub _build_theo_probability_value {
-    my $self = shift;
-
-    return $self->pricing_engine->probability if $self->new_interface_engine;
-    return $self->pricing_engine->probability->amount;
-}
 
 sub _build_app_markup {
     my $self = shift;
@@ -1339,7 +1335,7 @@ sub _build_shortcode {
 
     if ($self->two_barriers) {
         push @shortcode_elements, ($self->high_barrier->for_shortcode, $self->low_barrier->for_shortcode);
-    } elsif ($self->barrier) {
+    } elsif ($self->barrier and $self->barrier_at_start) {
         # Having a hardcoded 0 for single barrier is dumb.
         # We should get rid of this legacy
         push @shortcode_elements, ($self->barrier->for_shortcode, 0);

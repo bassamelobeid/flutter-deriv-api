@@ -91,6 +91,17 @@ sub translated_display_name {
     return localize($self->display_name);
 }
 
+=head2 barrier_at_start
+
+When is the barrier determined, at the start of the contract or after contract expiry.
+
+=cut
+
+has barrier_at_start => (
+    is      => 'ro',
+    default => 1,
+);
+
 around BUILDARGS => sub {
     my $orig  = shift;
     my $class = shift;
