@@ -103,7 +103,7 @@ sub script_run {
 
     my $dbset = $self->getOption('dbset');
     if ($dbset eq 'rmg') {
-        $dir = '/home/git/regentmarkets/bom-postgres/config/sql/';
+        $dir = '/home/git/regentmarkets/bom-postgres/config/sql/rmg';
     } elsif ($dbset eq 'collectordb') {
         $dir = '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/';
 
@@ -112,7 +112,7 @@ sub script_run {
     } elsif ($dbset eq 'chronicledb') {
         $dir      = '/home/git/regentmarkets/bom-postgres-chronicledb/config/sql/';
         $port     = '5437';
-        $database = 'chronicle';
+        $database = 'chronicledb';
     } elsif ($dbset eq 'feed') {
         $dir      = '/home/git/regentmarkets/bom-postgres-feeddb/config/sql/';
         $port     = '5433';
