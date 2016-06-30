@@ -255,7 +255,7 @@ if ($preview and @invalid_lines == 0) {
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append($msg);
 
     send_email({
-        'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
+        'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,
         'to'      => BOM::Platform::Runtime->instance->app_config->accounting->email,
         'subject' => 'Batch debit/credit client account on ' . Date::Utility->new->date_ddmmmyy,
         'message' => \@clients_has_been_processed,

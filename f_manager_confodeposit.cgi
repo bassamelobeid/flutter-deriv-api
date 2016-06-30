@@ -276,7 +276,7 @@ if ($toemail && $informclient) {
         . localize('Kind Regards') . "\n\n"
         . 'Binary.com';
 
-    my $support_email = BOM::Platform::Static::Config::get_customer_support_email();
+    my $support_email = BOM::Platform::Runtime->instance->app_config->cs->email;
 
     my $result = send_email({
         from               => $support_email,
