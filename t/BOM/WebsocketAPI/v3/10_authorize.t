@@ -54,7 +54,7 @@ $client->save;
 $client->set_default_account('USD');
 
 my $loginid = $client->loginid;
-my $user = BOM::Platform::User->create(
+my $user    = BOM::Platform::User->create(
     email    => $email,
     password => '1234',
 );
@@ -70,8 +70,8 @@ is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
 test_schema('authorize', $authorize);
 is $stash->{loginid}, $loginid, 'Test stash data';
-is $stash->{email}, $email, 'Should store email to stash';
-is $stash->{token}, $token, 'Should store token to stash';
+is $stash->{email},   $email,   'Should store email to stash';
+is $stash->{token},   $token,   'Should store token to stash';
 is $stash->{token_type}, 'oauth_token', 'Should store token_type to stash';
 is_deeply $stash->{scopes}, [qw/read admin trade payments/], 'Should store token_scopes to stash';
 ok $stash->{account_id},           'Should store to account_id stash';
@@ -99,7 +99,6 @@ ok exists $stash->{loginid} && !defined $stash->{email},                'Should 
 ok exists $stash->{loginid} && !defined $stash->{token},                'Should remove token from stash';
 ok exists $stash->{loginid} && !defined $stash->{token_type},           'Should remove token_type from stash';
 ok exists $stash->{loginid} && !defined $stash->{account_id},           'Should remove account_id from stash';
-ok exists $stash->{loginid} && !defined $stash->{country},              'Should remove country from stash';
 ok exists $stash->{loginid} && !defined $stash->{currency},             'Should remove currency from stash';
 ok exists $stash->{loginid} && !defined $stash->{landing_company_name}, 'Should remove landing_company_name from stash';
 

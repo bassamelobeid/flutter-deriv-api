@@ -6,7 +6,7 @@ use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
+use TestHelper qw/test_schema build_mojo_test build_test_R_50_data call_mocked_client/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 
@@ -14,6 +14,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
+use BOM::Database::DataMapper::FinancialMarketBet;
 
 build_test_R_50_data();
 my $t = build_mojo_test();
@@ -27,7 +28,7 @@ $client->email($email);
 $client->save;
 
 my $loginid = $client->loginid;
-my $user = BOM::Platform::User->create(
+my $user    = BOM::Platform::User->create(
     email    => $email,
     password => '1234',
 );
@@ -96,11 +97,10 @@ $t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
 note explain $res;
 is $res->{msg_type}, 'proposal_open_contract';
+ok $res->{echo_req};
+ok $res->{req_id};
 ok $res->{proposal_open_contract}->{contract_id};
-SKIP: {
-    skip 'SKIP until travis db connection will be fixed', 1 unless BOM::System::Config::env =~ /^qa/;
-    ok $res->{proposal_open_contract}->{id};
-}
+ok $res->{proposal_open_contract}->{id};
 test_schema('proposal_open_contract', $res);
 
 is $res->{proposal_open_contract}->{contract_id}, $contract_id, 'got correct contract from proposal open contracts';
@@ -131,58 +131,56 @@ $res = decode_json($t->message->[1]);
 is $res->{proposal_open_contract}->{id}, undef, 'passthrough should not allow multiple proposal_open_contract subscription';
 
 # It is hack to emulate contract selling and test subcribtion
-my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-my ($rpc_method, $call_params);
+my ($url, $call_params);
 
-SKIP: {
-    skip 'Skip failing tests on travis', 9 unless BOM::System::Config::env =~ /^qa/;
-    $rpc_caller->mock(
-        'call_rpc',
-        sub {
-            my ($c, $params) = @_;
-            my $rpc_response_cb;
-            ($rpc_method, $rpc_response_cb, $call_params) = ($params->{method}, $params->{rpc_response_cb}, $params->{call_params});
-            $c->send({json => $rpc_response_cb->({ok => 1})});
-        });
+my $fake_res = Test::MockObject->new();
+$fake_res->mock('result', sub { +{ok => 1} });
+$fake_res->mock('is_error', sub { '' });
 
-    my $msg = {
-        action_type             => 'sell',
-        account_id              => 201079,
-        financial_market_bet_id => $contract_id,
-        amount                  => 2500
-    };
-    my $json = JSON::to_json($msg);
+my $fake_rpc_client = Test::MockObject->new();
+$fake_rpc_client->mock('call', sub { shift; $url = $_[0]; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
 
-    BOM::System::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
+my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
+$module->mock('new', sub { return $fake_rpc_client });
 
-    $t   = $t->message_ok;
-    $res = decode_json($t->message->[1]);
+my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
+    broker_code => $client->broker_code,
+    operation   => 'replica'
+});
+my $contract_details = $mapper->get_contract_details_with_transaction_ids($contract_id);
 
-    is $res->{msg_type}, 'proposal_open_contract', 'Got message about selling contract';
-    ok $res->{proposal_open_contract}->{sell_time},  'Got message about selling contract';
-    ok $res->{proposal_open_contract}->{sell_price}, 'Got message about selling contract';
-    is $res->{proposal_open_contract}->{ok},         1, 'Got message about selling contract';
+my $msg = {
+    action_type             => 'sell',
+    account_id              => $contract_details->[0]->{account_id},
+    financial_market_bet_id => $contract_id,
+    amount                  => 2500
+};
+my $json = JSON::to_json($msg);
+BOM::System::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
 
-    is $call_params->{contract_id}, $contract_id, 'Request RPC to sell contract';
-    ok $call_params->{short_code},  'Request RPC to sell contract';
-    ok $call_params->{sell_time},   'Request RPC to sell contract';
+$t   = $t->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'proposal_open_contract', 'Got message about selling contract';
+ok $res->{proposal_open_contract}->{sell_time},  'Got message about selling contract';
+ok $res->{proposal_open_contract}->{sell_price}, 'Got message about selling contract';
+is $res->{proposal_open_contract}->{ok},         1, 'Got message about selling contract';
+is $call_params->{contract_id}, $contract_id, 'Request RPC to sell contract';
+ok $call_params->{short_code},  'Request RPC to sell contract';
+ok $call_params->{sell_time},   'Request RPC to sell contract';
+ok $url =~ /get_bid/;
 
-    is $rpc_method, 'get_bid';
-
-    $rpc_caller->unmock_all;
-}
+$module->unmock_all;
 
 $t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok;
 
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({
-        json => {
-            proposal_open_contract => 1,
-            contract_id            => 1
-        }})->message_ok;
+($res, $call_params) = call_mocked_client(
+    $t,
+    {
+        proposal_open_contract => 1,
+        contract_id            => 1
+    });
 is $call_params->{token}, $token;
 is $call_params->{args}->{contract_id}, 1;
-$rpc_caller->unmock_all;
 
 $t->finish_ok;
 

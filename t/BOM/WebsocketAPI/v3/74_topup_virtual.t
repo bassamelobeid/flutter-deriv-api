@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
@@ -55,16 +55,9 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $cr_1;
 
-my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-my $call_params;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({json => {topup_virtual => 1}})->message_ok;
+my ($res, $call_params) = call_mocked_client($t, {topup_virtual => 1});
 is $call_params->{language}, 'EN';
 ok exists $call_params->{token};
-$rpc_caller->unmock_all;
-
-$t = $t->send_ok({json => {topup_virtual => 1}})->message_ok;
-my $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'topup_virtual';
 ok $res->{error}->{message} =~ /virtual accounts only/, 'virtual accounts only';
 

@@ -21,21 +21,21 @@ use Time::HiRes qw(gettimeofday);
 use utf8;
 
 sub ticks {
-    my ($c, $args) = @_;
+    my ($c, $req_storage) = @_;
 
+    my $args       = $req_storage->{args};
     my $send_error = sub {
         my ($code, $message) = @_;
         $c->send({
                 json => {
                     msg_type => 'tick',
-                    echo_req => $args,
-                    (exists $args->{req_id})
-                    ? (req_id => $args->{req_id})
-                    : (),
-                    error => {
+                    error    => {
                         code    => $code,
                         message => $message
-                    }}});
+                    }}
+            },
+            $req_storage
+        );
     };
 
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
@@ -54,8 +54,9 @@ sub ticks {
 # then call rpc, we cache the ticks from feed channel and when rpc response
 # comes then we merge cache data with rpc response
 sub ticks_history {
-    my ($c, $args) = @_;
+    my ($c, $req_storage) = @_;
 
+    my $args = $req_storage->{args};
     if ($args->{granularity} and not grep { $_ == $args->{granularity} } qw(60 120 180 300 600 900 1800 3600 7200 14400 28800 86400)) {
         return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'));
     }
@@ -72,76 +73,77 @@ sub ticks_history {
     }
 
     my $callback = sub {
-        BOM::WebSocketAPI::Websocket_v3::rpc(
-            $c,
-            'ticks_history',
-            sub {
-                my $response = shift;
-                if (exists $response->{error}) {
-                    # cancel subscription if response has error
-                    _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args);
-                    return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
-                }
-
-                my $channel = $args->{ticks_history} . ';' . $publish;
-                my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
-
-                # check for cached data
-                if (exists $feed_channel_cache->{$channel} and scalar(keys %{$feed_channel_cache->{$channel}})) {
-                    my $cache = $feed_channel_cache->{$channel};
-                    # both history and candles have different structure, check rpc ticks_history sub
-                    if ($response->{type} eq 'history') {
-                        my %times;
-                        # store whats in cache
-                        @times{keys %$cache} = map { $_->{quote} } values %$cache;
-                        # merge with response data
-                        @times{@{$response->{data}->{history}->{times}}} = @{$response->{data}->{history}->{prices}};
-                        @{$response->{data}->{history}->{times}} = sort { $a <=> $b } keys %times;
-                        @{$response->{data}->{history}->{prices}} = @times{@{$response->{data}->{history}->{times}}};
-                    } elsif ($response->{type} eq 'candles') {
-                        my $index;
-                        my $candles = $response->{data}->{candles};
-
-                        # delete all cache value that have epoch lower than last candle epoch
-                        my @matches = grep { $_ < $candles->[-1]->{epoch} } keys %$cache;
-                        delete @$cache{@matches};
-
-                        foreach my $epoch (sort { $a <=> $b } keys %$cache) {
-                            my $window = $epoch - $epoch % $publish;
-                            # check if window exists in candles response
-                            $index = last_index { $_->{epoch} eq $window } @$candles;
-                            # if no window is in response then update the candles with cached data
-                            if ($index < 0) {
-                                push @$candles, {
-                                    open  => $cache->{$epoch}->{open},
-                                    close => $cache->{$epoch}->{close},
-                                    epoch => $window + 0,                 # need to send as integer
-                                    high  => $cache->{$epoch}->{high},
-                                    low   => $cache->{$epoch}->{low}};
-                            } else {
-                                # if window exists replace it with new data
-                                $candles->[$index] = {
-                                    open  => $cache->{$epoch}->{open},
-                                    close => $cache->{$epoch}->{close},
-                                    epoch => $window + 0,                 # need to send as integer
-                                    high  => $cache->{$epoch}->{high},
-                                    low   => $cache->{$epoch}->{low}};
-                            }
-                        }
+        $c->call_rpc({
+                args            => $args,
+                method          => 'ticks_history',
+                rpc_response_cb => sub {
+                    my ($c, $rpc_response, $req_storage) = @_;
+                    my $args = $req_storage->{args};
+                    if (exists $rpc_response->{error}) {
+                        # cancel subscription if response has error
+                        _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args);
+                        return $c->new_error('ticks_history', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                     }
 
-                    delete $feed_channel_cache->{$channel};
+                    my $channel = $args->{ticks_history} . ';' . $publish;
+                    my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
+
+                    # check for cached data
+                    if (exists $feed_channel_cache->{$channel} and scalar(keys %{$feed_channel_cache->{$channel}})) {
+                        my $cache = $feed_channel_cache->{$channel};
+                        # both history and candles have different structure, check rpc ticks_history sub
+                        if ($rpc_response->{type} eq 'history') {
+                            my %times;
+                            # store whats in cache
+                            @times{keys %$cache} = map { $_->{quote} } values %$cache;
+                            # merge with response data
+                            @times{@{$rpc_response->{data}->{history}->{times}}} = @{$rpc_response->{data}->{history}->{prices}};
+                            @{$rpc_response->{data}->{history}->{times}} = sort { $a <=> $b } keys %times;
+                            @{$rpc_response->{data}->{history}->{prices}} = @times{@{$rpc_response->{data}->{history}->{times}}};
+                        } elsif ($rpc_response->{type} eq 'candles') {
+                            my $index;
+                            my $candles = $rpc_response->{data}->{candles};
+
+                            # delete all cache value that have epoch lower than last candle epoch
+                            my @matches = grep { $_ < $candles->[-1]->{epoch} } keys %$cache;
+                            delete @$cache{@matches};
+
+                            foreach my $epoch (sort { $a <=> $b } keys %$cache) {
+                                my $window = $epoch - $epoch % $publish;
+                                # check if window exists in candles response
+                                $index = last_index { $_->{epoch} eq $window } @$candles;
+                                # if no window is in response then update the candles with cached data
+                                if ($index < 0) {
+                                    push @$candles, {
+                                        open  => $cache->{$epoch}->{open},
+                                        close => $cache->{$epoch}->{close},
+                                        epoch => $window + 0,                 # need to send as integer
+                                        high  => $cache->{$epoch}->{high},
+                                        low   => $cache->{$epoch}->{low}};
+                                } else {
+                                    # if window exists replace it with new data
+                                    $candles->[$index] = {
+                                        open  => $cache->{$epoch}->{open},
+                                        close => $cache->{$epoch}->{close},
+                                        epoch => $window + 0,                 # need to send as integer
+                                        high  => $cache->{$epoch}->{high},
+                                        low   => $cache->{$epoch}->{low}};
+                                }
+                            }
+                        }
+
+                        delete $feed_channel_cache->{$channel};
+                    }
+
+                    my $feed_channel_type = $c->stash('feed_channel_type') || {};
+                    # remove the cache flag which was set during subscription
+                    delete $feed_channel_type->{$channel}->{cache} if exists $feed_channel_type->{$channel};
+
+                    return {
+                        msg_type => $rpc_response->{type},
+                        %{$rpc_response->{data}}};
                 }
-
-                my $feed_channel_type = $c->stash('feed_channel_type') || {};
-                # remove the cache flag which was set during subscription
-                delete $feed_channel_type->{$channel}->{cache} if exists $feed_channel_type->{$channel};
-
-                return {
-                    msg_type => $response->{type},
-                    %{$response->{data}}};
-            },
-            {args => $args});
+            });
     };
 
     # subscribe first with flag of cache passed as 1 to indicate to cache the feed data
@@ -157,8 +159,9 @@ sub ticks_history {
 }
 
 sub pricing_table {
-    my ($c, $args) = @_;
+    my ($c, $req_storage) = @_;
 
+    my $args     = $req_storage->{args};
     my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args);
 
     if ($response and exists $response->{error}) {
@@ -360,7 +363,11 @@ sub process_transaction_updates {
         my $payload = JSON::from_json($message);
         my $args    = {};
         foreach my $type (keys %{$channel}) {
-            if ($payload and exists $payload->{error} and exists $payload->{error}->{code} and $payload->{error}->{code} eq 'TokenDeleted') {
+            if (    $payload
+                and exists $payload->{error}
+                and exists $payload->{error}->{code}
+                and $payload->{error}->{code} eq 'TokenDeleted')
+            {
                 _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
             } else {
                 $args = (exists $channel->{$type}->{args}) ? $channel->{$type}->{args} : {};
@@ -393,31 +400,36 @@ sub process_transaction_updates {
                                 ? Date::Utility->new($payload->{sell_time})->epoch
                                 : Date::Utility->new($payload->{purchase_time})->epoch;
 
-                            BOM::WebSocketAPI::Websocket_v3::rpc(
-                                $c,
-                                'get_contract_details',
-                                sub {
-                                    my $response = shift;
-                                    if (exists $response->{error}) {
-                                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                                        return $c->new_error('transaction', $response->{error}->{code}, $response->{error}->{message_to_client});
-                                    } else {
-                                        $details->{$type}->{contract_id}   = $payload->{financial_market_bet_id};
-                                        $details->{$type}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
-                                            if ($payload->{action_type} eq 'sell');
-                                        $details->{$type}->{longcode}     = $response->{longcode};
-                                        $details->{$type}->{symbol}       = $response->{symbol};
-                                        $details->{$type}->{display_name} = $response->{display_name};
-                                        $details->{$type}->{date_expiry}  = $response->{date_expiry};
-                                        return $details;
-                                    }
-                                },
-                                {
-                                    args       => $args,
-                                    token      => $c->stash('token'),
-                                    short_code => $payload->{short_code},
-                                    currency   => $payload->{currency_code},
-                                    language   => $c->stash('language')});
+                            $c->call_rpc({
+                                    args        => $args,
+                                    method      => 'get_contract_details',
+                                    call_params => {
+                                        token      => $c->stash('token'),
+                                        short_code => $payload->{short_code},
+                                        currency   => $payload->{currency_code},
+                                        language   => $c->stash('language'),
+                                    },
+                                    rpc_response_cb => sub {
+                                        my ($c, $rpc_response, $req_storage) = @_;
+
+                                        if (exists $rpc_response->{error}) {
+                                            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                                            return $c->new_error(
+                                                'transaction',
+                                                $rpc_response->{error}->{code},
+                                                $rpc_response->{error}->{message_to_client});
+                                        } else {
+                                            $details->{$type}->{contract_id}   = $payload->{financial_market_bet_id};
+                                            $details->{$type}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
+                                                if ($payload->{action_type} eq 'sell');
+                                            $details->{$type}->{longcode}     = $rpc_response->{longcode};
+                                            $details->{$type}->{symbol}       = $rpc_response->{symbol};
+                                            $details->{$type}->{display_name} = $rpc_response->{display_name};
+                                            $details->{$type}->{date_expiry}  = $rpc_response->{date_expiry};
+                                            return $details;
+                                        }
+                                    },
+                                });
                         } else {
                             $details->{$type}->{longcode}         = $payload->{payment_remark};
                             $details->{$type}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
