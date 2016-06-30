@@ -7,10 +7,14 @@ use Scalar::Util qw(looks_like_number);
 
 use BOM::RPC::v3::Utility;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
+use Data::Dumper;
 
 sub forget {
     my ($c, $req_storage) = @_;
 
+# TODO !!!!
+
+    _forget_pricing_subscription($c, $req_storage->{args}->{forget});
     return {
         msg_type => 'forget',
         forget => forget_one($c, $req_storage->{args}->{forget}) ? 1 : 0,
@@ -74,6 +78,7 @@ sub _forget_transaction_subscription {
     my $removed_ids = [];
     my $channel     = $c->stash('transaction_channel');
     if ($channel) {
+        #warn "_forget_transaction_subscription: channel : ".Dumper($channel);
         foreach my $type (keys %{$channel}) {
             if ($typeoruuid eq $type or $typeoruuid eq $channel->{$type}->{uuid}) {
                 push @$removed_ids, $channel->{$type}->{uuid};
@@ -85,24 +90,37 @@ sub _forget_transaction_subscription {
 }
 
 sub _forget_pricing_subscription {
+    #warn "_forget_pricing_subscription!!!\n";
     my ($c, $uuid) = @_;
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
+        #warn "pricing_channel : ".Dumper($pricing_channel);
         foreach my $channel (keys %{$pricing_channel}) {
             foreach my $amount (keys %{$pricing_channel->{$channel}}) {
                 next unless exists $pricing_channel->{$channel}->{$amount}->{uuid};
                 if ($pricing_channel->{$channel}->{$amount}->{uuid} eq $uuid) {
                     push @$removed_ids, $pricing_channel->{$channel}->{$amount}->{uuid};
+                    delete $pricing_channel->{uuid}->{$uuid};
                     delete $pricing_channel->{$channel}->{$amount};
                 }
             }
+            warn "_forget_pricing_subscription : processing $channel\n";
 
             if (scalar keys %{$pricing_channel->{$channel}} == 0) {
                 $c->stash('redis_pricer')->unsubscribe([$channel]);
                 delete $pricing_channel->{$channel};
+                warn "_forget_pricing_subscription : UNSUBSCRIBE $channel\n";
             }
         }
+        #foreach my $pc_uuid (keys %{$pricing_channel->{uuid}}) {
+        #    if ($pc_uuid eq $uuid) {
+        #        my $channel = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
+        #        warn "Got you! $channel\n";
+        #        $c->stash('redis_pricer')->unsubscribe([$channel]);
+        #        delete $pricing_channel->{uuid}->{$uuid};
+        #    }
+        #}
         $c->stash('pricing_channel' => $pricing_channel);
     }
 

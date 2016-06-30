@@ -8,6 +8,7 @@ use Data::UUID;
 use Scalar::Util qw (looks_like_number);
 use List::MoreUtils qw(last_index);
 use Format::Util::Numbers qw(roundnear);
+use Data::Dumper;
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Japan::Contract;
@@ -331,12 +332,14 @@ sub _transaction_channel {
 
     my $redis              = $c->stash('redis');
     my $channel            = $c->stash('transaction_channel');
+    warn "1 _transaction_channel : current: ".Dumper($channel);
     my $already_subscribed = $channel ? exists $channel->{$type} : undef;
 
     if ($action) {
         my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
-            $uuid = Data::UUID->new->create_str();
+            warn "2 _transaction_channel :TR subscribe: $channel_name  type: $type \n";
+            $uuid = $type =~ /-/ ? $type : Data::UUID->new->create_str();
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
@@ -344,6 +347,7 @@ sub _transaction_channel {
             $channel->{$type}->{contract_id} = $args->{contract_id};
             $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
+            warn "3 _transaction_channel :TR UNsubscribe: $channel_name  type: $type \n";
             delete $channel->{$type};
             unless (keys %$channel) {
                 $redis->unsubscribe([$channel_name], sub { });
@@ -351,6 +355,7 @@ sub _transaction_channel {
             }
         }
     }
+    warn "3 _transaction_channel : channil in stash : ".Dumper($channel); 
 
     return $uuid;
 }
@@ -358,6 +363,7 @@ sub _transaction_channel {
 sub process_transaction_updates {
     my ($c, $message) = @_;
     my $channel = $c->stash('transaction_channel');
+    warn "ENTER POINT process_transaction_updates: ".Dumper($channel);
 
     if ($channel) {
         my $payload = JSON::from_json($message);
@@ -440,8 +446,14 @@ sub process_transaction_updates {
                         and exists $payload->{financial_market_bet_id}
                         and $payload->{financial_market_bet_id} eq $channel->{$type}->{contract_id})
                     {
+                        warn "process_transaction_updates: $type\n";
                         # cancel proposal open contract streaming which will cancel transaction subscription also
-                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $type);
+                        #BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $type);
+                        # while i am switching new/old get_bid - have those both # TODO
+                        BOM::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, $type);
+                        BOM::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, $type);
+                        BOM::WebSocketAPI::v3::Wrapper::System::_forget_pricing_subscription($c, $type);
+                        warn "Payload: ".Dumper($payload);
 
                         $args->{is_sold}    = 1;
                         $args->{sell_price} = $payload->{amount};
@@ -449,6 +461,8 @@ sub process_transaction_updates {
 
                         # send proposal details last time
                         BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, undef, $args);
+                    } else {
+                        warn "Uncatched case for process_transaction_updates : $type\n";
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
                     _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
@@ -490,8 +504,8 @@ sub _skip_streaming {
     my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR);
     my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
 
-    my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
-    my $atm_contract = ($args->{contract_type} =~ /^(CALL|PUT)$/ and not $args->{barrier}) ? 1 : 0;
+    my $skip_symbols = (exists $args->{symbol} and $skip_symbol_list{$args->{symbol}}) ? 1 : 0;
+    my $atm_contract = (exists $args->{contract_type} and $args->{contract_type} =~ /^(CALL|PUT)$/ and not $args->{barrier}) ? 1 : 0;
     my $fixed_expiry = $args->{date_expiry} ? 1 : 0;
     my ($skip_tick_expiry, $skip_intraday_atm_non_fixed_expiry) = (0, 0);
     if (defined $args->{duration_unit}) {

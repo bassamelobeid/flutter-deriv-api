@@ -50,8 +50,8 @@ sub proposal_open_contract_cb {
     my ($c, $response, $req_storage) = @_;
 
     my $args = $req_storage->{args};
-    #warn "args: ".Dumper($args);
-    #warn "resp: ".Dumper($response);
+    #warn "POC_cb: args: ".Dumper($args);
+    #warn "POC_CB: resp: ".Dumper($response);
     if (exists $response->{error}) {
         return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -108,25 +108,31 @@ sub proposal_open_contract_cb {
                         $type_args{transaction_id} = $response->{$contract_id}->{transaction_ids}->{buy};
 
                         my $keystr = join("", map { $_ . ":" . $type_args{$_} } sort keys %type_args);
+                        my $uuid = Data::UUID->new->create_str();
+
                         #warn "Detalis to construct args for subscripbin to pricing chan: ".Dumper($details);
                         my $subscribe_args = {
-                            short_code  => delete $details->{short_code},
-                            contract_id => delete $details->{contract_id},
-                            currency    => delete $details->{currency},
-                            is_sold     => delete $details->{is_sold},
-                            sell_time   => delete $details->{sell_time},
+                            id          => $uuid,
+                            short_code  => $details->{short_code},
+                            contract_id => $details->{contract_id},
+                            currency    => $details->{currency},
+                            is_sold     => $details->{is_sold},
+                            sell_time   => $details->{sell_time},
                             subscribe   => 1,
-                            passthrough => delete $details->{passthrough},
+                            passthrough => $details->{passthrough},
+                            transaction_ids => $response->{$contract_id}->{transaction_ids},
+                            purchase_time => $details->{purchase_time},
                         };
-                        my $uuid;
-                        if (not $uuid = _pricing_channel($c, 'subscribe', $subscribe_args)) {
-                            #warn "Error - not subscribed!";
-                            return $c->new_error('proposal',
-                                    'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+                        my $c_uuid;
+                        if (not $c_uuid = _pricing_channel($c, 'subscribe', $subscribe_args)) {
+                            warn "Error - not subscribed!";
+                            return $c->new_error('proposal_open_contract',
+                                    'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal_open_contract subscription.'));
                         }
 
                         # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $details->{account_id}, $id, $details) if $id;
+                        #warn "Passing to subst to transaction id $uuid\n";
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $details->{account_id}, $uuid, $details); # if $id;
                     }
                     my $res = {$id ? (id => $id) : (), %{$response->{$contract_id}}};
                     $send_details->($res);
@@ -220,7 +226,7 @@ sub _pricing_channel {
         return;
     }
 
-    my $uuid = Data::UUID->new->create_str();
+    my $uuid = $args->{id} || Data::UUID->new->create_str();
 
     # subscribe if it is not already subscribed
     if (    not $pricing_channel->{$serialized_args}
@@ -228,6 +234,7 @@ sub _pricing_channel {
         and $args->{subscribe}
         and $args->{subscribe} == 1)
     {
+        warn "_pricing_channel : subs: $uuid\n";
         BOM::System::RedisReplicated::redis_pricer->set($serialized_args, 1);
         $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
@@ -358,22 +365,5 @@ sub _price_stream_results_adjustment {
 
     return $results;
 }
-
-sub __get_open_contracts {
-    my $client = shift;
-
-    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
-            client_loginid => $client->loginid,
-            currency_code  => $client->currency,
-            db             => BOM::Database::ClientDB->new({
-                client_loginid => $client->loginid,
-                operation      => 'replica',
-                }
-                )->db,
-            });
-
-    return $fmb_dm->get_open_bets_of_account();
-}
-
 
 1;
