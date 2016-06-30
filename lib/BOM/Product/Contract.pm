@@ -2605,7 +2605,10 @@ sub _validate_lifetime {
         $message = 'Daily duration is outside acceptable range';
     }
 
-    if ($self->for_sale and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before->($self->date_settlement))) {
+    if (    $self->for_sale
+        and $self->expiry_daily
+        and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before->($self->date_settlement)))
+    {
         # we don't offer sellback on tick expiry contracts.
         return {
             message           => 'waiting for settlement',
