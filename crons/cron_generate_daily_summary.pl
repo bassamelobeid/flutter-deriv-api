@@ -9,7 +9,7 @@ use warnings;
 use Getopt::Long;
 
 use Date::Utility;
-use BOM::System::Localhost;
+use BOM::System::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime;
@@ -39,7 +39,7 @@ my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : BOM::Platform::Run
 my @currencies  = ($currencies)  ? split(/,/, $currencies)  : BOM::Platform::Runtime::LandingCompany::Registry->new()->all_currencies;
 
 # This report will now only be run on the master server
-exit 0 unless (BOM::System::Localhost::is_master_server());
+exit 0 unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}}));
 
 my $run_for = Date::Utility->new($for_date);
 

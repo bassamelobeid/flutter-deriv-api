@@ -16,9 +16,10 @@ BOM::RiskReport::Base->new->generate;
 use strict;
 use warnings;
 
-use BOM::System::Localhost;
+use BOM::System::Config;
 use BOM::Platform::CurrencyConverter qw(in_USD);
 use BOM::Platform::Runtime::LandingCompany::Registry;
+
 
 local $\ = undef;    # Sigh.
 
@@ -87,7 +88,7 @@ sub _build_live_open_bets {
 
 before generate => sub {
     exit 0
-        unless (BOM::System::Localhost::is_master_server());
+        unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}}));
 };
 
 sub generate {
