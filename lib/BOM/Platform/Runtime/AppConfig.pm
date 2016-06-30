@@ -217,7 +217,7 @@ sub _build_data_set {
     my $self = shift;
 
     # relatively small yaml, so loading it shouldn't be expensive.
-    my $data_set->{app_config} = Data::Hash::DotNotation->new(data => LoadFile('/etc/rmg/app_config.yml'));
+    my $data_set->{app_config} = Data::Hash::DotNotation->new(data => {});
 
     $self->_add_app_setttings($data_set, BOM::System::Chronicle::get('app_settings', 'binary') || {});
 
