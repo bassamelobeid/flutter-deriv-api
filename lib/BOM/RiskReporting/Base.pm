@@ -18,6 +18,7 @@ use warnings;
 
 use BOM::System::Localhost;
 use BOM::Platform::CurrencyConverter qw(in_USD);
+use BOM::Platform::Runtime::LandingCompany::Registry;
 
 local $\ = undef;    # Sigh.
 
@@ -45,7 +46,7 @@ has _usd_rates => (
 );
 
 sub _build__usd_rates {
-    return {map { $_ => in_USD(1, $_) } BOM::Platform::Runtime->instance->landing_companies->all_currencies};
+    return {map { $_ => in_USD(1, $_) } BOM::Platform::Runtime::LandingCompany::Registry->new()->all_currencies};
 }
 
 sub amount_in_usd {
