@@ -1226,7 +1226,7 @@ sub _get_market_limit_profile {
     my $landing_company = $client->landing_company->short;
     my @markets         = map { BOM::Market::Registry->get($_) } get_offerings_with_filter('market', {landing_company => $landing_company});
 
-    my $limit_ref = BOM::Platform::Static::Config::quants->{risk_profile};
+    my $limit_ref = BOM::System::Config::quants->{risk_profile};
 
     my %limits;
     foreach my $market (@markets) {
