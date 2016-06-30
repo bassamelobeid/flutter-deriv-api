@@ -707,7 +707,7 @@ working going forward with any input, it should die.
 sub add_note {
     my ($self, $subject, $content) = @_;
     return if -e '/etc/rmg/travis';
-    my $to = BOM::Platform::Static::Config::get_customer_support_email();
+    my $to = BOM::Platform::Runtime->instance->app_config->cs->email;
     local $\ = undef;
     my $from    = $to;
     my $replyto = $to;

@@ -71,7 +71,7 @@ sub send_email {
         }
     }
 
-    if ($fromemail eq BOM::Platform::Static::Config::get_customer_support_email()) {
+    if ($fromemail eq BOM::Platform::Runtime->instance->app_config->cs->email) {
         $fromemail = "\"Binary.com\" <$fromemail>";
     }
 
