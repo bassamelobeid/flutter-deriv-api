@@ -19,7 +19,7 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('I.V. DATABASE');
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::can_access(['Quants']);
 
 Bar("Update volatilities");

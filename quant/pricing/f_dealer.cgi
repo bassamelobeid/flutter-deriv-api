@@ -28,7 +28,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
 BrokerPresentation('DEALER/LARGE BETS');
-my $broker  = request()->broker->code;
+my $broker  = request()->broker_code;
 my $staff   = BOM::Backoffice::Auth0::can_access(['Quants']);
 my $clerk   = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $betcode = request()->param('betcode');

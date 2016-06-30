@@ -17,7 +17,7 @@ PrintContentType();
 
 my $LIMIT  = 100;
 my %params = %{request()->params};
-my $broker = $params{broker} || request()->broker->code;
+my $broker = $params{broker} || request()->broker_code;
 BrokerPresentation("EASY SEARCH: $broker");
 
 my $staff = BOM::Backoffice::Auth0::can_access(['CS']);
