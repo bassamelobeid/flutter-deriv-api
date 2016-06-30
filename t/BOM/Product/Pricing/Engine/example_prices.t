@@ -111,7 +111,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 'Christmas Eve'  => ['FSE'],
             },
             '2014-12-25' => {
-                'Christmas Day' => ['USD', 'EUR', 'GBP', 'FSE', 'LSE', 'FOREX', 'SAS'],
+                'Christmas Day' => ['USD', 'EUR', 'GBP', 'FSE', 'LSE', 'FOREX', 'SAS', 'METAL'],
             },
             '2014-12-26' => {
                 'Christmas Day'     => ['EUR'],
