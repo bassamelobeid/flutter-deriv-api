@@ -279,7 +279,6 @@ sub process_realtime_events {
 sub _feed_channel_subscribe {
     my ($c, $symbol, $type, $args, $callback, $cache) = @_;
 
-    my $uuid;
     my $feed_channel       = $c->stash('feed_channel')       || {};
     my $feed_channel_type  = $c->stash('feed_channel_type')  || {};
     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
@@ -295,7 +294,7 @@ sub _feed_channel_subscribe {
         return;
     }
 
-    $uuid = Data::UUID->new->create_str();
+    my $uuid = Data::UUID->new->create_str();
     $feed_channel->{$symbol} += 1;
     $feed_channel_type->{$key}->{args}  = $args if $args;
     $feed_channel_type->{$key}->{uuid}  = $uuid;
@@ -311,7 +310,7 @@ sub _feed_channel_subscribe {
 }
 
 sub _feed_channel_unsubscribe {
-    my ($c, $symbol, $type) = @_;
+    my ($c, $symbol, $type, $req_id) = @_;
 
     my $feed_channel       = $c->stash('feed_channel')       || {};
     my $feed_channel_type  = $c->stash('feed_channel_type')  || {};
@@ -319,7 +318,7 @@ sub _feed_channel_unsubscribe {
 
     $feed_channel->{$symbol} -= 1;
     my $args = $feed_channel_type->{$key}->{args};
-    my $key = "$symbol;$type";
+    my $key = $req_id ? "$symbol;$type;$req_id" : "$symbol:$type";
 
     my $uuid = $feed_channel_type->{$key}->{uuid};
     delete $feed_channel_type->{$key};
