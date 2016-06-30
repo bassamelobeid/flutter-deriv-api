@@ -11,6 +11,10 @@ sub node {
     return $config;
 }
 
+sub role {
+    return (any { $_ eq shift } @{BOM::System::Config::node()->{node}->{roles}});
+}
+
 sub feed_listener {
     state $config = YAML::XS::LoadFile('/etc/rmg/feed_listener.yml');
     return $config;

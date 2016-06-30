@@ -13,10 +13,6 @@ sub _has_role {
     return (any { $_ eq $role } @roles);
 }
 
-sub is_master_server {
-    return _has_role('binary_role_master_server');
-}
-
 sub is_feed_server {
     return _has_role('binary_role_feed_server');
 }
