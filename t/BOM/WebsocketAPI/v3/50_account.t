@@ -6,7 +6,7 @@ use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
@@ -127,13 +127,10 @@ ok($trx);
 ok($trx->{$_}, "got $_") foreach (qw/sell_price buy_price purchase_time contract_id transaction_id/);
 test_schema('profit_table', $profit_table);
 
-my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-my $call_params;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({json => {get_limits => 1}})->message_ok;
+my (undef, $call_params) = call_mocked_client($t, {get_limits => 1});
+$t = $t->send_ok({json =>})->message_ok;
 is $call_params->{language}, 'EN';
 ok exists $call_params->{token};
-$rpc_caller->unmock_all;
 
 $t = $t->send_ok({json => {get_limits => 1}})->message_ok;
 my $res = decode_json($t->message->[1]);

@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
 use Test::Exception;
 use Test::MockModule;
 
@@ -77,16 +77,9 @@ subtest 'Initialization' => sub {
 };
 
 # paymentagent_list
-my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-my $call_params;
-$rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-$t = $t->send_ok({json => {paymentagent_list => 'id'}})->message_ok;
+my ($res, $call_params) = call_mocked_client($t, {paymentagent_list => 'id'});
 is $call_params->{language}, 'EN';
 ok exists $call_params->{token};
-$rpc_caller->unmock_all;
-
-$t = $t->send_ok({json => {paymentagent_list => 'id'}})->message_ok;
-my $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'paymentagent_list';
 ok(grep { $_->[0] eq 'id' } @{$res->{paymentagent_list}{available_countries}});
 ok(grep { $_->{name} eq 'Joe' } @{$res->{paymentagent_list}{list}});
@@ -115,30 +108,17 @@ foreach my $key (@{$tokens}) {
     my $client_b_balance    = $client->default_account->balance;
     my $pa_client_b_balance = $pa_client->default_account->balance;
 
-    my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-    my $call_params;
-    $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-    $t = $t->send_ok({
-            json => {
-                paymentagent_withdraw => 1,
-                paymentagent_loginid  => $pa_client->loginid,
-                currency              => 'USD',
-                amount                => 100,
-                verification_code     => $code
-            }})->message_ok;
+    ($res, $call_params) = call_mocked_client(
+        $t,
+        {
+            paymentagent_withdraw => 1,
+            paymentagent_loginid  => $pa_client->loginid,
+            currency              => 'USD',
+            amount                => 100,
+            verification_code     => $code
+        });
     ok $call_params->{server_name};
     ok $call_params->{token};
-    $rpc_caller->unmock_all;
-
-    $t = $t->send_ok({
-            json => {
-                paymentagent_withdraw => 1,
-                paymentagent_loginid  => $pa_client->loginid,
-                currency              => 'USD',
-                amount                => 100,
-                verification_code     => $code
-            }})->message_ok;
-    $res = decode_json($t->message->[1]);
     is $res->{msg_type}, 'paymentagent_withdraw';
     is $res->{paymentagent_withdraw}, 1, 'paymentagent_withdraw ok';
     ok $res->{transaction_id} =~ /\d+/;
@@ -288,29 +268,17 @@ foreach my $key (@{$tokens}) {
     my $client_b_balance    = $client->default_account->balance;
     my $pa_client_b_balance = $pa_client->default_account->balance;
 
-    my $rpc_caller = Test::MockModule->new('BOM::WebSocketAPI::CallingEngine');
-    my $call_params;
-    $rpc_caller->mock('call_rpc', sub { $call_params = $_[1]->{call_params}, shift->send({json => {ok => 1}}) });
-    $t = $t->send_ok({
-            json => {
-                paymentagent_transfer => 1,
-                transfer_to           => $pa_client->loginid,
-                currency              => 'USD',
-                amount                => 100
-            }})->message_ok;
+    # from client to pa_client is not allowed
+    ($res, $call_params) = call_mocked_client(
+        $t,
+        {
+            paymentagent_transfer => 1,
+            transfer_to           => $pa_client->loginid,
+            currency              => 'USD',
+            amount                => 100
+        });
     ok $call_params->{server_name};
     ok $call_params->{token};
-    $rpc_caller->unmock_all;
-
-    # from client to pa_client is not allowed
-    $t = $t->send_ok({
-            json => {
-                paymentagent_transfer => 1,
-                transfer_to           => $pa_client->loginid,
-                currency              => 'USD',
-                amount                => 100
-            }})->message_ok;
-    $res = decode_json($t->message->[1]);
     is $res->{msg_type}, 'paymentagent_transfer';
     ok $res->{error}->{message} =~ /You are not a Payment Agent/, 'You are not a Payment Agent';
 
