@@ -200,7 +200,8 @@ sub get_bid {
 
         if ($contract->is_spread) {
             # spreads require different set of parameters.
-            my $amount_per_point = $contract->amount_per_point;
+            my $sign = $contract->sentiment eq 'up' ? '+' : '-';
+            my $amount_per_point = $sign . $contract->amount_per_point;
             $response->{amount_per_point}  = $amount_per_point;
             $response->{entry_level}       = $contract->barrier->as_absolute;
             $response->{stop_loss_level}   = $contract->stop_loss_level;
@@ -218,7 +219,7 @@ sub get_bid {
                 if ($contract->is_expired) {
                     $response->{is_expired}              = 1;
                     $response->{exit_level}              = $contract->exit_level;
-                    $response->{current_value_in_dollar} = $contract->bid_price;
+                    $response->{current_value_in_dollar} = $contract->value;
                     $response->{current_value_in_point}  = $contract->point_value;
                 } else {
                     $response->{is_expired}              = 0;
