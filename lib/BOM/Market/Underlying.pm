@@ -17,6 +17,7 @@ my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 use open qw[ :encoding(UTF-8) ];
 use BOM::Market::Types;
 
+use Math::Round qw(round);
 use JSON qw(from_json);
 use List::MoreUtils qw( any );
 use List::Util qw( first max min);
@@ -685,16 +686,6 @@ has exchange_name => (
 sub _build_exchange_name {
     my $self = shift;
     my $exchange_name = $self->_exchange_name || 'FOREX';
-
-    if ($self->symbol =~ /^FUTE(B|C)/i) {
-
-        # International Petroleum Exchange (now called ICE)
-        $exchange_name = 'IPE';
-    } elsif ($self->symbol =~ /^FUTLZ/i) {
-
-        # Euronext LIFFE FTSE-100 Futures
-        $exchange_name = 'EURONEXT';
-    }
 
     return $exchange_name;
 }
@@ -2081,6 +2072,21 @@ sub _build_base_commission {
     my $self = shift;
 
     return $self->submarket->base_commission;
+}
+
+sub calculate_spread {
+    my ($self, $volatility) = @_;
+
+    die 'volatility is zero for ' . $self->symbol if $volatility == 0;
+
+    my $spread_multiplier = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{spread_multiplier};
+    # since it is only vol indices
+    my $spread  = $self->spot * sqrt($volatility**2 * 2 / (365 * 86400)) * $spread_multiplier;
+    my $y       = POSIX::floor(log($spread) / log(10));
+    my $x       = $spread / (10**$y);
+    my $rounded = max(2, round($x / 2) * 2);
+
+    return $rounded * 10**$y;
 }
 
 no Moose;
