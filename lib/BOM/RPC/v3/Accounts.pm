@@ -299,7 +299,7 @@ sub change_password {
 
     BOM::System::AuditLog::log('password has been changed', $client->email);
     send_email({
-            from    => BOM::Platform::Static::Config::get_customer_support_email(),
+            from    => BOM::Platform::Runtime->instance->app_config->cs->email,
             to      => $client->email,
             subject => localize('Your password has been changed.'),
             message => [
@@ -363,7 +363,7 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,
                     'to'      => $client->email,
                     'subject' => localize("[_1] cashier password updated", $client->loginid),
                     'message' => [
@@ -389,7 +389,7 @@ sub cashier_password {
         if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
             BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
-                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,
                     'to'      => $client->email,
                     'subject' => localize("[_1]-Failed attempt to unlock cashier section", $client->loginid),
                     'message' => [
@@ -411,7 +411,7 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,
                     'to'      => $client->email,
                     'subject' => localize("[_1] cashier password updated", $client->loginid),
                     'message' => [
@@ -481,7 +481,7 @@ sub reset_password {
 
     BOM::System::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
-            from    => BOM::Platform::Static::Config::get_customer_support_email(),
+            from    => BOM::Platform::Runtime->instance->app_config->cs->email,
             to      => $email,
             subject => localize('Your password has been reset.'),
             message => [
@@ -649,7 +649,7 @@ sub set_settings {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => BOM::Platform::Static::Config::get_customer_support_email(),
+        from               => BOM::Platform::Runtime->instance->app_config->cs->email,
         to                 => $client->email,
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
@@ -857,7 +857,7 @@ sub set_self_exclusion {
         $message = "Client $client set the following self-exclusion limits:\n\n$message";
         send_email({
             from    => $compliance_email,
-            to      => $compliance_email . ',' . BOM::Platform::Static::Config::get_customer_support_email(),
+            to      => $compliance_email . ',' . BOM::Platform::Runtime->instance->app_config->cs->email,
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
@@ -1050,7 +1050,7 @@ sub set_financial_assessment {
     };
 
     send_email({
-        from    => BOM::Platform::Static::Config::get_customer_support_email(),
+        from    => BOM::Platform::Runtime->instance->app_config->cs->email,
         to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
         subject => $subject,
         message => $message,

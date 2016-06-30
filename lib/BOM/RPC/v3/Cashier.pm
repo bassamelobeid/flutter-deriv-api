@@ -608,7 +608,7 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
     );
 
     send_email({
-        'from'               => BOM::Platform::Static::Config::get_customer_support_email(),
+        'from'               => BOM::Platform::Runtime->instance->app_config->cs->email,
         'to'                 => $client_to->email,
         'subject'            => localize('Acknowledgement of Money Transfer'),
         'message'            => [$emailcontent],
@@ -796,7 +796,7 @@ sub paymentagent_withdraw {
     }
 
     if ($amount_transferred > 1500) {
-        my $support = BOM::Platform::Static::Config::get_customer_support_email();
+        my $support = BOM::Platform::Runtime->instance->app_config->cs->email;
         my $message = "Client $client_loginid transferred \$$amount_transferred to payment agent today";
         send_email({
             from    => $support,
@@ -867,7 +867,7 @@ sub paymentagent_withdraw {
         localize('The [_1] team.', $website_name),
     ];
     send_email({
-        from               => BOM::Platform::Static::Config::get_customer_support_email(),
+        from               => BOM::Platform::Runtime->instance->app_config->cs->email,
         to                 => $paymentagent->email,
         subject            => localize('Acknowledgement of Withdrawal Request'),
         message            => $emailcontent,
@@ -890,7 +890,7 @@ sub __output_payments_error_message {
     my $amount         = $args->{'amount'};
     my $error_message  = $args->{'error_msg'};
     my $payments_email = BOM::Platform::Runtime->instance->app_config->payments->email;
-    my $cs_email       = BOM::Platform::Static::Config::get_customer_support_email();
+    my $cs_email       = BOM::Platform::Runtime->instance->app_config->cs->email;
 
     # amount is not always exist because error may happen before client submit the form
     # or when redirected from 3rd party site to failure script where no data is returned

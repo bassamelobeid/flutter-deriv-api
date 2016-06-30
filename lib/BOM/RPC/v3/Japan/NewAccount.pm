@@ -214,7 +214,7 @@ support@binary.com',
         );
 
         send_email({
-            from               => BOM::Platform::Static::Config::get_customer_support_email(),
+            from               => BOM::Platform::Runtime->instance->app_config->cs->email,
             to                 => $client->email,
             subject            => localize('Kindly send us your documents for verification.'),
             message            => [$email_content],
