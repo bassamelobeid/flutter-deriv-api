@@ -354,17 +354,6 @@ subtest 'survived notify payments', sub {
         testtype => 'payment_legacy_payment'
     });
 
-    $txn = $client->payment_bank_wire(
-        amount   => 10.01,
-        currency => 'USD',
-        remark   => 'Reward from payment_bank_wire'
-    );
-    test_payment_notify({
-        txn      => $txn,
-        remark   => 'Reward from payment_bank_wire',
-        testtype => 'payment_bank_wire'
-    });
-
     my $txnid = $client->payment_account_transfer(
         amount   => 20.02,
         currency => 'USD',
