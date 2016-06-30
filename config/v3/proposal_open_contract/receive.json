@@ -192,7 +192,7 @@
           "description": "The value (points) at which this contract was opened. Only applicable for spreads."
         },
         "amount_per_point": {
-          "type": "integer",
+          "type": "string",
           "description": "The dollar profit/loss per point of movement of the current value. Only applicable for spreads."
         },
         "stop_loss_level": {
