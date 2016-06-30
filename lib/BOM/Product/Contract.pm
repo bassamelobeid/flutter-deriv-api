@@ -2605,6 +2605,14 @@ sub _validate_lifetime {
         $message = 'Daily duration is outside acceptable range';
     }
 
+    if ($self->for_sale and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before->($self->date_settlement))) {
+        # we don't offer sellback on tick expiry contracts.
+        return {
+            message           => 'waiting for settlement',
+            message_to_client => localize('Waiting for settlement.'),
+        };
+    }
+
     if ($duration < $min_duration or $duration > $max_duration) {
         my $asset_text = localize('Asset Index');
         my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
