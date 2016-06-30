@@ -91,60 +91,21 @@ if (request()->param('whattodo') eq 'closeatzero') {
         code_exit_BO();
     }
 
-    if (request()->param('whattodo') eq 'closeatzero') {
-        my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
-        if ($fmbs and @$fmbs) {
-            BOM::Database::Helper::FinancialMarketBet->new({
-                    account_data => {
-                        client_loginid => $loginID,
-                        currency_code  => $currency
-                    },
-                    transaction_data => [({
-                                staff_loginid => $clerk,
-                                remark        => request()->param('comment')}
-                        ) x @$fmbs
-                    ],
-                    bet_data => [map { {sell_price => 0, sell_time => $now->db_timestamp, id => $_->id,} } @{$fmbs}],
-                    db => BOM::Database::ClientDB->new({broker_code => $broker})->db,
-                })->batch_sell_bet;
-        }
-    } else {
-        # check short code
-        my $bet = produce_contract($betcode, $currency);
-
-        if ($bet->longcode =~ /UNKNOWN|Unknown/) { print "Error : BOM::Product::Contract returned unknown bet code!"; code_exit_BO(); }
-
-        if ($bet->payout > 50001) { print "Error : Payout is higher than 50000. Payout=" . $bet->payout; code_exit_BO(); }
-        if ($bet->payout < $price) {
-            print "Error : Bet price is higher than payout: payout=" . $bet->payout . ' price=' . $price;
-            code_exit_BO();
-        }
-        # add other checks below..
-
-        my $contract_id;
-        if ($buysell eq 'SELL') {
-            # need fmbid
-            my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
-            unless ($fmbs and @$fmbs) {
-                print "Error : Contract $betcode not found in database";
-                code_exit_BO();
-            }
-            $contract_id = $fmbs->[0]->id;
-        }
-
-        #pricing comment
-        my $pricingcomment = request()->param('comment');
-        my $transaction    = BOM::Product::Transaction->new({
-            client      => $client,
-            contract    => $bet,
-            contract_id => $contract_id,
-            price       => $price,
-            comment     => $pricingcomment,
-            staff       => $clerk,
-        });
-        my $method = lc $buysell;
-        my $error = $transaction->$method(skip_validation => 1);
-        die $error->{-message_to_client} if $error;
+    my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
+    if ($fmbs and @$fmbs) {
+        BOM::Database::Helper::FinancialMarketBet->new({
+                account_data => {
+                    client_loginid => $loginID,
+                    currency_code  => $currency
+                },
+                transaction_data => [({
+                            staff_loginid => $clerk,
+                            remark        => request()->param('comment')}
+                    ) x @$fmbs
+                ],
+                bet_data => [map { {sell_price => 0, sell_time => $now->db_timestamp, id => $_->financial_market_bet_record->id,} } @{$fmbs}],
+                db => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+            })->batch_sell_bet;
     }
 
     # Logging
