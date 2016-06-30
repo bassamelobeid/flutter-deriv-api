@@ -18,7 +18,7 @@ sub _db_name {
 }
 
 sub _db_migrations_dir {
-    return 'feeddb';
+    return '/home/git/regentmarkets/bom-postgres-feeddb/config/sql/';
 }
 
 sub _build__connection_parameters {
