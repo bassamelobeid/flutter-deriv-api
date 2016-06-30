@@ -124,8 +124,6 @@ subtest 'param' => sub {
     };
 };
 
-my $email = 'abc@binary.com';
-
 subtest 'cookie_parsing' => sub {
     subtest 'Valid http_cookie' => sub {
         my $request = BOM::Platform::Context::Request::from_cgi({
@@ -145,7 +143,6 @@ subtest 'cookie_parsing' => sub {
         ok !$request->cookie('a'), 'Cookie a not present';
     };
 };
-
 
 sub mock_cgi_for {
     my $params     = shift || {};
@@ -180,7 +177,6 @@ sub mock_cgi_for {
 
     return $request_mock;
 }
-
 
 END {
 }

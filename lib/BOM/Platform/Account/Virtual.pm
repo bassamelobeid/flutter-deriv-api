@@ -36,25 +36,29 @@ sub create_account {
 
     my ($client, $error);
     try {
+        die 'residence is empty' if (not $residence);
+        my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+
         $client = BOM::Platform::Client->register_and_return_new_client({
-            broker_code     => BOM::Platform::Context::Request->new(country_code => $residence)->virtual_account_broker->code,
-            client_password => $password,
-            salutation      => '',
-            last_name       => '',
-            first_name      => '',
-            myaffiliates_token => $details->{myaffiliates_token} // '',
-            date_of_birth      => undef,
-            citizen            => '',
-            residence          => $residence,
-            email              => $email,
-            address_line_1     => '',
-            address_line_2     => '',
-            address_city       => '',
-            address_state      => '',
-            address_postcode   => '',
-            phone              => '',
-            secret_question    => '',
-            secret_answer      => '',
+            broker_code =>
+                BOM::Platform::Runtime::LandingCompany::Registry::get($countries_list->{$residence}->{virtual_company})->broker_codes->[0],
+            client_password               => $password,
+            salutation                    => '',
+            last_name                     => '',
+            first_name                    => '',
+            myaffiliates_token            => $details->{myaffiliates_token} // '',
+            date_of_birth                 => undef,
+            citizen                       => '',
+            residence                     => $residence,
+            email                         => $email,
+            address_line_1                => '',
+            address_line_2                => '',
+            address_city                  => '',
+            address_state                 => '',
+            address_postcode              => '',
+            phone                         => '',
+            secret_question               => '',
+            secret_answer                 => '',
             myaffiliates_token_registered => 0,
             checked_affiliate_exposures   => 0,
             source                        => $source,

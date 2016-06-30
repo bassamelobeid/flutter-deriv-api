@@ -1,4 +1,4 @@
-use Test::More (tests => 6);
+use Test::More (tests => 5);
 use Test::Exception;
 use Test::NoWarnings;
 use Test::MockObject;
@@ -35,35 +35,10 @@ subtest 'headers vs builds' => sub {
     };
 };
 
-subtest 'param builds' => sub {
-    subtest 'broker_code' => sub {
-        subtest 'broker inputs' => sub {
-            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {broker => 'MX'})});
-            is $request->broker_code, 'MX', "Valid broker from broker param";
-
-            $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {broker => 'MESA'})});
-            throws_ok { $request->broker_code } qr/Unknown broker code or loginid \[MESA\]/, "not a valid broker";
-
-            $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {w => 'MX'})});
-            is $request->broker_code, 'CR', "Not read from w param";
-        };
-    };
-
-    subtest 'is_pjax' => sub {
-        my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/")});
-        ok !$request->is_pjax, "Is not a pjax page";
-
-        $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/?_pjax")});
-        ok $request->is_pjax, "Is a pjax page";
-    };
-};
-
 subtest 'accepted http_methods' => sub {
     subtest 'GET|POST|HEAD' => sub {
         foreach my $method (qw/GET POST HEAD/) {
-            my $request =
-                BOM::Platform::Context::Request::from_mojo(
-                {mojo_request => mock_request_for("https://www.binary.com/", undef, $method)});
+            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", undef, $method)});
             is $request->http_method, $method, "Method $method ok";
         }
     };
@@ -105,7 +80,7 @@ sub mock_request_for {
     $request_mock->set_always('method',  $method);
     $request_mock->mock('param', sub { shift; return $params_mock->param(@_); });
     $request_mock->mock('cookie', sub { return; });
-    $request_mock->mock('env', sub { {} });
+    $request_mock->mock('env',    sub { {} });
 
     return $request_mock;
 }
