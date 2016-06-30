@@ -13,6 +13,7 @@ use JSON::XS qw(encode_json decode_json);
 use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
+use Math::Util::CalculatedValue::Validatable;
 
 sub proposal {
     my ($c, $req_storage) = @_;
@@ -204,9 +205,18 @@ sub _price_stream_results_adjustment {
     return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
 
     my $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($orig_args);
-    # overrides the theo_probability_value which take the most calculation time.
-    $contract_parameters->{theo_probability_value} = $results->{theo_probability};
-    $contract_parameters->{app_markup_percentage}  = $orig_args->{app_markup_percentage};
+    # overrides the theo_probability which take the most calculation time.
+    # theo_probability is a calculated value (CV), overwrite it with CV object.
+    my $theo_probability = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theo_probability',
+        description => 'theorectical value of a contract',
+        set_by      => 'Pricer Daemon',
+        base_amount => $results->{theo_probability},
+        minimum     => 0,
+        maximum     => 1,
+    });
+    $contract_parameters->{theo_probability}      = $theo_probability;
+    $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
     my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
     if (my $error = $contract->validate_price) {
