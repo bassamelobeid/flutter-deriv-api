@@ -37,11 +37,11 @@ sub create_account {
     my ($client, $error);
     try {
         die 'residence is empty' if (not $residence);
-        my $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+        my $company_name = BOM::Platform::Runtime->instance->virtual_company_for_country($residence);
 
         $client = BOM::Platform::Client->register_and_return_new_client({
             broker_code =>
-                BOM::Platform::Runtime::LandingCompany::Registry::get($countries_list->{$residence}->{virtual_company})->broker_codes->[0],
+                BOM::Platform::Runtime::LandingCompany::Registry::get($company_name)->broker_codes->[0],
             client_password               => $password,
             salutation                    => '',
             last_name                     => '',
