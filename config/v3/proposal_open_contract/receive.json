@@ -208,7 +208,7 @@
           "description": "Current value of the underlying. Only applicable for spreads."
         },
         "exit_level": {
-          "type": "number",
+          "type": ["number","null"],
           "description": "The contract was closed at this level. Only applicable for spreads"
         },
         "current_value_in_dollar": {
