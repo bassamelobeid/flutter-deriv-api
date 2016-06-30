@@ -155,7 +155,7 @@ subtest 'display_decimals' => sub {
 subtest 'all attributes on a variety of underlyings' => sub {
     # In case we want to randomly select symbols later, there's this:
     my @symbols =
-        ('frxUSDZAR', 'GDAXI', 'HSI', 'FRXUSDJPY', 'frxEURUSD', 'frxXAUUSD', 'R_100', 'frxHKDUSD', 'frxUSDEUR', 'HEARTB', 'FUTHSI_BOM', 'frxNZDAUD',);
+        ('frxUSDZAR', 'GDAXI', 'HSI', 'FRXUSDJPY', 'frxEURUSD', 'frxXAUUSD', 'R_100', 'frxHKDUSD', 'frxUSDEUR', 'FUTHSI_BOM', 'frxNZDAUD',);
     foreach my $symbol (@symbols) {
 
         my $underlying = BOM::Market::Underlying->new($symbol);
@@ -238,9 +238,9 @@ subtest 'all attributes on a variety of underlyings' => sub {
         is((scalar grep { exists $underlying->market_convention->{$_} } qw(delta_style delta_premium_adjusted)),
             2, ' with at least the minimal key set');
 
-        ok(looks_like_number($underlying->_builder->closed_weight), 'Closed weight is numeric');
-        cmp_ok($underlying->_builder->closed_weight, '>=', 0, ' nonnegative');
-        cmp_ok($underlying->_builder->closed_weight, '<',  1, ' and smaller than 1');
+        ok(looks_like_number($underlying->_builder->build_trading_calendar->closed_weight), 'Closed weight is numeric');
+        cmp_ok($underlying->_builder->build_trading_calendar->closed_weight, '>=', 0, ' nonnegative');
+        cmp_ok($underlying->_builder->build_trading_calendar->closed_weight, '<',  1, ' and smaller than 1');
 
         my $license = $underlying->feed_license;
         is((scalar grep { $license eq $_ } qw(chartonly delayed daily realtime)), 1, 'Feed license is exactly one of our allowed values');
@@ -556,7 +556,11 @@ subtest 'all methods on a selection of underlyings' => sub {
     };
 
     my $eod =
-        Quant::Framework::TradingCalendar->new('NYSE', BOM::System::Chronicle::get_chronicle_reader())->closing_on(Date::Utility->new('2016-04-05'));
+        Quant::Framework::TradingCalendar->new({
+                symbol => 'NYSE',
+                underlying_config => BOM::Market::Underlying->new('DJI')->config,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()
+        })->closing_on(Date::Utility->new('2016-04-05'));
     foreach my $pair (qw(frxUSDJPY frxEURUSD frxAUDUSD)) {
         my $worm = BOM::Market::Underlying->new($pair, $eod->minus_time_interval('1s'));
         is($worm->is_in_quiet_period, 0, $worm->symbol . ' not in a quiet period before New York closes');
@@ -584,9 +588,9 @@ subtest 'all methods on a selection of underlyings' => sub {
           });
         foreach my $days_hence (1 .. 7) {
             my $test_day      = $today->plus_time_interval($days_hence . 'd');
-            my $day_weight    = $builder->weight_on($test_day);
-            my $period_weight = $builder->weighted_days_in_period($today, $test_day);
-            cmp_ok($day_weight, '>=', $builder->closed_weight,
+            my $day_weight    = $builder->build_trading_calendar->weight_on($test_day);
+            my $period_weight = $builder->build_trading_calendar->weighted_days_in_period($today, $test_day);
+            cmp_ok($day_weight, '>=', $builder->build_trading_calendar->closed_weight,
                 $ul->display_name . ' weight for ' . $test_day->date . ' is at least as big as the closed weight');
             cmp_ok($day_weight, '<=', 1, 'And no larger than 1');
             cmp_ok(

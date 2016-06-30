@@ -33,10 +33,10 @@ has file => (
 sub _build_file {
     my $self = shift;
 
-    my $now = Date::Utility->new;
-    my $loc = '/feed/BBDL';
-    my $on  = Date::Utility->new($now->epoch);
-
+    my $now          = Date::Utility->new;
+    my $loc          = '/feed/BBDL';
+    my $on           = Date::Utility->new($now->epoch);
+    my $previous_day = $on->minus_time_interval('1d')->date_yyyymmdd;
     while (not -d $loc . '/' . $on->date_yyyymmdd) {
         $on = Date::Utility->new($on->epoch - 86400);
         if ($on->year <= 2011) {
@@ -59,8 +59,19 @@ sub _build_file {
 
         die('Could not find volatility source file for time[' . $now->datetime . ']');
     }
-    my $quanto_file = $now->is_a_weekday ? $loc . '/' . $day . '/quantovol.csv' : $loc . '/' . $day . '/quantovol_wknd.csv';
 
+    my $quanto_file;
+    my $quanto_weekday_file = $loc . '/' . $day . '/quantovol.csv';
+    my $quanto_weekend_file = $loc . '/' . $day . '/quantovol_wknd.csv';
+    if ($now->is_a_weekday) {
+        $quanto_file =
+              (-e $quanto_weekday_file) ? $quanto_weekday_file
+            : ($now->day_of_week == 1 and $now->hour == 0) ? $loc . '/' . $previous_day . '/quantovol_wknd.csv'
+            :                                                $loc . '/' . $previous_day . '/quantovol.csv';
+    } else {
+        $quanto_file = (-e $quanto_weekend_file) ? $quanto_weekend_file : $loc . '/' . $previous_day . '/quantovol.csv';
+
+    }
     my @files = $file ? ($file, $quanto_file) : ($quanto_file);
     return \@files;
 }
