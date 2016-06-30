@@ -48,7 +48,6 @@ $u_c->mock('uses_implied_rate', sub { return 0 });
 $u_c->mock('uses_implied_rate_for_asset', sub { return 0 });
 $u_c->mock('uses_implied_rate_for_quoted_currency', sub { return 0 });
 
-
 Quant::Framework::Holiday->create(
         storage_accessor => $storage_accessor,
         for_date         => $recorded_date,
@@ -121,7 +120,7 @@ Quant::Framework::Holiday->create(
             'Christmas Eve'  => ['FSE'],
         },
         '2014-12-25' => {
-            'Christmas Day' => ['USD', 'EUR', 'GBP', 'FSE', 'LSE', 'FOREX', 'SAS'],
+            'Christmas Day' => ['USD', 'EUR', 'GBP', 'FSE', 'LSE', 'FOREX', 'SAS', 'METAL'],
         },
         '2014-12-26' => {
             'Christmas Day'     => ['EUR'],
