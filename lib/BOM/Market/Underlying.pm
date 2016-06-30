@@ -687,16 +687,6 @@ sub _build_exchange_name {
     my $self = shift;
     my $exchange_name = $self->_exchange_name || 'FOREX';
 
-    if ($self->symbol =~ /^FUTE(B|C)/i) {
-
-        # International Petroleum Exchange (now called ICE)
-        $exchange_name = 'IPE';
-    } elsif ($self->symbol =~ /^FUTLZ/i) {
-
-        # Euronext LIFFE FTSE-100 Futures
-        $exchange_name = 'EURONEXT';
-    }
-
     return $exchange_name;
 }
 
