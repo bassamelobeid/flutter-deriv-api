@@ -941,10 +941,9 @@ sub __client_withdrawal_notes {
 
         return (
             localize(
-                'Sorry, you cannot withdraw. Your withdrawal amount [_1] exceeds withdrawal limit[_2]. Please contact <a href="[_3]">customer support</a> to authenticate your account.',
+                'Sorry, you cannot withdraw. Your withdrawal amount [_1] exceeds withdrawal limit[_2].',
                 "$currency $amount",
-                $limit,
-                request()->url_for('contact', {w => $client->broker})));
+                $limit));
     }
 
     my $withdrawal_limits = $client->get_withdrawal_limits();
