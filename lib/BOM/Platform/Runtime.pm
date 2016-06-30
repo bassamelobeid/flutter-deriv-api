@@ -111,9 +111,5 @@ sub _build_app_config {
     return BOM::Platform::Runtime::AppConfig->new();
 }
 
-sub _build_landing_companies {
-    return BOM::Platform::Runtime::LandingCompany::Registry->new();
-}
-
 __PACKAGE__->meta->make_immutable;
 1;

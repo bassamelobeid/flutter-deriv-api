@@ -1,8 +1,9 @@
 use Test::Most 0.22 (tests => 6);
 use Test::NoWarnings;
 use BOM::Platform::Runtime;
+use BOM::Platform::Runtime::LandingCompany::Registry;
 
-my $lc_registry = BOM::Platform::Runtime->instance->landing_companies;
+my $lc_registry = BOM::Platform::Runtime::LandingCompany::Registry->new();
 my $cr          = $lc_registry->get('costarica');
 my $cr2         = $lc_registry->get('Binary (C.R.) S.A.');
 isa_ok $cr, 'BOM::Platform::Runtime::LandingCompany';
