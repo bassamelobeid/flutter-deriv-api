@@ -19,7 +19,7 @@ BrokerPresentation("QUANT BACKOFFICE");
 
 use Mail::Sender;
 use ForexFactory;
-use BOM::System::Localhost;
+use BOM::System::Config;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Platform::Context;
