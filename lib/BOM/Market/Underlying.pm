@@ -598,7 +598,7 @@ sub _build_market {
     my $market = BOM::Market->new({name => 'nonsense'});
     if ($symbol =~ /^FUT/) {
         $market = BOM::Market::Registry->instance->get('futures');
-    } elsif ($symbol eq 'HEARTB' or $symbol =~ /^I_/) {
+    } elsif ($symbol =~ /^I_/) {
         $market = BOM::Market::Registry->instance->get('config');
     } elsif (length($symbol) >= 15) {
         $market = BOM::Market::Registry->instance->get('config');
@@ -684,16 +684,6 @@ has exchange_name => (
 sub _build_exchange_name {
     my $self = shift;
     my $exchange_name = $self->_exchange_name || 'FOREX';
-
-    if ($self->symbol =~ /^FUTE(B|C)/i) {
-
-        # International Petroleum Exchange (now called ICE)
-        $exchange_name = 'IPE';
-    } elsif ($self->symbol =~ /^FUTLZ/i) {
-
-        # Euronext LIFFE FTSE-100 Futures
-        $exchange_name = 'EURONEXT';
-    }
 
     return $exchange_name;
 }
@@ -851,7 +841,7 @@ sub _build_combined_folder {
     my $underlying_symbol = $self->system_symbol;
     my $market            = $self->market;
 
-    if ($market->name eq 'config' and $underlying_symbol !~ /HEARTB/gi) {
+    if ($market->name eq 'config') {
         $underlying_symbol =~ s/^FRX/^frx/;
         return 'combined/' . $underlying_symbol . '/quant';
     }
