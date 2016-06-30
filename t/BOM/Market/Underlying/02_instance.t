@@ -155,7 +155,7 @@ subtest 'display_decimals' => sub {
 subtest 'all attributes on a variety of underlyings' => sub {
     # In case we want to randomly select symbols later, there's this:
     my @symbols =
-        ('frxUSDZAR', 'GDAXI', 'HSI', 'FRXUSDJPY', 'frxEURUSD', 'frxXAUUSD', 'R_100', 'frxHKDUSD', 'frxUSDEUR', 'HEARTB', 'FUTHSI_BOM', 'frxNZDAUD',);
+        ('frxUSDZAR', 'GDAXI', 'HSI', 'FRXUSDJPY', 'frxEURUSD', 'frxXAUUSD', 'R_100', 'frxHKDUSD', 'frxUSDEUR', 'FUTHSI_BOM', 'frxNZDAUD',);
     foreach my $symbol (@symbols) {
 
         my $underlying = BOM::Market::Underlying->new($symbol);
@@ -557,7 +557,7 @@ subtest 'all methods on a selection of underlyings' => sub {
 
     my $eod =
         Quant::Framework::TradingCalendar->new({
-                symbol => 'NYSE', 
+                symbol => 'NYSE',
                 underlying_config => BOM::Market::Underlying->new('DJI')->config,
                 chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()
         })->closing_on(Date::Utility->new('2016-04-05'));
