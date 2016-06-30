@@ -16,11 +16,6 @@ has 'app_config' => (
     lazy_build => 1,
 );
 
-has 'landing_companies' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has 'countries' => (
     is         => 'ro',
     lazy_build => 1,
