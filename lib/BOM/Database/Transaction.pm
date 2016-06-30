@@ -1,8 +1,8 @@
-package BOM::Platform::Transaction;
+package BOM::Database::Transaction;
 
 =head1 NAME
 
-BOM::Platform::Transaction
+BOM::Database::Transaction
 
 =head1 DESCRIPTION
 
