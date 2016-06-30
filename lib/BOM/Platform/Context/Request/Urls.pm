@@ -82,7 +82,8 @@ sub url_for {
 sub domain_for {
     my $self = shift;
 
-    my $server_name = BOM::System::Localhost::name();
+    my @host_name   = split(/\./, Sys::Hostname::hostname);
+    my $server_name = $host_name[0];
 
     if ($server_name =~ /^(qa\d+)$/) {
         return "www.binary$1.com";
@@ -124,21 +125,6 @@ sub _get_domain_type {
     }
 
     return $domain_type;
-}
-
-has [qw(_dealing_domain _localhost_domain)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__dealing_domain {
-    my $self = shift;
-    return $self->broker->server . '.' . $self->domain;
-}
-
-sub _build__localhost_domain {
-    my $self = shift;
-    return BOM::System::Localhost::name() . '.' . $self->domain;
 }
 
 1;
