@@ -2363,12 +2363,9 @@ sub _validate_trading_times {
 
     if ($self->is_intraday) {
         if (not $calendar->is_open_at($date_expiry)) {
-            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             return {
                 message => 'underlying closed at expiry ' . "[symbol: " . $underlying->symbol . "] " . "[expiry: " . $date_expiry->datetime . "]",
                 message_to_client => localize("Contract must expire during trading hours."),
-                info_link         => $times_link,
-                info_text         => localize('Trading Times'),
             };
         } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($date_start)->epoch < $date_expiry->epoch) {
             return {
@@ -2378,7 +2375,6 @@ sub _validate_trading_times {
         }
     } elsif ($self->expiry_daily and not $self->is_atm_bet) {
         # For definite ATM contracts we do not have to check for upcoming holidays.
-        my $times_text    = localize('Trading Times');
         my $trading_days  = $self->calendar->trading_days_between($date_start, $date_expiry);
         my $holiday_days  = $self->calendar->holiday_days_between($date_start, $date_expiry);
         my $calendar_days = $date_expiry->days_between($date_start);
@@ -2394,12 +2390,9 @@ sub _validate_trading_times {
                 ($self->for_sale)
                 ? localize('Resale of this contract is not offered due to market holidays during contract period.')
                 : localize("Too many market holidays during the contract period.");
-            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             return {
                 message => 'Not enough trading days for calendar days ' . "[trading: " . $trading_days . "] " . "[calendar: " . $calendar_days . "]",
                 message_to_client => $message,
-                info_link         => $times_link,
-                info_text         => $times_text,
             };
         }
     }
@@ -2607,8 +2600,6 @@ sub _validate_lifetime {
     }
 
     if ($duration < $min_duration or $duration > $max_duration) {
-        my $asset_text = localize('Asset Index');
-        my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
         return {
             message => $message . " "
                 . "[duration seconds: "
@@ -2619,8 +2610,6 @@ sub _validate_lifetime {
                 . $self->code . "]",
             message_to_client       => $message_to_client,
             message_to_client_array => $message_to_client_array,
-            info_link               => $asset_link,
-            info_text               => $asset_text,
         };
     }
 
