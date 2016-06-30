@@ -284,18 +284,21 @@ sub _feed_channel {
     my $feed_channel_type  = $c->stash('feed_channel_type')  || {};
     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
+    my $req_id = $args and exists $args->{req_id} ? $args->{req_id} : undef;
+    my $key = $req_id ? "$symbol;$type;$req_id" : "$symbol;$type";
     my $redis = $c->stash('redis');
+
     if ($subs eq 'subscribe') {
         # already subscribe
-        if (exists $feed_channel_type->{"$symbol;$type"}) {
+        if (exists $feed_channel_type->{$key}) {
             return;
         }
 
         $uuid = Data::UUID->new->create_str();
         $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{"$symbol;$type"}->{args}  = $args if $args;
-        $feed_channel_type->{"$symbol;$type"}->{uuid}  = $uuid;
-        $feed_channel_type->{"$symbol;$type"}->{cache} = $cache || 0;
+        $feed_channel_type->{$key}->{args}  = $args if $args;
+        $feed_channel_type->{$key}->{uuid}  = $uuid;
+        $feed_channel_type->{$key}->{cache} = $cache || 0;
 
         my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
         $redis->subscribe([$channel_name], $callback // sub { });
@@ -303,11 +306,11 @@ sub _feed_channel {
 
     if ($subs eq 'unsubscribe') {
         $feed_channel->{$symbol} -= 1;
-        my $args = $feed_channel_type->{"$symbol;$type"}->{args};
-        $uuid = $feed_channel_type->{"$symbol;$type"}->{uuid};
-        delete $feed_channel_type->{"$symbol;$type"};
+        my $args = $feed_channel_type->{$key}->{args};
+        $uuid = $feed_channel_type->{$key}->{uuid};
+        delete $feed_channel_type->{$key};
         # delete cache on unsubscribe
-        delete $feed_channel_cache->{"$symbol;$type"};
+        delete $feed_channel_cache->{$key};
 
         # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
         _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
