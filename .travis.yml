@@ -34,6 +34,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres-authdb
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres-userdb
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres-chronicledb
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres-collectordb
 
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
