@@ -114,8 +114,6 @@ sub send_proposal_open_contract {
                 currency    => delete $details->{currency},
                 is_sold     => delete $details->{is_sold},
                 sell_time   => $sell_time,
-                sell_price  => $sell_price,
-                buy_price   => $buy_price,
             },
             rpc_response_cb => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
