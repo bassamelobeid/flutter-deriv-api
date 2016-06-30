@@ -35,6 +35,11 @@ sub third_party {
     return $config;
 }
 
+sub quants {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/quants_config.yml');
+    return $config;
+}
+
 {
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');
