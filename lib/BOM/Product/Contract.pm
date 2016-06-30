@@ -1290,8 +1290,8 @@ sub _build_risk_markup {
 sub _build_base_commission {
     my $self = shift;
 
-    my $minimum        = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100;
-    my $maximum        = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100;
+    my $minimum        = BOM::System::Config::quants->{commission}->{adjustment}->{minimum} / 100;
+    my $maximum        = BOM::System::Config::quants->{commission}->{adjustment}->{maximum} / 100;
     my $scaling_factor = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
     $scaling_factor = max($minimum, min($maximum, $scaling_factor));
 
@@ -1308,7 +1308,7 @@ sub _build_commission_markup {
         description => 'Commission markup for a pricing model',
         set_by      => __PACKAGE__,
         base_amount => $base_amount,
-        maximum     => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100,
+        maximum     => BOM::System::Config::quants->{commission}->{maximum_total_markup} / 100,
         %min,
     });
 
@@ -1623,7 +1623,7 @@ sub _build_staking_limits {
     my $underlying = $self->underlying;
     my $curr       = $self->currency;
 
-    my $static                    = BOM::Platform::Static::Config::quants;
+    my $static                    = BOM::System::Config::quants;
     my $bet_limits                = $static->{bet_limits};
     my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
     my @possible_payout_maxes     = ($bet_limits->{maximum_payout}->{$curr}, $per_contract_payout_limit);
@@ -2466,8 +2466,8 @@ sub _build_date_expiry_blackouts {
             push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch];
         }
     } elsif ($self->expiry_daily and $underlying->market->equity and not $self->is_atm_bet) {
-        my $start_of_period = BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_start};
-        my $end_of_period   = BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_end};
+        my $start_of_period = BOM::System::Config::quants->{bet_limits}->{holiday_blackout_start};
+        my $end_of_period   = BOM::System::Config::quants->{bet_limits}->{holiday_blackout_end};
         if ($self->date_start->day_of_year >= $start_of_period or $self->date_start->day_of_year <= $end_of_period) {
             my $year = $self->date_start->day_of_year > $start_of_period ? $date_start->year : $date_start->year - 1;
             my $end_blackout = Date::Utility->new($year . '-12-31')->plus_time_interval($end_of_period . 'd23h59m59s');

@@ -505,7 +505,7 @@ has [qw(_vega_formula _delta_formula)] => (
 sub _build_intraday_vega_correction {
     my $self = shift;
 
-    my $vmr = BOM::Platform::Static::Config::quants->{commission}->{intraday}->{historical_vol_meanrev};
+    my $vmr = BOM::System::Config::quants->{commission}->{intraday}->{historical_vol_meanrev};
     my $vc  = Math::Util::CalculatedValue::Validatable->new({
         name        => 'vega_correction',
         description => 'correction for uncertianty of vol',

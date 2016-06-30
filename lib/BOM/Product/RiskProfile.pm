@@ -37,7 +37,7 @@ sub _build_contract_info {
 has limits => (
     is      => 'ro',
     default => sub {
-        return BOM::Platform::Static::Config::quants->{risk_profile};
+        return BOM::System::Config::quants->{risk_profile};
     },
 );
 
