@@ -46,7 +46,7 @@ _flush_offerings();
 sub _make_new_flyby {
     my $landing_company_short = shift;
 
-    my $landing_company = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_short);
+    my $landing_company = BOM::Platform::Runtime::LandingCompany::Registry::get($landing_company_short);
     my %category_cache;    # Per-run to catch differences.
     my $runtime = BOM::Platform::Runtime->instance;
     my %suspended_underlyings =
