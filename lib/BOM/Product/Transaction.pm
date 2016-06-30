@@ -34,7 +34,7 @@ use BOM::Product::Offerings qw/get_offerings_with_filter/;
 use BOM::Platform::Static::Config;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 
-extends 'BOM::Platform::Transaction';
+extends 'BOM::Database::Transaction';
 
 has client => (
     is  => 'ro',
