@@ -212,11 +212,11 @@
           "description": "The contract was closed at this level. Only applicable for spreads"
         },
         "current_value_in_dollar": {
-          "type": "integer",
+          "type": "number",
           "description": "Current profit/loss in dollars. Only applicable for spreads."
         },
         "current_value_in_point": {
-          "type": "integer",
+          "type": "number",
           "description": "Current profit or loss in points. Only applicable for spreads."
         },
         "transaction_ids": {
