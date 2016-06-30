@@ -404,17 +404,6 @@ subtest 'survived notify payments', sub {
         testtype => 'payment_account_transfer inter_db'
     });
 
-    $txn = $client->payment_affiliate_reward(
-        amount   => 149.99,
-        currency => 'USD',
-        remark   => 'Reward from affiliate program for trades done by CRxxxx'
-    );
-    test_payment_notify({
-        txn      => $txn,
-        remark   => 'Reward from affiliate program for trades done by CRxxxx',
-        testtype => 'payment_affiliate_reward'
-    });
-
     $txn = $client->payment_doughflow(
         currency     => 'USD',
         amount       => 1,

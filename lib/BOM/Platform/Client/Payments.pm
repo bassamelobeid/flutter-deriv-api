@@ -392,54 +392,6 @@ sub payment_account_transfer {
 }
 
 #######################################
-sub payment_affiliate_reward {
-    my ($self, %args) = @_;
-
-    my $currency     = $args{currency}     || die "no currency";
-    my $amount       = $args{amount}       || die "no amount";
-    my $remark       = $args{remark}       || die "no remark";
-    my $payment_type = $args{payment_type} || 'affiliate_reward';
-    my $staff        = $args{staff}        || 'system';
-    my $source       = $args{source};
-
-    my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
-    my $fdp         = $self->is_first_deposit_pending;
-    my $account     = $self->set_default_account($currency);
-
-    my ($payment) = $account->add_payment({
-        amount               => $amount,
-        payment_gateway_code => 'affiliate_reward',
-        payment_type_code    => $payment_type,
-        status               => 'OK',
-        staff_loginid        => $staff,
-        remark               => $remark,
-    });
-    $payment->affiliate_reward({});
-    my ($trx) = $payment->add_transaction({
-        account_id    => $account->id,
-        amount        => $amount,
-        staff_loginid => $staff,
-        referrer_type => 'payment',
-        action_type   => $action_type,
-        quantity      => 1,
-        source        => $source,
-    });
-    $account->save(cascade => 1);
-    $trx->load;    # to re-read 'now' timestamps
-
-    BOM::Platform::Client::IDAuthentication->new(client => $self)->run_authentication if $fdp;
-
-    if (exists $self->{mlt_affiliate_first_deposit} and $self->{mlt_affiliate_first_deposit}) {
-        $self->set_status('cashier_locked', 'system', 'MLT client received an affiliate reward as first deposit');
-        $self->save();
-
-        delete $self->{mlt_affiliate_first_deposit};
-    }
-
-    return $trx;
-}
-
-#######################################
 sub payment_doughflow {
     my ($self, %args) = @_;
 
