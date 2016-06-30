@@ -104,24 +104,24 @@ sub script_run {
     my $dbset = $self->getOption('dbset');
     if ($dbset eq 'rmg') {
         $dir = '/home/git/regentmarkets/bom-postgres/config/sql/rmgdb';
-    } elsif ($dbset eq 'collectordb') {
+    } elsif ($dbset eq 'collector') {
         $dir = '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/';
 
         # version table = dbix_migration_collector
         $tablename_extension = 'collector';
-    } elsif ($dbset eq 'chronicledb') {
+    } elsif ($dbset eq 'chronicle') {
         $dir      = '/home/git/regentmarkets/bom-postgres-chronicledb/config/sql/';
         $port     = '5437';
-        $database = 'chronicledb';
+        $database = 'chronicle';
     } elsif ($dbset eq 'feed') {
         $dir      = '/home/git/regentmarkets/bom-postgres-feeddb/config/sql/';
         $port     = '5433';
         $database = 'feed';
-    } elsif ($dbset eq 'authdb') {
+    } elsif ($dbset eq 'auth') {
         $dir      = '/home/git/regentmarkets/bom-postgres-authdb/config/sql/';
         $port     = '5435';
         $database = 'auth';
-    } elsif ($dbset eq 'userdb') {
+    } elsif ($dbset eq 'users') {
         $dir      = '/home/git/regentmarkets/bom-postgres-userdb/config/sql';
         $port     = '5436';
         $database = 'users';
