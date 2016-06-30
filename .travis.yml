@@ -30,6 +30,10 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh binary-com/translations-websockets-api
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres-feeddb
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres-authdb
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres-userdb
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres-chronicledb
 
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
