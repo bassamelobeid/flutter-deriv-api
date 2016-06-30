@@ -317,8 +317,8 @@ sub _feed_channel_unsubscribe {
     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
     $feed_channel->{$symbol} -= 1;
-    my $args = $feed_channel_type->{$key}->{args};
     my $key = $req_id ? "$symbol;$type;$req_id" : "$symbol:$type";
+    my $args = $feed_channel_type->{$key}->{args};
 
     my $uuid = $feed_channel_type->{$key}->{uuid};
     delete $feed_channel_type->{$key};
@@ -330,7 +330,7 @@ sub _feed_channel_unsubscribe {
 
     if ($feed_channel->{$symbol} <= 0) {
         my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
-        $redis->unsubscribe([$channel_name], sub { });
+        $c->stash('redis')->unsubscribe([$channel_name], sub { });
         delete $feed_channel->{$symbol};
     }
 
