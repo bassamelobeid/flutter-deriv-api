@@ -41,7 +41,7 @@ sub forget_one {
     my ($c, $id, $reason) = @_;
 
     my $removed_ids = [];
-    if ($id =~ /-/) {
+    if ($id && ($id =~ /-/)) {
         # need to keep feed subscription first as in case of proposal_open_contract subscribes to transaction
         # channel and forgets transaction channel internally when we forget it
         $removed_ids = _forget_feed_subscription($c, $id) unless (scalar @$removed_ids);
