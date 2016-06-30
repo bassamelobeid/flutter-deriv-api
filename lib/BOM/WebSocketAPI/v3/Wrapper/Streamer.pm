@@ -43,7 +43,7 @@ sub ticks {
         my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
         if ($response and exists $response->{error}) {
             $send_error->($response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
-        } elsif (not _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
+        } elsif (not _feed_channel_subscribe($c, $symbol, 'tick', $args)) {
             $send_error->('AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
         }
     }
@@ -81,7 +81,7 @@ sub ticks_history {
                     my $args = $req_storage->{args};
                     if (exists $rpc_response->{error}) {
                         # cancel subscription if response has error
-                        _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args);
+                        _feed_channel_unsubscribe($c, $args->{ticks_history}, $publish);
                         return $c->new_error('ticks_history', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                     }
 
@@ -148,7 +148,7 @@ sub ticks_history {
 
     # subscribe first with flag of cache passed as 1 to indicate to cache the feed data
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $publish, $args, $callback, 1)) {
+        if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $args, $callback, 1)) {
             return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
         }
     } else {
@@ -180,7 +180,7 @@ sub pricing_table {
     my $symbol = $args->{symbol};
     my $id;
 
-    if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args), $args)) {
+    if (not $id = _feed_channel_subscribe($c, $symbol, 'pricing_table:' . JSON::to_json($args), $args)) {
         return $c->new_error('pricing_table', 'AlreadySubscribed', $c->l('You are already subscribed to pricing table.'));
     }
     my $msg = BOM::RPC::v3::Japan::Contract::get_table($args);
@@ -205,7 +205,7 @@ sub process_realtime_events {
 
         if ($type eq 'tick' and $m[0] eq $symbol) {
             unless ($c->tx) {
-                _feed_channel($c, 'unsubscribe', $symbol, $type, $arguments);
+                _feed_channel_unsubscribe($c, $symbol, $type);
                 return;
             }
 
@@ -237,7 +237,7 @@ sub process_realtime_events {
                 if $c->tx;
         } elsif ($m[0] eq $symbol) {
             unless ($c->tx) {
-                _feed_channel($c, 'unsubscribe', $symbol, $type, $arguments);
+                _feed_channel_unsubscribe($c, $symbol, $type);
                 return;
             }
 
@@ -276,8 +276,8 @@ sub process_realtime_events {
     return;
 }
 
-sub _feed_channel {
-    my ($c, $subs, $symbol, $type, $args, $callback, $cache) = @_;
+sub _feed_channel_subscribe {
+    my ($c, $symbol, $type, $args, $callback, $cache) = @_;
 
     my $uuid;
     my $feed_channel       = $c->stash('feed_channel')       || {};
@@ -287,48 +287,53 @@ sub _feed_channel {
     my $key   = "$symbol;$type";
     my $redis = $c->stash('redis');
 
-    my $req_id;
-    if ($subs eq 'subscribe') {
-        $req_id = ($args and exists $args->{req_id}) ? $args->{req_id} : undef;
-        $key = "$symbol;$type;$req_id" if $req_id;
-        # already subscribe
-        if (exists $feed_channel_type->{$key}) {
-            return;
-        }
+    my $req_id = ($args and exists $args->{req_id}) ? $args->{req_id} : undef;
+    $key = "$symbol;$type;$req_id" if $req_id;
 
-        $uuid = Data::UUID->new->create_str();
-        $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{$key}->{args}  = $args if $args;
-        $feed_channel_type->{$key}->{uuid}  = $uuid;
-        $feed_channel_type->{$key}->{cache} = $cache || 0;
-
-        my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
-        $redis->subscribe([$channel_name], $callback // sub { });
+    # already subscribe
+    if (exists $feed_channel_type->{$key}) {
+        return;
     }
 
-    if ($subs eq 'unsubscribe') {
-        $feed_channel->{$symbol} -= 1;
-        my $channel_args = $feed_channel_type->{$key}->{args};
-        $req_id = ($channel_args and exists $channel_args->{req_id}) ? $channel_args->{req_id} : undef;
-        $key = "$symbol;$type;$req_id" if $req_id;
+    $uuid = Data::UUID->new->create_str();
+    $feed_channel->{$symbol} += 1;
+    $feed_channel_type->{$key}->{args}  = $args if $args;
+    $feed_channel_type->{$key}->{uuid}  = $uuid;
+    $feed_channel_type->{$key}->{cache} = $cache || 0;
 
-        $uuid = $feed_channel_type->{$key}->{uuid};
-        delete $feed_channel_type->{$key};
-        # delete cache on unsubscribe
-        delete $feed_channel_cache->{$key};
-
-        # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
-        _transaction_channel($c, 'unsubscribe', $channel_args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
-
-        if ($feed_channel->{$symbol} <= 0) {
-            my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($channel_args) : "FEED::$symbol";
-            $redis->unsubscribe([$channel_name], sub { });
-            delete $feed_channel->{$symbol};
-        }
-    }
+    my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
+    $redis->subscribe([$channel_name], $callback // sub { });
 
     $c->stash('feed_channel'      => $feed_channel);
     $c->stash('feed_channel_type' => $feed_channel_type);
+
+    return $uuid;
+}
+
+sub _feed_channel_unsubscribe {
+    my ($c, $symbol, $type) = @_;
+
+    my $feed_channel       = $c->stash('feed_channel')       || {};
+    my $feed_channel_type  = $c->stash('feed_channel_type')  || {};
+    my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
+
+    $feed_channel->{$symbol} -= 1;
+    my $args = $feed_channel_type->{$key}->{args};
+    my $key = "$symbol;$type";
+
+    my $uuid = $feed_channel_type->{$key}->{uuid};
+    delete $feed_channel_type->{$key};
+    # delete cache on unsubscribe
+    delete $feed_channel_cache->{$key};
+
+    # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
+    _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
+
+    if ($feed_channel->{$symbol} <= 0) {
+        my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
+        $redis->unsubscribe([$channel_name], sub { });
+        delete $feed_channel->{$symbol};
+    }
 
     return $uuid;
 }

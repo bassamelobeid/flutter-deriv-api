@@ -150,10 +150,10 @@ sub _forget_feed_subscription {
             # . 's' while we are still using tickS in this calls. backward compatibility that must be removed
             if ($typeoruuid eq 'candles' and looks_like_number($ftype)) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $fsymbol, $ftype);
             } elsif (($ftype . 's') =~ /^$typeoruuid/ or $typeoruuid eq $subscription->{$channel}->{uuid}) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $fsymbol, $ftype);
             }
         }
     }
@@ -170,7 +170,7 @@ sub forget_buy_proposal {
             $channel =~ /(.*);(.*)/;
             if ($subscription->{$channel}->{uuid} eq $uuid) {
                 my $args = $subscription->{$channel}->{args};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $1, $2);
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $1, $2);
                 return $args;
             }
         }

@@ -69,9 +69,8 @@ sub proposal_open_contract {
 
                         my $keystr = join("", map { $_ . ":" . $type_args{$_} } sort keys %type_args);
 
-                        $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
-                            $c, 'subscribe',
-                            $response->{$contract_id}->{underlying},
+                        $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_subscribe(
+                            $c, $response->{$contract_id}->{underlying},
                             'proposal_open_contract:' . md5_hex($keystr), $details
                         );
 
