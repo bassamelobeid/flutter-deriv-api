@@ -16,6 +16,7 @@ use BOM::Platform::Untaint;
 
 use Plack::App::CGIBin::Streaming::Request;
 use BOM::Platform::Runtime::LandingCompany::Registry;
+use Sys::Hostname;
 
 with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
 
