@@ -144,18 +144,16 @@ has 'symbol' => (
     required => 1,
 );
 
-
 has spot_source => (
     is         => 'ro',
     lazy_build => 1,
-    handles => {
-        'set_combined_realtime' => 'set_spot_tick',
+    handles    => {
+        'set_combined_realtime'      => 'set_spot_tick',
         'get_combined_realtime_tick' => 'spot_tick',
-        'get_combined_realtime' => 'spot_tick_hash',
-        'pipsized_value' => 'pipsized_value',
-        'spot' => 'spot_value',
-    }
-);
+        'get_combined_realtime'      => 'spot_tick_hash',
+        'pipsized_value'             => 'pipsized_value',
+        'spot'                       => 'spot_value',
+    });
 
 sub _build_spot_source {
     my $self = shift;
@@ -163,8 +161,8 @@ sub _build_spot_source {
     #TODO: after we have a module to handle historical spot, here we will
     #create either Finance::Spot or that module based on for_date
     return Finance::Spot->new({
-            symbol => $self->symbol,
-            pip_size => $self->pip_size,
+            symbol      => $self->symbol,
+            pip_size    => $self->pip_size,
             get_tick_cr => sub {
                 return $self->tick_at(time, {allow_inconsistent => 1});
             }
@@ -190,7 +188,6 @@ sub spot_age {
     my $tick_time = $self->spot_time;
     return defined $tick_time && time - $tick_time;
 }
-
 
 =head2 spot_time
 
@@ -1618,7 +1615,6 @@ has pip_size => (
     is      => 'ro',
     default => 0.0001,
 );
-
 
 =head2 price_at_intervals(\%args)
 
