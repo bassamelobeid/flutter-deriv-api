@@ -153,7 +153,8 @@ has spot_source => (
         'get_combined_realtime_tick' => 'spot_tick',
         'get_combined_realtime'      => 'spot_tick_hash',
         'pipsized_value'             => 'pipsized_value',
-        'spot'                       => 'spot_value',
+        'spot'                       => 'spot_quote',
+        'display_decimals'           => 'display_decimals',
     });
 
 sub _build_spot_source {
