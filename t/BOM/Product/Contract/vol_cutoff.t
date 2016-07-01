@@ -21,13 +21,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => Date::Utility->new('2011-01-01'),
         calendar      => {
             '24-Dec-2015' => {
-                '18h00m' => ['FOREX'],
+                '18h00m' => ['FOREX', 'METAL'],
             },
             '31-Dec-2015' => {
-                '18h00m' => ['FOREX'],
+                '18h00m' => ['FOREX', 'METAL'],
             },
             '18-Jan-2016' => {
-                '18h00m' => ['FOREX'],
+                '18h00m' => ['FOREX', 'METAL'],
             },
         },
     });
