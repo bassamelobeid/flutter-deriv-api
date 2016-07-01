@@ -84,7 +84,7 @@ subtest 'Basic test' => sub {
             start_time => '2012-05-15 00:00:00',
             end_time   => '2012-05-15 11:00:00'
         });
-        isa_ok $output, 'BOM::Market::Data::Tick';
+        isa_ok $output, 'Finance::Spot::Tick';
         ok $output->epoch, 'Has epoch';
         my $date = Date::Utility->new({epoch => $output->epoch});
         is $date->datetime_yyyymmdd_hhmmss, '2012-05-15 10:10:01', 'Date Ok';
@@ -96,7 +96,7 @@ subtest 'Basic test' => sub {
             start_time => '2012-05-15 06:00:00',
             end_time   => '2012-05-15 09:00:00'
         });
-        isa_ok $output, 'BOM::Market::Data::Tick';
+        isa_ok $output, 'Finance::Spot::Tick';
         ok $output->epoch, 'Has epoch';
         my $date = Date::Utility->new({epoch => $output->epoch});
         is $date->datetime_yyyymmdd_hhmmss, '2012-05-15 08:10:01', 'Date Ok';
@@ -108,7 +108,7 @@ subtest 'Basic test' => sub {
             start_time => '2012-05-14 00:00:00',
             end_time   => '2012-05-14 20:00:00'
         });
-        isa_ok $output, 'BOM::Market::Data::Tick';
+        isa_ok $output, 'Finance::Spot::Tick';
         ok $output->epoch, 'Has epoch';
         my $date = Date::Utility->new({epoch => $output->epoch});
         is $date->datetime_yyyymmdd_hhmmss, '2012-05-14 05:10:01', 'Date Ok';
@@ -142,7 +142,7 @@ subtest 'New tick induction' => sub {
         start_time => '2012-05-15 00:00:00',
         end_time   => '2012-05-15 15:00:00'
     });
-    isa_ok $output, 'BOM::Market::Data::Tick';
+    isa_ok $output, 'Finance::Spot::Tick';
     ok $output->epoch, 'Has epoch';
     my $date = Date::Utility->new({epoch => $output->epoch});
     is $date->datetime_yyyymmdd_hhmmss, '2012-05-15 12:10:01', 'Date Ok - Last tick counted';
@@ -168,7 +168,7 @@ subtest 'Next day induction' => sub {
             start_time => '2012-05-15 00:00:00',
             end_time   => '2012-05-15 23:00:00'
         });
-        isa_ok $output, 'BOM::Market::Data::Tick';
+        isa_ok $output, 'Finance::Spot::Tick';
         ok $output->epoch, 'Has epoch';
         my $date = Date::Utility->new({epoch => $output->epoch});
         is $date->datetime_yyyymmdd_hhmmss, '2012-05-15 12:10:01', 'Date Ok';
@@ -179,7 +179,7 @@ subtest 'Next day induction' => sub {
             start_time => '2012-05-16 00:00:00',
             end_time   => '2012-12-06 23:00:00'
         });
-        isa_ok $output, 'BOM::Market::Data::Tick';
+        isa_ok $output, 'Finance::Spot::Tick';
         ok $output->epoch, 'Has epoch';
         my $date = Date::Utility->new({epoch => $output->epoch});
         is $date->datetime_yyyymmdd_hhmmss, '2012-05-16 05:10:01', 'Date Ok';

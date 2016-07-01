@@ -1446,7 +1446,7 @@ sub closing_tick_on {
             # The epochs for these are set to be the START of the period.
             # So we also need to change it to the closing time. Meh.
             my $not_tick = $ohlc->[0];
-            return BOM::Market::Data::Tick->new({
+            return Finance::Spot::Tick->new({
                 symbol => $self->symbol,
                 epoch  => $closing->epoch,
                 quote  => $not_tick->close,
@@ -1556,21 +1556,21 @@ Get next tick after a given time. What is the next tick on this underlying after
     my $tick = $underlying->next_tick_after(1234567890);
 
 Return:
-    'BOM::Market::Data::Tick' Object
+    'Finance::Spot::Tick' Object
 
 =head2 breaching_tick
 
 Get first tick in a provided period which breaches a barrier (either 'higher' or 'lower')
 
 Return:
-    'BOM::Market::Data::Tick' Object or undef
+    'Finance::Spot::Tick' Object or undef
 
 =head2 ticks_in_between_start_end
 
 Gets ticks for specified start_time, end_time as all ticks between start_time and end_time
 
 Returns,
-    ArrayRef[BOM::Market::Data::Tick] on success
+    ArrayRef[Finance::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ticks_in_between_start_limit
@@ -1578,7 +1578,7 @@ Returns,
 Get ticks for specified start_time, limit as limit number of ticks from start_time
 
 Returns,
-    ArrayRef[BOM::Market::Data::Tick] on success
+    ArrayRef[Finance::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ticks_in_between_end_limit
@@ -1586,7 +1586,7 @@ Returns,
 Get ticks for specified end_time, limit as limit number of ticks from end_time.
 
 Returns,
-    ArrayRef[BOM::Market::Data::Tick] on success
+    ArrayRef[Finance::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ohlc_between_start_end

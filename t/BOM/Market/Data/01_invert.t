@@ -7,11 +7,11 @@ use Test::Exception;
 use Test::NoWarnings;
 
 use Date::Utility;
-use BOM::Market::Data::Tick;
+use Finance::Spot::Tick;
 use BOM::Market::Data::OHLC;
 
 subtest 'ticks' => sub {
-    my $tick = BOM::Market::Data::Tick->new(
+    my $tick = Finance::Spot::Tick->new(
         bid   => 5,
         ask   => 10,
         quote => 7,
@@ -41,7 +41,7 @@ subtest 'ohlc' => sub {
 };
 
 subtest 'realtime tick' => sub {
-    my $tick = BOM::Market::Data::Tick->new(
+    my $tick = Finance::Spot::Tick->new(
         quote => 8,
         epoch => 1
     );

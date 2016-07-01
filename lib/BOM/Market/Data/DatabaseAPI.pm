@@ -21,7 +21,7 @@ If any of the functions fail due to any reason it will cause an exception thrown
 use Moose;
 use BOM::Platform::Runtime;
 use BOM::Market::Data::OHLC;
-use BOM::Market::Data::Tick;
+use Finance::Spot::Tick;
 use DateTime;
 use Date::Utility;
 use BOM::Database::FeedDB;
@@ -100,7 +100,7 @@ get ticks from feed db filtered by
     - start_time, end_time - All ticks between <start_time> and <end_time>
 
 Returns
-     ArrayRef[BOM::Market::Data::Tick]
+     ArrayRef[Finance::Spot::Tick]
 
 =cut
 
@@ -164,7 +164,7 @@ sub get_first_tick {
     }
     my $tick;
     if (my ($epoch, $quote) = $self->dbh->selectrow_array($statement)) {
-        $tick = BOM::Market::Data::Tick->new({
+        $tick = Finance::Spot::Tick->new({
             symbol => $underlying->symbol,
             epoch  => $epoch,
             quote  => $quote,
@@ -182,7 +182,7 @@ get ticks from feed db filtered by
     - start_time, limit - <limit> number of ticks starting from <start_time>
 
 Returns
-     ArrayRef[BOM::Market::Data::Tick]
+     ArrayRef[Finance::Spot::Tick]
 
 =cut
 
@@ -217,7 +217,7 @@ get ticks from feed db filtered by
     - end_time, limit - <limit> number ticks before <end_time>
 
 Returns
-     ArrayRef[BOM::Market::Data::Tick]
+     ArrayRef[Finance::Spot::Tick]
 
 =cut
 
@@ -244,7 +244,7 @@ get a valid tick at time given or not a valid tick before a given time. Accept a
     - allow_inconsistent - if this is passed then we get the last available tick, we do not care if its a valid ick or not.
 
 Returns
-     BOM::Market::Data::Tick
+     Finance::Spot::Tick
 
 =cut
 
@@ -273,7 +273,7 @@ get tick from feed db after the time given.
     - start_time - the first tick after <start_time>
 
 Returns
-     ArrayRef[BOM::Market::Data::Tick]
+     ArrayRef[Finance::Spot::Tick]
 
 =cut
 
@@ -297,7 +297,7 @@ get ticks from feed db filtered by
     - start_time, end_time, limit - all ticks between <start_time> and <end_time> and limit to <limit> entries.
 
 Returns
-     ArrayRef[BOM::Market::Data::Tick]
+     ArrayRef[Finance::Spot::Tick]
 
 =cut
 
@@ -476,7 +476,7 @@ sub combined_realtime_tick {
 
     return unless $data->{epoch};
 
-    my $tick = BOM::Market::Data::Tick->new(
+    my $tick = Finance::Spot::Tick->new(
         quote  => $data->{spot},
         epoch  => $data->{epoch},
         symbol => $self->underlying
@@ -544,7 +544,7 @@ sub _query_ticks {
         $statement->bind_col(5, \$ask);
 
         while ($statement->fetch()) {
-            my $tick_compiled = BOM::Market::Data::Tick->new({
+            my $tick_compiled = Finance::Spot::Tick->new({
                 symbol => $symbol,
                 epoch  => $epoch,
                 quote  => $quote,
@@ -576,7 +576,7 @@ sub _query_single_tick {
         # but all fields are null. So we check whether the epoch returned is
         # anything truish before assuming we got good data back.
         if ($statement->fetch() and $epoch) {
-            $tick_compiled = BOM::Market::Data::Tick->new({
+            $tick_compiled = Finance::Spot::Tick->new({
                 symbol => $self->underlying,
                 epoch  => $epoch,
                 quote  => $quote,

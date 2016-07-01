@@ -194,7 +194,7 @@ subtest 'Tick Fetch - Start-End-limit' => sub {
     subtest 'Tick datatype' => sub {
         foreach my $tick (@$ticks) {
             my $date = Date::Utility->new({epoch => $tick->epoch});
-            isa_ok $tick, 'BOM::Market::Data::Tick', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $tick, 'Finance::Spot::Tick', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 

@@ -1,12 +1,12 @@
-package BOM::Market::Data::Tick;
+package Finance::Spot::Tick;
 
 =head1 NAME
 
-BOM::Market::Data::Tick
+Finance::Spot::Tick
 
 =head1 SYNOPSYS
 
-    my $tick = BOM::Market::Data::Tick->new({
+    my $tick = Finance::Spot::Tick->new({
             symbol => 'frxRMBMNT',
             epoch  => 1340871449,
             bid    => 2.01,
