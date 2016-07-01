@@ -26,6 +26,7 @@ use Memoize;
 use Time::HiRes;
 use Finance::Asset;
 use Finance::Spot;
+use Finance::Spot::Tick;
 
 use Quant::Framework::Exchange;
 use Quant::Framework::TradingCalendar;
