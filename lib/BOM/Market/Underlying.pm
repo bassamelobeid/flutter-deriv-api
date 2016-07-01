@@ -24,6 +24,7 @@ use Scalar::Util qw( looks_like_number );
 use Memoize;
 use Time::HiRes;
 use Finance::Asset;
+use Finance::Spot;
 
 use Quant::Framework::Exchange;
 use Quant::Framework::TradingCalendar;
