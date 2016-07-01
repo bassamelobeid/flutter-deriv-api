@@ -165,7 +165,9 @@ sub _build_spot_source {
             symbol           => $self->symbol,
             pip_size         => $self->pip_size,
             get_tick_coderef => sub {
-                return $self->tick_at(time, {allow_inconsistent => 1});
+                my $tick = $self->tick_at(time, {allow_inconsistent => 1});
+                return Finance::Spot::Tick->new($tick->as_hash) if defined $tick;
+                return;
             }
         });
 }
