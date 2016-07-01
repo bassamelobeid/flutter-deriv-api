@@ -332,13 +332,13 @@ sub _transaction_channel {
 
     my $redis              = $c->stash('redis');
     my $channel            = $c->stash('transaction_channel');
-    warn "1 _transaction_channel : current: ".Dumper($channel);
+    #warn "1 _transaction_channel : current: ".Dumper($channel);
     my $already_subscribed = $channel ? exists $channel->{$type} : undef;
 
     if ($action) {
         my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
-            warn "2 _transaction_channel :TR subscribe: $channel_name  type: $type \n";
+            #warn "2 _transaction_channel :TR subscribe: $channel_name  type: $type \n";
             $uuid = $type =~ /-/ ? $type : Data::UUID->new->create_str();
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
             $channel->{$type}->{args}        = $args;
@@ -347,7 +347,7 @@ sub _transaction_channel {
             $channel->{$type}->{contract_id} = $args->{contract_id};
             $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
-            warn "3 _transaction_channel :TR UNsubscribe: $channel_name  type: $type \n";
+            #warn "2 _transaction_channel :TR UNsubscribe: $channel_name  type: $type \n";
             delete $channel->{$type};
             unless (keys %$channel) {
                 $redis->unsubscribe([$channel_name], sub { });
@@ -355,7 +355,7 @@ sub _transaction_channel {
             }
         }
     }
-    warn "3 _transaction_channel : channil in stash : ".Dumper($channel); 
+    #warn "3 _transaction_channel : channil in stash : ".Dumper($channel); 
 
     return $uuid;
 }
@@ -363,7 +363,7 @@ sub _transaction_channel {
 sub process_transaction_updates {
     my ($c, $message) = @_;
     my $channel = $c->stash('transaction_channel');
-    warn "ENTER POINT process_transaction_updates: ".Dumper($channel);
+    #warn "ENTER POINT process_transaction_updates: ".Dumper($channel);
 
     if ($channel) {
         my $payload = JSON::from_json($message);
@@ -446,14 +446,10 @@ sub process_transaction_updates {
                         and exists $payload->{financial_market_bet_id}
                         and $payload->{financial_market_bet_id} eq $channel->{$type}->{contract_id})
                     {
-                        warn "process_transaction_updates: $type\n";
+                        #warn "process_transaction_updates: $type\n";
                         # cancel proposal open contract streaming which will cancel transaction subscription also
-                        #BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $type);
-                        # while i am switching new/old get_bid - have those both # TODO
-                        BOM::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, $type);
-                        BOM::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, $type);
-                        BOM::WebSocketAPI::v3::Wrapper::System::_forget_pricing_subscription($c, $type);
-                        warn "Payload: ".Dumper($payload);
+                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $type);
+                        #warn "Payload: ".Dumper($payload);
 
                         $args->{is_sold}    = 1;
                         $args->{sell_price} = $payload->{amount};
@@ -461,8 +457,6 @@ sub process_transaction_updates {
 
                         # send proposal details last time
                         BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, undef, $args);
-                    } else {
-                        warn "Uncatched case for process_transaction_updates : $type\n";
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
                     _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);

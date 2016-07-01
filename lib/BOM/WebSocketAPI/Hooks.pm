@@ -6,6 +6,7 @@ use Try::Tiny;
 use Data::UUID;
 use RateLimitations qw(within_rate_limits);
 use BOM::System::Config;
+use Data::Dumper;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -135,6 +136,7 @@ sub before_forward {
     if (not $c->stash('connection_id')) {
         $c->stash('connection_id' => Data::UUID->new()->create_str());
     }
+    warn "before_forward : ".Dumper({map { m/validator/ ? () : ($_=>$req_storage->{$_})} keys %$req_storage}) unless {map {$_=>1} qw(time reality_check)}->{$req_storage->{method}};
 
     # For authorized calls that are heavier we will limit based on loginid
     # For unauthorized calls that are less heavy we will use connection id.

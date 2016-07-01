@@ -12,9 +12,6 @@ use Data::Dumper;
 sub forget {
     my ($c, $req_storage) = @_;
 
-# TODO !!!!
-
-    _forget_pricing_subscription($c, $req_storage->{args}->{forget});
     return {
         msg_type => 'forget',
         forget => forget_one($c, $req_storage->{args}->{forget}) ? 1 : 0,
@@ -48,9 +45,11 @@ sub forget_one {
     if ($id =~ /-/) {
         # need to keep feed subscription first as in case of proposal_open_contract subscribes to transaction
         # channel and forgets transaction channel internally when we forget it
-        $removed_ids = _forget_feed_subscription($c, $id) unless (scalar @$removed_ids);
-        $removed_ids = _forget_transaction_subscription($c, $id) unless (scalar @$removed_ids);
-        $removed_ids = _forget_pricing_subscription($c, $id) unless (scalar @$removed_ids);
+
+        # should be refactored - there is no feed subscribes for proposal_open_contract get_bid
+        $removed_ids = _forget_feed_subscription($c, $id); # unless (scalar @$removed_ids);
+        $removed_ids = _forget_transaction_subscription($c, $id); # unless (scalar @$removed_ids);
+        $removed_ids = _forget_pricing_subscription($c, $id); # unless (scalar @$removed_ids);
     }
 
     return scalar @$removed_ids;
@@ -105,7 +104,7 @@ sub _forget_pricing_subscription {
                     delete $pricing_channel->{$channel}->{$amount};
                 }
             }
-            warn "_forget_pricing_subscription : processing $channel\n";
+            #warn "_forget_pricing_subscription : processing $channel\n";
 
             if (scalar keys %{$pricing_channel->{$channel}} == 0) {
                 $c->stash('redis_pricer')->unsubscribe([$channel]);

@@ -396,13 +396,13 @@ sub startup {
 
 sub d1 {
     my ($c, $req_storage) = @_;
-    warn "before proposal_open_contract: ".Dumper($req_storage);
+    #warn "before proposal_open_contract: ".Dumper($req_storage);
     return;
 }
 sub d2 {
     my ($c, $req_storage, $res) = @_;
-    warn "after got rpc resp: ".Dumper($req_storage);
-    warn "after got rpc resp: ".Dumper($res);
+    #warn "after got rpc resp: ".Dumper($req_storage);
+    #warn "after got rpc resp: ".Dumper($res);
     return;
 }
 

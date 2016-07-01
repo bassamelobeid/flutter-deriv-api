@@ -13,10 +13,8 @@ use JSON::XS qw(encode_json decode_json);
 use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
+use Math::Util::CalculatedValue::Validatable;
 use Data::Dumper;
-use BOM::Platform::Client;
-use BOM::Database::DataMapper::FinancialMarketBet;
-use BOM::Database::ClientDB;
 
 sub proposal {
     my ($c, $req_storage) = @_;
@@ -34,15 +32,20 @@ sub proposal {
 sub proposal_open_contract {
     my ($c, $req_storage) = @_;
     my $args = $req_storage->{args};
+    #warn "proposal_open_contract : req_storage : ".Dumper($req_storage);
 
-    $c->call_rpc({
-            args            => $args,
-            method          => 'proposal_open_contract',
-            msg_type        => 'proposal_open_contract',
-            rpc_response_cb => \&proposal_open_contract_cb,
-            require_auth    => 'read',
-            stash_params    => [qw( language country_code source token )],
-        });
+    delete $req_storage->{instead_of_forward};
+    $req_storage->{rpc_response_cb} = \&proposal_open_contract_cb;
+    $c->call_rpc($req_storage);
+
+    #$c->call_rpc({
+    #        args            => $args,
+    #        method          => 'proposal_open_contract',
+    #        msg_type        => 'proposal_open_contract',
+    #        rpc_response_cb => \&proposal_open_contract_cb,
+    #        require_auth    => 'read',
+    #        stash_params    => [qw( language country_code source token )],
+    #    });
     return;
 }
 
@@ -52,6 +55,7 @@ sub proposal_open_contract_cb {
     my $args = $req_storage->{args};
     #warn "POC_cb: args: ".Dumper($args);
     #warn "POC_CB: resp: ".Dumper($response);
+    #warn "POC_CB: req_storage : ".Dumper($req_storage);
     if (exists $response->{error}) {
         return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -111,6 +115,21 @@ sub proposal_open_contract_cb {
                         my $uuid = Data::UUID->new->create_str();
 
                         #warn "Detalis to construct args for subscripbin to pricing chan: ".Dumper($details);
+
+                        # short_code
+                        # contract_id
+                        # currency
+                        # is_sold
+                        # sell_time
+
+                          #  $id ? (id => $id) : (),
+                          #  buy_price       => $buy_price,
+                          #  purchase_time   => $purchase_time,
+                          #  transaction_ids => $transaction_ids,
+                          #  (defined $sell_price) ? (sell_price => sprintf('%.2f', $sell_price)) : (),
+                          #  (defined $sell_time) ? (sell_time => $sell_time) : (),
+
+
                         my $subscribe_args = {
                             id          => $uuid,
                             short_code  => $details->{short_code},
@@ -168,6 +187,7 @@ sub _send_ask {
 
                 my $uuid;
 
+                warn "Pricer ASK going to _pricing_channel with args: ". Dumper($args);
                 if (not $uuid = _pricing_channel($c, 'subscribe', $args)) {
                     return $c->new_error('proposal',
                         'AlreadySubscribedOrLimit',
@@ -340,9 +360,18 @@ sub _price_stream_results_adjustment {
     return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
 
     my $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($orig_args);
-    # overrides the theo_probability_value which take the most calculation time.
-    $contract_parameters->{theo_probability_value} = $results->{theo_probability};
-    $contract_parameters->{app_markup_percentage}  = $orig_args->{app_markup_percentage};
+    # overrides the theo_probability which take the most calculation time.
+    # theo_probability is a calculated value (CV), overwrite it with CV object.
+    my $theo_probability = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theo_probability',
+        description => 'theorectical value of a contract',
+        set_by      => 'Pricer Daemon',
+        base_amount => $results->{theo_probability},
+        minimum     => 0,
+        maximum     => 1,
+    });
+    $contract_parameters->{theo_probability}      = $theo_probability;
+    $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
     my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
     if (my $error = $contract->validate_price) {

@@ -7,6 +7,7 @@ use Digest::MD5 qw(md5_hex);
 
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
+use Data::Dumper;
 
 sub proposal_open_contract {
     my ($c, $response, $req_storage) = @_;
@@ -79,6 +80,9 @@ sub proposal_open_contract {
                         BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $details->{account_id}, $id, $details) if $id;
                     }
                     my $res = {$id ? (id => $id) : (), %{$response->{$contract_id}}};
+                    #delete $res->{stop_profit_level};
+                    #delete $res->{stop_loss_level};
+                    #warn "res: ".Dumper($res);
                     $send_details->($res);
                 }
             }
@@ -132,6 +136,9 @@ sub send_proposal_open_contract {
                             $id = undef;
                         }
                     }
+                    #delete $rpc_response->{stop_profit_level};
+                    #delete $rpc_response->{stop_loss_level};
+                    #warn "PM send_proposal_open_contract: ".Dumper($rpc_response);
 
                     return {
                         msg_type               => 'proposal_open_contract',
