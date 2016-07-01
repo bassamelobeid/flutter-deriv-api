@@ -26,7 +26,7 @@ sub run {
         $vol_email_frequency = time;
     }
 
-    return 1 if ($self->is_a_weekend);         # don't do anything on weekend
+    return 1 if ($self->is_a_weekend);    # don't do anything on weekend
     my $report    = $self->report;
     my @successes = ('SUCCESSES');
     my @failures  = ('FAILURES');
