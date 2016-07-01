@@ -16,7 +16,6 @@ use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
-use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use utf8;
 
@@ -170,7 +169,7 @@ sub pricing_table {
     }
 
     my $feed_channel_type = $c->stash('feed_channel_type') || {};
-    my @pricing = grep { $_ =~ /^.*;pricing_table:/ } (keys $feed_channel_type);
+    my @pricing = grep { $_ =~ /^.*;pricing_table:/ } (keys %$feed_channel_type);
 
     # subscribe limit exceeded
     if (scalar @pricing > 5) {
