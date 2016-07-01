@@ -367,7 +367,7 @@ sub get_contract_details_with_transaction_ids {
         delete $record->{transaction_id};
         delete $record->{action_type};
 
-        push $response, $record;
+        push @$response, $record;
     }
 
     return $response;
