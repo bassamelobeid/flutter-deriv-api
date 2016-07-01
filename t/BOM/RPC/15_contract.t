@@ -1,3 +1,5 @@
+#!perl
+
 use strict;
 use warnings;
 use utf8;
@@ -552,7 +554,10 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
         is_sold     => 0,
     };
 
-    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    my $result = $c->call_ok('get_bid', $params);
+    note explain $result;
+    $result = $result->has_no_system_error;
+    $result = $result->has_no_error->result;
 
     my $expected_result = {
         'barrier'               => '55.50',
