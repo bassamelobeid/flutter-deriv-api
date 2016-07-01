@@ -39,7 +39,7 @@ sub portfolio {
             shortcode      => $row->{short_code},
             longcode       => (simple_contract_info($row->{short_code}, $client->currency))[0] // '',
         );
-        push $portfolio->{contracts}, \%trx;
+        push @{$portfolio->{contracts}}, \%trx;
     }
 
     return $portfolio,;
@@ -117,6 +117,8 @@ sub proposal_open_contract {
                     currency              => $client->currency,
                     is_sold               => $fmb->{is_sold},
                     sell_time             => $sell_time,
+                    sell_price            => $fmb->{sell_price},
+                    buy_price             => $fmb->{buy_price},
                     app_markup_percentage => $params->{app_markup_percentage}});
             if (exists $bid->{error}) {
                 $response->{$id} = $bid;
