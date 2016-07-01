@@ -146,7 +146,7 @@ sub error_map {
         'invalid PO Box'      => localize('P.O. Box is not accepted in address.'),
         'invalid DOB'         => localize('Your date of birth is invalid.'),
         'duplicate email'     => localize(
-            'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.')
+            'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.'
         ),
         'duplicate name DOB' => localize(
             'Sorry, you seem to already have a real money account with us. Perhaps you have used a different email address when you registered it. For legal reasons we are not allowed to open multiple real money accounts per person.'

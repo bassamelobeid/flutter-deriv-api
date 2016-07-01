@@ -20,7 +20,7 @@ sub url_for {
 sub domain_for {
     my $self = shift;
 
-    my @host_name   = split(/\./, Sys::Hostname::hostname);
+    my @host_name = split(/\./, Sys::Hostname::hostname);
     my $server_name = $host_name[0];
 
     if ($server_name =~ /^(qa\d+)$/) {
@@ -28,7 +28,6 @@ sub domain_for {
     }
     return $server_name . '.binary.com';
 }
-
 
 1;
 
