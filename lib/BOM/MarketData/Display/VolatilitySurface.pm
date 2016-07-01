@@ -29,18 +29,6 @@ has _field_separator => (
     default => "\t",
 );
 
-has _output_format => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__output_format {
-    my $self = shift;
-
-    my $print_precision = $self->surface->print_precision;
-    return ($print_precision) ? '%.' . $print_precision . 'f' : undef;
-}
-
 =head1 rmg_table_format
 
 Output the volatility surface in table format.
@@ -388,10 +376,7 @@ sub _construct_smile_line {
 
     foreach my $point (sort { $a <=> $b } keys %{$smile_ref}) {
         next if not $deltas_to_use{$point};
-        my $output =
-            ($self->_output_format)
-            ? sprintf($self->_output_format, $smile_ref->{$point})
-            : $smile_ref->{$point};
+        my $output = sprintf('%.4f', $smile_ref->{$point});
         push @smile_line, $output;
     }
 
