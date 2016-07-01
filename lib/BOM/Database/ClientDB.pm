@@ -3,7 +3,7 @@ package BOM::Database::ClientDB;
 use Moose;
 use feature "state";
 use BOM::Database::Rose::DB;
-use YAML::XS;
+use YAML::XS qw(LoadFile);
 
 use Carp;
 
@@ -32,6 +32,12 @@ sub BUILDARGS {
         croak "Invalid operation for DB " . $orig->{operation};
     }
 
+    # for some operations we use the collector that is aggregation of all db clusters
+    if ($orig->{broker_code} and $orig->{broker_code} eq 'FOG') {
+        $orig->{broker_code} = 'VRTC';
+        $orig->{operation}   = 'collector';
+    }
+
     if (defined($orig->{broker_code})) {
         return $orig;
     }
@@ -49,12 +55,10 @@ sub BUILDARGS {
 my $environment;
 
 BEGIN {
-    $environment = +{
-        map {
-            my ($bcodes, $landing_company) = @{$_}{qw/code landing_company/};
-            local $_;
-            map { $_ => $landing_company } @$bcodes;
-        } @{YAML::XS::LoadFile('/etc/rmg/broker_codes.yml')->{definitions}}};
+    my $loaded_landing_companies = LoadFile('/home/git/regentmarkets/bom-platform/config/landing_companies.yml');
+    while (my ($k, $v) = each %$loaded_landing_companies) {
+        map {$environment->{$_} = $v->{short}} @{$v->{broker_codes}};
+    }
 }
 
 sub _build_db {
