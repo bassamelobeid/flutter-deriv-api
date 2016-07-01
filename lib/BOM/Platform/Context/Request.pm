@@ -13,10 +13,10 @@ use Format::Util::Strings qw( defang_lite );
 
 use BOM::System::Localhost;
 use BOM::Platform::Runtime;
-use BOM::Platform::Runtime::Website;
 use BOM::Platform::Untaint;
 
 use Plack::App::CGIBin::Streaming::Request;
+use BOM::Platform::Runtime::LandingCompany::Registry;
 
 with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
 
@@ -57,11 +57,6 @@ has 'untainter' => (
     lazy_build => 1
 );
 
-has 'is_pjax' => (
-    is         => 'ro',
-    lazy_build => 1
-);
-
 has 'domain_name' => (
     is         => 'ro',
     isa        => 'Str',
@@ -86,8 +81,8 @@ has 'country' => (
 );
 
 has 'country_code' => (
-    is         => 'ro',
-    lazy_build => 1,
+    is      => 'ro',
+    default => 'aq',
 );
 
 has 'ui_settings' => (
@@ -114,40 +109,10 @@ has 'language' => (
     lazy_build => 1,
 );
 
-has 'website' => (
-    is         => 'ro',
-    isa        => 'BOM::Platform::Runtime::Website',
-    lazy_build => 1,
-);
-
-has 'broker' => (
-    is         => 'ro',
-    isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
-    lazy_build => 1,
-);
-
 has cookie_domain => (
     is      => 'ro',
     lazy    => 1,
     builder => '_build_cookie_domain'
-);
-
-has 'real_account_broker' => (
-    is         => 'ro',
-    isa        => 'BOM::Platform::Runtime::Broker',
-    lazy_build => 1,
-);
-
-has 'virtual_account_broker' => (
-    is         => 'ro',
-    isa        => 'BOM::Platform::Runtime::Broker',
-    lazy_build => 1,
-);
-
-has 'financial_account_broker' => (
-    is         => 'ro',
-    isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
-    lazy_build => 1,
 );
 
 has 'available_currencies' => (
@@ -289,29 +254,9 @@ sub _build_http_path {
     return "UNKNOWN";
 }
 
-sub _build_is_pjax {
-    my $self = shift;
-    if (exists $self->params->{_pjax}) {
-        return 1;
-    }
-
-    return;
-}
-
 sub _build_country {
     my $self = shift;
     return BOM::Platform::Runtime->instance->countries->country_from_code($self->country_code);
-}
-
-sub _build_country_code {
-    my $self = shift;
-
-    my $ip = $self->client_ip;
-    if (($ip =~ /^99\.99\.99\./) or ($ip =~ /^192\.168\./) or ($ip eq '127.0.0.1')) {
-        return 'aq';
-    }
-
-    return;
 }
 
 sub _build_cookie_domain {
@@ -328,49 +273,31 @@ sub _build_domain_name {
     return BOM::System::Localhost::external_fqdn();
 }
 
+my $countries_list;
+
+BEGIN {
+    $countries_list = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
+}
+
 sub _build_broker_code {
     my $self = shift;
 
     if ($self->backoffice) {
-        my $input_broker = $self->param('broker') || $self->param('w');
-        if ($input_broker and BOM::Platform::Runtime->instance->broker_codes->get($input_broker)->code) {
-            return $input_broker;
-        }
+        return $self->param('broker') if $self->param('broker');
 
         my $loginid = $self->param('LOGINID') || $self->param('loginID');
-        if ($loginid and BOM::Platform::Runtime->instance->broker_codes->get($loginid)->code) {
-            return BOM::Platform::Runtime->instance->broker_codes->get($loginid)->code;
+        if ($loginid and $loginid =~ /^([A-Z]+)\d+$/) {
+            return $1;
         }
+
+        return 'CR';
     }
 
-    if (my $input_broker = $self->param('broker')) {
-        return BOM::Platform::Runtime->instance->broker_codes->get($input_broker)->code;
-    }
+    my $company = $countries_list->{$self->country_code}->{gaming_company};
+    $company = $countries_list->{$self->country_code}->{financial_company} if (not $company or $company eq 'none');
 
-    return $self->real_account_broker->code;
-}
+    return BOM::Platform::Runtime::LandingCompany::Registry::get($company)->broker_codes->[0];
 
-sub _build_broker {
-    my $self = shift;
-    return BOM::Platform::Runtime->instance->broker_codes->get($self->broker_code);
-}
-
-sub _build_virtual_account_broker {
-    my $self = shift;
-    return unless ($self->website);
-    return $self->website->broker_for_new_virtual($self->country_code);
-}
-
-sub _build_real_account_broker {
-    my $self = shift;
-    return unless ($self->website);
-    return $self->website->broker_for_new_account($self->country_code);
-}
-
-sub _build_financial_account_broker {
-    my $self = shift;
-    return unless ($self->website);
-    return $self->website->broker_for_new_financial($self->country_code);
 }
 
 sub _build_language {
@@ -392,26 +319,13 @@ sub _build_language {
         return uc $language;
     }
 
-    if ($self->website) {
-        return $self->website->default_language;
-    }
-
     return 'EN';
-}
-
-sub _build_website {
-    my $self = shift;
-
-    my $parameters = {};
-    $parameters->{domain_name} = $self->domain_name;
-    $parameters->{backoffice} = 1 if ($self->backoffice);
-    return BOM::Platform::Runtime->instance->website_list->choose_website($parameters);
 }
 
 sub _build_available_currencies {
     my $self = shift;
 
-    return $self->broker->landing_company->legal_allowed_currencies;
+    return BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
 }
 
 sub _build_default_currency {
@@ -419,14 +333,14 @@ sub _build_default_currency {
 
     #First try to get a country specific currency.
     my $currency = $self->_country_specific_currency($self->country_code);
-    if ($currency and $self->broker->landing_company->is_currency_legal($currency)) {
+    if ($currency and BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->is_currency_legal($currency)) {
         if (grep { $_ eq $currency } @{$self->available_currencies}) {
             return $currency;
         }
     }
 
     #Next see if the default in landing company is available.
-    $currency = $self->broker->landing_company->legal_default_currency;
+    $currency = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_default_currency;
     if (grep { $_ eq $currency } @{$self->available_currencies}) {
         return $currency;
     }
