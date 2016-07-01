@@ -2370,8 +2370,8 @@ sub _validate_trading_times {
         }
     } elsif ($self->expiry_daily and not $self->is_atm_bet) {
         # For definite ATM contracts we do not have to check for upcoming holidays.
-        my $trading_days  = $self->calendar->trading_days_between($date_start, $date_expiry);
-        my $holiday_days  = $self->calendar->holiday_days_between($date_start, $date_expiry);
+        my $trading_days = $self->calendar->trading_days_between($date_start, $date_expiry);
+        my $holiday_days = $self->calendar->holiday_days_between($date_start, $date_expiry);
         my $calendar_days = $date_expiry->days_between($date_start);
 
         if ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
