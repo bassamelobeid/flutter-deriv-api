@@ -91,6 +91,7 @@ sub options {
 sub script_run {
     my $self = shift;
 
+
     my $hostname = $self->getOption('hostname');
     my $username = $self->getOption('username');
     my $password = 'mRX1E3Mi00oS8LG';
@@ -104,24 +105,24 @@ sub script_run {
     if ($dbset eq 'rmg') {
         $dir = '/home/git/regentmarkets/bom-postgres/config/sql/rmgdb';
     } elsif ($dbset eq 'collector') {
-        $dir = '/home/git/regentmarkets/bom-postgres/config/sql/collectordb';
+        $dir = '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/';
 
         # version table = dbix_migration_collector
         $tablename_extension = 'collector';
     } elsif ($dbset eq 'chronicle') {
-        $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/chronicledb';
+        $dir      = '/home/git/regentmarkets/bom-postgres-chronicledb/config/sql/';
         $port     = '5437';
         $database = 'chronicle';
     } elsif ($dbset eq 'feed') {
-        $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/feeddb';
+        $dir      = '/home/git/regentmarkets/bom-postgres-feeddb/config/sql/';
         $port     = '5433';
         $database = 'feed';
     } elsif ($dbset eq 'auth') {
-        $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/authdb';
+        $dir      = '/home/git/regentmarkets/bom-postgres-authdb/config/sql/';
         $port     = '5435';
         $database = 'auth';
     } elsif ($dbset eq 'users') {
-        $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/userdb';
+        $dir      = '/home/git/regentmarkets/bom-postgres-userdb/config/sql';
         $port     = '5436';
         $database = 'users';
     }
