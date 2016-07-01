@@ -10,7 +10,6 @@ use JSON qw(from_json to_json);
 use f_brokerincludeall;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Static::Config;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use List::Util qw(first);

@@ -11,7 +11,6 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Static::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 

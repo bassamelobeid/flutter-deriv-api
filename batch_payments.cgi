@@ -17,7 +17,6 @@ use BOM::Platform::Context;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::DualControl;
 use BOM::System::AuditLog;
-use BOM::Platform::Static::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
