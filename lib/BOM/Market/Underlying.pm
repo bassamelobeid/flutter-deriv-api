@@ -143,19 +143,22 @@ has 'symbol' => (
 );
 
 
-has spot_provider => (
+has spot_source => (
     is         => 'ro',
     lazy_build => 1,
     handles => {
         'set_combined_realtime' => 'set_spot_tick',
         'pipsized_value' => 'pipsized_value',
+        'spot' => 'spot_value',
     }
 );
 
-sub _build_spot_provider {
+sub _build_spot_source {
     my $self = shift;
 
-    return Finance::Sport->new({
+    #TODO: after we have a module to handle historical spot, here we will
+    #create either Finance::Spot or that module based on for_date
+    return Finance::Spot->new({
             symbol => $self->symbol,
             pip_size => $self->pip_size,
             get_tick_cr => sub {
@@ -164,13 +167,12 @@ sub _build_spot_provider {
         });
 }
 
-
 sub spot_tick {
     my $self = shift;
 
     return ($self->for_date)
         ? $self->tick_at($self->for_date->epoch, {allow_inconsistent => 1})
-        : $self->spot_provider->spot_tick;
+        : $self->spot_source->spot_tick;
 }
 
 =head2 spot_age
