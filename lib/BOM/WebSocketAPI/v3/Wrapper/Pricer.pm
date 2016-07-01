@@ -10,7 +10,6 @@ use BOM::RPC::v3::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
-use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
@@ -236,6 +235,7 @@ sub _pricing_channel {
 
     $args_hash{language} = $c->stash('language') || 'EN';
     my $serialized_args = _serialized_args(\%args_hash);
+    warn "Seria Ags: $serialized_args\n";
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
@@ -255,7 +255,7 @@ sub _pricing_channel {
         and $args->{subscribe} == 1)
     {
         warn "_pricing_channel : subs: $uuid\n";
-        BOM::System::RedisReplicated::redis_pricer->set($serialized_args, 1);
+        $c->redis_pricer->set($serialized_args, 1);
         $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
 
@@ -372,6 +372,7 @@ sub _price_stream_results_adjustment {
     });
     $contract_parameters->{theo_probability}      = $theo_probability;
     $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
+    warn "Price adj: creating contract with :".Dumper($contract_parameters);
     my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
     if (my $error = $contract->validate_price) {
