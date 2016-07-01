@@ -153,7 +153,6 @@ has spot_source => (
         'get_combined_realtime_tick' => 'spot_tick',
         'get_combined_realtime'      => 'spot_tick_hash',
         'pipsized_value'             => 'pipsized_value',
-        'spot'                       => 'spot_quote',
         'display_decimals'           => 'display_decimals',
     });
 
@@ -163,9 +162,9 @@ sub _build_spot_source {
     #TODO: after we have a module to handle historical spot, here we will
     #create either Finance::Spot or that module based on for_date
     return Finance::Spot->new({
-            symbol      => $self->symbol,
-            pip_size    => $self->pip_size,
-            get_tick_cr => sub {
+            symbol           => $self->symbol,
+            pip_size         => $self->pip_size,
+            get_tick_coderef => sub {
                 return $self->tick_at(time, {allow_inconsistent => 1});
             }
         });
@@ -177,6 +176,24 @@ sub spot_tick {
     return ($self->for_date)
         ? $self->tick_at($self->for_date->epoch, {allow_inconsistent => 1})
         : $self->spot_source->spot_tick;
+}
+
+=head2 spot
+
+What is the current spot price for this underlying?
+
+=cut
+
+# Get the last available value currently defined in realtime DB
+
+sub spot {
+    my $self = shift;
+    my $last_price;
+
+    my $last_tick = $self->spot_tick;
+    $last_price = $last_tick->quote if $last_tick;
+
+    return $self->spot_source->pipsized_value($last_price);
 }
 
 =head2 spot_age
