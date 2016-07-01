@@ -40,7 +40,6 @@ use BOM::Platform::Runtime;
 use BOM::Market::Data::DatabaseAPI;
 use BOM::Platform::Context qw(request localize);
 use BOM::Market::Types;
-use BOM::Platform::Static::Config;
 use Quant::Framework::Asset;
 use Quant::Framework::Currency;
 use Quant::Framework::ExpiryConventions;
