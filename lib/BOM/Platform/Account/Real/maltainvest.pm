@@ -8,7 +8,6 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Static::Config;
 
 sub _validate {
     my $args = shift;

@@ -8,7 +8,6 @@ use Locale::SubCountry;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request localize);
-use BOM::Platform::Static::Config;
 
 sub translate_salutation {
     my $provided = shift;

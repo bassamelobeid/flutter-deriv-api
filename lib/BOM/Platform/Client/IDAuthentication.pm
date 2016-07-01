@@ -9,7 +9,6 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
 use BOM::Platform::ProveID;
-use BOM::Platform::Static::Config;
 
 has client => (
     is  => 'ro',

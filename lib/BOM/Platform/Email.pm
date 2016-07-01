@@ -12,7 +12,6 @@ use Try::Tiny;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
-use BOM::Platform::Static::Config;
 
 use base 'Exporter';
 our @EXPORT_OK = qw(send_email);
