@@ -119,7 +119,7 @@ sub available_contracts_for_symbol {
             $o->{amount_per_point} = 1;
             $o->{stop_type}        = 'point';
             $o->{stop_profit}      = 10;
-            $o->{stop_loss}        = 10;
+            $o->{stop_loss}        = _get_minimum_stop_loss($underlying);
         }
     }
 
@@ -172,6 +172,19 @@ sub _default_barrier {
     my $barrier = $duration >= 86400 ? $strike->as_absolute : $strike->as_difference;
 
     return $underlying->market->integer_barrier ? floor($barrier) : $barrier;
+}
+
+sub _get_minimum_stop_loss {
+    my $underlying = shift;
+
+    my $vs = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
+    # 7 days volatility should be fine.
+    my $spread = $underlying->calculate_spread(
+        $vs->get_volatility({
+                delta => 50,
+                days  => 7
+            }));
+    return 1.5 * $spread;
 }
 
 1;

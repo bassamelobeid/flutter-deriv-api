@@ -145,13 +145,15 @@ subtest 'asian' => sub {
     }
     'build from shortcode'; 
 
-    dies_ok {
-        produce_contract('ASIANU_R_50_100_1466496619_5T_S5P_0', 'USD');
+    lives_ok {
+        my $c = produce_contract('ASIANU_R_50_100_1466496619_5T_S5P_0', 'USD');
+        is $c->shortcode, 'ASIANU_R_50_100_1466496619_5T', 'shortcode is without barrier';
     }
     'build from shortcode with relative barrier fails'; 
 
-    dies_ok {
-        produce_contract('ASIANU_R_50_100_1466496590_5T_1002000000_0', 'USD');
+    lives_ok {
+        my $c = produce_contract('ASIANU_R_50_100_1466496590_5T_1002000000_0', 'USD');
+        is $c->shortcode, 'ASIANU_R_50_100_1466496590_5T', 'shortcode is without barrier';
     }
     'build from shortcode with absolute barrier fails'; 
 };

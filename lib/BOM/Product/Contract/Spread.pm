@@ -170,7 +170,7 @@ has [qw(value point_value)] => (
 );
 
 # spread_divisor - needed to reproduce the digit corresponding to one point
-has [qw(spread spread_divisor spread_multiplier half_spread current_tick current_spot translated_display_name)] => (
+has [qw(spread spread_divisor half_spread current_tick current_spot translated_display_name)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -179,24 +179,12 @@ sub _build_spread {
     my $self = shift;
 
     my $vs = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $self->underlying});
-    # since it is only vol indices
-    my $vol     = $vs->get_volatility();
-    my $spread  = $self->current_spot * sqrt($vol**2 * 2 / (365 * 86400)) * $self->spread_multiplier;
-    my $y       = floor(log($spread) / log(10));
-    my $x       = $spread / (10**$y);
-    my $rounded = max(2, round($x / 2) * 2);
-
-    return $rounded * 10**$y;
+    return $self->underlying->calculate_spread($vs->get_volatility);
 }
 
 sub _build_spread_divisor {
     my $self = shift;
     return $self->underlying->spread_divisor;
-}
-
-sub _build_spread_multiplier {
-    my $self = shift;
-    return BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{spread_multiplier};
 }
 
 sub _build_half_spread {
