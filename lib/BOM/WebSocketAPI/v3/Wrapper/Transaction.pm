@@ -17,19 +17,19 @@ sub buy_get_contract_params {
     # 1. Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
     # 2. Calling forget_buy_proposal instead of forget_one as we need args for contract proposal
     if ($args->{parameters}) {
-        $params->{call_params}->{contract_parameters} = $args->{parameters};
+        $req_storage->{call_params}->{contract_parameters} = $args->{parameters};
         return;
     }
 
     if (my $proposal_id = $args->{buy} // $args->{buy_contract_for_multiple_accounts}) {
         if (my $p = BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $proposal_id)) {
-            $params->{call_params}->{contract_parameters} = $p;
+            $req_storage->{call_params}->{contract_parameters} = $p;
             return;
         }
 
         my $ch = $c->stash('pricing_channel');
         if ($ch and $ch = $ch->{uuid} and $ch = $ch->{$proposal_id}) {
-            $params->{call_params}->{contract_parameters} = $ch->{args};
+            $req_storage->{call_params}->{contract_parameters} = $ch->{args};
             BOM::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $proposal_id);
             return;
         }
