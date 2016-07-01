@@ -169,7 +169,7 @@ sub pricing_table {
     }
 
     my $feed_channel_type = $c->stash('feed_channel_type') || {};
-    my @pricing = grep { $_ =~ /^.*;pricing_table:/ } (keys $feed_channel_type);
+    my @pricing = grep { $_ =~ /^.*;pricing_table:/ } (keys %$feed_channel_type);
 
     # subscribe limit exceeded
     if (scalar @pricing > 5) {
