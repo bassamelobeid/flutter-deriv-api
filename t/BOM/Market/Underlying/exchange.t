@@ -31,10 +31,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 "Early May Bank Holiday" => [qw(LSE)],
             },
             "25-Dec-2013" => {
-                "Christmas Day" => [qw(LSE FOREX)],
+                "Christmas Day" => [qw(LSE FOREX METAL)],
             },
             "1-Jan-2014" => {
-                "New Year's Day" => [qw(LSE FOREX)],
+                "New Year's Day" => [qw(LSE FOREX METAL)],
             },
             "1-Apr-2013" => {
                 "Easter Monday" => [qw(LSE)],
@@ -56,7 +56,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 '12h30m' => ['LSE'],
             },
             '22-Dec-2016' => {
-                '18h' => ['FOREX'],
+                '18h' => ['FOREX METAL'],
             },
         },
     });
@@ -80,7 +80,6 @@ my $LSE = Quant::Framework::TradingCalendar->new({
         symbol => 'LSE', 
         underlying_config => $ul_LSE->config,
         chronicle_reader => $chronicle_r, 
-        locale => 'EN', 
         for_date => $date});
 
 is $ul_LSE->exchange->symbol, $LSE->symbol, "This underlying's exchange is what we expect";

@@ -17,6 +17,7 @@ my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 use open qw[ :encoding(UTF-8) ];
 use BOM::Market::Types;
 
+use Math::Round qw(round);
 use JSON qw(from_json);
 use List::MoreUtils qw( any );
 use List::Util qw( first max min);
@@ -347,7 +348,6 @@ sub _build_config {
         rate_to_imply_from                    => $self->rate_to_imply_from,
         volatility_surface_type               => $self->volatility_surface_type,
         exchange_name                         => $self->exchange_name,
-        locale                                => BOM::Platform::Context::request()->language,
         uses_implied_rate_for_asset           => $self->uses_implied_rate($self->asset_symbol) // '',
         uses_implied_rate_for_quoted_currency => $self->uses_implied_rate($self->quoted_currency_symbol) // '',
         spot                                  => $self->spot,
@@ -658,7 +658,7 @@ sub _build_market {
     my $market = BOM::Market->new({name => 'nonsense'});
     if ($symbol =~ /^FUT/) {
         $market = BOM::Market::Registry->instance->get('futures');
-    } elsif ($symbol eq 'HEARTB' or $symbol =~ /^I_/) {
+    } elsif ($symbol =~ /^I_/) {
         $market = BOM::Market::Registry->instance->get('config');
     } elsif (length($symbol) >= 15) {
         $market = BOM::Market::Registry->instance->get('config');
@@ -745,16 +745,6 @@ sub _build_exchange_name {
     my $self = shift;
     my $exchange_name = $self->_exchange_name || 'FOREX';
 
-    if ($self->symbol =~ /^FUTE(B|C)/i) {
-
-        # International Petroleum Exchange (now called ICE)
-        $exchange_name = 'IPE';
-    } elsif ($self->symbol =~ /^FUTLZ/i) {
-
-        # Euronext LIFFE FTSE-100 Futures
-        $exchange_name = 'EURONEXT';
-    }
-
     return $exchange_name;
 }
 
@@ -799,6 +789,7 @@ sub _build_calendar {
     my $self = shift;
 
     $self->_exchange_refreshed(time);
+
     return Quant::Framework::TradingCalendar->new({
         symbol           => $self->exchange_name,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
@@ -910,7 +901,7 @@ sub _build_combined_folder {
     my $underlying_symbol = $self->system_symbol;
     my $market            = $self->market;
 
-    if ($market->name eq 'config' and $underlying_symbol !~ /HEARTB/gi) {
+    if ($market->name eq 'config') {
         $underlying_symbol =~ s/^FRX/^frx/;
         return 'combined/' . $underlying_symbol . '/quant';
     }
@@ -1990,6 +1981,21 @@ sub _build_base_commission {
     my $self = shift;
 
     return $self->submarket->base_commission;
+}
+
+sub calculate_spread {
+    my ($self, $volatility) = @_;
+
+    die 'volatility is zero for ' . $self->symbol if $volatility == 0;
+
+    my $spread_multiplier = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{spread_multiplier};
+    # since it is only vol indices
+    my $spread  = $self->spot * sqrt($volatility**2 * 2 / (365 * 86400)) * $spread_multiplier;
+    my $y       = POSIX::floor(log($spread) / log(10));
+    my $x       = $spread / (10**$y);
+    my $rounded = max(2, round($x / 2) * 2);
+
+    return $rounded * 10**$y;
 }
 
 no Moose;
