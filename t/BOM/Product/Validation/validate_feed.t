@@ -34,7 +34,7 @@ my $bet_params = {
 
 };
 
-my $fake_tick = BOM::Market::Data::Tick->new({
+my $fake_tick = Finance::Spot::Tick->new({
     underlying => 'frxUSDJPY',
     epoch => 1,
     quote => 100,

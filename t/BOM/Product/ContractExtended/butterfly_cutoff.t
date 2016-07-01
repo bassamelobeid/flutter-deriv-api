@@ -16,7 +16,7 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Test::Runtime qw(:normal);
-use BOM::Market::Data::Tick;
+use Finance::Spot::Tick;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
@@ -158,7 +158,7 @@ sub _sample_surface {
 sub _sample_bet {
     my %overrides = @_;
 
-    my $tick = BOM::Market::Data::Tick->new(
+    my $tick = Finance::Spot::Tick->new(
         quote  => $spot,
         epoch  => 1,
         symbol => $underlying->symbol,

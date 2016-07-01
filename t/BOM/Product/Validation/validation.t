@@ -12,7 +12,7 @@ use JSON qw(decode_json);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Runtime qw(:normal);
 use Date::Utility;
-use BOM::Market::Data::Tick;
+use Finance::Spot::Tick;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw( produce_contract );
 
@@ -32,7 +32,7 @@ my $tick_params = {
     quote  => 100
 };
 
-my $tick = BOM::Market::Data::Tick->new($tick_params);
+my $tick = Finance::Spot::Tick->new($tick_params);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'holiday',
@@ -157,7 +157,7 @@ subtest 'valid bet passing and stuff' => sub {
     ok($bet->is_valid_to_buy, 'Valid for purchase');
     # If we look at it a few minutes later..
     $bet_params->{date_pricing} = $starting + 300;
-    $bet_params->{current_tick} = BOM::Market::Data::Tick->new({
+    $bet_params->{current_tick} = Finance::Spot::Tick->new({
         symbol => $bet->underlying->symbol,
         epoch  => $starting + 300,
         quote  => $bet->current_spot + 2 * $bet->underlying->pip_size
@@ -207,7 +207,7 @@ subtest 'invalid underlying is a weak foundation' => sub {
     test_error_list('buy', $bet, $expected_reasons);
     BOM::Platform::Runtime->instance->app_config->system->suspend->trading(0);    # Resume betting!
 
-    my $old_tick = BOM::Market::Data::Tick->new({
+    my $old_tick = Finance::Spot::Tick->new({
         symbol => $bet->underlying->symbol,
         epoch  => $starting - 3600,
         quote  => 100
@@ -424,7 +424,7 @@ subtest 'volsurfaces become old and invalid' => sub {
             recorded_date => Date::Utility->new($starting)->minus_time_interval('10d'),
         });
 
-    my $tick = BOM::Market::Data::Tick->new({
+    my $tick = Finance::Spot::Tick->new({
         symbol => 'frxAUDUSD',
         epoch  => $starting,
         quote  => 100
@@ -954,7 +954,7 @@ subtest '10% barrier check for double barrier contract' => sub {
         quote  => 100
     };
 
-    my $tick       = BOM::Market::Data::Tick->new($tick_params);
+    my $tick       = Finance::Spot::Tick->new($tick_params);
     my $bet_params = {
         underlying   => 'frxGBPUSD',
         bet_type     => 'UPORDOWN',
@@ -997,7 +997,7 @@ subtest 'intraday indices duration test' => sub {
             ask        => 100.021
         });
     }
-    my $tick   = BOM::Market::Data::Tick->new($tick_params);
+    my $tick   = Finance::Spot::Tick->new($tick_params);
     my $params = {
         bet_type     => 'FLASHU',
         underlying   => 'AS51',
@@ -1047,7 +1047,7 @@ subtest 'intraday indices duration test' => sub {
             spot_reference => $tick->quote,
         });
     $params->{date_start} = Date::Utility->new('2015-04-08 07:15:00');
-    my $ftse_tick = BOM::Market::Data::Tick->new({
+    my $ftse_tick = Finance::Spot::Tick->new({
         epoch      => $params->{date_start}->epoch,
         underlying => 'GDAXI',
         quote      => 100.012,
@@ -1072,7 +1072,7 @@ subtest 'expiry_daily expiration time' => sub {
         epoch  => $now->epoch,
         quote  => 100
     };
-    my $tick   = BOM::Market::Data::Tick->new($tick_params);
+    my $tick   = Finance::Spot::Tick->new($tick_params);
     my $params = {
         bet_type     => 'FLASHU',
         underlying   => 'AS51',
@@ -1113,7 +1113,7 @@ subtest 'spot reference check' => sub {
         quote  => 100
     };
 
-    my $tick       = BOM::Market::Data::Tick->new($tick_params);
+    my $tick       = Finance::Spot::Tick->new($tick_params);
     my $bet_params = {
         underlying   => 'DJI',
         bet_type     => 'CALL',
@@ -1254,7 +1254,7 @@ subtest 'integer barrier' => sub {
         quote  => 100
     };
 
-    my $tick   = BOM::Market::Data::Tick->new($tick_params);
+    my $tick   = Finance::Spot::Tick->new($tick_params);
     my $params = {
         bet_type     => 'CALL',
         underlying   => 'AS51',
@@ -1320,7 +1320,7 @@ subtest 'contract must be held' => sub {
 
 subtest 'zero payout' => sub {
     lives_ok {
-        my $fake_tick = BOM::Market::Data::Tick->new({
+        my $fake_tick = Finance::Spot::Tick->new({
             underlying => 'R_100',
             epoch      => time,
             quote      => 100,
@@ -1342,7 +1342,7 @@ subtest 'zero payout' => sub {
 };
 
 my $now       = Date::Utility->new;
-my $fake_tick = BOM::Market::Data::Tick->new({
+my $fake_tick = Finance::Spot::Tick->new({
     underlying => 'R_100',
     epoch      => $now->epoch,
     quote      => 100,
@@ -1364,7 +1364,7 @@ subtest 'sellback tick expiry contracts' => sub {
     my $c = produce_contract($params);
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like($c->primary_validation_error->{message}, qr/resale of tick expiry contract/, 'throws error');
-    $params->{exit_tick} = BOM::Market::Data::Tick->new({
+    $params->{exit_tick} = Finance::Spot::Tick->new({
         underlying => 'R_100',
         epoch      => $now->epoch + 10,
         quote      => 101,

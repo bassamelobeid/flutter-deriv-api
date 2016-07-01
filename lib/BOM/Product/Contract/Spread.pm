@@ -13,7 +13,7 @@ use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 
 use BOM::Platform::Context qw(localize request);
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Market::Data::Tick;
+use Finance::Spot::Tick;
 use BOM::Market::Underlying;
 use BOM::Product::Types;
 use BOM::Platform::Static::Config;
@@ -361,7 +361,7 @@ has _pip_size_tick => (
 sub _build__pip_size_tick {
     my $self = shift;
 
-    return BOM::Market::Data::Tick->new({
+    return Finance::Spot::Tick->new({
         quote  => $self->underlying->pip_size,
         epoch  => 1,                             # Intentionally very old for recognizability.
         symbol => $self->underlying->symbol,

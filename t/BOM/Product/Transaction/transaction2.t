@@ -720,7 +720,7 @@ subtest 'spreads', sub {
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $now          = time;
-        my $current_tick = BOM::Market::Data::Tick->new({
+        my $current_tick = Finance::Spot::Tick->new({
             underlying => 'R_100',
             epoch      => $now,
             quote      => 100,

@@ -14,7 +14,7 @@ use BOM::Market::Underlying;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 
-use BOM::Market::Data::Tick;
+use Finance::Spot::Tick;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw(
     shortcode_to_parameters

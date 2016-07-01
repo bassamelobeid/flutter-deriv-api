@@ -6,7 +6,7 @@ use warnings;
 use Test::More tests => 8;
 
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Market::Data::Tick;
+use Finance::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Date::Utility;
 use BOM::Market::Underlying;
@@ -22,7 +22,7 @@ my $u     = BOM::Market::Underlying->new('frxBROUSD');
 my $count = 0;
 foreach my $ds (@date_start) {
     $ds = Date::Utility->new($ds);
-    my $tick = BOM::Market::Data::Tick->new({
+    my $tick = Finance::Spot::Tick->new({
         symbol => $u,
         quote  => 100,
         epoch  => $ds->epoch,
@@ -56,7 +56,7 @@ my @duration_2   = ('20m',                 '10h58m59s');
 my $count_2      = 0;
 foreach my $ds_2 (@date_start_2) {
     $ds_2 = Date::Utility->new($ds_2);
-    my $tick_2 = BOM::Market::Data::Tick->new({
+    my $tick_2 = Finance::Spot::Tick->new({
         symbol => $u,
         quote  => 100,
         epoch  => $ds_2->epoch,

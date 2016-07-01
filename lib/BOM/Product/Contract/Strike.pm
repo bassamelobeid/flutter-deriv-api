@@ -41,7 +41,7 @@ sub _build_underlying {
 
 has basis_tick => (
     is       => 'ro',
-    isa      => 'BOM::Market::Data::Tick',
+    isa      => 'Finance::Spot::Tick',
     required => 1,
 );
 
