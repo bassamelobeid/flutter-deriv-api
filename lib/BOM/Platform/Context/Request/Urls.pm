@@ -1,6 +1,7 @@
 package BOM::Platform::Context::Request::Urls;
 
 use Mojo::URL;
+use Moose::Role;
 
 sub url_for {
     my ($self, @args) = @_;
