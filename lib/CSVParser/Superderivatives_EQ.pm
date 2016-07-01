@@ -7,7 +7,7 @@ use List::Util qw(max min);
 use Math::Function::Interpolator;
 use Quant::Framework::CorrelationMatrix;
 use BOM::Market::Underlying;
-use BOM::MarketData::VolSurface::Moneyness;
+use Quant::Framework::VolSurface::Moneyness;
 use SetupDatasetTestFixture;
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
@@ -48,8 +48,10 @@ sub _build_records {
     my $spot         = $data->{spot};
     my $currency     = $data->{currency};
 
-    my $surface = BOM::MarketData::VolSurface::Moneyness->new(
-        underlying       => $underlying,
+    my $surface = Quant::Framework::VolSurface::Moneyness->new(
+        underlying_config       => $underlying->config,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         surface          => $surface_data,
         recorded_date    => Date::Utility->new($date_start),
         spot_reference   => $spot,
@@ -157,9 +159,11 @@ sub _setup_quanto_volsurface {
         };
         $surface_data{$term}->{vol_spread} = {50 => 0.12};
     }
-    my $volsurface = BOM::MarketData::VolSurface::Delta->new(
+    my $volsurface = Quant::Framework::VolSurface::Delta->new(
         surface       => \%surface_data,
-        underlying    => $underlying,
+        underlying_config    => $underlying->config,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         recorded_date => $date,
     );
 
