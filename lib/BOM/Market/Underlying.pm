@@ -150,6 +150,8 @@ has spot_source => (
     lazy_build => 1,
     handles => {
         'set_combined_realtime' => 'set_spot_tick',
+        'get_combined_realtime_tick' => 'spot_tick',
+        'get_combined_realtime' => 'spot_tick_hash',
         'pipsized_value' => 'pipsized_value',
         'spot' => 'spot_value',
     }
