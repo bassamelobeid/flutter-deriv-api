@@ -8,7 +8,7 @@ sub _db_name {
 }
 
 sub _db_migrations_dir {
-    return 'authdb';
+    return '/home/git/regentmarkets/bom-postgres-authdb/config/sql/';
 }
 
 sub _build__connection_parameters {

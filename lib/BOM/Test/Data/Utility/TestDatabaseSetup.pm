@@ -12,8 +12,8 @@ requires '_db_name', '_post_import_operations', '_build__connection_parameters',
 
 sub _collectordb_migrations_dir {
     my $self = shift;
-    if ($self->_db_migrations_dir eq 'rmgdb') {
-        return 'collectordb';
+    if ($self->_db_migrations_dir =~ /rmgdb/) {
+        return '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/';
     }
     return;
 }
@@ -23,7 +23,7 @@ sub prepare_unit_test_database {
 
     try {
         $self->_migrate_changesets;
-        $self->_alter_user_mapping if ($self->_db_migrations_dir eq 'rmgdb');
+        $self->_alter_user_mapping if ($self->_db_migrations_dir =~ /rmgdb/);
         $self->_post_import_operations;
     }
     catch {
@@ -54,32 +54,6 @@ sub db_handler {
     my $dbh      = DBI->connect($self->dsn($db), 'postgres', $password)
         or croak $DBI::errstr;
     return $dbh;
-}
-
-has 'changesets_location' => (
-    is         => 'rw',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-
-sub _build_changesets_location {
-    my $self = shift;
-    return '/home/git/regentmarkets/bom-postgres/config/sql/' . $self->_db_migrations_dir . '/';
-}
-
-has 'collectordb_changesets_location' => (
-    is         => 'rw',
-    isa        => 'Maybe[Str]',
-    lazy_build => 1,
-);
-
-sub _build_collectordb_changesets_location {
-    my $self = shift;
-
-    if ($self->_db_migrations_dir eq 'rmgdb') {
-        return '/home/git/regentmarkets/bom-postgres/config/sql/collectordb/';
-    }
-    return;
 }
 
 sub _migrate_changesets {
@@ -137,21 +111,21 @@ sub _migrate_changesets {
 
     my $m = DBIx::Migration->new({
         'dsn'      => $self->dsn,
-        'dir'      => $self->changesets_location,
+        'dir'      => $self->_db_migrations_dir,
         'username' => 'postgres',
         'password' => $self->_connection_parameters->{'password'},
     });
     $m->migrate();
 
     # apply DB functions
-    $m->psql(sort glob $self->changesets_location . '/functions/*.sql')
-        if -d $self->changesets_location . '/functions';
+    $m->psql(sort glob $self->_db_migrations_dir . '/functions/*.sql')
+        if -d $self->_db_migrations_dir . '/functions';
 
     # migrate for collectordb schema
-    if ($self->_db_migrations_dir eq 'rmgdb') {
+    if ($self->_db_migrations_dir =~ /rmgdb/) {
         $m = DBIx::Migration->new({
             dsn                 => $self->dsn,
-            dir                 => $self->collectordb_changesets_location,
+            dir                 => '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/',
             tablename_extension => 'collector',
             username            => 'postgres',
             password            => $self->_connection_parameters->{'password'},
@@ -160,15 +134,15 @@ sub _migrate_changesets {
         $m->migrate();
 
         # apply DB functions
-        $m->psql(sort glob $self->collectordb_changesets_location . '/functions/*.sql')
-            if -d $self->collectordb_changesets_location . '/functions';
+        $m->psql(sort glob '/home/git/regentmarkets/bom-postgres-collectordb/config/sql//functions/*.sql')
+            if -d '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/functions';
     }
-    if (-f $self->changesets_location . '/unit_test_dml.sql') {
+    if (-f $self->_db_migrations_dir . '/unit_test_dml.sql') {
         $m->psql({
                 before => "SET session_replication_role TO 'replica';\n",
                 after  => ";\nSET session_replication_role TO 'origin';\n"
             },
-            $self->changesets_location . '/unit_test_dml.sql'
+            $self->_db_migrations_dir . '/unit_test_dml.sql'
         );
     }
 
@@ -195,9 +169,9 @@ sub _migrate_changesets {
 
 sub _alter_user_mapping {
     my $self = shift;
-    return if ($self->_db_migrations_dir ne 'rmgdb');
+    return if ($self->_db_migrations_dir !~ /rmgdb/);
 
-    $self->_migrate_file($self->changesets_location . '/devbox_server_user_mapping.sql');
+    $self->_migrate_file($self->_db_migrations_dir . '/devbox_server_user_mapping.sql');
     return 1;
 }
 
