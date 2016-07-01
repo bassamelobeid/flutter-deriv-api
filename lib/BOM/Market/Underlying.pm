@@ -289,7 +289,6 @@ sub _build_config {
         rate_to_imply_from                    => $self->rate_to_imply_from,
         volatility_surface_type               => $self->volatility_surface_type,
         exchange_name                         => $self->exchange_name,
-        locale                                => BOM::Platform::Context::request()->language,
         uses_implied_rate_for_asset           => $self->uses_implied_rate($self->asset_symbol) // '',
         uses_implied_rate_for_quoted_currency => $self->uses_implied_rate($self->quoted_currency_symbol) // '',
         spot                                  => $self->spot,
@@ -731,6 +730,7 @@ sub _build_calendar {
     my $self = shift;
 
     $self->_exchange_refreshed(time);
+
     return Quant::Framework::TradingCalendar->new({
         symbol           => $self->exchange_name,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
