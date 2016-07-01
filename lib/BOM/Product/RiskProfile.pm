@@ -3,7 +3,6 @@ package BOM::Product::RiskProfile;
 use Moose;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Static::Config;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
 

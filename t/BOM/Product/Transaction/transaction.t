@@ -12,7 +12,6 @@ use Crypt::NamedKeys;
 use BOM::Platform::Client;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Static::Config;
 
 use Date::Utility;
 use BOM::Product::Transaction;

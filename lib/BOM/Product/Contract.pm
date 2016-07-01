@@ -29,7 +29,6 @@ use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw( get_contract_specifics get_offerings_flyby);
-use BOM::Platform::Static::Config;
 use BOM::System::Chronicle;
 
 # require Pricing:: modules to avoid circular dependency problems.

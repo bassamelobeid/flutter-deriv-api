@@ -31,7 +31,6 @@ use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
-use BOM::Platform::Static::Config;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 
 extends 'BOM::Database::Transaction';

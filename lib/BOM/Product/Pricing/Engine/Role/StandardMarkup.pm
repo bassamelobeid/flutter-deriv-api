@@ -22,7 +22,6 @@ use BOM::Platform::Context qw(request localize);
 use BOM::Product::Pricing::Greeks::BlackScholes;
 use Quant::Framework::VolSurface::Utils;
 use Quant::Framework::EconomicEventCalendar;
-use BOM::Platform::Static::Config;
 
 =head1 ATTRIBUTES
 
