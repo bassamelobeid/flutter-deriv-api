@@ -5,7 +5,6 @@ use warnings;
 
 use Scalar::Util qw(looks_like_number);
 
-use BOM::RPC::v3::Utility;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub forget {
@@ -53,19 +52,17 @@ sub forget_one {
 }
 
 sub ping {
-    my ($c, $req_storage) = @_;
-
     return {
         msg_type => 'ping',
-        ping     => BOM::RPC::v3::Utility::ping()};
+        ping     => 'pong'
+    };
 }
 
 sub server_time {
-    my ($c, $req_storage) = @_;
-
     return {
-        msg_type => 'time',
-        time     => BOM::RPC::v3::Utility::server_time()};
+        'msg_type' => 'time',
+        'time'     => time
+    };
 }
 
 sub _forget_transaction_subscription {

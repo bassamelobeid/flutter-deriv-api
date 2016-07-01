@@ -10,7 +10,6 @@ use BOM::RPC::v3::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
-use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
@@ -113,7 +112,7 @@ sub _pricing_channel {
         and $args->{subscribe}
         and $args->{subscribe} == 1)
     {
-        BOM::System::RedisReplicated::redis_pricer->set($serialized_args, 1);
+        $c->redis_pricer->set($serialized_args, 1);
         $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
 
