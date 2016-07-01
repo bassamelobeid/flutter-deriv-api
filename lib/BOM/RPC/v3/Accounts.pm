@@ -19,7 +19,6 @@ use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Locale;
 use BOM::Platform::Client;
 use BOM::Platform::User;
-use BOM::Platform::Static::Config;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Token::Verification;
 use BOM::Product::Transaction;

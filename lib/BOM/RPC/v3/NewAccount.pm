@@ -23,7 +23,6 @@ use BOM::Platform::User;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Static::Config;
 use BOM::Database::Model::OAuth;
 
 my $countries_list;
