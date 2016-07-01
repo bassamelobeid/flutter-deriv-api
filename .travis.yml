@@ -60,6 +60,10 @@ install:
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
     - perl -MBOM::Test::Data::Utility::UnitTestRedis -e '1'
     - perl -MBOM::Test /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
+
+before_script:
+    - while netstat -lnt | awk '$4 ~ /:5005$/ {exit 1}'; do echo 'Waiting RPC'; sleep 3; done
+
 script:
     - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
 
