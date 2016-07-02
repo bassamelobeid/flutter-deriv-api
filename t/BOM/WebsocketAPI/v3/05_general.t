@@ -9,6 +9,9 @@ use TestHelper qw/test_schema build_mojo_test/;
 use Test::MockObject;
 use Test::MockModule;
 
+my $system = Test::MockModule->new('BOM::WebSocketAPI::v3::Wrapper::System');
+$system->mock('server_time', sub { +{ msg_type => 'time', time => ('1' x 328000) } });
+
 my $t = build_mojo_test();
 
 $t = $t->send_ok({json => 'notjson'})->message_ok;
@@ -28,11 +31,9 @@ is $res->{msg_type}, 'ping';
 is $res->{ping},     'pong';
 test_schema('ping', $res);
 
-my $rpc_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
-$rpc_utility->mock('server_time', sub { return ('1' x 328000) });
 $t = $t->send_ok({json => {time => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
-is $res->{error}->{code}, 'ResponseTooLarge', 'API response without forwarding should be checked to size';
+is $res->{error}->{code}, 'ResponseTooLarge', 'API response without RPC forwarding should be checked to size';
 
 my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
 $fake_rpc_response = Test::MockObject->new();

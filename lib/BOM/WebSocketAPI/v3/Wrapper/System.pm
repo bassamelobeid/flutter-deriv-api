@@ -5,7 +5,6 @@ use warnings;
 
 use Scalar::Util qw(looks_like_number);
 
-use BOM::RPC::v3::Utility;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub forget {
@@ -41,7 +40,7 @@ sub forget_one {
     my ($c, $id, $reason) = @_;
 
     my $removed_ids = [];
-    if ($id =~ /-/) {
+    if ($id && ($id =~ /-/)) {
         # need to keep feed subscription first as in case of proposal_open_contract subscribes to transaction
         # channel and forgets transaction channel internally when we forget it
         $removed_ids = _forget_feed_subscription($c, $id) unless (scalar @$removed_ids);
@@ -53,19 +52,17 @@ sub forget_one {
 }
 
 sub ping {
-    my ($c, $req_storage) = @_;
-
     return {
         msg_type => 'ping',
-        ping     => BOM::RPC::v3::Utility::ping()};
+        ping     => 'pong'
+    };
 }
 
 sub server_time {
-    my ($c, $req_storage) = @_;
-
     return {
-        msg_type => 'time',
-        time     => BOM::RPC::v3::Utility::server_time()};
+        'msg_type' => 'time',
+        'time'     => time
+    };
 }
 
 sub _forget_transaction_subscription {
