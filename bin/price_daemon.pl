@@ -8,6 +8,7 @@ use Getopt::Long;
 use DataDog::DogStatsd::Helper;
 use BOM::RPC::v3::Contract;
 use sigtrap qw/handler signal_handler normal-signals/;
+use Data::Dumper;
 
 my $workers = 4;
 GetOptions(
@@ -68,6 +69,8 @@ while (1) {
 
         DataDog::DogStatsd::Helper::stats_inc('pricer_daemon.price.call');
         DataDog::DogStatsd::Helper::stats_timing('pricer_daemon.price.time', $response->{rpc_time});
+
+        warn "Pricing time too long: " . $response->{rpc_time} . ' ' . Data::Dumper::Dumper($params) if $response->{rpc_time}>1000;
 
         my $subsribers_count = $redis->publish($key->[1], encode_json($response));
         # if None was subscribed, so delete the job
