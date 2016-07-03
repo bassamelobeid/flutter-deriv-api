@@ -141,7 +141,7 @@ sub ticks_history {
                     return {
                         msg_type => $rpc_response->{type},
                         %{$rpc_response->{data}}};
-                    }
+                }
             });
     };
 
