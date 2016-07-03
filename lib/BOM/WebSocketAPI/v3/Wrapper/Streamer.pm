@@ -141,7 +141,7 @@ sub ticks_history {
                     return {
                         msg_type => $rpc_response->{type},
                         %{$rpc_response->{data}}};
-                }
+                    }
             });
     };
 
@@ -179,7 +179,7 @@ sub pricing_table {
     my $symbol = $args->{symbol};
     my $id;
 
-    if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args,{canonical => 1}), $args)) {
+    if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args, {canonical => 1}), $args)) {
         return $c->new_error('pricing_table', 'AlreadySubscribed', $c->l('You are already subscribed to pricing table.'));
     }
     my $msg = BOM::RPC::v3::Japan::Contract::get_table($args);
