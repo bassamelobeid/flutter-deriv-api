@@ -147,7 +147,7 @@ sub statement {
             $txn_time = $txn->{payment_time};
         }
         $struct->{transaction_time} = Date::Utility->new($txn_time)->epoch;
-        $struct->{app_id} = mask_app_id($txn->{source}, $txn_time);
+        $struct->{app_id} = BOM::RPC::v3::Utility::mask_app_id($txn->{source}, $txn_time);
 
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
@@ -207,7 +207,7 @@ sub profit_table {
         $trx{payout}         = $row->{payout_price};
         $trx{purchase_time}  = Date::Utility->new($row->{purchase_time})->epoch;
         $trx{sell_time}      = Date::Utility->new($row->{sell_time})->epoch;
-        $trx{app_id}         = mask_app_id($row->{source}, $row->{purchase_time});
+        $trx{app_id}         = BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time});
 
         if ($and_description) {
             $trx{shortcode} = $row->{short_code};
@@ -1136,16 +1136,6 @@ sub reality_check {
     $summary->{open_contract_count} = $data->{open_cnt}      // 0;
 
     return $summary;
-}
-
-sub mask_app_id {
-    my ($id, $time) = @_;
-
-    # this is the date when we started populating source with app_id, before this
-    # there were random numbers so don't want to send them back
-    $id = undef if ($time and Date::Utility->new($time)->is_before(Date::Utility->new("2016-03-01")));
-
-    return $id;
 }
 
 1;
