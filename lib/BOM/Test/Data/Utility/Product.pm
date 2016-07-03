@@ -41,7 +41,7 @@ sub client_buy_bet {
 sub buy_bet {
     my ($sc, $curr, $client, $price, $start) = @_;
 
-    local $ENV{REQUEST_STARTTIME} = blessed($start) && $start->isa('Date::Utility') ? $start->epoch : $start
+    local $ENV{REQUEST_STARTTIME} = blessed($start) && $start->isa('Date::Utility') ? $start->epoch : $start;
     my $txn = BOM::Product::Transaction->new({
         contract => produce_contract($sc, $curr),
         client   => $client,
