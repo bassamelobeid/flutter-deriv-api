@@ -47,7 +47,7 @@ sub _send_ask {
 
                 my $uuid;
 
-                if (not $uuid = _pricing_channel($c, 'subscribe', $args)) {
+                if (not $uuid = _pricing_channel_for_ask($c, 'subscribe', $args)) {
                     return $c->new_error('proposal',
                         'AlreadySubscribedOrLimit',
                         $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
@@ -79,7 +79,7 @@ sub _serialized_args {
     return 'PRICER_KEYS::' . encode_json(\@a);
 }
 
-sub _pricing_channel {
+sub _pricing_channel_for_ask {
     my ($c, $subs, $args) = @_;
 
     my %args_hash = %{$args};
@@ -93,6 +93,7 @@ sub _pricing_channel {
     delete $args_hash{req_id};
 
     $args_hash{language} = $c->stash('language') || 'EN';
+    $args_hash{rpc_call} = 'send_ask';
     my $serialized_args = _serialized_args(\%args_hash);
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
@@ -131,7 +132,6 @@ sub process_pricing_events {
 
     # in case that it is a spread
     return if not $message or not $c->tx;
-    $message =~ s/^PRICER_KEYS:://;
 
     my $response        = decode_json($message);
     my $serialized_args = $chan;
