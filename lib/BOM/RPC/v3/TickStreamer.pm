@@ -16,7 +16,7 @@ use BOM::Product::Offerings qw(get_offerings_with_filter);
 sub ticks {
     my $params = shift;
 
-    my $symbol = $params->{symbol};
+    my $symbol   = $params->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return BOM::RPC::v3::Utility::create_error({
