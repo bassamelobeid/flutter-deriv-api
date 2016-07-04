@@ -74,21 +74,10 @@ sub proposal_open_contract_cb {
                         and not $response->{$contract_id}->{is_expired}
                         and not $response->{$contract_id}->{is_sold})
                     {
-                        # as req_id and passthrough can change so we should not send them in type else
-                        # client can subscribe to multiple proposal_open_contract as feed channel type will change
-                        my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
-
-                        # pass account_id, transaction_id so that we can categorize it based on type, can't use contract_id
-                        # as we send contract_id also, we want both request to stream i.e one with contract_id
-                        # and one for all contracts
-                        $type_args{account_id}     = $response->{$contract_id}->{account_id};
-                        $type_args{transaction_id} = $response->{$contract_id}->{transaction_ids}->{buy};
-
-                        my $keystr = join("", map { $_ . ":" . $type_args{$_} } sort keys %type_args);
-
                         $uuid = Data::UUID->new->create_str();
 
                         my $subscribe_args = {
+                            subscribe       => 1,
                             echo_req        => {%$args},
                             account_id      => delete $response->{$contract_id}->{account_id},
                             id              => $uuid,
@@ -97,10 +86,11 @@ sub proposal_open_contract_cb {
                             currency        => $response->{$contract_id}->{currency},
                             is_sold         => $response->{$contract_id}->{is_sold},
                             sell_time       => $response->{$contract_id}->{sell_time},
-                            subscribe       => 1,
+                            sell_price      => $response->{$contract_id}->{sell_price},
                             passthrough     => $args->{passthrough},
                             transaction_ids => $response->{$contract_id}->{transaction_ids},
                             purchase_time   => $response->{$contract_id}->{purchase_time},
+                            buy_price       => $response->{$contract_id}->{buy_price},
                         };
 
                         if (not _pricing_channel_for_bid($c, 'subscribe', $subscribe_args)) {
@@ -110,8 +100,7 @@ sub proposal_open_contract_cb {
                         }
 
                         # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                        #warn "Passing to subst to transaction id $uuid\n";
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $type_args{account_id}, $uuid, $subscribe_args);
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $subscribe_args->{account_id}, $uuid, $subscribe_args);
                     }
                     my $res = {$uuid ? (id => $uuid) : (), %{$response->{$contract_id}}};
                     #warn "proposal_open_contract send to WS: ".Dumper($res);
@@ -296,7 +285,13 @@ sub process_bid_event {
         $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
         $results = $err;
     } else {
-        $response->{id} = $pricing_channel->{$serialized_args}->{args}->{id};
+        my $passed_fields            = $pricing_channel->{$serialized_args}->{args};
+        $response->{id}              = $passed_fields->{id};
+        $response->{transaction_ids} = $passed_fields->{transaction_ids};
+        $response->{buy_price}       = $passed_fields->{buy_price};
+        $response->{purchase_time}   = $passed_fields->{purchase_time};
+        $response->{sell_price}      = $passed_fields->{sell_price} if exists $passed_fields->{sell_price};
+        $response->{sell_time}       = $passed_fields->{sell_time} if exists $passed_fields->{sell_time};
         $results = {
             msg_type   => 'proposal_open_contract',
             'proposal_open_contract' => {
