@@ -10,7 +10,7 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Market::Data::DatabaseAPI;
+use Finance::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 
@@ -119,7 +119,7 @@ subtest 'Prepare ticks' => sub {
     }
 };
 
-my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
 subtest 'get all aggregated ticks' => sub {
     my $start_date          = Date::Utility->new('2013-01-01 00:00:00');
