@@ -8,7 +8,7 @@ use JSON qw(decode_json);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 
-use BOM::Market::Data::DatabaseAPI;
+use Finance::Spot::DatabaseAPI;
 use BOM::Market::Underlying;
 use Date::Utility;
 

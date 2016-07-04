@@ -9,24 +9,24 @@ use Test::NoWarnings;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Market::Data::DatabaseAPI;
+use Finance::Spot::DatabaseAPI;
 
 subtest 'Object creation' => sub {
     my $api;
     lives_ok {
-        $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+        $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
     }
     'Able to create api object';
 
-    isa_ok $api, 'BOM::Market::Data::DatabaseAPI';
+    isa_ok $api, 'Finance::Spot::DatabaseAPI';
 };
 
 subtest 'Creation makes no sense without underlying' => sub {
-    throws_ok { BOM::Market::Data::DatabaseAPI->new(); } qr/Attribute \(underlying\) is required/, 'No Underlying';
+    throws_ok { Finance::Spot::DatabaseAPI->new(); } qr/Attribute \(underlying\) is required/, 'No Underlying';
 };
 
 subtest 'read dbh set' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     ok $api->dbh->ping, 'Able to connect to database';
 };
@@ -34,13 +34,13 @@ subtest 'read dbh set' => sub {
 subtest 'Historical Object creation' => sub {
     my $api;
     lives_ok {
-        $api = BOM::Market::Data::DatabaseAPI->new(
+        $api = Finance::Spot::DatabaseAPI->new(
             underlying => 'frxUSDJPY',
             historical => 1
         );
     }
     'Able to create api object';
 
-    isa_ok $api, 'BOM::Market::Data::DatabaseAPI';
+    isa_ok $api, 'Finance::Spot::DatabaseAPI';
     ok $api->dbh->ping, 'Able to connect to database';
 };

@@ -9,12 +9,12 @@ use Test::NoWarnings;
 use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Market::Data::DatabaseAPI;
+use Finance::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 
 subtest 'No Ticks' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');
@@ -42,7 +42,7 @@ subtest 'Tick before request time' => sub {
     }
     'Tick 1 - 2012-05-13 05:10:00';
 
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');
@@ -71,7 +71,7 @@ subtest 'Tick at request time' => sub {
     }
     'Tick 1 - 2012-05-13 05:10:01';
 
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');
@@ -100,7 +100,7 @@ subtest 'Tick after request time' => sub {
     }
     'Tick 1 - 2012-05-13 05:10:30';
 
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');
@@ -114,7 +114,7 @@ subtest 'Tick after request time' => sub {
 };
 
 subtest 'Invert' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');
@@ -148,7 +148,7 @@ subtest 'Tick much later' => sub {
     }
     'Tick 1 - 2012-05-13 05:10:30';
 
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
     my $tick;
     lives_ok {
         $tick = $api->tick_after('2012-05-13 05:10:01');

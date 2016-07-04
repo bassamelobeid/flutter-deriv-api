@@ -10,7 +10,7 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Market::Data::DatabaseAPI;
+use Finance::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 
@@ -77,7 +77,7 @@ subtest 'prepare ticks' => sub {
 };
 
 subtest 'Basic test' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => $symbol);
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol);
 
     subtest 'Ideal date 2012-05-15' => sub {
         my $output = $api->combined_realtime_tick({
@@ -136,7 +136,7 @@ subtest 'New tick induction' => sub {
     }
     'Tick - 2012-05-15 12:10:01';
 
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => $symbol);
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol);
 
     my $output = $api->combined_realtime_tick({
         start_time => '2012-05-15 00:00:00',
@@ -161,7 +161,7 @@ subtest 'Next day induction' => sub {
     }
     'Tick - 2012-05-16 05:10:01';
 
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => $symbol);
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol);
 
     subtest 'Date 2012-05-15' => sub {
         my $output = $api->combined_realtime_tick({

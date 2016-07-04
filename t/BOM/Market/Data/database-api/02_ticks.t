@@ -10,7 +10,7 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Market::Data::DatabaseAPI;
+use Finance::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 
@@ -182,7 +182,7 @@ subtest 'prepare ticks' => sub {
 };
 
 subtest 'Tick Fetch - Start-End - Simple' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $ticks = $api->ticks_start_end({
         start_time => '2012-05-15 00:00:00',
@@ -216,7 +216,7 @@ subtest 'Tick Fetch - Start-End - Simple' => sub {
 };
 
 subtest 'Tick Fetch - Start-End - Narrower' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $end_time  = '2012-05-16 19:00:00';
     my $end_epoch = Date::Utility->new($end_time)->epoch;
@@ -238,7 +238,7 @@ subtest 'Tick Fetch - Start-End - Narrower' => sub {
 };
 
 subtest 'Tick Fetch - Start-End - Way off mark' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $ticks = $api->ticks_start_end({
         start_time => '2012-03-15 00:00:00',
@@ -249,7 +249,7 @@ subtest 'Tick Fetch - Start-End - Way off mark' => sub {
 };
 
 subtest 'Tick Fetch - Start-End - Beserk User' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     throws_ok {
         warnings_like { my $ticks = $api->ticks_start_end({end_time => '2012-05-15 23:00:00'}); }
@@ -271,7 +271,7 @@ subtest 'Tick Fetch - Start-End - Beserk User' => sub {
 };
 
 subtest 'Tick Fetch - Start-Limit - Simple' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $ticks = $api->ticks_start_limit({
         start_time => '2012-05-15 00:00:00',
@@ -305,7 +305,7 @@ subtest 'Tick Fetch - Start-Limit - Simple' => sub {
 };
 
 subtest 'Tick Fetch - Start-Limit - Limit 2' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $ticks = $api->ticks_start_limit({
         start_time => '2012-05-15 00:00:00',
@@ -338,7 +338,7 @@ subtest 'Tick Fetch - Start-Limit - Limit 2' => sub {
 };
 
 subtest 'Tick Fetch - Start-Limit - Limit 2, but it can be any day' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $ticks = $api->ticks_start_limit({
         start_time => '2011-03-01 00:00:00',
@@ -371,7 +371,7 @@ subtest 'Tick Fetch - Start-Limit - Limit 2, but it can be any day' => sub {
 };
 
 subtest 'Tick Fetch - Start-Limit - Beserk User' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     throws_ok {
         warnings_like { my $ticks = $api->ticks_start_limit({start_time => '2012-05-15 23:00:00'}); }
@@ -387,7 +387,7 @@ subtest 'Tick Fetch - Start-Limit - Beserk User' => sub {
 };
 
 subtest 'Tick Fetch - End-Limit - Simple' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $end_time = '2012-05-20 14:00:00';
     my $ticks    = $api->ticks_end_limit({
@@ -424,7 +424,7 @@ subtest 'Tick Fetch - End-Limit - Simple' => sub {
 };
 
 subtest 'Tick Fetch - End-Limit - Limit 2' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $ticks = $api->ticks_end_limit({
         end_time => '2012-05-20 23:00:00',
@@ -453,7 +453,7 @@ subtest 'Tick Fetch - End-Limit - Limit 2' => sub {
 };
 
 subtest 'Tick Fetch - End-Limit - Limit 2, but it can be any day' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $ticks = $api->ticks_end_limit({
         end_time => '2015-01-01 00:00:00',
@@ -482,7 +482,7 @@ subtest 'Tick Fetch - End-Limit - Limit 2, but it can be any day' => sub {
 };
 
 subtest 'Tick Fetch - End-Limit - Beserk User' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     throws_ok {
         warnings_like { my $ticks = $api->ticks_end_limit({end_time => '2012-05-15 23:00:00'}); }

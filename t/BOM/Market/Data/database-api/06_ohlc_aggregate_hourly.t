@@ -10,7 +10,7 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Market::Data::DatabaseAPI;
+use Finance::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 use Date::Parse;
@@ -566,7 +566,7 @@ subtest 'prepare ohlc hourly' => sub {
 };
 
 subtest '4 hr OHLC Fetch - Start-End' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $end_time = '2012-06-02 04:00:00';
     my $ohlcs    = $api->ohlc_start_end({
@@ -666,7 +666,7 @@ subtest '4 hr OHLC Fetch - Start-End' => sub {
 };
 
 subtest '4 hr OHLC Fetch - Start-End - Narrower' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $start_time = '2012-06-01 00:00:00';
     my $end_time   = '2012-06-01 16:00:00';
@@ -729,7 +729,7 @@ subtest '4 hr OHLC Fetch - Start-End - Narrower' => sub {
 };
 
 subtest '8 hr OHLC Fetch - Start-End - Narrower' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $start_time = '2012-06-01 00:00:00';
     my $end_time   = '2012-06-02 00:00:00';
@@ -785,7 +785,7 @@ subtest '8 hr OHLC Fetch - Start-End - Narrower' => sub {
 };
 
 subtest '4 hr OHLC Fetch - Start-End - Way off mark' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     my $ohlcs = $api->ohlc_start_end({
         start_time         => '2012-03-15 00:00:00',
@@ -797,7 +797,7 @@ subtest '4 hr OHLC Fetch - Start-End - Way off mark' => sub {
 };
 
 subtest '4 hr OHLC Fetch - Start-End - Beserk User' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     throws_ok {
         warning_like {

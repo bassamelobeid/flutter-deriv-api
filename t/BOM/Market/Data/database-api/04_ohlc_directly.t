@@ -10,7 +10,7 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Market::Data::DatabaseAPI;
+use Finance::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 
@@ -63,7 +63,7 @@ subtest 'prepare ohlc' => sub {
 };
 
 subtest 'Daily - Start-End - Official' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(
+    my $api = Finance::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1
     );
@@ -101,7 +101,7 @@ subtest 'Daily - Start-End - Official' => sub {
 };
 
 subtest 'Daily - Start-End - Simple' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(
+    my $api = Finance::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1
     );
@@ -139,7 +139,7 @@ subtest 'Daily - Start-End - Simple' => sub {
 };
 
 subtest 'Daily - Start-End - Beserk User' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
 
     throws_ok {
         warnings_like {
