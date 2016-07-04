@@ -934,21 +934,6 @@ In case of an unexpected error, the exception is re-thrown unmodified.
                 'Your account balance ([_1][_2]) is insufficient to buy this contract ([_1][_3]).', $currency,
                 to_monetary_number_format($balance),                                                to_monetary_number_format($price)));
     },
-    BI004 => Error::Base->cuss(
-        -type              => 'IntradayLimitExceeded',
-        -mesg              => 'Exceeds intraday limit on turnover',
-        -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.'),
-    ),
-    BI005 => Error::Base->cuss(
-        -type              => 'IntradayLimitExceeded',
-        -mesg              => 'Exceeds intraday limit on potential_profit',
-        -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.'),
-    ),
-    BI006 => Error::Base->cuss(
-        -type              => 'IntradayLimitExceeded',
-        -mesg              => 'Exceeds intraday limit on realized_profit',
-        -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.'),
-    ),
     BI007 => sub {
         my $self   = shift;
         my $client = shift;
