@@ -16,6 +16,10 @@ use DateTime;
 use Date::Utility;
 use Date::Parse;
 
+use Finance::Spot::DatabaseAPI;
+my $dbh = BOM::Database::FeedDB::read_dbh;
+$dbh->{RaiseError} = 1;
+
 subtest 'prepare ohlc hourly' => sub {
     my @ohlc_hour = ({
             date  => '2012-06-01 00:00:00',
@@ -567,7 +571,7 @@ subtest 'prepare ohlc hourly' => sub {
 };
 
 subtest '4 hr OHLC Fetch - Start-End' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
 
     my $end_time = '2012-06-02 04:00:00';
     my $ohlcs    = $api->ohlc_start_end({
@@ -667,7 +671,7 @@ subtest '4 hr OHLC Fetch - Start-End' => sub {
 };
 
 subtest '4 hr OHLC Fetch - Start-End - Narrower' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
 
     my $start_time = '2012-06-01 00:00:00';
     my $end_time   = '2012-06-01 16:00:00';
@@ -730,7 +734,7 @@ subtest '4 hr OHLC Fetch - Start-End - Narrower' => sub {
 };
 
 subtest '8 hr OHLC Fetch - Start-End - Narrower' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
 
     my $start_time = '2012-06-01 00:00:00';
     my $end_time   = '2012-06-02 00:00:00';
@@ -786,7 +790,7 @@ subtest '8 hr OHLC Fetch - Start-End - Narrower' => sub {
 };
 
 subtest '4 hr OHLC Fetch - Start-End - Way off mark' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
 
     my $ohlcs = $api->ohlc_start_end({
         start_time         => '2012-03-15 00:00:00',
@@ -798,7 +802,7 @@ subtest '4 hr OHLC Fetch - Start-End - Way off mark' => sub {
 };
 
 subtest '4 hr OHLC Fetch - Start-End - Beserk User' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
 
     throws_ok {
         warning_like {

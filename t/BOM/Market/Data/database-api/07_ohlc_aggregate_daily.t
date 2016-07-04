@@ -16,6 +16,10 @@ use Date::Utility;
 use Date::Parse;
 use Finance::Spot::OHLC;
 
+use Finance::Spot::DatabaseAPI;
+my $dbh = BOM::Database::FeedDB::read_dbh;
+$dbh->{RaiseError} = 1;
+
 subtest 'prepare ohlc daily' => sub {
     my @ohlc_daily = (
 
@@ -644,7 +648,7 @@ subtest 'prepare ohlc daily' => sub {
 };
 
 subtest '1 week OHLC Fetch - Start-End' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
 
     my $ohlcs = $api->ohlc_start_end({
         start_time         => '2012-05-27 00:00:00',
@@ -727,7 +731,7 @@ subtest '1 week OHLC Fetch - Start-End' => sub {
 };
 
 subtest '1 week OHLC Fetch - Start-End - Narrower' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
 
     my $start_time = '2012-06-04 00:00:00';
     my $end_time   = '2012-06-18 00:00:00';
@@ -773,7 +777,7 @@ subtest '1 week OHLC Fetch - Start-End - Narrower' => sub {
 };
 
 subtest '1 week OHLC Fetch - Start-End - Way off mark' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
 
     my $ohlcs = $api->ohlc_start_end({
         start_time         => '2012-01-15 00:00:00',
@@ -785,7 +789,7 @@ subtest '1 week OHLC Fetch - Start-End - Way off mark' => sub {
 };
 
 subtest '1 week OHLC Fetch - Start-End - Beserk User' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
 
     throws_ok {
         warning_like {

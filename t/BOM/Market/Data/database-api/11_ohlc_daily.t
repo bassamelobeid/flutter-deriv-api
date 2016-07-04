@@ -11,8 +11,12 @@ use Test::Warn;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use Finance::Spot::DatabaseAPI;
+use Finance::Spot::OHLC;
 use DateTime;
 use Date::Utility;
+
+my $dbh = BOM::Database::FeedDB::read_dbh;
+$dbh->{RaiseError} = 1;
 
 subtest 'Test ohlc daily from tick table' => sub {
     my @ticks = ({
@@ -147,7 +151,7 @@ subtest 'Test ohlc daily from tick table' => sub {
 
 my $start_time = '2012-07-08 00:00:00';
 my $end_time   = '2012-07-08 11:00:00';
-my $api        = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY');
+my $api        = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
 my ($ohlcs, $ohlc);
 
 subtest 'ohlc_daily_list - within 1 day' => sub {

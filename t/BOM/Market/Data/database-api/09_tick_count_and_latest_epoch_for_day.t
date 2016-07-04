@@ -14,6 +14,10 @@ use Finance::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 
+use Finance::Spot::DatabaseAPI;
+my $dbh = BOM::Database::FeedDB::read_dbh;
+$dbh->{RaiseError} = 1;
+
 my $symbol = 'frxUSDJPY';
 
 subtest 'prepare ticks' => sub {
@@ -77,7 +81,7 @@ subtest 'prepare ticks' => sub {
 };
 
 subtest 'Basic test' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol);
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
 
     subtest 'Ideal date 2012-05-15' => sub {
         my $output = $api->combined_realtime_tick({
@@ -136,7 +140,7 @@ subtest 'New tick induction' => sub {
     }
     'Tick - 2012-05-15 12:10:01';
 
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol);
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
 
     my $output = $api->combined_realtime_tick({
         start_time => '2012-05-15 00:00:00',
@@ -161,7 +165,7 @@ subtest 'Next day induction' => sub {
     }
     'Tick - 2012-05-16 05:10:01';
 
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol);
+    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
 
     subtest 'Date 2012-05-15' => sub {
         my $output = $api->combined_realtime_tick({
