@@ -16,9 +16,7 @@ use BOM::Product::Offerings qw(get_offerings_with_filter);
 sub ticks {
     my $params = shift;
 
-    my $args   = $params->{args};
-    my $symbol = $args->{tick};
-
+    my $symbol = $params->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -28,7 +26,7 @@ sub ticks {
 
     my $display_decimals = BOM::Market::Underlying->new($symbol)->display_decimals;
 
-    return {stash => {"{$symbol}_display_decimals" => $display_decimals}};
+    return {stash => {"${symbol}_display_decimals" => $display_decimals}};
 }
 
 sub ticks_history {
@@ -93,7 +91,7 @@ sub ticks_history {
     }
 
     return {
-        stash   => {"{$symbol}_display_decimals" => $display_decimals},
+        stash   => {"${symbol}_display_decimals" => $display_decimals},
         type    => $type,
         data    => $result,
         publish => $publish,
