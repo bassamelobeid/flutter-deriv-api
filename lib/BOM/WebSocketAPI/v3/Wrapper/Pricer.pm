@@ -197,9 +197,9 @@ sub process_pricing_events {
 }
 
 sub _price_stream_results_adjustment {
-    my $orig_args        = shift;
-    my $results          = shift;
-    my $theo_probability = shift;
+    my $orig_args             = shift;
+    my $results               = shift;
+    my $resp_theo_probability = shift;
 
     # skips for spreads
     return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
@@ -211,7 +211,7 @@ sub _price_stream_results_adjustment {
         name        => 'theo_probability',
         description => 'theorectical value of a contract',
         set_by      => 'Pricer Daemon',
-        base_amount => $theo_probability,
+        base_amount => $resp_theo_probability,
         minimum     => 0,
         maximum     => 1,
     });
