@@ -345,16 +345,16 @@ subtest 'tick_at' => sub {
         underlying => 'frxEURUSD'
     });
 
-    is($u->feed_source->tick_at(Date::Utility->new('2009-05-11 06:10:39')->epoch)->quote,
+    is($u->spot_source->tick_at(Date::Utility->new('2009-05-11 06:10:39')->epoch)->quote,
         1.3634, "We have tick for that time and it's not the last tick received");
-    is($u->feed_source->tick_at(Date::Utility->new('2009-05-11 06:10:40')->epoch)->quote,
+    is($u->spot_source->tick_at(Date::Utility->new('2009-05-11 06:10:40')->epoch)->quote,
         1.3634, 'We dont have tick for that second but we do have a previous one and at least one more after that');
-    is($u->feed_source->tick_at(Date::Utility->new('2009-05-11 06:10:41')->epoch)->quote,
+    is($u->spot_source->tick_at(Date::Utility->new('2009-05-11 06:10:41')->epoch)->quote,
         1.3633, "We have tick for that time and it's not the last tick received");
-    is($u->feed_source->tick_at(Date::Utility->new('2009-05-11 06:11:26')->epoch)->quote,
+    is($u->spot_source->tick_at(Date::Utility->new('2009-05-11 06:11:26')->epoch)->quote,
         1.3634, 'That is the last tick we received but it happens to be at the exact time');
     #NOTE: Do not delete this test case. This is the scenario where we do not have the tick but we return a tick
-    is($u->feed_source->tick_at(Date::Utility->new('2009-05-11 06:11:27')->epoch),
+    is($u->spot_source->tick_at(Date::Utility->new('2009-05-11 06:11:27')->epoch),
         undef, "The closest tick to that time is the last tick received that day. Cannot guarantee we won't receive a closer tick later.");
 };
 
@@ -531,15 +531,15 @@ subtest 'all methods on a selection of underlyings' => sub {
 
     my $test_date = $oldEU->for_date;
 
-    is($EURUSD->feed_source->tick_at($test_date->epoch)->quote, '1.2859', 'feed_source->tick_at has some value');
-    cmp_ok($EURUSD->feed_source->tick_at($test_date->epoch)->quote, '==', $oldEU->spot, 'Spot for wormholed underlying and tick_at on standard underlying match');
+    is($EURUSD->spot_source->tick_at($test_date->epoch)->quote, '1.2859', 'spot_source->tick_at has some value');
+    cmp_ok($EURUSD->spot_source->tick_at($test_date->epoch)->quote, '==', $oldEU->spot, 'Spot for wormholed underlying and tick_at on standard underlying match');
 
     cmp_ok($EURUSD->spot_tick->epoch, '>',  $test_date->epoch, 'current spot is newer than the wormhole date');
     cmp_ok($oldEU->spot_tick->epoch,  '<=', $test_date->epoch, ' plus, spot_tick for old EURUSD is NOT');
     cmp_ok($oldEU->spot_tick->epoch,  '==', 1326957371,        ' in fact, it is exactly the time we expect');
 
     cmp_ok($oldEU->spot,                               '==', 1.2859,           'spot for old EURUSD is correct');
-    cmp_ok($USDEUR->feed_source->tick_at($test_date->epoch)->quote, '==', 1 / $oldEU->spot, 'And the inverted underlying is flipped');
+    cmp_ok($USDEUR->spot_source->tick_at($test_date->epoch)->quote, '==', 1 / $oldEU->spot, 'And the inverted underlying is flipped');
     my $next_tick     = $EURUSD->next_tick_after($test_date->epoch);
     my $inverted_next = $USDEUR->next_tick_after($test_date->epoch);
 
@@ -551,8 +551,8 @@ subtest 'all methods on a selection of underlyings' => sub {
     is(Date::Utility->new($next_tick->epoch)->date, $test_date->date, ' on the same day');
 
     subtest 'asking for very old ticks' => sub {
-        is($EURUSD->feed_source->tick_at(123456789),  undef, 'Undefined prices way in history when no table');
-        is($EURUSD->feed_source->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
+        is($EURUSD->spot_source->tick_at(123456789),  undef, 'Undefined prices way in history when no table');
+        is($EURUSD->spot_source->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
     my $eod =
