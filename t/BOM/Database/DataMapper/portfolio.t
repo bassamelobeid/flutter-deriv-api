@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package t::Portfolio;
 
 # PURPOSE: Perform unit tests on the open bets related subroutines (in Subs_openpos.pm).
