@@ -100,7 +100,7 @@ sub create_contract {
     push @epoches, @$tick_epoches;
     @epoches = sort { $a <=> $b } @epoches;
     for my $epoch (@epoches) {
-        my $api = BOM::Market::Data::DatabaseAPI->new(underlying => $underlying_symbol);
+        my $api = Finance::Spot::DatabaseAPI->new(underlying => $underlying_symbol);
         my $tick = $api->tick_at({end_time => $epoch});
 
         unless ($tick) {

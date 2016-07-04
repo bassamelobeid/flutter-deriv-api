@@ -270,7 +270,7 @@ sub create_fmb_with_ticks {
     my $expire = $start->plus_time_interval('2m');
 
     for my $epoch ($start->epoch, $start->epoch + 1, $expire->epoch) {
-        my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'R_100');
+        my $api = Finance::Spot::DatabaseAPI->new(underlying => 'R_100');
         my $tick = $api->tick_at({end_time => $epoch});
         next if $tick;
 

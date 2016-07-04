@@ -6,7 +6,7 @@ use warnings;
 use MooseX::Singleton;
 use BOM::Platform::Runtime;
 use BOM::Database::FeedDB;
-use BOM::Market::Data::Tick;
+use Finance::Spot::Tick;
 use Try::Tiny;
 
 use base qw( Exporter );
@@ -116,7 +116,7 @@ EOD
     $sth->bind_param(5, $defaults{quote});
     $sth->execute();
 
-    return BOM::Market::Data::Tick->new(\%defaults);
+    return Finance::Spot::Tick->new(\%defaults);
 }
 
 sub create_ohlc_daily {
@@ -158,7 +158,7 @@ EOD
     $sth->execute();
 
     delete $defaults{underlying};
-    return BOM::Market::Data::OHLC->new(\%defaults);
+    return Finance::Spot::OHLC->new(\%defaults);
 }
 
 sub _create_table_for_date {
