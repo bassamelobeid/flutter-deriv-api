@@ -26,12 +26,12 @@ sub ticks {
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     foreach my $symbol (@symbols) {
         $c->call_rpc({
-                args    => $args,
-                method  => 'ticks',
-                msg_type  => 'tick',
-                symbol  => $symbol,    
+                args        => $args,
+                method      => 'ticks',
+                msg_type    => 'tick',
+                symbol      => $symbol,
                 call_params => {
-                    symbol  => $symbol,    
+                    symbol => $symbol,
                 },
                 success => sub {
                     my ($c, $rpc_response, $req_storage) = @_;
@@ -40,7 +40,8 @@ sub ticks {
                 response => sub {
                     my ($rpc_response, $api_response, $req_storage) = @_;
                     unless ($rpc_response->{error} || $req_storage->{id}) {
-                        $api_response = $c->new_error('tick', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $req_storage->{symbol}))
+                        $api_response =
+                            $c->new_error('tick', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $req_storage->{symbol}));
                     }
                     undef $api_response unless $api_response->{error};
                     return $api_response;
