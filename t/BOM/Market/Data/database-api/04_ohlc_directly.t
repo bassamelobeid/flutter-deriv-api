@@ -79,7 +79,7 @@ subtest 'Daily - Start-End - Official' => sub {
     subtest 'OHLC datatype' => sub {
         foreach my $tick (@$ticks) {
             my $date = Date::Utility->new({epoch => $tick->epoch});
-            isa_ok $tick, 'BOM::Market::Data::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $tick, 'Finance::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -117,7 +117,7 @@ subtest 'Daily - Start-End - Simple' => sub {
     subtest 'OHLC datatype' => sub {
         foreach my $tick (@$ticks) {
             my $date = Date::Utility->new({epoch => $tick->epoch});
-            isa_ok $tick, 'BOM::Market::Data::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $tick, 'Finance::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 

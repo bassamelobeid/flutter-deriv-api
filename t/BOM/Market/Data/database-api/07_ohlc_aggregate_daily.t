@@ -656,7 +656,7 @@ subtest '1 week OHLC Fetch - Start-End' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'BOM::Market::Data::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Finance::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
