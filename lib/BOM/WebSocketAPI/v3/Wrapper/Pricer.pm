@@ -75,9 +75,14 @@ sub proposal_open_contract_cb {
                         and not $response->{$contract_id}->{is_sold})
                     {
                         $uuid = Data::UUID->new->create_str();
+                        my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
+                        $type_args{account_id}     = $response->{$contract_id}->{account_id};
+                        $type_args{transaction_id} = $response->{$contract_id}->{transaction_ids}->{buy};
+                        my $subchannel = join("", map { $_ . ":" . $type_args{$_} } sort keys %type_args);
 
                         my $subscribe_args = {
                             subscribe       => 1,
+                            subchannel      => $subchannel,
                             echo_req        => {%$args},
                             account_id      => delete $response->{$contract_id}->{account_id},
                             id              => $uuid,
@@ -93,6 +98,7 @@ sub proposal_open_contract_cb {
                             buy_price       => $response->{$contract_id}->{buy_price},
                         };
 
+                        warn "subscribe_args: ".Dumper($subscribe_args);
                         if (not _pricing_channel_for_bid($c, 'subscribe', $subscribe_args)) {
                             warn "Error - not subscribed!";
                             return $c->new_error('proposal_open_contract',
@@ -100,6 +106,7 @@ sub proposal_open_contract_cb {
                         }
 
                         # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+                        warn "Subcribed uuid: ".$uuid;
                         BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $subscribe_args->{account_id}, $uuid, $subscribe_args);
                     }
                     my $res = {$uuid ? (id => $uuid) : (), %{$response->{$contract_id}}};
@@ -223,29 +230,35 @@ sub _pricing_channel_for_bid {
 
     warn "_pricing_channel_for_bid : args: ".Dumper($args);
     my %args_hash;
-    $args_hash{$_} = $args->{$_} for qw(short_code contract_id currency is_sold sell_time passthrough);
+    $args_hash{$_} = $args->{$_} for qw(short_code contract_id currency is_sold sell_time);
     $args_hash{language} = $c->stash('language') || 'EN';
     $args_hash{rpc_call} = 'get_bid';
     my $serialized_args = _serialized_args(\%args_hash);
     warn "Seria Ags: $serialized_args\n";
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
+    my $subchannel = $args->{subchannel};
 
-    return if $pricing_channel->{$serialized_args};
+    if (exists $pricing_channel->{$serialized_args}
+        and  exists $pricing_channel->{$serialized_args}->{subchannel}) {
+        return;
+    }
 
     my $uuid = $args->{id};
 
     # subscribe if it is not already subscribed
-    if ( exists $args->{subscribe} and $args->{subscribe} == 1)
+    if ( exists $args->{subscribe} and $args->{subscribe} == 1
+        and not exists $pricing_channel->{$serialized_args})
     {
         $c->redis_pricer->set($serialized_args, 1);
         $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
 
-    $pricing_channel->{$serialized_args}->{uuid}         = $uuid;
-    $pricing_channel->{$serialized_args}->{args}         = $args;
+    $pricing_channel->{$serialized_args}->{$subchannel}->{uuid}         = $uuid;
+    $pricing_channel->{$serialized_args}->{$subchannel}->{args}         = $args;
+    $pricing_channel->{uuid}->{$uuid}->{subchannel} = $subchannel;
     $pricing_channel->{uuid}->{$uuid}->{serialized_args} = $serialized_args;
-    $pricing_channel->{uuid}->{$uuid}->{args}            = $args;
+    $pricing_channel->{uuid}->{$uuid}->{args}            = $args; # no need?
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
@@ -272,7 +285,6 @@ sub process_pricing_events {
 
 sub process_bid_event {
     my ($c, $response, $serialized_args, $pricing_channel) = @_;
-    my $results;
     if ($response and exists $response->{error}) {
         BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$serialized_args}->{uuid});
         if ($response->{error}->{message_to_client_array}) {
@@ -283,28 +295,31 @@ sub process_bid_event {
 
         my $err = $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
         $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
-        $results = $err;
+        $c->send({json => $err});
     } else {
-        my $passed_fields            = $pricing_channel->{$serialized_args}->{args};
-        $response->{id}              = $passed_fields->{id};
-        $response->{transaction_ids} = $passed_fields->{transaction_ids};
-        $response->{buy_price}       = $passed_fields->{buy_price};
-        $response->{purchase_time}   = $passed_fields->{purchase_time};
-        $response->{sell_price}      = $passed_fields->{sell_price} if exists $passed_fields->{sell_price};
-        $response->{sell_time}       = $passed_fields->{sell_time} if exists $passed_fields->{sell_time};
-        $results = {
-            msg_type   => 'proposal_open_contract',
-            'proposal_open_contract' => {
-                %$response,
-            },
-        };
-        $results->{echo_req} = $pricing_channel->{$serialized_args}->{args}->{echo_req};
-        if (my $passthrough = $pricing_channel->{$serialized_args}->{args}->{echo_req}->{passthrough}) {
-            $results->{passthrough} = $passthrough;
+        my $results;
+        for my $subchannel (keys %{$pricing_channel->{$serialized_args}}) {
+            my $passed_fields            = $pricing_channel->{$serialized_args}->{$subchannel}->{args};
+            $response->{id}              = $passed_fields->{id};
+            $response->{transaction_ids} = $passed_fields->{transaction_ids};
+            $response->{buy_price}       = $passed_fields->{buy_price};
+            $response->{purchase_time}   = $passed_fields->{purchase_time};
+            $response->{sell_price}      = $passed_fields->{sell_price} if exists $passed_fields->{sell_price};
+            $response->{sell_time}       = $passed_fields->{sell_time} if exists $passed_fields->{sell_time};
+            $results = {
+                msg_type   => 'proposal_open_contract',
+                'proposal_open_contract' => {
+                    %$response,
+                },
+            };
+            $results->{echo_req} = $pricing_channel->{$serialized_args}->{$subchannel}->{args}->{echo_req};
+            if (my $passthrough = $pricing_channel->{$serialized_args}->{$subchannel}->{args}->{echo_req}->{passthrough}) {
+                $results->{passthrough} = $passthrough;
+            }
+            #warn "process_bid_send to WS: ".Dumper($results);
+            $c->send({json => $results});
         }
     }
-    #warn "process_bid_send to WS: ".Dumper($results);
-    $c->send({json => $results});
     return;
 }
 

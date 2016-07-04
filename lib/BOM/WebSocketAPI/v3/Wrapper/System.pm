@@ -86,19 +86,19 @@ sub _forget_transaction_subscription {
 }
 
 sub _forget_pricing_subscription {
-    #warn "_forget_pricing_subscription!!!\n";
     my ($c, $uuid) = @_;
+    #warn "_forget_pricing_subscription: $uuid \n";
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
         #warn "pricing_channel : ".Dumper($pricing_channel);
         foreach my $channel (keys %{$pricing_channel}) {
-            foreach my $amount (keys %{$pricing_channel->{$channel}}) {
-                next unless exists $pricing_channel->{$channel}->{$amount}->{uuid};
-                if ($pricing_channel->{$channel}->{$amount}->{uuid} eq $uuid) {
-                    push @$removed_ids, $pricing_channel->{$channel}->{$amount}->{uuid};
+            foreach my $subchannel (keys %{$pricing_channel->{$channel}}) {
+                next unless exists $pricing_channel->{$channel}->{$subchannel}->{uuid};
+                if ($pricing_channel->{$channel}->{$subchannel}->{uuid} eq $uuid) {
+                    push @$removed_ids, $pricing_channel->{$channel}->{$subchannel}->{uuid};
                     delete $pricing_channel->{uuid}->{$uuid};
-                    delete $pricing_channel->{$channel}->{$amount};
+                    delete $pricing_channel->{$channel}->{$subchannel};
                 }
             }
             #warn "_forget_pricing_subscription : processing $channel\n";
@@ -109,14 +109,6 @@ sub _forget_pricing_subscription {
                 warn "_forget_pricing_subscription : UNSUBSCRIBE $channel\n";
             }
         }
-        #foreach my $pc_uuid (keys %{$pricing_channel->{uuid}}) {
-        #    if ($pc_uuid eq $uuid) {
-        #        my $channel = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
-        #        warn "Got you! $channel\n";
-        #        $c->stash('redis_pricer')->unsubscribe([$channel]);
-        #        delete $pricing_channel->{uuid}->{$uuid};
-        #    }
-        #}
         $c->stash('pricing_channel' => $pricing_channel);
     }
 
