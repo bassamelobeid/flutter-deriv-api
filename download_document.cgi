@@ -4,12 +4,12 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use BOM::Backoffice::PlackHelpers qw/PrintContentType_XSendfile/;
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 
 use f_brokerincludeall;
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access();
 
 # category: id_scan (Default), 192_result
@@ -72,7 +72,7 @@ if (my ($type) = $path =~ /\.(tif|txt|csv|xls|doc|gif|png|bmp|jpg|jpeg|pdf|zip)$
     if (-f -r $full_path) {
         PrintContentType_XSendfile($full_path, (lc($type) eq 'pdf' ? 'application/pdf' : 'application/octet-stream'));
 
-        BOM::Platform::Sysinit::code_exit();
+        BOM::Backoffice::Sysinit::code_exit();
     } else {
         PrintContentType();
         print "ERROR: cannot open file ($full_path) $!";

@@ -7,8 +7,8 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
 
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("Setting Client Self Exclusion");
@@ -78,6 +78,9 @@ if (my $self_exclusion = $client->get_self_exclusion) {
     if ($self_exclusion->exclude_until) {
         $page .= '<li>' . localize('Website exclusion is currently set to <strong>[_1].</strong>', $self_exclusion->exclude_until) . '</li>';
     }
+    if ($self_exclusion->timeout_until) {
+        $page .= '<li>' . localize('Website Timeout until is currently set to <strong>[_1].</strong>', $self_exclusion->timeout_until) . '</li>';
+    }
     $page .= '</ul>';
 }
 
@@ -120,6 +123,7 @@ $client->set_exclusion->session_duration_limit(looks_like_number($v) ? $v : unde
 
 # by or-ing to 'undef' here we turn any blank exclude_until date to no-date.
 $client->set_exclusion->exclude_until(request()->param('EXCLUDEUNTIL') || undef);
+$client->set_exclusion->timeout_until(request()->param('TIMEOUTUNTIL') || undef);
 
 if ($client->save) {
     #print message inform Client everything is ok

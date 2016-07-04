@@ -11,8 +11,8 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::Static::Config;
 
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 local $\ = "\n";
 my $loginID    = uc(request()->param('loginID'));
@@ -28,7 +28,7 @@ if ($outputtype eq 'csv') {
     BrokerPresentation("$loginID Portfolio");
 }
 
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^$broker/) {

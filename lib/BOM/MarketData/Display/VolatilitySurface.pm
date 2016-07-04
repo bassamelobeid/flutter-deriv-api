@@ -8,6 +8,7 @@ use BOM::Platform::Context qw(request template);
 use Format::Util::Numbers qw( roundnear );
 use VolSurface::Utils qw( get_1vol_butterfly );
 use BOM::MarketData::Fetcher::VolSurface;
+use BOM::Market::Underlying;
 use BOM::Backoffice::GNUPlot;
 use Try::Tiny;
 
@@ -19,7 +20,7 @@ The surface object that you want to display
 
 has surface => (
     is       => 'ro',
-    isa      => 'BOM::MarketData::VolSurface',
+    isa      => 'Quant::Framework::VolSurface',
     required => 1,
 );
 
@@ -60,7 +61,7 @@ sub rmg_table_format {
     foreach my $date (@{$dates}) {
         my $surface_date   = Date::Utility->new($date);
         my $new_volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
-            underlying => $volsurface->underlying,
+            underlying => BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date),
             for_date   => $surface_date
         });
         # We are working on a new calibration method.
@@ -85,7 +86,7 @@ sub rmg_table_format {
     my @surface;
     my @days       = @{$volsurface->original_term_for_smile};
     my @tenors     = map { $volsurface->surface->{$_}->{tenor} || 'n/a' } @days;
-    my $underlying = $volsurface->underlying;
+    my $underlying = BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date);
 
     if ($volsurface->type eq 'moneyness') {
         push @headers, qw(tenor date forward_vol RR 2vBF 1vBF skew kurtosis);
@@ -261,7 +262,7 @@ sub get_forward_vol {
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
         my $date = Date::Utility->new({epoch => ($volsurface->recorded_date->epoch + $i * 86400)});
-        $weights{$i} = $volsurface->underlying->weight_on($date);
+        $weights{$i} = BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date)->_builder->build_trading_calendar->weight_on($date);
     }
 
     my $forward_vols;
@@ -710,6 +711,7 @@ sub calculate_moneyness_vol_for_display {
     my $self = shift;
 
     my $volsurface = $self->surface;
+    my $underlying = BOM::Market::Underlying->new($volsurface->symbol, $volsurface->for_date);
     my $fv         = $self->get_forward_vol();
     my @surface;
 
@@ -727,16 +729,16 @@ sub calculate_moneyness_vol_for_display {
         my $vol1_bf = roundnear(
             0.0001,
             get_1vol_butterfly({
-                    spot             => $volsurface->underlying->spot,
+                    spot             => $underlying->spot,
                     tiy              => $term / 365,
                     delta            => 0.25,
                     call_vol         => $delta_smile{25},
                     put_vol          => $delta_smile{75},
                     atm_vol          => $delta_smile{50},
                     bf_1vol          => 0,
-                    r                => $volsurface->underlying->interest_rate_for($term / 365),
-                    q                => $volsurface->underlying->dividend_rate_for($term / 365),
-                    premium_adjusted => $volsurface->underlying->{market_convention}->{delta_premium_adjusted},
+                    r                => $underlying->interest_rate_for($term / 365),
+                    q                => $underlying->dividend_rate_for($term / 365),
+                    premium_adjusted => $underlying->{market_convention}->{delta_premium_adjusted},
                     bf_style         => '2_vol',
                 }));
         push @row, $vol1_bf;

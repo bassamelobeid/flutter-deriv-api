@@ -12,8 +12,8 @@ use URL::Encode qw( url_decode );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_JSON );
 
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 # Our very own %input processing logic seems to strip
 # out characters from my URL encoded JSON, breaking it.
@@ -27,8 +27,8 @@ my $surface_string = url_decode($cgi->param('surface'));
 $surface_string =~ s/point/./g;
 my $surface_data = from_json($surface_string);
 
-my $surface = BOM::MarketData::VolSurface::Moneyness->new(
-    underlying     => $underlying,
+my $surface = Quant::Framework::VolSurface::Moneyness->new(
+    underlying_config     => $underlying->config,
     surface        => $surface_data,
     recorded_date  => $recorded_date,
     spot_reference => $spot,

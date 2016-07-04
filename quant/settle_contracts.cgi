@@ -17,8 +17,9 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+use BOM::Backoffice::Cookie;
+BOM::Backoffice::Sysinit::init();
 use BOM::Platform::Context qw(request);
 
 PrintContentType();
@@ -41,7 +42,7 @@ my $expired_unsold = current_unsaleable($broker_db);
 
 if (request()->param('perform_actions')) {
     try {
-        my $staff_name = request()->bo_cookie->clerk;
+        my $staff_name = BOM::Backoffice::Cookie::get_staff();
         die 'Do not know who you are; cannot proceed' unless $staff_name;
         foreach my $todo (grep { /^fmb_/ } (keys %{request()->params})) {
             my $action = request()->param($todo);

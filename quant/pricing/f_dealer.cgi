@@ -19,16 +19,16 @@ use BOM::Platform::Transaction;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Static::Config;
 use BOM::Product::ContractFactory qw( produce_contract );
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
 BrokerPresentation('DEALER/LARGE BETS');
-my $broker  = request()->broker->code;
+my $broker  = request()->broker_code;
 my $staff   = BOM::Backoffice::Auth0::can_access(['Quants']);
 my $clerk   = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $betcode = request()->param('betcode');
@@ -43,10 +43,10 @@ my $qty      = request()->param('qty');
 my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
-my $to = BOM::Platform::Runtime->instance->app_config->system->alerts->quants . ',' . BOM::Platform::Static::Config::get_customer_support_email();
+my $to = BOM::Platform::Runtime->instance->app_config->system->alerts->quants;
 
 # Make transaction on client account
-if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') eq 'closeatzero') {
+if (request()->param('whattodo') eq 'closeatzero') {
 
     if ($currency !~ /^\w\w\w$/)    { print "Error with curr " . request()->param('curr');       code_exit_BO(); }
     if ($price !~ /^\d*\.?\d*$/)    { print "Error with price " . request()->param('price');     code_exit_BO(); }
@@ -64,28 +64,13 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
         code_exit_BO();
     };
 
-    my $ttype;
-    if   ($buysell eq 'BUY') { $ttype = 'DEBIT'; }
-    else                     { $ttype = 'CREDIT'; }
+    my $ttype = 'CREDIT';
 
-    if (request()->param('whattodo') eq 'maketrans') {
-        if ($buysell ne 'BUY' and $buysell ne 'SELL') { print "Error with buysell " . request()->param('buysell'); code_exit_BO(); }
-        #check if control code already used
-        my $count    = 0;
-        my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fmanagerconfodeposit.log");
-        while ((defined(my $l = $log_file->readline)) and ($count++ < 200)) {
-            my $dc_code = request()->param('DCcode');
-            if ($l =~ /DCcode\=$dc_code/i) { print "ERROR: this control code has already been used today!"; code_exit_BO(); }
-        }
-
-    } elsif (request()->param('whattodo') eq 'closeatzero') {
-
-        if (request()->param('buysell') ne 'SELL') {
-            print "You can only sell the contract. You had choosen " . request()->param('buysell');
-            code_exit_BO();
-        }
-        if (request()->param('price') != 0) { print "You can only close position at zero price"; code_exit_BO(); }
+    if (request()->param('buysell') ne 'SELL') {
+        print "You can only sell the contract. You had choosen " . request()->param('buysell');
+        code_exit_BO();
     }
+    if (request()->param('price') != 0) { print "You can only close position at zero price"; code_exit_BO(); }
 
     # Further error checks
     my $fmb_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
@@ -93,84 +78,34 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
         currency_code  => $currency,
     });
 
-    if ($buysell eq 'BUY') {
-        my $bal = BOM::Database::DataMapper::Account->new({
-                'client_loginid' => $loginID,
-                'currency_code'  => $currency
-            })->get_balance();
-        if ($bal < $price) { print "Error : insufficient client account balance. Client balance is only $currency$bal"; code_exit_BO(); }
-    } elsif ($buysell eq 'SELL') {
-        my $stockonhand = $fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($betcode);
+    my $stockonhand = $fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($betcode);
 
-        if ($qty > $stockonhand + 0.000001) {
-            if   ($stockonhand == 0) { print "Error: Client $loginID does not own $betcode in $currency"; }
-            else                     { print "Error: you cannot sell $qty as $loginID only owns $stockonhand of $betcode" }
-            code_exit_BO();
-        }
-
-        if ($qty != $stockonhand) {
-            print "Error: you cannot sell $qty as $loginID owns $stockonhand of $betcode. <br> All of the positions have to be sold at once";
-            code_exit_BO();
-        }
-    } else {
-        print "Error: unknown instruction buysell=$buysell";
+    if ($qty > $stockonhand + 0.000001) {
+        if   ($stockonhand == 0) { print "Error: Client $loginID does not own $betcode in $currency"; }
+        else                     { print "Error: you cannot sell $qty as $loginID only owns $stockonhand of $betcode" }
         code_exit_BO();
     }
 
-    if (request()->param('whattodo') eq 'closeatzero') {
-        my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
-        if ($fmbs and @$fmbs) {
-            BOM::Database::Helper::FinancialMarketBet->new({
-                    account_data => {
-                        client_loginid => $loginID,
-                        currency_code  => $currency
-                    },
-                    transaction_data => [({
-                                staff_loginid => $clerk,
-                                remark        => request()->param('comment')}
-                        ) x @$fmbs
-                    ],
-                    bet_data => [map { {sell_price => 0, sell_time => $now->db_timestamp, id => $_->id,} } @{$fmbs}],
-                    db => BOM::Database::ClientDB->new({broker_code => $broker})->db,
-                })->batch_sell_bet;
-        }
-    } else {
-        # check short code
-        my $bet = produce_contract($betcode, $currency);
+    if ($qty != $stockonhand) {
+        print "Error: you cannot sell $qty as $loginID owns $stockonhand of $betcode. <br> All of the positions have to be sold at once";
+        code_exit_BO();
+    }
 
-        if ($bet->longcode =~ /UNKNOWN|Unknown/) { print "Error : BOM::Product::Contract returned unknown bet code!"; code_exit_BO(); }
-
-        if ($bet->payout > 50001) { print "Error : Payout is higher than 50000. Payout=" . $bet->payout; code_exit_BO(); }
-        if ($bet->payout < $price) {
-            print "Error : Bet price is higher than payout: payout=" . $bet->payout . ' price=' . $price;
-            code_exit_BO();
-        }
-        # add other checks below..
-
-        my $contract_id;
-        if ($buysell eq 'SELL') {
-            # need fmbid
-            my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
-            unless ($fmbs and @$fmbs) {
-                print "Error : Contract $betcode not found in database";
-                code_exit_BO();
-            }
-            $contract_id = $fmbs->[0]->id;
-        }
-
-        #pricing comment
-        my $pricingcomment = request()->param('comment');
-        my $transaction    = BOM::Product::Transaction->new({
-            client      => $client,
-            contract    => $bet,
-            contract_id => $contract_id,
-            price       => $price,
-            comment     => $pricingcomment,
-            staff       => $clerk,
-        });
-        my $method = lc $buysell;
-        my $error = $transaction->$method(skip_validation => 1);
-        die $error->{-message_to_client} if $error;
+    my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
+    if ($fmbs and @$fmbs) {
+        BOM::Database::Helper::FinancialMarketBet->new({
+                account_data => {
+                    client_loginid => $loginID,
+                    currency_code  => $currency
+                },
+                transaction_data => [({
+                            staff_loginid => $clerk,
+                            remark        => request()->param('comment')}
+                    ) x @$fmbs
+                ],
+                bet_data => [map { {sell_price => 0, sell_time => $now->db_timestamp, id => $_->financial_market_bet_record->id,} } @{$fmbs}],
+                db => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+            })->batch_sell_bet;
     }
 
     # Logging
@@ -200,19 +135,8 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
  <INPUT type=\"submit\" value='View client portfolio'>
  </FORM>";
 
-    if (request()->param('whattodo') eq 'maketrans') {
-
-        $subject = "Manually close contract. ";
-        @body    = (
-            "CS team,\nwe manually closed the contract [Ref: $bet_ref] at price [$currency $price] for clien[$loginID] shortcode[$betcode]. Please inform the client. "
-        );
-    } elsif (request()->param('whattodo') eq 'closeatzero') {
-        $subject = "Manually close contract at zero price. ";
-        @body    = ("We manually closed the contract [Ref: $bet_ref] at price $currency 0 for client[$loginID] shortcode[$betcode]. \n");
-
-        push @body, "CS team,\nplease inform the client.";
-
-    }
+    $subject = "Manually close contract at zero price. ";
+    @body    = ("We manually closed the contract [Ref: $bet_ref] at price $currency 0 for client[$loginID] shortcode[$betcode]. \n");
 
     send_email({
         from    => BOM::Platform::Runtime->instance->app_config->system->email,
@@ -223,35 +147,6 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
 
     code_exit_BO();
 }
-
-Bar("MAKE TRANSACTION IN CLIENT ACCOUNT");
-print qq~
-<table width=100% border=0 bgcolor=ffffce><tr><td width=100% bgcolor=ffffce>
-<FORM name=maketrans onsubmit="return confirm('Are you sure ? Please double-check all inputs.');" method=POST action="~
-    . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~">
-<input type=hidden name=whattodo value=maketrans>
-<input type=hidden name=broker value=$broker>
-<select name=buysell><option selected>SELL<option>BUY</select>
-<br>BET CODE: <input type=text size=70 name=betcode value=''> <a onclick='document.maketrans.betcode.value=document.dealer.betcode.value'><i>click to grab from above</i></a>
-<br>PRICE: <select name=curr><option>~ . get_currency_options() . qq~</select>
-<input type=text size=12 name=price value=''> <a onclick='document.maketrans.price.value=document.dealer.price.value'><i>click to grab from above</i></a>
-<br>QUANTITY: <input type=text size=12 name=qty value=1>
-<br>BET REFERENCE: <input type=text size=12 name=ref value=''>
-<br>CLIENT LOGINID: <input type=text size=12 name=loginid value=$broker>
-<br>COMMENT: <input type=text size=45 maxlength=90 name=comment>
-<br>
-
-<table border=0 cellpadding=1 cellspacing=1><tr><td bgcolor=FFFFEE><font color=blue>
-<b>DUAL CONTROL CODE FOR QTY*PRICE</b>
-<br>Fellow staff name: <input type=text name=DCstaff size=8>
-Control Code: <input type=text name=DCcode size=16>
-</td></tr></table>
-
-<br>
-<input type=submit value='- Make Transaction -'>
-</form>
-</td></tr></table>
-~;
 
 Bar("CLOSE CONTRACT AT ZERO PRICE");
 print qq~

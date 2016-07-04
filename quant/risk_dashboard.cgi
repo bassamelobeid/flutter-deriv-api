@@ -10,8 +10,8 @@ use Format::Util::Numbers qw( to_monetary_number_format );
 use BOM::RiskReporting::Dashboard;
 use BOM::Platform::Runtime;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Risk Dashboard.');
@@ -42,18 +42,8 @@ $report->{titlfy} = sub {
     my $href  = shift;
     my $title = $href->{name};
 
-    if ($href->{custom_limits}) {
-        foreach my $limit (@{$href->{custom_limits}}) {
-            my $payout_amount = $limit->{payout_limit} // 'no limit';
-            $title .=
-                  "\n" . '['
-                . $limit->{market} . '-'
-                . $limit->{contract_kind} . ': '
-                . $payout_amount . '] '
-                . $limit->{comment} . ' ('
-                . $limit->{staff} . ','
-                . $limit->{modified} . ')';
-        }
+    if ($href->{being_watched_for}) {
+        $title .= "\n" . '[' . $href->{being_watched_for} . ']';
     }
     return $title;
 };

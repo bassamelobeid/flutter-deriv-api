@@ -5,13 +5,15 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
+use Date::Utility;
 use Quant::Framework::CorporateAction;
+use Quant::Framework::StorageAccessor;
 use BOM::Platform::Runtime;
 use JSON qw(to_json);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_JSON );
 use CGI;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 my $cgi     = CGI->new;
 my $symbol  = $cgi->param('symbol');
@@ -21,10 +23,17 @@ my $enable  = $cgi->param('enable');
 
 my $response;
 try {
-    my $corp = Quant::Framework::CorporateAction->new(
-        symbol           => $symbol,
+    my $storage_accessor = Quant::Framework::StorageAccessor->new(
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    );
+
+    my $corp = Quant::Framework::CorporateAction::load($storage_accessor, $symbol)
+        || die("No corporate actions for '$symbol' available for update");
+
+    # creates new corporate action with new date
+    $corp = $corp->update({}, Date::Utility->new);
+
     my $action_to_update = $corp->actions->{$id};
     $action_to_update->{comment} = $comment;
     if ($enable) {

@@ -11,14 +11,13 @@ use Data::Dumper;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
-use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Platform::User;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Client::Utility ();
-use BOM::Platform::Sysinit         ();
+use BOM::Backoffice::Sysinit         ();
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Helper::Doughflow qw( get_sportsbook );
 use BOM::Database::Model::HandoffToken;
@@ -26,7 +25,7 @@ use BOM::Database::ClientDB;
 use BOM::System::Config;
 use BOM::Backoffice::FormAccounts;
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 my %input = %{request()->params};
 

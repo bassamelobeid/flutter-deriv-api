@@ -13,8 +13,8 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_excel);
 
 use Path::Tiny;
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 my $show = request()->param('show');
 if (request()->param('action') ne 'DOWNLOAD CSV') {
@@ -22,7 +22,7 @@ if (request()->param('action') ne 'DOWNLOAD CSV') {
     BrokerPresentation("MONITOR $show");
 }
 
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 

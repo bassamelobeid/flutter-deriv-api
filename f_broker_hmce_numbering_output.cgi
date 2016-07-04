@@ -6,10 +6,10 @@ use f_brokerincludeall;
 use BOM::Database::DataMapper::Transaction;
 use Try::Tiny;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_excel );
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::Product::ContractFactory qw( simple_contract_info );
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 local $\ = "\n";
 
@@ -19,7 +19,7 @@ if (request()->param('output') ne 'CSV') {
 
 PrintContentType_excel(request()->param('action_type') . '_bets_for_' . request()->param('start') . ".csv");
 
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['Accounts']);
 
 my $action_type = request()->param('action_type');

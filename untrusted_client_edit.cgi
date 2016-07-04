@@ -5,15 +5,15 @@ use strict 'vars';
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 use BOM::System::RedisReplicated;
 
 PrintContentType();
 BrokerPresentation("UNTRUSTED/DISABLE CLIENT");
 
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
 my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
@@ -69,11 +69,6 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         if ($action eq 'insert_data') {
             $client->set_status('disabled', $clerk, $reason);
             $printline = $client->save ? $insert_success_msg : $insert_error_msg;
-            my @tokens = BOM::System::RedisReplicated::redis_read->keys('LOGIN_SESSION::*');
-            for my $token (@tokens) {
-                my $cookie = BOM::Platform::SessionCookie->new({token => $token});
-                $cookie->end_session if $cookie->loginid eq $client->loginid;
-            }
         }
         # remove client from $broker.disabledlogins
         elsif ($action eq 'remove_data') {

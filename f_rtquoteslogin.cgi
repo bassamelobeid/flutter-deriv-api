@@ -13,12 +13,12 @@ use BOM::Market::Registry;
 use Feed::Listener::Quote;
 use Try::Tiny;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('REALTIME QUOTES');
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my @all_markets = BOM::Market::Registry->instance->all_market_names;

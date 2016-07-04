@@ -1,12 +1,18 @@
 #!/usr/bin/perl
 package main;
+
+BEGIN {
+    push @INC, "/home/git/regentmarkets/bom-backoffice/lib";
+}
+
+
 use strict;
 
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Client;
 
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 if ($ENV{REQUEST_METHOD}) {
     die 'REQUEST_METHOD[' . $ENV{REQUEST_METHOD} . '] exists!?';

@@ -325,7 +325,7 @@ table#client_edit td{
         </td>
     </tr>
     <tr>
-        <td class="label">Max Payout</td>
+        <td class="label">Max Open Positions Payout</td>
         <td>: <input type="text" name="custom_max_payout" value="[% client.custom_max_payout %]" size="15" />
          Currently enforced client limit: 
          [% client.currency %] [% client.get_limit_for_payout %] 

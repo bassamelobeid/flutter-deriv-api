@@ -5,18 +5,18 @@ use strict 'vars';
 use f_brokerincludeall;
 use Format::Util::Numbers qw(roundnear);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('TRANSACTION REPORTS');
 
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['CS']);
 my $currency_options = get_currency_options();
 
 if ($broker eq 'FOG') {
-    $broker = request()->broker->code;
+    $broker = request()->broker_code;
 }
 
 if ($broker ne 'FOG') {

@@ -10,8 +10,8 @@ use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::Client;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Clients Locked in Transaction');
@@ -37,7 +37,7 @@ foreach my $client_loginid (@clients) {
 }
 
 my $client_data_mapper = BOM::Database::DataMapper::Client->new({
-    broker_code => request()->broker->code,
+    broker_code => request()->broker_code,
 });
 
 my $clients_list = $client_data_mapper->locked_client_list();

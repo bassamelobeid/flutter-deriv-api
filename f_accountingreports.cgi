@@ -8,13 +8,14 @@ use DateTime;
 use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Market::UnderlyingDB;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('ACCOUNTING REPORTS');
 BOM::Backoffice::Auth0::can_access(['Accounts']);
-my $broker           = request()->broker->code;
+my $broker           = request()->broker_code;
 my $all_currencies   = request()->available_currencies;
 my $currency_options = get_currency_options();
 my $feedloc          = BOM::Platform::Runtime->instance->app_config->system->directory->feed;
@@ -82,7 +83,7 @@ print "<form action=\""
     . "<input type=\"submit\" value=\"View Dailysummary File in Table format\">"
     . "</form>";
 
-my $landing_company = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($broker)->short;
+my $landing_company = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($broker)->short;
 if (any { $landing_company eq $_ } qw(iom malta maltainvest)) {
     Bar("HMCE/IOMCE bet numbering records");
 

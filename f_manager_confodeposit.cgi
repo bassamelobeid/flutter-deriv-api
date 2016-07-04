@@ -17,8 +17,8 @@ use BOM::Platform::Context;
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
 use BOM::Platform::Static::Config;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
@@ -46,7 +46,6 @@ my $DCcode       = delete $params{DCcode};
 my $range        = delete $params{range};
 
 BOM::Backoffice::Auth0::can_access(['Payments']);
-my $token = BOM::Platform::Context::request()->bo_cookie->token;
 my $staff = BOM::Backoffice::Auth0::from_cookie();
 my $clerk = $staff->{nickname};
 
@@ -265,7 +264,6 @@ my $staffemail = $staff->{'email'};
 
 my $email_accountant = BOM::Platform::Runtime->instance->app_config->accounting->email;
 my $toemail          = ($staffemail eq $email_accountant) ? "$staffemail" : "$staffemail,$email_accountant";
-my $website          = BOM::Platform::Runtime->instance->website_list->get_by_broker_code($broker);
 
 if ($toemail && $informclient) {
 
@@ -276,14 +274,14 @@ if ($toemail && $informclient) {
         . " $who,\n\n"
         . localize('We would like to inform you that your [_1] has been processed.', $subject) . "\n\n"
         . localize('Kind Regards') . "\n\n"
-        . $website->display_name;
+        . 'Binary.com';
 
     my $support_email = BOM::Platform::Static::Config::get_customer_support_email();
 
     my $result = send_email({
         from               => $support_email,
         to                 => $email,
-        subject            => $website->display_name . ': ' . $subject,
+        subject            => $subject,
         message            => [$email_body],
         use_email_template => 1,
         template_loginid   => $loginID,

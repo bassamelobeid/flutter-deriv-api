@@ -14,8 +14,11 @@ use BOM::Backoffice::Auth0;
 use BOM::StaffPages;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Market::Registry;
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Platform::Runtime::LandingCompany;
+
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
+
 
 if (not BOM::Backoffice::Auth0::from_cookie()) {
     PrintContentType();
@@ -38,7 +41,7 @@ if (BOM::System::Localhost::is_master_server()) {
 
 print "<center>";
 
-my $allbrokercodes = '<option>' . join("<option>", BOM::Platform::Runtime->instance->broker_codes->all_codes);
+my $allbrokercodes = '<option>' . join("<option>", BOM::Platform::Runtime::LandingCompany::Registry::all_broker_codes);
 
 my $brokerselection = "Broker code : <select name=broker>" . set_selected_item($broker, $allbrokercodes) . "</select>";
 
@@ -229,6 +232,12 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 					<form action="~ . request()->url_for('backoffice/quant/pricing/contract_details.cgi') . qq~" method="post"><font size=2>
 						<b>$brokerselection</b>
                                                 <input type="submit" value="RETRIEVE CONTRACT DETAILS">
+					</font></form>
+				</td>
+                                <td align="center" width="50%">
+					<p><b>PRODUCT MANAGEMENT</b></p>
+					<form action="~ . request()->url_for('backoffice/quant/product_management.cgi') . qq~" method="post"><font size=2>
+                                                <input type="submit" value="PRODUCT MANAGEMENT">
 					</font></form>
 				</td>
 

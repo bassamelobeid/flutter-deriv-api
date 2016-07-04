@@ -43,34 +43,31 @@ sub parse_calendar {
 
     my $csv = Text::CSV::Slurp->load(file => $file);
     my @holiday_data;
+    my @early_closes;
     if ($calendar_type eq 'exchange_holiday') {
         @holiday_data = grep { defined $_->{Trading} and $_->{Trading} =~ /No/ } @$csv;
+        @early_closes = grep { defined $_->{Trading} and $_->{Trading} =~ /Partial/ } @$csv;
+
     } elsif ($calendar_type eq 'country_holiday') {
         @holiday_data = grep { defined $_->{Settle} and $_->{Settle} =~ /No/ } @$csv;
-    } elsif ($calendar_type eq 'early_closes') {
-        @holiday_data = grep { defined $_->{Trading} and $_->{Trading} =~ /Partial/ } @$csv;
     }
-
-    my $data = _process(@holiday_data);
+    my $data              = _process(@holiday_data);
+    my $early_closes_data = _process(@early_closes);
     # don't have to include synthetics for country holidays
     if ($calendar_type ne 'country_holiday') {
-        _include_synthetic($data);
         _include_forex_holidays($data);
+        _include_metal_holidays_and_early_closes({
+            holidays     => $data,
+            early_closes => $early_closes_data
+        });
+        _save_early_closes_calendar($early_closes_data);
     }
     # convert to proper calendar format
     my $calendar;
+
     foreach my $exchange_name (keys %$data) {
         foreach my $date (keys %{$data->{$exchange_name}}) {
-            my $description;
-            if ($calendar_type eq 'early_closes') {
-                my $calendar = Quant::Framework::TradingCalendar->new($exchange_name, BOM::System::Chronicle::get_chronicle_reader());
-                $description =
-                      $calendar->is_in_dst_at($date)
-                    ? $calendar->market_times->{partial_trading}{dst_close}
-                    : $calendar->market_times->{partial_trading}{standard_close};
-            } else {
-                $description = $data->{$exchange_name}{$date};
-            }
+            my $description = $data->{$exchange_name}{$date};
             push @{$calendar->{$date}{$description}}, $exchange_name;
         }
     }
@@ -89,6 +86,24 @@ sub _include_forex_holidays {
         $new_year  => "New Year\'s Day",
     };
 
+    return;
+}
+
+sub _include_metal_holidays_and_early_closes {
+    my $param             = shift;
+    my $data              = $param->{holidays};
+    my $early_closes_data = $param->{early_closes};
+
+    my $year        = Date::Utility->new->year;
+    my $christmas   = Date::Utility->new("$year-12-25")->epoch;
+    my $new_year    = Date::Utility->new(($year + 1) . "-01-01")->epoch;
+    my $us_holidays = $data->{NYSE};
+
+    $data->{METAL} = {
+        $christmas => 'Christmas Day',
+        $new_year  => "New Year\'s Day",
+        map { $_ => 'Good Friday' } grep { $us_holidays->{$_} =~ /Good Friday/ } keys %{$us_holidays}};
+    $early_closes_data->{METAL} = $us_holidays;
     return;
 }
 
@@ -139,27 +154,40 @@ sub _process {
     return $output;
 }
 
-sub _include_synthetic {
-    my $calendar = shift;
+sub _save_early_closes_calendar {
+    my $data = shift;
+    my $calendar_data;
+    foreach my $exchange_name (keys %$data) {
+        my $calendar = Quant::Framework::TradingCalendar->new({
+                symbol           => $exchange_name,
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()});
+        my $partial_trading = $calendar->market_times->{partial_trading};
+        if (not $partial_trading) {
+            print "$exchange_name does not have partial trading configuration but it has early closes. Please check. \n";
+            next;
+        }
 
-    my %mapper = (
-        SYNSTOXX    => [qw(STOXX EUREX)],
-        SYNEURONEXT => [qw(EURONEXT EEI_AM)],
-        SYNLSE      => [qw(LSE ICE_LIFFE)],
-        SYNBSE      => [qw(BSE BSE)],
-        SYNNYSE_DJI => [qw(NYSE CME)],
-        SYNFSE      => [qw(FSE EUREX)],
-        SYNHKSE     => [qw(HKSE HKF)],
-        SYNTSE      => [qw(TSE CME)],
-        SYNSWX      => [qw(SWX EUREX_SWISS)],
-        SYNNYSE_SPC => [qw(NYSE_SPC CME)],
-    );
-    # take care of synthetic holidays now
-    foreach my $syn_exchange (keys %mapper) {
-        my %syn_data = map { (exists $calendar->{$_}) ? %{$calendar->{$_}} : () } @{$mapper{$syn_exchange}};
-        $calendar->{$syn_exchange} = \%syn_data;
+        foreach my $date (keys %{$data->{$exchange_name}}) {
+
+            my $epoch    = Date::Utility->new($date)->epoch;
+
+            my $description =
+                  $calendar->is_in_dst_at($epoch)
+                ? $partial_trading->{dst_close}->interval
+                : $partial_trading->{standard_close}->interval;
+            push @{$calendar_data->{$date}{$description}}, $exchange_name;
+        }
     }
 
+    my $updated = Quant::Framework::PartialTrading->new(
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+        recorded_date    => Date::Utility->new,
+        type             => 'early_closes',
+        calendar         => $calendar_data,
+    )->save;
     return;
+
 }
+
 1;

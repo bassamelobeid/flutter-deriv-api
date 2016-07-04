@@ -7,11 +7,11 @@ use f_brokerincludeall;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use SuperDerivatives::Correlation qw( upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
-use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Sysinit ();
 use Quant::Framework::EconomicEventCalendar;
 use BOM::System::Chronicle;
 use Try::Tiny;
-BOM::Platform::Sysinit::init();
+BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("QUANT BACKOFFICE");
@@ -23,7 +23,7 @@ use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Platform::Context;
 use Quant::Framework::CorrelationMatrix;
-my $broker = request()->broker->code;
+my $broker = request()->broker_code;
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }

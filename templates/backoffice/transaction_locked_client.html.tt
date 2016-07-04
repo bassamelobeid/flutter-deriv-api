@@ -28,7 +28,7 @@ function toggle(source) {
     </tr>
     [% END %]
 </table>
-<input type="hidden" name="broker" value="[% broker.code %]">
+<input type="hidden" name="broker" value="[% broker_code %]">
 <input type="submit" name="unlock_selection"  value="Unlock selected clients">
 </form>
 </div>

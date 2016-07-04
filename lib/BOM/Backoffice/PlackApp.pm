@@ -3,7 +3,7 @@ package BOM::Backoffice::PlackApp;
 use strict;
 use warnings;
 
-use Try::Tiny::Except ();    # preload: see BOM::Platform::Sysinit
+use Try::Tiny::Except ();    # preload: see BOM::Backoffice::Sysinit
 use Plack::Builder;
 use Plack::App::CGIBin::Streaming;
 use Time::HiRes ();
@@ -11,10 +11,6 @@ use File::Copy  ();
 use File::Path  ();
 
 BEGIN {
-    $ENV{ERROR_LOG} ||= 'error_log';
-    if ($ENV{ERROR_LOG} ne 'STDERR') {
-        open STDERR, '>>', $ENV{ERROR_LOG} or die "Cannot open $ENV{ERROR_LOG}: $!";
-    }
     select +(select(STDERR), $| = 1)[0];    ## no critic
 
     my $t = Time::HiRes::time;
