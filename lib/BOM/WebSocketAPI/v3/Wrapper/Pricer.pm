@@ -291,12 +291,27 @@ sub process_pricing_events {
 
 sub process_bid_event {
     my ($c, $response, $pricing_channel) = @_;
+    my $results = {
+        msg_type   => 'proposal_open_contract',
+        'proposal_open_contract' => {
+            %$response,
+        },
+    };
+    $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
+    if (my $passthrough = $pricing_channel->{$serialized_args}->{$amount}->{args}->{passthrough}) {
+        $results->{passthrough} = $passthrough;
+    }
+    if (my $req_id = $pricing_channel->{$serialized_args}->{$amount}->{args}->{req_id}) {
+        $results->{req_id} = $req_id;
+    }
+    $c->send({json => $results});
     return;
 }
 
 sub process_ask_event {
     my ($c, $response, $serialized_args, $pricing_channel) = @_;
 
+    my $theo_probability = $response->{theo_probability};
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
         my $results;
         if ($response and exists $response->{error}) {
@@ -313,48 +328,31 @@ sub process_ask_event {
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
-            if ($response->{shortcode}) { # bid
+            delete $response->{longcode};
+            my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
+
+            if (my $ref = $adjusted_results->{error}) {
+                my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
+                $err->{error}->{details} = $ref->{details} if exists $ref->{details};
+                $results = $err;
+            } else {
                 $results = {
-                    msg_type   => 'proposal_open_contract',
-                    'proposal_open_contract' => {
-                        %$response,
+                    msg_type   => 'proposal',
+                    'proposal' => {
+                        id       => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
+                        longcode => $pricing_channel->{$serialized_args}->{$amount}->{longcode},
+                        %$adjusted_results,
                     },
                 };
-                $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
-                if (my $passthrough = $pricing_channel->{$serialized_args}->{$amount}->{args}->{passthrough}) {
-                    $results->{passthrough} = $passthrough;
-                }
-                if (my $req_id = $pricing_channel->{$serialized_args}->{$amount}->{args}->{req_id}) {
-                    $results->{req_id} = $req_id;
-                }
-            } else { # ask
-                delete $response->{longcode};
-                my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
-
-                if (my $ref = $adjusted_results->{error}) {
-                    my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
-                    $err->{error}->{details} = $ref->{details} if exists $ref->{details};
-                    $results = $err;
-                } else {
-                    $results = {
-                        msg_type   => 'proposal',
-                        'proposal' => {
-                            id       => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
-                            longcode => $pricing_channel->{$serialized_args}->{$amount}->{longcode},
-                            %$adjusted_results,
-                        },
-                    };
-                }
-                $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
-                if (my $passthrough = $pricing_channel->{$serialized_args}->{$amount}->{args}->{passthrough}) {
-                    $results->{passthrough} = $passthrough;
-                }
-                if (my $req_id = $pricing_channel->{$serialized_args}->{$amount}->{args}->{req_id}) {
-                    $results->{req_id} = $req_id;
-                }
+            }
+            $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
+            if (my $passthrough = $pricing_channel->{$serialized_args}->{$amount}->{args}->{passthrough}) {
+                $results->{passthrough} = $passthrough;
+            }
+            if (my $req_id = $pricing_channel->{$serialized_args}->{$amount}->{args}->{req_id}) {
+                $results->{req_id} = $req_id;
             }
         }
-
         if ($c->stash('debug')) {
             $results->{debug} = {
                 time   => $results->{price_stream}->{rpc_time},
@@ -367,9 +365,9 @@ sub process_ask_event {
 }
 
 sub _price_stream_results_adjustment {
-    my $orig_args = shift;
-    my $results   = shift;
-    my $amount    = shift;
+    my $orig_args             = shift;
+    my $results               = shift;
+    my $resp_theo_probability = shift;
 
     # skips for spreads
     return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
@@ -381,7 +379,7 @@ sub _price_stream_results_adjustment {
         name        => 'theo_probability',
         description => 'theorectical value of a contract',
         set_by      => 'Pricer Daemon',
-        base_amount => $results->{theo_probability},
+        base_amount => $resp_theo_probability,
         minimum     => 0,
         maximum     => 1,
     });
