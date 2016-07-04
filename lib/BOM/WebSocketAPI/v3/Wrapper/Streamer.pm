@@ -22,6 +22,7 @@ use utf8;
 sub ticks {
     my ($c, $req_storage) = @_;
 
+    my $args = $req_storage->{args};
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     foreach my $symbol (@symbols) {
         $c->call_rpc({
