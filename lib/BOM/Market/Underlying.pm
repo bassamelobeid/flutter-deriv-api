@@ -160,6 +160,7 @@ has spot_source => (
         'spot_time'                  => 'spot_time',
         'spot_age'                   => 'spot_age',
         'closing_tick_on'            => 'closing_tick_on',
+        'tick_at'                    => 'tick_at',
     });
 
 sub _build_spot_source {
