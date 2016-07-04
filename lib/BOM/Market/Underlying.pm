@@ -39,7 +39,7 @@ use POSIX;
 use YAML::XS qw(LoadFile);
 use Try::Tiny;
 use BOM::Platform::Runtime;
-use BOM::Market::Data::DatabaseAPI;
+use Finance::Spot::DatabaseAPI;
 use BOM::Platform::Context qw(request localize);
 use BOM::Market::Types;
 use BOM::Platform::Static::Config;
@@ -1516,7 +1516,7 @@ Returns,
 Gets ohlc for specified start_time, end_time, aggregation_period
 
 Returns,
-    ArrayRef[BOM::Market::Data::OHLC] on success
+    ArrayRef[Finance::Spot::OHLC] on success
     empty ArrayRef on failure
 
 
