@@ -8,6 +8,7 @@ use Try::Tiny;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Contract;
+use BOM::RPC::v3::Accounts;
 use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
@@ -38,8 +39,8 @@ sub portfolio {
             currency       => $client->currency,
             shortcode      => $row->{short_code},
             longcode       => (simple_contract_info($row->{short_code}, $client->currency))[0] // '',
-        );
-        push @{$portfolio->{contracts}}, \%trx;
+            app_id => BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time}));
+        push $portfolio->{contracts}, \%trx;
     }
 
     return $portfolio,;
