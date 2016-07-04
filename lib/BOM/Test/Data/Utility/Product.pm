@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use feature 'state';
+use Scalar::Util qw(blessed);
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Market::Underlying;
@@ -27,7 +28,7 @@ sub client_buy_bet {
         date_expiry => $now->epoch + 300,
     });
 
-    local $ENV{REQUEST_STARTTIME} = $now;
+    local $ENV{REQUEST_STARTTIME} = $now->epoch;
     my $txn = BOM::Product::Transaction->new({
         client   => $client,
         contract => $contract,
@@ -40,7 +41,7 @@ sub client_buy_bet {
 sub buy_bet {
     my ($sc, $curr, $client, $price, $start) = @_;
 
-    local $ENV{REQUEST_STARTTIME} = $start;
+    local $ENV{REQUEST_STARTTIME} = blessed($start) && $start->isa('Date::Utility') ? $start->epoch : $start;
     my $txn = BOM::Product::Transaction->new({
         contract => produce_contract($sc, $curr),
         client   => $client,
