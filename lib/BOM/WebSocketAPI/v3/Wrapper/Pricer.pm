@@ -133,8 +133,9 @@ sub process_pricing_events {
     return if not $message or not $c->tx;
     $message =~ s/^PRICER_KEYS:://;
 
-    my $response        = decode_json($message);
-    my $serialized_args = $chan;
+    my $response         = decode_json($message);
+    my $serialized_args  = $chan;
+    my $theo_probability = $response->{theo_probability};
 
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
@@ -157,7 +158,7 @@ sub process_pricing_events {
             $results = $err;
         } else {
             delete $response->{longcode};
-            my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
+            my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $theo_probability);
 
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
@@ -196,9 +197,9 @@ sub process_pricing_events {
 }
 
 sub _price_stream_results_adjustment {
-    my $orig_args = shift;
-    my $results   = shift;
-    my $amount    = shift;
+    my $orig_args        = shift;
+    my $results          = shift;
+    my $theo_probability = shift;
 
     # skips for spreads
     return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
@@ -210,7 +211,7 @@ sub _price_stream_results_adjustment {
         name        => 'theo_probability',
         description => 'theorectical value of a contract',
         set_by      => 'Pricer Daemon',
-        base_amount => $results->{theo_probability},
+        base_amount => $theo_probability,
         minimum     => 0,
         maximum     => 1,
     });
