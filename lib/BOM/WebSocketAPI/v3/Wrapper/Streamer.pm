@@ -27,16 +27,22 @@ sub ticks {
     foreach my $symbol (@symbols) {
         $c->call_rpc({
                 args    => $args,
-                symbol  => $symbol,
                 method  => 'ticks',
+                msg_type  => 'tick',
+                symbol  => $symbol,    
+                call_params => {
+                    symbol  => $symbol,    
+                },
                 success => sub {
                     my ($c, $rpc_response, $req_storage) = @_;
                     $req_storage->{id} = _feed_channel($c, 'subscribe', $req_storage->{symbol}, 'tick', $req_storage->{args});
                 },
                 response => sub {
                     my ($rpc_response, $api_response, $req_storage) = @_;
-                    $api_response = $c->new_error('tick', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $req_storage->{symbol}))
-                        unless $req_storage->{id};
+                    unless ($rpc_response->{error} || $req_storage->{id}) {
+                        $api_response = $c->new_error('tick', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $req_storage->{symbol}))
+                    }
+                    undef $api_response unless $api_response->{error};
                     return $api_response;
                 }
             });
