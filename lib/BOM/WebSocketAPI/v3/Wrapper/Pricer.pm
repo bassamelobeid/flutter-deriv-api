@@ -187,7 +187,7 @@ sub _send_ask {
                 my $uuid;
 
                 warn "Pricer ASK going to _pricing_channel with args: ". Dumper($args);
-                if (not $uuid = _pricing_channel($c, 'subscribe', $args)) {
+                if (not $uuid = _pricing_channel_for_ask($c, 'subscribe', $args)) {
                     return $c->new_error('proposal',
                         'AlreadySubscribedOrLimit',
                         $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
@@ -219,7 +219,7 @@ sub _serialized_args {
     return 'PRICER_KEYS::' . encode_json(\@a);
 }
 
-sub _pricing_channel {
+sub _pricing_channel_for_ask {
     my ($c, $subs, $args) = @_;
 
     my %args_hash = %{$args};
@@ -234,6 +234,7 @@ sub _pricing_channel {
     delete $args_hash{req_id};
 
     $args_hash{language} = $c->stash('language') || 'EN';
+    $args_hash{rpc_call} = 'send_ask';
     my $serialized_args = _serialized_args(\%args_hash);
     warn "Seria Ags: $serialized_args\n";
 
@@ -270,17 +271,31 @@ sub _pricing_channel {
 }
 
 sub process_pricing_events {
-    my ($c, $message, $chan) = @_;
+    my ($c, $message, $channel_name) = @_;
 
     # in case that it is a spread
     return if not $message or not $c->tx;
-    $message =~ s/^PRICER_KEYS:://;
+    my $pricing_channel = $c->stash('pricing_channel');
+    return if not $pricing_channel or not $pricing_channel->{$channel_name};
 
     my $response        = decode_json($message);
-    my $serialized_args = $chan;
+    my $rpc_call        = delete $response->{rpc_call};
 
-    my $pricing_channel = $c->stash('pricing_channel');
-    return if not $pricing_channel or not $pricing_channel->{$serialized_args};
+    if ($rpc_call eq 'send_ask') {
+        process_ask_event($c, $response, $channel_name, $pricing_channel);
+    } elsif ($rpc_call eq 'get_bid') {
+        process_bid_event($c, $response, $channel_name, $pricing_channel);
+    }
+    return;
+}
+
+sub process_bid_event {
+    my ($c, $response, $pricing_channel) = @_;
+    return;
+}
+
+sub process_ask_event {
+    my ($c, $response, $serialized_args, $pricing_channel) = @_;
 
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
         my $results;
