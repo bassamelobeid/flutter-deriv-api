@@ -154,73 +154,26 @@ has spot_source => (
         'get_combined_realtime'      => 'spot_tick_hash',
         'pipsized_value'             => 'pipsized_value',
         'display_decimals'           => 'display_decimals',
+        'spot_tic'                   => 'spot_tick',
+        'spot'                       => 'spot_quote',
+        'spot_time'                  => 'spot_time',
+        'spot_age'                   => 'spot_age',
+
     });
 
 sub _build_spot_source {
     my $self = shift;
 
-    #TODO: after we have a module to handle historical spot, here we will
-    #create either Finance::Spot or that module based on for_date
     return Finance::Spot->new({
-            symbol           => $self->symbol,
-            pip_size         => $self->pip_size,
-            get_tick_coderef => sub {
-                my $tick = $self->tick_at(time, {allow_inconsistent => 1});
-                return Finance::Spot::Tick->new($tick->as_hash) if defined $tick;
-                return;
-            }
+            symbol            => $self->symbol,
+            pip_size          => $self->pip_size,
+            feed_api          => $self->feed_api,
+            calendar          => $self->calendar,
+            for_date          => $self->for_date,
+            use_official_ohlc => $self->use_official_ohlc, 
         });
 }
 
-sub spot_tick {
-    my $self = shift;
-
-    return ($self->for_date)
-        ? $self->tick_at($self->for_date->epoch, {allow_inconsistent => 1})
-        : $self->spot_source->spot_tick;
-}
-
-=head2 spot
-
-What is the current spot price for this underlying?
-
-=cut
-
-# Get the last available value currently defined in realtime DB
-
-sub spot {
-    my $self = shift;
-    my $last_price;
-
-    my $last_tick = $self->spot_tick;
-    $last_price = $last_tick->quote if $last_tick;
-
-    return $self->spot_source->pipsized_value($last_price);
-}
-
-=head2 spot_age
-
-The age in seconds of the latest tick
-
-=cut
-
-sub spot_age {
-    my $self      = shift;
-    my $tick_time = $self->spot_time;
-    return defined $tick_time && time - $tick_time;
-}
-
-=head2 spot_time
-
-The epoch timestamp of the latest recorded tick in the .realtime file or undef if we can't find one.
-t
-=cut
-
-sub spot_time {
-    my $self      = shift;
-    my $last_tick = $self->spot_tick;
-    return $last_tick && $last_tick->epoch;
-}
 
 # Can not be made into an attribute to avoid the caching problem.
 
@@ -451,7 +404,7 @@ has forward_feed => (
 
 has 'feed_api' => (
     is      => 'ro',
-    isa     => 'BOM::Market::Data::DatabaseAPI',
+    isa     => 'Finance::Spot::DatabaseAPI',
     handles => {
         ticks_in_between_start_end   => 'ticks_start_end',
         ticks_in_between_start_limit => 'ticks_start_limit',
@@ -1073,7 +1026,7 @@ sub _build_quoted_currency_symbol {
 
 =head2 feed_api
 
-Returns, an instance of I<BOM::Market::Data::DatabaseAPI> based on information that it can collect from underlying.
+Returns, an instance of I<Finance::Spot::DatabaseAPI> based on information that it can collect from underlying.
 
 =cut
 
@@ -1093,7 +1046,12 @@ sub _build_feed_api {
         $build_args->{invert_values} = 1;
     }
 
-    return BOM::Market::Data::DatabaseAPI->new($build_args);
+     my $dbh = BOM::Database::FeedDB::read_dbh;
+     $dbh->{RaiseError} = 1;
+
+     $build_args->{dbh} = $dbh;
+
+    return Finance::Spot::DatabaseAPI->new($build_args);
 }
 
 # End of builders.
@@ -1384,42 +1342,6 @@ sub is_in_quiet_period {
 
 =head1 FEED METHODS
 
-=head2 tick_at
-
-What was the market tick at a given timestamp?  This will be the tick on or before the supplied timestamp.
-
-=cut
-
-sub tick_at {
-    my ($self, $timestamp, $allow_inconsistent_hash) = @_;
-
-    my $inconsistent_price;
-    if (defined $allow_inconsistent_hash->{allow_inconsistent}
-        and $allow_inconsistent_hash->{allow_inconsistent} == 1)
-    {
-        $inconsistent_price = 1;
-    }
-
-    my $pricing_date = Date::Utility->new($timestamp);
-    my $tick;
-
-    # get official close for previous trading day
-    if ($self->use_official_ohlc
-        and not $self->calendar->trades_on($pricing_date))
-    {
-        my $last_trading_day = $self->calendar->trade_date_before($pricing_date);
-        $tick = $self->closing_tick_on($last_trading_day->date_ddmmmyy);
-    } else {
-        my $request_hash = {};
-        $request_hash->{end_time} = $timestamp;
-        $request_hash->{allow_inconsistent} = 1 if ($inconsistent_price);
-
-        $tick = $self->feed_api->tick_at($request_hash);
-    }
-
-    return $tick;
-}
-
 =head2 closing_tick_on
 
 Get the market closing tick for a given date.
@@ -1702,13 +1624,13 @@ sub price_at_intervals {
     while ($time <= $end_date->epoch) {
         my $tick;
         if ($time == $start_date->epoch) {
-            $tick = $self->tick_at($start_date->epoch);
+            $tick = $self->spot_source->tick_at($start_date->epoch);
         } elsif ($time == $end_date->epoch) {
-            $tick = $self->tick_at($end_date->epoch);
+            $tick = $self->spot_source->tick_at($end_date->epoch);
         } elsif ($db_ticks->{$time} and $time != $last_tick_in_db) {
             $tick = $db_ticks->{$time};
         } else {
-            $tick = $self->tick_at($time);
+            $tick = $self->spot_source->tick_at($time);
         }
         if ($tick) {
             $tick->invert_values if ($self->inverted);
