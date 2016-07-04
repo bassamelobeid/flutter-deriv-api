@@ -274,7 +274,7 @@ sub startup {
             }
         ],
         [ 'proposal_open_contract', { instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract, require_auth    => 'read', } ],
-        #[ 'proposal_open_contract', { after_got_rpc_response=>\&d2, _before_call=>\&d1, require_auth    => 'read', rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract, } ],
+        #[ 'proposal_open_contract', { require_auth    => 'read', rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract, } ],
         [
             'sell_expired',
             {
@@ -391,18 +391,6 @@ sub startup {
             skip_check_sanity => qr/password/,
         });
 
-    return;
-}
-
-sub d1 {
-    my ($c, $req_storage) = @_;
-    #warn "before proposal_open_contract: ".Dumper($req_storage);
-    return;
-}
-sub d2 {
-    my ($c, $req_storage, $res) = @_;
-    #warn "after got rpc resp: ".Dumper($req_storage);
-    #warn "after got rpc resp: ".Dumper($res);
     return;
 }
 
