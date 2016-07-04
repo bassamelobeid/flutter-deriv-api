@@ -44,7 +44,7 @@ sub ticks {
                         $api_response =
                             $c->new_error('tick', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $req_storage->{symbol}));
                     }
-                    undef $api_response unless $api_response->{error}; # Don't return anything if subscribed ok
+                    undef $api_response unless $api_response->{error};    # Don't return anything if subscribed ok
                     return $api_response;
                 }
             });
