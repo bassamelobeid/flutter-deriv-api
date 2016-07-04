@@ -7,6 +7,7 @@ use MooseX::Singleton;
 use BOM::Platform::Runtime;
 use BOM::Database::FeedDB;
 use Finance::Spot::Tick;
+use Finance::Spot::OHLC;
 use Try::Tiny;
 
 use base qw( Exporter );
