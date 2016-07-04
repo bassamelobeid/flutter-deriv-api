@@ -53,6 +53,7 @@ use BOM::System::Chronicle;
 use BOM::Market::SubMarket::Registry;
 use BOM::Market;
 use BOM::Market::Registry;
+use BOM::Database::FeedDB;
 
 our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
@@ -165,15 +166,14 @@ sub _build_spot_source {
     my $self = shift;
 
     return Finance::Spot->new({
-            symbol            => $self->symbol,
-            pip_size          => $self->pip_size,
-            feed_api          => $self->feed_api,
-            calendar          => $self->calendar,
-            for_date          => $self->for_date,
-            use_official_ohlc => $self->use_official_ohlc, 
-        });
+        symbol            => $self->symbol,
+        pip_size          => $self->pip_size,
+        feed_api          => $self->feed_api,
+        calendar          => $self->calendar,
+        for_date          => $self->for_date,
+        use_official_ohlc => $self->use_official_ohlc,
+    });
 }
-
 
 # Can not be made into an attribute to avoid the caching problem.
 
@@ -1046,10 +1046,10 @@ sub _build_feed_api {
         $build_args->{invert_values} = 1;
     }
 
-     my $dbh = BOM::Database::FeedDB::read_dbh;
-     $dbh->{RaiseError} = 1;
+    my $dbh = BOM::Database::FeedDB::read_dbh;
+    $dbh->{RaiseError} = 1;
 
-     $build_args->{dbh} = $dbh;
+    $build_args->{dbh} = $dbh;
 
     return Finance::Spot::DatabaseAPI->new($build_args);
 }
