@@ -13,6 +13,7 @@ use Date::Parse;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Finance::Spot::DatabaseAPI;
+use Finance::Spot::OHLC;
 use Date::Utility;
 
 subtest 'prepare ohlc minutely' => sub {

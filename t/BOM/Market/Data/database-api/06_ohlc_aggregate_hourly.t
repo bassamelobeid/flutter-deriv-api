@@ -11,6 +11,7 @@ use Test::Warn;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use Finance::Spot::DatabaseAPI;
+use Finance::Spot::OHLC;
 use DateTime;
 use Date::Utility;
 use Date::Parse;

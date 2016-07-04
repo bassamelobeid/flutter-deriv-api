@@ -16,6 +16,7 @@ use Date::Utility;
 use BOM::Market::Underlying;
 use Cache::RedisDB;
 use BOM::Database::FeedDB;
+use Finance::Spot::OHLC;
 
 subtest 'get_combined_realtime' => sub {
     #Rewind back to a simpler time.
@@ -311,8 +312,8 @@ subtest 'tick_at' => sub {
     my $inverted_underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxJPYAUD'}]);
 
     subtest 'call with no data' => sub {
-        ok !$underlying->tick_at($test_time),          'Standard got nothing';
-        ok !$inverted_underlying->tick_at($test_time), '... and so did inverted';
+        ok !$underlying->spot_source->tick_at($test_time),          'Standard got nothing';
+        ok !$inverted_underlying->spot_source->tick_at($test_time), '... and so did inverted';
     };
 
     subtest 'Adding tick for t - 20 mins' => sub {
@@ -331,8 +332,8 @@ subtest 'tick_at' => sub {
     };
 
     subtest 'call for t with data at t - 20 mins' => sub {
-        ok !$underlying->tick_at($test_time),          'Standard got nothing';
-        ok !$inverted_underlying->tick_at($test_time), '... and so did inverted';
+        ok !$underlying->spot_source->tick_at($test_time),          'Standard got nothing';
+        ok !$inverted_underlying->spot_source->tick_at($test_time), '... and so did inverted';
     };
 
     subtest 'Adding tick for t' => sub {
@@ -351,8 +352,8 @@ subtest 'tick_at' => sub {
     };
 
     subtest 'call for t with data at t' => sub {
-        is $underlying->tick_at($test_time)->quote, 80.88, 'Standard got correct quote';
-        is $inverted_underlying->tick_at($test_time)->quote, 1 / 80.88, '... and so did inverted';
+        is $underlying->spot_source->tick_at($test_time)->quote, 80.88, 'Standard got correct quote';
+        is $inverted_underlying->spot_source->tick_at($test_time)->quote, 1 / 80.88, '... and so did inverted';
     };
 
     subtest 'Adding tick for t + 5 minutes, 1 second' => sub {
@@ -371,8 +372,8 @@ subtest 'tick_at' => sub {
     };
 
     subtest 'call for t with data at t + 5 minutes, 1 second' => sub {
-        is $underlying->tick_at($test_time)->quote, 80.88, 'Standard got correct quote';
-        is $inverted_underlying->tick_at($test_time)->quote, 1 / 80.88, '... and so did inverted';
+        is $underlying->spot_source->tick_at($test_time)->quote, 80.88, 'Standard got correct quote';
+        is $inverted_underlying->spot_source->tick_at($test_time)->quote, 1 / 80.88, '... and so did inverted';
     };
 };
 
@@ -396,12 +397,12 @@ subtest 'tick_at scenarios' => sub {
         subtest 'Request for 2 minutes after first tick' => sub {
             my $test_time = $first_tick_date->plus_time_interval('2m');
 
-            ok !$underlying->tick_at($test_time), 'No price as we are not sure if there is another tick coming';
-            is $underlying->tick_at($test_time, {allow_inconsistent => 1})->quote, 6080.73, 'If we are ok with inconsistent price then get our tick';
+            ok !$underlying->spot_source->tick_at($test_time), 'No price as we are not sure if there is another tick coming';
+            is $underlying->spot_source->tick_at($test_time, {allow_inconsistent => 1})->quote, 6080.73, 'If we are ok with inconsistent price then get our tick';
         };
 
         subtest 'tick at exact time' => sub {
-            is $underlying->tick_at($first_tick_date)->quote, 6080.73, 'Since you are asking for the exact time. We have it';
+            is $underlying->spot_source->tick_at($first_tick_date)->quote, 6080.73, 'Since you are asking for the exact time. We have it';
         };
 
         lives_ok {
@@ -416,8 +417,8 @@ subtest 'tick_at scenarios' => sub {
         subtest 'Request again for 2 minutes after first tick' => sub {
             my $test_time = $first_tick_date->plus_time_interval('2m');
 
-            is $underlying->tick_at($test_time)->quote, 6080.73, 'Get our first added tick';
-            is $underlying->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6080.73, '... and possibly inconsistent is the same';
+            is $underlying->spot_source->tick_at($test_time)->quote, 6080.73, 'Get our first added tick';
+            is $underlying->spot_source->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6080.73, '... and possibly inconsistent is the same';
         };
     };
 
@@ -437,8 +438,8 @@ subtest 'tick_at scenarios' => sub {
 
         my $an_hour_before = $first_tick_date->plus_time_interval('23h')->epoch;
 
-        is $underlying->tick_at($an_hour_before)->quote, 6088.73, 'The lastest available tick is found from previous day';
-        is $underlying->tick_at($an_hour_before, {allow_inconsistent => 1})->quote, 6088.73, '... and possibly inconsistent is the same';
+        is $underlying->spot_source->tick_at($an_hour_before)->quote, 6088.73, 'The lastest available tick is found from previous day';
+        is $underlying->spot_source->tick_at($an_hour_before, {allow_inconsistent => 1})->quote, 6088.73, '... and possibly inconsistent is the same';
     };
 };
 

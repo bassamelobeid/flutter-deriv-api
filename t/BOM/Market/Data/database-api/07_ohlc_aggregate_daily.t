@@ -14,6 +14,7 @@ use Finance::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 use Date::Parse;
+use Finance::Spot::OHLC;
 
 subtest 'prepare ohlc daily' => sub {
     my @ohlc_daily = (

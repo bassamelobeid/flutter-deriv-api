@@ -10,6 +10,7 @@ use DateTime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use Finance::Spot::DatabaseAPI;
+use Finance::Spot::OHLC;
 use BOM::Market::Underlying;
 use Date::Utility;
 
