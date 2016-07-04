@@ -296,6 +296,7 @@ sub process_bid_event {
         $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
         $results = $err;
     } else {
+        $response->{id} = $pricing_channel->{$serialized_args}->{args}->{id};
         $results = {
             msg_type   => 'proposal_open_contract',
             'proposal_open_contract' => {
