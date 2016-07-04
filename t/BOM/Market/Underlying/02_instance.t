@@ -534,9 +534,9 @@ subtest 'all methods on a selection of underlyings' => sub {
     is($EURUSD->spot_source->tick_at($test_date->epoch)->quote, '1.2859', 'spot_source->tick_at has some value');
     cmp_ok($EURUSD->spot_source->tick_at($test_date->epoch)->quote, '==', $oldEU->spot, 'Spot for wormholed underlying and tick_at on standard underlying match');
 
-    cmp_ok($EURUSD->spot_tick->epoch, '>',  $test_date->epoch, 'current spot is newer than the wormhole date');
-    cmp_ok($oldEU->spot_tick->epoch,  '<=', $test_date->epoch, ' plus, spot_tick for old EURUSD is NOT');
-    cmp_ok($oldEU->spot_tick->epoch,  '==', 1326957371,        ' in fact, it is exactly the time we expect');
+    cmp_ok($EURUSD->spot_source->epoch, '>',  $test_date->epoch, 'current spot is newer than the wormhole date');
+    cmp_ok($oldEU->spot_source->epoch,  '<=', $test_date->epoch, ' plus, spot_tick for old EURUSD is NOT');
+    cmp_ok($oldEU->spot_source->epoch,  '==', 1326957371,        ' in fact, it is exactly the time we expect');
 
     cmp_ok($oldEU->spot,                               '==', 1.2859,           'spot for old EURUSD is correct');
     cmp_ok($USDEUR->spot_source->tick_at($test_date->epoch)->quote, '==', 1 / $oldEU->spot, 'And the inverted underlying is flipped');
