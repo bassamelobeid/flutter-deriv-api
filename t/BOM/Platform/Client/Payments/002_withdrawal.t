@@ -203,7 +203,7 @@ subtest 'JP withdrawal' => sub {
 };
 
 subtest 'EUR3k over 30 days MX limitation.' => sub {
-    plan tests => 9;
+    plan tests => 11;
 
     my $client = new_client(
         'GBP',
@@ -238,6 +238,13 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     my %wd3001 = (%wd_gbp, amount => -_GBP_equiv(3001));
 
     throws_ok { $client->validate_payment(%wd3001) } qr/exceeds withdrawal limit \[EUR/, 'Unauthed, not allowed to withdraw GBP equiv of EUR3001.';
+    # mx client should be cashier locked and unwelcome
+    ok $client->get_status('unwelcome'),      'MX client is unwelcome after wihtdrawal limit is reached';
+    ok $client->get_status('cashier_locked'), 'MX client is cashier_locked after wihtdrawal limit is reached';
+
+    # remove for further testing
+    $client->clr_status('unwelcome');
+    $client->clr_status('cashier_locked');
 
     ok $client->validate_payment(%wd3000), 'Unauthed, allowed to withdraw GBP equiv of EUR3000.';
 
@@ -252,6 +259,10 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[EUR/,
         'Unauthed, not allowed to withdraw equiv EUR2500 then 501 making total over 3000.';
 
+    # remove for further testing
+    $client->clr_status('unwelcome');
+    $client->clr_status('cashier_locked');
+
     ok $client->validate_payment(%wd0500), 'Unauthed, allowed to withdraw equiv EUR2500 then 500 making total 3000.';
 
     # move forward 29 days
@@ -259,6 +270,10 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
 
     throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[EUR/,
         'Unauthed, not allowed to withdraw equiv EUR3000 then 1 more 29 days later';
+
+    # remove for further testing
+    $client->clr_status('unwelcome');
+    $client->clr_status('cashier_locked');
 
     # move forward 1 day
     set_fixed_time(time + 86400 + 1);
@@ -286,11 +301,16 @@ subtest 'Total EUR2300 MLT limitation.' => sub {
     subtest 'unauthenticated' => sub {
         throws_ok { $client->validate_payment(%withdrawal_eur, amount => -2301) } qr/exceeds withdrawal limit \[EUR/,
             'Unauthed, not allowed to withdraw EUR2301.';
+
+        is $client->get_status('unwelcome'),      undef, 'Only MX client is unwelcome after it exceeds limit';
+        is $client->get_status('cashier_locked'), undef, 'Only MX client is cashier_locked after it exceeds limit';
+
         ok $client->validate_payment(%withdrawal_eur, amount => -2300), 'Unauthed, allowed to withdraw EUR2300.';
 
         $client->smart_payment(%withdrawal_eur, amount => -2000);
         throws_ok { $client->validate_payment(%withdrawal_eur, amount => -301) } qr/exceeds withdrawal limit \[EUR/,
             'Unauthed, total withdrawal (2000+301) > EUR2300.';
+
         ok $client->validate_payment(%withdrawal_eur, amount => -300), 'Unauthed, allowed to withdraw total EUR (2000+300).';
     };
 
