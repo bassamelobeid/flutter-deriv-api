@@ -139,14 +139,15 @@ sub statement {
         if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
             if ($txn->{action_type} eq 'sell') {
                 $struct->{purchase_time} = Date::Utility->new($txn->{purchase_time})->epoch;
-                $txn_time = Date::Utility->new($txn->{sell_time})->epoch;
+                $txn_time = $txn->{sell_time};
             } else {
-                $txn_time = Date::Utility->new($txn->{purchase_time})->epoch;
+                $txn_time = $txn->{purchase_time};
             }
         } else {
-            $txn_time = Date::Utility->new($txn->{payment_time})->epoch;
+            $txn_time = $txn->{payment_time};
         }
-        $struct->{transaction_time} = $txn_time;
+        $struct->{transaction_time} = Date::Utility->new($txn_time)->epoch;
+        $struct->{app_id} = BOM::RPC::v3::Utility::mask_app_id($txn->{source}, $txn_time);
 
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
@@ -206,6 +207,7 @@ sub profit_table {
         $trx{payout}         = $row->{payout_price};
         $trx{purchase_time}  = Date::Utility->new($row->{purchase_time})->epoch;
         $trx{sell_time}      = Date::Utility->new($row->{sell_time})->epoch;
+        $trx{app_id}         = BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time});
 
         if ($and_description) {
             $trx{shortcode} = $row->{short_code};
