@@ -39,11 +39,12 @@ sub ticks {
                 },
                 response => sub {
                     my ($rpc_response, $api_response, $req_storage) = @_;
-                    unless ($rpc_response->{error} || $req_storage->{id}) {
+                    return $api_response if $rpc_response->{error};
+                    unless ($req_storage->{id}) {
                         $api_response =
                             $c->new_error('tick', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $req_storage->{symbol}));
                     }
-                    undef $api_response unless $api_response->{error};
+                    undef $api_response unless $api_response->{error}; # Don't return anything if subscribed ok
                     return $api_response;
                 }
             });
@@ -219,7 +220,7 @@ sub process_realtime_events {
                 id     => $feed_channels_type->{$channel}->{uuid},
                 symbol => $symbol,
                 epoch  => $m[1],
-                quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])};
+                quote  => sprintf('%.' . $c->stash("${symbol}_display_decimals") . 'f', $m[2])};
 
             if ($cache) {
                 $feed_channel_cache->{$channel}->{$m[1]} = $tick;
@@ -247,7 +248,6 @@ sub process_realtime_events {
                 return;
             }
 
-            my $u = BOM::Market::Underlying->new($symbol);
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             my $ohlc = {
                 id        => $feed_channels_type->{$channel}->{uuid},
@@ -257,10 +257,10 @@ sub process_realtime_events {
                 : $m[1] - $m[1] % 60,    #defining default granularity
                 symbol      => $symbol,
                 granularity => $type,
-                open        => $u->pipsized_value($1),
-                high        => $u->pipsized_value($2),
-                low         => $u->pipsized_value($3),
-                close       => $u->pipsized_value($4)};
+                open        => sprintf('%.' . $c->stash("${symbol}_display_decimals") . 'f', $1),
+                high        => sprintf('%.' . $c->stash("${symbol}_display_decimals") . 'f', $2),
+                low         => sprintf('%.' . $c->stash("${symbol}_display_decimals") . 'f', $3),
+                close       => sprintf('%.' . $c->stash("${symbol}_display_decimals") . 'f', $4)};
 
             if ($cache) {
                 $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;

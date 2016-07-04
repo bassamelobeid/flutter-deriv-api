@@ -23,6 +23,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
     my $i = shift || 700;
+print 'create tick'. "\n";
     BOM::System::RedisReplicated::redis_write->publish('FEED::R_50',
               'R_50;'
             . Date::Utility->new->epoch . ';'
