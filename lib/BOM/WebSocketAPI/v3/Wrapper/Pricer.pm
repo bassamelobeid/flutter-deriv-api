@@ -158,7 +158,8 @@ sub process_pricing_events {
             $results = $err;
         } else {
             delete $response->{longcode};
-            my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $theo_probability);
+            my $adjusted_results =
+                _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $theo_probability);
 
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
