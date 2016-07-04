@@ -2607,7 +2607,7 @@ sub _validate_lifetime {
 
     if (    $self->for_sale
         and $self->expiry_daily
-        and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before->($self->date_settlement)))
+        and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
     {
         # we don't offer sellback on tick expiry contracts.
         return {
