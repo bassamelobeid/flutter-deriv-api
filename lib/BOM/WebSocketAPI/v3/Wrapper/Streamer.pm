@@ -36,7 +36,7 @@ sub ticks {
                 response => sub {
                     my ($rpc_response, $api_response, $req_storage) = @_;
                     $api_response = $c->new_error('tick', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $req_storage->{symbol}))
-                        unless $req_atorage->{id};
+                        unless $req_storage->{id};
                     return $api_response;
                 }
             });
