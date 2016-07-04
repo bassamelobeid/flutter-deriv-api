@@ -155,11 +155,11 @@ has spot_source => (
         'get_combined_realtime'      => 'spot_tick_hash',
         'pipsized_value'             => 'pipsized_value',
         'display_decimals'           => 'display_decimals',
-        'spot_tic'                   => 'spot_tick',
+        'spot_tick'                  => 'spot_tick',
         'spot'                       => 'spot_quote',
         'spot_time'                  => 'spot_time',
         'spot_age'                   => 'spot_age',
-
+        'closing_tick_on'            => 'closing_tick_on',
     });
 
 sub _build_spot_source {
@@ -1342,41 +1342,7 @@ sub is_in_quiet_period {
 
 =head1 FEED METHODS
 
-=head2 closing_tick_on
-
-Get the market closing tick for a given date.
-
-Example : $underlying->closing_tick_on("10-Jan-00");
-
 =cut
-
-sub closing_tick_on {
-    my ($self, $end) = @_;
-    my $date = Date::Utility->new($end);
-
-    my $closing = $self->calendar->closing_on($date);
-    if ($closing and time > $closing->epoch) {
-        my $ohlc = $self->ohlc_between_start_end({
-            start_time         => $date,
-            end_time           => $date,
-            aggregation_period => 86400,
-        });
-
-        if ($ohlc and scalar @{$ohlc} > 0) {
-
-            # We need a tick, but we can only get an OHLC
-            # The epochs for these are set to be the START of the period.
-            # So we also need to change it to the closing time. Meh.
-            my $not_tick = $ohlc->[0];
-            return Finance::Spot::Tick->new({
-                symbol => $self->symbol,
-                epoch  => $closing->epoch,
-                quote  => $not_tick->close,
-            });
-        }
-    }
-    return;
-}
 
 sub get_ohlc_data_for_period {
     my ($self, $args) = @_;
