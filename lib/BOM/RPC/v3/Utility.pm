@@ -179,4 +179,14 @@ sub login_env {
     return $environment;
 }
 
+sub mask_app_id {
+    my ($id, $time) = @_;
+
+    # this is the date when we started populating source with app_id, before this
+    # there were random numbers so don't want to send them back
+    $id = undef if ($time and Date::Utility->new($time)->is_before(Date::Utility->new("2016-03-01")));
+
+    return $id;
+}
+
 1;

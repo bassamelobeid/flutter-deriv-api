@@ -587,10 +587,10 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
         };
 
         my $wd = (gmtime time)[6];
-        skip 'This test fails on weekends', 2+keys %$expected_result
-            if ($result->result->{error} and
-                $result->result->{error}->{code} eq 'GetProposalFailure' and
-                ($wd == 0 or $wd == 6));
+        skip 'This test fails on weekends', 2 + keys %$expected_result
+            if ($result->result->{error}
+            and $result->result->{error}->{code} eq 'GetProposalFailure'
+            and ($wd == 0 or $wd == 6));
 
         $result = $result->has_no_system_error->has_no_error->result;
 

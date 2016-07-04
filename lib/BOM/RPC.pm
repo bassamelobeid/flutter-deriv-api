@@ -84,6 +84,7 @@ sub register {
                     return $auth_error;
                 }
                 $params->{client} = $client;
+                $params->{app_id} = $token_details->{app_id};
             }
 
             goto &$code;
