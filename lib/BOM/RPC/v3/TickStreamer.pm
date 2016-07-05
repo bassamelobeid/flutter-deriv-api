@@ -61,17 +61,11 @@ sub ticks_history {
         $publish = 'tick';
     } elsif ($style eq 'candles') {
         my @candles = @{_candles($args)};
-        if (@candles) {
-            $result = {
-                candles => \@candles,
-            };
-            $type    = "candles";
-            $publish = $args->{granularity};
-        } else {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InvalidCandlesRequest',
-                    message_to_client => BOM::Platform::Context::localize('Invalid candles request')});
-        }
+        $result = {
+            candles => \@candles,
+        };
+        $type    = "candles";
+        $publish = $args->{granularity};
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidStyle',
