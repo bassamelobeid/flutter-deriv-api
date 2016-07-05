@@ -47,8 +47,6 @@ BEGIN
                                         b_purchase_time, b_buy_price, p_limits),
             bet_v1.validate_30day_limits(v_account,
                                          b_purchase_time, b_buy_price, p_limits),
-            bet_v1.validate_intraday_forex_iv_action(v_account, b_purchase_time,
-                                                     b_buy_price, b_payout_price, p_limits),
             bet_v1.validate_spreads_daily_profit_limit( v_account, b_purchase_time,
                                                         b_chld, p_limits);
 
