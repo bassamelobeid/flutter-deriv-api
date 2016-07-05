@@ -29,7 +29,7 @@ $module->mock(
 
 my $t = build_mojo_test();
 
-my @lines = File::Slurp::read_file('config/v3/schema_suite/suite.conf');
+my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.conf');
 
 my $response;
 
