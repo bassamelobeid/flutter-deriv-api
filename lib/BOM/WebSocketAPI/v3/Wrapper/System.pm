@@ -44,7 +44,7 @@ sub forget_one {
 
     my $removed_ids = {};
     if ($id && ($id =~ /-/)) {
-        $removed_ids_>{$_} = 1 for @{_forget_feed_subscription($c, $id)};
+        $removed_ids->{$_} = 1 for @{_forget_feed_subscription($c, $id)};
         $removed_ids->{$_} = 1 for @{_forget_transaction_subscription($c, $id)};
         $removed_ids->{$_} = 1 for @{_forget_pricing_subscription($c, $id)};
     }
