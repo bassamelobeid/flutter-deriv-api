@@ -29,9 +29,9 @@ $module->mock(
 
 my $t = build_mojo_test();
 
-my @lines = File::Slurp::read_file( 'config/v3/schema_suite/suite.conf' );
+my @lines = File::Slurp::read_file('config/v3/schema_suite/suite.conf');
 
-my $stash;
+my $response;
 
 foreach my $line(@lines) {
 	my ($send_file, $receive_file,@template_func) = split(',', $line);
@@ -50,7 +50,7 @@ foreach my $line(@lines) {
 
 	$t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
 	my $result = decode_json($t->message->[1]);
-	$stash->{$call} = $result->{$call};
+	$response->{$call} = $result->{$call};
 
 	_test_schema($receive_file, $result);	
 }
@@ -91,7 +91,7 @@ sub _get_token {
 sub _get_stashed {
 	@hierarchy = @_;
 
-	my $r = $stash;
+	my $r = $response;
 	foreach my $l ((split '/',@hierarchy)) {
 		$r=$r->{$l};
 	}
