@@ -55,6 +55,7 @@ foreach my $line(@lines) {
 	$response->{$call} = $result->{$call};
 
 	note($call);
+	note(Dumper($result));
 	note(Dumper($response->{$call}));
 
 	_test_schema($receive_file, $result);	
