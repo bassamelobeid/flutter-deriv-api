@@ -4,6 +4,7 @@
     <title><%= l('Login') %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel='stylesheet' href='/oauth2/css/styles.css' />
+    <link rel='stylesheet' href='https://style.binary.com/binary.css' />
     <script type="text/javascript" src="/oauth2/js/scripts.js"></script>
 
     <link rel="apple-touch-icon" sizes="57x57" href="/oauth2/images/favicons/apple-touch-icon-57x57.png" />
