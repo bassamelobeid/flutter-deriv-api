@@ -54,6 +54,9 @@ foreach my $line(@lines) {
 	my $result = decode_json($t->message->[1]);
 	$response->{$call} = $result->{$call};
 
+	note($call);
+	note(Dumper($response->{$call}));
+
 	_test_schema($receive_file, $result);	
 }
 
