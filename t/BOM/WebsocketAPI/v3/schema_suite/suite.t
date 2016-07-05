@@ -60,6 +60,7 @@ foreach my $line(@lines) {
 	_test_schema($receive_file, $result);	
 }
 
+done_testing();
 
 
 sub _test_schema {
