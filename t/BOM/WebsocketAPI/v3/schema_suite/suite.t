@@ -89,7 +89,7 @@ sub _get_token {
 
 
 sub _get_stashed {
-	@hierarchy = @_;
+	my @hierarchy = @_;
 
 	my $r = $response;
 	foreach my $l ((split '/',@hierarchy)) {
