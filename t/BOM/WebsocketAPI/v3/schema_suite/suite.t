@@ -29,13 +29,13 @@ $module->mock(
 
 my $t = build_mojo_test();
 
-my @lines = File::Slurp::read_file( 'config/3/schema_suite/suite.conf' );
+my @lines = File::Slurp::read_file( 'config/v3/schema_suite/suite.conf' );
 
 foreach my $line(@lines) {
 	my ($send_file, $receive_file,@template_func) = split(',', $line);
 	note("Running [$send_file, $receive_file]\n"); 
 
-	my $content = File::Slurp::read_file('config/v3'.$send_file);
+	my $content = File::Slurp::read_file('config/v3/'.$send_file);
 	my $c=0;
 	foreach my $f(@template_func) {
 		$c++;
@@ -54,7 +54,7 @@ foreach my $line(@lines) {
 sub _test_schema {
     my ($schema_file, $data) = @_;
 
-    my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("config/3/$schema_file", format => \%JSON::Schema::FORMATS)));
+    my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("config/v3/$schema_file", format => \%JSON::Schema::FORMATS)));
     my $result    = $validator->validate($data);
     ok $result, "$schema_file response is valid";
     if (not $result) {
