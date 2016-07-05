@@ -258,7 +258,7 @@ sub active_symbols {
             });
         foreach my $symbol (@all_active) {
             my $desc = _description($symbol, $params->{args}->{active_symbols});
-            $desc->{is_forward_starting} = 1 if $forward_starting{$symbol};
+            $desc->{allow_forward_starting} = 1 if $forward_starting{$symbol};
             push @{$active_symbols}, $desc;
         }
 
