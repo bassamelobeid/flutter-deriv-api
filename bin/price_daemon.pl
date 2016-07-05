@@ -71,9 +71,9 @@ while (1) {
             $redis->expire($next, 300);
             $response = BOM::RPC::v3::Contract::send_ask({args => $params}, 1);
 
-        } elsif ($rpc_call eq 'get_bid') {
+        } elsif ($rpc_call eq 'send_bid') {
 
-            $response = BOM::RPC::v3::Contract::get_bid($params);
+            $response = BOM::RPC::v3::Contract::send_bid({args => $params});
 
         }
 
