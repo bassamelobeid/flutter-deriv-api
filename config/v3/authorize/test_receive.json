@@ -35,12 +35,11 @@
         },
         "scopes": {
           "type": "array",
-          "items": [
-            "admin",
-            "payments",
-            "read",
-            "trade"
-          ]
+          "minItems": 4,
+          "items": {
+            "type": "string",
+            "pattern": "^(admin|payments|read|trade)$"
+          }
         }
       }
     },
