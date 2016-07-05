@@ -46,7 +46,7 @@ foreach my $line(@lines) {
 	foreach my $f(@template_func) {
 		$c++;
 		my $template_content = eval $f;
-		note("temaplte [$c, $template_content]\n");
+		note("temaplte [$c, $f, $template_content]\n");
 		$content =~ s/\[_$c\]/$template_content/mg;
 	}
 
