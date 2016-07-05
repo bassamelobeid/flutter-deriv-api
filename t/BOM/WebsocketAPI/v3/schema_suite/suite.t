@@ -9,6 +9,7 @@ use TestHelper qw/test_schema build_mojo_test/;
 use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
+use BOM::System::RedisReplicated;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use File::Slurp;
@@ -28,14 +29,21 @@ $module->mock(
 
 my $t = build_mojo_test();
 
-my @lines = File::Slurp::read_file( 'suite.conf' );
+my @lines = File::Slurp::read_file( 'config/3/schema_suite/suite.conf' );
 
 foreach my $line(@lines) {
-	my ($send_file, $receive_file) = split(',', $line);
+	my ($send_file, $receive_file,@template_func) = split(',', $line);
 	note("Running [$send_file, $receive_file]\n"); 
 
-	my $json = JSON::from_json(File::Slurp::read_file('config/v3'.$send_file));
-	$t = $t->send_ok({json => $json})->message_ok;
+	my $content = File::Slurp::read_file('config/v3'.$send_file);
+	my $c=0;
+	foreach my $f(@template_func) {
+		$c++;
+		$template_content = eval $f;
+		$content =~ s/[_$c]/$template_content/mg;
+	}
+
+	$t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
 	my $result = decode_json($t->message->[1]);
 
 	_test_schema($receive_file, $result);	
@@ -53,4 +61,22 @@ sub _test_schema {
         diag Dumper(\$data);
         diag " - $_" foreach $result->errors;
     }
+}
+
+sub _get_token {
+	my $email = shift;
+    my $redis = BOM::System::RedisReplicated::redis_read;
+    my $tokens = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
+
+    my $code;
+    foreach my $key (@{$tokens}) {
+        my $value = JSON::from_json($redis->get($key));
+
+        if ($value->{email} eq $email) {
+            $key =~ /^VERIFICATION_TOKEN::(\w+)$/;
+            $code = $1;
+            last;
+        }
+    }
+    return $code;
 }
