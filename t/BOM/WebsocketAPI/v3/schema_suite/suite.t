@@ -33,37 +33,36 @@ my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.con
 
 my $response;
 
-foreach my $line(@lines) {
-	my ($send_file, $receive_file,@template_func) = split(',', $line);
-	chomp $receive_file;
-	note("Running [$send_file, $receive_file]\n");
+foreach my $line (@lines) {
+    my ($send_file, $receive_file, @template_func) = split(',', $line);
+    chomp $receive_file;
+    note("Running [$send_file, $receive_file]\n");
 
-	$send_file =~ /^(.*)\//;
-	my $call = $1;
+    $send_file =~ /^(.*)\//;
+    my $call = $1;
 
-	my $content = File::Slurp::read_file('config/v3/'.$send_file);
-	my $c=0;
-	foreach my $f(@template_func) {
-		$c++;
-		my $template_content = eval $f;
-		$content =~ s/\[_$c\]/$template_content/mg;
-	}
+    my $content = File::Slurp::read_file('config/v3/' . $send_file);
+    my $c       = 0;
+    foreach my $f (@template_func) {
+        $c++;
+        my $template_content = eval $f;
+        $content =~ s/\[_$c\]/$template_content/mg;
+    }
 
-	$t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
-	my $result = decode_json($t->message->[1]);
-	$response->{$call} = $result->{$call};
+    $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
+    my $result = decode_json($t->message->[1]);
+    $response->{$call} = $result->{$call};
 
-	_test_schema($receive_file, $result);	
+    _test_schema($receive_file, $result);
 }
 
 done_testing();
-
 
 sub _test_schema {
     my ($schema_file, $data) = @_;
 
     my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("config/v3/$schema_file", format => \%JSON::Schema::FORMATS)));
-    my $result    = $validator->validate($data);
+    my $result = $validator->validate($data);
     ok $result, "$schema_file response is valid";
     if (not $result) {
         diag Dumper(\$data);
@@ -72,8 +71,8 @@ sub _test_schema {
 }
 
 sub _get_token {
-	my $email = shift;
-    my $redis = BOM::System::RedisReplicated::redis_read;
+    my $email  = shift;
+    my $redis  = BOM::System::RedisReplicated::redis_read;
     my $tokens = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
 
     my $code;
@@ -89,15 +88,14 @@ sub _get_token {
     return $code;
 }
 
-
 sub _get_stashed {
-	my @hierarchy = split '/', shift;
+    my @hierarchy = split '/', shift;
 
-	my $r = $response;
+    my $r = $response;
 
-	foreach my $l (@hierarchy) {
-		$r=$r->{$l};
-	}
+    foreach my $l (@hierarchy) {
+        $r = $r->{$l};
+    }
 
-	return $r;
+    return $r;
 }
