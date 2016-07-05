@@ -46,16 +46,12 @@ foreach my $line(@lines) {
 	foreach my $f(@template_func) {
 		$c++;
 		my $template_content = eval $f;
-		note("temaplte [$c, $f, $template_content]\n");
 		$content =~ s/\[_$c\]/$template_content/mg;
 	}
 
 	$t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
 	my $result = decode_json($t->message->[1]);
 	$response->{$call} = $result->{$call};
-
-	note($call);
-	note(Dumper($response));
 
 	_test_schema($receive_file, $result);	
 }
@@ -98,8 +94,6 @@ sub _get_stashed {
 	my @hierarchy = split '/', shift;
 
 	my $r = $response;
-
-	note(Dumper(\@hierarchy));
 
 	foreach my $l (@hierarchy) {
 		$r=$r->{$l};
