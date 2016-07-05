@@ -332,7 +332,9 @@ sub _transaction_channel {
     if ($action) {
         my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
-            $uuid = $type =~ /-/ ? $type : Data::UUID->new->create_str();
+            # uuid is passed as type for subscription from proposal_open_contract
+            # seel line ~436
+            $uuid = $type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/ ? $type : Data::UUID->new->create_str();
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
@@ -486,8 +488,8 @@ sub _skip_streaming {
     my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR);
     my %skip_type_list     = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
 
-    my $skip_symbols = (exists $args->{symbol} and $skip_symbol_list{$args->{symbol}}) ? 1 : 0;
-    my $atm_contract = (exists $args->{contract_type} and $args->{contract_type} =~ /^(CALL|PUT)$/ and not $args->{barrier}) ? 1 : 0;
+    my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
+    my $atm_contract = ($args->{contract_type} =~ /^(CALL|PUT)$/ and not $args->{barrier}) ? 1 : 0;
     my $fixed_expiry = $args->{date_expiry} ? 1 : 0;
     my ($skip_tick_expiry, $skip_intraday_atm_non_fixed_expiry) = (0, 0);
     if (defined $args->{duration_unit}) {

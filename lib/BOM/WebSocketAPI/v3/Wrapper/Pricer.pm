@@ -69,7 +69,6 @@ sub proposal_open_contract_cb {
                         and not $response->{$contract_id}->{is_expired}
                         and not $response->{$contract_id}->{is_sold})
                     {
-                        $uuid = Data::UUID->new->create_str();
                         my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
                         $type_args{account_id}     = $response->{$contract_id}->{account_id};
                         $type_args{transaction_id} = $response->{$contract_id}->{transaction_ids}->{buy};
@@ -80,7 +79,6 @@ sub proposal_open_contract_cb {
                             subchannel      => $subchannel,
                             echo_req        => {%$args},
                             account_id      => delete $response->{$contract_id}->{account_id},
-                            id              => $uuid,
                             short_code      => $response->{$contract_id}->{shortcode},
                             contract_id     => $response->{$contract_id}->{contract_id},
                             currency        => $response->{$contract_id}->{currency},
@@ -93,7 +91,7 @@ sub proposal_open_contract_cb {
                             buy_price       => $response->{$contract_id}->{buy_price},
                         };
 
-                        if (not _pricing_channel_for_bid($c, 'subscribe', $subscribe_args)) {
+                        if (not $uuid = _pricing_channel_for_bid($c, 'subscribe', $subscribe_args)) {
                             return $c->new_error('proposal_open_contract',
                                     'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal_open_contract subscription.'));
                         }
@@ -126,6 +124,7 @@ sub _send_ask {
             rpc_response_cb => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $args = $req_storage->{args};
+                my $uuid;
 
                 if ($rpc_response and exists $rpc_response->{error}) {
                     my $err = $c->new_error('proposal', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
@@ -133,9 +132,7 @@ sub _send_ask {
                     return $err;
                 }
 
-                my $uuid;
-
-                if (not $uuid = _pricing_channel_for_ask($c, 'subscribe', $args)) {
+                if (not defined($uuid = _pricing_channel_for_ask($c, 'subscribe', $args))) {
                     return $c->new_error('proposal',
                         'AlreadySubscribedOrLimit',
                         $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
@@ -171,6 +168,10 @@ sub _pricing_channel_for_ask {
     my ($c, $subs, $args) = @_;
     my $rpc_call = 'send_ask';
 
+    # returns defined value indicating there is no error,
+    # but no need to create subscription channel
+    return 0 if BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
+
     my %args_hash = %{$args};
 
     if ($args_hash{basis}) {
@@ -184,10 +185,28 @@ sub _pricing_channel_for_ask {
     $args_hash{language} = $c->stash('language') || 'EN';
     $args_hash{rpc_call} = $rpc_call;
     my $redis_channel    = _serialized_args(\%args_hash);
+    my $subchannel       = $args->{amount_per_point} || $args->{amount};
+
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $rpc_call);
+}
+
+sub _pricing_channel_for_bid {
+    my ($c, $subs, $args) = @_;
+    my $rpc_call = 'send_bid';
+
+    my %args_hash;
+    $args_hash{$_}       = $args->{$_} for qw(short_code contract_id currency is_sold sell_time);
+    $args_hash{language} = $c->stash('language') || 'EN';
+    $args_hash{rpc_call} = $rpc_call;
+    my $redis_channel    = _serialized_args(\%args_hash);
+
+    return _create_pricer_channel($c, $args, $redis_channel, $args->{subchannel}, $rpc_call);
+}
+
+sub _create_pricer_channel {
+    my ($c, $args, $redis_channel, $subchannel, $rpc_call) = @_;
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
-
-    my $subchannel = $args->{amount_per_point} || $args->{amount};
 
     # already subscribed
     if (exists $pricing_channel->{$redis_channel} and exists $pricing_channel->{$redis_channel}->{$subchannel}) {
@@ -197,10 +216,8 @@ sub _pricing_channel_for_ask {
     my $uuid = Data::UUID->new->create_str();
 
     # subscribe if it is not already subscribed
-    if (    not $pricing_channel->{$redis_channel}
-        and not BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args)
-        and $args->{subscribe}
-        and $args->{subscribe} == 1)
+    if ( exists $args->{subscribe} and $args->{subscribe} == 1
+         and not exists $pricing_channel->{$redis_channel})
     {
         $c->redis_pricer->set($redis_channel, 1);
         $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
@@ -212,47 +229,7 @@ sub _pricing_channel_for_ask {
     $pricing_channel->{uuid}->{$uuid}->{subchannel}           = $subchannel;
     $pricing_channel->{uuid}->{$uuid}->{rpc_call}             = $rpc_call;
     $pricing_channel->{$rpc_call}->{$uuid}                    = 1;          # for forget_all
-    $pricing_channel->{uuid}->{$uuid}->{args}                 = $args;      # for buy
-
-    $c->stash('pricing_channel' => $pricing_channel);
-    return $uuid;
-}
-
-sub _pricing_channel_for_bid {
-    my ($c, $subs, $args) = @_;
-    my $rpc_call = 'send_bid';
-
-    my %args_hash;
-    $args_hash{$_} = $args->{$_} for qw(short_code contract_id currency is_sold sell_time);
-    $args_hash{language} = $c->stash('language') || 'EN';
-    $args_hash{rpc_call} = $rpc_call;
-    my $redis_channel = _serialized_args(\%args_hash);
-
-    my $pricing_channel = $c->stash('pricing_channel') || {};
-    my $subchannel = $args->{subchannel};
-
-    if (exists $pricing_channel->{$redis_channel}
-        and  exists $pricing_channel->{$redis_channel}->{subchannel}) {
-        return;
-    }
-
-    my $uuid = $args->{id};
-
-    # subscribe if it is not already subscribed
-    if ( exists $args->{subscribe} and $args->{subscribe} == 1
-        and not exists $pricing_channel->{$redis_channel})
-    {
-        $c->redis_pricer->set($redis_channel, 1);
-        $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
-    }
-
-    $pricing_channel->{$redis_channel}->{$subchannel}->{uuid} = $uuid;
-    $pricing_channel->{$redis_channel}->{$subchannel}->{args} = $args;
-    $pricing_channel->{uuid}->{$uuid}->{redis_channel}        = $redis_channel;
-    $pricing_channel->{uuid}->{$uuid}->{subchannel}           = $subchannel;
-    $pricing_channel->{uuid}->{$uuid}->{rpc_call}             = $rpc_call;
-    $pricing_channel->{$rpc_call}->{$uuid}                    = 1; #for forget_all
-    $pricing_channel->{uuid}->{$uuid}->{args}                 = $args; # no need?
+    $pricing_channel->{uuid}->{$uuid}->{args}                 = $args;      # for buy rpc call
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;

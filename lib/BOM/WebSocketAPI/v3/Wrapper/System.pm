@@ -20,7 +20,6 @@ sub forget_all {
     my ($c, $req_storage) = @_;
 
     my $removed_ids = {};
-    my $type = $req_storage->{args}->{forget_all};
     if (my $type = $req_storage->{args}->{forget_all}) {
         if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
             $removed_ids->{$_} = 1 for @{_forget_transaction_subscription($c, $type)};
