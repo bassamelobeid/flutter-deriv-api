@@ -21,10 +21,7 @@ sub proposal {
     my $symbol = $args->{symbol};
 
     $c->call_rpc({
-            args        => $args,
-            call_params => {
-                symbol => $symbol,
-            },
+            args            => $args,
             method          => 'send_ask',
             msg_type        => 'proposal',
             rpc_response_cb => sub {
