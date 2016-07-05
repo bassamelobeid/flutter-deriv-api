@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Create real account sub account",
+  "title": "Create real sub account",
   "description": "This call opens a new sub account for account that is used to call this api.",
   "properties": {
     "new_sub_account": {
