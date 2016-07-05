@@ -26,6 +26,11 @@ sub domain_for {
     if ($server_name =~ /^(qa\d+)$/) {
         return "www.binary$1.com";
     }
+
+    if ($server_name =~ /^backoffice.*$/) {
+        return "backoffice.binary.com";
+    }
+
     return $server_name . '.binary.com';
 }
 
