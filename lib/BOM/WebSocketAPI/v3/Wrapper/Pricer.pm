@@ -10,7 +10,6 @@ use BOM::RPC::v3::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
-use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
@@ -113,7 +112,7 @@ sub _pricing_channel {
         and $args->{subscribe}
         and $args->{subscribe} == 1)
     {
-        BOM::System::RedisReplicated::redis_pricer->set($serialized_args, 1);
+        $c->redis_pricer->set($serialized_args, 1);
         $c->stash('redis_pricer')->subscribe([$serialized_args], sub { });
     }
 
@@ -134,8 +133,9 @@ sub process_pricing_events {
     return if not $message or not $c->tx;
     $message =~ s/^PRICER_KEYS:://;
 
-    my $response        = decode_json($message);
-    my $serialized_args = $chan;
+    my $response         = decode_json($message);
+    my $serialized_args  = $chan;
+    my $theo_probability = $response->{theo_probability};
 
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
@@ -158,7 +158,8 @@ sub process_pricing_events {
             $results = $err;
         } else {
             delete $response->{longcode};
-            my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $amount);
+            my $adjusted_results =
+                _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $theo_probability);
 
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
@@ -197,9 +198,9 @@ sub process_pricing_events {
 }
 
 sub _price_stream_results_adjustment {
-    my $orig_args = shift;
-    my $results   = shift;
-    my $amount    = shift;
+    my $orig_args             = shift;
+    my $results               = shift;
+    my $resp_theo_probability = shift;
 
     # skips for spreads
     return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
@@ -211,7 +212,7 @@ sub _price_stream_results_adjustment {
         name        => 'theo_probability',
         description => 'theorectical value of a contract',
         set_by      => 'Pricer Daemon',
-        base_amount => $results->{theo_probability},
+        base_amount => $resp_theo_probability,
         minimum     => 0,
         maximum     => 1,
     });

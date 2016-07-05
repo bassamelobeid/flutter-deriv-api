@@ -16,7 +16,6 @@ use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
-use BOM::System::RedisReplicated;
 use Time::HiRes qw(gettimeofday);
 use utf8;
 
@@ -170,7 +169,7 @@ sub pricing_table {
     }
 
     my $feed_channel_type = $c->stash('feed_channel_type') || {};
-    my @pricing = grep { $_ =~ /^.*;pricing_table:/ } (keys $feed_channel_type);
+    my @pricing = grep { $_ =~ /^.*;pricing_table:/ } (keys %$feed_channel_type);
 
     # subscribe limit exceeded
     if (scalar @pricing > 5) {
@@ -180,7 +179,7 @@ sub pricing_table {
     my $symbol = $args->{symbol};
     my $id;
 
-    if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args), $args)) {
+    if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args, {canonical => 1}), $args)) {
         return $c->new_error('pricing_table', 'AlreadySubscribed', $c->l('You are already subscribed to pricing table.'));
     }
     my $msg = BOM::RPC::v3::Japan::Contract::get_table($args);
