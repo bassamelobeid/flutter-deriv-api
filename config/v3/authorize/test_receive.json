@@ -31,7 +31,7 @@
         },
         "fullname": {
           "type": "string",
-          "pattern": "^$"
+          "pattern": "^  $"
         },
         "scopes": {
           "type": "array",
