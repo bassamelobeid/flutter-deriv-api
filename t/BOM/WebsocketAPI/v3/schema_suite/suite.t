@@ -40,7 +40,7 @@ foreach my $line(@lines) {
 	foreach my $f(@template_func) {
 		$c++;
 		$template_content = eval $f;
-		$content =~ s/[_$c]/$template_content/mg;
+		$content =~ s/\[_$c\]/$template_content/mg;
 	}
 
 	$t = $t->send_ok({json => JSON::from_json($content)})->message_ok;

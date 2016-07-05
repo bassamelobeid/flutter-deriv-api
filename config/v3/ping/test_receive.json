@@ -8,17 +8,17 @@
       "properties": {
 	    "ping": {
 	    	"type": "string",
-	    	"pattern": "^1$",
+        "pattern": "^1$"
 	    }
       }
     },
     "ping": {
     	"type": "string",
-    	"pattern": "^pong$",
+      "pattern": "^pong$"
     },
     "msg_type": {
         "type": "string",
-        "pattern": "^ping$",
+        "pattern": "^ping$"
     }
   },
   "required": [
