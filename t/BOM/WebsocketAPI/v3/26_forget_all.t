@@ -41,7 +41,7 @@ my $t = build_mojo_test();
 $t->send_ok({json => {ticks => 'R_50'}});
 
 # waiting to avoid to process next message first
-Mojo::IOLoop->one_tick for (1..5);
+Mojo::IOLoop->one_tick for (1 .. 5);
 
 $t->send_ok({
         json => {
@@ -71,7 +71,7 @@ $t->send_ok({
             start         => $start->epoch,
             subscribe     => 1
         }});
-Mojo::IOLoop->one_tick for (1..5);
+Mojo::IOLoop->one_tick for (1 .. 5);
 $t->send_ok({
         json => {
             ticks_history => 'frxUSDJPY',

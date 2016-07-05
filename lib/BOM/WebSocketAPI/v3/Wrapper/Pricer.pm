@@ -17,22 +17,14 @@ use Math::Util::CalculatedValue::Validatable;
 sub proposal {
     my ($c, $req_storage) = @_;
 
-    my $symbol   = $req_storage->{args}->{symbol};
-    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
-    if ($response and exists $response->{error}) {
-        return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
-    } else {
-        _send_ask($c, $req_storage);
-    }
-    return;
-}
-
-sub _send_ask {
-    my ($c, $req_storage, $api_name) = @_;
-    my $args = $req_storage->{args};
+    my $args   = $req_storage->{args};
+    my $symbol = $args->{symbol};
 
     $c->call_rpc({
-            args            => $args,
+            args        => $args,
+            call_params => {
+                symbol => $symbol,
+            },
             method          => 'send_ask',
             msg_type        => 'proposal',
             rpc_response_cb => sub {
