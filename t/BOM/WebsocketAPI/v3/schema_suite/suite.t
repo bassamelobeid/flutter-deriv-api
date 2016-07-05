@@ -70,6 +70,8 @@ sub _test_schema {
     }
 }
 
+# fetch the token related to an specific email
+# e.x _get_token('test@binary.com')
 sub _get_token {
     my $email  = shift;
     my $redis  = BOM::System::RedisReplicated::redis_read;
@@ -88,6 +90,9 @@ sub _get_token {
     return $code;
 }
 
+# responses are stashed in a hash-ref. For example for a sucessful new_account_virtual there will be an new_account_virtual item and there {new_account_virtual}->{oauth_token}
+# you can access the stashed values as a template in your test_receive ([_1]) like _get_stashed('new_account_virtual/oauth_token')
+# look at suite.conf for examples
 sub _get_stashed {
     my @hierarchy = split '/', shift;
 
