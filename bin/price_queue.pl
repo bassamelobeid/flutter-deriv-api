@@ -5,7 +5,9 @@ use BOM::System::RedisReplicated;
 use DataDog::DogStatsd::Helper;
 use List::MoreUtils qw(uniq);
 use Time::HiRes;
+use LWP::Simple;
 
+my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $redis = BOM::System::RedisReplicated::redis_pricer;
 
 while (1) {
@@ -19,10 +21,9 @@ while (1) {
         COUNT => 20000
     );
 
-    DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.size', (scalar @$keys));
-    DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.not_processed', $redis->llen('pricer_jobs'));
+    DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.size', (scalar @$keys), {tags => ['tag:' . $internal_ip]});
+    DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.queue.not_processed', $redis->llen('pricer_jobs'), {tags => ['tag:' . $internal_ip]});
 
     $redis->del('pricer_jobs');
     $redis->lpush('pricer_jobs', @{$keys}) if scalar @{$keys} > 0;
 }
-
