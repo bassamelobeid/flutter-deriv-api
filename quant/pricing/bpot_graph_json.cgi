@@ -24,8 +24,8 @@ use JSON qw(to_json);
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType_JSON );
-use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use BOM::Backoffice::Sysinit ();
+BOM::Backoffice::Sysinit::init();
 
 my $bet = produce_contract(request()->param('shortcode'), request()->param('currency'));
 my $timestep = Time::Duration::Concise::Localize->new(interval => request()->param('timestep'));
