@@ -23,14 +23,26 @@ use JSON qw(to_json);
 
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
-use BOM::Backoffice::PlackHelpers qw( PrintContentType_JSON );
+use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_JSON );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-my $bet = produce_contract(request()->param('shortcode'), request()->param('currency'));
-my $timestep = Time::Duration::Concise::Localize->new(interval => request()->param('timestep'));
-my $start    = Date::Utility->new(request()->param('start'));
-my $end      = Date::Utility->new(request()->param('end'));
+my $bet =
+    (request()->param('shortcode') and request()->param('currency'))
+    ? produce_contract(request()->param('shortcode'), request()->param('currency'))
+    : '';
+
+unless ($bet) {
+    PrintContentType();
+
+    print "Error with shortcode '" . request()->param('shortcode')
+        . "' and currency '" . request()->param('currency') . "'";
+    code_exit_BO();
+}
+
+my $timestep = Time::Duration::Concise::Localize->new(interval => request()->param('timestep') || '24s');
+my $start    = Date::Utility->new(request()->param('start') || time());
+my $end      = Date::Utility->new(request()->param('end') || time());
 
 my ($barrier, $barrier2);
 if ($bet->two_barriers) {
