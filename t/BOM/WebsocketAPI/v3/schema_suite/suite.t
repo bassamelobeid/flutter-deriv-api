@@ -28,13 +28,13 @@ $module->mock(
 
 my $t = build_mojo_test();
 
-my @lines = read_file( 'suite.conf' );
+my @lines = File::Slurp::read_file( 'suite.conf' );
 
 foreach my $line(@lines) {
 	my ($send_file, $receive_file) = split(',', $line);
 	note("Running [$send_file, $receive_file]\n"); 
 
-	my $json = JSON::from_json(File::Slurp('config/v3'.$send_file));
+	my $json = JSON::from_json(File::Slurp::read_file('config/v3'.$send_file));
 	$t = $t->send_ok({json => $json)->message_ok;
 	my $result = decode_json($t->message->[1]);
 
