@@ -40,10 +40,10 @@ sub portfolio {
             shortcode      => $row->{short_code},
             longcode       => (simple_contract_info($row->{short_code}, $client->currency))[0] // '',
             app_id => BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time}));
-        push $portfolio->{contracts}, \%trx;
+        push @{$portfolio->{contracts}}, \%trx;
     }
 
-    return $portfolio,;
+    return $portfolio;
 }
 
 sub __get_open_contracts {
