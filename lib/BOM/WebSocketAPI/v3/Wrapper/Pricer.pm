@@ -13,7 +13,6 @@ use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
-use Data::Dumper;
 
 sub proposal {
     my ($c, $req_storage) = @_;
@@ -43,10 +42,6 @@ sub proposal_open_contract_cb {
     my ($c, $response, $req_storage) = @_;
 
     my $args = $req_storage->{args};
-    #warn "POC_cb: args: ".Dumper($args);
-    #warn "POC_CB: resp: ".Dumper($response);
-    #warn "POC_CB: req_storage : ".Dumper($req_storage);
-    warn "POC_CB: req_storage : ".Dumper({map { m/validator/ ? () : ($_=>$req_storage->{$_})} keys %$req_storage});
     if (exists $response->{error}) {
         return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -98,19 +93,15 @@ sub proposal_open_contract_cb {
                             buy_price       => $response->{$contract_id}->{buy_price},
                         };
 
-                        warn "subscribe_args: ".Dumper($subscribe_args);
                         if (not _pricing_channel_for_bid($c, 'subscribe', $subscribe_args)) {
-                            warn "Error - not subscribed!";
                             return $c->new_error('proposal_open_contract',
                                     'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal_open_contract subscription.'));
                         }
 
                         # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                        warn "Subcribed uuid: ".$uuid;
                         BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $subscribe_args->{account_id}, $uuid, $subscribe_args);
                     }
                     my $res = {$uuid ? (id => $uuid) : (), %{$response->{$contract_id}}};
-                    #warn "proposal_open_contract send to WS: ".Dumper($res);
                     $send_details->($res);
                 }
             }
@@ -144,7 +135,6 @@ sub _send_ask {
 
                 my $uuid;
 
-                #warn "Pricer ASK going to _pricing_channel with args: ". Dumper($args);
                 if (not $uuid = _pricing_channel_for_ask($c, 'subscribe', $args)) {
                     return $c->new_error('proposal',
                         'AlreadySubscribedOrLimit',
@@ -232,13 +222,11 @@ sub _pricing_channel_for_bid {
     my ($c, $subs, $args) = @_;
     my $rpc_call = 'send_bid';
 
-    #warn "_pricing_channel_for_bid : args: ".Dumper($args);
     my %args_hash;
     $args_hash{$_} = $args->{$_} for qw(short_code contract_id currency is_sold sell_time);
     $args_hash{language} = $c->stash('language') || 'EN';
     $args_hash{rpc_call} = $rpc_call;
     my $redis_channel = _serialized_args(\%args_hash);
-    warn "Seria Ags: $redis_channel\n";
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
     my $subchannel = $args->{subchannel};
@@ -322,7 +310,6 @@ sub process_bid_event {
             if (my $passthrough = $pricing_channel->{$redis_channel}->{$subchannel}->{args}->{echo_req}->{passthrough}) {
                 $results->{passthrough} = $passthrough;
             }
-            #warn "process_bid_send to WS: ".Dumper($results);
             $c->send({json => $results});
         }
     }

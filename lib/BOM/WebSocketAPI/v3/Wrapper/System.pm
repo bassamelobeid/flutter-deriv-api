@@ -6,7 +6,6 @@ use warnings;
 use Scalar::Util qw(looks_like_number);
 
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
-use Data::Dumper;
 
 sub forget {
     my ($c, $req_storage) = @_;
@@ -118,7 +117,6 @@ sub _forget_all_pricing_subscriptions {
     my $removed_ids     = [];
     my %channels_to_check;
     my $pricing_channel = $c->stash('pricing_channel');
-    #print "_faps: pricing_channel: ".Dumper($pricing_channel);
     if ($pricing_channel) {
         foreach my $uuid (keys %{$pricing_channel->{$rpc_call}}) {
             push @$removed_ids, $uuid;
