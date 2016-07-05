@@ -73,6 +73,7 @@ sub register {
                 $redis->on(
                     error => sub {
                         my ($self, $err) = @_;
+                        warn("error: $err");
                     });
                 $redis->on(
                     message => sub {
@@ -104,6 +105,7 @@ sub register {
                 $redis_pricer->on(
                     error => sub {
                         my ($self, $err) = @_;
+                        warn("error: $err");
                     });
                 $redis_pricer->on(
                     message => sub {
