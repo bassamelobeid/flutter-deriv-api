@@ -179,7 +179,7 @@ sub pricing_table {
     my $symbol = $args->{symbol};
     my $id;
 
-    if (not $id = _feed_channel_subscribe($c, $symbol, 'pricing_table:' . JSON::to_json($args), $args)) {
+    if (not $id = _feed_channel_subscribe($c, $symbol, 'pricing_table:' . JSON::to_json($args, {canonical => 1}), $args)) {
         return $c->new_error('pricing_table', 'AlreadySubscribed', $c->l('You are already subscribed to pricing table.'));
     }
     my $msg = BOM::RPC::v3::Japan::Contract::get_table($args);
