@@ -31,9 +31,14 @@ my $t = build_mojo_test();
 
 my @lines = File::Slurp::read_file( 'config/v3/schema_suite/suite.conf' );
 
+my $stash;
+
 foreach my $line(@lines) {
 	my ($send_file, $receive_file,@template_func) = split(',', $line);
-	note("Running [$send_file, $receive_file]\n"); 
+	note("Running [$send_file, $receive_file]\n");
+
+	$send_file =~ /^(.*)\//;
+	my $call = $1;
 
 	my $content = File::Slurp::read_file('config/v3/'.$send_file);
 	my $c=0;
@@ -45,6 +50,7 @@ foreach my $line(@lines) {
 
 	$t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
 	my $result = decode_json($t->message->[1]);
+	$stash->{$call} = $result->{$call};
 
 	_test_schema($receive_file, $result);	
 }
@@ -79,4 +85,16 @@ sub _get_token {
         }
     }
     return $code;
+}
+
+
+sub _get_stashed {
+	@hierarchy = @_;
+
+	my $r = $stash;
+	foreach my $l ((split '/',@hierarchy)) {
+		$r=$r->{$l};
+	}
+
+	return $r;
 }
