@@ -21,7 +21,6 @@ use JSON::Schema;
 use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
 use Digest::MD5 qw(md5_hex);
-use Data::Dumper;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -273,8 +272,13 @@ sub startup {
                 require_auth => 'read',
             }
         ],
-        [ 'proposal_open_contract', { instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract, require_auth    => 'read', } ],
-        #[ 'proposal_open_contract', { require_auth    => 'read', rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract, } ],
+        [
+            'proposal_open_contract',
+            {
+                instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract,
+                require_auth    => 'read',
+            }
+        ],
         [
             'sell_expired',
             {

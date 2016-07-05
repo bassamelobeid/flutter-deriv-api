@@ -309,9 +309,6 @@ sub _feed_channel {
         # delete cache on unsubscribe
         delete $feed_channel_cache->{"$symbol;$type"};
 
-        # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
-        _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
-
         if ($feed_channel->{$symbol} <= 0) {
             my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
             $redis->unsubscribe([$channel_name], sub { });

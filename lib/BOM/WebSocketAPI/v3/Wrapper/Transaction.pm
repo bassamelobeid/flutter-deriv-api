@@ -22,7 +22,7 @@ sub buy_get_contract_params {
         $req_storage->{call_params}->{contract_parameters} = $p;
     } elsif ($c->stash('pricing_channel') and $c->stash('pricing_channel')->{uuid} and $c->stash('pricing_channel')->{uuid}->{$args->{buy}}) {
         $req_storage->{call_params}->{contract_parameters} = $c->stash('pricing_channel')->{uuid}->{$args->{buy}}->{args};
-        BOM::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $args->{buy});
+        BOM::WebSocketAPI::v3::Wrapper::System::_forget_pricing_subscription($c, $args->{buy});
     } else {
         return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
     }
