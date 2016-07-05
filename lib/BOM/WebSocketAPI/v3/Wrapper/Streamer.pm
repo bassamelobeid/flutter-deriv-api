@@ -250,6 +250,7 @@ sub process_realtime_events {
             }
 
             my $display_decimals = $c->stash("${symbol}_display_decimals");
+            my $quote_format = '%.' . $display_decimals . 'f';
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             my $ohlc = {
                 id        => $feed_channels_type->{$channel}->{uuid},
@@ -259,10 +260,10 @@ sub process_realtime_events {
                 : $m[1] - $m[1] % 60,    #defining default granularity
                 symbol      => $symbol,
                 granularity => $type,
-                open        => sprintf('%.' . $display_decimals . 'f', $1),
-                high        => sprintf('%.' . $display_decimals . 'f', $2),
-                low         => sprintf('%.' . $display_decimals . 'f', $3),
-                close       => sprintf('%.' . $display_decimals . 'f', $4)};
+                open        => sprintf($quote_format, $1),
+                high        => sprintf($quote_format, $2),
+                low         => sprintf($quote_format, $3),
+                close       => sprintf($quote_format, $4)};
 
             if ($cache) {
                 $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
