@@ -99,7 +99,7 @@ sub _get_stashed {
 	my $r = $response;
 
 	note(Dumper(\@hierarchy));
-	note(Dumper(split '/',@hierarchy);
+	note(Dumper(split '/',@hierarchy));
 
 	foreach my $l (split '/',@hierarchy) {
 		$r=$r->{$l};
