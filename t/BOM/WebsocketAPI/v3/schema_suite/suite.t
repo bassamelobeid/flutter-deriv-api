@@ -35,6 +35,7 @@ my $response;
 
 foreach my $line(@lines) {
 	my ($send_file, $receive_file,@template_func) = split(',', $line);
+	chomp $receive_file;
 	note("Running [$send_file, $receive_file]\n");
 
 	$send_file =~ /^(.*)\//;
