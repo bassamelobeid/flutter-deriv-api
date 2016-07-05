@@ -39,7 +39,7 @@ foreach my $line(@lines) {
 	my $c=0;
 	foreach my $f(@template_func) {
 		$c++;
-		$template_content = eval $f;
+		my $template_content = eval $f;
 		$content =~ s/\[_$c\]/$template_content/mg;
 	}
 
