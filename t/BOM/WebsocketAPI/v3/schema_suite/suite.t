@@ -35,7 +35,7 @@ foreach my $line(@lines) {
 	note("Running [$send_file, $receive_file]\n"); 
 
 	my $json = JSON::from_json(File::Slurp::read_file('config/v3'.$send_file));
-	$t = $t->send_ok({json => $json)->message_ok;
+	$t = $t->send_ok({json => $json})->message_ok;
 	my $result = decode_json($t->message->[1]);
 
 	_test_schema($receive_file, $result);	
