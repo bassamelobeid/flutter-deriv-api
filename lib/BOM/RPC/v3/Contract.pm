@@ -305,7 +305,7 @@ sub send_ask {
     my $args               = $params->{args};
     my $from_pricer_daemon = shift;
 
-    my $symbol   = $params->{symbol};
+    my $symbol   = $args->{symbol};
     my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -316,7 +316,6 @@ sub send_ask {
     my $tv = [Time::HiRes::gettimeofday];
 
     my %details = %{$args};
-    my $response;
     try {
         my $arguments = {
             from_pricer_daemon => $from_pricer_daemon,
