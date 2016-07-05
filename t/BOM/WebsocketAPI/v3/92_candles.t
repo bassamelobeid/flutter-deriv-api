@@ -38,7 +38,14 @@ my $t = build_mojo_test();
 
 my ($res);
 
-$t->send_ok({json => {ticks_history => 'R_50', end => "latest", count => 10, style => "candles", subscribe => 1}})->message_ok;
+$t->send_ok({
+        json => {
+            ticks_history => 'R_50',
+            end           => "latest",
+            count         => 10,
+            style         => "candles",
+            subscribe     => 1
+        }})->message_ok;
 my $pid = fork;
 die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
 unless ($pid) {
@@ -53,7 +60,10 @@ unless ($pid) {
 for (my $i = 0; $i < 2; $i++) {
     $t->message_ok;
     $res = decode_json($t->message->[1]);
-    ok $res->{ohlc}->{open} =~ /\d+\.\d{4,}/ && $res->{ohlc}->{high} =~ /\d+\.\d{4,}/ && $res->{ohlc}->{close} =~ /\d+\.\d{4,}/ && $res->{ohlc}->{low} =~ /\d+\.\d{4,}/, 'OHLC should be pipsized';
+    ok $res->{ohlc}->{open} =~ /\d+\.\d{4,}/
+        && $res->{ohlc}->{high} =~ /\d+\.\d{4,}/
+        && $res->{ohlc}->{close} =~ /\d+\.\d{4,}/
+        && $res->{ohlc}->{low} =~ /\d+\.\d{4,}/, 'OHLC should be pipsized';
 }
 
 $t->finish_ok;
