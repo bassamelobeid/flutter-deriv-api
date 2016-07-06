@@ -93,11 +93,13 @@ sub proposal_open_contract_cb {
 
                         if (not $uuid = _pricing_channel_for_bid($c, 'subscribe', $subscribe_args)) {
                             return $c->new_error('proposal_open_contract',
-                                    'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal_open_contract subscription.'));
+                                'AlreadySubscribedOrLimit',
+                                $c->l('You are either already subscribed or you have reached the limit for proposal_open_contract subscription.'));
                         }
 
                         # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $subscribe_args->{account_id}, $uuid, $subscribe_args);
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $subscribe_args->{account_id},
+                            $uuid, $subscribe_args);
                     }
                     my $res = {$uuid ? (id => $uuid) : (), %{$response->{$contract_id}}};
                     $send_details->($res);
@@ -132,6 +134,7 @@ sub _send_ask {
                     return $err;
                 }
 
+                # uuid could be defined but 0 which means skip streaming
                 if (not defined($uuid = _pricing_channel_for_ask($c, 'subscribe', $args))) {
                     return $c->new_error('proposal',
                         'AlreadySubscribedOrLimit',
@@ -166,7 +169,7 @@ sub _serialized_args {
 
 sub _pricing_channel_for_ask {
     my ($c, $subs, $args) = @_;
-    my $rpc_call = 'send_ask';
+    my $price_daemon_cmd = 'price';
 
     # returns defined value indicating there is no error,
     # but no need to create subscription channel
@@ -183,28 +186,28 @@ sub _pricing_channel_for_ask {
     delete $args_hash{req_id};
 
     $args_hash{language} = $c->stash('language') || 'EN';
-    $args_hash{rpc_call} = $rpc_call;
-    my $redis_channel    = _serialized_args(\%args_hash);
-    my $subchannel       = $args->{amount_per_point} || $args->{amount};
+    $args_hash{price_daemon_cmd} = $price_daemon_cmd;
+    my $redis_channel = _serialized_args(\%args_hash);
+    my $subchannel = $args->{amount_per_point} || $args->{amount};
 
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $rpc_call);
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd);
 }
 
 sub _pricing_channel_for_bid {
     my ($c, $subs, $args) = @_;
-    my $rpc_call = 'send_bid';
+    my $price_daemon_cmd = 'bid';
 
     my %args_hash;
-    $args_hash{$_}       = $args->{$_} for qw(short_code contract_id currency is_sold sell_time);
+    $args_hash{$_} = $args->{$_} for qw(short_code contract_id currency is_sold sell_time);
     $args_hash{language} = $c->stash('language') || 'EN';
-    $args_hash{rpc_call} = $rpc_call;
-    my $redis_channel    = _serialized_args(\%args_hash);
+    $args_hash{price_daemon_cmd} = $price_daemon_cmd;
+    my $redis_channel = _serialized_args(\%args_hash);
 
-    return _create_pricer_channel($c, $args, $redis_channel, $args->{subchannel}, $rpc_call);
+    return _create_pricer_channel($c, $args, $redis_channel, $args->{subchannel}, $price_daemon_cmd);
 }
 
 sub _create_pricer_channel {
-    my ($c, $args, $redis_channel, $subchannel, $rpc_call) = @_;
+    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd) = @_;
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
@@ -216,8 +219,9 @@ sub _create_pricer_channel {
     my $uuid = Data::UUID->new->create_str();
 
     # subscribe if it is not already subscribed
-    if ( exists $args->{subscribe} and $args->{subscribe} == 1
-         and not exists $pricing_channel->{$redis_channel})
+    if (    exists $args->{subscribe}
+        and $args->{subscribe} == 1
+        and not exists $pricing_channel->{$redis_channel})
     {
         $c->redis_pricer->set($redis_channel, 1);
         $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
@@ -227,9 +231,9 @@ sub _create_pricer_channel {
     $pricing_channel->{$redis_channel}->{$subchannel}->{args} = $args;
     $pricing_channel->{uuid}->{$uuid}->{redis_channel}        = $redis_channel;
     $pricing_channel->{uuid}->{$uuid}->{subchannel}           = $subchannel;
-    $pricing_channel->{uuid}->{$uuid}->{rpc_call}             = $rpc_call;
-    $pricing_channel->{$rpc_call}->{$uuid}                    = 1;          # for forget_all
-    $pricing_channel->{uuid}->{$uuid}->{args}                 = $args;      # for buy rpc call
+    $pricing_channel->{uuid}->{$uuid}->{price_daemon_cmd}     = $price_daemon_cmd;
+    $pricing_channel->{$price_daemon_cmd}->{$uuid}            = 1;                   # for forget_all
+    $pricing_channel->{uuid}->{$uuid}->{args}                 = $args;               # for buy rpc call
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
@@ -243,12 +247,12 @@ sub process_pricing_events {
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$channel_name};
 
-    my $response        = decode_json($message);
-    my $rpc_call        = delete $response->{rpc_call};
+    my $response         = decode_json($message);
+    my $price_daemon_cmd = delete $response->{price_daemon_cmd};
 
-    if ($rpc_call eq 'send_ask') {
+    if ($price_daemon_cmd eq 'price') {
         process_ask_event($c, $response, $channel_name, $pricing_channel);
-    } elsif ($rpc_call eq 'send_bid') {
+    } elsif ($price_daemon_cmd eq 'bid') {
         process_bid_event($c, $response, $channel_name, $pricing_channel);
     }
     return;
@@ -257,6 +261,7 @@ sub process_pricing_events {
 sub process_bid_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     for my $subchannel (keys %{$pricing_channel->{$redis_channel}}) {
+        my $results;
         if ($response and exists $response->{error}) {
             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$redis_channel}->{uuid});
             if ($response->{error}->{message_to_client_array}) {
@@ -265,30 +270,29 @@ sub process_bid_event {
                 $response->{error}->{message_to_client} = $c->l($response->{error}->{message_to_client});
             }
 
-            my $err = $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
-            $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
-            $c->send({json => $err});
+            $results = $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
+            $results->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
         } else {
-            my $results;
-            my $passed_fields            = $pricing_channel->{$redis_channel}->{$subchannel}->{args};
+            my $passed_fields = $pricing_channel->{$redis_channel}->{$subchannel}->{args};
             $response->{id}              = $passed_fields->{id};
             $response->{transaction_ids} = $passed_fields->{transaction_ids};
             $response->{buy_price}       = $passed_fields->{buy_price};
             $response->{purchase_time}   = $passed_fields->{purchase_time};
-            $response->{sell_price}      = $passed_fields->{sell_price} if exists $passed_fields->{sell_price};
-            $response->{sell_time}       = $passed_fields->{sell_time} if exists $passed_fields->{sell_time};
-            $results = {
-                msg_type   => 'proposal_open_contract',
-                'proposal_open_contract' => {
-                    %$response,
-                },
+            $response->{sell_price}      = $passed_fields->{sell_price} if $passed_fields->{sell_price};
+            $response->{sell_time}       = $passed_fields->{sell_time} if $passed_fields->{sell_time};
+            $results                     = {
+                msg_type                 => 'proposal_open_contract',
+                'proposal_open_contract' => {%$response,},
             };
-            $results->{echo_req} = $pricing_channel->{$redis_channel}->{$subchannel}->{args}->{echo_req};
-            if (my $passthrough = $pricing_channel->{$redis_channel}->{$subchannel}->{args}->{echo_req}->{passthrough}) {
-                $results->{passthrough} = $passthrough;
-            }
-            $c->send({json => $results});
+            _prepare_results($results, $pricing_channel, $redis_channel, $subchannel);
         }
+        if ($c->stash('debug')) {
+            $results->{debug} = {
+                time   => $results->{proposal_open_contract}->{rpc_time},
+                method => 'proposal_open_contract',
+            };
+        }
+        $c->send({json => $results});
     }
     return;
 }
@@ -314,7 +318,8 @@ sub process_ask_event {
             $results = $err;
         } else {
             delete $response->{longcode};
-            my $adjusted_results = _price_stream_results_adjustment($pricing_channel->{$redis_channel}->{$subchannel}->{args}, $response, $theo_probability);
+            my $adjusted_results =
+                _price_stream_results_adjustment($pricing_channel->{$redis_channel}->{$subchannel}->{args}, $response, $theo_probability);
 
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
@@ -330,21 +335,27 @@ sub process_ask_event {
                     },
                 };
             }
-            $results->{echo_req} = $pricing_channel->{$redis_channel}->{$subchannel}->{args};
-            if (my $passthrough = $pricing_channel->{$redis_channel}->{$subchannel}->{args}->{passthrough}) {
-                $results->{passthrough} = $passthrough;
-            }
-            if (my $req_id = $pricing_channel->{$redis_channel}->{$subchannel}->{args}->{req_id}) {
-                $results->{req_id} = $req_id;
-            }
+            _prepare_results($results, $pricing_channel, $redis_channel, $subchannel);
         }
         if ($c->stash('debug')) {
             $results->{debug} = {
-                time   => $results->{price_stream}->{rpc_time},
+                time   => $results->{proposal}->{rpc_time},
                 method => 'proposal',
             };
         }
         $c->send({json => $results});
+    }
+    return;
+}
+
+sub _prepare_results {
+    my ($results, $pricing_channel, $redis_channel, $subchannel) = @_;
+    $results->{echo_req} = $pricing_channel->{$redis_channel}->{$subchannel}->{args};
+    if (my $passthrough = $pricing_channel->{$redis_channel}->{$subchannel}->{args}->{passthrough}) {
+        $results->{passthrough} = $passthrough;
+    }
+    if (my $req_id = $pricing_channel->{$redis_channel}->{$subchannel}->{args}->{req_id}) {
+        $results->{req_id} = $req_id;
     }
     return;
 }

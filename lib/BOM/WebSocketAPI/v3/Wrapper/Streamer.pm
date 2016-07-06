@@ -333,7 +333,7 @@ sub _transaction_channel {
         my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
             # uuid is passed as type for subscription from proposal_open_contract
-            # seel line ~436
+            # see line ~436
             $uuid = $type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/ ? $type : Data::UUID->new->create_str();
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
             $channel->{$type}->{args}        = $args;

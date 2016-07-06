@@ -276,7 +276,7 @@ sub startup {
             'proposal_open_contract',
             {
                 instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract,
-                require_auth    => 'read',
+                require_auth       => 'read',
             }
         ],
         [

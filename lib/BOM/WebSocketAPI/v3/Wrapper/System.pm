@@ -92,10 +92,10 @@ sub _forget_pricing_subscription {
                 next unless exists $pricing_channel->{$channel}->{$subchannel}->{uuid};
                 if ($pricing_channel->{$channel}->{$subchannel}->{uuid} eq $uuid) {
                     push @$removed_ids, $pricing_channel->{$channel}->{$subchannel}->{uuid};
-                    my $rpc_call = $pricing_channel->{uuid}->{$uuid}->{rpc_call};
+                    my $price_daemon_cmd = $pricing_channel->{uuid}->{$uuid}->{price_daemon_cmd};
                     delete $pricing_channel->{uuid}->{$uuid};
                     delete $pricing_channel->{$channel}->{$subchannel};
-                    delete $pricing_channel->{$rpc_call}->{$uuid};
+                    delete $pricing_channel->{$price_daemon_cmd}->{$uuid};
                 }
             }
 
@@ -112,12 +112,15 @@ sub _forget_pricing_subscription {
 
 sub _forget_all_pricing_subscriptions {
     my ($c, $type) = @_;
-    my $rpc_call = {proposal => 'send_ask', proposal_open_contract => 'send_bid'}->{$type};
-    my $removed_ids     = [];
+    my $price_daemon_cmd = {
+        proposal               => 'price',
+        proposal_open_contract => 'bid'
+    }->{$type};
+    my $removed_ids = [];
     my %channels_to_check;
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
-        foreach my $uuid (keys %{$pricing_channel->{$rpc_call}}) {
+        foreach my $uuid (keys %{$pricing_channel->{$price_daemon_cmd}}) {
             push @$removed_ids, $uuid;
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
             my $subchannel    = $pricing_channel->{uuid}->{$uuid}->{subchannel};
@@ -131,7 +134,7 @@ sub _forget_all_pricing_subscriptions {
                 delete $pricing_channel->{$redis_channel};
             }
         }
-        delete $pricing_channel->{$rpc_call};
+        delete $pricing_channel->{$price_daemon_cmd};
         $c->stash('pricing_channel' => $pricing_channel);
     }
     return $removed_ids;
