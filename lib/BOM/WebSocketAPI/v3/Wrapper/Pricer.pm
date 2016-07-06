@@ -12,6 +12,7 @@ use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
+use BOM::RPC::v3::Contract;
 
 sub proposal {
     my ($c, $req_storage) = @_;
