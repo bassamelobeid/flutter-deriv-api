@@ -321,8 +321,9 @@ sub send_ask {
             from_pricer_daemon => $from_pricer_daemon,
             %details,
         };
-        $response = _get_ask(prepare_ask($arguments), $params->{app_markup_percentage});
-        $response->{contract_parameters} = prepare_ask($args);
+        my $contract_parameters = prepare_ask($arguments);
+        $response = _get_ask($contract_parameters, $params->{app_markup_percentage});
+        $response->{contract_parameters} = $contract_parameters;
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
