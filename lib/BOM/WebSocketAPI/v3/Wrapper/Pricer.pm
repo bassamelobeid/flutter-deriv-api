@@ -134,8 +134,7 @@ sub _send_ask {
                     return $err;
                 }
 
-                # uuid could be defined but 0 which means skip streaming
-                if (not defined($uuid = _pricing_channel_for_ask($c, 'subscribe', $args))) {
+                if (not $uuid = _pricing_channel_for_ask($c, 'subscribe', $args)) {
                     return $c->new_error('proposal',
                         'AlreadySubscribedOrLimit',
                         $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
@@ -171,10 +170,6 @@ sub _pricing_channel_for_ask {
     my ($c, $subs, $args) = @_;
     my $price_daemon_cmd = 'price';
 
-    # returns defined value indicating there is no error,
-    # but no need to create subscription channel
-    return 0 if BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
-
     my %args_hash = %{$args};
 
     if ($args_hash{basis}) {
@@ -190,7 +185,8 @@ sub _pricing_channel_for_ask {
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel = $args->{amount_per_point} || $args->{amount};
 
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd);
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd,
+        BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args));
 }
 
 sub _pricing_channel_for_bid {
@@ -207,7 +203,7 @@ sub _pricing_channel_for_bid {
 }
 
 sub _create_pricer_channel {
-    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd) = @_;
+    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $skip_redis_subscr) = @_;
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
@@ -217,11 +213,13 @@ sub _create_pricer_channel {
     }
 
     my $uuid = Data::UUID->new->create_str();
+    $args->{id} = $uuid;
 
     # subscribe if it is not already subscribed
     if (    exists $args->{subscribe}
         and $args->{subscribe} == 1
-        and not exists $pricing_channel->{$redis_channel})
+        and not exists $pricing_channel->{$redis_channel}
+        and not $skip_redis_subscr)
     {
         $c->redis_pricer->set($redis_channel, 1);
         $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
@@ -293,6 +291,8 @@ sub process_bid_event {
             };
         }
         $c->send({json => $results});
+        # remove price subscription when contract is sold
+        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $response->{id}) if exists $response->{sell_time};
     }
     return;
 }

@@ -116,14 +116,14 @@ sub _forget_all_pricing_subscriptions {
         proposal               => 'price',
         proposal_open_contract => 'bid'
     }->{$type};
-    my $removed_ids = [];
+    my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
         foreach my $uuid (keys %{$pricing_channel->{$price_daemon_cmd}}) {
             push @$removed_ids, $uuid;
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
             if ($pricing_channel->{$redis_channel}) {
-                $c->stash('redis_pricer')->unsubscribe([$redis_channel]) ;
+                $c->stash('redis_pricer')->unsubscribe([$redis_channel]);
                 delete $pricing_channel->{$redis_channel};
             }
             delete $pricing_channel->{uuid}->{$uuid};

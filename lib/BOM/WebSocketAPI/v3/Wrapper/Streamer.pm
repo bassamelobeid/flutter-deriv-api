@@ -11,7 +11,6 @@ use Format::Util::Numbers qw(roundnear);
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Japan::Contract;
-use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
@@ -231,9 +230,6 @@ sub process_realtime_events {
             if ($chan eq BOM::RPC::v3::Japan::Contract::get_channel_name($arguments)) {
                 send_pricing_table($c, $feed_channels_type->{$channel}->{uuid}, $arguments, $message);
             }
-        } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
-            BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
-                if $c->tx;
         } elsif ($m[0] eq $symbol) {
             unless ($c->tx) {
                 _feed_channel($c, 'unsubscribe', $symbol, $type, $arguments);
@@ -332,9 +328,7 @@ sub _transaction_channel {
     if ($action) {
         my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
-            # uuid is passed as type for subscription from proposal_open_contract
-            # see line ~436
-            $uuid = $type =~ /\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/ ? $type : Data::UUID->new->create_str();
+            $uuid = Data::UUID->new->create_str();
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
@@ -438,15 +432,15 @@ sub process_transaction_updates {
                         and exists $payload->{financial_market_bet_id}
                         and $payload->{financial_market_bet_id} eq $channel->{$type}->{contract_id})
                     {
-                        # cancel proposal open contract streaming which will cancel transaction subscription also
-                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $type);
-
-                        $args->{is_sold}    = 1;
-                        $args->{sell_price} = $payload->{amount};
-                        $args->{sell_time}  = Date::Utility->new($payload->{sell_time})->epoch;
-
-                        # send proposal details last time
-                        BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, undef, $args);
+                        # forget_one for this subscr will be performed after sending final response with sell_time set
+                        if (my $pricing_channel = $c->stash('pricing_channel')) {
+                            if (    exists $pricing_channel->{uuid}
+                                and exists $pricing_channel->{uuid}->{$type})
+                            {
+                                $pricing_channel->{uuid}->{$type}->{args}->{sell_price} = $payload->{amount};
+                                $pricing_channel->{uuid}->{$type}->{args}->{sell_time}  = Date::Utility->new($payload->{sell_time})->epoch;
+                            }
+                        }
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
                     _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
