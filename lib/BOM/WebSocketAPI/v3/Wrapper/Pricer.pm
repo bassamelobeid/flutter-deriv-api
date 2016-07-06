@@ -98,9 +98,9 @@ sub _pricing_channel {
     # cache the longcode to add them to responses from pricer_daemon.
     $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $cache->{longcode};
 
-    $pricing_channel->{uuid}->{$uuid}->{serialized_args}        = $serialized_args;
-    $pricing_channel->{uuid}->{$uuid}->{amount}                 = $amount;
-    $pricing_channel->{uuid}->{$uuid}->{args}                   = $args;
+    $pricing_channel->{uuid}->{$uuid}->{serialized_args} = $serialized_args;
+    $pricing_channel->{uuid}->{$uuid}->{amount}          = $amount;
+    $pricing_channel->{uuid}->{$uuid}->{args}            = $args;
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
