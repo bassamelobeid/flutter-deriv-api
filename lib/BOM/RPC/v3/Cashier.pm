@@ -938,11 +938,7 @@ sub __client_withdrawal_notes {
             $limit = '';
         }
 
-        return (
-            localize(
-                'Sorry, you cannot withdraw. Your withdrawal amount [_1] exceeds withdrawal limit[_2].',
-                "$currency $amount",
-                $limit));
+        return (localize('Sorry, you cannot withdraw. Your withdrawal amount [_1] exceeds withdrawal limit[_2].', "$currency $amount", $limit));
     }
 
     my $withdrawal_limits = $client->get_withdrawal_limits();
