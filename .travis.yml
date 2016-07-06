@@ -45,6 +45,7 @@ install:
     - /tmp/travis-scripts/devbox.sh *.yml
     - /tmp/travis-scripts/setup_feeddb.sh
     - sudo ln -s /home/travis/build/regentmarkets/bom-quant-benchmark /home/git/regentmarkets/bom-quant-benchmark
+    - /tmp/travis-scripts/setup_clientdb.sh
     - /tmp/travis-scripts/setup_chronicledb.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
 script:
