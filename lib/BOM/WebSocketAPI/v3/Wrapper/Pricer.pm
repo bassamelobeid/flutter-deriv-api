@@ -17,44 +17,30 @@ use Math::Util::CalculatedValue::Validatable;
 sub proposal {
     my ($c, $req_storage) = @_;
 
-    my $args   = $req_storage->{args};
-    my $symbol = $args->{symbol};
+    my $args = $req_storage->{args};
 
     $c->call_rpc({
-            args            => $args,
-            method          => 'send_ask',
-            msg_type        => 'proposal',
-            rpc_response_cb => sub {
+            args     => $args,
+            method   => 'send_ask',
+            msg_type => 'proposal',
+            success  => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
-                my $args = $req_storage->{args};
+                $req_storage->{uuid} = _pricing_channel($c, 'subscribe', $req_storage->{args}, $rpc_response);
+            },
+            response => sub {
+                my ($rpc_response, $api_response, $req_storage) = @_;
 
-                if ($rpc_response and exists $rpc_response->{error}) {
-                    my $err = $c->new_error('proposal', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
-                    $err->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
-                    return $err;
-                }
-
-                my $uuid;
-
-                if (not $uuid = _pricing_channel($c, 'subscribe', $args)) {
-                    return $c->new_error('proposal',
+                return $api_response if $rpc_response->{error};
+                if (my $uuid = $req_storage->{uuid}) {
+                    $api_response->{proposal}->{id} = $uuid;
+                } else {
+                    $api_response =
+                        $c->new_error('proposal',
                         'AlreadySubscribedOrLimit',
                         $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
                 }
-
-                # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
-                my $pricing_channel = $c->stash('pricing_channel');
-                if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
-                    my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
-                    my $amount = $args->{amount_per_point} || $args->{amount};
-                    $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $rpc_response->{longcode};
-                    $c->stash('pricing_channel' => $pricing_channel);
-                }
-
-                return {
-                    msg_type   => 'proposal',
-                    'proposal' => {($uuid ? (id => $uuid) : ()), %$rpc_response}};
-            }
+                return $api_response;
+            },
         });
     return;
 }
@@ -69,7 +55,7 @@ sub _serialized_args {
 }
 
 sub _pricing_channel {
-    my ($c, $subs, $args) = @_;
+    my ($c, $subs, $args, $cache) = @_;
 
     my %args_hash = %{$args};
 
@@ -107,9 +93,11 @@ sub _pricing_channel {
 
     $pricing_channel->{$serialized_args}->{$amount}->{uuid} = $uuid;
     $pricing_channel->{$serialized_args}->{$amount}->{args} = $args;
-    $pricing_channel->{uuid}->{$uuid}->{serialized_args}    = $serialized_args;
-    $pricing_channel->{uuid}->{$uuid}->{amount}             = $amount;
-    $pricing_channel->{uuid}->{$uuid}->{args}               = $args;
+    # cache the longcode to add them to responses from pricer_daemon.
+    $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $cache->{longcode};
+    $pricing_channel->{uuid}->{$uuid}->{serialized_args}        = $serialized_args;
+    $pricing_channel->{uuid}->{$uuid}->{amount}                 = $amount;
+    $pricing_channel->{uuid}->{$uuid}->{args}                   = $args;
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
