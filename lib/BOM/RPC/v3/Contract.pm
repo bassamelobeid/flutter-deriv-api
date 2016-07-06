@@ -322,6 +322,7 @@ sub send_ask {
             %details,
         };
         $response = _get_ask(prepare_ask($arguments), $params->{app_markup_percentage});
+        $response->{contract_parameters} = prepare_ask($args);
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
