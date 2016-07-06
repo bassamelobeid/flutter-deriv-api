@@ -17,7 +17,7 @@ sub _db_name {
 }
 
 sub _db_migrations_dir {
-    return '/home/git/regentmarkets/bom-postgres/config/sql/rmgdb/';
+    return '/home/git/regentmarkets/bom-postgres-clientdb/config/sql/';
 }
 
 sub _build__connection_parameters {
