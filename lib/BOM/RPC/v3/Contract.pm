@@ -302,8 +302,8 @@ sub get_bid {
 }
 
 sub send_bid {
-    my $params             = shift;
-    my %details            = %{$params->{args}};
+    my $params  = shift;
+    my %details = %{$params->{args}};
 
     my $tv = [Time::HiRes::gettimeofday];
 
