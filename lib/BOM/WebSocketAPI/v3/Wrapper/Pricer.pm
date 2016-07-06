@@ -6,7 +6,6 @@ use JSON;
 use Data::UUID;
 use List::Util qw(first);
 use Format::Util::Numbers qw(roundnear);
-use BOM::RPC::v3::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
@@ -93,8 +92,12 @@ sub _pricing_channel {
 
     $pricing_channel->{$serialized_args}->{$amount}->{uuid} = $uuid;
     $pricing_channel->{$serialized_args}->{$amount}->{args} = $args;
+
+    # cache sanitized parameters to create contract from pricer_daemon.
+    $pricing_channel->{$serialized_args}->{$amount}->{contract_parameters} = $cache->{contract_parameters};
     # cache the longcode to add them to responses from pricer_daemon.
     $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $cache->{longcode};
+
     $pricing_channel->{uuid}->{$uuid}->{serialized_args}        = $serialized_args;
     $pricing_channel->{uuid}->{$uuid}->{amount}                 = $amount;
     $pricing_channel->{uuid}->{$uuid}->{args}                   = $args;
@@ -136,7 +139,8 @@ sub process_pricing_events {
         } else {
             delete $response->{longcode};
             my $adjusted_results =
-                _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $theo_probability);
+                _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{contract_parameters}, $response,
+                $theo_probability);
 
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
@@ -175,14 +179,13 @@ sub process_pricing_events {
 }
 
 sub _price_stream_results_adjustment {
-    my $orig_args             = shift;
+    my $contract_parameters   = shift;
     my $results               = shift;
     my $resp_theo_probability = shift;
 
     # skips for spreads
-    return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
+    return $results if first { $contract_parameters->{contract_type} eq $_ } qw(SPREADU SPREADD);
 
-    my $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($orig_args);
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
     my $theo_probability = Math::Util::CalculatedValue::Validatable->new({
@@ -194,7 +197,7 @@ sub _price_stream_results_adjustment {
         maximum     => 1,
     });
     $contract_parameters->{theo_probability}      = $theo_probability;
-    $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
+    $contract_parameters->{app_markup_percentage} = $contract_parameters->{app_markup_percentage};
     my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
     if (my $error = $contract->validate_price) {
