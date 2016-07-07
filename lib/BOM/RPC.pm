@@ -91,7 +91,7 @@ sub register {
                 $params->{source} = $params->{valid_source};
             }
             elsif ($require_source) {
-                my $verify_app_res = BOM::RPC::v3::App::verify_app({app_id => $params->{source});
+                my $verify_app_res = BOM::RPC::v3::App::verify_app({app_id => $params->{source}});
                 return $verify_app_res if $verify_app_res->{error};
             }
 
