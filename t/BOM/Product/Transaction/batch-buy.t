@@ -12,7 +12,6 @@ use Guard;
 use BOM::Platform::Client;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Static::Config;
 
 use ExpiryQueue ();
 
