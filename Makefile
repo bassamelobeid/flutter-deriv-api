@@ -9,9 +9,6 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test: $(TESTS)
 
-kjkj:
-	@$(PROVE) -r aaa
-
 test_all: test
 
 unit_test_database_datamapper:
