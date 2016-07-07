@@ -88,35 +88,10 @@ sub startup {
             }
 
             my $app_id;
-            if ($c->req->param('app_id')) {
-                $app_id = defang_lite($c->req->param('app_id'));
-
-                my $error;
-                APP_ID:
-                {
-                    if ($app_id !~ /^\d+$/) {
-                        $error = 1;
-                        last;
-                    }
-
-                    my $oauth = BOM::Database::Model::OAuth->new;
-                    my $app   = $oauth->verify_app($app_id);
-
-                    if (not $app) {
-                        $error = 1;
-                        last;
-                    }
-
-                    $c->stash(
-                        source                => $app_id,
-                        app_markup_percentage => $app->{app_markup_percentage} // 0
-                    );
-                }
-
-                if ($error) {
-                    $c->send({json => $c->new_error('error', 'InvalidAppID', $c->l('Your app_id is invalid.'))});
-                    $c->finish();
-                }
+            if ($app_id = defang_lite($c->req->param('app_id'))) {
+                $c->call_rpc({
+                        method      => 'verify_app',
+                        call_params => {app_id => $app_id}});
             }
             my $client_ip = $c->client_ip;
 
@@ -131,6 +106,7 @@ sub startup {
                 country_code   => $c->country_code,
                 user_agent     => $user_agent,
                 ua_fingerprint => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
+                $app_id ? (source => $app_id) : (),
             );
         });
 
@@ -352,7 +328,7 @@ sub startup {
         $action_options->{out_validator} = $out_validator;
 
         $action_options->{stash_params} ||= [];
-        push @{$action_options->{stash_params}}, qw( language country_code source );
+        push @{$action_options->{stash_params}}, qw( language country_code source valid_source );
 
         push @{$action_options->{stash_params}}, 'token' if $action_options->{require_auth};
     }
