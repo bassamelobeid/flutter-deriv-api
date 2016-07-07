@@ -43,4 +43,4 @@ PGHOST=localhost PGPORT=5432 \
 pg_dump -w regentmarkets -a | grep pg_catalog.setval
 
 echo "DELETE FROM data_collection.exchange_rate WHERE id < 1099;"
-) > /home/git/regentmarkets/bom-postgres/config/sql/rmgdb/unit_test_dml.sql
+) > /home/git/regentmarkets/bom-postgres-clientdb/config/sql/unit_test_dml.sql
