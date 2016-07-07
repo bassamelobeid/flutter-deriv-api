@@ -188,7 +188,7 @@ sub startup {
         ['new_account_real',        \&BOM::RPC::v3::NewAccount::new_account_real,        1],
         ['new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest, 1],
         ['new_account_japan',       \&BOM::RPC::v3::NewAccount::new_account_japan,       1],
-        ['new_account_virtual', \&BOM::RPC::v3::NewAccount::new_account_virtual,      0, 1],
+        ['new_account_virtual', \&BOM::RPC::v3::NewAccount::new_account_virtual],
         ['jp_knowledge_test',   \&BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test, 1],
 
         ['portfolio',              \&BOM::RPC::v3::PortfolioManagement::portfolio,              1],
