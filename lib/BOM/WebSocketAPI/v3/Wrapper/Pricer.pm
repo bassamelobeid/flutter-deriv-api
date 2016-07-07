@@ -139,14 +139,11 @@ sub process_pricing_events {
             $results = $err;
         } else {
             delete $response->{longcode};
-            my $adjusted_results = _price_stream_results_adjustment({
-                    %{$pricing_channel->{$serialized_args}->{$amount}->{contract_parameters}},
-                    app_markup_percentage => $pricing_channel->{$serialized_args}->{$amount}->{args}->{app_markup_percentage}
-                },
-                $response,
-                $theo_probability
+            my $adjusted_results = _price_stream_results_adjustment(
+                $pricing_channel->{$serialized_args}->{$amount}->{args},
+                $pricing_channel->{$serialized_args}->{$amount}->{contract_parameters},
+                $response, $theo_probability
             );
-
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
@@ -184,12 +181,13 @@ sub process_pricing_events {
 }
 
 sub _price_stream_results_adjustment {
+    my $orig_args             = shift;
     my $contract_parameters   = shift;
     my $results               = shift;
     my $resp_theo_probability = shift;
 
     # skips for spreads
-    return $results if first { $contract_parameters->{contract_type} eq $_ } qw(SPREADU SPREADD);
+    return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
 
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
@@ -201,7 +199,8 @@ sub _price_stream_results_adjustment {
         minimum     => 0,
         maximum     => 1,
     });
-    $contract_parameters->{theo_probability} = $theo_probability;
+    $contract_parameters->{theo_probability}      = $theo_probability;
+    $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
     my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
     if (my $error = $contract->validate_price) {
