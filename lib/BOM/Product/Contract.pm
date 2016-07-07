@@ -2576,6 +2576,16 @@ sub _validate_lifetime {
         ? localize('Resale of this contract is not offered.')
         : localize('Trading is not offered for this duration.');
 
+    if (    $self->for_sale
+        and $self->expiry_daily
+        and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
+    {
+        return {
+            message           => 'waiting for settlement',
+            message_to_client => localize('Waiting for settlement.'),
+        };
+    }
+
     # This might be empty because we don't have short-term expiries on some contracts, even though
     # it's a valid bet type for multi-day contracts.
     if (not($min_duration and $max_duration)) {
@@ -2603,17 +2613,6 @@ sub _validate_lifetime {
         $duration = $calendar->trading_date_for($self->date_expiry)->days_between($calendar->trading_date_for($self->date_start));
         ($min_duration, $max_duration) = ($min_duration->days, $max_duration->days);
         $message = 'Daily duration is outside acceptable range';
-    }
-
-    if (    $self->for_sale
-        and $self->expiry_daily
-        and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
-    {
-        # we don't offer sellback on tick expiry contracts.
-        return {
-            message           => 'waiting for settlement',
-            message_to_client => localize('Waiting for settlement.'),
-        };
     }
 
     if ($duration < $min_duration or $duration > $max_duration) {
