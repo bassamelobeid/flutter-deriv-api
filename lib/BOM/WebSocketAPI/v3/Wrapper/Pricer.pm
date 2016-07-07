@@ -187,7 +187,7 @@ sub _price_stream_results_adjustment {
     my $resp_theo_probability = shift;
 
     # skips for spreads
-    return $results if first { $contract_parameters->{contract_type} eq $_ } qw(SPREADU SPREADD);
+    return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
 
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
@@ -200,7 +200,7 @@ sub _price_stream_results_adjustment {
         maximum     => 1,
     });
     $contract_parameters->{theo_probability}      = $theo_probability;
-    $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
+
     my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
     if (my $error = $contract->validate_price) {
