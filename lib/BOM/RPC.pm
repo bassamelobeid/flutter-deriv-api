@@ -51,7 +51,7 @@ sub apply_usergroup {
 }
 
 sub register {
-    my ($method, $code, $require_auth, $require_source) = @_;
+    my ($method, $code, $require_auth) = @_;
     return MojoX::JSON::RPC::Service->new->register(
         $method,
         sub {
@@ -89,7 +89,7 @@ sub register {
 
             if ($params->{valid_source}) {
                 $params->{source} = $params->{valid_source};
-            } elsif ($require_source) {
+            } elsif ($params->{source}) {
                 my $verify_app_res = BOM::RPC::v3::App::verify_app({app_id => $params->{source}});
                 return $verify_app_res if $verify_app_res->{error};
             }
@@ -135,8 +135,8 @@ sub startup {
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
         ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
 
-        ['buy',  \&BOM::RPC::v3::Transaction::buy,  0, 1],
-        ['sell', \&BOM::RPC::v3::Transaction::sell, 1, 1],
+        ['buy',  \&BOM::RPC::v3::Transaction::buy],
+        ['sell', \&BOM::RPC::v3::Transaction::sell, 1],
 
         ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
         ['asset_index',           \&BOM::RPC::v3::MarketDiscovery::asset_index],
@@ -150,18 +150,18 @@ sub startup {
 
         ['get_limits',        \&BOM::RPC::v3::Cashier::get_limits, 1],
         ['paymentagent_list', \&BOM::RPC::v3::Cashier::paymentagent_list],
-        ['paymentagent_withdraw',     \&BOM::RPC::v3::Cashier::paymentagent_withdraw,     1, 1],
-        ['paymentagent_transfer',     \&BOM::RPC::v3::Cashier::paymentagent_transfer,     1, 1],
-        ['transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts, 1, 1],
+        ['paymentagent_withdraw',     \&BOM::RPC::v3::Cashier::paymentagent_withdraw,     1],
+        ['paymentagent_transfer',     \&BOM::RPC::v3::Cashier::paymentagent_transfer,     1],
+        ['transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts, 1],
         ['cashier',                   \&BOM::RPC::v3::Cashier::cashier,                   1],
-        ['topup_virtual',             \&BOM::RPC::v3::Cashier::topup_virtual,             1, 1],
+        ['topup_virtual',             \&BOM::RPC::v3::Cashier::topup_virtual,             1],
 
         ['payout_currencies',       \&BOM::RPC::v3::Accounts::payout_currencies],
         ['landing_company',         \&BOM::RPC::v3::Accounts::landing_company],
         ['landing_company_details', \&BOM::RPC::v3::Accounts::landing_company_details],
 
-        ['statement',          \&BOM::RPC::v3::Accounts::statement,          1, 1],
-        ['profit_table',       \&BOM::RPC::v3::Accounts::profit_table,       1, 1],
+        ['statement',          \&BOM::RPC::v3::Accounts::statement,          1],
+        ['profit_table',       \&BOM::RPC::v3::Accounts::profit_table,       1],
         ['get_account_status', \&BOM::RPC::v3::Accounts::get_account_status, 1],
         ['change_password',    \&BOM::RPC::v3::Accounts::change_password,    1],
         ['cashier_password',   \&BOM::RPC::v3::Accounts::cashier_password,   1],
@@ -177,7 +177,7 @@ sub startup {
         ['tnc_approval',             \&BOM::RPC::v3::Accounts::tnc_approval,             1],
         ['set_financial_assessment', \&BOM::RPC::v3::Accounts::set_financial_assessment, 1],
         ['get_financial_assessment', \&BOM::RPC::v3::Accounts::get_financial_assessment, 1],
-        ['reality_check', \&BOM::RPC::v3::Accounts::reality_check, 1, 1],
+        ['reality_check', \&BOM::RPC::v3::Accounts::reality_check, 1],
 
         ['verify_email', \&BOM::RPC::v3::NewAccount::verify_email],
 
@@ -185,14 +185,14 @@ sub startup {
         ['get_bid',  \&BOM::RPC::v3::Contract::get_bid],
         ['get_contract_details', \&BOM::RPC::v3::Contract::get_contract_details, 1],
 
-        ['new_account_real',        \&BOM::RPC::v3::NewAccount::new_account_real,         1, 1],
-        ['new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest,  1, 1],
-        ['new_account_japan',       \&BOM::RPC::v3::NewAccount::new_account_japan,        1, 1],
+        ['new_account_real',        \&BOM::RPC::v3::NewAccount::new_account_real,         1],
+        ['new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest,  1],
+        ['new_account_japan',       \&BOM::RPC::v3::NewAccount::new_account_japan,        1],
         ['new_account_virtual',     \&BOM::RPC::v3::NewAccount::new_account_virtual,      0, 1],
         ['jp_knowledge_test',       \&BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test, 1],
 
-        ['portfolio',              \&BOM::RPC::v3::PortfolioManagement::portfolio,              1, 1],
-        ['sell_expired',           \&BOM::RPC::v3::PortfolioManagement::sell_expired,           1, 1],
+        ['portfolio',              \&BOM::RPC::v3::PortfolioManagement::portfolio,              1],
+        ['sell_expired',           \&BOM::RPC::v3::PortfolioManagement::sell_expired,           1],
         ['proposal_open_contract', \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract, 1],
 
         ['app_register', \&BOM::RPC::v3::App::register,   1],

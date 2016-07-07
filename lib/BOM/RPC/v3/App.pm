@@ -195,7 +195,7 @@ sub oauth_apps {
 sub verify_app {
     my $params = shift;
 
-    my $app_id = $params->{app_id};
+    my $app_id = $params->{app_id} || '';
     my $app;
     my $error;
     APP_ID:
