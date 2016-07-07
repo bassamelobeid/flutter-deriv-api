@@ -20,7 +20,7 @@
           }
         },
         "financial_company": {
-          "type": ["null", "object"],
+          "type": ["object"],
           "properties": {
             "shortcode":{
               "type":"string",
@@ -46,25 +46,25 @@
             },
             "legal_allowed_currencies":{
               "type":"array",
+              "minItems": 3,
               "items":{
                 "type":"string",
-                "minItems": 3,
                 "pattern": "^(USD|EUR|GBP)$"
               }
             },
             "legal_allowed_markets":{
               "type":"array",
+              "minItems": 5,
               "items":{
                 "type":"string",
-                "minItems": 5,
                 "pattern": "^(commodities|forex|indices|stocks|smarties)$"
               }
             },
             "legal_allowed_contract_categories":{
               "type":"array",
+              "minItems": 6,
               "items":{
                 "type":"string",
-                "minItems": 6,
                 "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch)$"
               }
             },
