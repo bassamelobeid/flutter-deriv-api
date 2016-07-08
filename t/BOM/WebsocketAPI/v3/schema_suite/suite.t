@@ -54,7 +54,6 @@ foreach my $line (@lines) {
     my $result = decode_json($t->message->[1]);
     $response->{$call} = $result->{$call};
 
-
     my $content = $receive_file;
     my $c       = 0;
     foreach my $f (@template_func) {
