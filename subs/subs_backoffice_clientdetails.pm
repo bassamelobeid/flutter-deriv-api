@@ -382,40 +382,6 @@ sub show_client_id_docs {
     return $links;
 }
 
-## get_trusted_allow_login_reason ############################
-# Purpose : all available trusted allowed login reason
-##############################################################
-sub get_trusted_allow_login_reason {
-    return (
-        'Client accessing from CDMA',
-        'Client accessing from PDA or mobile',
-        'Client\'s cashier section is locked or access denied',
-        'Client\'s country is not in the allowed list',
-        'Client is currently residing in country other than client\'s citizenship',
-        'Client is fully authenticated',
-        'Client is training under BOM gurus',
-        'Client is travelling to other country',
-        'Client login from a shared internet connection ( network, ISP, ADSL )',
-        'Client login from internet cafe with shared IPs',
-        'Client login from big proxies',
-        'Client login from different IPs',
-        'Client unable to access account and has no multiple accounts',
-        'Client owned credit card issued by other country',
-        'Client owned more than one account from different jurisidiction',
-        'Multiple accounts with same IPs',
-        'Received scanned documents from client',
-        'Same IP but client only owned one account',
-        'System recorded office IP when staff login using master password',
-        'System triggered wrong IP',
-        'System triggered wrong telephone or mobile',
-        'System triggered wrong country code',
-        'System error or bug',
-        'Trusted or genuine client',
-        'Test accounts',
-        'Others',
-    );
-}
-
 sub client_statement_for_backoffice {
     my $args = shift;
     my ($client, $before, $after, $max_number_of_lines) = @{$args}{'client', 'before', 'after', 'max_number_of_lines'};
