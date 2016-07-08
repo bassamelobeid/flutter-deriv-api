@@ -17,7 +17,7 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Account;
 
-sub _validate {
+sub validate {
     my $args = shift;
     my ($from_client, $user) = @{$args}{'from_client', 'user'};
     my $country = $args->{country} || '';
@@ -90,20 +90,24 @@ sub create_account {
     my $args = shift;
     my ($from_client, $user, $details) = @{$args}{'from_client', 'user', 'details'};
 
-    if (my $error = _validate($args)) {
+    if (my $error = validate($args)) {
         return $error;
     }
-    my $register = _register_client($details);
+    my $register = register_client($details);
     return $register if ($register->{error});
 
-    return _after_register_client({
+    my $response = after_register_client({
         client  => $register->{client},
         user    => $user,
         details => $details,
     });
+
+    add_details_to_desk($client, $details);
+
+    return $response;
 }
 
-sub _register_client {
+sub register_client {
     my $details = shift;
 
     my ($client, $error);
@@ -118,7 +122,7 @@ sub _register_client {
     return {client => $client};
 }
 
-sub _after_register_client {
+sub after_register_client {
     my $args = shift;
     my ($client, $user, $details) = @{$args}{'client', 'user', 'details'};
 
@@ -135,21 +139,33 @@ sub _after_register_client {
         $client->add_note('UNTERR', "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
     }
 
-    my $emailmsg = "$client_loginid - Name and Address\n\n\n\t\t $client_name \n\t\t";
+    my $notemsg = "$client_loginid - Name and Address\n\n\n\t\t $client_name \n\t\t";
     my @address = map { $client->$_ } qw(address_1 address_2 city state postcode);
-    $emailmsg .= join("\n\t\t", @address, Locale::Country::code2country($client->residence));
-    $client->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$emailmsg\n");
+    $notemsg .= join("\n\t\t", @address, Locale::Country::code2country($client->residence));
+    $client->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$notemsg\n");
 
     if ($client->landing_company->short eq 'iom'
         and (length $client->first_name < 3 or length $client->last_name < 3))
     {
-        $emailmsg = "$client_loginid - first name or last name less than 3 characters \n\n\n\t\t";
-        $emailmsg .= join("\n\t\t",
+        $notemsg = "$client_loginid - first name or last name less than 3 characters \n\n\n\t\t";
+        $notemsg .= join("\n\t\t",
             'first name: ' . $client->first_name,
             'last name: ' . $client->last_name,
             'residence: ' . Locale::Country::code2country($client->residence));
-        $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$emailmsg\n");
+        $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$notemsg\n");
     }
+
+    stats_inc("business.new_account.real");
+    stats_inc("business.new_account.real." . $client->broker);
+
+    return {
+        client => $client,
+        user   => $user,
+    };
+}
+
+sub add_details_to_desk {
+    my ($client, $details) = @_;
 
     if (BOM::Platform::Runtime->instance->app_config->system->on_production) {
         try {
@@ -161,21 +177,14 @@ sub _after_register_client {
                 token_secret => BOM::System::Config::third_party->{desk}->{access_token_secret},
             });
 
-            $details->{loginid}  = $client_loginid;
+            $details->{loginid}  = $client->loginid;
             $details->{language} = request()->language;
             $desk_api->upload($details);
         }
         catch {
-            warn("Unable to add loginid $client_loginid (" . $client->email . ") to desk.com API: $_");
+            warn("Unable to add loginid " . $client->loginid . "(" . $client->email . ") to desk.com API: $_");
         };
     }
-    stats_inc("business.new_account.real");
-    stats_inc("business.new_account.real." . $client->broker);
-
-    return {
-        client => $client,
-        user   => $user,
-    };
 }
 
 sub get_financial_input_mapping {

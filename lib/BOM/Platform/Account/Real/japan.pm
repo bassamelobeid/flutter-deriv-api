@@ -8,7 +8,7 @@ use BOM::Platform::Account::Real::default;
 
 sub _validate {
     my $args = shift;
-    if (my $error = BOM::Platform::Account::Real::default::_validate($args)) {
+    if (my $error = BOM::Platform::Account::Real::default::validate($args)) {
         return $error;
     }
 
@@ -40,7 +40,7 @@ sub create_account {
 
     $financial_assessment->{agreement} = $agreement;
 
-    my $register = BOM::Platform::Account::Real::default::_register_client($details);
+    my $register = BOM::Platform::Account::Real::default::register_client($details);
     return $register if ($register->{error});
 
     my $client = $register->{client};
@@ -53,11 +53,15 @@ sub create_account {
     $client->set_status('disabled',                  'system', 'disabled until Japan account opening process completed');
     $client->save;
 
-    return BOM::Platform::Account::Real::default::_after_register_client({
+    my $response = BOM::Platform::Account::Real::default::after_register_client({
         client  => $client,
         user    => $user,
         details => $details,
     });
+
+    BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
+
+    return $response;
 }
 
 sub agreement_fields {
