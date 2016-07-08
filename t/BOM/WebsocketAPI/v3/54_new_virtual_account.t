@@ -53,10 +53,9 @@ subtest 'verify_email' => sub {
             verify_email => $email,
             type         => 'account_opening'
         });
-    is $call_params->{email}, $email;
+    is $call_params->{args}->{verify_email}, $email;
+    ok $call_params->{args}->{type};
     ok $call_params->{server_name};
-    ok $call_params->{code};
-    ok $call_params->{type};
 
     # send this again to check if invalidates old one
     Cache::RedisDB->redis->flushall;
