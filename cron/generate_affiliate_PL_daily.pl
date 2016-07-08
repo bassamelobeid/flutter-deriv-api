@@ -6,7 +6,6 @@ use Path::Tiny;
 use FileHandle;
 
 use Date::Utility;
-use BOM::System::Localhost;
 use BOM::Platform::Email qw(send_email);
 use BOM::MyAffiliates::ActivityReporter;
 use BOM::Platform::Runtime;
@@ -73,8 +72,7 @@ while ($to_date->days_between($processing_date) >= 0) {
 send_email({
         from    => BOM::Platform::Runtime->instance->app_config->system->email,
         to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
-        subject => 'CRON generate_affiliate_PL_daily: Report from '
-            . BOM::System::Localhost::name()
+        subject => 'CRON generate_affiliate_PL_daily: '
             . ' for date range '
             . $from_date->date_yyyymmdd . ' - '
             . $to_date->date_yyyymmdd,
