@@ -306,7 +306,7 @@ sub send_ask {
     my $from_pricer_daemon = shift;
 
     my $symbol   = $args->{symbol};
-    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
+    my $response = validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $response->{error}->{code},
