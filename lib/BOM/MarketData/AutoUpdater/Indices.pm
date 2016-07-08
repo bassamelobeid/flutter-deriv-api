@@ -107,14 +107,14 @@ sub run {
     );
 
     foreach my $symbol (@{$self->symbols_to_update}) {
+        if (not $surfaces_from_file->{$symbol}) {
+            $self->report->{$symbol} = {
+                success => 0,
+                reason  => 'Surface Information missing from datasource for ' . $symbol,
+            };
+            next;
+        }
         try {
-            if (not $surfaces_from_file->{$symbol}) {
-                $self->report->{$symbol} = {
-                    success => 0,
-                    reason  => 'Surface Information missing from datasource for ' . $symbol,
-                };
-                next;
-            }
             my $underlying     = BOM::Market::Underlying->new($symbol);
             my $raw_volsurface = $surfaces_from_file->{$symbol};
             if ($self->uses_binary_spot->{$symbol}) {
