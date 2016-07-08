@@ -6,7 +6,7 @@ use feature 'state';
 use Data::Dumper;
 
 use BOM::Platform::Runtime::AppConfig;
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 use YAML::XS;
 use Locale::Country::Extra;
 use Locale::Country;
