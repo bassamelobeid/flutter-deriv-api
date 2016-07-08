@@ -15,7 +15,7 @@ sub residence_list {
     $residence_list = [grep { $_->{value} ne '' } @$residence_list];
 
     # plus phone_idd
-    my $countries = BOM::Platform::Runtime->instance->countries;
+    my $countries = BOM::Platform::Countries->instance->countries;
     foreach (@$residence_list) {
         my $phone_idd = $countries->idd_from_code($_->{value});
         $_->{phone_idd} = $phone_idd if $phone_idd;
