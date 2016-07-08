@@ -12,7 +12,6 @@ use Crypt::NamedKeys;
 use BOM::Platform::Client;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Static::Config;
 
 use Date::Utility;
 use BOM::Product::Transaction;
@@ -1366,7 +1365,7 @@ subtest 'max_payout_open_bets validation', sub {
 
         my $error = do {
             note "Set max_payout_open_positions for MF Client => 29.99";
-            BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{USD} = 29.99;
+            BOM::System::Config::quants->{client_limits}->{max_payout_open_positions}->{USD} = 29.99;
             my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
 
             if ($now->is_a_weekend or ($now->day_of_week == 5 and $contract->date_expiry->is_after($now->truncate_to_day->plus_time_interval('21h')))) {
@@ -1557,9 +1556,9 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
         my $error = do {
             # need to do this because these limits are not by landing company anymore
             note "change quants->{client_limits}->{max_payout_open_positions}->{USD} to 1000.00";
-            BOM::Platform::Static::Config::quants->{client_limits}->{max_payout_open_positions}->{USD} = 1000.00;
+            BOM::System::Config::quants->{client_limits}->{max_payout_open_positions}->{USD} = 1000.00;
             note "change quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit->{USD}} to 29.99";
-            BOM::Platform::Static::Config::quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
+            BOM::System::Config::quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
@@ -1593,7 +1592,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
         # retry with a slightly higher limit should succeed
         $error = do {
             note "change quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} to 30";
-            BOM::Platform::Static::Config::quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 30;
+            BOM::System::Config::quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 30;
 
             my $contract_r100 = produce_contract({
                 underlying   => $underlying_r100,
@@ -1655,7 +1654,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way'
         my $txn_id_buy_expired_contract;
         my $error = do {
             note "change quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} to 29.99";
-            BOM::Platform::Static::Config::quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
+            BOM::System::Config::quants->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{USD} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
