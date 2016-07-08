@@ -10,7 +10,7 @@ use BOM::Platform::Context;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
-use BOM::Platform::Token::Verification;
+use BOM::Platform::Token;
 use BOM::Platform::Static::Config;
 use BOM::System::Config;
 BOM::Backoffice::Sysinit::init();
@@ -40,7 +40,7 @@ if (not $email) {
 my $lang = request()->language;
 
 my $link;
-my $token = BOM::Platform::Token::Verification->new({
+my $token = BOM::Platform::Token->new({
         email       => $email,
         expires_in  => 3600,
         created_for => 'reset_password'
