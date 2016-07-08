@@ -9,7 +9,6 @@ use BOM::Product::Transaction;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::Static::Config;
 
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
