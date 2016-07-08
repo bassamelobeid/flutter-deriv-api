@@ -5,17 +5,15 @@ use Moose::Util::TypeConstraints;
 
 use JSON;
 use CGI;
-use CGI::Untaint;
 use URL::Encode;
 use Data::Dumper;
 use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Untaint;
 
 use Plack::App::CGIBin::Streaming::Request;
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 use Sys::Hostname;
 
 with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
@@ -42,19 +40,9 @@ has 'http_method' => (
     lazy_build => 1,
 );
 
-has 'http_path' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has 'http_handler' => (
     is  => 'rw',
     isa => 'Maybe[Plack::App::CGIBin::Streaming::Request]',
-);
-
-has 'untainter' => (
-    is         => 'ro',
-    lazy_build => 1
 );
 
 has 'domain_name' => (
@@ -83,11 +71,6 @@ has 'country' => (
 has 'country_code' => (
     is      => 'ro',
     default => 'aq',
-);
-
-has 'ui_settings' => (
-    is         => 'ro',
-    lazy_build => 1,
 );
 
 has 'broker_code' => (
@@ -137,10 +120,6 @@ has 'start_time' => (
     is => 'ro',
 );
 
-has 'http_modified' => (
-    is => 'ro',
-);
-
 sub cookie {
     my $self = shift;
     my $name = shift;
@@ -163,20 +142,6 @@ sub param {
     my $self = shift;
     my $name = shift;
     return $self->params->{$name};
-}
-
-sub param_untaint {
-    my $self = shift;
-    return $self->untainter->extract(@_);
-}
-
-sub ui_settings_value {
-    my $self = shift;
-    if (scalar keys %{$self->ui_settings}) {
-        return to_json($self->ui_settings);
-    }
-
-    return '';
 }
 
 sub _build_params {
@@ -225,11 +190,6 @@ sub _build_params {
     return $params;
 }
 
-sub _build_untainter {
-    my $self = shift;
-    return CGI::Untaint->new({INCLUDE_PATH => 'BOM::Platform::Untaint'}, %{$self->params});
-}
-
 sub _build_http_method {
     my $self = shift;
 
@@ -240,18 +200,6 @@ sub _build_http_method {
     }
 
     return "";
-}
-
-sub _build_http_path {
-    my $self = shift;
-
-    if (my $request = $self->mojo_request) {
-        return $request->url->path;
-    } elsif ($request = $self->cgi) {
-        return $request->script_name;
-    }
-
-    return "UNKNOWN";
 }
 
 sub _build_country {
@@ -302,7 +250,7 @@ sub _build_broker_code {
     my $company = $countries_list->{$self->country_code}->{gaming_company};
     $company = $countries_list->{$self->country_code}->{financial_company} if (not $company or $company eq 'none');
 
-    return BOM::Platform::Runtime::LandingCompany::Registry::get($company)->broker_codes->[0];
+    return BOM::Platform::LandingCompany::Registry::get($company)->broker_codes->[0];
 
 }
 
@@ -331,7 +279,7 @@ sub _build_language {
 sub _build_available_currencies {
     my $self = shift;
 
-    return BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
+    return BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
 }
 
 sub _build_default_currency {
@@ -339,33 +287,20 @@ sub _build_default_currency {
 
     #First try to get a country specific currency.
     my $currency = $self->_country_specific_currency($self->country_code);
-    if ($currency and BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->is_currency_legal($currency)) {
+    if ($currency and BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->is_currency_legal($currency)) {
         if (grep { $_ eq $currency } @{$self->available_currencies}) {
             return $currency;
         }
     }
 
     #Next see if the default in landing company is available.
-    $currency = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_default_currency;
+    $currency = BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_default_currency;
     if (grep { $_ eq $currency } @{$self->available_currencies}) {
         return $currency;
     }
 
     #Give the first available.
     return $self->available_currencies->[0];
-}
-
-sub _build_ui_settings {
-    my $self = shift;
-
-    my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->settings;
-
-    my $ui_settings = {};
-    if (my $value = $self->cookie($cookie_name)) {
-        try { $ui_settings = JSON::from_json($value); };
-    }
-
-    return $ui_settings;
 }
 
 sub _build_client_ip {

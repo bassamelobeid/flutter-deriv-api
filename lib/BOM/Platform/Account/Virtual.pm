@@ -11,7 +11,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client;
 use BOM::Platform::User;
-use BOM::Platform::Token::Verification;
+use BOM::Platform::Token;
 use BOM::Platform::Account;
 
 sub create_account {
@@ -40,7 +40,7 @@ sub create_account {
         my $company_name = BOM::Platform::Runtime->instance->virtual_company_for_country($residence);
 
         $client = BOM::Platform::Client->register_and_return_new_client({
-            broker_code                   => BOM::Platform::Runtime::LandingCompany::Registry::get($company_name)->broker_codes->[0],
+            broker_code                   => BOM::Platform::LandingCompany::Registry::get($company_name)->broker_codes->[0],
             client_password               => $password,
             salutation                    => '',
             last_name                     => '',
