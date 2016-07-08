@@ -45,7 +45,7 @@
       "description" : "2-letter country code. Note: not applicable for real money account. Only allow for Virtual account without residence set."
     },
     "jp_settings": {
-      "type": "object",
+      "type": ["object", "null"],
       "title": "Japan real money client settings",
       "description": "Japan real money client settings, only applicable for Japan real money account client.",
       "properties": {
