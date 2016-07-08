@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 12;
+use Test::More tests => 11;
 use Test::NoWarnings;
 use Test::Exception;
 
@@ -151,23 +151,6 @@ subtest 'Prepare for other tests' => sub {
         my $new_deposit_count = $payment_data_mapper->get_client_payment_count_by({'invalid_key' => 0});
     }
     qr/Invalid parameter/, 'try invalid key in get_client_payment_count_by ';
-};
-
-subtest 'affiliate reward' => sub {
-    lives_ok {
-        my $account = $client->default_account;
-
-        my $remark = 'Reward from affiliate program for trades done by CR34285';
-        my $amount = 149.99;
-
-        my $trx = $client->payment_affiliate_reward(
-            amount   => $amount,
-            currency => 'USD',
-            remark   => $remark
-        );
-        my $affiliate_reward_payment_id = $trx->payment->id;
-    }
-    'expect to create affiliate reward payment for account [CR0031, USD]';
 };
 
 subtest 'total free gift deposit' => sub {
