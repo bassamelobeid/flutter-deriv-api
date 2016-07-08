@@ -122,7 +122,7 @@ sub _migrate_changesets {
         if -d $self->_db_migrations_dir . '/functions';
 
     # migrate for collectordb schema
-    if ($self->_db_migrations_dir =~ /rmgdb/) {
+    if ($self->_db_migrations_dir =~ /bom-postgres-clientdb/) {
         $m = DBIx::Migration->new({
             dsn                 => $self->dsn,
             dir                 => '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/',
@@ -134,7 +134,7 @@ sub _migrate_changesets {
         $m->migrate();
 
         # apply DB functions
-        $m->psql(sort glob '/home/git/regentmarkets/bom-postgres-collectordb/config/sql//functions/*.sql')
+        $m->psql(sort glob '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/functions/*.sql')
             if -d '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/functions';
     }
     if (-f $self->_db_migrations_dir . '/unit_test_dml.sql') {
