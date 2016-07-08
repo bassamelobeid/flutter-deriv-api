@@ -9,9 +9,16 @@ sub url_for {
     my $url = Mojo::URL->new($args[0] || '');
     my $query = $args[1] || {};
 
-    $url->query($query);
-    $url->path('/d/' . $url->path);
-    $url->host($self->domain_for());
+    if ($url->path =~ /.*\.cgi$/) {
+        $url->query($query);
+        $url->path('/d/' . $url->path);
+        $url->host($self->domain_for());
+    # static files
+    } else {
+        $url->query($query);
+        $url->path('/binary-static-backoffice/' . $url->path);
+        $url->host('regentmarkets.github.io');
+    }
     $url->scheme('https');
 
     return $url;
