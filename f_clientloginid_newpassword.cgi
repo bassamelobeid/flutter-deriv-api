@@ -10,8 +10,7 @@ use BOM::Platform::Context;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
-use BOM::Platform::Token;
-use BOM::Platform::Static::Config;
+use BOM::Platform::Token::Verification;
 use BOM::System::Config;
 BOM::Backoffice::Sysinit::init();
 
@@ -40,7 +39,7 @@ if (not $email) {
 my $lang = request()->language;
 
 my $link;
-my $token = BOM::Platform::Token->new({
+my $token = BOM::Platform::Token::Verification->new({
         email       => $email,
         expires_in  => 3600,
         created_for => 'reset_password'
@@ -59,7 +58,7 @@ BOM::Platform::Context::template->process(
     {
         'link'     => $link,
         'token'    => $token,
-        'helpdesk' => BOM::Platform::Static::Config::get_customer_support_email(),
+        'helpdesk' => BOM::Platform::Runtime->instance->app_config->cs->email,
     },
     \$lost_pass_email
 );
@@ -70,7 +69,7 @@ Bar('emailing change password link to ' . $loginID);
 print '<p class="success_message">Emailing change password link to ' . $client_name . ' at ' . $email . ' ...</p>';
 
 my $result = send_email({
-    from               => BOM::Platform::Static::Config::get_customer_support_email(),
+    from               => BOM::Platform::Runtime->instance->app_config->cs->email,
     to                 => $email,
     subject            => localize('New Password Request'),
     message            => [$lost_pass_email,],

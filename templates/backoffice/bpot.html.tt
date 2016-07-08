@@ -9,6 +9,9 @@
         <tr><td colspan=2><input type="submit" value="Graph it!"/></td></tr>
 </table>
 </form>
+<p>
+    <a id="draw_quant_graph">Draw the graph</a>
+</p>
 [% debug_link %]
 [% IF graph_url %]
     <hr>
@@ -19,6 +22,7 @@
     <li>Background color changes indicate a different volatility surface from the previous plotted price.</li>
     <li>Percentage amounts of over 300% have been scaled down 100x. Review pricing details in cases of confusion.</li>
 </ul>
+<div id="quant_graph"></div>
 [% END %]
 <script>
 PricingDetails.register();
