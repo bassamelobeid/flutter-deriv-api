@@ -16,7 +16,6 @@ use BOM::MarketData::Fetcher::VolSurface;
 use Finance::Spot::Tick;
 use BOM::Market::Underlying;
 use BOM::Product::Types;
-use BOM::Platform::Static::Config;
 use BOM::Product::RiskProfile;
 
 with 'MooseX::Role::Validatable';
