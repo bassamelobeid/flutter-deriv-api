@@ -3,7 +3,7 @@ package BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use strict;
 use warnings;
 
-use BOM::Platform::Token::Verification;
+use BOM::Platform::Token;
 
 sub verify_email_get_type_code {
     my ($c, $req_storage) = @_;
@@ -11,7 +11,7 @@ sub verify_email_get_type_code {
     my $args  = $req_storage->{args};
     my $email = $args->{verify_email};
     my $type  = $args->{type};
-    my $code  = BOM::Platform::Token::Verification->new({
+    my $code  = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
             created_for => $type,
