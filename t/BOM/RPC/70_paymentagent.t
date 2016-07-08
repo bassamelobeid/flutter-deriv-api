@@ -7,7 +7,7 @@ use Data::Dumper;
 use BOM::RPC::v3::Cashier;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Transaction;
+use BOM::Database::Transaction;
 use BOM::Database::Model::AccessToken;
 
 my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
@@ -193,8 +193,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ok $res->{error}->{message_to_client} =~ /An error occurred while processing request/, 'An error occurred while processing request';
 
     # need unfreeze_client after withdraw error
-    BOM::Platform::Transaction->unfreeze_client($client->loginid);
-    BOM::Platform::Transaction->unfreeze_client($pa_client->loginid);
+    BOM::Database::Transaction->unfreeze_client($client->loginid);
+    BOM::Database::Transaction->unfreeze_client($pa_client->loginid);
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
             client => $client,
             args   => {
@@ -358,8 +358,8 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     ok $res->{error}->{message_to_client} =~ /An error occurred while processing request/, 'An error occurred while processing request';
 
     # need unfreeze_client after transfer error
-    BOM::Platform::Transaction->unfreeze_client($client->loginid);
-    BOM::Platform::Transaction->unfreeze_client($pa_client->loginid);
+    BOM::Database::Transaction->unfreeze_client($client->loginid);
+    BOM::Database::Transaction->unfreeze_client($pa_client->loginid);
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,
             args   => {
