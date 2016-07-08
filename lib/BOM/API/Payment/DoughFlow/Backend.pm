@@ -6,7 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Transaction;
+use BOM::Database::Transaction;
 use Date::Utility;
 use Guard;
 use BOM::Database::DataMapper::Payment::DoughFlow;
@@ -153,13 +153,13 @@ sub write_transaction_line {
     my $client = $c->user;
 
     # Lock the customer's account
-    if (not BOM::Platform::Transaction->freeze_client($client->loginid)) {
+    if (not BOM::Database::Transaction->freeze_client($client->loginid)) {
         return $c->throw(403, "Unable to lock customer account; please contact customer support");
     }
     ## unfreeze on exit no matter it's succeed or not
     scope_guard {
         # Unlock the customer's account
-        BOM::Platform::Transaction->unfreeze_client($client->loginid);
+        BOM::Database::Transaction->unfreeze_client($client->loginid);
     };
 
     my $currency_code  = $c->request_parameters->{currency_code};
