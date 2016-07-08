@@ -357,16 +357,8 @@ sub _construct_smile_line {
 
     my $volsurface = $self->surface;
 
-    my @surface_vol_point;
-    my $vol_type;
-    if ($volsurface->type eq 'delta') {
-        @surface_vol_point = @{$volsurface->deltas};
-        $vol_type          = 'delta';
-
-    } elsif ($volsurface->type eq 'moneyness') {
-        @surface_vol_point = @{$volsurface->moneynesses};
-        $vol_type          = 'moneyness';
-    }
+    my @surface_vol_point = @{$volsurface->smile_points};
+    my $vol_type          = $volsurface->type;
 
     my %deltas_to_use = map { $_ => 1 } @surface_vol_point;
 
@@ -391,16 +383,11 @@ sub html_volsurface_in_table {
     my ($self, $args) = @_;
     my $class = $args->{class};
 
-    my $surface = $self->surface;
-    my @volatility_type;
-    my @spreads_points = @{$surface->spread_points};
+    my $surface         = $self->surface;
+    my @volatility_type = @{$surface->smile_points};
+    my @spreads_points  = @{$surface->spread_points};
 
     my @days = @{$surface->original_term_for_smile};
-    if ($surface->type eq 'delta') {
-        @volatility_type = @{$surface->deltas};
-    } elsif ($surface->type eq 'moneyness') {
-        @volatility_type = @{$surface->moneynesses};
-    }
 
     $class = $class ? ' class="' . $class . '"' : '';
 
@@ -493,7 +480,7 @@ sub print_comparison_between_volsurface {
     my @column_names;
     my $vol_type = $surface->type;
 
-    my @surface_vol_point = $vol_type eq 'delta' ? @{$surface->deltas} : @{$surface->moneynesses};
+    my @surface_vol_point    = @{$surface->smile_points};
     my @surface_spread_point = @{$surface->spread_points};
 
     push @column_names, (@surface_vol_point, @surface_spread_point);
@@ -614,16 +601,8 @@ sub plot_smile_or_termstructure {
 
     return 'VolSurface does not exist' unless $exist;
 
-    my @surface_vol_point;
-    my $vol_type;
-    if ($surface->type eq 'delta') {
-        @surface_vol_point = @{$surface->deltas};
-        $vol_type          = 'delta';
-
-    } elsif ($surface->type eq 'moneyness') {
-        @surface_vol_point = @{$surface->moneynesses};
-        $vol_type          = 'moneyness';
-    }
+    my @surface_vol_point = @{$surface->smile_points};
+    my $vol_type          = $surface->type;
 
     my $days_to_expiry_fix = $setup->{days_to_expiry};
     my $moneyness_fix      = $setup->{moneyness};
@@ -730,7 +709,7 @@ sub calculate_moneyness_vol_for_display {
         my $sk = $self->get_skew_kurtosis($rr_bf);
         push @row, roundnear(0.0001, $sk->{skew});
         push @row, roundnear(0.0001, $sk->{kurtosis});
-        my $moneynesses = $volsurface->moneynesses;
+        my $moneynesses = $volsurface->smile_points;
         my $smile       = $volsurface->surface->{$term}->{smile};
         my @rounded_vol =
             map { 100 * roundnear(0.0001, $smile->{$_}) } @$moneynesses;
