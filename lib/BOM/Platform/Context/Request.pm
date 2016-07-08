@@ -40,11 +40,6 @@ has 'http_method' => (
     lazy_build => 1,
 );
 
-has 'http_path' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has 'http_handler' => (
     is  => 'rw',
     isa => 'Maybe[Plack::App::CGIBin::Streaming::Request]',
@@ -209,18 +204,6 @@ sub _build_http_method {
     }
 
     return "";
-}
-
-sub _build_http_path {
-    my $self = shift;
-
-    if (my $request = $self->mojo_request) {
-        return $request->url->path;
-    } elsif ($request = $self->cgi) {
-        return $request->script_name;
-    }
-
-    return "UNKNOWN";
 }
 
 sub _build_country {
