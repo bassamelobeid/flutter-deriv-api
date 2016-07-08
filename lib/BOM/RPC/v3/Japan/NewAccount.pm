@@ -10,7 +10,6 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::Platform::Context qw (localize);
-use BOM::Platform::Static::Config;
 use BOM::Platform::Runtime;
 use BOM::System::AuditLog;
 use BOM::Platform::Runtime::LandingCompany::Registry;
@@ -214,7 +213,7 @@ support@binary.com',
         );
 
         send_email({
-            from               => BOM::Platform::Static::Config::get_customer_support_email(),
+            from               => BOM::Platform::Runtime->instance->app_config->cs->email,
             to                 => $client->email,
             subject            => localize('Kindly send us your documents for verification.'),
             message            => [$email_content],
