@@ -266,6 +266,8 @@ sub set_jp_settings {
 
     return BOM::RPC::v3::Utility::permission_error() if ($client->residence ne 'jp');
 
+    $args = $args->{jp_settings};
+
     my $text = {
         'annual_income'                               => localize('Annual income'),
         'financial_asset'                             => localize('Financial asset'),
