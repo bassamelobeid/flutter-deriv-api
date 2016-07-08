@@ -5,7 +5,7 @@ use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
-use BOM::Platform::Token::Verification;
+use BOM::Platform::Token;
 use BOM::System::RedisReplicated;
 use List::Util qw(first);
 use RateLimitations qw (flush_all_service_consumers);
@@ -53,10 +53,9 @@ subtest 'verify_email' => sub {
             verify_email => $email,
             type         => 'account_opening'
         });
-    is $call_params->{email}, $email;
+    is $call_params->{args}->{verify_email}, $email;
+    ok $call_params->{args}->{type};
     ok $call_params->{server_name};
-    ok $call_params->{code};
-    ok $call_params->{type};
 
     # send this again to check if invalidates old one
     Cache::RedisDB->redis->flushall;
@@ -71,7 +70,7 @@ subtest 'verify_email' => sub {
     test_schema('verify_email', $res);
     ok _get_token(), "Token exists";
 
-    is(BOM::Platform::Token::Verification->new({token => $old_token})->token, undef, 'New token will expire old token created earlier');
+    is(BOM::Platform::Token->new({token => $old_token})->token, undef, 'New token will expire old token created earlier');
 };
 
 my $create_vr = {
