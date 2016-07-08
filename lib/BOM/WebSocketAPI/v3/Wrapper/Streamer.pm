@@ -22,29 +22,32 @@ use utf8;
 sub ticks {
     my ($c, $req_storage) = @_;
 
-    my $args       = $req_storage->{args};
-    my $send_error = sub {
-        my ($code, $message) = @_;
-        $c->send({
-                json => {
-                    msg_type => 'tick',
-                    error    => {
-                        code    => $code,
-                        message => $message
-                    }}
-            },
-            $req_storage
-        );
-    };
-
+    my $args = $req_storage->{args};
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     foreach my $symbol (@symbols) {
-        my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
-        if ($response and exists $response->{error}) {
-            $send_error->($response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
-        } elsif (not _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
-            $send_error->('AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
-        }
+        $c->call_rpc({
+                args        => $args,
+                method      => 'ticks',
+                msg_type    => 'tick',
+                symbol      => $symbol,
+                call_params => {
+                    symbol => $symbol,
+                },
+                success => sub {
+                    my ($c, $rpc_response, $req_storage) = @_;
+                    $req_storage->{id} = _feed_channel($c, 'subscribe', $req_storage->{symbol}, 'tick', $req_storage->{args});
+                },
+                response => sub {
+                    my ($rpc_response, $api_response, $req_storage) = @_;
+                    return $api_response if $rpc_response->{error};
+                    unless ($req_storage->{id}) {
+                        $api_response =
+                            $c->new_error('tick', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $req_storage->{symbol}));
+                    }
+                    undef $api_response unless $api_response->{error};    # Don't return anything if subscribed ok
+                    return $api_response;
+                }
+            });
     }
     return;
 }
@@ -86,6 +89,11 @@ sub ticks_history {
 
                     my $channel = $args->{ticks_history} . ';' . $publish;
                     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
+
+                    # stash display_decimals
+                    if (my $to_stash = delete $rpc_response->{stash}) {
+                        $c->stash(%$to_stash);
+                    }
 
                     # check for cached data
                     if (exists $feed_channel_cache->{$channel} and scalar(keys %{$feed_channel_cache->{$channel}})) {
@@ -208,11 +216,12 @@ sub process_realtime_events {
                 return;
             }
 
-            my $tick = {
+            my $display_decimals = $c->stash("${symbol}_display_decimals");
+            my $tick             = {
                 id     => $feed_channels_type->{$channel}->{uuid},
                 symbol => $symbol,
                 epoch  => $m[1],
-                quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])};
+                quote  => sprintf('%.' . $display_decimals . 'f', $m[2])};
 
             if ($cache) {
                 $feed_channel_cache->{$channel}->{$m[1]} = $tick;
@@ -240,7 +249,8 @@ sub process_realtime_events {
                 return;
             }
 
-            my $u = BOM::Market::Underlying->new($symbol);
+            my $display_decimals = $c->stash("${symbol}_display_decimals");
+            my $quote_format     = '%.' . $display_decimals . 'f';
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             my $ohlc = {
                 id        => $feed_channels_type->{$channel}->{uuid},
@@ -250,10 +260,10 @@ sub process_realtime_events {
                 : $m[1] - $m[1] % 60,    #defining default granularity
                 symbol      => $symbol,
                 granularity => $type,
-                open        => $u->pipsized_value($1),
-                high        => $u->pipsized_value($2),
-                low         => $u->pipsized_value($3),
-                close       => $u->pipsized_value($4)};
+                open        => sprintf($quote_format, $1),
+                high        => sprintf($quote_format, $2),
+                low         => sprintf($quote_format, $3),
+                close       => sprintf($quote_format, $4)};
 
             if ($cache) {
                 $feed_channel_cache->{$channel}->{$m[1]} = $ohlc;
