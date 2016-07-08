@@ -31,10 +31,9 @@ use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
-use BOM::Platform::Static::Config;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 
-extends 'BOM::Platform::Transaction';
+extends 'BOM::Database::Transaction';
 
 has client => (
     is  => 'ro',
@@ -281,7 +280,7 @@ sub stats_stop {
 sub calculate_limits {
     my $self = shift;
 
-    my $static_config = BOM::Platform::Static::Config::quants;
+    my $static_config = BOM::System::Config::quants;
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
@@ -1369,7 +1368,7 @@ sub _validate_stake_limit {
 
     my $stake_limit =
         $landing_company->short eq 'maltainvest'
-        ? BOM::Platform::Static::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{$currency}
+        ? BOM::System::Config::quants->{bet_limits}->{min_stake}->{maltainvest}->{$currency}
         : $contract->staking_limits->{min};    # minimum is always a stake check
 
     if ($contract->ask_price < $stake_limit) {
@@ -1407,7 +1406,7 @@ sub _validate_payout_limit {
 
     # setups client specific payout and turnover limits, if any.
     if (@{$rp->custom_client_profiles}) {
-        my $custom_limit = BOM::Platform::Static::Config::quants->{risk_profile}{$rp->get_risk_profile}{payout}{$contract->currency};
+        my $custom_limit = BOM::System::Config::quants->{risk_profile}{$rp->get_risk_profile}{payout}{$contract->currency};
         if (defined $custom_limit and $payout > $custom_limit) {
             return Error::Base->cuss(
                 -type              => 'PayoutLimitExceeded',
