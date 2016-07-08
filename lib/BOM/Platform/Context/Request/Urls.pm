@@ -13,7 +13,7 @@ sub url_for {
         $url->query($query);
         $url->path('/d/' . $url->path);
         $url->host($self->domain_for());
-    # static files
+        # static files
     } else {
         $url->query($query);
         $url->path('/binary-static-backoffice/' . $url->path);
