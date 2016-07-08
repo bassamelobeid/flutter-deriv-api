@@ -11,12 +11,12 @@ use Data::Dumper;
 use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
 
-use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use BOM::Platform::Untaint;
 
 use Plack::App::CGIBin::Streaming::Request;
 use BOM::Platform::Runtime::LandingCompany::Registry;
+use Sys::Hostname;
 
 with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
 
@@ -270,7 +270,13 @@ sub _build_cookie_domain {
 sub _build_domain_name {
     my $self = shift;
 
-    return BOM::System::Localhost::external_fqdn();
+    my @host_name = split(/\./, Sys::Hostname::hostname);
+    my $name = $host_name[0];
+
+    if ($name =~ /^qa\d+$/) {
+        return 'binary' . $name . '.com';
+    }
+    return 'binary.com';
 }
 
 my $countries_list;
