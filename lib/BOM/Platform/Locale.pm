@@ -45,7 +45,7 @@ sub generate_residence_countries_list {
         };
 
         # to be removed later - JP
-        if (BOM::Platform::Runtime->instance->restricted_country($country_code) or $country_code eq 'jp') {
+        if (BOM::Platform::Countries->instance->restricted_country($country_code) or $country_code eq 'jp') {
             $option->{disabled} = 'DISABLED';
         } elsif (request()->country_code eq $country_code) {
             $option->{selected} = 'selected';
