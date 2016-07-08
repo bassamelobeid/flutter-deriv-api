@@ -204,7 +204,7 @@ sub _build_http_method {
 
 sub _build_country {
     my $self = shift;
-    return BOM::Platform::Runtime->instance->countries->country_from_code($self->country_code);
+    return BOM::Platform::Countries->instance->countries->country_from_code($self->country_code);
 }
 
 sub _build_cookie_domain {

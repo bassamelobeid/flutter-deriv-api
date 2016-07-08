@@ -29,8 +29,8 @@ sub generate_residence_countries_list {
 
     foreach my $country_selection (
         sort { $a->{translated_name} cmp $b->{translated_name} }
-        map { +{code => $_, translated_name => BOM::Platform::Runtime->instance->countries->localized_code2country($_, request()->language)} }
-        BOM::Platform::Runtime->instance->countries->all_country_codes
+        map { +{code => $_, translated_name => BOM::Platform::Countries->instance->countries->localized_code2country($_, request()->language)} }
+        BOM::Platform::Countries->instance->countries->all_country_codes
         )
     {
         my $country_code = $country_selection->{code};

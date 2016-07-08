@@ -11,7 +11,7 @@ use BOM::Platform::Runtime;
 my $configs;
 subtest 'get countries config' => sub {
     lives_ok {
-        $configs = BOM::Platform::Runtime->instance->countries_list;
+        $configs = BOM::Platform::Countries->instance->countries_list;
     }
     'get countries config ok';
 
