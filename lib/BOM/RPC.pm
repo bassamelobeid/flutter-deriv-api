@@ -87,14 +87,21 @@ sub register {
                 $params->{app_id} = $token_details->{app_id};
             }
 
+            my $verify_app_res;
             if ($params->{valid_source}) {
                 $params->{source} = $params->{valid_source};
             } elsif ($params->{source}) {
-                my $verify_app_res = BOM::RPC::v3::App::verify_app({app_id => $params->{source}});
+                $verify_app_res = BOM::RPC::v3::App::verify_app({app_id => $params->{source}});
                 return $verify_app_res if $verify_app_res->{error};
             }
 
-            goto &$code;
+            # goto &$code;
+            my $result = $code->(@_);
+
+            if ($verify_app_res) {
+                %{$result->{stash}} = { %{$result->{stash}}, %{$verify_app_res->{stash}} };
+            }
+            return $result;
         });
 }
 
@@ -201,8 +208,6 @@ sub startup {
         ['app_update',   \&BOM::RPC::v3::App::update,     1],
         ['app_delete',   \&BOM::RPC::v3::App::delete,     1],
         ['oauth_apps',   \&BOM::RPC::v3::App::oauth_apps, 1],
-        ['verify_app',   \&BOM::RPC::v3::App::verify_app],
-
     );
     my $services = {};
     foreach my $srv (@services) {
