@@ -324,7 +324,7 @@ sub get_financial_assessment_score {
     return $evaluated_data;
 }
 
-sub check_account_details {
+sub validate_account_details {
     my ($args, $client, $broker, $source) = @_;
 
     my $details = {
