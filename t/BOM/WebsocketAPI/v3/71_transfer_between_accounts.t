@@ -13,7 +13,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::System::Password;
 use BOM::Platform::User;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Transaction;
+use BOM::Database::Transaction;
 
 ## do not send email
 use Test::MockModule;
