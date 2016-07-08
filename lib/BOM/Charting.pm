@@ -742,42 +742,4 @@ sub _get_price_changes_html {
     return $changes_html;
 }
 
-sub chart_intraday_prices {
-    my $args       = shift;
-    my $underlying = $args->{underlying};
-    my $prices     = $args->{prices};
-
-    my $delay_seconds = ($underlying->feed_license eq 'delayed') ? $underlying->delay_amount * 60 : 0;
-
-    my $changes_html = _get_price_changes_html({
-        prices     => $prices,
-        underlying => $underlying,
-    });
-
-    my @ticker_data;
-    my $current_time = time;
-
-    # Process the data.
-    foreach my $datum (@{$prices}) {
-        my $epoch = $datum->{epoch};
-        my $change_cell = (defined $changes_html->{$epoch}) ? $changes_html->{$epoch} : '<td></td>';
-
-        my $ticker = {};
-        # Determine the timestamp to show
-        my $gtime = Date::Utility->new($epoch);
-        $ticker->{time_start} = $gtime->time_hhmm;
-
-        $ticker->{price} = '';
-        if ($current_time - $epoch > $delay_seconds) {
-            $ticker->{price} = $underlying->pipsized_value($datum->{quote});
-        }
-
-        $ticker->{change_cell} = $change_cell;
-
-        push @ticker_data, $ticker;
-    }
-
-    return @ticker_data;
-}
-
 1;
