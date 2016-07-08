@@ -486,10 +486,6 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $half_ten = Date::Utility->new(Date::Utility->today->epoch + 37800);
     my $half_one = Date::Utility->new(Date::Utility->today->epoch + 48600);
 
-    isnt($EURUSD->deny_purchase_during(Date::Utility->new($half_ten->epoch - 1), $half_one), 1, " ok a little earlier");
-    isnt($EURUSD->deny_purchase_during($half_ten, Date::Utility->new($half_one->epoch + 1)),     1, " or a little later");
-    isnt($EURUSD->deny_purchase_during($half_ten, Date::Utility->new($half_one->epoch + 86399)), 1, " or even into the same period tomorrow");
-
     my $orig_buy    = BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy;
     my $orig_trades = BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades;
 

@@ -1144,28 +1144,6 @@ sub uses_implied_rate {
     return $self->rate_to_imply eq $which ? 1 : 0;
 }
 
-=head2 deny_purchase_during
-
-Do both the supplied start and end Date::Utilitys lie within a denied trading period?
-
-=cut
-
-sub deny_purchase_during {
-    my ($self, $start, $end) = @_;
-
-    my $denied    = ($self->is_buying_suspended) ? 1 : 0;
-    my $day_start = $start->truncate_to_day;
-    my @ieps      = @{$self->inefficient_periods};
-
-    while (not $denied and my $ie = shift @ieps) {
-        $denied = 1
-            unless ($start->is_before($day_start->plus_time_interval($ie->{start}))
-            or $end->is_after($day_start->plus_time_interval($ie->{end})));
-    }
-
-    return $denied;
-}
-
 has '_recheck_appconfig' => (
     is      => 'rw',
     default => sub { return time; },
