@@ -238,15 +238,8 @@ sub startup {
         ['set_financial_assessment', {require_auth => 'admin'}],
         ['get_financial_assessment', {require_auth => 'admin'}],
         ['reality_check',            {require_auth => 'read'}],
-
-        [
-            'verify_email',
-            {
-                before_forward => [\&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email_get_type_code],
-                stash_params   => [qw/ server_name /],
-            }
-        ],
-        ['new_account_virtual', {stash_params => [qw/ server_name client_ip user_agent /]}],
+        ['verify_email',             {stash_params => [qw/ server_name /]}],
+        ['new_account_virtual',      {stash_params => [qw/ server_name client_ip user_agent /]}],
         ['reset_password'],
 
         # authenticated calls
