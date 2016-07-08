@@ -40,7 +40,7 @@ use BOM::Market::Registry;
 use JSON qw(from_json);
 use BOM::Market::SubMarket::Registry;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 
 sub cashier {
     my $params = shift;
@@ -285,7 +285,7 @@ sub get_limits {
                 message_to_client => localize('Sorry, this feature is not available.')});
     }
 
-    my $landing_company = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($client->broker)->short;
+    my $landing_company = BOM::Platform::LandingCompany::Registry::get_by_broker($client->broker)->short;
     my $wl_config       = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company;
 
     my $limit = +{
