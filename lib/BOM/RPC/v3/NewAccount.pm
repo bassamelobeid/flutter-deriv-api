@@ -47,7 +47,7 @@ sub new_account_virtual {
         return $err_code;
     }
 
-    my $email = BOM::Platform::Token::Verification->new({token => $args->{verification_code}})->email;
+    my $email = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
 
     if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
         return BOM::RPC::v3::Utility::create_error({

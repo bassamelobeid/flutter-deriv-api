@@ -21,7 +21,7 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Static::Config;
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::Token::Verification;
+use BOM::Platform::Token;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -435,7 +435,7 @@ sub cashier_password {
 sub reset_password {
     my $params = shift;
     my $args   = $params->{args};
-    my $email  = BOM::Platform::Token::Verification->new({token => $args->{verification_code}})->email;
+    my $email  = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
     if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
