@@ -3,6 +3,7 @@ package BOM::Platform::Account::Real::default;
 use strict;
 use warnings;
 
+use DateTime;
 use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
@@ -88,7 +89,7 @@ sub validate {
 
 sub create_account {
     my $args = shift;
-    my ($from_client, $user, $details) = @{$args}{'from_client', 'user', 'details'};
+    my ($user, $details) = @{$args}{'user', 'details'};
 
     if (my $error = validate($args)) {
         return $error;
@@ -321,6 +322,58 @@ sub get_financial_assessment_score {
     $evaluated_data->{user_data}   = $json_data;
 
     return $evaluated_data;
+}
+
+sub check_account_details {
+    my ($args, $client, $broker, $source) = @_;
+
+    my $details = {
+        broker_code                   => $broker,
+        email                         => $client->email,
+        client_password               => $client->password,
+        myaffiliates_token_registered => 0,
+        checked_affiliate_exposures   => 0,
+        latest_environment            => '',
+        source                        => $source,
+    };
+
+    my $affiliate_token;
+    $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
+    $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
+
+    my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
+        address_city address_state address_postcode phone secret_question secret_answer);
+
+    if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
+        my $dob_error;
+        try {
+            my $dob = DateTime->new(
+                year  => $1,
+                month => $2,
+                day   => $3,
+            );
+            $args->{date_of_birth} = $dob->ymd;
+        }
+        catch {
+            $dob_error = {error => 'InvalidDateOfBirth'};
+        };
+        return $dob_error if $dob_error;
+    }
+
+    foreach my $key (@fields) {
+        my $value = $args->{$key};
+        $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
+
+        if (not $client->is_virtual) {
+            $value ||= $client->$key;
+        }
+        $details->{$key} = $value || '';
+
+        # Japan real a/c has NO salutation
+        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode salutation));
+        return {error => 'InsufficientAccountDetails'} if (not $details->{$key});
+    }
+    return {details => $details};
 }
 
 1;
