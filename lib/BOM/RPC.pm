@@ -126,6 +126,7 @@ sub startup {
         ['website_status', \&BOM::RPC::v3::Static::website_status],
 
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
+        ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
 
         ['buy', \&BOM::RPC::v3::Transaction::buy],
         ['sell', \&BOM::RPC::v3::Transaction::sell, 1],
