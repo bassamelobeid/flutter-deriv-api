@@ -342,7 +342,6 @@ sub startup {
                 \&BOM::WebSocketAPI::Hooks::add_req_data,      \&BOM::WebSocketAPI::Hooks::start_timing
             ],
             after_sent_api_response => [\&BOM::WebSocketAPI::Hooks::log_call_timing_sent],
-            after_dispatch          => [\&BOM::WebSocketAPI::Hooks::clear_db_cache],
 
             # main config
             base_path         => '/websockets/v3',

@@ -243,9 +243,4 @@ sub forget_all {
     return;
 }
 
-sub clear_db_cache {
-    BOM::Database::Rose::DB->db_cache->finish_request_cycle;
-    return;
-}
-
 1;
