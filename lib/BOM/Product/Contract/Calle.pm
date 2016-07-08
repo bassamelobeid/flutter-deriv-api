@@ -4,16 +4,18 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
+use BOM::Platform::Context qw(localize);
+
 # Static methods
 
 sub code { return 'CALLE'; }
 
 sub localizable_description {
     return +{
-        tick                  => 'Win payout if [_3] after [plural,_5,%d tick,%d ticks] is higher than or equal to [_6].',
-        daily                 => 'Win payout if [_3] is higher than or equal to [_6] at [_5].',
-        intraday              => 'Win payout if [_3] is higher than or equal to [_6] at [_5] after [_4].',
-        intraday_fixed_expiry => 'Win payout if [_3] is higher than or equal to [_6] at [_5].',
+        tick                  => localize('Win payout if [_3] after [plural,_5,%d tick,%d ticks] is higher than or equal to [_6].'),
+        daily                 => localize('Win payout if [_3] is higher than or equal to [_6] at [_5].'),
+        intraday              => localize('Win payout if [_3] is higher than or equal to [_6] at [_5] after [_4].'),
+        intraday_fixed_expiry => localize('Win payout if [_3] is higher than or equal to [_6] at [_5].'),
     };
 }
 
