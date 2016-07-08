@@ -1803,67 +1803,6 @@ sub use_official_ohlc {
     return $self->submarket->official_ohlc;
 }
 
-sub forward_starts_on {
-    my $self = shift;
-    my $day  = Date::Utility->new(shift)->truncate_to_day;
-
-    my $calendar = $self->calendar;
-    my $opening  = $calendar->opening_on($day);
-    return [] unless ($opening);
-
-    my $cache_key = 'FORWARDSTARTS::' . $self->symbol;
-    my $cached_starts = Cache::RedisDB->get($cache_key, $day->date);
-    return $cached_starts if ($cached_starts);
-
-    my $sod_bo            = $self->sod_blackout_start;
-    my $eod_bo            = $self->eod_blackout_expiry;
-    my $intraday_interval = $self->intraday_interval;
-
-    # With 0s blackout, skip open if we weren't open at the previous start.
-    # Basically, Monday morning/holiday forex.
-    my $start_at =
-        (not $sod_bo and not $calendar->is_open_at($opening->minus_time_interval($intraday_interval)))
-        ? $opening->plus_time_interval($intraday_interval)
-        : $sod_bo ? $opening->plus_time_interval($sod_bo)
-        :           $opening;
-
-    my $end_at = $eod_bo ? $calendar->closing_on($day)->minus_time_interval($eod_bo) : $calendar->closing_on($day);
-    my @trading_periods;
-    if (my $breaks = $calendar->trading_breaks($day)) {
-        my @breaks = @$breaks;
-        if (@breaks == 1) {
-            my $first_half_close = $eod_bo ? $breaks[0][0]->minus_time_interval($eod_bo) : $breaks[0][0];
-            my $second_half_open = $sod_bo ? $breaks[0][1]->plus_time_interval($sod_bo)  : $breaks[0][1];
-            @trading_periods = ([$start_at, $first_half_close], [$second_half_open, $end_at]);
-        } else {
-            push @trading_periods, [$start_at, $breaks[0][0]];
-            push @trading_periods, [$breaks[0][1],  $breaks[1][0]];
-            push @trading_periods, [$breaks[-1][1], $end_at];
-        }
-    } else {
-        @trading_periods = ([$start_at, $end_at]);
-    }
-
-    my $starts;
-    my $step_seconds = $intraday_interval->seconds;
-    foreach my $period (@trading_periods) {
-        my ($start_period, $end_period) = @$period;
-        my $current = $start_period;
-        my $stop    = $end_period;
-        my $next    = $current->plus_time_interval($intraday_interval);
-
-        while ($next->is_before($end_period)) {
-            push @$starts, $current;
-            $current = $next;
-            $next    = $current->plus_time_interval($intraday_interval);
-        }
-    }
-
-    Cache::RedisDB->set($cache_key, $day->date, $starts, 7207);    # Hold for about 2 hours.
-
-    return $starts;
-}
-
 =head2 corporate_actions
 
 A complete list of corporate actions available for this underlying at this time.
