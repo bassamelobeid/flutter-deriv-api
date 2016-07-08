@@ -13,10 +13,9 @@ use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::Platform::Context qw (localize);
-use BOM::Platform::Static::Config;
 use BOM::Platform::Runtime;
 use BOM::System::AuditLog;
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 
 sub get_jp_account_status {
     my $client = shift;
@@ -28,8 +27,8 @@ sub get_jp_account_status {
     my $jp_account_status;
 
     if (    @siblings > 1
-        and BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($client->broker)->short eq 'japan-virtual'
-        and BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($jp_client->broker)->short eq 'japan')
+        and BOM::Platform::LandingCompany::Registry::get_by_broker($client->broker)->short eq 'japan-virtual'
+        and BOM::Platform::LandingCompany::Registry::get_by_broker($jp_client->broker)->short eq 'japan')
     {
         if ($jp_client->get_status('disabled')) {
             $jp_account_status->{status} = 'disabled';
@@ -116,8 +115,8 @@ sub jp_knowledge_test {
 
     # only allowed for VRTJ client, upgrading to JP
     unless (@siblings > 1
-        and BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($client->broker)->short eq 'japan-virtual'
-        and BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($jp_client->broker)->short eq 'japan')
+        and BOM::Platform::LandingCompany::Registry::get_by_broker($client->broker)->short eq 'japan-virtual'
+        and BOM::Platform::LandingCompany::Registry::get_by_broker($jp_client->broker)->short eq 'japan')
     {
         return BOM::RPC::v3::Utility::permission_error();
     }
@@ -217,7 +216,7 @@ support@binary.com',
         );
 
         send_email({
-            from               => BOM::Platform::Static::Config::get_customer_support_email(),
+            from               => BOM::Platform::Runtime->instance->app_config->cs->email,
             to                 => $client->email,
             subject            => localize('Kindly send us your documents for verification.'),
             message            => [$email_content],
