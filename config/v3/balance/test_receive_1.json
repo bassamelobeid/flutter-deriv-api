@@ -16,7 +16,7 @@
 				},
 				"loginid": {
 					"type": "string",
-					"pattern": "^VRTC\\d+$"
+					"pattern": "[_1]"
 				},
 				"id": {
 					"type": "string"
