@@ -40,6 +40,7 @@ use YAML::XS qw(LoadFile);
 use Try::Tiny;
 use BOM::Platform::Runtime;
 use Finance::Spot::DatabaseAPI;
+use BOM::Database::FeedDB;
 use BOM::Platform::Context qw(request localize);
 use BOM::Market::Types;
 use Quant::Framework::Asset;
