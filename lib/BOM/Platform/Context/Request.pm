@@ -13,7 +13,7 @@ use Format::Util::Strings qw( defang_lite );
 use BOM::Platform::Runtime;
 
 use Plack::App::CGIBin::Streaming::Request;
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 use Sys::Hostname;
 
 with 'BOM::Platform::Context::Request::Urls', 'BOM::Platform::Context::Request::Builders';
@@ -250,7 +250,7 @@ sub _build_broker_code {
     my $company = $countries_list->{$self->country_code}->{gaming_company};
     $company = $countries_list->{$self->country_code}->{financial_company} if (not $company or $company eq 'none');
 
-    return BOM::Platform::Runtime::LandingCompany::Registry::get($company)->broker_codes->[0];
+    return BOM::Platform::LandingCompany::Registry::get($company)->broker_codes->[0];
 
 }
 
@@ -279,7 +279,7 @@ sub _build_language {
 sub _build_available_currencies {
     my $self = shift;
 
-    return BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
+    return BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_allowed_currencies;
 }
 
 sub _build_default_currency {
@@ -287,14 +287,14 @@ sub _build_default_currency {
 
     #First try to get a country specific currency.
     my $currency = $self->_country_specific_currency($self->country_code);
-    if ($currency and BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->is_currency_legal($currency)) {
+    if ($currency and BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->is_currency_legal($currency)) {
         if (grep { $_ eq $currency } @{$self->available_currencies}) {
             return $currency;
         }
     }
 
     #Next see if the default in landing company is available.
-    $currency = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_default_currency;
+    $currency = BOM::Platform::LandingCompany::Registry::get_by_broker($self->broker_code)->legal_default_currency;
     if (grep { $_ eq $currency } @{$self->available_currencies}) {
         return $currency;
     }
