@@ -34,9 +34,10 @@ my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.con
 my $response;
 
 foreach my $line (@lines) {
+	next if ($line =~ /^(#.*|)$/);
     my ($send_file, $receive_file, @template_func) = split(',', $line);
     chomp $receive_file;
-    note("Running [$send_file, $receive_file]\n");
+    diag("Running [$send_file, $receive_file]\n");
 
     $send_file =~ /^(.*)\//;
     my $call = $1;
