@@ -87,12 +87,7 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            my $app_id;
-            if ($app_id = defang_lite($c->req->param('app_id'))) {
-                $c->call_rpc({
-                        method      => 'verify_app',
-                        call_params => {app_id => $app_id}});
-            }
+            my $app_id = defang_lite($c->req->param('app_id');
             my $client_ip = $c->client_ip;
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
