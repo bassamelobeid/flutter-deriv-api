@@ -23,7 +23,6 @@ use BOM::Platform::User;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Static::Config;
 use BOM::Database::Model::OAuth;
 
 my $countries_list;
@@ -95,7 +94,7 @@ sub verify_email {
 
     if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'reset_password') {
         send_email({
-                from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                from    => BOM::Platform::Runtime->instance->app_config->cs->email,
                 to      => $params->{email},
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
@@ -108,7 +107,7 @@ sub verify_email {
     } elsif ($params->{type} eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $params->{email}})) {
             send_email({
-                    from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    from    => BOM::Platform::Runtime->instance->app_config->cs->email,
                     to      => $params->{email},
                     subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
                     message => [
@@ -120,7 +119,7 @@ sub verify_email {
                 });
         } else {
             send_email({
-                    from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                    from    => BOM::Platform::Runtime->instance->app_config->cs->email,
                     to      => $params->{email},
                     subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
                     message => [
@@ -135,7 +134,7 @@ sub verify_email {
         }
     } elsif ($params->{type} eq 'paymentagent_withdraw' && BOM::Platform::User->new({email => $params->{email}})) {
         send_email({
-                from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                from    => BOM::Platform::Runtime->instance->app_config->cs->email,
                 to      => $params->{email},
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
@@ -147,7 +146,7 @@ sub verify_email {
             });
     } elsif ($params->{type} eq 'payment_withdraw' && BOM::Platform::User->new({email => $params->{email}})) {
         send_email({
-                from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                from    => BOM::Platform::Runtime->instance->app_config->cs->email,
                 to      => $params->{email},
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
