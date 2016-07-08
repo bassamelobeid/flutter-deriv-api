@@ -5,14 +5,12 @@ use Moose::Util::TypeConstraints;
 
 use JSON;
 use CGI;
-use CGI::Untaint;
 use URL::Encode;
 use Data::Dumper;
 use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Untaint;
 
 use Plack::App::CGIBin::Streaming::Request;
 use BOM::Platform::Runtime::LandingCompany::Registry;
@@ -52,11 +50,6 @@ has 'http_handler' => (
     isa => 'Maybe[Plack::App::CGIBin::Streaming::Request]',
 );
 
-has 'untainter' => (
-    is         => 'ro',
-    lazy_build => 1
-);
-
 has 'domain_name' => (
     is         => 'ro',
     isa        => 'Str',
@@ -83,11 +76,6 @@ has 'country' => (
 has 'country_code' => (
     is      => 'ro',
     default => 'aq',
-);
-
-has 'ui_settings' => (
-    is         => 'ro',
-    lazy_build => 1,
 );
 
 has 'broker_code' => (
@@ -165,20 +153,6 @@ sub param {
     return $self->params->{$name};
 }
 
-sub param_untaint {
-    my $self = shift;
-    return $self->untainter->extract(@_);
-}
-
-sub ui_settings_value {
-    my $self = shift;
-    if (scalar keys %{$self->ui_settings}) {
-        return to_json($self->ui_settings);
-    }
-
-    return '';
-}
-
 sub _build_params {
     my $self = shift;
 
@@ -223,11 +197,6 @@ sub _build_params {
     }
 
     return $params;
-}
-
-sub _build_untainter {
-    my $self = shift;
-    return CGI::Untaint->new({INCLUDE_PATH => 'BOM::Platform::Untaint'}, %{$self->params});
 }
 
 sub _build_http_method {
@@ -353,19 +322,6 @@ sub _build_default_currency {
 
     #Give the first available.
     return $self->available_currencies->[0];
-}
-
-sub _build_ui_settings {
-    my $self = shift;
-
-    my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->settings;
-
-    my $ui_settings = {};
-    if (my $value = $self->cookie($cookie_name)) {
-        try { $ui_settings = JSON::from_json($value); };
-    }
-
-    return $ui_settings;
 }
 
 sub _build_client_ip {
