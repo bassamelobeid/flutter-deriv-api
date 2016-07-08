@@ -10,7 +10,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
-use BOM::Platform::Token::Verification;
+use BOM::Platform::Token;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
 sub get_token_details {
@@ -121,7 +121,7 @@ sub check_authorization {
 sub is_verification_token_valid {
     my ($token, $email) = @_;
 
-    my $verification_token = BOM::Platform::Token::Verification->new({token => $token});
+    my $verification_token = BOM::Platform::Token->new({token => $token});
     return create_error({
             code              => "InvalidToken",
             message_to_client => localize('Your token has expired.')}) unless ($verification_token and $verification_token->token);
