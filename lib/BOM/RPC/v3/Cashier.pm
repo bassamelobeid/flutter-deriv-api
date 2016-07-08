@@ -30,7 +30,7 @@ use BOM::System::AuditLog;
 use BOM::Database::Model::HandoffToken;
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Database::DataMapper::Payment::DoughFlow;
-use BOM::Platform::Helper::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
+use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
@@ -39,7 +39,7 @@ use BOM::Market::Registry;
 use JSON qw(from_json);
 use BOM::Market::SubMarket::Registry;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 
 sub cashier {
     my $params = shift;
@@ -284,7 +284,7 @@ sub get_limits {
                 message_to_client => localize('Sorry, this feature is not available.')});
     }
 
-    my $landing_company = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($client->broker)->short;
+    my $landing_company = BOM::Platform::LandingCompany::Registry::get_by_broker($client->broker)->short;
     my $wl_config       = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company;
 
     my $limit = +{
