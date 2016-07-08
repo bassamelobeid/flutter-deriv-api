@@ -11,7 +11,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client;
 use BOM::Platform::User;
-use BOM::Platform::Token::Verification;
+use BOM::Platform::Token;
 use BOM::Platform::Account;
 
 sub create_account {
