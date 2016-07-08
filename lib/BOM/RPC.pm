@@ -95,11 +95,11 @@ sub register {
                 return $verify_app_res if $verify_app_res->{error};
             }
 
-            # goto &$code;
             my $result = $code->(@_);
 
-            if ($verify_app_res) {
-                %{$result->{stash}} = {%{$result->{stash}}, %{$verify_app_res->{stash}}};
+            if ($verify_app_res && ref $result eq 'HASH') {
+                $result->{stash} ||= {};
+                %{$result->{stash}} = (%{$result->{stash}}, %{$verify_app_res->{stash}});
             }
             return $result;
         });
