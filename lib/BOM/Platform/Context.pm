@@ -71,16 +71,6 @@ sub runtime {
     return BOM::Platform::Runtime->instance;
 }
 
-=head2 app_config
-
-App config for the current request.
-
-=cut
-
-sub app_config {
-    return BOM::Platform::Runtime->instance->app_config;
-}
-
 =head2 template
 
 Correct instance of template_toolkit object for current request.

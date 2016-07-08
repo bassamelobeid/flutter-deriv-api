@@ -27,16 +27,3 @@ subtest 'request' => sub {
     is(BOM::Platform::Context::request()->broker_code, 'CR', 'back to default request');
 };
 
-subtest 'app_config' => sub {
-    ok(BOM::Platform::Context::app_config(), 'default');
-
-    my $request = BOM::Platform::Context::Request->new(
-        domain_name => 'www.binary.com',
-        backoffice  => 1
-    );
-    ok(BOM::Platform::Context::request($request), 'new request');
-    is(scalar @{BOM::Platform::Context::app_config()->cgi->allowed_languages}, 4, 'new settings');
-
-    BOM::Platform::Context::request_completed();
-};
-
