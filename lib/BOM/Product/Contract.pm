@@ -2050,41 +2050,6 @@ sub _get_time_to_end {
     );
 }
 
-=head2 barrier_display_info
-
-Given a tick break down how the barriers relate.
-
-=cut
-
-sub barrier_display_info {
-    my ($self, $tick) = @_;
-
-    my $underlying = $self->underlying;
-    my $spot = defined $tick ? $tick->quote : undef;
-    my @barriers;
-    if ($self->two_barriers) {
-        push @barriers, {barrier  => $self->high_barrier->as_absolute} if $self->high_barrier;
-        push @barriers, {barrier2 => $self->low_barrier->as_absolute}  if $self->low_barrier;
-    } else {
-        @barriers = $self->barrier ? ({barrier => $self->barrier->as_absolute}) : ();
-    }
-
-    my %barriers;
-    if ($spot) {
-        foreach my $barrier (@barriers) {
-            my $which  = keys %$barrier;
-            my $strike = values %$barrier;
-            $barriers{$which}->{amnt} = $underlying->pipsized_value($strike);
-            $barriers{$which}->{dir}  = ($spot > $strike) ? localize('minus') : ($spot < $strike) ? localize('plus') : '';
-            $barriers{$which}->{diff} = $underlying->pipsized_value(abs($spot - $strike)) || '';                             # Do not show 0 for 0.
-            $barriers{$which}->{desc} =
-                !$self->two_barriers ? localize('barrier') : $strike > $spot ? localize('high barrier') : localize('low barrier');
-        }
-    }
-
-    return (barriers => \%barriers);
-}
-
 has exit_tick => (
     is         => 'ro',
     lazy_build => 1,
