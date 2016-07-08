@@ -1,7 +1,6 @@
 package BOM::MarketData::AutoUpdater;
 
 use Moose;
-use BOM::System::Localhost;
 use Date::Utility;
 use BOM::Platform::Runtime;
 use Mail::Sender;
@@ -17,11 +16,6 @@ has is_a_weekend => (
     default => sub { Date::Utility->new->is_a_weekend },
 );
 
-sub should_send_email {
-    my $self = shift;
-    return (BOM::System::Localhost::name() eq 'collector01') ? 1 : 0;
-}
-
 sub run {
     my $self = shift;
 
@@ -32,8 +26,7 @@ sub run {
         $vol_email_frequency = time;
     }
 
-    return 1 if ($self->is_a_weekend);         # don't do anything on weekend
-    return 1 if (!$self->should_send_email);
+    return 1 if ($self->is_a_weekend);    # don't do anything on weekend
     my $report    = $self->report;
     my @successes = ('SUCCESSES');
     my @failures  = ('FAILURES');
@@ -60,8 +53,7 @@ sub run {
     if (($number_failures > 0 or $error > 0) and $time_from_last_email > 3600) {
         Cache::RedisDB->set_nw('QUANT_EMAIL', 'FOREX_VOL', time);
 
-        my $body = 'Run on: ' . BOM::System::Localhost::name() . "\n\n";
-        $body .= join "\n", (@successes, @failures, @errors);
+        my $body = join "\n", (@successes, @failures, @errors);
 
         my $sender = Mail::Sender->new({
             smtp      => 'localhost',

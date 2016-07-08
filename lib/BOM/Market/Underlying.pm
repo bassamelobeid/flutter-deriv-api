@@ -40,7 +40,6 @@ use BOM::Platform::Runtime;
 use BOM::Market::Data::DatabaseAPI;
 use BOM::Platform::Context qw(request localize);
 use BOM::Market::Types;
-use BOM::Platform::Static::Config;
 use Quant::Framework::Asset;
 use Quant::Framework::Currency;
 use Quant::Framework::ExpiryConventions;
@@ -51,6 +50,7 @@ use BOM::System::Chronicle;
 use BOM::Market::SubMarket::Registry;
 use BOM::Market;
 use BOM::Market::Registry;
+use BOM::System::Config;
 
 our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
@@ -294,7 +294,7 @@ sub _build_config {
         spot                                  => $self->spot,
         asset_symbol                          => $self->asset_symbol,
         quoted_currency_symbol                => $self->quoted_currency_symbol,
-        extra_vol_diff_by_delta               => BOM::Platform::Static::Config::quants->{market_data}->{extra_vol_diff_by_delta},
+        extra_vol_diff_by_delta               => BOM::System::Config::quants->{market_data}->{extra_vol_diff_by_delta},
         market_convention                     => $self->market_convention,
         asset_class                           => $asset_class,
         default_interest_rate                 => $default_interest_rate,
@@ -1138,7 +1138,7 @@ sub uses_implied_rate {
     my ($self, $which) = @_;
 
     return
-        if BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source} eq 'market';
+        if BOM::System::Config::quants->{market_data}->{interest_rates_source} eq 'market';
     return unless $self->forward_feed;
     return unless $self->market->name eq 'forex';    # only forex for now
     return $self->rate_to_imply eq $which ? 1 : 0;
@@ -2082,7 +2082,7 @@ sub calculate_spread {
 
     die 'volatility is zero for ' . $self->symbol if $volatility == 0;
 
-    my $spread_multiplier = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{spread_multiplier};
+    my $spread_multiplier = BOM::System::Config::quants->{commission}->{adjustment}->{spread_multiplier};
     # since it is only vol indices
     my $spread  = $self->spot * sqrt($volatility**2 * 2 / (365 * 86400)) * $spread_multiplier;
     my $y       = POSIX::floor(log($spread) / log(10));
