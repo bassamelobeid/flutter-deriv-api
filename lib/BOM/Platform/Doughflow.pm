@@ -1,8 +1,8 @@
-package BOM::Platform::Helper::Doughflow;
+package BOM::Platform::Doughflow;
 
 =head1 NAME
 
-BOM::Platform::Helper::Doughflow
+BOM::Platform::Doughflow
 
 =head1 DESCRIPTION
 
