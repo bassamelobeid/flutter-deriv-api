@@ -14,7 +14,7 @@ use POSIX qw/ ceil /;
 use Test::BOM::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Platform::Token::Verification;
+use BOM::Platform::Token;
 
 use utf8;
 
@@ -65,7 +65,7 @@ subtest $method => sub {
         ->has_no_system_error->has_error->error_code_is('InvalidToken', 'If email verification_code is wrong it should return error')
         ->error_message_is('Your token has expired.', 'If email verification_code is wrong it should return error_message');
 
-    $params->{args}->{verification_code} = BOM::Platform::Token::Verification->new(
+    $params->{args}->{verification_code} = BOM::Platform::Token->new(
         email       => $email,
         created_for => 'account_opening'
     )->token;
@@ -77,7 +77,7 @@ subtest $method => sub {
     }
     [qr/^Virtual: register_and_return_new_client err/], "Expected warn about error virtual account opening";
 
-    $params->{args}->{verification_code} = BOM::Platform::Token::Verification->new(
+    $params->{args}->{verification_code} = BOM::Platform::Token->new(
         email       => $email,
         created_for => 'account_opening'
     )->token;
