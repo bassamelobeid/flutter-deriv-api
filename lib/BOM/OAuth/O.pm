@@ -13,7 +13,6 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
 use BOM::Platform::User;
-use BOM::Platform::Static::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Runtime::LandingCompany::Registry;
@@ -328,7 +327,7 @@ sub __login {
                     }
 
                     send_email({
-                        from               => BOM::Platform::Static::Config::get_customer_support_email(),
+                        from               => BOM::Platform::Runtime->instance->app_config->cs->email,
                         to                 => $client->email,
                         subject            => localize('New Sign-In Activity Detected'),
                         message            => [$message],
