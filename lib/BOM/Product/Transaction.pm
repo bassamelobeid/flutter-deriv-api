@@ -1741,25 +1741,6 @@ sub sell_expired_contracts {
     };
 }
 
-=head2 validate_request_method
-
-Static function: Validate the request method to POST
-
-Returns: Error::Base object with message to client
-
-=cut
-
-sub validate_request_method {
-    if (BOM::Platform::Context::request()->http_method ne 'POST') {
-        return Error::Base->cuss(
-            -type              => 'RequestNotPost',
-            -mesg              => 'Sorry, this page cannot be refreshed.',
-            -message_to_client => BOM::Platform::Context::localize('Sorry, this page cannot be refreshed.'),
-        );
-    }
-    return;
-}
-
 sub report {
     my $self = shift;
     return
