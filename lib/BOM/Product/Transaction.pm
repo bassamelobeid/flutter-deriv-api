@@ -1294,9 +1294,6 @@ sub __validate_transaction_rate_limit {
     my $client = $self->client;
     $what = lc $what;
 
-    # Define the appropriate rates in `bom-platform/config/environments/*/perl_rate_limitations.yml`
-    # before attempting to apply them here.
-
     return unless $client->is_virtual;    # We only limit virtual accounts at this point
 
     my $service = 'virtual_' . $what . '_transaction';
