@@ -202,11 +202,11 @@ sub new_account_real {
     }
     my $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
-    my $details_ref = _get_client_details($params, $client, $broker);
+    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($params, $client, $broker);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => $err->{code},
-                message_to_client => $err->{message}});
+                code              => $err,
+                message_to_client => $error_map->{$err}});
     }
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
@@ -256,11 +256,11 @@ sub new_account_maltainvest {
                 message_to_client => $error_map->{'invalid'}});
     }
 
-    my $details_ref = _get_client_details($params, $client, 'MF');
+    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($params, $client, 'MF');
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => $err->{code},
-                message_to_client => $err->{message}});
+                code              => $err,
+                message_to_client => $error_map->{$err}});
     }
 
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
@@ -323,11 +323,11 @@ sub new_account_japan {
     my $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
     my $args = $params->{args};
-    my $details_ref = _get_client_details($params, $client, $broker);
+    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($params, $client, $broker);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => $err->{code},
-                message_to_client => $err->{message}});
+                code              => $err,
+                message_to_client => $error_map->{$err}});
     }
 
     my $details = $details_ref->{details};
@@ -370,66 +370,6 @@ sub new_account_japan {
         landing_company_shortcode => $landing_company->short,
         oauth_token               => _create_oauth_token($new_client->loginid),
     };
-}
-
-sub _get_client_details {
-    my ($params, $client, $broker) = @_;
-
-    my $args    = $params->{args};
-    my $details = {
-        broker_code                   => $broker,
-        email                         => $client->email,
-        client_password               => $client->password,
-        myaffiliates_token_registered => 0,
-        checked_affiliate_exposures   => 0,
-        latest_environment            => '',
-        source                        => $params->{source},
-    };
-
-    my $affiliate_token;
-    $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
-    $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
-
-    my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
-        address_city address_state address_postcode phone secret_question secret_answer);
-
-    if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
-        my $dob_error;
-        try {
-            my $dob = DateTime->new(
-                year  => $1,
-                month => $2,
-                day   => $3,
-            );
-            $args->{date_of_birth} = $dob->ymd;
-        }
-        catch {
-            $dob_error = {
-                error => {
-                    code    => 'InvalidDateOfBirth',
-                    message => localize('Date of birth is invalid')}};
-        };
-        return $dob_error if $dob_error;
-    }
-
-    foreach my $key (@fields) {
-        my $value = $args->{$key};
-        $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
-
-        if (not $client->is_virtual) {
-            $value ||= $client->$key;
-        }
-        $details->{$key} = $value || '';
-
-        # Japan real a/c has NO salutation
-        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode salutation));
-        return {
-            error => {
-                code    => 'InsufficientAccountDetails',
-                message => localize('Please provide complete details for account opening.')}}
-            if (not $details->{$key});
-    }
-    return {details => $details};
 }
 
 1;
