@@ -508,11 +508,6 @@ subtest 'get_ohlc_data_for_period' => sub {
         is $ohlc->{high},  13_368.55, 'Correct High';
         is $ohlc->{low},   13_063.63, 'Correct Low';
         is $ohlc->{close}, 13_077.34, 'Correct Close';
-        my $ohlc_table = $underlying->get_daily_ohlc_table({
-            start => '2012-10-22',
-            end   => '2012-10-24'
-        });
-        is scalar @{$ohlc_table}, 3, 'The three ticks are in table';
     };
 
     my $tick_date = Date::Utility->new('2012-10-23 14:35:00');
@@ -534,12 +529,6 @@ subtest 'get_ohlc_data_for_period' => sub {
         is $ohlc->{high},  13_368.55, 'Correct High';
         is $ohlc->{low},   13_220.73, 'Correct Low';
         is $ohlc->{close}, 13_220.73, 'Correct Close';
-        my $ohlc_table = $underlying->get_daily_ohlc_table({
-            start => '2012-10-22',
-            end   => '2012-10-23 22:00:00'
-        });
-
-        is scalar @{$ohlc_table}, 2, 'The two ticks are in table';
     };
 };
 

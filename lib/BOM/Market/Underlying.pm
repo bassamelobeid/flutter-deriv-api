@@ -1499,31 +1499,6 @@ sub get_ohlc_data_for_period {
     return @ohlcs;
 }
 
-=head2 get_daily_ohlc_table
-
-Returns an array reference with ohlc information in the format of:
-(date, open, high, low, close)
-
-->get_daily_ohlc_table({
-    start => $start,
-    end => $end,
-});
-
-=cut
-
-sub get_daily_ohlc_table {
-    my ($self, $args) = @_;
-
-    my @ohlcs = $self->get_ohlc_data_for_period($args);
-
-    my @table;
-    foreach my $ohlc (@ohlcs) {
-        push @table, [Date::Utility->new($ohlc->epoch)->date, map { $self->pipsized_value($ohlc->$_) } (qw(open high low close))];
-    }
-
-    return \@table;
-}
-
 =head2 get_high_low_for_period
 
 Usage:
