@@ -94,7 +94,7 @@ sub verify_email {
 
     my $email = $params->{args}->{verify_email};
     my $type  = $params->{args}->{type};
-    my $code  = BOM::Platform::Token::Verification->new({
+    my $code  = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
             created_for => $type,
