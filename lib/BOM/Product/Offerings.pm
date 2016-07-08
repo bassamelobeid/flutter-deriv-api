@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use base qw( Exporter );
-our @EXPORT_OK = qw( get_offerings_with_filter get_offerings_flyby get_permitted_expiries get_historical_pricer_durations get_contract_specifics );
+our @EXPORT_OK = qw( get_offerings_with_filter get_offerings_flyby get_permitted_expiries get_contract_specifics );
 
 use Cache::RedisDB;
 use FlyBy;
@@ -180,12 +180,6 @@ sub get_permitted_expiries {
     my $args = shift;
 
     return _do_min_max('min_contract_duration', 'max_contract_duration', $args);
-}
-
-sub get_historical_pricer_durations {
-    my $args = shift;
-
-    return _do_min_max('min_historical_pricer_duration', 'max_historical_pricer_duration', $args);
 }
 
 sub _do_min_max {
