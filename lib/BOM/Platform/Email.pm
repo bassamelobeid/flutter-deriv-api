@@ -12,7 +12,6 @@ use Try::Tiny;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
-use BOM::Platform::Static::Config;
 
 use base 'Exporter';
 our @EXPORT_OK = qw(send_email);
@@ -71,7 +70,7 @@ sub send_email {
         }
     }
 
-    if ($fromemail eq BOM::Platform::Static::Config::get_customer_support_email()) {
+    if ($fromemail eq BOM::Platform::Runtime->instance->app_config->cs->email) {
         $fromemail = "\"Binary.com\" <$fromemail>";
     }
 
