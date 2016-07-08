@@ -3,7 +3,6 @@ package BOM::Product::RiskProfile;
 use Moose;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Static::Config;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
 
@@ -37,7 +36,7 @@ sub _build_contract_info {
 has limits => (
     is      => 'ro',
     default => sub {
-        return BOM::Platform::Static::Config::quants->{risk_profile};
+        return BOM::System::Config::quants->{risk_profile};
     },
 );
 
