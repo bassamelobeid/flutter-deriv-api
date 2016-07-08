@@ -10,7 +10,7 @@ sub url_for {
     my $query = $args[1] || {};
 
     $url->query($query);
-    $url->path('/d/backoffice/' . $url->path);
+    $url->path('/d/' . $url->path);
     $url->host($self->domain_for());
     $url->scheme('https');
 
