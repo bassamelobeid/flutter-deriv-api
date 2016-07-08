@@ -19,9 +19,8 @@ use Template;
 use Template::Stash;
 use base qw( Exporter );
 
-our @EXPORT_OK = qw( request runtime localize app_config template);
+our @EXPORT_OK = qw( request localize template);
 
-use BOM::Platform::Runtime;
 use BOM::Platform::Context::Request;
 use Format::Util::Numbers;
 use BOM::Platform::Context::I18N;
@@ -59,16 +58,6 @@ sub request_completed {
     $current_request = undef;
     _configure_for_request(request());
     return;
-}
-
-=head2 runtime
-
-The object representing the whole runtime.
-
-=cut
-
-sub runtime {
-    return BOM::Platform::Runtime->instance;
 }
 
 =head2 template
