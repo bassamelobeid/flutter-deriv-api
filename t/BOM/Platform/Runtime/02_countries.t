@@ -33,7 +33,7 @@ subtest 'iom countries' => sub {
         is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     !1,    '!volidx _restricted_country');
         is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'fog', 'virtual_company_for_country');
         is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    'iom', 'gaming_company_for_country');
-        is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'iom', 'financial_company_for_country');
+        is(BOM::Platform::Countries->instance->financial_company_for_country($c), 'iom', 'financial_company_for_country');
     }
 };
 
@@ -50,7 +50,7 @@ subtest 'EU countries' => sub {
         is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     !1,            '! volidx_restricted_country');
         is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'fog',         'virtual_company_for_country');
         is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    'malta',       'gaming_company_for_country');
-        is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'maltainvest', 'financial_company_for_country');
+        is(BOM::Platform::Countries->instance->financial_company_for_country($c), 'maltainvest', 'financial_company_for_country');
     }
 };
 
@@ -67,7 +67,7 @@ subtest 'EU countries, no Volatility Indices' => sub {
         is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     1,             'volidx_restricted_country');
         is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'fog',         'virtual_company_for_country');
         is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    undef,         '! gaming_company_for_country');
-        is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'maltainvest', 'financial_company_for_country');
+        is(BOM::Platform::Countries->instance->financial_company_for_country($c), 'maltainvest', 'financial_company_for_country');
     }
 };
 
@@ -84,7 +84,7 @@ subtest 'restricted countries' => sub {
         is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     1,     '! volidx_restricted_country');
         is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'fog', 'virtual_company_for_country');
         is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    undef, '! gaming_company_for_country');
-        is(BOM::Platform::Runtime->instance->financial_company_for_country($c), undef, '! financial_company_for_country');
+        is(BOM::Platform::Countries->instance->financial_company_for_country($c), undef, '! financial_company_for_country');
     }
 };
 
@@ -99,7 +99,7 @@ subtest 'japan' => sub {
     is(BOM::Platform::Runtime->instance->volidx_restricted_country($c),     1,               'volidx_restricted_country');
     is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'japan-virtual', 'virtual_company_for_country');
     is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    undef,           '! gaming_company_for_country');
-    is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'japan',         'financial_company_for_country');
+    is(BOM::Platform::Countries->instance->financial_company_for_country($c), 'japan',         'financial_company_for_country');
 };
 
 my @exclude = (@iom_country, @mlt_country, @mf_only_country, @restricted_country, 'jp');
@@ -128,7 +128,7 @@ subtest 'CR countries' => sub {
 
         is(BOM::Platform::Runtime->instance->restricted_country($c),            !1,          '! restricted_country');
         is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'fog',       'virtual_company_for_country');
-        is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'costarica', 'financial_company_for_country');
+        is(BOM::Platform::Countries->instance->financial_company_for_country($c), 'costarica', 'financial_company_for_country');
     }
 };
 
