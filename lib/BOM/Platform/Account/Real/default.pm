@@ -341,9 +341,6 @@ sub check_account_details {
     $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
     $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
 
-    my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
-        address_city address_state address_postcode phone secret_question secret_answer);
-
     if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
         my $dob_error;
         try {
@@ -360,7 +357,7 @@ sub check_account_details {
         return $dob_error if $dob_error;
     }
 
-    foreach my $key (@fields) {
+    foreach my $key (get_account_fields()) {
         my $value = $args->{$key};
         $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
 
@@ -374,6 +371,11 @@ sub check_account_details {
         return {error => 'InsufficientAccountDetails'} if (not $details->{$key});
     }
     return {details => $details};
+}
+
+sub get_account_fields {
+    return qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
+        address_city address_state address_postcode phone secret_question secret_answer);
 }
 
 1;
