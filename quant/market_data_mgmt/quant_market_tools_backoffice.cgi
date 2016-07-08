@@ -12,13 +12,14 @@ use Quant::Framework::EconomicEventCalendar;
 use BOM::System::Chronicle;
 use Try::Tiny;
 BOM::Backoffice::Sysinit::init();
+use BOM::System::Config;
 
 PrintContentType();
 BrokerPresentation("QUANT BACKOFFICE");
 
 use Mail::Sender;
 use ForexFactory;
-use BOM::System::Localhost;
+use BOM::System::Config;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Platform::Context;
@@ -28,7 +29,7 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
-unless (BOM::System::Localhost::is_master_server()) {
+unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}})) {
     code_exit_BO();
 }
 

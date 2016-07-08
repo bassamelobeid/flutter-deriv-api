@@ -16,8 +16,10 @@ BOM::RiskReport::Base->new->generate;
 use strict;
 use warnings;
 
-use BOM::System::Localhost;
+use BOM::System::Config;
 use BOM::Platform::CurrencyConverter qw(in_USD);
+use BOM::Platform::Runtime::LandingCompany::Registry;
+
 
 local $\ = undef;    # Sigh.
 
@@ -45,7 +47,7 @@ has _usd_rates => (
 );
 
 sub _build__usd_rates {
-    return {map { $_ => in_USD(1, $_) } BOM::Platform::Runtime->instance->landing_companies->all_currencies};
+    return {map { $_ => in_USD(1, $_) } BOM::Platform::Runtime::LandingCompany::Registry->new()->all_currencies};
 }
 
 sub amount_in_usd {
@@ -86,7 +88,7 @@ sub _build_live_open_bets {
 
 before generate => sub {
     exit 0
-        unless (BOM::System::Localhost::is_master_server());
+        unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}}));
 };
 
 sub generate {

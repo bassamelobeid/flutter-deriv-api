@@ -15,12 +15,11 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Platform::Transaction;
+use BOM::Database::Transaction;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
-use BOM::Platform::Static::Config;
 use BOM::Product::ContractFactory qw( produce_contract );
 
 BOM::Backoffice::Sysinit::init();

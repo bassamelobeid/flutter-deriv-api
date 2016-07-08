@@ -6,7 +6,6 @@
 #
 ###############################################################################################
 use strict 'vars';
-use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use Mojo::URL;
@@ -26,7 +25,7 @@ sub BrokerPresentation {
 
     print '<html>';
     print '<head>';
-    print '<title>' . uc(BOM::System::Localhost::name()) . "-$Title-$ENV{REMOTE_ADDR}</title>";
+    print "<title>$Title-$ENV{REMOTE_ADDR}</title>";
     print '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
     print '<link rel="SHORTCUT ICON" href="' . request()->url_for('images/common/favicon_1.ico') . '" />';
     print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/style.css',         undef, undef, {internal_static => 1}) . '"/>';
@@ -111,8 +110,6 @@ sub ServerWarningBar {
  <tr><td>
  </td><td>~;
 
-    my $switchservers = "<b>You are on " . BOM::System::Localhost::name() . "</b><br/>";
-
     my $runtime   = BOM::Platform::Runtime->instance;
     my $ipmessage = "Your IP: $ENV{'REMOTE_ADDR'}";
 
@@ -128,7 +125,7 @@ sub ServerWarningBar {
     print qq~
  <table width="100%" cellpadding="4" cellspacing="0" border="0">
  <tr><td width="100%" bgcolor="$topbarbackground" align="center"><font class="whitetop">
- $switchservers<b>$systemisoff $ipmessage $systemisoff</b></font>
+ <b>$systemisoff $ipmessage $systemisoff</b></font>
  </td></tr></table>
  </td></tr><tr>
  <td colspan="2" style="background-repeat: repeat-x;" background="~
