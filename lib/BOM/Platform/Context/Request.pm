@@ -120,10 +120,6 @@ has 'start_time' => (
     is => 'ro',
 );
 
-has 'http_modified' => (
-    is => 'ro',
-);
-
 sub cookie {
     my $self = shift;
     my $name = shift;

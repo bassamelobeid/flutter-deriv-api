@@ -40,10 +40,6 @@ sub from_cgi {
         $args->{backoffice} = 1;
     }
 
-    if (my $http_modified = $main::ENV{HTTP_IF_MODIFIED_SINCE}) {
-        $args->{http_modified} = $http_modified;
-    }
-
     $args->{from_ui} = 1;
 
     return BOM::Platform::Context::Request->new($args);
