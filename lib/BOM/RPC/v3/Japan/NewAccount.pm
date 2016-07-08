@@ -292,7 +292,7 @@ sub set_jp_settings {
     my $ori_fin    = JSON::from_json($client->financial_assessment->data);
     my $fin_change = 0;
 
-    foreach qw(
+    foreach my $key (qw(
         trading_purpose
         hedge_asset
         hedge_asset_amount
@@ -305,22 +305,23 @@ sub set_jp_settings {
         trading_experience_investment_trust
         trading_experience_public_bond
         trading_experience_option_trading
-        ) {
-        my $key     = $_;
-            my $ori = $ori_fin->{$key};
-            if (not grep { $key eq $_ } qw(trading_purpose hedge_asset hedge_asset_amount)) {
+        ))
+    {
+        my $ori = $ori_fin->{$key};
+
+        if (not grep { $key eq $_ } qw(trading_purpose hedge_asset hedge_asset_amount)) {
             $ori = $ori->{answer};
         }
 
         my $new = $args->{$key};
-            if ($ori ne $new) {
+        if ($ori ne $new) {
             push @updated, [$text->{$key}, $ori, $new];
             $fin_change = 1;
         }
-        }
+    }
 
-        # no settings change
-        return {status => 1} unless (@updated > 0);
+    # no settings change
+    return {status => 1} unless (@updated > 0);
 
     if ($fin_change == 1) {
         delete $args->{occupation};
