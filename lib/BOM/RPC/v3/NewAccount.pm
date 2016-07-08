@@ -23,7 +23,6 @@ use BOM::Platform::User;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Static::Config;
 use BOM::Database::Model::OAuth;
 
 my $countries_list;
@@ -93,35 +92,45 @@ sub verify_email {
     my $params = shift;
     my $email_content;
 
-    if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'reset_password') {
+    my $email = $params->{args}->{verify_email};
+    my $type  = $params->{args}->{type};
+    my $code  = BOM::Platform::Token::Verification->new({
+            email       => $email,
+            expires_in  => 3600,
+            created_for => $type,
+        })->token;
+
+    if (BOM::Platform::User->new({email => $email}) && $type eq 'reset_password') {
         send_email({
-                from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                to      => $params->{email},
+                from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                to      => $email,
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
                         '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Before we can help you change your password, please help us to verify your identity by entering the following verification token into the password reset form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
-                        $params->{code})
+                        $code
+                    )
                 ],
                 use_email_template => 1
             });
-    } elsif ($params->{type} eq 'account_opening') {
-        unless (BOM::Platform::User->new({email => $params->{email}})) {
+    } elsif ($type eq 'account_opening') {
+        unless (BOM::Platform::User->new({email => $email})) {
             send_email({
-                    from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                    to      => $params->{email},
+                    from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                    to      => $email,
                     subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
                     message => [
                         BOM::Platform::Context::localize(
                             '<p style="font-weight: bold;">Thanks for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account: <p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p>Enjoy trading with us on Binary.com.</p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
-                            $params->{code})
+                            $code
+                        )
                     ],
                     use_email_template => 1
                 });
         } else {
             send_email({
-                    from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                    to      => $params->{email},
+                    from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                    to      => $email,
                     subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
                     message => [
                         '<div style="line-height:200%;color:#333333;font-size:15px;">'
@@ -133,27 +142,29 @@ sub verify_email {
                     use_email_template => 1
                 });
         }
-    } elsif ($params->{type} eq 'paymentagent_withdraw' && BOM::Platform::User->new({email => $params->{email}})) {
+    } elsif ($type eq 'paymentagent_withdraw' && BOM::Platform::User->new({email => $email})) {
         send_email({
-                from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                to      => $params->{email},
+                from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                to      => $email,
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
                         '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
-                        $params->{code})
+                        $code
+                    )
                 ],
                 use_email_template => 1
             });
-    } elsif ($params->{type} eq 'payment_withdraw' && BOM::Platform::User->new({email => $params->{email}})) {
+    } elsif ($type eq 'payment_withdraw' && BOM::Platform::User->new({email => $email})) {
         send_email({
-                from    => BOM::Platform::Static::Config::get_customer_support_email(),
-                to      => $params->{email},
+                from    => BOM::Platform::Runtime->instance->app_config->cs->email,
+                to      => $email,
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
                         '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With Regards,<br/>Binary.com</p>',
-                        $params->{code})
+                        $code
+                    )
                 ],
                 use_email_template => 1
             });

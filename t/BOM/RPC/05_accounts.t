@@ -1101,7 +1101,7 @@ subtest 'get and set self_exclusion' => sub {
         'get self_exclusion ok'
     );
     my %msg = get_email_by_address_subject(
-        email   => 'qa-alerts@regentmarkets.com,support@binary.com',
+        email   => 'compliance@binary.com,support@binary.com',
         subject => qr/Client set self-exclusion limits/
     );
     ok(%msg, "msg sent to support email");
