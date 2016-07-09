@@ -1,9 +1,9 @@
-package BOM::Platform::Runtime::LandingCompany::Registry;
+package BOM::Platform::LandingCompany::Registry;
 use strict;
 use warnings;
 use YAML::XS qw(LoadFile);
 
-use BOM::Platform::Runtime::LandingCompany;
+use BOM::Platform::LandingCompany;
 
 my (%landing_companies, %landing_company_by_broker, @all_currencies, @all_landing_companies, @all_broker_codes);
 
@@ -12,7 +12,7 @@ BEGIN {
     my %currencies;
     while (my ($k, $v) = each %$loaded_landing_companies) {
         $v->{name} ||= $k;
-        my $lc = BOM::Platform::Runtime::LandingCompany->new($v);
+        my $lc = BOM::Platform::LandingCompany->new($v);
         $landing_companies{$k} = $lc;
         $landing_companies{$v->{short}} = $lc;
         push @all_landing_companies, $lc;

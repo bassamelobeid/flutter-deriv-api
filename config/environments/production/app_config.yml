@@ -1,6 +1,0 @@
----
-system:
-  on_production: 1
-  send_email_to_clients: 1
-cs:
-  email: 'helpdesk@binary.com'

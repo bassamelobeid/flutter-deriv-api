@@ -6,17 +6,12 @@ use feature 'state';
 use Data::Dumper;
 
 use BOM::Platform::Runtime::AppConfig;
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 use YAML::XS;
 use Locale::Country::Extra;
 use Locale::Country;
 
 has 'app_config' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has 'landing_companies' => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -109,10 +104,6 @@ sub volidx_restricted_country {
 sub _build_app_config {
     my $self = shift;
     return BOM::Platform::Runtime::AppConfig->new();
-}
-
-sub _build_landing_companies {
-    return BOM::Platform::Runtime::LandingCompany::Registry->new();
 }
 
 __PACKAGE__->meta->make_immutable;

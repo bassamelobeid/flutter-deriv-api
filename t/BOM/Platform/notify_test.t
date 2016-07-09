@@ -354,17 +354,6 @@ subtest 'survived notify payments', sub {
         testtype => 'payment_legacy_payment'
     });
 
-    $txn = $client->payment_bank_wire(
-        amount   => 10.01,
-        currency => 'USD',
-        remark   => 'Reward from payment_bank_wire'
-    );
-    test_payment_notify({
-        txn      => $txn,
-        remark   => 'Reward from payment_bank_wire',
-        testtype => 'payment_bank_wire'
-    });
-
     my $txnid = $client->payment_account_transfer(
         amount   => 20.02,
         currency => 'USD',
@@ -402,17 +391,6 @@ subtest 'survived notify payments', sub {
         txn      => $txn->{transaction_record},
         remark   => 'from reference: #USD20.02#F72117379D1DD7B5#',
         testtype => 'payment_account_transfer inter_db'
-    });
-
-    $txn = $client->payment_affiliate_reward(
-        amount   => 149.99,
-        currency => 'USD',
-        remark   => 'Reward from affiliate program for trades done by CRxxxx'
-    );
-    test_payment_notify({
-        txn      => $txn,
-        remark   => 'Reward from affiliate program for trades done by CRxxxx',
-        testtype => 'payment_affiliate_reward'
     });
 
     $txn = $client->payment_doughflow(

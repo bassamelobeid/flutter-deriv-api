@@ -9,7 +9,6 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Client;
 use BOM::Platform::ProveID;
-use BOM::Platform::Static::Config;
 
 has client => (
     is  => 'ro',
@@ -123,7 +122,7 @@ sub _request_id_authentication {
     $self->_notify("SET TO $status PENDING EMAIL REQUEST FOR ID", 'client received an email requesting identity proof');
 
     my $client_name   = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    my $support_email = BOM::Platform::Static::Config::get_customer_support_email();
+    my $support_email = BOM::Platform::Runtime->instance->app_config->cs->email;
     my $ce_subject    = localize('Documents are required to verify your identity');
     my $ce_body       = localize(<<'EOM', $client_name, $support_email);
 Dear [_1],

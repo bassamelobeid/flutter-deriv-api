@@ -8,7 +8,6 @@ use Locale::SubCountry;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request localize);
-use BOM::Platform::Static::Config;
 
 sub translate_salutation {
     my $provided = shift;
@@ -147,12 +146,10 @@ sub error_map {
         'invalid PO Box'      => localize('P.O. Box is not accepted in address.'),
         'invalid DOB'         => localize('Your date of birth is invalid.'),
         'duplicate email'     => localize(
-            'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site. If you have forgotten the password of your existing account, please <a href="[_1]">try our password recovery tool</a> or contact customer service.',
-            request()->url_for('/user/lost_password')
+            'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.'
         ),
         'duplicate name DOB' => localize(
-            'Sorry, you seem to already have a real money account with us. Perhaps you have used a different email address when you registered it. For legal reasons we are not allowed to open multiple real money accounts per person. If you don\'t remember your account with us, please <a href="[_1]">contact us</a>.',
-            request()->url_for('contact')
+            'Sorry, you seem to already have a real money account with us. Perhaps you have used a different email address when you registered it. For legal reasons we are not allowed to open multiple real money accounts per person.'
         ),
         'too young'            => localize('Sorry, you are too young to open an account.'),
         'show risk disclaimer' => localize('Please agree to the risk disclaimer before proceeding.'),
