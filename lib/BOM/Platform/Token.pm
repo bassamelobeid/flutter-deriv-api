@@ -1,12 +1,12 @@
-package BOM::Platform::Token::Verification;
+package BOM::Platform::Token;
 
 =head1 NAME
 
 Email verification token handler
 
 =head1 SYNOPSIS
- my $token = BOM::Platform::Token::Verification->new({created_for => 'lost_password', email => 'abc@binary.com', expires_in => 3600});
- my $token = BOM::Platform::Token::Verification->new({token => $token});
+ my $token = BOM::Platform::Token->new({created_for => 'lost_password', email => 'abc@binary.com', expires_in => 3600});
+ my $token = BOM::Platform::Token->new({token => $token});
 
  The resulting token is a simple hashref, stored in Redis for a period of time
  and retrieved with a token.

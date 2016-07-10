@@ -11,6 +11,10 @@ sub node {
     return $config;
 }
 
+sub role {
+    return (any { $_ eq shift } @{BOM::System::Config::node()->{node}->{roles}});
+}
+
 sub feed_listener {
     state $config = YAML::XS::LoadFile('/etc/rmg/feed_listener.yml');
     return $config;
@@ -28,6 +32,11 @@ sub randsrv {
 
 sub third_party {
     state $config = YAML::XS::LoadFile('/etc/rmg/third_party.yml');
+    return $config;
+}
+
+sub quants {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/quants_config.yml');
     return $config;
 }
 

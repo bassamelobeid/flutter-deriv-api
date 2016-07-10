@@ -2,12 +2,12 @@ use Test::Most 0.22 (tests => 8);
 use Test::NoWarnings;
 use Sys::Hostname;
 
-use BOM::Platform::Runtime::LandingCompany;
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany;
+use BOM::Platform::LandingCompany::Registry;
 
 my $registry;
 lives_ok {
-    $registry = BOM::Platform::Runtime::LandingCompany::Registry->new();
+    $registry = BOM::Platform::LandingCompany::Registry->new();
 }
 'Initialized Registry';
 

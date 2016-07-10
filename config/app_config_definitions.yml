@@ -66,6 +66,15 @@ cgi:
       isa: Str
       default: ""
       global: 1
+cs:
+  description: "CS Settings"
+  isa: section
+  contains:
+    email:
+      description: "Email address for cs"
+      isa: Str
+      default: "support@binary.com"
+      global: 1
 marketing:
   description: "Marketing Settings"
   isa: section
