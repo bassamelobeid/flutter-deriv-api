@@ -19,9 +19,8 @@ use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
-use BOM::Platform::Static::Config;
 use BOM::Platform::CurrencyConverter qw(amount_from_to_currency in_USD);
-use BOM::Platform::Transaction;
+use BOM::Database::Transaction;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
@@ -31,7 +30,7 @@ use BOM::System::AuditLog;
 use BOM::Database::Model::HandoffToken;
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Database::DataMapper::Payment::DoughFlow;
-use BOM::Platform::Helper::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
+use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for );
 use String::UTF8::MD5;
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
@@ -40,7 +39,7 @@ use BOM::Market::Registry;
 use JSON qw(from_json);
 use BOM::Market::SubMarket::Registry;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 
 sub cashier {
     my $params = shift;
@@ -285,7 +284,7 @@ sub get_limits {
                 message_to_client => localize('Sorry, this feature is not available.')});
     }
 
-    my $landing_company = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($client->broker)->short;
+    my $landing_company = BOM::Platform::LandingCompany::Registry::get_by_broker($client->broker)->short;
     my $wl_config       = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company;
 
     my $limit = +{
@@ -502,15 +501,15 @@ sub paymentagent_transfer {
     }
 
     # freeze loginID to avoid a race condition
-    if (not BOM::Platform::Transaction->freeze_client($loginid_fm)) {
+    if (not BOM::Database::Transaction->freeze_client($loginid_fm)) {
         return $error_sub->(
             localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $loginid_fm"
         );
     }
 
-    if (not BOM::Platform::Transaction->freeze_client($loginid_to)) {
-        BOM::Platform::Transaction->unfreeze_client($loginid_fm);
+    if (not BOM::Database::Transaction->freeze_client($loginid_to)) {
+        BOM::Database::Transaction->unfreeze_client($loginid_fm);
         return $error_sub->(
             localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $loginid_to"
@@ -543,23 +542,23 @@ sub paymentagent_transfer {
 
     # maximum amount USD 100000 per day
     if (($amount_transferred + $amount) >= 100000) {
-        BOM::Platform::Transaction->unfreeze_client($loginid_fm);
-        BOM::Platform::Transaction->unfreeze_client($loginid_to);
+        BOM::Database::Transaction->unfreeze_client($loginid_fm);
+        BOM::Database::Transaction->unfreeze_client($loginid_to);
 
         return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transfer amount for today.'));
     }
 
     # do not allow more than 1000 transactions per day
     if ($count > 1000) {
-        BOM::Platform::Transaction->unfreeze_client($loginid_fm);
-        BOM::Platform::Transaction->unfreeze_client($loginid_to);
+        BOM::Database::Transaction->unfreeze_client($loginid_fm);
+        BOM::Database::Transaction->unfreeze_client($loginid_to);
 
         return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
     if ($client_to->default_account and $amount + $client_to->default_account->balance > $client_to->get_limit_for_account_balance) {
-        BOM::Platform::Transaction->unfreeze_client($loginid_fm);
-        BOM::Platform::Transaction->unfreeze_client($loginid_to);
+        BOM::Database::Transaction->unfreeze_client($loginid_fm);
+        BOM::Database::Transaction->unfreeze_client($loginid_to);
 
         return $reject_error_sub->(localize('Sorry, client balance will exceed limits with this payment.'));
     }
@@ -587,8 +586,8 @@ sub paymentagent_transfer {
         $error = "Paymentagent Transfer failed to $loginid_to [$_]";
     };
 
-    BOM::Platform::Transaction->unfreeze_client($loginid_fm);
-    BOM::Platform::Transaction->unfreeze_client($loginid_to);
+    BOM::Database::Transaction->unfreeze_client($loginid_fm);
+    BOM::Database::Transaction->unfreeze_client($loginid_to);
 
     if ($error) {
         return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'), $error);
@@ -608,7 +607,7 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
     );
 
     send_email({
-        'from'               => BOM::Platform::Static::Config::get_customer_support_email(),
+        'from'               => BOM::Platform::Runtime->instance->app_config->cs->email,
         'to'                 => $client_to->email,
         'subject'            => localize('Acknowledgement of Money Transfer'),
         'message'            => [$emailcontent],
@@ -742,15 +741,15 @@ sub paymentagent_withdraw {
     }
 
     # freeze loginID to avoid a race condition
-    if (not BOM::Platform::Transaction->freeze_client($client_loginid)) {
+    if (not BOM::Database::Transaction->freeze_client($client_loginid)) {
         return $error_sub->(
             localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $client_loginid"
         );
     }
 
-    if (not BOM::Platform::Transaction->freeze_client($paymentagent_loginid)) {
-        BOM::Platform::Transaction->unfreeze_client($client_loginid);
+    if (not BOM::Database::Transaction->freeze_client($paymentagent_loginid)) {
+        BOM::Database::Transaction->unfreeze_client($client_loginid);
         return $error_sub->(
             localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $paymentagent_loginid"
@@ -788,15 +787,15 @@ sub paymentagent_withdraw {
     my $daily_limit = (DateTime->now->day_of_week() > 5) ? 1500 : 5000;
 
     if (($amount_transferred + $amount) > $daily_limit) {
-        BOM::Platform::Transaction->unfreeze_client($client_loginid);
-        BOM::Platform::Transaction->unfreeze_client($paymentagent_loginid);
+        BOM::Database::Transaction->unfreeze_client($client_loginid);
+        BOM::Database::Transaction->unfreeze_client($paymentagent_loginid);
 
         return $reject_error_sub->(
             localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit));
     }
 
     if ($amount_transferred > 1500) {
-        my $support = BOM::Platform::Static::Config::get_customer_support_email();
+        my $support = BOM::Platform::Runtime->instance->app_config->cs->email;
         my $message = "Client $client_loginid transferred \$$amount_transferred to payment agent today";
         send_email({
             from    => $support,
@@ -808,8 +807,8 @@ sub paymentagent_withdraw {
 
     # do not allowed more than 20 transactions per day
     if ($count > 20) {
-        BOM::Platform::Transaction->unfreeze_client($client_loginid);
-        BOM::Platform::Transaction->unfreeze_client($paymentagent_loginid);
+        BOM::Database::Transaction->unfreeze_client($client_loginid);
+        BOM::Database::Transaction->unfreeze_client($paymentagent_loginid);
 
         return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
@@ -843,8 +842,8 @@ sub paymentagent_withdraw {
         $error = "Paymentagent Withdraw failed to $paymentagent_loginid [$_]";
     };
 
-    BOM::Platform::Transaction->unfreeze_client($client_loginid);
-    BOM::Platform::Transaction->unfreeze_client($paymentagent_loginid);
+    BOM::Database::Transaction->unfreeze_client($client_loginid);
+    BOM::Database::Transaction->unfreeze_client($paymentagent_loginid);
 
     if ($error) {
         return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'), $error);
@@ -867,7 +866,7 @@ sub paymentagent_withdraw {
         localize('The [_1] team.', $website_name),
     ];
     send_email({
-        from               => BOM::Platform::Static::Config::get_customer_support_email(),
+        from               => BOM::Platform::Runtime->instance->app_config->cs->email,
         to                 => $paymentagent->email,
         subject            => localize('Acknowledgement of Withdrawal Request'),
         message            => $emailcontent,
@@ -890,7 +889,7 @@ sub __output_payments_error_message {
     my $amount         = $args->{'amount'};
     my $error_message  = $args->{'error_msg'};
     my $payments_email = BOM::Platform::Runtime->instance->app_config->payments->email;
-    my $cs_email       = BOM::Platform::Static::Config::get_customer_support_email();
+    my $cs_email       = BOM::Platform::Runtime->instance->app_config->cs->email;
 
     # amount is not always exist because error may happen before client submit the form
     # or when redirected from 3rd party site to failure script where no data is returned
@@ -939,12 +938,7 @@ sub __client_withdrawal_notes {
             $limit = '';
         }
 
-        return (
-            localize(
-                'Sorry, you cannot withdraw. Your withdrawal amount [_1] exceeds withdrawal limit[_2]. Please contact <a href="[_3]">customer support</a> to authenticate your account.',
-                "$currency $amount",
-                $limit,
-                request()->url_for('contact', {w => $client->broker})));
+        return (localize('Sorry, you cannot withdraw. Your withdrawal amount [_1] exceeds withdrawal limit[_2].', "$currency $amount", $limit));
     }
 
     my $withdrawal_limits = $client->get_withdrawal_limits();
@@ -1062,7 +1056,7 @@ sub transfer_between_accounts {
     my $error_unfreeze_msg_sub = sub {
         my ($err, $client_message, @unfreeze) = @_;
         foreach my $loginid (@unfreeze) {
-            BOM::Platform::Transaction->unfreeze_client($loginid);
+            BOM::Database::Transaction->unfreeze_client($loginid);
         }
 
         BOM::System::AuditLog::log("Account Transfer FAILED, $err");
@@ -1075,10 +1069,10 @@ sub transfer_between_accounts {
         $error_unfreeze_msg_sub->($err, '', @unfreeze);
     };
 
-    if (not BOM::Platform::Transaction->freeze_client($client_from->loginid)) {
+    if (not BOM::Database::Transaction->freeze_client($client_from->loginid)) {
         return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $client_from->loginid . ']');
     }
-    if (not BOM::Platform::Transaction->freeze_client($client_to->loginid)) {
+    if (not BOM::Database::Transaction->freeze_client($client_to->loginid)) {
         return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $client_to->loginid . ']', $client_from->loginid);
     }
 
@@ -1171,8 +1165,8 @@ sub transfer_between_accounts {
 
     BOM::System::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
-    BOM::Platform::Transaction->unfreeze_client($client_from->loginid);
-    BOM::Platform::Transaction->unfreeze_client($client_to->loginid);
+    BOM::Database::Transaction->unfreeze_client($client_from->loginid);
+    BOM::Database::Transaction->unfreeze_client($client_to->loginid);
 
     return {
         status              => 1,
@@ -1227,7 +1221,7 @@ sub _get_market_limit_profile {
     my $landing_company = $client->landing_company->short;
     my @markets         = map { BOM::Market::Registry->get($_) } get_offerings_with_filter('market', {landing_company => $landing_company});
 
-    my $limit_ref = BOM::Platform::Static::Config::quants->{risk_profile};
+    my $limit_ref = BOM::System::Config::quants->{risk_profile};
 
     my %limits;
     foreach my $market (@markets) {

@@ -58,16 +58,16 @@ subtest 'Initialization' => sub {
 subtest 'Account opening request with email does not exist' => sub {
     clear_mailbox();
 
-    $params[1]->{email}       = 'test' . rand(999) . '@binary.com';
-    $params[1]->{type}        = 'account_opening';
-    $params[1]->{server_name} = 'binary.com';
-    $params[1]->{link}        = 'binary.com/some_url';
+    $params[1]->{args}->{verify_email} = 'test' . rand(999) . '@binary.com';
+    $params[1]->{args}->{type}         = 'account_opening';
+    $params[1]->{server_name}          = 'binary.com';
+    $params[1]->{link}                 = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
     my %msg = get_email_by_address_subject(
-        email   => $params[1]->{email},
+        email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your email address/
     );
     ok keys %msg, 'Email sent successfully';
@@ -77,16 +77,16 @@ subtest 'Account opening request with email does not exist' => sub {
 subtest 'Account opening request with email exists' => sub {
     clear_mailbox();
 
-    $params[1]->{email}       = $email;
-    $params[1]->{type}        = 'account_opening';
-    $params[1]->{server_name} = 'binary.com';
-    $params[1]->{link}        = 'binary.com/some_url';
+    $params[1]->{args}->{verify_email} = $email;
+    $params[1]->{args}->{type}         = 'account_opening';
+    $params[1]->{server_name}          = 'binary.com';
+    $params[1]->{link}                 = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
     my %msg = get_email_by_address_subject(
-        email   => $params[1]->{email},
+        email   => $params[1]->{args}->{verify_email},
         subject => qr/A Duplicate Email Address Has Been Submitted/
     );
     ok keys %msg, 'Email sent successfully';
@@ -96,16 +96,16 @@ subtest 'Account opening request with email exists' => sub {
 subtest 'Reset password for exists user' => sub {
     clear_mailbox();
 
-    $params[1]->{email}       = $email;
-    $params[1]->{type}        = 'reset_password';
-    $params[1]->{server_name} = 'binary.com';
-    $params[1]->{link}        = 'binary.com/some_url';
+    $params[1]->{args}->{verify_email} = $email;
+    $params[1]->{args}->{type}         = 'reset_password';
+    $params[1]->{server_name}          = 'binary.com';
+    $params[1]->{link}                 = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
     my %msg = get_email_by_address_subject(
-        email   => $params[1]->{email},
+        email   => $params[1]->{args}->{verify_email},
         subject => qr/New Password Request/
     );
     ok keys %msg, 'Email sent successfully';
@@ -113,10 +113,10 @@ subtest 'Reset password for exists user' => sub {
 };
 
 subtest 'Reset password for not exists user' => sub {
-    $params[1]->{email}       = 'not_' . $email;
-    $params[1]->{type}        = 'reset_password';
-    $params[1]->{server_name} = 'binary.com';
-    $params[1]->{link}        = 'binary.com/some_url';
+    $params[1]->{args}->{verify_email} = 'not_' . $email;
+    $params[1]->{args}->{type}         = 'reset_password';
+    $params[1]->{server_name}          = 'binary.com';
+    $params[1]->{link}                 = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
@@ -125,16 +125,16 @@ subtest 'Reset password for not exists user' => sub {
 subtest 'Payment agent withdraw' => sub {
     clear_mailbox();
 
-    $params[1]->{email}       = $email;
-    $params[1]->{type}        = 'paymentagent_withdraw';
-    $params[1]->{server_name} = 'binary.com';
-    $params[1]->{link}        = 'binary.com/some_url';
+    $params[1]->{args}->{verify_email} = $email;
+    $params[1]->{args}->{type}         = 'paymentagent_withdraw';
+    $params[1]->{server_name}          = 'binary.com';
+    $params[1]->{link}                 = 'binary.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply({status => 1}, "It always should return 1, so not to leak client's email");
 
     my %msg = get_email_by_address_subject(
-        email   => $params[1]->{email},
+        email   => $params[1]->{args}->{verify_email},
         subject => qr/Verify your withdrawal request/
     );
     ok keys %msg, 'Email sent successfully';
