@@ -78,7 +78,7 @@ sub create_pricing_data {
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'index',
             {
-                symbol        => $_
+                symbol        => $_,
                 recorded_date => $for_date,
                 rates => { 365 => $default_rate },
             }) for @dividend_symbols;
