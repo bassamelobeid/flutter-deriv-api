@@ -410,6 +410,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             # $client->myaffiliates_token_registered(1);
             $client->myaffiliates_token($input{$key}) if $input{$key};
         }
+
+        if ($key eq 'allow_omnibus') {
+            $client->allow_omnibus($input{$key});
+        }
     }
 
     if (not $client->save) {
