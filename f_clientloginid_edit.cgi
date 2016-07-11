@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package main;
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
@@ -19,7 +19,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Client::Utility ();
 use BOM::Backoffice::Sysinit         ();
 use BOM::Platform::Client::DoughFlowClient;
-use BOM::Platform::Helper::Doughflow qw( get_sportsbook );
+use BOM::Platform::Doughflow qw( get_sportsbook );
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::System::Config;

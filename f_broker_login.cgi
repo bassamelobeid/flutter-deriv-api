@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package main;
 
 #official globals
@@ -14,7 +14,7 @@ use BOM::Backoffice::Auth0;
 use BOM::StaffPages;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Market::Registry;
-use BOM::Platform::Runtime::LandingCompany;
+use BOM::Platform::LandingCompany;
 
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -41,7 +41,7 @@ if ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{
 
 print "<center>";
 
-my $allbrokercodes = '<option>' . join("<option>", BOM::Platform::Runtime::LandingCompany::Registry::all_broker_codes);
+my $allbrokercodes = '<option>' . join("<option>", BOM::Platform::LandingCompany::Registry::all_broker_codes);
 
 my $brokerselection = "Broker code : <select name=broker>" . set_selected_item($broker, $allbrokercodes) . "</select>";
 

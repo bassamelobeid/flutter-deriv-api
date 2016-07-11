@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/etc/rmg/bin/perl
 
 package BOM::Riskd;
 
