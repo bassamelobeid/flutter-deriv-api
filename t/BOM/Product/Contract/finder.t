@@ -38,7 +38,7 @@ subtest "available contracts for symbol" => sub {
     );
     my %expected = (
         R_100 => {
-            callput      => 12,
+            callput      => 14,
             touchnotouch => 4,    # intraday and daily separated
             staysinout   => 4,
             endsinout    => 4,
@@ -47,7 +47,7 @@ subtest "available contracts for symbol" => sub {
             spreads      => 2
         },
         RDBEAR => {
-            callput      => 8,
+            callput      => 10,
             touchnotouch => 2,    # intraday and daily separated
             staysinout   => 2,
             endsinout    => 2,
