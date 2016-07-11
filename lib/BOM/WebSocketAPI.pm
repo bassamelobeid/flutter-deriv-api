@@ -336,12 +336,12 @@ sub startup {
             before_forward           => [\&BOM::WebSocketAPI::Hooks::before_forward, \&BOM::WebSocketAPI::Hooks::get_rpc_url],
             before_call              => [\&BOM::WebSocketAPI::Hooks::start_timing],
             before_get_rpc_response  => [\&BOM::WebSocketAPI::Hooks::log_call_timing],
-            after_got_rpc_response   => [\&BOM::WebSocketAPI::Hooks::log_call_timing_connection],
+            after_got_rpc_response   => [\&BOM::WebSocketAPI::Hooks::log_call_timing_connection, \&BOM::WebSocketAPI::Hooks::error_check],
             before_send_api_response => [
                 \&BOM::WebSocketAPI::Hooks::output_validation, \&BOM::WebSocketAPI::Hooks::add_call_debug,
                 \&BOM::WebSocketAPI::Hooks::add_req_data,      \&BOM::WebSocketAPI::Hooks::start_timing
             ],
-            after_sent_api_response => [\&BOM::WebSocketAPI::Hooks::log_call_timing_sent],
+            after_sent_api_response => [\&BOM::WebSocketAPI::Hooks::log_call_timing_sent, \&BOM::WebSocketAPI::Hooks::close_bad_connection],
 
             # main config
             base_path         => '/websockets/v3',

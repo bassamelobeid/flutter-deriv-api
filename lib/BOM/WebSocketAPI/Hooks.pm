@@ -243,4 +243,21 @@ sub forget_all {
     return;
 }
 
+sub error_check {
+    my ($c, $req_storage, $rpc_response) = @_;
+    my $result = $rpc_response->result;
+    if (ref($result) eq 'HASH' && $result->{error} && $result->{error}->{code} eq 'InvalidAppID') {
+        $req_storage->{invalid_app_id} = 1;
+    }
+    return;
+}
+
+sub close_bad_connection {
+    my ($c, $req_storage) = @_;
+    if ($req_storage->{invalid_app_id}) {
+        $c->finish;
+    }
+    return;
+}
+
 1;
