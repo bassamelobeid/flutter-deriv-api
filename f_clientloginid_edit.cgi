@@ -411,9 +411,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->myaffiliates_token($input{$key}) if $input{$key};
         }
 
-        if ($key eq 'allow_omnibus') {
-            $client->allow_omnibus($input{$key});
-        }
+        $client->allow_omnibus($input{allow_omnibus});
     }
 
     if (not $client->save) {

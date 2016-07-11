@@ -459,7 +459,7 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">Allow Omnibus</td>
-        <td>:
+        <td>
             <input type="checkbox" value="1" name="allow_omnibus" [% IF client.allow_omnibus %]checked[% END %]/>
         </td>
     </tr>
