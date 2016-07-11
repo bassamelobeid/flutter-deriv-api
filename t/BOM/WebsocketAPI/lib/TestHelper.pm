@@ -39,8 +39,9 @@ sub build_mojo_test {
     my $url = "/websockets/$version";
 
     my @query_params;
-    push @query_params, 'l=' . $args->{language}  if $args->{language};
-    push @query_params, 'debug=' . $args->{debug} if $args->{debug};
+    push @query_params, 'l=' . $args->{language}    if $args->{language};
+    push @query_params, 'debug=' . $args->{debug}   if $args->{debug};
+    push @query_params, 'app_id=' . $args->{app_id} if $args->{app_id};
     $url .= '?' . join('&', @query_params) if @query_params;
 
     my $t = Test::Mojo->new('BOM::WebSocketAPI');
