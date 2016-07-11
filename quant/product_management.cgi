@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 
 package main;
 
@@ -10,7 +10,6 @@ use JSON qw(from_json to_json);
 use f_brokerincludeall;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Static::Config;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use List::Util qw(first);
@@ -26,7 +25,7 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $staff          = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $r              = request();
-my $limit_profile  = BOM::Platform::Static::Config::quants->{risk_profile};
+my $limit_profile  = BOM::System::Config::quants->{risk_profile};
 my %known_profiles = map { $_ => 1 } keys %$limit_profile;
 
 if ($r->param('update_limit')) {

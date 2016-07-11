@@ -4,10 +4,9 @@ use MooseX::Singleton;
 use Mojo::URL;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Static::Config;
 
 sub binary_js {
-    return Mojo::URL->new(BOM::Platform::Static::Config::get_static_url())->to_string . 'js/binary.min.js';
+    return 'https://www.binary.com/js/binary.min.js';
 }
 
 sub bo_js_files_for {

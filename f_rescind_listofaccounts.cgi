@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package main;
 
 use strict;
@@ -6,7 +6,7 @@ use warnings;
 
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
-use BOM::Platform::Transaction;
+use BOM::Database::Transaction;
 use BOM::Platform::CurrencyConverter qw(in_USD);
 use BOM::Product::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -36,7 +36,7 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     my $name  = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
     my $email = $client->email;
 
-    if (not BOM::Platform::Transaction->freeze_client($loginID)) {
+    if (not BOM::Database::Transaction->freeze_client($loginID)) {
         die "Account stuck in previous transaction $loginID";
     }
 
@@ -72,7 +72,7 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     }
     $grandtotal += in_USD($b, $curr);
 
-    BOM::Platform::Transaction->unfreeze_client($loginID);
+    BOM::Database::Transaction->unfreeze_client($loginID);
 }
 
 print "<hr>Grand total recovered (converted to USD): USD $grandtotal<P>";

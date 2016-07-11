@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package main;
 use strict;
 use warnings;
@@ -9,12 +9,12 @@ use File::Slurp;
 use BOM::Platform::ProveID;
 use BOM::Platform::Runtime;
 use BOM::Platform::Client;
-use BOM::Platform::Runtime::LandingCompany;
+use BOM::Platform::LandingCompany;
 
 
 my $accounts_dir = BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_accounts";
 
-for my $broker (BOM::Platform::Runtime::LandingCompany::Registry::all_broker_codes) {
+for my $broker (BOM::Platform::LandingCompany::Registry::all_broker_codes) {
     next unless $broker =~ /^(CR|MX|MLT)$/;
     my $dir     = "$accounts_dir/$broker/192com_authentication";
     my $xml_dir = "$dir/xml";

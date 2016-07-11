@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package main;
 
 use strict;
@@ -16,7 +16,6 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Platform::Context;
 use BOM::System::AuditLog;
 use BOM::ContractInfo;
-use BOM::Platform::Static::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
@@ -162,13 +161,13 @@ unless ($params{skip_validation}) {
 
 my $transRef;
 
-BOM::Platform::Transaction->freeze_client($loginID) || do {
+BOM::Database::Transaction->freeze_client($loginID) || do {
     print "ERROR: Account stuck in previous transaction $loginID";
     code_exit_BO();
 };
 
 if ($ttype eq 'TRANSFER') {
-    BOM::Platform::Transaction->freeze_client($toLoginID) || do {
+    BOM::Database::Transaction->freeze_client($toLoginID) || do {
         print "ERROR: To-Account stuck in previous transaction $toLoginID";
         code_exit_BO();
         }
@@ -200,8 +199,8 @@ catch {
     printf STDERR "got here\n";
 };
 
-BOM::Platform::Transaction->unfreeze_client($loginID);
-BOM::Platform::Transaction->unfreeze_client($toLoginID) if $toLoginID;
+BOM::Database::Transaction->unfreeze_client($loginID);
+BOM::Database::Transaction->unfreeze_client($toLoginID) if $toLoginID;
 
 code_exit_BO() if $leave;
 
@@ -276,7 +275,7 @@ if ($toemail && $informclient) {
         . localize('Kind Regards') . "\n\n"
         . 'Binary.com';
 
-    my $support_email = BOM::Platform::Static::Config::get_customer_support_email();
+    my $support_email = BOM::Platform::Runtime->instance->app_config->cs->email;
 
     my $result = send_email({
         from               => $support_email,

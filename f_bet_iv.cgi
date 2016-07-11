@@ -1,11 +1,11 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package main;
 
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use BOM::System::Localhost;
+use BOM::System::Config;
 use subs::subs_dividend_from_excel_file;
 use BOM::Market::UnderlyingDB;
 use BOM::MarketData::Fetcher::CorporateAction;
@@ -35,7 +35,7 @@ print '<p>BLOOMBERG DATA LICENSE (BBDL) is an FTP service where we can make requ
  <br>Note1: to view currently scheduled batch files, upload the JYSscheduled.req request file.
  Then wait a minute and download scheduled.out . </p>';
 
-unless (BOM::System::Localhost::is_master_server()) {
+unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}})) {
     print
         "<font color=red><b>WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.</b></font><P>";
 }

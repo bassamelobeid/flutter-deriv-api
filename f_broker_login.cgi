@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package main;
 
 #official globals
@@ -7,14 +7,14 @@ use open qw[ :encoding(UTF-8) ];
 use BOM::Market::Registry;
 
 use f_brokerincludeall;
-use BOM::System::Localhost;
+use BOM::System::Config;
 use BOM::Platform::Runtime;
 use Format::Util::Strings qw( set_selected_item );
 use BOM::Backoffice::Auth0;
 use BOM::StaffPages;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Market::Registry;
-use BOM::Platform::Runtime::LandingCompany;
+use BOM::Platform::LandingCompany;
 
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -32,7 +32,7 @@ my $broker = request()->broker_code;
 
 BrokerPresentation('STAFF LOGIN PAGE');
 
-if (BOM::System::Localhost::is_master_server()) {
+if ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}})) {
     print "<table border=0 width=97%><tr><td width=97% bgcolor=#FFFFEE>
         <b><center><font size=+1>YOU ARE ON THE MASTER LIVE SERVER</font>
         <br>This is the server on which to edit most system files (except those that are specifically to do with a specific broker code).
@@ -41,7 +41,7 @@ if (BOM::System::Localhost::is_master_server()) {
 
 print "<center>";
 
-my $allbrokercodes = '<option>' . join("<option>", BOM::Platform::Runtime::LandingCompany::Registry::all_broker_codes);
+my $allbrokercodes = '<option>' . join("<option>", BOM::Platform::LandingCompany::Registry::all_broker_codes);
 
 my $brokerselection = "Broker code : <select name=broker>" . set_selected_item($broker, $allbrokercodes) . "</select>";
 

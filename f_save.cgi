@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package main;
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
@@ -9,7 +9,7 @@ use Path::Tiny;
 
 use f_brokerincludeall;
 use Date::Utility;
-use BOM::System::Localhost;
+use BOM::System::Config;
 use Format::Util::Numbers qw( commas );
 use Quant::Framework::InterestRate;
 use Quant::Framework::ImpliedRate;
@@ -48,7 +48,7 @@ if ($ok == 0) {
     code_exit_BO();
 }
 
-unless (BOM::System::Localhost::is_master_server()) {
+unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::System::Config::node()->{node}->{roles}})) {
     print "Sorry, files cannot be saved on this server because it is not the Master Server.";
     code_exit_BO();
 }
