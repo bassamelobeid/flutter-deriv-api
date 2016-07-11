@@ -79,7 +79,7 @@ sub create_pricing_data {
             'index',
             {
                 symbol        => $_
-                recorded_date => $now,
+                recorded_date => $for_date,
                 rates => { 365 => $default_rate },
             }) for @dividend_symbols;
     }
