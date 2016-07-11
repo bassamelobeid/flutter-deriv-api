@@ -118,6 +118,9 @@ my $client_jp = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'JP',
 });
 $client_jp->residence('jp');
+
+$client_jp->financial_assessment({data => '{"hedge_asset_amount":null,"jp_knowledge_test":[{"epoch":1467604241,"status":"pass","score":"20"}],"agreement":{"confirm_understand_total_loss":"2016-07-04 03:46:39","confirm_understand_judgment_time":"2016-07-04 03:46:39","confirm_understand_sellback_loss":"2016-07-04 03:46:39","confirm_understand_trading_mechanism":"2016-07-04 03:46:39","agree_warnings_and_policies":"2016-07-04 03:46:39","confirm_understand_own_judgment":"2016-07-04 03:46:39","confirm_understand_company_profit":"2016-07-04 03:46:39","confirm_understand_shortsell_loss":"2016-07-04 03:46:39","declare_not_fatca":"2016-07-04 03:46:39","confirm_understand_expert_knowledge":"2016-07-04 03:46:39","agree_use_electronic_doc":"2016-07-04 03:46:39"},"annual_income":{"answer":"Less than 1 million JPY","score":1},"trading_experience_equities":{"answer":"6 months to 1 year","score":3},"trading_experience_score":14,"trading_experience_public_bond":{"answer":"No experience","score":1},"hedge_asset":null,"trading_experience_investment_trust":{"answer":"No experience","score":1},"trading_experience_option_trading":{"answer":"No experience","score":1},"income_asset_score":3,"total_score":17,"trading_purpose":"Targeting medium-term / long-term profits","financial_asset":{"answer":"1-3 million JPY","score":2},"trading_experience_commodities":{"answer":"6 months to 1 year","score":3},"trading_experience_margin_fx":{"answer":"Less than 6 months","score":2},"trading_experience_foreign_currency_deposit":{"answer":"6 months to 1 year","score":3}}' });
+
 $client_jp->save;
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_jp->loginid);
@@ -128,12 +131,27 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 $t = $t->send_ok({
         json => {
             "set_settings"   => 1,
-            "address_line_1" => "Test Address Line 1",
-            "address_line_2" => "Test Address Line 2",
-            "phone"          => "1234567890"
+            "jp_settings"    => {
+                occupation                                  => 'Director',
+                annual_income                               => 'Less than 1 million JPY',
+                financial_asset                             => '1-3 million JPY',
+                trading_experience_equities                 => '6 months to 1 year',
+                trading_experience_commodities              => '6 months to 1 year',
+                trading_experience_foreign_currency_deposit => '6 months to 1 year',
+                trading_experience_margin_fx                => 'Less than 6 months',
+                trading_experience_investment_trust         => 'No experience',
+                trading_experience_public_bond              => 'No experience',
+                trading_experience_option_trading           => 'No experience',
+                trading_purpose                             => 'Hedging',
+                hedge_asset                                 => 'Foreign currency deposit',
+                hedge_asset_amount                          => '99999'
+            }
         }})->message_ok;
+
 $res = decode_json($t->message->[1]);
-is $res->{error}->{code}, 'PermissionDenied';
+
+ok($res->{set_settings});    # update OK
+test_schema('set_settings', $res);
 
 $t->finish_ok;
 done_testing();
