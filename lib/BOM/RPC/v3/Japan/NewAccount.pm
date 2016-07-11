@@ -307,6 +307,7 @@ sub set_jp_settings {
         ))
     {
         my $ori = $ori_fin->{$key};
+
         if (not grep { $key eq $_ } qw(trading_purpose hedge_asset hedge_asset_amount)) {
             $ori = $ori->{answer};
         }
@@ -372,20 +373,10 @@ sub set_jp_settings {
     BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
     my $cs_msg = "Please note that client " . $client->loginid . " settings has been updated as below:\n\n";
-    $cs_msg .= "<table><tr><th>Setting</th><th>Old Value</th><th>New Value</th></tr>";
     foreach my $field (@updated) {
-        $cs_msg .=
-              "<tr><td style='text-align:left'><strong>"
-            . $field->[0] . ": "
-            . "</strong></td><td style='text-align:left'>"
-            . $field->[1]
-            . "</td><td style='text-align:left'>"
-            . $field->[2]
-            . "</td></tr>";
+        $cs_msg .= $field->[0] . ":" . "\n\t old value: " . $field->[1] . "\n\t new value: " . $field->[2] . "\n\n";
     }
-    $cs_msg .= "</table>";
-    $cs_msg .= "\n" . localize('The [_1] team.', $website_name);
-    $client->add_note('Japan Client Update Settings Notification', $cs_msg);
+    $client->add_note($client->loginid . ' ' . 'Japan Client Change in account settings notification', $cs_msg);
 
     return {status => 1};
 }
