@@ -62,13 +62,13 @@ foreach my $line (@lines) {
         my $template_content = eval $f;
         $content =~ s/\[_$c\]/$template_content/mg;
     }
-    _test_schema($content, $result);
+    _test_schema($receive_file, $content, $result);
 }
 
 done_testing();
 
 sub _test_schema {
-    my ($content, $data) = @_;
+    my ($schema_file, $content, $data) = @_;
 
     my $validator = JSON::Schema->new(JSON::from_json($content));
     my $result = $validator->validate($data);
