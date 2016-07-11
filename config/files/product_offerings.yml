@@ -268,10 +268,15 @@ RDBEAR: &random_daily_nightly
         euro_atm:
           max: 1d
           min: 15s
-        euro_non_atm: *two_minutes_to_day
+        euro_non_atm:
+          max: 1d
+          min: 15s
     tick:
       spot:
         euro_atm:
+          max: 10
+          min: 5
+        euro_non_atm: 
           max: 10
           min: 5
   digits:
@@ -314,10 +319,15 @@ R_100: &random_index
         euro_atm:
           max: 1d
           min: 15s
-        euro_non_atm: *two_minutes_to_day
+        euro_non_atm:
+          max: 1d
+          min: 15s
     tick:
       spot:
         euro_atm:
+          max: 10
+          min: 5
+        euro_non_atm:
           max: 10
           min: 5
   digits:
