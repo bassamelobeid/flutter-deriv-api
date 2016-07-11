@@ -333,7 +333,7 @@ sub startup {
             actions => $actions,
 
             # action hooks
-            before_forward           => [\&BOM::WebSocketAPI::Hooks::before_forward, \&BOM::WebSocketAPI::Hooks::get_rpc_url],
+            before_forward           => [\&BOM::WebSocketAPI::Hooks::before_forward,             \&BOM::WebSocketAPI::Hooks::get_rpc_url],
             before_call              => [\&BOM::WebSocketAPI::Hooks::start_timing],
             before_get_rpc_response  => [\&BOM::WebSocketAPI::Hooks::log_call_timing],
             after_got_rpc_response   => [\&BOM::WebSocketAPI::Hooks::log_call_timing_connection, \&BOM::WebSocketAPI::Hooks::error_check],
