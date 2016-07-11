@@ -118,11 +118,11 @@ subtest 'CR countries' => sub {
         is($c_config->{financial_company}, 'costarica', 'financial company = costarica');
 
         if ($c eq 'sg' or $c eq 'au') {
-            is($c_config->{gaming_company},                                      'none', $c . ' no gaming company');
+            is($c_config->{gaming_company},                                        'none', $c . ' no gaming company');
             is(BOM::Platform::Countries->instance->volidx_restricted_country($c),  1,      'volidx_restricted_country');
             is(BOM::Platform::Countries->instance->gaming_company_for_country($c), undef,  '! gaming_company_for_country');
         } else {
-            is($c_config->{gaming_company},                                      'costarica', 'gaming company = costarica');
+            is($c_config->{gaming_company},                                        'costarica', 'gaming company = costarica');
             is(BOM::Platform::Countries->instance->volidx_restricted_country($c),  !1,          '! volidx_restricted_country');
             is(BOM::Platform::Countries->instance->gaming_company_for_country($c), 'costarica', 'gaming_company_for_country');
         }
