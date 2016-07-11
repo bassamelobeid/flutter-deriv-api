@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package main;
 use strict 'vars';
 use Try::Tiny;
