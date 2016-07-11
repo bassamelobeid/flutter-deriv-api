@@ -103,7 +103,7 @@ sub create_account {
         details => $details,
     });
 
-    add_details_to_desk($client, $details);
+    add_details_to_desk($register->{client}, $details);
 
     return $response;
 }

@@ -7,9 +7,6 @@ use BOM::Platform::Account::Real::default;
 
 sub create_sub_account {
     my $args = shift;
-
-    $args->{details} = _populate_details($args->{from_client}, $args->{details});
-
     my ($user, $details) = @{$args}{'user', 'details'};
 
     if (my $error = BOM::Platform::Account::Real::default::validate($args)) {
@@ -27,7 +24,7 @@ sub create_sub_account {
 
 # as some traders don't want to provide their client details so we
 # need to populate details based on traders/master account
-sub _populate_details {
+sub populate_details {
     my ($master_client, $params) = @_;
 
     my $populated_params = {};
