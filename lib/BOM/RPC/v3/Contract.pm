@@ -305,16 +305,25 @@ sub send_ask {
     my $args               = $params->{args};
     my $from_pricer_daemon = shift;
 
+    my $symbol   = $args->{symbol};
+    my $response = validate_symbol($symbol);
+    if ($response and exists $response->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $response->{error}->{code},
+                message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
+    }
+
     my $tv = [Time::HiRes::gettimeofday];
 
     my %details = %{$args};
-    my $response;
     try {
         my $arguments = {
             from_pricer_daemon => $from_pricer_daemon,
             %details,
         };
-        $response = _get_ask(prepare_ask($arguments), $params->{app_markup_percentage});
+        my $contract_parameters = prepare_ask($arguments);
+        $response = _get_ask($contract_parameters, $params->{app_markup_percentage});
+        $response->{contract_parameters} = $contract_parameters;
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
