@@ -6,66 +6,41 @@ use JSON;
 use Data::UUID;
 use List::Util qw(first);
 use Format::Util::Numbers qw(roundnear);
-use BOM::RPC::v3::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
+use BOM::RPC::v3::Contract;
 
 sub proposal {
     my ($c, $req_storage) = @_;
 
-    my $symbol   = $req_storage->{args}->{symbol};
-    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
-    if ($response and exists $response->{error}) {
-        return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
-    } else {
-        _send_ask($c, $req_storage);
-    }
-    return;
-}
-
-sub _send_ask {
-    my ($c, $req_storage, $api_name) = @_;
     my $args = $req_storage->{args};
 
     $c->call_rpc({
-            args            => $args,
-            method          => 'send_ask',
-            msg_type        => 'proposal',
-            rpc_response_cb => sub {
+            args     => $args,
+            method   => 'send_ask',
+            msg_type => 'proposal',
+            success  => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
-                my $args = $req_storage->{args};
+                $req_storage->{uuid} = _pricing_channel($c, 'subscribe', $req_storage->{args}, $rpc_response);
+            },
+            response => sub {
+                my ($rpc_response, $api_response, $req_storage) = @_;
 
-                if ($rpc_response and exists $rpc_response->{error}) {
-                    my $err = $c->new_error('proposal', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
-                    $err->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
-                    return $err;
-                }
-
-                my $uuid;
-
-                if (not $uuid = _pricing_channel($c, 'subscribe', $args)) {
-                    return $c->new_error('proposal',
+                return $api_response if $rpc_response->{error};
+                if (my $uuid = $req_storage->{uuid}) {
+                    $api_response->{proposal}->{id} = $uuid;
+                } else {
+                    $api_response =
+                        $c->new_error('proposal',
                         'AlreadySubscribedOrLimit',
                         $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
                 }
-
-                # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
-                my $pricing_channel = $c->stash('pricing_channel');
-                if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
-                    my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
-                    my $amount = $args->{amount_per_point} || $args->{amount};
-                    $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $rpc_response->{longcode};
-                    $c->stash('pricing_channel' => $pricing_channel);
-                }
-
-                return {
-                    msg_type   => 'proposal',
-                    'proposal' => {($uuid ? (id => $uuid) : ()), %$rpc_response}};
-            }
+                return $api_response;
+            },
         });
     return;
 }
@@ -80,7 +55,7 @@ sub _serialized_args {
 }
 
 sub _pricing_channel {
-    my ($c, $subs, $args) = @_;
+    my ($c, $subs, $args, $cache) = @_;
 
     my %args_hash = %{$args};
 
@@ -118,9 +93,15 @@ sub _pricing_channel {
 
     $pricing_channel->{$serialized_args}->{$amount}->{uuid} = $uuid;
     $pricing_channel->{$serialized_args}->{$amount}->{args} = $args;
-    $pricing_channel->{uuid}->{$uuid}->{serialized_args}    = $serialized_args;
-    $pricing_channel->{uuid}->{$uuid}->{amount}             = $amount;
-    $pricing_channel->{uuid}->{$uuid}->{args}               = $args;
+
+    # cache sanitized parameters to create contract from pricer_daemon.
+    $pricing_channel->{$serialized_args}->{$amount}->{contract_parameters} = $cache->{contract_parameters};
+    # cache the longcode to add them to responses from pricer_daemon.
+    $pricing_channel->{$serialized_args}->{$amount}->{longcode} = $cache->{longcode};
+
+    $pricing_channel->{uuid}->{$uuid}->{serialized_args} = $serialized_args;
+    $pricing_channel->{uuid}->{$uuid}->{amount}          = $amount;
+    $pricing_channel->{uuid}->{$uuid}->{args}            = $args;
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
@@ -158,9 +139,11 @@ sub process_pricing_events {
             $results = $err;
         } else {
             delete $response->{longcode};
-            my $adjusted_results =
-                _price_stream_results_adjustment($pricing_channel->{$serialized_args}->{$amount}->{args}, $response, $theo_probability);
-
+            my $adjusted_results = _price_stream_results_adjustment(
+                $pricing_channel->{$serialized_args}->{$amount}->{args},
+                $pricing_channel->{$serialized_args}->{$amount}->{contract_parameters},
+                $response, $theo_probability
+            );
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
@@ -199,13 +182,13 @@ sub process_pricing_events {
 
 sub _price_stream_results_adjustment {
     my $orig_args             = shift;
+    my $contract_parameters   = shift;
     my $results               = shift;
     my $resp_theo_probability = shift;
 
     # skips for spreads
     return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
 
-    my $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($orig_args);
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
     my $theo_probability = Math::Util::CalculatedValue::Validatable->new({
