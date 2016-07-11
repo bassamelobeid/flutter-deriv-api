@@ -9,7 +9,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use Test::MockModule;
-use Format::Util::Numbers qw(to_monetary_number_format roundnear);
+use Format::Util::Numbers qw(roundnear);
 use utf8;
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
@@ -81,9 +81,9 @@ subtest 'CR' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal);
 
-        $expected_result->{withdrawal_for_x_days_monetary}      = to_monetary_number_format($withdraw_amount, 1);
-        $expected_result->{withdrawal_since_inception_monetary} = to_monetary_number_format($withdraw_amount, 1);
-        $expected_result->{remainder} = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
+        $expected_result->{withdrawal_for_x_days_monetary}      = roundnear(0.01, $withdraw_amount);
+        $expected_result->{withdrawal_since_inception_monetary} = roundnear(0.01, $withdraw_amount);
+        $expected_result->{remainder}                           = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -159,8 +159,8 @@ subtest 'JP' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal, currency => 'JPY');
 
-        $expected_result->{'withdrawal_for_x_days_monetary'}      = to_monetary_number_format($withdraw_amount, 1);
-        $expected_result->{'withdrawal_since_inception_monetary'} = to_monetary_number_format($withdraw_amount, 1);
+        $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
+        $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
         $expected_result->{'remainder'} = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
@@ -222,8 +222,8 @@ subtest 'MLT' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal, currency => 'EUR');
 
-        $expected_result->{'withdrawal_for_x_days_monetary'}      = to_monetary_number_format($withdraw_amount, 1);
-        $expected_result->{'withdrawal_since_inception_monetary'} = to_monetary_number_format($withdraw_amount, 1);
+        $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
+        $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
         $expected_result->{'remainder'} = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
@@ -285,8 +285,8 @@ subtest 'MX' => sub {
         my $withdraw_amount = 1000;
         $client->smart_payment(%withdrawal, currency => 'EUR');
 
-        $expected_result->{'withdrawal_for_x_days_monetary'}      = to_monetary_number_format($withdraw_amount, 1);
-        $expected_result->{'withdrawal_since_inception_monetary'} = to_monetary_number_format($withdraw_amount, 1);
+        $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
+        $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
         $expected_result->{'remainder'} = roundnear(0.01, $limits->limit_for_days - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
