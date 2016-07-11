@@ -7,11 +7,14 @@ use BOM::Platform::Account::Real::default;
 
 sub create_sub_account {
     my $args = shift;
-    my ($user, $details) = @{$args}{'user', 'details'};
+    my ($from_client, $user, $details) = @{$args}{'from_client', 'user', 'details'};
 
     if (my $error = BOM::Platform::Account::Real::default::validate($args)) {
         return $error;
     }
+
+    # we need to mark new client to be sub_account_of master client
+    $details->{sub_account_of} = $from_client->loginid;
     my $register = BOM::Platform::Account::Real::default::register_client($details);
     return $register if ($register->{error});
 
