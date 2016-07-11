@@ -5,7 +5,6 @@ use warnings;
 use Try::Tiny;
 use Data::UUID;
 use RateLimitations qw(within_rate_limits);
-use BOM::System::Config;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
