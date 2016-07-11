@@ -418,10 +418,11 @@ sub new_sub_account {
                 message_to_client => $error_map->{$err_code}});
     }
 
+    my $new_client = $acc->{client};
     return {
         client_id                 => $new_client->loginid,
-        landing_company           => $landing_company->name,
-        landing_company_shortcode => $landing_company->short,
+        landing_company           => $new_client->landing_company->name,
+        landing_company_shortcode => $new_client->landing_company->short,
     };
 }
 
