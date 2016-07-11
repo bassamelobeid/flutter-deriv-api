@@ -330,7 +330,7 @@ sub set_jp_settings {
         # keep other existing fields, eg: agreement, jp_knowledge_test
         foreach (keys %$ori_fin) {
             if (not exists $new_fin->{$_}) {
-                $new_fin->{$_} = $old_fin->{$_};
+                $new_fin->{$_} = $ori_fin->{$_};
             }
         }
         $client->financial_assessment({data => encode_json($new_fin)});
