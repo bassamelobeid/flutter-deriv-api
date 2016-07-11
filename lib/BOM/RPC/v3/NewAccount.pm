@@ -17,6 +17,7 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::japan;
+use BOM::Platform::Account::Real::subaccount;
 use BOM::Platform::Locale;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
@@ -369,6 +370,60 @@ sub new_account_japan {
         landing_company           => $landing_company->name,
         landing_company_shortcode => $landing_company->short,
         oauth_token               => _create_oauth_token($new_client->loginid),
+    };
+}
+
+sub new_sub_account {
+    my $params = shift;
+
+    my $client = $params->{client};
+    if ($client->is_virtual or not $client->allow_omnibus) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidAccount',
+                message_to_client => $error_map->{'invalid'}});
+    }
+
+    my $args = $params->{args};
+
+    my ($company, $broker);
+    if ($args->{residence}) {
+        $company = $countries_list->{$args->{residence}}->{gaming_company};
+        $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
+    }
+
+    if (not $company) {
+        $broker = $client->broker_code;
+    } else {
+        $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    }
+
+    # call populate fields as some merchant accounts may not provide their client details
+    $params->{args} = BOM::Platform::Account::Real::subaccount::populate_details($client, $args);
+
+    # we still need to call because some may provide details, some may not provide client details
+    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($params, $client, $broker);
+    if (my $err = $details_ref->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err,
+                message_to_client => $error_map->{$err}});
+    }
+
+    my $acc = BOM::Platform::Account::Real::subaccount::create_sub_account({
+        from_client => $client,
+        user        => BOM::Platform::User->new({email => $client->email}),
+        details     => $details_ref->{details},
+    });
+
+    if (my $err_code = $acc->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err_code,
+                message_to_client => $error_map->{$err_code}});
+    }
+
+    return {
+        client_id                 => $new_client->loginid,
+        landing_company           => $landing_company->name,
+        landing_company_shortcode => $landing_company->short,
     };
 }
 
