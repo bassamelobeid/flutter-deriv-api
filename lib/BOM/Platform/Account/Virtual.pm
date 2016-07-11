@@ -8,6 +8,8 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::System::Password;
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
+
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client;
 use BOM::Platform::User;

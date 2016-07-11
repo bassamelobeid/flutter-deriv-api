@@ -11,6 +11,8 @@ use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
 
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
+
 
 use Plack::App::CGIBin::Streaming::Request;
 use BOM::Platform::LandingCompany::Registry;

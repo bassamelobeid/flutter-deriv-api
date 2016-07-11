@@ -14,6 +14,7 @@ use Format::Util::Numbers qw(roundnear);
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 use BOM::Platform::User;
 use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::Payment;

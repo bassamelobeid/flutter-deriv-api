@@ -7,6 +7,7 @@ use Test::Most 0.22 (tests => 8);
 use Test::NoWarnings;
 use List::Util qw(first);
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 
 my $configs;
 subtest 'get countries config' => sub {
