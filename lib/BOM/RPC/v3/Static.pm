@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 use BOM::Platform::Locale;
 use BOM::Platform::Context qw (request);
 use BOM::RPC::v3::Utility;

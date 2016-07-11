@@ -14,6 +14,7 @@ use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::LandingCompany::Registry;
 use BOM::Platform::Locale;

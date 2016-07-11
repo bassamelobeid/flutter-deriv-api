@@ -17,6 +17,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
 use BOM::Platform::CurrencyConverter qw(amount_from_to_currency in_USD);
