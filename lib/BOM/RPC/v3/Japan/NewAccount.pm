@@ -307,12 +307,13 @@ sub set_jp_settings {
         ))
     {
         my $ori = $ori_fin->{$key};
-
         if (not grep { $key eq $_ } qw(trading_purpose hedge_asset hedge_asset_amount)) {
             $ori = $ori->{answer};
         }
+        $ori //= '';
 
-        my $new = $args->{$key};
+        my $new = $args->{$key} // '';
+
         if ($ori ne $new) {
             push @updated, [$text->{$key}, $ori, $new];
             $fin_change = 1;
