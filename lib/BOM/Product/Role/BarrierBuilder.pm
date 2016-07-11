@@ -39,6 +39,14 @@ sub make_barrier {
         });
     }
 
+    if ($self->tick_expiry and $string_version !~ /^S-?\d+P$/i) {
+        $self->add_error({
+            severity          => 100,
+            message           => 'Intend to buy tick expiry contract with absolute barrier.',
+            message_to_client => localize('Invalid barrier.'),
+        });
+    }
+
     my $barrier = BOM::Product::Contract::Strike->new(
         underlying       => $self->underlying,
         basis_tick       => $self->basis_tick,
