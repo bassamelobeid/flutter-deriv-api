@@ -60,7 +60,11 @@
                 "clients_country": {
                     "type": "string"
                 }
-            }
+            },
+            "required": [
+                "terms_conditions_version",
+                "clients_country"
+            ]
         },
         "msg_type": {
             "type": "string"
