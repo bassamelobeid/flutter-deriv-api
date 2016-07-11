@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package BOM::System::Script::UpdateVol;
 
 =head1 NAME

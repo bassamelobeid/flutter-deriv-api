@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/etc/rmg/bin/perl -w
 
 package BOM::Market::Script::TickAgg;
 

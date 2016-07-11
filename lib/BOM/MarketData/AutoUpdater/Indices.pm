@@ -114,41 +114,50 @@ sub run {
             };
             next;
         }
-        my $underlying     = BOM::Market::Underlying->new($symbol);
-        my $raw_volsurface = $surfaces_from_file->{$symbol};
-        if ($self->uses_binary_spot->{$symbol}) {
-            # We do not have feed of BIST100 cash index, hence it need to use the spot of OTC_BIST100
-            $raw_volsurface->{spot_reference} =
-                $symbol eq 'BIST100'
-                ? BOM::Market::Underlying->new('OTC_BIST100')->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote
-                : $underlying->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote;
+        try {
+            my $underlying     = BOM::Market::Underlying->new($symbol);
+            my $raw_volsurface = $surfaces_from_file->{$symbol};
+            if ($self->uses_binary_spot->{$symbol}) {
+                # We do not have feed of BIST100 cash index, hence it need to use the spot of OTC_BIST100
+                $raw_volsurface->{spot_reference} =
+                    $symbol eq 'BIST100'
+                    ? BOM::Market::Underlying->new('OTC_BIST100')->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote
+                    : $underlying->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote;
 
-        }
-        my $volsurface = Quant::Framework::VolSurface::Moneyness->new({
-            underlying_config => $underlying->config,
-            recorded_date     => $raw_volsurface->{recorded_date},
-            spot_reference    => $raw_volsurface->{spot_reference},
-            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
-            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
-            surface           => $raw_volsurface->{surface},
-        });
-        if ($volsurface->is_valid) {
-            if (exists $otc_list{'OTC_' . $symbol}) {
-                my $otc         = BOM::Market::Underlying->new('OTC_' . $symbol);
-                my $otc_surface = $volsurface->clone({
-                    underlying_config => $otc->config,
-                });
-                $otc_surface->save;
             }
+            my $volsurface = Quant::Framework::VolSurface::Moneyness->new({
+                underlying_config => $underlying->config,
+                recorded_date     => $raw_volsurface->{recorded_date},
+                spot_reference    => $raw_volsurface->{spot_reference},
+                chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
+                chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
+                surface           => $raw_volsurface->{surface},
+            });
+            if ($volsurface->is_valid) {
+                if (exists $otc_list{'OTC_' . $symbol}) {
+                    my $otc         = BOM::Market::Underlying->new('OTC_' . $symbol);
+                    my $otc_surface = $volsurface->clone({
+                        underlying_config => $otc->config,
+                    });
+                    $otc_surface->save;
+                }
 
-            $volsurface->save;
-            $self->report->{$symbol}->{success} = 1;
-        } else {
+                $volsurface->save;
+                $self->report->{$symbol}->{success} = 1;
+            } else {
+                $self->report->{$symbol} = {
+                    success => 0,
+                    reason  => $volsurface->validation_error,
+                };
+            }
+        }
+        catch {
+            # if it dies, catch it here.
             $self->report->{$symbol} = {
                 success => 0,
-                reason  => $volsurface->validation_error,
+                reason  => $_,
             };
-        }
+        };
     }
 
     $self->SUPER::run();
