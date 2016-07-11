@@ -8,7 +8,6 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Static::Config;
 
 sub _validate {
     my $args = shift;
@@ -58,7 +57,7 @@ sub create_account {
 
     if ($financial_assessment->{total_score} > 59) {
         send_email({
-            from    => BOM::Platform::Static::Config::get_customer_support_email(),
+            from    => BOM::Platform::Runtime->instance->app_config->cs->email,
             to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
             subject => $client->loginid . ' considered as professional trader',
             message =>

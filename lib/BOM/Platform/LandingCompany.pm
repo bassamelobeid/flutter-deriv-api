@@ -1,12 +1,12 @@
-package BOM::Platform::Runtime::LandingCompany;
+package BOM::Platform::LandingCompany;
 
 =head1 NAME
 
-BOM::Platform::Runtime::LandingCompany
+BOM::Platform::LandingCompany
 
 =head1 SYNOPSYS
 
-    my $iom = BOM::Platform::Runtime::LandingCompany->new(
+    my $iom = BOM::Platform::LandingCompany->new(
         short   => 'iom',
         name    => 'Binary (IOM) Ltd',
         address => ["Millennium House", "Victoria Road", "Douglas", "Island"],
