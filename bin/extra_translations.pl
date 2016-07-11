@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -I ./cgi -I ./cgi/oop
+#!/etc/rmg/bin/perl -w -I ./cgi -I ./cgi/oop
 
 package RMG::UnderlyingsTranslator;
 
