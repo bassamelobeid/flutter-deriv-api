@@ -16,7 +16,7 @@
 				},
 				"loginid": {
 					"type": "string",
-					"pattern": "[_1]"
+					"pattern": "^VRTC\\d+$"
 				},
 				"id": {
 					"type": "string"
@@ -25,8 +25,7 @@
 			"required": [
 				"balance",
 				"currency",
-				"loginid",
-				"id"
+				"loginid"
 			]
 		},
 		"msg_type": {
