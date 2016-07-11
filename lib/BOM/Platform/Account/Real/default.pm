@@ -186,6 +186,8 @@ sub add_details_to_desk {
             warn("Unable to add loginid " . $client->loginid . "(" . $client->email . ") to desk.com API: $_");
         };
     }
+
+    return;
 }
 
 sub get_financial_input_mapping {
