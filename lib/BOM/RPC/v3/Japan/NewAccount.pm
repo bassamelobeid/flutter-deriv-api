@@ -268,23 +268,23 @@ sub set_jp_settings {
     $args = $args->{jp_settings};
 
     my $text = {
-        'annual_income'                               => localize('Annual income'),
-        'financial_asset'                             => localize('Financial asset'),
-        'trading_experience_equities'                 => localize('Trading Experience for Equities'),
-        'trading_experience_commodities'              => localize('Trading Experience for Commodities'),
-        'trading_experience_foreign_currency_deposit' => localize('Trading Experience for Foreign currency deposit'),
-        'trading_experience_margin_fx'                => localize('Trading Experience for Margin FX'),
-        'trading_experience_investment_trust'         => localize('Trading Experience for Investment trust'),
-        'trading_experience_public_bond'              => localize('Trading Experience for Public and corporation bond'),
-        'trading_experience_option_trading'           => localize('Trading Experience for OTC derivative (Option) trading'),
-        'trading_purpose'                             => localize('Purpose of trading'),
-        'hedge_asset'                                 => localize('Classification of assets requiring hedge'),
-        'hedge_asset_amount'                          => localize('Amount of hedging assets'),
+        'annual_income'                               => localize('{JAPAN ONLY}Annual income'),
+        'financial_asset'                             => localize('{JAPAN ONLY}Financial asset'),
+        'trading_experience_equities'                 => localize('{JAPAN ONLY}Trading Experience for Equities'),
+        'trading_experience_commodities'              => localize('{JAPAN ONLY}Trading Experience for Commodities'),
+        'trading_experience_foreign_currency_deposit' => localize('{JAPAN ONLY}Trading Experience for Foreign currency deposit'),
+        'trading_experience_margin_fx'                => localize('{JAPAN ONLY}Trading Experience for Margin FX'),
+        'trading_experience_investment_trust'         => localize('{JAPAN ONLY}Trading Experience for Investment trust'),
+        'trading_experience_public_bond'              => localize('{JAPAN ONLY}Trading Experience for Public and corporation bond'),
+        'trading_experience_option_trading'           => localize('{JAPAN ONLY}Trading Experience for OTC derivative (Option) trading'),
+        'trading_purpose'                             => localize('{JAPAN ONLY}Purpose of trading'),
+        'hedge_asset'                                 => localize('{JAPAN ONLY}Classification of assets requiring hedge'),
+        'hedge_asset_amount'                          => localize('{JAPAN ONLY}Amount of hedging assets'),
     };
 
     my @updated;
     if ($client->occupation ne $args->{occupation}) {
-        push @updated, [localize('Occupation'), $client->occupation, $args->{occupation}];
+        push @updated, [localize('{JAPAN ONLY}Occupation'), $client->occupation, $args->{occupation}];
         $client->occupation($args->{occupation});
     }
 
