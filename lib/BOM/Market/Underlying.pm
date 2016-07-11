@@ -268,9 +268,6 @@ sub _build_config {
         $default_dividend_rate = pop @rates;
     }
 
-    my $default_vol_duration = undef;
-    $default_vol_duration = 2 / 86400 if $self->submarket->name eq 'random_daily';
-
     my $default_interest_rate = undef;
 
     # list of markets that have zero rate
@@ -299,7 +296,6 @@ sub _build_config {
         asset_class                           => $asset_class,
         default_interest_rate                 => $default_interest_rate,
         default_dividend_rate                 => $default_dividend_rate,
-        default_volatility_duration           => $default_vol_duration,
     });
 }
 
