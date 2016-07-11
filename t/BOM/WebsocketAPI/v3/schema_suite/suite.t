@@ -55,8 +55,8 @@ foreach my $line (@lines) {
     $response->{$call} = $result->{$call};
 
 
-    my $content = $receive_file;
-    my $c       = 0;
+    $content = $receive_file;
+    $c       = 0;
     foreach my $f (@template_func) {
         $c++;
         my $template_content = eval $f;
