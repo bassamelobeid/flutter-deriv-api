@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 
 use Test::More tests => 2;
 use Test::NoWarnings;
