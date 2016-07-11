@@ -15,12 +15,12 @@ use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 use BOM::Platform::Locale;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::Token::Verification;
+use BOM::Platform::Token;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -43,7 +43,7 @@ sub payout_currencies {
     if ($client) {
         $currencies = [$client->currency];
     } else {
-        my $lc = BOM::Platform::Runtime::LandingCompany::Registry::get('costarica');
+        my $lc = BOM::Platform::LandingCompany::Registry::get('costarica');
         $currencies = $lc->legal_allowed_currencies;
     }
 
@@ -68,7 +68,7 @@ sub landing_company {
     my %landing_company = %{$c_config};
 
     $landing_company{id} = $country;
-    my $registry = BOM::Platform::Runtime::LandingCompany::Registry->new;
+    my $registry = BOM::Platform::LandingCompany::Registry->new;
     if (($landing_company{gaming_company} // '') ne 'none') {
         $landing_company{gaming_company} = __build_landing_company($registry->get($landing_company{gaming_company}));
     } else {
@@ -86,7 +86,7 @@ sub landing_company {
 sub landing_company_details {
     my $params = shift;
 
-    my $lc = BOM::Platform::Runtime::LandingCompany::Registry::get($params->{args}->{landing_company_details});
+    my $lc = BOM::Platform::LandingCompany::Registry::get($params->{args}->{landing_company_details});
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UnknownLandingCompany',
             message_to_client => localize('Unknown landing company.')}) unless $lc;
@@ -434,7 +434,7 @@ sub cashier_password {
 sub reset_password {
     my $params = shift;
     my $args   = $params->{args};
-    my $email  = BOM::Platform::Token::Verification->new({token => $args->{verification_code}})->email;
+    my $email  = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
     if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},

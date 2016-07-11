@@ -248,8 +248,19 @@ sub active_symbols {
     {
         $active_symbols = Sereal::Decoder->new->decode($active_symbols);
     } else {
-        $active_symbols = [map { my $descr = _description($_, $params->{args}->{active_symbols}); }
-                get_offerings_with_filter('underlying_symbol', {landing_company => $landing_company_name})];
+        my @all_active = get_offerings_with_filter('underlying_symbol', {landing_company => $landing_company_name});
+        # symbols would be active if we allow forward starting contracts on them.
+        my %forward_starting = map { $_ => 1 } get_offerings_with_filter(
+            'underlying_symbol',
+            {
+                landing_company => $landing_company_name,
+                start_type      => 'forward'
+            });
+        foreach my $symbol (@all_active) {
+            my $desc = _description($symbol, $params->{args}->{active_symbols});
+            $desc->{allow_forward_starting} = 1 if $forward_starting{$symbol};
+            push @{$active_symbols}, $desc;
+        }
 
         BOM::System::RedisReplicated::redis_write()->set($key, Sereal::Encoder->new->encode($active_symbols));
         #expire in nearest 5 minute interval
