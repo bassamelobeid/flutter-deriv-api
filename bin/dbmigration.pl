@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/etc/rmg/bin/perl -w
 
 package BOM::Database::DBMigration;
 
