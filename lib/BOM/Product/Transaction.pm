@@ -31,7 +31,7 @@ use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 
 extends 'BOM::Database::Transaction';
 
@@ -968,7 +968,7 @@ sub _validate_currency {
         );
     }
 
-    if (not BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($broker)->is_currency_legal($currency)) {
+    if (not BOM::Platform::LandingCompany::Registry::get_by_broker($broker)->is_currency_legal($currency)) {
         return Error::Base->cuss(
             -type              => 'IllegalCurrency',
             -mesg              => "Illegal $currency for $broker",
@@ -1278,9 +1278,6 @@ sub __validate_transaction_rate_limit {
     my $client = $self->client;
     $what = lc $what;
 
-    # Define the appropriate rates in `bom-platform/config/environments/*/perl_rate_limitations.yml`
-    # before attempting to apply them here.
-
     return unless $client->is_virtual;    # We only limit virtual accounts at this point
 
     my $service = 'virtual_' . $what . '_transaction';
@@ -1313,7 +1310,7 @@ sub _validate_iom_withdrawal_limit {
 
     return if $client->is_virtual;
 
-    my $landing_company = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($client->broker_code);
+    my $landing_company = BOM::Platform::LandingCompany::Registry::get_by_broker($client->broker_code);
     return if ($landing_company->country ne 'Isle of Man');
 
     my $landing_company_short = $landing_company->short;
@@ -1446,7 +1443,7 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    my $lc = BOM::Platform::Runtime::LandingCompany::Registry::get_by_broker($loginid);
+    my $lc = BOM::Platform::LandingCompany::Registry::get_by_broker($loginid);
 
     my %legal_allowed_ct = map { $_ => 1 } @{$lc->legal_allowed_contract_types};
     if (not $legal_allowed_ct{$contract->code}) {
@@ -1726,25 +1723,6 @@ sub sell_expired_contracts {
         total_credited      => $total_credited,
         number_of_sold_bets => 0 + @$sold,
     };
-}
-
-=head2 validate_request_method
-
-Static function: Validate the request method to POST
-
-Returns: Error::Base object with message to client
-
-=cut
-
-sub validate_request_method {
-    if (BOM::Platform::Context::request()->http_method ne 'POST') {
-        return Error::Base->cuss(
-            -type              => 'RequestNotPost',
-            -mesg              => 'Sorry, this page cannot be refreshed.',
-            -message_to_client => BOM::Platform::Context::localize('Sorry, this page cannot be refreshed.'),
-        );
-    }
-    return;
 }
 
 sub report {

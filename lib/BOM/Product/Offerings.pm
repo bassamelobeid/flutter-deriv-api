@@ -15,7 +15,7 @@ use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
 use BOM::Product::Contract::Category;
 use BOM::Platform::Context;
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 use YAML::XS qw(LoadFile);
 
 my $contract_type_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_types.yml');
@@ -46,7 +46,7 @@ _flush_offerings();
 sub _make_new_flyby {
     my $landing_company_short = shift;
 
-    my $landing_company = BOM::Platform::Runtime::LandingCompany::Registry::get($landing_company_short);
+    my $landing_company = BOM::Platform::LandingCompany::Registry::get($landing_company_short);
     my %category_cache;    # Per-run to catch differences.
     my $runtime = BOM::Platform::Runtime->instance;
     my %suspended_underlyings =
