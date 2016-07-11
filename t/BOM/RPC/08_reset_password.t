@@ -8,7 +8,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
 use utf8;
-use BOM::Platform::Token::Verification;
+use BOM::Platform::Token;
 
 # init db
 my $email_vr = 'abv@binary.com';
@@ -49,7 +49,7 @@ my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 # reset password vrtc
 my $method = 'reset_password';
 subtest 'reset_password_vrtc' => sub {
-    $code = BOM::Platform::Token::Verification->new({
+    $code = BOM::Platform::Token->new({
             email       => $email_vr,
             expires_in  => 3600,
             created_for => 'reset_password'
@@ -114,7 +114,7 @@ subtest $method => sub {
     # reset password with invalid verification code
     $c->call_ok($method, $params)->has_error->error_message_is('Your token has expired.', 'InvalidToken');
 
-    $code = BOM::Platform::Token::Verification->new({
+    $code = BOM::Platform::Token->new({
             email       => $email_cr,
             expires_in  => 3600,
             created_for => 'reset_password'
@@ -126,7 +126,7 @@ subtest $method => sub {
         ->has_error->error_message_is('Password should be at least six characters, including lower and uppercase letters with numbers.',
         'PasswordError');
 
-    $code = BOM::Platform::Token::Verification->new({
+    $code = BOM::Platform::Token->new({
             email       => $email_cr,
             expires_in  => 3600,
             created_for => 'reset_password'
@@ -138,7 +138,7 @@ subtest $method => sub {
     # reset password with wrong date of birth
     $c->call_ok($method, $params)->has_error->error_message_is('The email address and date of birth do not match.', 'DateOfBirthMismatch');
     $params->{args}->{date_of_birth} = $dob;
-    $code = BOM::Platform::Token::Verification->new({
+    $code = BOM::Platform::Token->new({
             email       => $email_cr,
             expires_in  => 3600,
             created_for => 'reset_password'
