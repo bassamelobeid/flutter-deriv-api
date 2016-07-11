@@ -12,7 +12,7 @@ use DateTime;
 use Date::Utility;
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
-use Format::Util::Numbers qw(to_monetary_number_format roundnear);
+use Format::Util::Numbers qw(roundnear);
 
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Locale;
@@ -330,8 +330,8 @@ sub get_limits {
         $withdrawal_since_inception =
             roundnear(0.01, amount_from_to_currency($withdrawal_since_inception, $client->currency, $withdrawal_limit_curr));
 
-        $limit->{withdrawal_since_inception_monetary} = to_monetary_number_format($withdrawal_since_inception, 1);
-        $limit->{withdrawal_for_x_days_monetary}      = to_monetary_number_format($withdrawal_for_x_days,      1);
+        $limit->{withdrawal_since_inception_monetary} = $withdrawal_since_inception;
+        $limit->{withdrawal_for_x_days_monetary}      = $withdrawal_for_x_days;
 
         my $remainder = roundnear(0.01, min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception)));
         if ($remainder < 0) {
@@ -923,10 +923,10 @@ sub __output_payments_error_message {
 sub __client_withdrawal_notes {
     my $arg_ref  = shift;
     my $client   = $arg_ref->{'client'};
-    my $amount   = to_monetary_number_format($arg_ref->{'amount'});
+    my $amount   = roundnear(0.01, $arg_ref->{'amount'});
     my $error    = $arg_ref->{'error'};
     my $currency = $client->currency;
-    my $balance  = $client->default_account ? to_monetary_number_format($client->default_account->balance) : 0;
+    my $balance  = $client->default_account ? roundnear(0.01, $client->default_account->balance) : 0;
 
     if ($error =~ /exceeds client balance/) {
         return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
@@ -994,8 +994,8 @@ sub transfer_between_accounts {
             next unless (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'));
             push @accounts,
                 {
-                loginid  => $account->loginid,
-                balance  => $account->default_account ? to_monetary_number_format($account->default_account->balance) : 0,
+                loginid => $account->loginid,
+                balance => $account->default_account ? roundnear(0.01, $account->default_account->balance) : 0,
                 currency => $account->default_account ? $account->default_account->currency_code : '',
                 };
         }
@@ -1099,10 +1099,10 @@ sub transfer_between_accounts {
     if ($err) {
         my $limit;
         if ($err =~ /exceeds client balance/) {
-            $limit = $currency . ' ' . to_monetary_number_format($client_from->default_account->balance);
+            $limit = $currency . ' ' . roundnear(0.01, $client_from->default_account->balance);
         } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
             my $frozen_bonus = $1;
-            $limit = $currency . ' ' . to_monetary_number_format($client_from->default_account->balance - $frozen_bonus);
+            $limit = $currency . ' ' . roundnear(0.01, $client_from->default_account->balance - $frozen_bonus);
         } elsif ($err =~ /exceeds withdrawal limit \[(.+)\]\s+\((.+)\)/) {
             my $bal_1 = $1;
             my $bal_2 = $2;
