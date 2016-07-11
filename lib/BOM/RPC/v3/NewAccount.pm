@@ -179,7 +179,6 @@ sub new_account_real {
 
     my $client = $params->{client};
 
-    my $response  = 'new_account_real';
     my $error_map = BOM::Platform::Locale::error_map();
 
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
@@ -247,7 +246,6 @@ sub new_account_maltainvest {
 
     my $client = $params->{client};
 
-    my $response  = 'new_account_maltainvest';
     my $args      = $params->{args};
     my $error_map = BOM::Platform::Locale::error_map();
 
@@ -304,8 +302,6 @@ sub new_account_japan {
     my $params = shift;
 
     my $client = $params->{client};
-
-    my $response  = 'new_account_japan';
     my $error_map = BOM::Platform::Locale::error_map();
 
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
@@ -375,6 +371,8 @@ sub new_account_japan {
 
 sub new_sub_account {
     my $params = shift;
+
+    my $error_map = BOM::Platform::Locale::error_map();
 
     my $client = $params->{client};
     if ($client->is_virtual or not $client->allow_omnibus) {
