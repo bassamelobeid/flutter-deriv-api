@@ -19,7 +19,11 @@ my $storage_accessor = Quant::Framework::StorageAccessor->new(
     chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
     chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
 );
-Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $now)->update({
+Quant::Framework::CorporateAction->create(
+    storage_accessor => $storage_accessor,
+    symbol           => 'USAAPL',
+    for_date         => $now,
+)->update({
         80004829 => {
             type        => 'DVD_CASH',
             flag        => 'N',

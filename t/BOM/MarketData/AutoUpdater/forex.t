@@ -14,12 +14,22 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
+use Quant::Framework::StorageAccessor;
+use Quant::Framework::Holiday;
+use BOM::System::Chronicle;
+
+
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketData::AutoUpdater::Forex;
 initialize_realtime_ticks_db;
 
 # Prep:
+my $storage_accessor = Quant::Framework::StorageAccessor->new(
+    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+);
+
 my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
 set_absolute_time($fake_date->epoch);
 
@@ -35,16 +45,16 @@ BOM::Market::Underlying->new({symbol => 'frxGBPINR'})->set_combined_realtime({
     quote => 100,
 });
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'holiday',
-    {
-        recorded_date => $fake_date,
-        calendar      => {
-            '2013-01-01' => {
-                'New Year' => ['FOREX'],
-            }
-        },
-    });
+Quant::Framework::Holiday->create(
+      storage_accessor => $storage_accessor,
+      for_date         => $fake_date
+    )->update({
+        '2013-01-01' => {
+            'New Year' => ['FOREX'],
+        }
+    }, $fake_date)
+    ->save;
+
 Quant::Framework::Utils::Test::create_doc(
     'volsurface_delta',
     {

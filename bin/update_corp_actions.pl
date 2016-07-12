@@ -40,8 +40,16 @@ sub script_run {
     foreach my $file (@files) {
         my %grouped_actions = $parser->process_data($file);
         foreach my $symbol (keys %grouped_actions) {
-            my $previous_corp = Quant::Framework::CorporateAction::load($storage_accessor, $symbol)
-                || Quant::Framework::CorporateAction::create($storage_accessor, $symbol, $now);
+            my %ca_request = (
+            );
+            my $previous_corp = Quant::Framework::CorporateAction->load(
+              storage_accessor => $storage_accessor,
+              symbol           => $symbol,
+            ) || Quant::Framework::CorporateAction->create(
+              storage_accessor => $storage_accessor,
+              symbol           => $symbol,
+              for_date         => $now,
+            );
 
             my ($new_corp, $new_actions, $cancelled_actions) =
                 $previous_corp->update($grouped_actions{$symbol}, $now);
