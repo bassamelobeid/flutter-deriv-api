@@ -23,7 +23,7 @@ subtest 'tuesday to friday close' => sub {
     my $expiry = Date::Utility->new('2016-01-22 21:00:00');
     my $data   = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/vol_expiry_test.yml');
 
-    foreach my $now (map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [Date::Utility->new($_)->epoch, Date::Utility->new($_)] } keys $data) {
+    foreach my $now (map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [Date::Utility->new($_)->epoch, Date::Utility->new($_)] } keys %$data) {
         my $surface_data = $data->{$now->datetime}{surface_data};
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'currency',
