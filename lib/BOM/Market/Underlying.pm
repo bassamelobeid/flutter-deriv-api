@@ -1913,7 +1913,10 @@ sub _build_corporate_actions {
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );
 
-    my $corp = Quant::Framework::CorporateAction::load($storage_accessor, $self->symbol);
+    my $corp = Quant::Framework::CorporateAction->load(
+        storage_accessor => $storage_accessor,
+        symbol           => $self->symbol,
+    );
     # no corporate actions in Chronicle
     return [] unless $corp;
 

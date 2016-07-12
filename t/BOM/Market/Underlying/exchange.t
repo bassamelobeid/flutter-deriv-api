@@ -11,6 +11,9 @@ use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
 use BOM::Test::Data::Utility::UnitTestMarketData;
 use Quant::Framework::TradingCalendar;
+use Quant::Framework::StorageAccessor;
+use Quant::Framework::Holiday;
+
 
 #tests related to underlying-exchange are moved here because exchange is moved to Q::F
 my $date                 = Date::Utility->new('2013-12-01');    # first of December 2014
@@ -22,25 +25,29 @@ my $friday               = Date::Utility->new('2016-03-25');
 my $normal_thursday      = Date::Utility->new('2016-03-24');
 my $early_close_thursday = Date::Utility->new('2016-12-24');
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'holiday',
-    {
-        recorded_date => $date,
-        calendar      => {
-            "6-May-2013" => {
-                "Early May Bank Holiday" => [qw(LSE)],
-            },
-            "25-Dec-2013" => {
-                "Christmas Day" => [qw(LSE FOREX METAL)],
-            },
-            "1-Jan-2014" => {
-                "New Year's Day" => [qw(LSE FOREX METAL)],
-            },
-            "1-Apr-2013" => {
-                "Easter Monday" => [qw(LSE)],
-            },
+my $storage_accessor = Quant::Framework::StorageAccessor->new(
+    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+);
+
+Quant::Framework::Holiday->create(
+      storage_accessor => $storage_accessor,
+      for_date         => $date,
+    )->update({
+        "6-May-2013" => {
+            "Early May Bank Holiday" => [qw(LSE)],
         },
-    });
+        "25-Dec-2013" => {
+            "Christmas Day" => [qw(LSE FOREX METAL)],
+        },
+        "1-Jan-2014" => {
+            "New Year's Day" => [qw(LSE FOREX METAL)],
+        },
+        "1-Apr-2013" => {
+            "Easter Monday" => [qw(LSE)],
+        },
+    }, $date)
+    ->save;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'partial_trading',
@@ -77,9 +84,9 @@ my $chronicle_r = BOM::System::Chronicle::get_chronicle_reader($date);
 
 my $ul_LSE = BOM::Market::Underlying->new('FTSE');
 my $LSE = Quant::Framework::TradingCalendar->new({
-        symbol => 'LSE', 
+        symbol => 'LSE',
         underlying_config => $ul_LSE->config,
-        chronicle_reader => $chronicle_r, 
+        chronicle_reader => $chronicle_r,
         for_date => $date});
 
 is $ul_LSE->exchange->symbol, $LSE->symbol, "This underlying's exchange is what we expect";
