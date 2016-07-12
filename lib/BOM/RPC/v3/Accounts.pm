@@ -878,7 +878,21 @@ sub api_token {
 
     my $client = $params->{client};
     my $args   = $params->{args};
-    my $rtn;
+
+    # check if sub_account loginid is present then check if its valid
+    # and assign it to client object
+    my $sub_account_loginid = $params->{args}->{sub_account};
+    my ($rtn, $sub_account_client);
+    if ($sub_account_loginid) {
+        $sub_account_client = BOM::Platform::Client->new({loginid => $sub_account_loginid});
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidSubAccount',
+                message_to_client => localize('Please provide a valid sub account loginid.')
+        }) unless $sub_account_client;
+        $client = $sub_account_client;
+        $rtn->{sub_account} = $sub_account_loginid;
+    }
+
     my $m = BOM::Database::Model::AccessToken->new;
     if ($args->{delete_token}) {
         $m->remove_by_token($args->{delete_token});
