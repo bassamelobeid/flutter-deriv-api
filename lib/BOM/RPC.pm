@@ -98,8 +98,7 @@ sub register {
             my $result = $code->(@_);
 
             if ($verify_app_res && ref $result eq 'HASH') {
-                $result->{stash} ||= {};
-                %{$result->{stash}} = (%{$result->{stash}}, %{$verify_app_res->{stash}});
+                $result->{stash} = {%{$result->{stash} // {}}, %{$verify_app_res->{stash}},};
             }
             return $result;
         });
