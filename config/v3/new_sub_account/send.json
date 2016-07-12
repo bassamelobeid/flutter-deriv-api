@@ -5,7 +5,9 @@
   "description": "This call opens a new sub account for account that is used to call this api.",
   "properties": {
     "new_sub_account": {
-      "enum": [1],
+      "enum": [
+        1
+      ],
       "description": "Must be 1",
       "required": "1"
     },
