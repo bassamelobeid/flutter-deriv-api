@@ -54,7 +54,8 @@ if ($broker and $id) {
         payout      => $contract->payout,
         description => $contract->longcode,
         ccy         => $details->{currency_code},
-        ask_price   => $contract->ask_price,
+        ask_price   => $details->{ask_price},
+        bid_price   => $details->{bid_price} // 'null';
     );
 }
 my $display = $params{download} ? 'download' : 'display';
