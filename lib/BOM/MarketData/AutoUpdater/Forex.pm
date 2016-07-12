@@ -23,6 +23,7 @@ use File::Find::Rule;
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::VolSurface::Delta;
+use Quant::Framework::VolSurface::Utils;
 use List::Util qw( first );
 
 has file => (
@@ -126,11 +127,47 @@ sub _build_surfaces_from_file {
                 $surface->{$underlying}->{surface} = _append_to_existing_surface($surface->{$underlying}->{surface}, $underlying);
             }
         }
+        _convert_tenors_to_day($surface);
         push @volsurface, $surface;
     }
 
     my $combined = {map { %$_ } @volsurface};
     return $combined;
+}
+
+sub _convert_tenors_to_day {
+    my $surfaces = shift;
+
+    foreach my $symbol (keys %{$surfaces}) {
+        my $builder = Quant::Framework::Utils::Builder->new({
+            chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer(),
+            underlying_config => BOM::Market::Underlying->new($symbol)->config,
+        });
+
+        my $expiry_conventions = $builder->build_expiry_conventions;
+
+        my $surface_data = $surfaces->{$symbol}{surface};
+        foreach my $maturity (keys %{$surface_data}) {
+            my $smile = $surface_data->{$maturity};
+            my $effective_date;
+            if ($maturity =~ /^(?:ON|\d{1,2}[WMY])$/) {
+                $effective_date ||= Quant::Framework::VolSurface::Utils->new->effective_date_for($surfaces->{$symbol}{recorded_date});
+
+                my $vol_expiry_date = $expiry_conventions->vol_expiry_date({
+                    from => $effective_date,
+                    term => $maturity
+                });
+                my $day = $vol_expiry_date->days_between($effective_date);
+
+                $surfaces->{$symbol}{surface}{$day} = $smile;
+                $surfaces->{$symbol}{surface}{$day}{tenor} = $maturity;
+                delete $surfaces->{$symbol}{surface}{$maturity};
+            }
+        }
+    }
+
+    return;
 }
 
 has _connect_ftp => (
@@ -195,10 +232,8 @@ sub run {
 
 sub _append_to_existing_surface {
     my ($new_surface, $underlying_symbol) = @_;
-    my $underlying       = BOM::Market::Underlying->new($underlying_symbol);
-    my $existing_surface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
-            underlying => $underlying
-        })->surface;
+    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $existing_surface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying})->surface;
 
     foreach my $term (keys %{$existing_surface}) {
 
