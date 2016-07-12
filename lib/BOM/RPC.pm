@@ -108,6 +108,9 @@ sub startup {
     # at a time.
     $app->config->{hypnotoad}->{multi_accept} = 1;
 
+    # A connection should accept only one requests, then it should terminate.
+    $app->config->{hypnotoad}->{requests}     = 1;
+
     my $log = $app->log;
 
     my $signature = "Binary.com RPC";
