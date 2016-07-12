@@ -13,6 +13,7 @@ use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::RPC::v3::Contract;
+use Data::Dumper;
 
 sub proposal {
     my ($c, $req_storage) = @_;
@@ -125,36 +126,6 @@ sub _send_ask {
             msg_type => 'proposal',
             success  => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
-#<<<<<<< HEAD
-#                my $args = $req_storage->{args};
-#                my $uuid;
-#
-#                if ($rpc_response and exists $rpc_response->{error}) {
-#                    my $err = $c->new_error('proposal', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
-#                    $err->{error}->{details} = $rpc_response->{error}->{details} if (exists $rpc_response->{error}->{details});
-#                    return $err;
-#                }
-#
-#                if (not $uuid = _pricing_channel_for_ask($c, 'subscribe', $args)) {
-#                    return $c->new_error('proposal',
-#                        'AlreadySubscribedOrLimit',
-#                        $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
-#                }
-#
-#                # if uuid is set (means subscribe:1), and channel stil exists we cache the longcode here (reposnse from rpc) to add them to responses from pricer_daemon.
-#                my $pricing_channel = $c->stash('pricing_channel');
-#                if ($uuid and exists $pricing_channel->{uuid}->{$uuid}) {
-#                    my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
-#                    my $subchannel = $args->{amount_per_point} || $args->{amount};
-#                    $pricing_channel->{$redis_channel}->{$subchannel}->{longcode} = $rpc_response->{longcode};
-#                    $c->stash('pricing_channel' => $pricing_channel);
-#                }
-#
-#                return {
-#                    msg_type   => 'proposal',
-#                    'proposal' => {($uuid ? (id => $uuid) : ()), %$rpc_response}};
-#            }
-#=======
                 $req_storage->{uuid} = _pricing_channel_for_ask($c, 'subscribe', $req_storage->{args}, $rpc_response);
             },
             response => sub {
@@ -171,7 +142,6 @@ sub _send_ask {
                 }
                 return $api_response;
             },
-#>>>>>>> master
         });
     return;
 }
@@ -204,8 +174,9 @@ sub _pricing_channel_for_ask {
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel = $args->{amount_per_point} || $args->{amount};
 
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd,
-        BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args));
+    my $skip = BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
+
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $skip, $cache);
 }
 
 sub _pricing_channel_for_bid {
@@ -250,11 +221,11 @@ sub _create_pricer_channel {
     $pricing_channel->{$redis_channel}->{$subchannel}->{contract_parameters} = $cache->{contract_parameters};
     # cache the longcode to add them to responses from pricer_daemon.
     $pricing_channel->{$redis_channel}->{$subchannel}->{longcode} = $cache->{longcode};
-    $pricing_channel->{uuid}->{$uuid}->{redis_channel}        = $redis_channel;
-    $pricing_channel->{uuid}->{$uuid}->{subchannel}           = $subchannel;
-    $pricing_channel->{uuid}->{$uuid}->{price_daemon_cmd}     = $price_daemon_cmd;
-    $pricing_channel->{$price_daemon_cmd}->{$uuid}            = 1;                   # for forget_all
-    $pricing_channel->{uuid}->{$uuid}->{args}                 = $args;               # for buy rpc call
+    $pricing_channel->{uuid}->{$uuid}->{redis_channel}            = $redis_channel;
+    $pricing_channel->{uuid}->{$uuid}->{subchannel}               = $subchannel;
+    $pricing_channel->{uuid}->{$uuid}->{price_daemon_cmd}         = $price_daemon_cmd;
+    $pricing_channel->{$price_daemon_cmd}->{$uuid}                = 1;                    # for forget_all
+    $pricing_channel->{uuid}->{$uuid}->{args}                     = $args;                # for buy rpc call
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
