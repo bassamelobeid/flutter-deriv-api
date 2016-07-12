@@ -36,7 +36,7 @@ ok $tokens->[0]->{last_used} =~ /^[\d\-]{10}\s+[\d\:]{8}$/; # update on get_logi
 my $token_cnt = $m->get_token_count_by_loginid($test_loginid);
 is $token_cnt, 1;
 
-my $ok = $m->remove_by_token($token);
+my $ok = $m->remove_by_token($token, $test_loginid);
 ok $ok;
 
 $client_loginid = $m->get_loginid_by_token($token);
