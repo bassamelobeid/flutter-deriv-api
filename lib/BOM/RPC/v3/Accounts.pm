@@ -896,7 +896,7 @@ sub api_token {
 
     my $m = BOM::Database::Model::AccessToken->new;
     if ($args->{delete_token}) {
-        $m->remove_by_token($args->{delete_token});
+        $m->remove_by_token($args->{delete_token}, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
