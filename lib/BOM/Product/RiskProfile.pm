@@ -10,7 +10,7 @@ use JSON qw(from_json);
 use List::Util qw(first);
 use List::MoreUtils qw(all);
 
-has [qw(contract_category underlying expiry_type start_type currency)] => (
+has [qw(contract_category underlying expiry_type start_type currency barrier_category)] => (
     is       => 'ro',
     required => 1,
 );
