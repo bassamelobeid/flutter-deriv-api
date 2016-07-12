@@ -2758,6 +2758,7 @@ sub _build_risk_profile {
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
         currency          => $self->currency,
+        barrier_category  => $self->barrier_category,
     );
 }
 
