@@ -29,8 +29,14 @@ my $storage_accessor = Quant::Framework::StorageAccessor->new(
 );
 my $date       = Date::Utility->new('2013-03-27');
 
-my $corp_apple = Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $date);
-my $corp_google = Quant::Framework::CorporateAction::create($storage_accessor, 'USGOOG', $date);
+my $corp_apple = Quant::Framework::CorporateAction->create(
+    storage_accessor => $storage_accessor,
+    symbol           => 'USAAPL',
+    for_date         => $date);
+my $corp_google = Quant::Framework::CorporateAction->create(
+    storage_accessor => $storage_accessor,
+    symbol           => 'USGOOG',
+    for_date         => $date);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -388,7 +394,10 @@ subtest 'order check' => sub {
     my $id_1 = 11223344;
     my $id_2 = 11223355;
 
-    my $corp_2 = Quant::Framework::CorporateAction::create($storage_accessor, 'USPM', $date);
+    my $corp_2 = Quant::Framework::CorporateAction->create(
+        storage_accessor => $storage_accessor,
+        symbol           => 'USPM',
+        for_date         => $date);
 
     my %corp_args = (
         $id_1 => {
