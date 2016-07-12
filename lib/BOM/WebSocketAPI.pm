@@ -267,8 +267,8 @@ sub startup {
         [
             'proposal_open_contract',
             {
-                instead_of_forward => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract,
-                require_auth       => 'read',
+                require_auth    => 'read',
+                rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract,
             }
         ],
         [

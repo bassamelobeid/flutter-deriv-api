@@ -29,17 +29,6 @@ sub proposal {
 }
 
 sub proposal_open_contract {
-    my ($c, $req_storage) = @_;
-    my $args = $req_storage->{args};
-
-    delete $req_storage->{instead_of_forward};
-    $req_storage->{rpc_response_cb} = \&proposal_open_contract_cb;
-    $c->call_rpc($req_storage);
-
-    return;
-}
-
-sub proposal_open_contract_cb {
     my ($c, $response, $req_storage) = @_;
 
     my $args = $req_storage->{args};
