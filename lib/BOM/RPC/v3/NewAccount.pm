@@ -301,7 +301,7 @@ sub new_account_maltainvest {
 sub new_account_japan {
     my $params = shift;
 
-    my $client = $params->{client};
+    my $client    = $params->{client};
     my $error_map = BOM::Platform::Locale::error_map();
 
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
