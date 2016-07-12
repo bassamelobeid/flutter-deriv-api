@@ -15,20 +15,30 @@ use BOM::Product::Offerings qw(get_offerings_flyby);
 use BOM::Market::Underlying;
 use Date::Utility;
 
+use Quant::Framework::Holiday;
+use Quant::Framework::StorageAccessor;
+
+my $storage_accessor = Quant::Framework::StorageAccessor->new(
+    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+);
+
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
+
 subtest "predefined contracts for symbol" => sub {
     my $now = Date::Utility->new('2015-08-21 05:30:00');
+    my $past =  Date::Utility->new('2014-01-01');
 
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'holiday',
-        {
-            recorded_date => $now,
-            calendar      => {
-                "01-Jan-15" => {
-                    "Christmas Day" => ['FOREX'],
-                },
+    Quant::Framework::Holiday->create(
+            storage_accessor => $storage_accessor,
+            for_date         => $past,
+        )->update({
+            "01-Jan-15" => {
+              "Christmas Day" => ['FOREX'],
             },
-        });
+        }, $past)->save;
+
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_delta',
         {
