@@ -81,15 +81,12 @@ sub _collect_vol_ages {
 
     my @symbols = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
     foreach my $symbol (@symbols) {
-        my $underlying      = BOM::Market::Underlying->new($symbol);
+        my $underlying = BOM::Market::Underlying->new($symbol);
         next if $underlying->volatility_surface_type eq 'flat';
         my $dm              = BOM::MarketData::Fetcher::VolSurface->new;
-        my $surface_in_used = $dm->fetch_surface({
-            underlying => $underlying,
-            cutoff     => 'New York 10:00'
-        });
-        my $vol_age = (time - $surface_in_used->recorded_date->epoch) / 3600;
-        my $market  = $underlying->market->name;
+        my $surface_in_used = $dm->fetch_surface({underlying => $underlying});
+        my $vol_age         = (time - $surface_in_used->recorded_date->epoch) / 3600;
+        my $market          = $underlying->market->name;
         if ($market eq 'forex' or $market eq 'commodities') {
             if ($underlying->quanto_only) {
                 $market = 'forex_quanto';
@@ -139,7 +136,7 @@ sub _collect_rates_ages {
 
     foreach my $implied_symbol_to_update (@implied_symbols_to_update) {
         my $rates_in_used = Quant::Framework::ImpliedRate->new(
-            symbol => $implied_symbol_to_update,
+            symbol           => $implied_symbol_to_update,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
@@ -154,7 +151,7 @@ sub _collect_rates_ages {
             next;
         }
         my $currency_in_used = Quant::Framework::InterestRate->new(
-            symbol => $currency_symbol_to_update,
+            symbol           => $currency_symbol_to_update,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
@@ -169,7 +166,7 @@ sub _collect_rates_ages {
     );
     foreach my $smart_fx (@smart_fx) {
         my $smart_fx_in_used = Quant::Framework::InterestRate->new(
-            symbol => $smart_fx,
+            symbol           => $smart_fx,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
@@ -184,9 +181,8 @@ sub _collect_rates_ages {
 sub _collect_correlation_ages {
 
     my $latest_correlation_matrix_age = time - Quant::Framework::CorrelationMatrix->new({
-            symbol              => 'indices',
-            chronicle_reader    => BOM::System::Chronicle::get_chronicle_reader()
-        })->recorded_date->epoch;
+            symbol           => 'indices',
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader()})->recorded_date->epoch;
     stats_gauge('correlation_matrix.age', $latest_correlation_matrix_age);
     return;
 
@@ -223,7 +219,8 @@ sub _collect_dividend_ages {
     );
 
     foreach my $index (@offer_indices) {
-        my $dividend_in_used = Quant::Framework::Dividend->new(symbol => $index,
+        my $dividend_in_used = Quant::Framework::Dividend->new(
+            symbol           => $index,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
 

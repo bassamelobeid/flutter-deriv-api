@@ -12,7 +12,6 @@ commodities:
     sod_blackout_start: '10m'
     reduced_display_decimals: 1
     asset_type: 'currency'
-    vol_cut_off: 'NY1000'
     absolute_barrier_multiplier: 1
     explanation: 'Commodities are traded items with directly usable qualities.'
     license: "realtime"
@@ -35,7 +34,6 @@ forex:
     integer_number_of_day: 1
     reduced_display_decimals: 1
     asset_type: 'currency'
-    vol_cut_off: 'NY1000'
     foreign_bs_probability: 1
     absolute_barrier_multiplier: 1
     explanation: 'Forex (or foreign exchange) represents the ratio between the values of two currencies.'
