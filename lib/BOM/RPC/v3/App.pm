@@ -199,7 +199,7 @@ sub verify_app {
     my $app;
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    if ($app_id !~ /^\d+$/ || not($app = $oauth->verify_app($app_id))) {
+    if ($app_id !~ /^\d+$/ or not($app = $oauth->verify_app($app_id))) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidAppID',
             message_to_client => localize('Your app_id is invalid.'),
