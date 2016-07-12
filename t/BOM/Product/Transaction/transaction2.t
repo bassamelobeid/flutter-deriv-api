@@ -914,6 +914,148 @@ subtest 'custom client limit' => sub {
     'survived';
 };
 
+subtest 'non atm turnover checks' => sub {
+    lives_ok {
+        my $cl = create_client;
+
+        top_up $cl, 'USD', 5000;
+
+        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+
+        my $bal;
+        is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
+
+        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        note("sets non_atm tick expiry forex to extreme risk");
+        note("mocked extreme_risk USD limit to 149.99");
+        BOM::System::Config::quants->{risk_profile}{extreme_risk}{turnover}{USD} = 149.99;
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '5t',
+            tick_expiry  => 1,
+            tick_count   => 5,
+            current_tick => $tick,
+            barrier      => 'S10P',
+        });
+
+        my $txn = BOM::Product::Transaction->new({
+            client      => $cl,
+            contract    => $contract,
+            price       => 50.00,
+            payout      => $contract->payout,
+            amount_type => 'payout',
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_transaction->mock(
+                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            note('mocking custom_product_profiles');
+            my $new  = {
+                xxx => {
+                    "expiry_type"       => "tick",
+                    "start_type"        => "spot",
+                    "contract_category" => "callput",
+                    "market"            => "forex",
+                    "barrier_category"  => "euro_non_atm",
+                    "risk_profile"      => "extreme_risk",
+                    "name"              => "tick_expiry_nonatm_turnover_limit"
+                }};
+            BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles(to_json($new));
+
+            is $txn->buy, undef, 'bought 1st contract';
+            is $txn->buy, undef, 'bought 2nd contract';
+
+            my $atm_contract = produce_contract({
+                underlying   => $underlying,
+                bet_type     => 'CALL',
+                currency     => 'USD',
+                payout       => 100,
+                duration     => '5t',
+                tick_expiry  => 1,
+                tick_count   => 5,
+                current_tick => $tick,
+                barrier      => 'S0P',
+            });
+            $txn = BOM::Product::Transaction->new({
+                client        => $cl,
+                contract      => $atm_contract,
+                price         => 50.00,
+                payout        => $atm_contract->payout,
+                amount_type   => 'payout',
+                purchase_date => $atm_contract->date_start,
+            });
+            is $txn->buy, undef, 'bought atm tick expiry';
+            # create a new transaction object to get pristine (undef) contract_id and the like
+            $txn = BOM::Product::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => $contract->date_start,
+            });
+
+            $txn->buy;
+        };
+
+        SKIP: {
+            skip 'no error', 6
+                unless isa_ok $error, 'Error::Base';
+
+            is $error->get_type, 'tick_expiry_nonatm_turnover_limitExceeded', 'error is tick_expiry_nonatm_turnover_limit';
+
+            is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
+            is $error->{-mesg},              'Exceeds turnover limit on tick_expiry_nonatm_turnover_limit',             'mesg';
+
+            is $txn->contract_id,    undef, 'txn->contract_id';
+            is $txn->transaction_id, undef, 'txn->transaction_id';
+            is $txn->balance_after,  undef, 'txn->balance_after';
+        }
+
+
+        # now matching exactly the limit -- should succeed
+        $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_transaction->mock(
+                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            note("mocked extreme_tisk USD limit to 150.00");
+            BOM::System::Config::quants->{risk_profile}{extreme_risk}{turnover}{USD} = 150.00;
+
+            $contract = make_similar_contract($contract);
+            # create a new transaction object to get pristine (undef) contract_id and the like
+            $txn = BOM::Product::Transaction->new({
+                client        => $cl,
+                contract      => $contract,
+                price         => 50.00,
+                payout        => $contract->payout,
+                amount_type   => 'payout',
+                purchase_date => $contract->date_start,
+            });
+            $txn->buy;
+        };
+        is $error, undef, 'exactly matching the limit ==> successful buy';
+
+    }
+    'survived';
+};
+
 # see further transaction.t:  many more tests
 #             transaction2.t: special turnover limits
 my $empty_hashref = {};
