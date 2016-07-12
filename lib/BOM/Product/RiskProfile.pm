@@ -81,7 +81,11 @@ sub get_turnover_limit_parameters {
         }
 
         # we only need to distinguish atm and non_atm for callput.
-        if ($profile->{barrier_category} eq 'euro_non_atm' and $profile->{contract_category} eq 'callput') {
+        if (    $profile->{barrier_category}
+            and $profile->{barrier_category} eq 'euro_non_atm'
+            and $profile->{contract_category}
+            and $profile->{contract_category} eq 'callput')
+        {
             $params->{non_atm} = 1;
         }
 
