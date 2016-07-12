@@ -197,8 +197,7 @@ sub _append_to_existing_surface {
     my ($new_surface, $underlying_symbol) = @_;
     my $underlying       = BOM::Market::Underlying->new($underlying_symbol);
     my $existing_surface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
-            underlying => $underlying,
-            cutoff     => 'New York 10:00'
+            underlying => $underlying
         })->surface;
 
     foreach my $term (keys %{$existing_surface}) {
