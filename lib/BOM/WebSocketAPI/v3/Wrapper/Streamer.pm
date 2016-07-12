@@ -9,7 +9,6 @@ use Scalar::Util qw (looks_like_number);
 use List::MoreUtils qw(last_index);
 use Format::Util::Numbers qw(roundnear);
 
-use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Japan::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;

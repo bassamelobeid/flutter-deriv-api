@@ -34,7 +34,7 @@ my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.con
 my $response;
 
 foreach my $line (@lines) {
-	next if ($line =~ /^(#.*|)$/);
+    next if ($line =~ /^(#.*|)$/);
     my ($send_file, $receive_file, @template_func) = split(',', $line);
     chomp $receive_file;
     diag("Running [$send_file, $receive_file]\n");
@@ -55,22 +55,22 @@ foreach my $line (@lines) {
     $response->{$call} = $result->{$call};
 
 
-    my $content = $receive_file;
-    my $c       = 0;
+    $content = File::Slurp::read_file('config/v3/' . $receive_file);
+    $c       = 0;
     foreach my $f (@template_func) {
         $c++;
         my $template_content = eval $f;
         $content =~ s/\[_$c\]/$template_content/mg;
     }
-    _test_schema($content, $result);
+    _test_schema($receive_file, $content, $result);
 }
 
 done_testing();
 
 sub _test_schema {
-    my ($schema_file, $data) = @_;
+    my ($schema_file, $content, $data) = @_;
 
-    my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("config/v3/$schema_file", format => \%JSON::Schema::FORMATS)));
+    my $validator = JSON::Schema->new(JSON::from_json($content));
     my $result = $validator->validate($data);
     ok $result, "$schema_file response is valid";
     if (not $result) {
