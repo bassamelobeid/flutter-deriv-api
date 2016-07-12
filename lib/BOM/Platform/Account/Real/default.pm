@@ -59,7 +59,8 @@ sub validate {
         {
             return {error => 'invalid PO Box'};
         }
-        if (any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
+        # check for duplicate email when sub_account_of is not present (omnibus)
+        if ((any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) and not $details->{sub_account_of}) {
             return {error => 'duplicate email'};
         }
         if (BOM::Database::DataMapper::Client->new({broker_code => $broker})->get_duplicate_client($details)) {
