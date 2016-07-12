@@ -71,7 +71,7 @@ sub _test_schema {
     my ($schema_file, $content, $data) = @_;
 
     my $validator = JSON::Schema->new(JSON::from_json($content));
-    my $result = $validator->validate($data);
+    my $result    = $validator->validate($data);
     ok $result, "$schema_file response is valid";
     if (not $result) {
         diag Dumper(\$data);

@@ -323,7 +323,7 @@ sub startup {
         $action_options->{out_validator} = $out_validator;
 
         $action_options->{stash_params} ||= [];
-        push @{$action_options->{stash_params}}, qw( language country_code source valid_source );
+        push @{$action_options->{stash_params}}, qw( language country_code );
 
         push @{$action_options->{stash_params}}, 'token' if $action_options->{require_auth};
     }
@@ -334,7 +334,7 @@ sub startup {
 
             # action hooks
             before_forward           => [\&BOM::WebSocketAPI::Hooks::before_forward,             \&BOM::WebSocketAPI::Hooks::get_rpc_url],
-            before_call              => [\&BOM::WebSocketAPI::Hooks::start_timing],
+            before_call              => [\&BOM::WebSocketAPI::Hooks::add_app_id,                 \&BOM::WebSocketAPI::Hooks::start_timing],
             before_get_rpc_response  => [\&BOM::WebSocketAPI::Hooks::log_call_timing],
             after_got_rpc_response   => [\&BOM::WebSocketAPI::Hooks::log_call_timing_connection, \&BOM::WebSocketAPI::Hooks::error_check],
             before_send_api_response => [

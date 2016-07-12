@@ -249,4 +249,11 @@ sub close_bad_connection {
     return;
 }
 
+sub add_app_id {
+    my ($c, $req_storage) = @_;
+    $req_storage->{call_params}->{valid_source} = $c->stash('valid_source');
+    $req_storage->{call_params}->{source}       = $c->stash('source');
+    return;
+}
+
 1;
