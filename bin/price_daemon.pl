@@ -60,6 +60,10 @@ while (1) {
         my $params  = {@{$payload}};
 
         my $price_daemon_cmd = delete $params->{price_daemon_cmd};
+        unless ($price_daemon_cmd) {
+            warn "Pricer command missed! Payload is: " . $next;
+            next;
+        }
         my $current_time     = time;
         my $response;
 
@@ -78,13 +82,14 @@ while (1) {
 
             $response = BOM::RPC::v3::Contract::send_bid({args => $params});
 
+        } else {
+            warn "Unrecognized Pricer command! Payload is: " . $next;
+            next;
         }
 
-        if ($price_daemon_cmd) {
-            DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => ['tag:' . $internal_ip]});
-            DataDog::DogStatsd::Helper::stats_timing("pricer_daemon.$price_daemon_cmd.time", $response->{rpc_time}, {tags => ['tag:' . $internal_ip]});
-            $response->{price_daemon_cmd} = $price_daemon_cmd;
-        }
+        DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.call", {tags => ['tag:' . $internal_ip]});
+        DataDog::DogStatsd::Helper::stats_timing("pricer_daemon.$price_daemon_cmd.time", $response->{rpc_time}, {tags => ['tag:' . $internal_ip]});
+        $response->{price_daemon_cmd} = $price_daemon_cmd;
 
         warn "Pricing time too long: " . $response->{rpc_time} . ' ' . Data::Dumper::Dumper($params) if $response->{rpc_time}>1000;
 
