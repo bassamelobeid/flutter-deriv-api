@@ -46,7 +46,7 @@ sub new_account_virtual {
         return $err_code;
     }
 
-    my $email = BOM::Platform::Token::Verification->new({token => $args->{verification_code}})->email;
+    my $email = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
 
     if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -94,7 +94,7 @@ sub verify_email {
 
     my $email = $params->{args}->{verify_email};
     my $type  = $params->{args}->{type};
-    my $code  = BOM::Platform::Token::Verification->new({
+    my $code  = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
             created_for => $type,
@@ -200,7 +200,7 @@ sub new_account_real {
                 code              => 'NoLandingCompany',
                 message_to_client => $error_map->{'No landing company for this country'}});
     }
-    my $broker = BOM::Platform::Runtime::LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
     my $details_ref = _get_client_details($params, $client, $broker);
     if (my $err = $details_ref->{error}) {
@@ -320,7 +320,7 @@ sub new_account_japan {
                 code              => 'NoLandingCompany',
                 message_to_client => $error_map->{'No landing company for this country'}});
     }
-    my $broker = BOM::Platform::Runtime::LandingCompany::Registry->new->get($company)->broker_codes->[0];
+    my $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
     my $args = $params->{args};
     my $details_ref = _get_client_details($params, $client, $broker);
