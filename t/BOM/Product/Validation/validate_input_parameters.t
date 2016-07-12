@@ -1,6 +1,6 @@
 #!/etc/rmg/bin/perl
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::NoWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -11,6 +11,7 @@ use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::UnitTestPrice;
 use Test::MockModule;
 
 my $now = Date::Utility->new('2016-03-18 01:00:00');
@@ -72,3 +73,73 @@ subtest 'invalid start and expiry time' => sub {
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
 };
+
+
+$fake_tick = BOM::Market::Data::Tick->new({
+    underlying => 'frxUSDJPY',
+    epoch => $now->epoch,
+    quote => 100,
+});
+
+my $bet_params2 = {
+    underlying   => 'frxUSDJPY',
+    bet_type     => 'CALL',
+    currency     => 'USD',
+    payout       => 100,
+    date_start   => $now,
+    date_pricing => $now,
+    duration     => '4d',
+    barrier      => '0',
+    current_tick => $fake_tick,
+};
+
+subtest 'absolute barrier for a non-intraday contract' => sub {
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'currency',
+        {
+            symbol        => $_,
+            recorded_date => $now,
+            rates => { 1 => 0, 100 => 0, 365 => 0 },
+        }) for qw(USD JPY USD-JPY);
+
+    my $forex = BOM::Market::Underlying->new('frxUSDJPY');
+
+    my $delta_surface = Quant::Framework::VolSurface::Delta->new({
+            deltas        => [75, 50, 25],
+            underlying_config    => $forex->config,
+            chronicle_reader =>  BOM::System::Chronicle::get_chronicle_reader,
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
+            recorded_date => $now,
+            surface       => {
+                1 => {
+                    smile => {
+                        25 => 0.19,
+                        50 => 0.15,
+                        75 => 0.23,
+                    },
+                    vol_spread => {
+                        50 => 0.02,
+                    },
+                },
+                30 => {
+                    smile => {
+                        25 => 0.24,
+                        50 => 0.18,
+                        75 => 0.29,
+                    },
+                    vol_spread => {
+                        50 => 0.02,
+                    },
+                },
+            },
+        });
+    $delta_surface->save;
+
+    my $c = produce_contract($bet_params2);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like ($c->primary_validation_error->{message}, qr/Absolute barrier cannot be zero/, 'Absolute barrier cannot be zero');
+
+    $bet_params2->{barrier} = 101;
+    $c = produce_contract($bet_params2);
+    ok $c->is_valid_to_buy, 'valid to buy';
+}
