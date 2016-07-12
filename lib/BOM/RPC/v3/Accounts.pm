@@ -887,8 +887,9 @@ sub api_token {
         $sub_account_client = BOM::Platform::Client->new({loginid => $sub_account_loginid});
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidSubAccount',
-                message_to_client => localize('Please provide a valid sub account loginid.')
-        }) unless $sub_account_client;
+                message_to_client => localize('Please provide a valid sub account loginid.')}
+        ) if (not $sub_account_client or ($sub_account_client->sub_account_of ne $client->loginid));
+
         $client = $sub_account_client;
         $rtn->{sub_account} = $sub_account_loginid;
     }
