@@ -109,7 +109,7 @@ sub startup {
     $app->config->{hypnotoad}->{multi_accept} = 1;
 
     # A connection should accept only one requests, then it should terminate.
-    $app->config->{hypnotoad}->{requests}     = 1;
+    $app->config->{hypnotoad}->{requests} = 1;
 
     my $log = $app->log;
 
