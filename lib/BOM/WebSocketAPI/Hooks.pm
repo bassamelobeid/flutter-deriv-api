@@ -193,7 +193,7 @@ sub before_forward {
 sub get_rpc_url {
     my ($c, $req_storage) = @_;
 
-    $req_storage->{url} = $ENV{RPC_URL} || app->config->{rpc_url};
+    $req_storage->{url} = $ENV{RPC_URL} || $c->app->config->{rpc_url};
     return;
 }
 
