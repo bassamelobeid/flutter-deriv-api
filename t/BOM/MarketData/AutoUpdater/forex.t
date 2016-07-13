@@ -22,7 +22,6 @@ use BOM::System::Chronicle;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketData::AutoUpdater::Forex;
-initialize_realtime_ticks_db;
 
 # Prep:
 my $storage_accessor = Quant::Framework::StorageAccessor->new(
@@ -63,6 +62,8 @@ Quant::Framework::Utils::Test::create_doc(
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
         recorded_date => Date::Utility->new,
     }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
+
+initialize_realtime_ticks_db;
 
 subtest 'Basics.' => sub {
     my $auf = BOM::MarketData::AutoUpdater::Forex->new(file => ['t/data/bbdl/vol_points/2012-08-13/fx000000.csv']);
@@ -236,6 +237,7 @@ subtest "Friday after close, weekend, won't open check." => sub {
 
         my $result = $auf->passes_additional_check($surface);
         cmp_ok($result, '==', $details->{success}, "Surface with recorded_date for the '$name' test doesn't update.");
+        $DB::single=1 if $name eq 'wont_open';
 
         if (not $result) {
             is(
