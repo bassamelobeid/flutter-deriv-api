@@ -32,7 +32,6 @@ my @params = (
     $method,
     {
         language => 'EN',
-        source   => 1,
         country  => 'ru',
         args     => {},
     });
