@@ -54,9 +54,9 @@ foreach my $line (@lines) {
     my $result = decode_json($t->message->[1]);
     $response->{$call} = $result->{$call};
 
-
     $content = File::Slurp::read_file('config/v3/' . $receive_file);
     $c       = 0;
+
     foreach my $f (@template_func) {
         $c++;
         my $template_content = eval $f;
@@ -71,7 +71,7 @@ sub _test_schema {
     my ($schema_file, $content, $data) = @_;
 
     my $validator = JSON::Schema->new(JSON::from_json($content));
-    my $result = $validator->validate($data);
+    my $result    = $validator->validate($data);
     ok $result, "$schema_file response is valid";
     if (not $result) {
         diag Dumper(\$data);
