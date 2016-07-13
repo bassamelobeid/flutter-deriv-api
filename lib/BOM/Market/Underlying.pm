@@ -153,10 +153,7 @@ has spot_source => (
         'set_combined_realtime'      => 'set_spot_tick',
         'get_combined_realtime_tick' => 'spot_tick',
         'get_combined_realtime'      => 'spot_tick_hash',
-        'pipsized_value'             => 'pipsized_value',
-        'display_decimals'           => 'display_decimals',
         'spot_tick'                  => 'spot_tick',
-        'spot'                       => 'spot_quote',
         'spot_time'                  => 'spot_time',
         'spot_age'                   => 'spot_age',
         'closing_tick_on'            => 'closing_tick_on',
@@ -168,13 +165,21 @@ sub _build_spot_source {
 
     return Finance::Spot->new({
         symbol            => $self->symbol,
-        pip_size          => $self->pip_size,
         feed_api          => $self->feed_api,
         calendar          => $self->calendar,
         for_date          => $self->for_date,
         use_official_ohlc => $self->use_official_ohlc,
     });
 }
+
+sub spot {
+    my $self = shift;
+
+    my $spot_value = $self->spot_source->spot_quote;
+
+    return $self->pipsized_value($spot_value);
+}
+
 
 # Can not be made into an attribute to avoid the caching problem.
 
@@ -1526,6 +1531,43 @@ has pip_size => (
     default => 0.0001,
 );
 
+=head2 display_decimals
+
+How many decimals to display for this underlying
+
+=cut
+
+has display_decimals => (
+    is         => 'ro',
+    isa        => 'Num',
+    lazy_build => 1,
+);
+
+sub _build_display_decimals {
+    my $self = shift;
+
+    return log(1 / $self->pip_size) / log(10);
+}
+
+=head2 pipsized_value
+
+Resize a value to conform to the pip size of this underlying
+
+=cut
+
+sub pipsized_value {
+    my ($self, $value, $custom) = @_;
+
+    my ($pip_size, $display_decimals) =
+          ($custom)
+        ? ($custom, log(1 / $custom) / log(10))
+        : ($self->pip_size, $self->display_decimals);
+    if (defined $value and looks_like_number($value)) {
+        $value = sprintf '%.' . $display_decimals . 'f', $value;
+    }
+    return $value;
+}
+
 =head2 price_at_intervals(\%args)
 
 Give price_at values between start_time and end_time at interval_seconds
@@ -1616,7 +1658,9 @@ sub price_at_intervals {
 sub breaching_tick {
     my ($self, %args) = @_;
 
-    $args{underlying} = $self;
+    $args{underlying} = $self->symbol;
+    $args{pip_size} = $self->pip_size;
+    $args{system_symbol} = $self->system_symbol;
 
     return $self->feed_api->get_first_tick(%args);
 }
