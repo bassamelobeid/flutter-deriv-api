@@ -62,12 +62,28 @@ sub create_pricing_data {
     @currencies       = uniq(grep { defined } @currencies);
     @dividend_symbols = uniq(grep { defined } @dividend_symbols);
 
-    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-        'index',
-        {
-            symbol        => $_,
-            recorded_date => $for_date
-        }) for @dividend_symbols;
+    if ($underlying->market->name ne 'volidx') {
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'index',
+            {
+                symbol        => $_,
+                recorded_date => $for_date
+            }) for @dividend_symbols;
+    } else {
+
+        my $default_rate = 0;
+        $default_rate = -35 if $underlying->symbol eq 'RDBULL';
+        $default_rate = 20  if $underlying->symbol eq 'RDBEAR';
+
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'index',
+            {
+                symbol        => $_,
+                recorded_date => $for_date,
+                rates         => {365 => $default_rate},
+            }) for @dividend_symbols;
+    }
+
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'currency',
         {
