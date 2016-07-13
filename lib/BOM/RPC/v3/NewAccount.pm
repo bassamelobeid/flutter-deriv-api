@@ -376,9 +376,7 @@ sub new_sub_account {
 
     my $client = $params->{client};
     if ($client->is_virtual or not $client->allow_omnibus) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'InvalidAccount',
-                message_to_client => $error_map->{'invalid'}});
+        return BOM::RPC::v3::Utility::permission_error();
     }
 
     my $args = $params->{args};
