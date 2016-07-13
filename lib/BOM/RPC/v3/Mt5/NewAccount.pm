@@ -27,7 +27,7 @@ sub new_account_mt5 {
             });
     }
 
-    my $response  = 'new_account_mt5';
+    $args->{group} = $group;
     my $user = BOM::Mt5::User::create_user($args);
 
     if ($user->{error}) {
