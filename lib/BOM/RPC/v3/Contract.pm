@@ -243,6 +243,7 @@ sub get_bid {
 
             $response->{has_corporate_actions} = 1 if @{$contract->corporate_actions};
 
+            $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
             if ($contract->entry_tick) {
                 my $entry_spot = $contract->underlying->pipsized_value($contract->entry_tick->quote);
                 $response->{entry_tick}      = $entry_spot;
@@ -254,11 +255,9 @@ sub get_bid {
                     $response->{original_high_barrier} = $contract->original_high_barrier->as_absolute
                         if defined $contract->original_high_barrier;
                     $response->{original_low_barrier} = $contract->original_low_barrier->as_absolute if defined $contract->original_low_barrier;
-                    $response->{barrier_count} = 2;
                 } elsif ($contract->barrier) {
                     $response->{barrier}          = $contract->barrier->as_absolute;
                     $response->{original_barrier} = $contract->original_barrier->as_absolute if defined $contract->original_barrier;
-                    $response->{barrier_count}    = 1;
                 }
             }
 
