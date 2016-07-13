@@ -210,6 +210,10 @@ sub startup {
         ['app_update',   \&BOM::RPC::v3::App::update,     1],
         ['app_delete',   \&BOM::RPC::v3::App::delete,     1],
         ['oauth_apps',   \&BOM::RPC::v3::App::oauth_apps, 1],
+
+        ['connect_add',  \&BOM::RPC::v3::Accounts::connect_add,  1],
+        ['connect_del',  \&BOM::RPC::v3::Accounts::connect_del,  1],
+        ['connect_list', \&BOM::RPC::v3::Accounts::connect_list, 1],
     );
     my $services = {};
     foreach my $srv (@services) {

@@ -30,6 +30,8 @@ use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
+use WWW::OneAll;
+use BOM::Database::Model::UserConnect;
 
 sub payout_currencies {
     my $params = shift;
@@ -1136,6 +1138,65 @@ sub reality_check {
     $summary->{open_contract_count} = $data->{open_cnt}      // 0;
 
     return $summary;
+}
+
+sub connect_add {
+    my $params = shift;
+
+    my $connection_token = $params->{connection_token};
+    my $oneall           = WWW::OneAll->new(
+        subdomain   => 'binary',
+        public_key  => '48a20118-629b-4020-83fe-38af46e27b06',
+        private_key => '1970bcf0-a7ec-48f5-b9bc-737eb74146a4',
+    );
+    my $data = $oneall->connection($connection_token) or die $oneall->errstr;
+
+    if ($data->{response}->{request}->{status} != 200) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'ConnectAdd',
+                message_to_client => localize('Failed to get user identity.')});
+    }
+
+    my $client = $params->{client};
+    my $user = BOM::Platform::User->new({email => $client->email});
+
+    my $provider_data = $data->{response}->{result}->{data};
+    my $user_connect  = BOM::Database::Model::UserConnect->new;
+    my $res           = $user_connect->insert_connect($user->id, $provider_data);
+    if ($res->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'ConnectAdd',
+                message_to_client => $res->{error}});
+    }
+
+    return {connect_add => 1};
+}
+
+sub connect_del {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my $user = BOM::Platform::User->new({email => $client->email});
+
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    my $res = $user_connect->remove_connect($user->id, $params->{provider});
+
+    return {connect_del => $res ? 1 : 0};
+}
+
+sub connect_list {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my $user = BOM::Platform::User->new({email => $client->email});
+
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    my @providers    = $user_connect->get_connects_by_user_id($user->id);
+
+    return {
+        connect_list => 1,
+        providers    => \@providers
+    };
 }
 
 1;
