@@ -141,7 +141,7 @@ subtest 'absolute barrier for a non-intraday contract' => sub {
     $bet_params2->{barrier} = 101;
     $c = produce_contract($bet_params2);
     ok $c->is_valid_to_buy, 'valid to buy';
-}
+};
 
 subtest 'invalid barrier for tick expiry' => sub {
     my $bet_params = {
