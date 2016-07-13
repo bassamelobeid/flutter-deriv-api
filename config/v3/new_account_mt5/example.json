@@ -1,6 +1,6 @@
 {
     "new_account_mt5": "1",
-    "type": "demo",
+    "account_type": "demo",
     "email": "test@mailinator.com",
     "name": "Peter Pan",
     "mainPassword": "Abc1234",
