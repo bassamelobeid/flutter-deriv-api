@@ -256,7 +256,7 @@ sub get_bid {
                         if defined $contract->original_high_barrier;
                     $response->{original_low_barrier} = $contract->original_low_barrier->as_absolute if defined $contract->original_low_barrier;
                 } elsif ($contract->barrier) {
-                    $response->{barrier}          = $contract->barrier->as_absolute;
+                    $response->{barrier} = $contract->barrier->as_absolute;
                     $response->{original_barrier} = $contract->original_barrier->as_absolute if defined $contract->original_barrier;
                 }
             }
