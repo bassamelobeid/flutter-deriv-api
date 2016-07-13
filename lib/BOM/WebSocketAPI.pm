@@ -164,6 +164,7 @@ sub startup {
                 stash_params => [qw/ token_type client_ip /]}
         ],
         ['get_settings', {require_auth => 'read'}],
+        ['get_settings_mt5', {require_auth => 'read'}],
         [
             'set_settings',
             {
