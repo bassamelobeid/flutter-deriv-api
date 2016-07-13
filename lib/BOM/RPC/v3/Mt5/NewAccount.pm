@@ -60,5 +60,26 @@ sub new_account_mt5 {
     };
 }
 
+sub get_settings_mt5 {
+    my $params = shift;
+    my $client = $params->{client};
+
+    # TODO: from client->email, check user has this MT5 account. If not, throw permission error
+    my $user = BOM::Platform::User->new({email => $client->email});
+
+    my $args = $params->{args};
+    my $login = $args->{login};
+
+    my $settings = BOM::Mt5::User::get_user($login);
+    if ($settings->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'Mt5GetUserError',
+                message_to_client => $settings->{error}
+            });
+    }
+
+    return $settings;
+}
+
 
 1;
