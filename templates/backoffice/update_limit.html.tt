@@ -32,6 +32,11 @@
             <td> e.g. callput | touchnotouch | endsinout | staysinout | digits | asian | spreads</td>
         </tr>
         <tr>
+            <td>Barrier category: </td>
+            <td><input type="text" name="barrier_category" value=''></input></td>
+            <td> e.g. euro_atm | euro_non_atm</td>
+        </tr>
+        <tr>
             <td>Start type: </td>
             <td><input type="text" name="start_type" value=''></input></td>
             <td> e.g. spot | forward</td>
