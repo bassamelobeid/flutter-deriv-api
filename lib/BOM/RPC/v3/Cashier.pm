@@ -17,6 +17,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
 use BOM::Platform::CurrencyConverter qw(amount_from_to_currency in_USD);
@@ -361,7 +362,7 @@ sub paymentagent_list {
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = BOM::Platform::Runtime->instance->countries->localized_code2country($_->[0], $language);
+        $_->[1] = BOM::Platform::Countries->instance->countries->localized_code2country($_->[0], $language);
     }
 
     my $authenticated_paymentagent_agents =
