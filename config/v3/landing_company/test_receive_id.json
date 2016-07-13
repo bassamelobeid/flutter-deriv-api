@@ -1,0 +1,129 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"type": "object",
+	"properties": {
+		"echo_req": {},
+		"landing_company": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string",
+					"pattern": "^id$"
+				},
+				"name": {
+					"type": "string",
+					"pattern": "^Indonesia$"
+				},
+				"gaming_company": {
+					"country": {
+						"type": "string",
+						"pattern": "^Costa Rica$"
+					},
+					"legal_allowed_markets": {
+						"type": "array",
+						"minItems": 6,
+						"items": {
+							"type": "string",
+							"pattern": "^(commodities|forex|indices|stocks|smarties|volidx)$"
+						}
+					},
+					"shortcode": {
+						"type": "string",
+						"pattern": "^costarica$"
+					},
+					"legal_allowed_contract_categories": {
+						"type": "array",
+						"minItems": 7,
+						"items": {
+							"type": "string",
+							"pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|spreads)$"
+						}
+					},
+					"legal_allowed_currencies": {
+						"type": "array",
+						"minItems": 4,
+						"items": {
+							"type": "string",
+							"pattern": "^(USD|EUR|GBP|AUD)$"
+						}
+					},
+					"legal_allowed_currencies": {
+						"type": "array",
+						"minItems": 4,
+						"items": {
+							"type": "string",
+							"pattern": "^(USD|EUR|GBP|AUD)$"
+						}
+					},
+					"has_reality_check": {
+						"type": "integer",
+						"pattern": "^0$"
+					}
+				}
+			},
+			"financial_company": {
+				"type": "object",
+				"properties": {
+					"shortcode": {
+						"type": "string",
+						"pattern": "^costarica$"
+					},
+					"name": {
+						"type": "string",
+						"pattern": "^Binary \\(C\\.R\\.\\) S\\.A\\.$"
+					},
+					"address": {
+						"type": ["array","null"],
+						"items": {
+							"type": "string"
+						}
+					},
+					"country": {
+						"type": "string",
+						"pattern": "^Costa Rica$"
+					},
+					"legal_default_currency": {
+						"type": "string",
+						"pattern": "^USD$"
+					},
+					"legal_allowed_currencies": {
+						"type": "array",
+						"minItems": 4,
+						"items": {
+							"type": "string",
+							"pattern": "^(USD|EUR|GBP|AUD)$"
+						}
+					},
+					"legal_allowed_markets": {
+						"type": "array",
+						"minItems": 6,
+						"items": {
+							"type": "string",
+							"pattern": "^(commodities|forex|indices|stocks|smarties|volidx)$"
+						}
+					},
+					"legal_allowed_contract_categories": {
+						"type": "array",
+						"minItems": 7,
+						"items": {
+							"type": "string",
+							"pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|spreads)$"
+						}
+					},
+					"has_reality_check": {
+						"type": "integer",
+						"pattern": "^0$"
+					}
+				}
+			}
+		}
+	},
+	"msg_type": {
+		"type": "string"
+	},
+	"required": [
+		"echo_req",
+		"landing_company",
+		"msg_type"
+	]
+}
