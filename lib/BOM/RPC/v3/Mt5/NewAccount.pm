@@ -13,7 +13,6 @@ sub new_account_mt5 {
 
     my $client = $params->{client};
     my $args = $params->{args};
-
     my $account_type = delete $args->{account_type};
 
     my $group;
