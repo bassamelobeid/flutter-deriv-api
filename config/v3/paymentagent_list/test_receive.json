@@ -1,0 +1,81 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "echo_req": {},
+        "paymentagent_list": {
+            "type": "object",
+            "properties": {
+                "available_countries": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": [
+                            {
+                                "type": "string",
+                                "pattern": "^[a-z]{2}$"
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ]
+                    }
+                },
+                "list": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "currencies": {
+                                "type": "string",
+                                "pattern": "^[A-Z]{3}$"
+                            },
+                            "deposit_commission": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                            },
+                            "withdrawal_commission": {
+                                "type": "string",
+                                "pattern": "^\\d+$"
+                            },
+                            "email": {
+                                "type": "string"
+                            },
+                            "further_information": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "paymentagent_loginid": {
+                                "type": "string"
+                            },
+                            "summary": {
+                                "type": "string"
+                            },
+                            "supported_banks": {
+                                "type": "string"
+                            },
+                            "telephone": {
+                                "type": "string"
+                            },
+                            "url": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "msg_type": {
+            "type": "string",
+            "pattern": "^paymentagent_list$"
+        },
+        "req_id": {}
+    },
+    "required": [
+        "echo_req",
+        "msg_type",
+        "paymentagent_list"
+    ]
+}
