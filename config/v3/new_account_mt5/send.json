@@ -75,7 +75,7 @@
     "phone": {
       "type" : "string",
       "maxLength": 50,
-      "description": "User's phone number. Optional field.",
+      "description": "User's phone number. Optional field."
     },
     "phonePassword": {
       "type": "string",
