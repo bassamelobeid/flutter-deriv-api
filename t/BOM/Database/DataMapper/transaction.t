@@ -16,27 +16,6 @@ use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 
 my $txn_data_mapper;
-lives_ok {
-    $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({client_loginid => 'CR0021'});
-
-}
-'Expect to initialize the object';
-
-lives_ok {
-    $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
-        client_loginid => 'CR0021',
-        currency_code  => 'USD'
-    });
-}
-'Expect to initialize the object';
-cmp_ok($txn_data_mapper->get_balance_after_transaction({transaction_time => '2005-09-21 06:14:00'}), '==', 600,
-    "after first transaction balance 600");
-cmp_ok($txn_data_mapper->get_balance_after_transaction({transaction_time => '2005-09-21 06:41:00'}),
-    '==', 553.50, "after third transaction balance 604.5");
-
-throws_ok { $txn_data_mapper->get_balance_after_transaction(); } qr/Must pass transaction_time argument/, 'Croaks unless transaction_time specified';
-throws_ok { $txn_data_mapper->get_balance_after_transaction({transaction_id => 1234567890}); } qr/Must pass transaction_time argument/,
-    'Croaks unless transaction_time specified';
 
 lives_ok {
     $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
