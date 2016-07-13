@@ -1144,28 +1144,6 @@ sub uses_implied_rate {
     return $self->rate_to_imply eq $which ? 1 : 0;
 }
 
-=head2 deny_purchase_during
-
-Do both the supplied start and end Date::Utilitys lie within a denied trading period?
-
-=cut
-
-sub deny_purchase_during {
-    my ($self, $start, $end) = @_;
-
-    my $denied    = ($self->is_buying_suspended) ? 1 : 0;
-    my $day_start = $start->truncate_to_day;
-    my @ieps      = @{$self->inefficient_periods};
-
-    while (not $denied and my $ie = shift @ieps) {
-        $denied = 1
-            unless ($start->is_before($day_start->plus_time_interval($ie->{start}))
-            or $end->is_after($day_start->plus_time_interval($ie->{end})));
-    }
-
-    return $denied;
-}
-
 has '_recheck_appconfig' => (
     is      => 'rw',
     default => sub { return time; },
@@ -1521,31 +1499,6 @@ sub get_ohlc_data_for_period {
     return @ohlcs;
 }
 
-=head2 get_daily_ohlc_table
-
-Returns an array reference with ohlc information in the format of:
-(date, open, high, low, close)
-
-->get_daily_ohlc_table({
-    start => $start,
-    end => $end,
-});
-
-=cut
-
-sub get_daily_ohlc_table {
-    my ($self, $args) = @_;
-
-    my @ohlcs = $self->get_ohlc_data_for_period($args);
-
-    my @table;
-    foreach my $ohlc (@ohlcs) {
-        push @table, [Date::Utility->new($ohlc->epoch)->date, map { $self->pipsized_value($ohlc->$_) } (qw(open high low close))];
-    }
-
-    return \@table;
-}
-
 =head2 get_high_low_for_period
 
 Usage:
@@ -1709,93 +1662,6 @@ sub pipsized_value {
     return $value;
 }
 
-=head2 price_at_intervals(\%args)
-
-Give price_at values between start_time and end_time at interval_seconds
-intervals. Accepts the following parameters:
-
-=over 4
-
-=item B<start_time>
-
-Start from the specified time. This will be rounded up to the multiple of the
-interval size
-
-=item B<end_time>
-
-End at specified time. This will be rounded down to the multiple of the
-interval size
-
-=item B<interval_seconds>
-
-Interval between price_at values in seconds. By default I<intraday_interval> is
-used
-
-=back
-
-Returns reference to the array of hashes with I<epoch> and <quote> elements
-
-=cut
-
-sub price_at_intervals {
-    my $self             = shift;
-    my $args             = shift;
-    my $start_date       = Date::Utility->new($args->{start_time});
-    my $end_date         = Date::Utility->new($args->{end_time} // time);
-    my $interval_seconds = $args->{interval_seconds} // $self->intraday_interval->seconds;
-
-    # We don't want to go beyond the end of the day.
-    # And if it's not even open, just use the same Date.
-    my $day_close = $self->calendar->closing_on($start_date) // $start_date;
-    $end_date = $day_close if ($end_date->is_after($day_close));
-
-    $start_date = Date::Utility->new(POSIX::ceil($start_date->epoch / $interval_seconds) * $interval_seconds);
-    $end_date   = Date::Utility->new(POSIX::floor($end_date->epoch / $interval_seconds) * $interval_seconds);
-
-    my $prices = [];
-    if ($end_date->is_before($start_date)) {
-        return $prices;
-    }
-
-    my $ticks = $self->feed_api->tick_at_for_interval({
-        'start_date'          => $start_date,
-        'end_date'            => $end_date,
-        'interval_in_seconds' => $interval_seconds,
-    });
-
-    my $db_ticks;
-    my $last_tick_in_db = $start_date->epoch;
-    foreach my $tick (@{$ticks}) {
-        $db_ticks->{$tick->epoch} = $tick;
-        $last_tick_in_db = $tick->epoch;
-    }
-
-    my $time = $start_date->epoch;
-    while ($time <= $end_date->epoch) {
-        my $tick;
-        if ($time == $start_date->epoch) {
-            $tick = $self->tick_at($start_date->epoch);
-        } elsif ($time == $end_date->epoch) {
-            $tick = $self->tick_at($end_date->epoch);
-        } elsif ($db_ticks->{$time} and $time != $last_tick_in_db) {
-            $tick = $db_ticks->{$time};
-        } else {
-            $tick = $self->tick_at($time);
-        }
-        if ($tick) {
-            $tick->invert_values if ($self->inverted);
-            push @$prices,
-                {
-                epoch => $time,
-                quote => $self->pipsized_value($tick->quote),
-                };
-        }
-        $time += $interval_seconds;
-    }
-
-    return $prices;
-}
-
 sub breaching_tick {
     my ($self, %args) = @_;
 
@@ -1823,67 +1689,6 @@ Should this underlying use official OHLC
 sub use_official_ohlc {
     my $self = shift;
     return $self->submarket->official_ohlc;
-}
-
-sub forward_starts_on {
-    my $self = shift;
-    my $day  = Date::Utility->new(shift)->truncate_to_day;
-
-    my $calendar = $self->calendar;
-    my $opening  = $calendar->opening_on($day);
-    return [] unless ($opening);
-
-    my $cache_key = 'FORWARDSTARTS::' . $self->symbol;
-    my $cached_starts = Cache::RedisDB->get($cache_key, $day->date);
-    return $cached_starts if ($cached_starts);
-
-    my $sod_bo            = $self->sod_blackout_start;
-    my $eod_bo            = $self->eod_blackout_expiry;
-    my $intraday_interval = $self->intraday_interval;
-
-    # With 0s blackout, skip open if we weren't open at the previous start.
-    # Basically, Monday morning/holiday forex.
-    my $start_at =
-        (not $sod_bo and not $calendar->is_open_at($opening->minus_time_interval($intraday_interval)))
-        ? $opening->plus_time_interval($intraday_interval)
-        : $sod_bo ? $opening->plus_time_interval($sod_bo)
-        :           $opening;
-
-    my $end_at = $eod_bo ? $calendar->closing_on($day)->minus_time_interval($eod_bo) : $calendar->closing_on($day);
-    my @trading_periods;
-    if (my $breaks = $calendar->trading_breaks($day)) {
-        my @breaks = @$breaks;
-        if (@breaks == 1) {
-            my $first_half_close = $eod_bo ? $breaks[0][0]->minus_time_interval($eod_bo) : $breaks[0][0];
-            my $second_half_open = $sod_bo ? $breaks[0][1]->plus_time_interval($sod_bo)  : $breaks[0][1];
-            @trading_periods = ([$start_at, $first_half_close], [$second_half_open, $end_at]);
-        } else {
-            push @trading_periods, [$start_at, $breaks[0][0]];
-            push @trading_periods, [$breaks[0][1],  $breaks[1][0]];
-            push @trading_periods, [$breaks[-1][1], $end_at];
-        }
-    } else {
-        @trading_periods = ([$start_at, $end_at]);
-    }
-
-    my $starts;
-    my $step_seconds = $intraday_interval->seconds;
-    foreach my $period (@trading_periods) {
-        my ($start_period, $end_period) = @$period;
-        my $current = $start_period;
-        my $stop    = $end_period;
-        my $next    = $current->plus_time_interval($intraday_interval);
-
-        while ($next->is_before($end_period)) {
-            push @$starts, $current;
-            $current = $next;
-            $next    = $current->plus_time_interval($intraday_interval);
-        }
-    }
-
-    Cache::RedisDB->set($cache_key, $day->date, $starts, 7207);    # Hold for about 2 hours.
-
-    return $starts;
 }
 
 =head2 corporate_actions

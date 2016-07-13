@@ -486,10 +486,6 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $half_ten = Date::Utility->new(Date::Utility->today->epoch + 37800);
     my $half_one = Date::Utility->new(Date::Utility->today->epoch + 48600);
 
-    isnt($EURUSD->deny_purchase_during(Date::Utility->new($half_ten->epoch - 1), $half_one), 1, " ok a little earlier");
-    isnt($EURUSD->deny_purchase_during($half_ten, Date::Utility->new($half_one->epoch + 1)),     1, " or a little later");
-    isnt($EURUSD->deny_purchase_during($half_ten, Date::Utility->new($half_one->epoch + 86399)), 1, " or even into the same period tomorrow");
-
     my $orig_buy    = BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_buy;
     my $orig_trades = BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades;
 
@@ -725,77 +721,6 @@ subtest 'last_licensed_display_epoch' => sub {
     # chartonly license
     my $DJI = BOM::Market::Underlying->new('DJI');
     ok $DJI->last_licensed_display_epoch == 0, "Do not display any ticks for 'chartonly'";
-};
-
-subtest 'forward_starts_on' => sub {
-    subtest 'frxUSDJPY' => sub {
-        my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
-        my $interval   = 300;
-        subtest 'Mid-Week' => sub {
-            my $date = Date::Utility->new('10-Oct-2013');
-
-            my $expected_starts = [];
-            my $epoch           = $date->epoch;
-            while ($epoch <= 1381449000) {    #10 Oct 2013 23:50:00 GMT - 10 mins before 00:00 GMT.
-                push @$expected_starts, $epoch;
-                $epoch = $epoch + $interval;    #Intraday Interval
-            }
-
-            eq_or_diff([map { $_->epoch } (@{$underlying->forward_starts_on($date)})], $expected_starts, "Got Correct starts");
-        };
-
-        subtest 'Monday' => sub {
-            my $date = Date::Utility->new('21-Oct-2013');
-
-            my $expected_starts = [];
-            my $epoch           = $date->epoch + $interval;    # Should open late because it was closed before.
-            while ($epoch <= 1382399400) {                     #21 Oct 2013 23:50:00 GMT - 10 mins before 00:00 GMT.
-                push @$expected_starts, $epoch;
-                $epoch = $epoch + $interval;                   #Intraday Interval
-            }
-            eq_or_diff([map { $_->epoch } (@{$underlying->forward_starts_on($date)})], $expected_starts, "Got Correct starts");
-
-        };
-
-        subtest 'Friday - Closing Early' => sub {
-            my $date = Date::Utility->new('11-Oct-2013');
-
-            my $expected_starts = [];
-            my $epoch           = $date->epoch;
-            while ($epoch <= 1381524600) {                     #11 Oct 2013 20:50:00 GMT - Closing early friday.
-                push @$expected_starts, $epoch;
-                $epoch = $epoch + $interval;                   #Intraday Interval
-            }
-            eq_or_diff([map { $_->epoch } (@{$underlying->forward_starts_on($date)})], $expected_starts, "Got Correct starts");
-
-        };
-
-        subtest 'weekend' => sub {
-            my $date = Date::Utility->new('12-Oct-2013');      #Saturday
-
-            my $expected_starts = [];
-            eq_or_diff($underlying->forward_starts_on($date), $expected_starts, "Got Correct starts");
-        };
-    };
-    subtest 'N225 - lunch time' => sub {
-        my $underlying = BOM::Market::Underlying->new('N225');
-        my $date       = Date::Utility->new('11-Oct-2013');      #Saturday
-        my $interval   = 300;
-
-        my %lunch = (
-            close_buy => 1381458300,
-            open_buy  => 1381462500,
-        );
-
-        my $expected_starts = [];
-        my $epoch           = 1381450200;                        #11-Oct-13 00h10GMT
-        while ($epoch <= 1381470600) {                           #11-Oct-13 05h50GMT
-            push @$expected_starts, $epoch unless ($epoch >= $lunch{close_buy} and $epoch <= $lunch{open_buy});
-
-            $epoch = $epoch + $interval;                         #Intraday Interval
-        }
-        eq_or_diff([map { $_->epoch } (@{$underlying->forward_starts_on($date)})], $expected_starts, "Got Correct starts");
-    };
 };
 
 subtest 'risk type' => sub {
