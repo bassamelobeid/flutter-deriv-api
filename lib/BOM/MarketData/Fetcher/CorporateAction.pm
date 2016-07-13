@@ -36,7 +36,10 @@ sub get_underlyings_with_corporate_action {
 
     my %list;
     foreach my $underlying_symbol (@stocks_list) {
-        my $corp = Quant::Framework::CorporateAction::load($storage_accessor, $underlying_symbol);
+        my $corp = Quant::Framework::CorporateAction->load(
+            storage_accessor => $storage_accessor,
+            symbol           => $underlying_symbol,
+        );
         next unless $corp;
 
         $list{$underlying_symbol} = $corp->actions;
