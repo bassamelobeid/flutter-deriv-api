@@ -116,6 +116,23 @@ subtest $method => sub {
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($real_client->loginid, 'real account token');
         $rpc_ct->call_ok('new_sub_account', $params)->has_no_system_error->has_error->error_code_is('duplicate name DOB',
             'as details are provided so we will not populate with default values, hence duplicate error');
+
+        # empty all details so that we default details to master account
+        $params->{args} = {new_sub_account => 1};
+        my $result = $rpc_ct->call_ok('new_sub_account', $params)->has_no_system_error->result;
+        is $result->{landing_company}, 'Binary (C.R.) S.A.', 'Landing company same as master account';
+
+        my $sub_account_loginid = $result->{client_id};
+        ok $sub_account_loginid =~ /^CR\d+$/, 'new CR sub account loginid';
+
+        my $sub_client = BOM::Platform::Client->new({loginid => $sub_account_loginid});
+        is $sub_client->sub_account_of, $new_loginid, 'Correct loginid populated for sub_account_of for sub account';
+        is $sub_client->email,         $real_client->email,         'Email for master and sub account is same';
+        is $sub_client->date_of_birth, $real_client->date_of_birth, 'Date of birth for master and sub account is same';
+
+        ok $sub_client->first_name =~ /^$new_loginid\d+$/, "First name of sub account is master account loginid plus time";
+        ok $sub_client->last_name =~ /^$new_loginid\d+$/,  "Last name of sub account is master account loginid plus time";
+        is $sub_client->address_line_1, $real_client->address_line_1, 'same address as master account';
     };
 
 };

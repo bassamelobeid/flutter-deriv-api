@@ -113,7 +113,6 @@ subtest 'get_corporate_actions' => sub {
             type           => 'DVD_STOCK',
         }};
 
-
     Quant::Framework::CorporateAction->create(
         storage_accessor => $storage_accessor,
         symbol           => 'USAAPL',
