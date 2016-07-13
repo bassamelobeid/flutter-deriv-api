@@ -18,95 +18,6 @@ use Data::Dumper;
 sub proposal {
     my ($c, $req_storage) = @_;
 
-    my $symbol   = $req_storage->{args}->{symbol};
-    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
-    if ($response and exists $response->{error}) {
-        return $c->new_error('proposal', $response->{error}->{code}, $c->l($response->{error}->{message}, $symbol));
-    } else {
-        _send_ask($c, $req_storage);
-    }
-    return;
-}
-
-sub proposal_open_contract {
-    my ($c, $response, $req_storage) = @_;
-
-    my $args = $req_storage->{args};
-    if (exists $response->{error}) {
-        return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        my @contract_ids = keys %$response;
-        if (scalar @contract_ids) {
-            my $send_details = sub {
-                my $result = shift;
-                $c->send({
-                        json => {
-                            msg_type               => 'proposal_open_contract',
-                            proposal_open_contract => {%$result}}
-                    },
-                    $req_storage
-                );
-            };
-            foreach my $contract_id (@contract_ids) {
-                if (exists $response->{$contract_id}->{error}) {
-                    $send_details->({
-                            contract_id      => $contract_id,
-                            validation_error => $response->{$contract_id}->{error}->{message_to_client}});
-                } else {
-                    my $uuid;
-                    if (    exists $args->{subscribe}
-                        and $args->{subscribe} eq '1'
-                        and not $response->{$contract_id}->{is_expired}
-                        and not $response->{$contract_id}->{is_sold})
-                    {
-                        my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
-                        $type_args{account_id}     = $response->{$contract_id}->{account_id};
-                        $type_args{transaction_id} = $response->{$contract_id}->{transaction_ids}->{buy};
-                        my $subchannel = join("", map { $_ . ":" . $type_args{$_} } sort keys %type_args);
-
-                        my $subscribe_args = {
-                            subscribe       => 1,
-                            subchannel      => $subchannel,
-                            echo_req        => {%$args},
-                            account_id      => delete $response->{$contract_id}->{account_id},
-                            short_code      => $response->{$contract_id}->{shortcode},
-                            contract_id     => $response->{$contract_id}->{contract_id},
-                            currency        => $response->{$contract_id}->{currency},
-                            is_sold         => $response->{$contract_id}->{is_sold},
-                            sell_time       => $response->{$contract_id}->{sell_time},
-                            sell_price      => $response->{$contract_id}->{sell_price},
-                            passthrough     => $args->{passthrough},
-                            transaction_ids => $response->{$contract_id}->{transaction_ids},
-                            purchase_time   => $response->{$contract_id}->{purchase_time},
-                            buy_price       => $response->{$contract_id}->{buy_price},
-                        };
-
-                        if (not $uuid = _pricing_channel_for_bid($c, 'subscribe', $subscribe_args)) {
-                            return $c->new_error('proposal_open_contract',
-                                'AlreadySubscribedOrLimit',
-                                $c->l('You are either already subscribed or you have reached the limit for proposal_open_contract subscription.'));
-                        }
-
-                        # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $subscribe_args->{account_id},
-                            $uuid, $subscribe_args);
-                    }
-                    my $res = {$uuid ? (id => $uuid) : (), %{$response->{$contract_id}}};
-                    $send_details->($res);
-                }
-            }
-            return;
-        } else {
-            return {
-                msg_type               => 'proposal_open_contract',
-                proposal_open_contract => {}};
-        }
-    }
-    return;
-}
-
-sub _send_ask {
-    my ($c, $req_storage, $api_name) = @_;
     my $args = $req_storage->{args};
 
     $c->call_rpc({
@@ -132,6 +43,82 @@ sub _send_ask {
                 return $api_response;
             },
         });
+    return;
+}
+
+sub proposal_open_contract {
+    my ($c, $response, $req_storage) = @_;
+
+    my $args = $req_storage->{args};
+    my @contract_ids = keys %$response;
+    if (scalar @contract_ids) {
+        my $send_details = sub {
+            my $result = shift;
+            $c->send({
+                    json => {
+                        msg_type               => 'proposal_open_contract',
+                        proposal_open_contract => {%$result}}
+                    },
+                    $req_storage
+                    );
+        };
+        foreach my $contract_id (@contract_ids) {
+            if (exists $response->{$contract_id}->{error}) {
+                my $error = $c->new_error('proposal_open_contract',
+                                'ContractValidationError',
+                                $c->l($response->{$contract_id}->{error}->{message_to_client}));
+                $c->send({json => $error}, $req_storage);
+            } else {
+                my $uuid;
+
+                if (    exists $args->{subscribe}
+                        and $args->{subscribe} eq '1'
+                        and not $response->{$contract_id}->{is_expired}
+                        and not $response->{$contract_id}->{is_sold})
+                {
+                    my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
+                    $type_args{account_id}     = $response->{$contract_id}->{account_id};
+                    $type_args{transaction_id} = $response->{$contract_id}->{transaction_ids}->{buy};
+                    my $subchannel = join("", map { $_ . ":" . $type_args{$_} } sort keys %type_args);
+
+                    my $cache = {
+                        subscribe       => 1,
+                        subchannel      => $subchannel,
+                        echo_req        => {%$args},
+                        passthrough     => $args->{passthrough},
+                        account_id      => delete $response->{$contract_id}->{account_id},
+                        short_code      => $response->{$contract_id}->{shortcode},
+                        contract_id     => $response->{$contract_id}->{contract_id},
+                        currency        => $response->{$contract_id}->{currency},
+                        is_sold         => $response->{$contract_id}->{is_sold},
+                        sell_time       => $response->{$contract_id}->{sell_time},
+                        sell_price      => $response->{$contract_id}->{sell_price},
+                        transaction_ids => $response->{$contract_id}->{transaction_ids},
+                        purchase_time   => $response->{$contract_id}->{purchase_time},
+                        buy_price       => $response->{$contract_id}->{buy_price},
+                    };
+
+                    if (not $uuid = _pricing_channel_for_bid($c, 'subscribe', $cache)) {
+                        my $error = $c->new_error('proposal_open_contract',
+                                'AlreadySubscribedOrLimit',
+                                $c->l('You are either already subscribed or you have reached the limit for proposal_open_contract subscription.'));
+                        $c->send({json => $error}, $req_storage);
+                    } else {
+                        # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $cache->{account_id},
+                                $uuid, $cache);
+                    }
+                }
+                my $res = {$uuid ? (id => $uuid) : (), %{$response->{$contract_id}}};
+                $send_details->($res);
+            }
+        }
+        return;
+    } else {
+        return {
+            msg_type               => 'proposal_open_contract',
+                                   proposal_open_contract => {}};
+    }
     return;
 }
 
@@ -165,7 +152,7 @@ sub _pricing_channel_for_ask {
 
     my $skip = BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
 
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $skip, $cache);
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip);
 }
 
 sub _pricing_channel_for_bid {
@@ -178,11 +165,11 @@ sub _pricing_channel_for_bid {
     $args_hash{price_daemon_cmd} = $price_daemon_cmd;
     my $redis_channel = _serialized_args(\%args_hash);
 
-    return _create_pricer_channel($c, $args, $redis_channel, $args->{subchannel}, $price_daemon_cmd);
+    return _create_pricer_channel($c, $args->{echo_req}, $redis_channel, $args->{subchannel}, $price_daemon_cmd, $args);
 }
 
 sub _create_pricer_channel {
-    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $skip_redis_subscr, $cache) = @_;
+    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip_redis_subscr) = @_;
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
@@ -192,7 +179,6 @@ sub _create_pricer_channel {
     }
 
     my $uuid = Data::UUID->new->create_str();
-    $args->{id} = $uuid;
 
     # subscribe if it is not already subscribed
     if (    exists $args->{subscribe}
@@ -204,17 +190,14 @@ sub _create_pricer_channel {
         $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
     }
 
-    $pricing_channel->{$redis_channel}->{$subchannel}->{uuid} = $uuid;
-    $pricing_channel->{$redis_channel}->{$subchannel}->{args} = $args;
-    # cache sanitized parameters to create contract from pricer_daemon.
-    $pricing_channel->{$redis_channel}->{$subchannel}->{contract_parameters} = $cache->{contract_parameters};
-    # cache the longcode to add them to responses from pricer_daemon.
-    $pricing_channel->{$redis_channel}->{$subchannel}->{longcode} = $cache->{longcode};
-    $pricing_channel->{uuid}->{$uuid}->{redis_channel}            = $redis_channel;
-    $pricing_channel->{uuid}->{$uuid}->{subchannel}               = $subchannel;
-    $pricing_channel->{uuid}->{$uuid}->{price_daemon_cmd}         = $price_daemon_cmd;
-    $pricing_channel->{$price_daemon_cmd}->{$uuid}                = 1;                    # for forget_all
-    $pricing_channel->{uuid}->{$uuid}->{args}                     = $args;                # for buy rpc call
+    $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}  = $uuid;
+    $pricing_channel->{$redis_channel}->{$subchannel}->{args}  = $args;
+    $pricing_channel->{$redis_channel}->{$subchannel}->{cache} = $cache;
+    $pricing_channel->{uuid}->{$uuid}->{redis_channel}         = $redis_channel;
+    $pricing_channel->{uuid}->{$uuid}->{subchannel}            = $subchannel;
+    $pricing_channel->{uuid}->{$uuid}->{price_daemon_cmd}      = $price_daemon_cmd;
+    $pricing_channel->{uuid}->{$uuid}->{args}                  = $args;                # for buy rpc call
+    $pricing_channel->{$price_daemon_cmd}->{$uuid}             = 1;                    # for forget_all
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
@@ -254,8 +237,8 @@ sub process_bid_event {
             $results = $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
             $results->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
         } else {
-            my $passed_fields = $pricing_channel->{$redis_channel}->{$subchannel}->{args};
-            $response->{id}              = $passed_fields->{id};
+            my $passed_fields            = $pricing_channel->{$redis_channel}->{$subchannel}->{cache};
+            $response->{id}              = $pricing_channel->{$redis_channel}->{$subchannel}->{uuid};
             $response->{transaction_ids} = $passed_fields->{transaction_ids};
             $response->{buy_price}       = $passed_fields->{buy_price};
             $response->{purchase_time}   = $passed_fields->{purchase_time};
@@ -303,7 +286,7 @@ sub process_ask_event {
             delete $response->{longcode};
             my $adjusted_results = _price_stream_results_adjustment(
                 $pricing_channel->{$redis_channel}->{$subchannel}->{args},
-                $pricing_channel->{$redis_channel}->{$subchannel}->{contract_parameters},
+                $pricing_channel->{$redis_channel}->{$subchannel}->{cache}->{contract_parameters},
                 $response, $theo_probability
             );
             if (my $ref = $adjusted_results->{error}) {
@@ -315,7 +298,7 @@ sub process_ask_event {
                     msg_type   => 'proposal',
                     'proposal' => {
                         id       => $pricing_channel->{$redis_channel}->{$subchannel}->{uuid},
-                        longcode => $pricing_channel->{$redis_channel}->{$subchannel}->{longcode},
+                        longcode => $pricing_channel->{$redis_channel}->{$subchannel}->{cache}->{longcode},
                         %$adjusted_results,
                     },
                 };
