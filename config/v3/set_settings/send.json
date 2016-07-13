@@ -103,7 +103,8 @@
           "pattern": "^\\d{0,20}$",
           "description": "Hedge asset amount in JPY. This field is only required if 'Hedging' is selected for 'trading_purpose'."
         }
-      }
+      },
+      "additionalProperties": false
     },
     "passthrough": {
       "type": "object",
