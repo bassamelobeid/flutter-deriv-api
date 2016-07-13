@@ -26,6 +26,7 @@ use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::App;
 use BOM::RPC::v3::Japan::NewAccount;
+use BOM::RPC::v3::Mt5::NewAccount;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
