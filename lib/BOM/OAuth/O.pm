@@ -107,6 +107,12 @@ sub authorize {
     } elsif ($c->req->method eq 'POST' and $c->session('__is_logined')) {
         # get loginid from Mojo Session
         $client = $c->__get_client;
+    } elsif ($c->session('__oneall_user_id')) {
+        ## from Oneall Social Login
+        my $oneall_user_id = $c->session('__oneall_user_id');
+        $client = $c->__login($app, $oneall_user_id) or return;
+        $c->session('__is_logined', 1);
+        $c->session('__loginid',    $client->loginid);
     }
 
     ## setup oneall callback url
@@ -132,12 +138,19 @@ sub authorize {
 
     ## check user is logined
     unless ($client) {
+        ## taken error from oneall
+        my $error = '';
+        if ($error = $c->session('__oneall_error')) {
+            delete $c->session->{__oneall_error};
+        }
+
         ## show login form
         return $c->render(
             template => $app_id eq '1' ? 'loginbinary' : 'login',
             layout => 'default',
 
             app       => $app,
+            error     => $error,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
@@ -215,54 +228,87 @@ sub authorize {
     delete $c->session->{__is_logined};
     delete $c->session->{__loginid};
     delete $c->session->{__is_app_approved};
+    delete $c->session->{__oneall_user_id};
 
     $c->redirect_to($uri);
 }
 
 sub __login {
-    my ($c, $app) = @_;
+    my ($c, $app, $oneall_user_id) = @_;
 
-    my ($email, $password) = ($c->param('email'), $c->param('password'));
     my ($user, $client, $last_login, $err);
 
-    LOGIN:
-    {
-        if (not $email or not Email::Valid->address($email)) {
-            $err = localize('Email not given.');
-            last;
+    if ($oneall_user_id) {
+        LOGIN:
+        {
+            $user = BOM::Platform::User->new({id => $oneall_user_id});
+            unless ($user) {
+                $err = localize('Invalid user.');
+                last;
+            }
+
+            # get last login before current login to get last record
+            $last_login = $user->get_last_successful_login_history();
+            my $result = $user->login_social(
+                environment => $c->__login_env(),
+            );
+
+            last if ($err = $result->{error});
+
+            # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
+            my @clients = $user->clients;
+            $client = $clients[0];
+
+            # get 1st loginid, which is not currently self-excluded until
+            if (exists $result->{self_excluded}) {
+                $client = firstval { !exists $result->{self_excluded}->{$_->loginid} } (@clients);
+            }
+
+            if ($result = $client->login_error()) {
+                $err = $result;
+            }
         }
+    } else {
+        my ($email, $password) = ($c->param('email'), $c->param('password'));
+        LOGIN:
+        {
+            if (not $email or not Email::Valid->address($email)) {
+                $err = localize('Email not given.');
+                last;
+            }
 
-        if (not $password) {
-            $err = localize('Password not given.');
-            last;
-        }
+            if (not $password) {
+                $err = localize('Password not given.');
+                last;
+            }
 
-        $user = BOM::Platform::User->new({email => $email});
-        unless ($user) {
-            $err = localize('Invalid email and password combination.');
-            last;
-        }
+            $user = BOM::Platform::User->new({email => $email});
+            unless ($user) {
+                $err = localize('Invalid email and password combination.');
+                last;
+            }
 
-        # get last login before current login to get last record
-        $last_login = $user->get_last_successful_login_history();
-        my $result = $user->login(
-            password    => $password,
-            environment => $c->__login_env(),
-        );
+            # get last login before current login to get last record
+            $last_login = $user->get_last_successful_login_history();
+            my $result = $user->login(
+                password    => $password,
+                environment => $c->__login_env(),
+            );
 
-        last if ($err = $result->{error});
+            last if ($err = $result->{error});
 
-        # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
-        my @clients = $user->clients;
-        $client = $clients[0];
+            # clients are ordered by reals-first, then by loginid.  So the first is the 'default'
+            my @clients = $user->clients;
+            $client = $clients[0];
 
-        # get 1st loginid, which is not currently self-excluded until
-        if (exists $result->{self_excluded}) {
-            $client = firstval { !exists $result->{self_excluded}->{$_->loginid} } (@clients);
-        }
+            # get 1st loginid, which is not currently self-excluded until
+            if (exists $result->{self_excluded}) {
+                $client = firstval { !exists $result->{self_excluded}->{$_->loginid} } (@clients);
+            }
 
-        if ($result = $client->login_error()) {
-            $err = $result;
+            if ($result = $client->login_error()) {
+                $err = $result;
+            }
         }
     }
 
