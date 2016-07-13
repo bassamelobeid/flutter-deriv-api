@@ -16,23 +16,21 @@
           "type": "array",
           "maxItems": 10,
           "minItems": 10,
-          "items": [
+          "items":
             {
               "type": "integer",
               "pattern": "^\\d{10}$"
             }
-          ]
         },
         "prices": {
           "type": "array",
           "maxItems": 10,
           "minItems": 10,
-          "items": [
+          "items":
             {
               "type": "string",
               "pattern": "^\\d+\\.\\d+$"
             }
-          ]
         }
       }
     },
@@ -45,7 +43,6 @@
   },
   "required": [
     "echo_req",
-    "msg_type",
-    "xxx"
+    "msg_type"
   ]
 }
