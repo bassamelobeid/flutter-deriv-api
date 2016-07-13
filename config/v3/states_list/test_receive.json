@@ -1,0 +1,32 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "echo_req": {},
+        "states_list": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string"
+                    },
+                    "value": {
+                        "type": "string",
+                        "pattern": "^.{2}$"
+                    }
+                }
+            }
+        },
+        "msg_type": {
+            "type": "string",
+            "pattern": "^states_list$"
+        },
+        "req_id": {}
+    },
+    "required": [
+        "echo_req",
+        "msg_type",
+        "states_list"
+    ]
+}
