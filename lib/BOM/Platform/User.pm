@@ -57,6 +57,7 @@ sub login {
     my ($self, %args) = @_;
     my $password    = $args{password}    || die "requires password argument";
     my $environment = $args{environment} || '';
+    my $is_social_login = $args{is_social_login} || 0;
 
     my ($error, $cfl, @clients, @self_excluded);
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
@@ -69,7 +70,7 @@ sub login {
         $error = localize('Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.');
         BOM::System::AuditLog::log('failed login > 5 times', $self->email);
 
-    } elsif (not BOM::System::Password::checkpw($args{password}, $self->password)) {
+    } elsif (not $is_social_login and not BOM::System::Password::checkpw($args{password}, $self->password)) {
 
         my $fail_count = $cfl ? $cfl->fail_count : 0;
         $self->failed_login({
@@ -116,64 +117,6 @@ sub login {
     }
 
     $cfl->delete if $cfl;    # delete client failed login
-    BOM::System::AuditLog::log('successful login', $self->email);
-    stats_inc("business.log_in.success");
-
-    my $success = {success => 1};
-
-    if (@self_excluded > 0) {
-        my %excluded = map { $_->loginid => 1 } @self_excluded;
-        $success->{self_excluded} = \%excluded;
-    }
-
-    return $success;
-}
-
-sub login_social {
-    my ($self, %args) = @_;
-    my $environment = $args{environment} || '';
-
-    my ($error, @clients, @self_excluded);
-    if (BOM::Platform::Runtime->instance->app_config->system->suspend->all_logins) {
-
-        $error = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
-        BOM::System::AuditLog::log('system suspend all login', $self->email);
-
-    } elsif (not @clients = $self->clients) {
-        $error = localize('This account is unavailable. For any questions please contact Customer Support.');
-        BOM::System::AuditLog::log('Account disabled', $self->email);
-    } elsif (
-        @self_excluded = grep {
-            $_->get_self_exclusion_until_dt
-        } @clients
-        and @self_excluded == @clients
-        )
-    {
-        # If all accounts are self excluded - show error
-        # Print the earliest time until user has excluded himself
-        my ($client) = sort {
-            my $tmp_a = $a->get_self_exclusion_until_dt;
-            $tmp_a =~ s/GMT$//;
-            my $tmp_b = $b->get_self_exclusion_until_dt;
-            $tmp_b =~ s/GMT$//;
-            Date::Utility->new($tmp_a)->epoch <=> Date::Utility->new($tmp_b)->epoch
-        } @self_excluded;
-        $error = localize('Sorry, you have excluded yourself until [_1].', $client->get_self_exclusion_until_dt);
-        BOM::System::AuditLog::log('Account self excluded', $self->email);
-    }
-
-    $self->add_login_history({
-        action      => 'login',
-        environment => $environment,
-        successful  => ($error) ? 'f' : 't'
-    });
-    $self->save;
-
-    if ($error) {
-        stats_inc("business.log_in.failure");
-        return {error => $error};
-    }
-
     BOM::System::AuditLog::log('successful login', $self->email);
     stats_inc("business.log_in.success");
 
