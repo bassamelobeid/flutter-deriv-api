@@ -209,4 +209,24 @@ is $res->{error}->{code}, 'InvalidToken', 'not valid after revoke';
 
 $t->finish_ok;
 
+$t = build_mojo_test({app_id => $app1->{app_id}});
+$t = $t->send_ok({json => {authorize => $token}})->message_ok;
+$t = $t->send_ok({
+        json => {
+            app_get => $app1->{app_id},
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'app_get';
+test_schema('app_get', $res);
+is_deeply($res->{app_get}, $app1, 'app_get ok');
+
+$t->finish_ok;
+
+$t = build_mojo_test({app_id => 333});
+$t = $t->send_ok({json => {authorize => $token}})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'authorize';
+is $res->{error}->{code}, 'InvalidAppID', 'Should return error if get wrong app_id and close connection';
+$t->finished_ok(1005);
+
 done_testing();
