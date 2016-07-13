@@ -11,8 +11,8 @@ sub get_real_acc_opening_type {
     my $from_client = $args->{from_client};
 
     return unless ($from_client->residence);
-    my $gaming_company    = BOM::Platform::Runtime->instance->gaming_company_for_country($from_client->residence);
-    my $financial_company = BOM::Platform::Runtime->instance->financial_company_for_country($from_client->residence);
+    my $gaming_company    = BOM::Platform::Countries->instance->gaming_company_for_country($from_client->residence);
+    my $financial_company = BOM::Platform::Countries->instance->financial_company_for_country($from_client->residence);
 
     if ($from_client->is_virtual) {
         return 'real' if ($gaming_company);
