@@ -14,6 +14,7 @@ use Format::Util::Numbers qw(roundnear);
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 use BOM::Platform::User;
 use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::Payment;
@@ -146,7 +147,7 @@ sub save {
 sub check_country_restricted {
     my $country_code = shift;
     return (    BOM::Platform::Runtime->instance->app_config->system->on_production
-            and BOM::Platform::Runtime->instance->restricted_country($country_code));
+            and BOM::Platform::Countries->instance->restricted_country($country_code));
 }
 
 sub register_and_return_new_client {
