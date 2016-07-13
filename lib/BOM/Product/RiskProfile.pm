@@ -10,7 +10,7 @@ use JSON qw(from_json);
 use List::Util qw(first);
 use List::MoreUtils qw(all);
 
-has [qw(contract_category underlying expiry_type start_type currency)] => (
+has [qw(contract_category underlying expiry_type start_type currency barrier_category)] => (
     is       => 'ro',
     required => 1,
 );
@@ -30,6 +30,7 @@ sub _build_contract_info {
         contract_category => $self->contract_category,
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
+        barrier_category  => $self->barrier_category,
     };
 }
 
@@ -77,6 +78,15 @@ sub get_turnover_limit_parameters {
             } else {
                 $params->{daily} = 0;
             }
+        }
+
+        # we only need to distinguish atm and non_atm for callput.
+        if (    $profile->{barrier_category}
+            and $profile->{barrier_category} eq 'euro_non_atm'
+            and $profile->{contract_category}
+            and $profile->{contract_category} eq 'callput')
+        {
+            $params->{non_atm} = 1;
         }
 
         if ($profile->{market}) {

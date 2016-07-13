@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/etc/rmg/bin/perl
 
 use Test::Most (tests => 4);
 use Test::FailWarnings;
