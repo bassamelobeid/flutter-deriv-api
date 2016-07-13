@@ -161,7 +161,7 @@ subtest 'JP' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
         $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'remainder'} = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
+        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -224,7 +224,7 @@ subtest 'MLT' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
         $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'remainder'} = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
+        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->lifetime_limit - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
@@ -287,7 +287,7 @@ subtest 'MX' => sub {
 
         $expected_result->{'withdrawal_for_x_days_monetary'}      = roundnear(0.01, $withdraw_amount);
         $expected_result->{'withdrawal_since_inception_monetary'} = roundnear(0.01, $withdraw_amount);
-        $expected_result->{'remainder'} = roundnear(0.01, $limits->limit_for_days - $withdraw_amount);
+        $expected_result->{'remainder'}                           = roundnear(0.01, $limits->limit_for_days - $withdraw_amount);
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
