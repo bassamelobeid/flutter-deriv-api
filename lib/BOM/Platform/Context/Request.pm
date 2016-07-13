@@ -11,6 +11,7 @@ use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
 
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 
 use Plack::App::CGIBin::Streaming::Request;
 use BOM::Platform::LandingCompany::Registry;
@@ -204,7 +205,7 @@ sub _build_http_method {
 
 sub _build_country {
     my $self = shift;
-    return BOM::Platform::Runtime->instance->countries->country_from_code($self->country_code);
+    return BOM::Platform::Countries->instance->countries->country_from_code($self->country_code);
 }
 
 sub _build_cookie_domain {
