@@ -20,7 +20,7 @@
         "account_type": {
           "enum": ["demo", "real_money"],
           "description": "landing company full name"
-        }
+        },
         "balance": {
           "type": "string",
           "description": "Account balance"
