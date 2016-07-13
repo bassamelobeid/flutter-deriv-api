@@ -12,7 +12,6 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Accounts;
 use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
-use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 
 use File::Slurp;
