@@ -16,6 +16,7 @@ use Try::Tiny;
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 use BOM::Platform::Client;
 use BOM::System::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
@@ -1462,7 +1463,7 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    if ($residence && $market_name eq 'volidx' && BOM::Platform::Runtime->instance->volidx_restricted_country($residence)) {
+    if ($residence && $market_name eq 'volidx' && BOM::Platform::Countries->instance->volidx_restricted_country($residence)) {
         return Error::Base->cuss(
             -type => 'RandomRestrictedCountry',
             -mesg => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',

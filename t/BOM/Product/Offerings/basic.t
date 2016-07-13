@@ -1,13 +1,13 @@
 use strict;
 use warnings;
 
-use Test::Most (tests => 5);
+use Test::Most (tests => 4);
 use Test::FailWarnings;
 
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 use BOM::Product::Offerings
-    qw( get_offerings_flyby get_offerings_with_filter get_permitted_expiries get_historical_pricer_durations get_contract_specifics );
+    qw( get_offerings_flyby get_offerings_with_filter get_permitted_expiries get_contract_specifics );
 
 subtest 'get_offerings_flyby' => sub {
     my $fb;
@@ -108,52 +108,6 @@ subtest 'get_permitted_expiries' => sub {
         expiry_type       => 'tick',
     });
     my $r100_tnt_tick = get_permitted_expiries({
-        underlying_symbol => 'R_100',
-        contract_category => 'touchnotouch',
-        expiry_type       => 'tick',
-    });
-
-    ok exists $r100_digits_tick->{min} && exists $r100_digits_tick->{max}, 'Asking for a relevant tick expiry, gives just that min and max';
-    eq_or_diff($r100_tnt_tick, {}, '... but get an empty reference if they are not there.');
-};
-
-subtest 'get_historical_pricer_durations' => sub {
-
-    my $r100 = get_historical_pricer_durations({underlying_symbol => 'R_100'});
-
-    eq_or_diff(get_historical_pricer_durations({underlying_symbol => 'R_100'}),
-        {}, 'Randoms do not use the historical pricer, so the durations are empty');
-    my $eu_cp = get_historical_pricer_durations({
-        underlying_symbol => 'frxEURUSD',
-        contract_category => 'callput'
-    });
-    ok exists $eu_cp->{intraday}, 'EUR/USD callput has intraday durations';
-    ok !exists $eu_cp->{daily},   '... but not daily';
-    ok !exists $eu_cp->{tick},    '... nor tick';
-
-    my $eu_tnt = get_historical_pricer_durations({
-        underlying_symbol => 'frxEURUSD',
-        contract_category => 'touchnotouch'
-    });
-    use BOM::Market::Underlying;
-    my $eu = BOM::Market::Underlying->new('frxEURUSD');
-
-    ok !exists $eu_tnt->{intraday}, 'EUR/USD touchnotouch has intraday durations';
-    ok !exists $eu_tnt->{daily},   '... but not daily';
-    ok !exists $eu_tnt->{tick},    '... nor tick';
-    SKIP: {
-        skip 'skip because of euro pairs offerings adjustment', 2 unless exists $eu_tnt->{intraday};
-        cmp_ok $eu_cp->{intraday}->{min}->seconds, '<',  $eu_tnt->{intraday}->{min}->seconds, 'callputs have shorter minimums';
-        cmp_ok $eu_cp->{intraday}->{max}->seconds, '==', 18000, '5h eu callput';
-        cmp_ok $eu_tnt->{intraday}->{max}->seconds, '==', 18000, '5h tnt';
-    }
-
-    my $r100_digits_tick = get_permitted_expiries({
-        underlying_symbol => 'R_100',
-        contract_category => 'digits',
-        expiry_type       => 'tick',
-    });
-    my $r100_tnt_tick = get_historical_pricer_durations({
         underlying_symbol => 'R_100',
         contract_category => 'touchnotouch',
         expiry_type       => 'tick',
