@@ -1,0 +1,70 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "echo_req": {},
+        "active_symbols": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "market": {
+                        "type": "string",
+                        "pattern": "^volidx$"
+                    },
+                    "market_display_name": {
+                        "type": "string"
+                    },
+                    "submarket": {
+                        "type": "string"
+                    },
+                    "submarket_display_name": {
+                        "type": "string"
+                    },
+                    "symbol": {
+                        "type": "string"
+                    },
+                    "symbol_type": {
+                        "type": "string"
+                    },
+                    "display_name": {
+                        "type": "string"
+                    },
+                    "exchange_is_open": {
+                        "type": "integer",
+                        "pattern": "^(0|1)$"
+                    },
+                    "is_trading_suspended": {
+                        "type": "integer",
+                        "pattern": "^(0|1)$"
+                    },
+                    "pip": {
+                        "type": "string",
+                        "pattern": "^0\\.0{1,4}1$"
+                    }
+                },
+                "required": [
+                    "market",
+                    "market_display_name",
+                    "submarket",
+                    "submarket_display_name",
+                    "symbol",
+                    "symbol_type",
+                    "display_name",
+                    "exchange_is_open",
+                    "is_trading_suspended",
+                    "pip"
+                ]
+            }
+        },
+        "msg_type": {
+            "type": "string",
+            "pattern": "^active_symbols$"
+        }
+    },
+    "required": [
+        "echo_req",
+        "msg_type",
+        "active_symbols"
+    ]
+}
