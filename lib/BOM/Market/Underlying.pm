@@ -150,11 +150,13 @@ has spot_source => (
     is         => 'ro',
     lazy_build => 1,
     handles    => {
-        'set_combined_realtime' => 'set_spot_tick',
-        'spot_tick'             => 'spot_tick',
-        'spot_time'             => 'spot_time',
-        'spot_age'              => 'spot_age',
-        'tick_at'               => 'tick_at',
+        'set_combined_realtime'      => 'set_spot_tick',
+        'get_combined_realtime_tick' => 'spot_tick',
+        'get_combined_realtime'      => 'spot_tick_hash',
+        'spot_tick'                  => 'spot_tick',
+        'spot_time'                  => 'spot_time',
+        'spot_age'                   => 'spot_age',
+        'tick_at'                    => 'tick_at',
     });
 
 sub _build_spot_source {
