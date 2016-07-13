@@ -13,12 +13,15 @@ __PACKAGE__->meta->setup(
         binary_user_id        => { type => 'bigint', not_null => 1 },
         provider              => { type => 'varchar', length => 24, not_null => 1 },
         provider_identity_uid => { type => 'varchar', length => 64, not_null => 1 },
-        data                  => { type => 'text', not_null => 1 },
+        provider_data         => { type => 'text', not_null => 1 },
+        date                  => { type => 'timestamp', default => 'now()' },
     ],
 
     primary_key_columns => [ 'id' ],
 
     unique_key => [ 'provider', 'provider_identity_uid' ],
+
+    allow_inline_column_values => 1,
 
     foreign_keys => [
         binary_user => {
