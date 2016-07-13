@@ -11,7 +11,7 @@ use Test::MockModule;
 
 use BOM::Database::Model::AccessToken;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Platform::Transaction;
+use BOM::Database::Transaction;
 
 ## do not send email
 use Test::MockModule;
@@ -247,8 +247,8 @@ foreach my $key (@{$tokens}) {
     ok $res->{error}->{message} =~ /An error occurred while processing request/, 'An error occurred while processing request';
 
     # need unfreeze_client after withdraw error
-    BOM::Platform::Transaction->unfreeze_client($client->loginid);
-    BOM::Platform::Transaction->unfreeze_client($pa_client->loginid);
+    BOM::Database::Transaction->unfreeze_client($client->loginid);
+    BOM::Database::Transaction->unfreeze_client($pa_client->loginid);
     $t = $t->send_ok({
             json => {
                 paymentagent_withdraw => 1,
@@ -404,8 +404,8 @@ foreach my $key (@{$tokens}) {
     ok $res->{error}->{message} =~ /An error occurred while processing request/, 'An error occurred while processing request';
 
     # need unfreeze_client after transfer error
-    BOM::Platform::Transaction->unfreeze_client($client->loginid);
-    BOM::Platform::Transaction->unfreeze_client($pa_client->loginid);
+    BOM::Database::Transaction->unfreeze_client($client->loginid);
+    BOM::Database::Transaction->unfreeze_client($pa_client->loginid);
     $t = $t->send_ok({
             json => {
                 paymentagent_transfer => 1,

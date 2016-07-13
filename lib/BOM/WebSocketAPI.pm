@@ -13,7 +13,6 @@ use BOM::WebSocketAPI::v3::Wrapper::Accounts;
 use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
-use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 
 use File::Slurp;
@@ -87,37 +86,7 @@ sub startup {
                 $c->stash(debug => 1);
             }
 
-            my $app_id;
-            if ($c->req->param('app_id')) {
-                $app_id = defang_lite($c->req->param('app_id'));
-
-                my $error;
-                APP_ID:
-                {
-                    if ($app_id !~ /^\d+$/) {
-                        $error = 1;
-                        last;
-                    }
-
-                    my $oauth = BOM::Database::Model::OAuth->new;
-                    my $app   = $oauth->verify_app($app_id);
-
-                    if (not $app) {
-                        $error = 1;
-                        last;
-                    }
-
-                    $c->stash(
-                        source                => $app_id,
-                        app_markup_percentage => $app->{app_markup_percentage} // 0
-                    );
-                }
-
-                if ($error) {
-                    $c->send({json => $c->new_error('error', 'InvalidAppID', $c->l('Your app_id is invalid.'))});
-                    $c->finish();
-                }
-            }
+            my $app_id    = defang_lite($c->req->param('app_id'));
             my $client_ip = $c->client_ip;
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
@@ -131,6 +100,7 @@ sub startup {
                 country_code   => $c->country_code,
                 user_agent     => $user_agent,
                 ua_fingerprint => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
+                $app_id ? (source => $app_id) : (),
             );
         });
 
@@ -239,15 +209,8 @@ sub startup {
         ['set_financial_assessment', {require_auth => 'admin'}],
         ['get_financial_assessment', {require_auth => 'admin'}],
         ['reality_check',            {require_auth => 'read'}],
-
-        [
-            'verify_email',
-            {
-                before_forward => [\&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email_get_type_code],
-                stash_params   => [qw/ server_name /],
-            }
-        ],
-        ['new_account_virtual', {stash_params => [qw/ server_name client_ip user_agent /]}],
+        ['verify_email',             {stash_params => [qw/ server_name /]}],
+        ['new_account_virtual',      {stash_params => [qw/ server_name client_ip user_agent /]}],
         ['reset_password'],
 
         # authenticated calls
@@ -359,7 +322,7 @@ sub startup {
         $action_options->{out_validator} = $out_validator;
 
         $action_options->{stash_params} ||= [];
-        push @{$action_options->{stash_params}}, qw( language country_code source );
+        push @{$action_options->{stash_params}}, qw( language country_code );
 
         push @{$action_options->{stash_params}}, 'token' if $action_options->{require_auth};
     }
@@ -369,16 +332,15 @@ sub startup {
             actions => $actions,
 
             # action hooks
-            before_forward           => [\&BOM::WebSocketAPI::Hooks::before_forward, \&BOM::WebSocketAPI::Hooks::get_rpc_url],
-            before_call              => [\&BOM::WebSocketAPI::Hooks::start_timing],
+            before_forward           => [\&BOM::WebSocketAPI::Hooks::before_forward,             \&BOM::WebSocketAPI::Hooks::get_rpc_url],
+            before_call              => [\&BOM::WebSocketAPI::Hooks::add_app_id,                 \&BOM::WebSocketAPI::Hooks::start_timing],
             before_get_rpc_response  => [\&BOM::WebSocketAPI::Hooks::log_call_timing],
-            after_got_rpc_response   => [\&BOM::WebSocketAPI::Hooks::log_call_timing_connection],
+            after_got_rpc_response   => [\&BOM::WebSocketAPI::Hooks::log_call_timing_connection, \&BOM::WebSocketAPI::Hooks::error_check],
             before_send_api_response => [
                 \&BOM::WebSocketAPI::Hooks::output_validation, \&BOM::WebSocketAPI::Hooks::add_call_debug,
                 \&BOM::WebSocketAPI::Hooks::add_req_data,      \&BOM::WebSocketAPI::Hooks::start_timing
             ],
-            after_sent_api_response => [\&BOM::WebSocketAPI::Hooks::log_call_timing_sent],
-            after_dispatch          => [\&BOM::WebSocketAPI::Hooks::clear_db_cache],
+            after_sent_api_response => [\&BOM::WebSocketAPI::Hooks::log_call_timing_sent, \&BOM::WebSocketAPI::Hooks::close_bad_connection],
 
             # main config
             base_path         => '/websockets/v3',
