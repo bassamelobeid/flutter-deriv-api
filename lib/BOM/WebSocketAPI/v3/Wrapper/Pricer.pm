@@ -25,7 +25,11 @@ sub proposal {
             msg_type => 'proposal',
             success  => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
-                $req_storage->{uuid} = _pricing_channel($c, 'subscribe', $req_storage->{args}, $rpc_response);
+                my $subscription_cache = {
+                    contract_parameters => delete $rpc_response->{contract_parameters},
+                    longcode            => $rpc_response->{longcode},
+                };
+                $req_storage->{uuid} = _pricing_channel($c, 'subscribe', $req_storage->{args}, $subscription_cache);
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
