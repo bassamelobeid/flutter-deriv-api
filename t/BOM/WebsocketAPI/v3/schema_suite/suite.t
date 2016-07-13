@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::Most;
+use Test::FailWarnings;
 use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
@@ -109,6 +110,13 @@ sub _get_stashed {
 
     foreach my $l (@hierarchy) {
         $r = $r->{$l};
+        if ($l eq 'tokens') {
+            foreach my $token (@{$r}) {
+                if ($token->{display_name} eq 'test') {
+                    $r = $token->{token};
+                }
+            }
+        }
     }
 
     return $r;
