@@ -150,11 +150,11 @@ has spot_source => (
     is         => 'ro',
     lazy_build => 1,
     handles    => {
-        'set_combined_realtime'      => 'set_spot_tick',
-        'spot_tick'                  => 'spot_tick',
-        'spot_time'                  => 'spot_time',
-        'spot_age'                   => 'spot_age',
-        'tick_at'                    => 'tick_at',
+        'set_combined_realtime' => 'set_spot_tick',
+        'spot_tick'             => 'spot_tick',
+        'spot_time'             => 'spot_time',
+        'spot_age'              => 'spot_age',
+        'tick_at'               => 'tick_at',
     });
 
 sub _build_spot_source {
@@ -171,7 +171,7 @@ sub _build_spot_source {
 
 sub closing_tick_on {
     my $self = shift;
-    my $end = shift;
+    my $end  = shift;
 
     my $closing = $self->calendar->closing_on(Date::Utility->new($end));
 
@@ -185,7 +185,6 @@ sub spot {
 
     return $self->pipsized_value($spot_value);
 }
-
 
 # Can not be made into an attribute to avoid the caching problem.
 
@@ -1664,8 +1663,8 @@ sub price_at_intervals {
 sub breaching_tick {
     my ($self, %args) = @_;
 
-    $args{underlying} = $self->symbol;
-    $args{pip_size} = $self->pip_size;
+    $args{underlying}    = $self->symbol;
+    $args{pip_size}      = $self->pip_size;
     $args{system_symbol} = $self->system_symbol;
 
     return $self->feed_api->get_first_tick(%args);
