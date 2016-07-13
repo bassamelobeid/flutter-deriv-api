@@ -63,12 +63,14 @@ sub new_account_mt5 {
 sub get_settings_mt5 {
     my $params = shift;
     my $client = $params->{client};
-
-    # TODO: from client->email, check user has this MT5 account. If not, throw permission error
-    my $user = BOM::Platform::User->new({email => $client->email});
-
     my $args = $params->{args};
     my $login = $args->{login};
+
+    # MT5 login not belongs to user
+    my $user = BOM::Platform::User->new({email => $client->email});
+    if (not grep { $login eq $_ } $user->loginid) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
     my $settings = BOM::Mt5::User::get_user($login);
     if ($settings->{error}) {
