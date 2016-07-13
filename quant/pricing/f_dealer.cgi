@@ -30,8 +30,6 @@ BrokerPresentation('DEALER/LARGE BETS');
 my $broker  = request()->broker_code;
 my $staff   = BOM::Backoffice::Auth0::can_access(['Quants']);
 my $clerk   = BOM::Backoffice::Auth0::from_cookie()->{nickname};
-my $betcode = request()->param('betcode');
-$betcode =~ s/\s+//;
 my $now = Date::Utility->new;
 # Get inputs
 my $loginID  = request()->param('loginid');
@@ -51,7 +49,6 @@ if (request()->param('whattodo') eq 'closeatzero') {
     if ($price !~ /^\d*\.?\d*$/)    { print "Error with price " . request()->param('price');     code_exit_BO(); }
     if ($price eq "")               { print "Error : no price entered";                          code_exit_BO(); }
     if ($loginID !~ /^$broker\d+$/) { print "Error with loginid " . request()->param('loginid'); code_exit_BO(); }
-    if ($betcode !~ /^[\w\.\-]+$/)  { print "Error with betcode $betcode";                       code_exit_BO(); }
     if ($qty !~ /^\d+$/ or request()->param('qty') > 50) { print "Error with qty " . request()->param('qty'); code_exit_BO(); }
 
     my $client;
@@ -77,20 +74,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
         currency_code  => $currency,
     });
 
-    my $stockonhand = $fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($betcode);
-
-    if ($qty > $stockonhand + 0.000001) {
-        if   ($stockonhand == 0) { print "Error: Client $loginID does not own $betcode in $currency"; }
-        else                     { print "Error: you cannot sell $qty as $loginID only owns $stockonhand of $betcode" }
-        code_exit_BO();
-    }
-
-    if ($qty != $stockonhand) {
-        print "Error: you cannot sell $qty as $loginID owns $stockonhand of $betcode. <br> All of the positions have to be sold at once";
-        code_exit_BO();
-    }
-
-    my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
+    my $fmbs = $fmb_mapper->get_fmb_by_id([$bet_ref]);
     if ($fmbs and @$fmbs) {
         BOM::Database::Helper::FinancialMarketBet->new({
                 account_data => {
@@ -110,7 +94,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
         ->append($now->datetime
-            . "GMT $ttype($buysell) $qty @ $currency$price $betcode $loginID clerk=$clerk fellow="
+            . "GMT $ttype($buysell) $qty @ $currency$price $bet_ref $loginID clerk=$clerk fellow="
             . request()->param('DCstaff')
             . " DCcode="
             . request()->param('DCcode') . " ["
@@ -135,7 +119,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
  </FORM>";
 
     $subject = "Manually close contract at zero price. ";
-    @body    = ("We manually closed the contract [Ref: $bet_ref] at price $currency 0 for client[$loginID] shortcode[$betcode]. \n");
+    @body    = ("We manually closed the contract [Ref: $bet_ref] at price $currency 0 for client[$loginID]. \n");
 
     send_email({
         from    => BOM::Platform::Runtime->instance->app_config->system->email,
@@ -155,7 +139,6 @@ print qq~
 <input type=hidden name=whattodo value=closeatzero>
 <input type=hidden name=broker value=$broker>
 <select name=buysell><option selected>SELL</select>
-<br>BET CODE: <input type=text size=70 name=betcode value=''> <a onclick='document.maketrans.betcode.value=document.dealer.betcode.value'></a>
 <br>PRICE: <select name=curr><option>~ . get_currency_options() . qq~</select>
 <input type=hidden size=12 name=price value=0><a>0</a>
 <br>QUANTITY: <input type=text size=12 name=qty value=1>
