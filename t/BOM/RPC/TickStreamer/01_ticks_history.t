@@ -23,7 +23,6 @@ my $method = 'ticks_history';
 
 my $params = {
     language => 'EN',
-    source   => 1,
     country  => 'ru',
 };
 
