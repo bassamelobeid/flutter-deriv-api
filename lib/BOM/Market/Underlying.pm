@@ -151,12 +151,9 @@ has spot_source => (
     lazy_build => 1,
     handles    => {
         'set_combined_realtime'      => 'set_spot_tick',
-        'get_combined_realtime_tick' => 'spot_tick',
-        'get_combined_realtime'      => 'spot_tick_hash',
         'spot_tick'                  => 'spot_tick',
         'spot_time'                  => 'spot_time',
         'spot_age'                   => 'spot_age',
-        'closing_tick_on'            => 'closing_tick_on',
         'tick_at'                    => 'tick_at',
     });
 
@@ -170,6 +167,15 @@ sub _build_spot_source {
         for_date          => $self->for_date,
         use_official_ohlc => $self->use_official_ohlc,
     });
+}
+
+sub closing_tick_on {
+    my $self = shift;
+    my $end = shift;
+
+    my $closing = $self->calendar->closing_on(Date::Utility->new($end));
+
+    return $self->spot_source->closing_tick_on($end, $closing);
 }
 
 sub spot {
