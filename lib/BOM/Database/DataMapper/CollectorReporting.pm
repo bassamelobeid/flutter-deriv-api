@@ -203,67 +203,6 @@ sub get_unregistered_client_token_pairs_before_datetime {
     return $result;
 }
 
-sub get_clients_with_unchecked_affiliate_exposures {
-    my $self = shift;
-
-    my $sql = q{
-        SELECT t.*
-        FROM
-            betonmarkets.production_servers() s,
-            dblink(s.srvname, $$
-
-                SELECT
-                    c.loginid,
-                    count(*)
-                FROM
-                    (
-                        SELECT
-                            c.loginid,
-                            count(*) as deposit_cnt
-                        FROM
-                            betonmarkets.client c,
-                            transaction.account a,
-                            payment.payment p
-                        WHERE
-                            c.loginid = a.client_loginid
-                            AND a.id = p.account_id
-                            AND a.is_default
-                            AND c.checked_affiliate_exposures IS FALSE
-                            AND p.amount > 0
-                            AND p.payment_gateway_code NOT IN (
-                                'free_gift',
-                                'compacted_statement',
-                                'cancellation',
-                                'closed_account',
-                                'miscellaneous',
-                                'adjustment',
-                                'affiliate_reward',
-                                'payment_fee',
-                                'virtual_credit',
-                                'account_transfer',
-                                'currency_conversion_transfer'
-                            )
-                        GROUP BY 1
-                    ) c,
-                    betonmarkets.client_affiliate_exposure e
-                WHERE
-                    c.loginid = e.client_loginid
-                GROUP BY 1
-
-            $$) t(
-                loginid TEXT,
-                count BIGINT
-            )
-        };
-
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute();
-
-    my $result = $sth->fetchall_arrayref({});
-    return $result;
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
