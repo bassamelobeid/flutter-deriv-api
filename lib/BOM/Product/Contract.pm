@@ -1760,7 +1760,7 @@ sub _market_data {
             # if there's new surface data, calculate vol from that.
             my $vol;
             if ($surface_data) {
-                my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
+                my $new_volsurface_obj = $volsurface->clone({surface_data => $surface_data});
                 $vol = $new_volsurface_obj->get_volatility($args);
             } else {
                 $vol = $volsurface->get_volatility($args);
