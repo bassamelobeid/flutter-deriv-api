@@ -13,7 +13,7 @@
       "type": "object",
       "properties": {
         "times": {
-          "type": "array",
+          "type": ["array","null"],
           "maxItems": 10,
           "minItems": 10,
           "items":
@@ -23,7 +23,7 @@
             }
         },
         "prices": {
-          "type": "array",
+          "type": ["array","null"],
           "maxItems": 10,
           "minItems": 10,
           "items":
