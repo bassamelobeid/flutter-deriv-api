@@ -13,7 +13,6 @@ use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::RPC::v3::Contract;
-use Data::Dumper;
 
 sub proposal {
     my ($c, $req_storage) = @_;
@@ -197,6 +196,7 @@ sub _create_pricer_channel {
     $pricing_channel->{uuid}->{$uuid}->{subchannel}            = $subchannel;
     $pricing_channel->{uuid}->{$uuid}->{price_daemon_cmd}      = $price_daemon_cmd;
     $pricing_channel->{uuid}->{$uuid}->{args}                  = $args;                # for buy rpc call
+    $pricing_channel->{uuid}->{$uuid}->{cache}                 = $cache;
     $pricing_channel->{$price_daemon_cmd}->{$uuid}             = 1;                    # for forget_all
 
     $c->stash('pricing_channel' => $pricing_channel);

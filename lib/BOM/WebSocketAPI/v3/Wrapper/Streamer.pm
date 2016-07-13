@@ -446,8 +446,8 @@ sub process_transaction_updates {
                             if (    exists $pricing_channel->{uuid}
                                 and exists $pricing_channel->{uuid}->{$type})
                             {
-                                $pricing_channel->{uuid}->{$type}->{args}->{sell_price} = $payload->{amount};
-                                $pricing_channel->{uuid}->{$type}->{args}->{sell_time}  = Date::Utility->new($payload->{sell_time})->epoch;
+                                $pricing_channel->{uuid}->{$type}->{cache}->{sell_price} = $payload->{amount};
+                                $pricing_channel->{uuid}->{$type}->{cache}->{sell_time}  = Date::Utility->new($payload->{sell_time})->epoch;
                             }
                         }
                     }
