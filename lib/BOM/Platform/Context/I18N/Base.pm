@@ -2,6 +2,9 @@ package BOM::Platform::Context::I18N::Base;
 
 use strict;
 use warnings;
+
+require Locale::Maketext::Lexicon;
+
 use parent 'Locale::Maketext';
 
 =head1 NAME
@@ -11,7 +14,7 @@ BOM::Platform::Context::I18N::Base
 =head1 SYNOPSIS
 
     use BOM::Platform::Context::I18N::Base;
-    my $lh = BOM::Platform::Context::Base::I18N->get_handle('en');
+    my $lh = BOM::Platform::Context::I18N::Base->get_handle('en');
     $lh->maketext("Hello");
 
 =head1 DESCRIPTION
@@ -21,6 +24,17 @@ This package is a subclass of L<Locale::Maketext>.
 =head1 METHODS
 
 =cut
+
+=head2 BOM::Platform::Context::I18N::Base->import({'*' => ['Gettext' => 'i18n/*.po']})
+
+This method to specify languages.
+
+=cut
+
+sub import {
+    shift;
+    Locale::Maketext::Lexicon->import(@_);
+}
 
 =head2 $self->plural($num, @strings)
 
@@ -42,13 +56,7 @@ sub plural {
             $header =~ s/\[_([0-9]+)\]/%$1/g;
             die "Invalid expression for plural: $header" if $header =~ /\$|n\s*\(|[A-Za-mo-z]|nn/;
             $header =~ s/n/\$_[0]/g;
-            my @where = (__LINE__ + 3, __FILE__);
-            $self->{_plural} = eval <<"EOF";    ## no critic
-#line $where[0] "$where[1]"
-sub {
-   return $header;
-}
-EOF
+            $self->{_plural} = sub { return $header };
         } else {
             $self->{_plural} = sub { return $_[0] != 1 };
         }
