@@ -14,6 +14,8 @@
       "properties": {
         "times": {
           "type": "array",
+          "maxItems": 10,
+          "minItems": 10,
           "items": [
             {
               "type": "integer",
@@ -23,6 +25,8 @@
         },
         "prices": {
           "type": "array",
+          "maxItems": 10,
+          "minItems": 10,
           "items": [
             {
               "type": "string",
@@ -41,6 +45,7 @@
   },
   "required": [
     "echo_req",
-    "msg_type"
+    "msg_type",
+    "xxx"
   ]
 }
