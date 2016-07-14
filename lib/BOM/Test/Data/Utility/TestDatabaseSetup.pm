@@ -10,14 +10,6 @@ use BOM::Platform::Runtime;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
-sub _collectordb_migrations_dir {
-    my $self = shift;
-    if ($self->_db_migrations_dir =~ /rmgdb/) {
-        return '/home/git/regentmarkets/bom-postgres-collectordb/config/sql/';
-    }
-    return;
-}
-
 sub prepare_unit_test_database {
     my $self = shift;
 
