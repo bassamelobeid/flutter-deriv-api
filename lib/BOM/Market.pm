@@ -51,13 +51,9 @@ has suspicious_move => (
 
 Only allow integer barrier for this market. Default to false.
 
-=head2 integer_number_of_day
-
-Volatility surface expiry convention. For Forex and commodities it is integer number of day.
-
 =cut
 
-has [qw(integer_barrier integer_number_of_day)] => (
+has [qw(integer_barrier)] => (
     is      => 'ro',
     default => 0,
 );

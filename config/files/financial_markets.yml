@@ -7,7 +7,6 @@ commodities:
     suspicious_move: 0.05
     display_name: "Commodities"
     display_order: 4
-    integer_number_of_day: 1
     eod_blackout_expiry: '59s'
     sod_blackout_start: '10m'
     reduced_display_decimals: 1
@@ -31,7 +30,6 @@ forex:
     deep_otm_threshold: 0.05
     display_name: "Forex"
     display_order: 1
-    integer_number_of_day: 1
     reduced_display_decimals: 1
     asset_type: 'currency'
     foreign_bs_probability: 1
