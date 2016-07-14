@@ -7,7 +7,6 @@ use warnings;
 use feature "state";
 use Sys::Hostname;
 use YAML::XS;
-use BOM::Platform::Context::I18N;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use Locale::Maketext::ManyPluralForms {
