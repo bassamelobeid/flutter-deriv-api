@@ -8,6 +8,7 @@ use JSON;
 use Try::Tiny;
 use Date::Utility;
 use Data::Password::Meter;
+use Format::Util::Numbers qw(roundnear);
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
@@ -131,7 +132,7 @@ sub statement {
             transaction_id => $txn->{id},
             amount         => $txn->{amount},
             action_type    => $txn->{action_type},
-            balance_after  => $txn->{balance_after},
+            balance_after  => roundnear(0.01, $txn->{balance_after}),
             contract_id    => $txn->{financial_market_bet_id},
             payout         => $txn->{payout_price}};
 
@@ -237,8 +238,7 @@ sub balance {
     return {
         loginid  => $client_loginid,
         currency => $client->default_account->currency_code,
-        balance  => $client->default_account->balance
-    };
+        balance  => roundnear(0.01, $client->default_account->balance)};
 }
 
 sub get_account_status {

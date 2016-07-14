@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Try::Tiny;
+use Format::Util::Numbers qw(roundnear);
 
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
@@ -59,7 +60,7 @@ sub buy {
     my $response = {
         transaction_id => $trx->transaction_id,
         contract_id    => $trx->contract_id,
-        balance_after  => $trx->balance_after,
+        balance_after  => roundnear(0.01, $trx->balance_after),
         purchase_time  => $trx->purchase_date->epoch,
         buy_price      => $trx->price,
         start_time     => $contract->date_start->epoch,
@@ -112,7 +113,7 @@ sub sell {
     return {
         transaction_id => $trx->id,
         contract_id    => $id,
-        balance_after  => $trx->balance_after,
+        balance_after  => roundnear(0.01, $trx->balance_after),
         sold_for       => abs($trx->amount),
     };
 }
