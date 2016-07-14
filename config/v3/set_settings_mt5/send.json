@@ -29,7 +29,7 @@
     },
     "leverage": {
       "type": "string",
-      "pattern": "^[1-9]|([1-9][0-9])|([1-4][0-9][0-9])|(500)$",
+      "pattern": "/^([1-9]|[1-9][0-9]|[1-4][0-9][0-9]|500)$",
       "description": "The size of a client's leverage in the leverage from 1 to 500",
       "required" : "1"
     },
