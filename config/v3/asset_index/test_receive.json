@@ -2,20 +2,23 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "properties": {
-        "echo_req": {},
         "asset_index": {
             "type": "array",
+            "required": 1,
             "items": {
                 "type": "array",
                 "items": [
                     {
-                        "type": "string"
+                        "type": "string",
+                        "required": 1
                     },
                     {
-                        "type": "string"
+                        "type": "string",
+                        "required": 1
                     },
                     {
                         "type": "array",
+                        "required": 1,
                         "items": {
                             "type": "array",
                             "items": {
@@ -30,14 +33,12 @@
                 "uniqueItems": true
             }
         },
+        "echo_req": {
+            "required": 1
+        },
         "msg_type": {
             "type": "string",
             "pattern": "^asset_index$"
         }
-    },
-    "required": [
-        "echo_req",
-        "msg_type",
-        "asset_index"
-    ]
+    }
 }

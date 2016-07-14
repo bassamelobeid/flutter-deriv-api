@@ -2,31 +2,31 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "properties": {
-        "echo_req": {},
         "states_list": {
             "type": "array",
+            "required": 1,
             "items": {
                 "type": "object",
                 "properties": {
                     "text": {
-                        "type": "string"
+                        "type": "string",
+                        "required": 1
                     },
                     "value": {
                         "type": "string",
-                        "pattern": "^.{2}$"
+                        "pattern": "^.{2}$",
+                        "required": 1
                     }
                 }
             }
         },
+        "echo_req": {
+            "required": 1
+        },
         "msg_type": {
             "type": "string",
-            "pattern": "^states_list$"
-        },
-        "req_id": {}
-    },
-    "required": [
-        "echo_req",
-        "msg_type",
-        "states_list"
-    ]
+            "pattern": "^states_list$",
+            "required": 1
+        }
+    }
 }

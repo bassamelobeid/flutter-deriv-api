@@ -2,9 +2,9 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "properties": {
-        "echo_req": {},
         "residence_list": {
             "type": "array",
+            "required": 1,
             "items": {
                 "type": "object",
                 "properties": {
@@ -13,24 +13,24 @@
                         "pattern": "^\\d+$"
                     },
                     "text": {
-                        "type": "string"
+                        "type": "string",
+                        "required": 1
                     },
                     "value": {
                         "type": "string",
-                        "pattern": "^[a-z]{2}$"
+                        "pattern": "^[a-z]{2}$",
+                        "required": 1
                     }
                 }
             }
         },
+        "echo_req": {
+            "required": 1
+        },
         "msg_type": {
             "type": "string",
-            "pattern": "^residence_list$"
-        },
-        "req_id": {}
-    },
-    "required": [
-        "echo_req",
-        "msg_type",
-        "residence_list"
-    ]
+            "pattern": "^residence_list$",
+                                "required": 1
+        }
+    }
 }

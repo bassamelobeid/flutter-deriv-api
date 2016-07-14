@@ -2,9 +2,9 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "properties": {
-        "echo_req": {},
         "paymentagent_list": {
             "type": "object",
+            "required": 1,
             "properties": {
                 "available_countries": {
                     "type": "array",
@@ -13,10 +13,12 @@
                         "items": [
                             {
                                 "type": "string",
-                                "pattern": "^[a-z]{2}$"
+                                "pattern": "^[a-z]{2}$",
+                                "required": 1
                             },
                             {
-                                "type": "string"
+                                "type": "string",
+                                "required": 1
                             }
                         ]
                     }
@@ -28,54 +30,63 @@
                         "properties": {
                             "currencies": {
                                 "type": "string",
-                                "pattern": "^[A-Z]{3}$"
+                                "pattern": "^[A-Z]{3}$",
+                                "required": 1
                             },
                             "deposit_commission": {
                                 "type": "string",
-                                "pattern": "^\\d+$"
+                                "pattern": "^\\d+$",
+                                "required": 1
                             },
                             "withdrawal_commission": {
                                 "type": "string",
-                                "pattern": "^\\d+$"
+                                "pattern": "^\\d+$",
+                                "required": 1
                             },
                             "email": {
-                                "type": "string"
+                                "type": "string",
+                                "required": 1
                             },
                             "further_information": {
-                                "type": "string"
+                                "type": "string",
+                                "required": 1
                             },
                             "name": {
-                                "type": "string"
+                                "type": "string",
+                                "required": 1
                             },
                             "paymentagent_loginid": {
-                                "type": "string"
+                                "type": "string",
+                                "required": 1
                             },
                             "summary": {
-                                "type": "string"
+                                "type": "string",
+                                "required": 1
                             },
                             "supported_banks": {
-                                "type": "string"
+                                "type": "string",
+                                "required": 1
                             },
                             "telephone": {
-                                "type": "string"
+                                "type": "string",
+                                "required": 1
                             },
                             "url": {
-                                "type": "string"
+                                "type": "string",
+                                "required": 1
                             }
                         }
                     }
                 }
             }
         },
+        "echo_req": {
+            "required": 1
+        },
         "msg_type": {
             "type": "string",
-            "pattern": "^paymentagent_list$"
-        },
-        "req_id": {}
-    },
-    "required": [
-        "echo_req",
-        "msg_type",
-        "paymentagent_list"
-    ]
+            "pattern": "^paymentagent_list$",
+            "required": 1
+        }
+    }
 }
