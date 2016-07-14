@@ -275,9 +275,9 @@ sub create_fmb_with_ticks {
 
     for my $epoch ($start->epoch, $start->epoch + 1, $expire->epoch) {
         my $api = Finance::Spot::DatabaseAPI->new({
-                underlying => 'R_100',
-                dbh        => $dbh
-            });
+            underlying => 'R_100',
+            dbh        => $dbh
+        });
 
         my $tick = $api->tick_at({end_time => $epoch});
         next if $tick;
