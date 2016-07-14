@@ -30,7 +30,7 @@
           "description": "Client's name. The maximum length of a client's symbol name is 128 characters. Optional field."
         },
         "leverage": {
-          "pattern": "^([1-4][0-9]?[0-9]?)|500$",
+          "type": "string",
           "description": "The size of a client's leverage in the leverage from 1 to 500"
         },
         "address": {
