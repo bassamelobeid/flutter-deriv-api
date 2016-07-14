@@ -8,7 +8,7 @@
 			"properties": {
 				"balance": {
 					"type": "number",
-					"pattern": "^10000.0000$"
+					"pattern": "^10000.00$"
 				},
 				"currency": {
 					"type": "string",

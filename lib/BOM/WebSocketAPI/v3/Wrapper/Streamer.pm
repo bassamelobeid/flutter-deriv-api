@@ -7,7 +7,6 @@ use JSON;
 use Data::UUID;
 use Scalar::Util qw (looks_like_number);
 use List::MoreUtils qw(last_index);
-use Format::Util::Numbers qw(roundnear);
 
 use BOM::RPC::v3::Japan::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
@@ -393,10 +392,10 @@ sub process_transaction_updates {
                     if ($type eq 'balance') {
                         $details->{$type}->{loginid}  = $c->stash('loginid');
                         $details->{$type}->{currency} = $c->stash('currency');
-                        $details->{$type}->{balance}  = roundnear(0.01, $payload->{balance_after});
+                        $details->{$type}->{balance}  = sprintf('%.2f', $payload->{balance_after});
                         $c->send({json => $details}) if $c->tx;
                     } elsif ($type eq 'transaction') {
-                        $details->{$type}->{balance}        = roundnear(0.01, $payload->{balance_after});
+                        $details->{$type}->{balance}        = sprintf('%.2f', $payload->{balance_after});
                         $details->{$type}->{action}         = $payload->{action_type};
                         $details->{$type}->{amount}         = $payload->{amount};
                         $details->{$type}->{transaction_id} = $payload->{id};
