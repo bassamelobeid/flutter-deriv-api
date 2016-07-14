@@ -412,7 +412,6 @@ sub client_statement_for_backoffice {
             limit  => $max_number_of_lines
         });
         foreach my $transaction (@{$transactions}) {
-            $transaction->{balance_after} = $txn_dm->get_balance_after_transaction({transaction_time => $transaction->{transaction_time}});
             $transaction->{amount} = abs($transaction->{amount});
         }
     } else {
