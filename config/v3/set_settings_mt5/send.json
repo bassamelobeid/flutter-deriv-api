@@ -10,6 +10,11 @@
       "pattern": "^1$",
       "required": "1"
     },
+    "login": {
+      "type": "string",
+      "description": "MT5 user login",
+      "required": "1"
+    },
     "email": {
       "type": "string",
       "format": "email",
