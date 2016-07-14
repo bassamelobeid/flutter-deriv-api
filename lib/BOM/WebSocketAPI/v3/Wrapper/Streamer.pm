@@ -393,10 +393,10 @@ sub process_transaction_updates {
                     if ($type eq 'balance') {
                         $details->{$type}->{loginid}  = $c->stash('loginid');
                         $details->{$type}->{currency} = $c->stash('currency');
-                        $details->{$type}->{balance}  = $payload->{balance_after};
+                        $details->{$type}->{balance}  = roundnear(0.01, $payload->{balance_after});
                         $c->send({json => $details}) if $c->tx;
                     } elsif ($type eq 'transaction') {
-                        $details->{$type}->{balance}        = $payload->{balance_after};
+                        $details->{$type}->{balance}        = roundnear(0.01, $payload->{balance_after});
                         $details->{$type}->{action}         = $payload->{action_type};
                         $details->{$type}->{amount}         = $payload->{amount};
                         $details->{$type}->{transaction_id} = $payload->{id};
