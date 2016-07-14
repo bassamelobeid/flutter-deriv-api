@@ -4,7 +4,7 @@ use feature 'state';
 use strict;
 use warnings;
 
-use BOM::Platform::Context::I18N::Base {
+use Locale::Maketext::ManyPluralForms {
     'EN'      => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/en.po'],
     '*'       => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/locales/*.po'],
     '_auto'   => 1,
@@ -16,7 +16,7 @@ sub handle_for {
 
     state %handles;
     $language = lc $language;
-    return $handles{$language} //= BOM::Platform::Context::I18N::Base->get_handle($language);
+    return $handles{$language} //= Locale::Maketext::ManyPluralForms->get_handle($language);
 }
 
 1;
