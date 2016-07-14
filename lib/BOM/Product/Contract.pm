@@ -29,7 +29,6 @@ use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::EconomicEventCalendar;
 use BOM::Product::Offerings qw( get_contract_specifics get_offerings_flyby);
-use BOM::Platform::Static::Config;
 use BOM::System::Chronicle;
 
 # require Pricing:: modules to avoid circular dependency problems.
@@ -1289,8 +1288,8 @@ sub _build_risk_markup {
 sub _build_base_commission {
     my $self = shift;
 
-    my $minimum        = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100;
-    my $maximum        = BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100;
+    my $minimum        = BOM::System::Config::quants->{commission}->{adjustment}->{minimum} / 100;
+    my $maximum        = BOM::System::Config::quants->{commission}->{adjustment}->{maximum} / 100;
     my $scaling_factor = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
     $scaling_factor = max($minimum, min($maximum, $scaling_factor));
 
@@ -1307,7 +1306,7 @@ sub _build_commission_markup {
         description => 'Commission markup for a pricing model',
         set_by      => __PACKAGE__,
         base_amount => $base_amount,
-        maximum     => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100,
+        maximum     => BOM::System::Config::quants->{commission}->{maximum_total_markup} / 100,
         %min,
     });
 
@@ -1622,7 +1621,7 @@ sub _build_staking_limits {
     my $underlying = $self->underlying;
     my $curr       = $self->currency;
 
-    my $static                    = BOM::Platform::Static::Config::quants;
+    my $static                    = BOM::System::Config::quants;
     my $bet_limits                = $static->{bet_limits};
     my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
     my @possible_payout_maxes     = ($bet_limits->{maximum_payout}->{$curr}, $per_contract_payout_limit);
@@ -2054,41 +2053,6 @@ sub _get_time_to_end {
     );
 }
 
-=head2 barrier_display_info
-
-Given a tick break down how the barriers relate.
-
-=cut
-
-sub barrier_display_info {
-    my ($self, $tick) = @_;
-
-    my $underlying = $self->underlying;
-    my $spot = defined $tick ? $tick->quote : undef;
-    my @barriers;
-    if ($self->two_barriers) {
-        push @barriers, {barrier  => $self->high_barrier->as_absolute} if $self->high_barrier;
-        push @barriers, {barrier2 => $self->low_barrier->as_absolute}  if $self->low_barrier;
-    } else {
-        @barriers = $self->barrier ? ({barrier => $self->barrier->as_absolute}) : ();
-    }
-
-    my %barriers;
-    if ($spot) {
-        foreach my $barrier (@barriers) {
-            my $which  = keys %$barrier;
-            my $strike = values %$barrier;
-            $barriers{$which}->{amnt} = $underlying->pipsized_value($strike);
-            $barriers{$which}->{dir}  = ($spot > $strike) ? localize('minus') : ($spot < $strike) ? localize('plus') : '';
-            $barriers{$which}->{diff} = $underlying->pipsized_value(abs($spot - $strike)) || '';                             # Do not show 0 for 0.
-            $barriers{$which}->{desc} =
-                !$self->two_barriers ? localize('barrier') : $strike > $spot ? localize('high barrier') : localize('low barrier');
-        }
-    }
-
-    return (barriers => \%barriers);
-}
-
 has exit_tick => (
     is         => 'ro',
     lazy_build => 1,
@@ -2362,12 +2326,9 @@ sub _validate_trading_times {
 
     if ($self->is_intraday) {
         if (not $calendar->is_open_at($date_expiry)) {
-            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             return {
                 message => 'underlying closed at expiry ' . "[symbol: " . $underlying->symbol . "] " . "[expiry: " . $date_expiry->datetime . "]",
                 message_to_client => localize("Contract must expire during trading hours."),
-                info_link         => $times_link,
-                info_text         => localize('Trading Times'),
             };
         } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($date_start)->epoch < $date_expiry->epoch) {
             return {
@@ -2377,9 +2338,8 @@ sub _validate_trading_times {
         }
     } elsif ($self->expiry_daily and not $self->is_atm_bet) {
         # For definite ATM contracts we do not have to check for upcoming holidays.
-        my $times_text    = localize('Trading Times');
-        my $trading_days  = $self->calendar->trading_days_between($date_start, $date_expiry);
-        my $holiday_days  = $self->calendar->holiday_days_between($date_start, $date_expiry);
+        my $trading_days = $self->calendar->trading_days_between($date_start, $date_expiry);
+        my $holiday_days = $self->calendar->holiday_days_between($date_start, $date_expiry);
         my $calendar_days = $date_expiry->days_between($date_start);
 
         if ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
@@ -2393,12 +2353,9 @@ sub _validate_trading_times {
                 ($self->for_sale)
                 ? localize('Resale of this contract is not offered due to market holidays during contract period.')
                 : localize("Too many market holidays during the contract period.");
-            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             return {
                 message => 'Not enough trading days for calendar days ' . "[trading: " . $trading_days . "] " . "[calendar: " . $calendar_days . "]",
                 message_to_client => $message,
-                info_link         => $times_link,
-                info_text         => $times_text,
             };
         }
     }
@@ -2472,8 +2429,8 @@ sub _build_date_expiry_blackouts {
             push @periods, [$end_of_trading->minus_time_interval($expiry_blackout)->epoch, $end_of_trading->epoch];
         }
     } elsif ($self->expiry_daily and $underlying->market->equity and not $self->is_atm_bet) {
-        my $start_of_period = BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_start};
-        my $end_of_period   = BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_end};
+        my $start_of_period = BOM::System::Config::quants->{bet_limits}->{holiday_blackout_start};
+        my $end_of_period   = BOM::System::Config::quants->{bet_limits}->{holiday_blackout_end};
         if ($self->date_start->day_of_year >= $start_of_period or $self->date_start->day_of_year <= $end_of_period) {
             my $year = $self->date_start->day_of_year > $start_of_period ? $date_start->year : $date_start->year - 1;
             my $end_blackout = Date::Utility->new($year . '-12-31')->plus_time_interval($end_of_period . 'd23h59m59s');
@@ -2616,8 +2573,6 @@ sub _validate_lifetime {
     }
 
     if ($duration < $min_duration or $duration > $max_duration) {
-        my $asset_text = localize('Asset Index');
-        my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
         return {
             message => $message . " "
                 . "[duration seconds: "
@@ -2628,8 +2583,6 @@ sub _validate_lifetime {
                 . $self->code . "]",
             message_to_client       => $message_to_client,
             message_to_client_array => $message_to_client_array,
-            info_link               => $asset_link,
-            info_text               => $asset_text,
         };
     }
 
@@ -2783,6 +2736,7 @@ sub _build_risk_profile {
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
         currency          => $self->currency,
+        barrier_category  => $self->barrier_category,
     );
 }
 

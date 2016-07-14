@@ -1,7 +1,7 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 
-use Test::More tests => 2;
-use Test::NoWarnings;
+use Test::More;
+use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::Underlying;
@@ -72,3 +72,24 @@ subtest 'invalid start and expiry time' => sub {
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
 };
+
+subtest 'invalid barrier for tick expiry' => sub {
+    my $bet_params = {
+        date_start => $now,
+        date_pricing => $now,
+        underlying => 'R_100',
+        bet_type => 'CALL',
+        duration => '5t',
+        barrier => 100,
+        currency => 'USD',
+        payout => 10,
+        current_tick => $fake_tick,
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like ($c->primary_validation_error->{message}, qr/Intend to buy tick expiry contract/, 'tick expiry barrier check');
+    $bet_params->{barrier} = 'S10P';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+};
+done_testing();

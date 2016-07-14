@@ -16,7 +16,6 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
 use BOM::Product::Types;
-use BOM::Platform::Static::Config;
 use BOM::Product::RiskProfile;
 
 with 'MooseX::Role::Validatable';
@@ -575,6 +574,7 @@ sub _build_risk_profile {
         expiry_type       => 'intraday',             # making this intraday.
         start_type        => 'spot',
         currency          => $self->currency,
+        barrier_category  => 'spread',
     );
 }
 
