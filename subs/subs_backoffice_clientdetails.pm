@@ -52,9 +52,9 @@ sub print_client_details {
 
     my @countries;
     my $country_codes = {};
-    foreach my $country_name (sort BOM::Platform::Runtime->instance->countries->all_country_names) {
+    foreach my $country_name (sort BOM::Platform::Countries->instance->countries->all_country_names) {
         push @countries, $country_name;
-        $country_codes->{$country_name} = BOM::Platform::Runtime->instance->countries->code_from_country($country_name);
+        $country_codes->{$country_name} = BOM::Platform::Countries->instance->countries->code_from_country($country_name);
     }
 
     my ($proveID, $show_uploaded_documents);
@@ -68,7 +68,7 @@ sub print_client_details {
     }
 
     # COMMUNICATION ADDRESSES
-    my $client_phone_country = BOM::Platform::Runtime->instance->countries->code_from_phone($client->phone);
+    my $client_phone_country = BOM::Platform::Countries->instance->countries->code_from_phone($client->phone);
     if (not $client_phone_country) {
         $client_phone_country = 'Unknown';
     }
@@ -380,40 +380,6 @@ sub show_client_id_docs {
         }
     }
     return $links;
-}
-
-## get_trusted_allow_login_reason ############################
-# Purpose : all available trusted allowed login reason
-##############################################################
-sub get_trusted_allow_login_reason {
-    return (
-        'Client accessing from CDMA',
-        'Client accessing from PDA or mobile',
-        'Client\'s cashier section is locked or access denied',
-        'Client\'s country is not in the allowed list',
-        'Client is currently residing in country other than client\'s citizenship',
-        'Client is fully authenticated',
-        'Client is training under BOM gurus',
-        'Client is travelling to other country',
-        'Client login from a shared internet connection ( network, ISP, ADSL )',
-        'Client login from internet cafe with shared IPs',
-        'Client login from big proxies',
-        'Client login from different IPs',
-        'Client unable to access account and has no multiple accounts',
-        'Client owned credit card issued by other country',
-        'Client owned more than one account from different jurisidiction',
-        'Multiple accounts with same IPs',
-        'Received scanned documents from client',
-        'Same IP but client only owned one account',
-        'System recorded office IP when staff login using master password',
-        'System triggered wrong IP',
-        'System triggered wrong telephone or mobile',
-        'System triggered wrong country code',
-        'System error or bug',
-        'Trusted or genuine client',
-        'Test accounts',
-        'Others',
-    );
 }
 
 sub client_statement_for_backoffice {
