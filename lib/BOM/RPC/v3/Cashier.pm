@@ -1005,9 +1005,15 @@ sub transfer_between_accounts {
     my ($is_good, $client_from, $client_to) = (0, $siblings{$loginid_from}, $siblings{$loginid_to});
 
     if ($client_from && $client_to) {
-        # for sub account we need to check if it fulfils sub_account_of criteria
+        # for sub account we need to check if it fulfils sub_account_of criteria and allow_omnibus is set
         if ($is_subaccount) {
-            $is_good = $client_from->sub_account_of eq $client_to || $client_to->sub_account_of eq $client_from;
+            if (
+                ($client_from->allow_omnibus || $client_to->allow_omnibus)
+                && (   ($client_from->sub_account_of && $client_from->sub_account_of eq $loginid_to)
+                    || ($client_to->sub_account_of && $client_to->sub_account_of eq $loginid_from)))
+            {
+                $is_good = 1;
+            }
         } else {
             my %landing_companies = (
                 $client_from->landing_company->short => 1,
