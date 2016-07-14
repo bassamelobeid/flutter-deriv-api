@@ -14,13 +14,14 @@ use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::LandingCompany::Registry;
 use BOM::Platform::Locale;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::Token::Verification;
+use BOM::Platform::Token;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -43,7 +44,7 @@ sub payout_currencies {
     if ($client) {
         $currencies = [$client->currency];
     } else {
-        my $lc = BOM::Platform::Runtime::LandingCompany::Registry::get('costarica');
+        my $lc = BOM::Platform::LandingCompany::Registry::get('costarica');
         $currencies = $lc->legal_allowed_currencies;
     }
 
@@ -54,7 +55,7 @@ sub landing_company {
     my $params = shift;
 
     my $country  = $params->{args}->{landing_company};
-    my $configs  = BOM::Platform::Runtime->instance->countries_list;
+    my $configs  = BOM::Platform::Countries->instance->countries_list;
     my $c_config = $configs->{$country};
     unless ($c_config) {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
@@ -68,7 +69,7 @@ sub landing_company {
     my %landing_company = %{$c_config};
 
     $landing_company{id} = $country;
-    my $registry = BOM::Platform::Runtime::LandingCompany::Registry->new;
+    my $registry = BOM::Platform::LandingCompany::Registry->new;
     if (($landing_company{gaming_company} // '') ne 'none') {
         $landing_company{gaming_company} = __build_landing_company($registry->get($landing_company{gaming_company}));
     } else {
@@ -86,7 +87,7 @@ sub landing_company {
 sub landing_company_details {
     my $params = shift;
 
-    my $lc = BOM::Platform::Runtime::LandingCompany::Registry::get($params->{args}->{landing_company_details});
+    my $lc = BOM::Platform::LandingCompany::Registry::get($params->{args}->{landing_company_details});
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UnknownLandingCompany',
             message_to_client => localize('Unknown landing company.')}) unless $lc;
@@ -434,7 +435,7 @@ sub cashier_password {
 sub reset_password {
     my $params = shift;
     my $args   = $params->{args};
-    my $email  = BOM::Platform::Token::Verification->new({token => $args->{verification_code}})->email;
+    my $email  = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
     if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email)->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->{code},
@@ -507,7 +508,7 @@ sub get_settings {
     $dob_epoch = Date::Utility->new($client->date_of_birth)->epoch if ($client->date_of_birth);
     if ($client->residence) {
         $country_code = $client->residence;
-        $country = BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $params->{language});
+        $country = BOM::Platform::Countries->instance->countries->localized_code2country($client->residence, $params->{language});
     }
 
     my $client_tnc_status = $client->get_status('tnc_approval');

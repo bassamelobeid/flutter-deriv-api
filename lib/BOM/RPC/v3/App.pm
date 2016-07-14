@@ -192,4 +192,25 @@ sub oauth_apps {
     return $oauth->get_used_apps_by_loginid($client->loginid);
 }
 
+sub verify_app {
+    my $params = shift;
+
+    my $app_id = $params->{app_id} || '';
+    my $app;
+
+    my $oauth = BOM::Database::Model::OAuth->new;
+    if ($app_id !~ /^\d+$/ or not($app = $oauth->verify_app($app_id))) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidAppID',
+            message_to_client => localize('Your app_id is invalid.'),
+        });
+    }
+
+    return {
+        stash => {
+            valid_source          => $app_id,
+            app_markup_percentage => $app->{app_markup_percentage} // 0
+        }};
+}
+
 1;

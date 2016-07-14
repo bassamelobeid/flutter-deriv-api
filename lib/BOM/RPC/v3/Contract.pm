@@ -243,6 +243,7 @@ sub get_bid {
 
             $response->{has_corporate_actions} = 1 if @{$contract->corporate_actions};
 
+            $response->{barrier_count} = $contract->two_barriers ? 2 : 1;
             if ($contract->entry_tick) {
                 my $entry_spot = $contract->underlying->pipsized_value($contract->entry_tick->quote);
                 $response->{entry_tick}      = $entry_spot;
@@ -254,11 +255,9 @@ sub get_bid {
                     $response->{original_high_barrier} = $contract->original_high_barrier->as_absolute
                         if defined $contract->original_high_barrier;
                     $response->{original_low_barrier} = $contract->original_low_barrier->as_absolute if defined $contract->original_low_barrier;
-                    $response->{barrier_count} = 2;
                 } elsif ($contract->barrier) {
-                    $response->{barrier}          = $contract->barrier->as_absolute;
+                    $response->{barrier} = $contract->barrier->as_absolute;
                     $response->{original_barrier} = $contract->original_barrier->as_absolute if defined $contract->original_barrier;
-                    $response->{barrier_count}    = 1;
                 }
             }
 
@@ -305,16 +304,25 @@ sub send_ask {
     my $args               = $params->{args};
     my $from_pricer_daemon = shift;
 
+    my $symbol   = $args->{symbol};
+    my $response = validate_symbol($symbol);
+    if ($response and exists $response->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $response->{error}->{code},
+                message_to_client => BOM::Platform::Context::localize($response->{error}->{message}, $symbol)});
+    }
+
     my $tv = [Time::HiRes::gettimeofday];
 
     my %details = %{$args};
-    my $response;
     try {
         my $arguments = {
             from_pricer_daemon => $from_pricer_daemon,
             %details,
         };
-        $response = _get_ask(prepare_ask($arguments), $params->{app_markup_percentage});
+        my $contract_parameters = prepare_ask($arguments);
+        $response = _get_ask($contract_parameters, $params->{app_markup_percentage});
+        $response->{contract_parameters} = $contract_parameters;
     }
     catch {
         $response = BOM::RPC::v3::Utility::create_error({
