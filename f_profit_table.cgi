@@ -101,6 +101,9 @@ if (defined $do_calculation) {
             start_time   => \@start_time,
             sell_time    => \@sell_time,
         });
+
+        $performance_probability = (1 - $performance_probability) * 100;
+        $performance_probability = roundnear(0.001, $performance_probability);
     }
 }
 
