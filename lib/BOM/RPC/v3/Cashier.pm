@@ -980,29 +980,20 @@ sub transfer_between_accounts {
         return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
     }
 
-    my $args         = $params->{args};
-    my $loginid_from = $args->{account_from};
-    my $loginid_to   = $args->{account_to};
-    my $currency     = $args->{currency};
-    my $amount       = $args->{amount};
+    my $args          = $params->{args};
+    my $is_subaccount = $args->{sub_account};
+    my $loginid_from  = $args->{account_from};
+    my $loginid_to    = $args->{account_to};
+    my $currency      = $args->{currency};
+    my $amount        = $args->{amount};
 
     my %siblings = map { $_->loginid => $_ } $client->siblings;
 
     # get clients
     unless ($loginid_from and $loginid_to and $currency and $amount) {
-        my @accounts;
-        foreach my $account (values %siblings) {
-            next unless (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'));
-            push @accounts,
-                {
-                loginid => $account->loginid,
-                balance => $account->default_account ? roundnear(0.01, $account->default_account->balance) : 0,
-                currency => $account->default_account ? $account->default_account->currency_code : '',
-                };
-        }
         return {
             status   => 0,
-            accounts => \@accounts
+            accounts => _get_sibling_accounts(\%siblings, $is_subaccount);
         };
     }
 
@@ -1012,28 +1003,31 @@ sub transfer_between_accounts {
 
     my $err_msg = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
 
-    my $is_good = 0;
-    if ($siblings{$loginid_from} && $siblings{$loginid_to}) {
-        my %landing_companies = (
-            $siblings{$loginid_from}->landing_company->short => 1,
-            $siblings{$loginid_to}->landing_company->short   => 1,
-        );
+    my ($is_good, $client_from, $client_to) = (0, $siblings{$loginid_from}, $siblings{$loginid_to});
 
-        # check for transfer between malta & maltainvest
-        $is_good = $landing_companies{malta} && $landing_companies{maltainvest};
+
+    if ($client_from && $client_to) {
+        # for sub account we need to check if it fulfils sub_account_of criteria
+        if ($is_subaccount) {
+            $is_good = $client_from->sub_account_of eq $client_to || $client_to->sub_account_of eq $client_from;
+        } else {
+            my %landing_companies = (
+                $client_from->landing_company->short => 1,
+                $client_to->landing_company->short   => 1,
+            );
+
+            # check for transfer between malta & maltainvest
+            $is_good = $landing_companies{malta} && $landing_companies{maltainvest};
+        }
     }
 
     unless ($is_good) {
-        # $c->app->log->warn("DISABLED " . $client->loginid . ". Tried tampering with transfer input for account transfer. $err_msg");
         $client->set_status('disabled', 'SYSTEM',
             "Tried tampering with transfer input for account transfer, illegal from [$loginid_from], to [$loginid_to]");
         $client->save;
 
         return $error_sub->(localize('The account transfer is unavailable for your account.'));
     }
-
-    my $client_from = $siblings{$loginid_from};
-    my $client_to   = $siblings{$loginid_to};
 
     my %deposited = (
         $loginid_from => $client_from->default_account ? $client_from->default_account->currency_code : '',
@@ -1175,6 +1169,26 @@ sub transfer_between_accounts {
         client_to_full_name => $client_to->full_name,
         client_to_loginid   => $client_to->loginid
     };
+}
+
+sub _get_sibling_accounts {
+    my ($siblings, $is_subaccount) = @_;
+
+    my @accounts;
+    foreach my $account (values %{$siblings}) {
+        if ($is_subaccount) {
+            next if $client->is_virtual;
+        } else {
+            next unless (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'));
+        }
+        push @accounts,
+            {
+            loginid => $account->loginid,
+            balance => $account->default_account ? sprintf('%.2f', $account->default_account->balance) : 0.00,
+            currency => $account->default_account ? $account->default_account->currency_code : '',
+            };
+    }
+    return \@accounts;
 }
 
 sub topup_virtual {
