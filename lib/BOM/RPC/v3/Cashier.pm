@@ -993,8 +993,7 @@ sub transfer_between_accounts {
     unless ($loginid_from and $loginid_to and $currency and $amount) {
         return {
             status   => 0,
-            accounts => _get_sibling_accounts(\%siblings, $is_subaccount);
-        };
+            accounts => _get_sibling_accounts(\%siblings, $is_subaccount)};
     }
 
     if (not looks_like_number($amount) or $amount < 0.1 or $amount !~ /^\d+.?\d{0,2}$/) {
@@ -1004,7 +1003,6 @@ sub transfer_between_accounts {
     my $err_msg = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
 
     my ($is_good, $client_from, $client_to) = (0, $siblings{$loginid_from}, $siblings{$loginid_to});
-
 
     if ($client_from && $client_to) {
         # for sub account we need to check if it fulfils sub_account_of criteria
@@ -1177,7 +1175,7 @@ sub _get_sibling_accounts {
     my @accounts;
     foreach my $account (values %{$siblings}) {
         if ($is_subaccount) {
-            next if $client->is_virtual;
+            next if $account->is_virtual;
         } else {
             next unless (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'));
         }
