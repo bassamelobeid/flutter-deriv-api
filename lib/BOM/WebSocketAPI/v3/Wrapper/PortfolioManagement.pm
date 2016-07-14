@@ -42,6 +42,9 @@ sub proposal_open_contract {
                         # need to do this as args are passed back to client as response echo_req
                         my $details = {%$args};
 
+                        # need to pass back original echo_req - with or without contract_id
+                        $details->{echo_req} = $args;
+
                         # we don't want to leak account_id to client
                         $details->{account_id} = delete $response->{$contract_id}->{account_id};
 
@@ -105,7 +108,7 @@ sub send_proposal_open_contract {
     my $transaction_ids = delete $details->{transaction_ids};
 
     $c->call_rpc({
-            args        => $details,
+            args        => delete $details->{echo_req},
             method      => 'get_bid',
             msg_type    => 'proposal_open_contract',
             call_params => {
@@ -125,12 +128,17 @@ sub send_proposal_open_contract {
                             BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
                         }
                         return $c->new_error('proposal_open_contract', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
-                    } elsif (exists $rpc_response->{is_expired} and $rpc_response->{is_expired} eq '1') {
+                    } elsif (exists $rpc_response->{is_expired} and $rpc_response->{is_expired} eq '1' and not $rpc_response->{is_valid_to_sell}) {
+                        # this case actually should not happen
+                        # problems wich could freeze 'is_expired' contract will generate error in RPC Client get_bid (see previous case)
+                        # otherwise contract will be sold by expiryd or by client
+                        # and transaction 'sell event' will unsubscribe client and send last message with proper data
                         if ($id) {
                             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
                             BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
                             $id = undef;
                         }
+
                     }
 
                     return {
