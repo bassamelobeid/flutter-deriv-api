@@ -443,7 +443,7 @@ subtest $method => sub {
         $result,
         {
             'currency' => 'USD',
-            'balance'  => '1505.0000',
+            'balance'  => '1505.00',
             'loginid'  => 'CR0021'
         },
         'result is correct'
