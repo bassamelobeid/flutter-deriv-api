@@ -38,7 +38,8 @@ sub new_account_mt5 {
     my $mt5_login = $status->{login};
 
     my $user = BOM::Platform::User->new({email => $client->email});
-    $user->add_loginid({loginid => $mt5_login});
+    # eg: MT5 login: 1000, we store MT1000
+    $user->add_loginid({loginid => 'MT' . $mt5_login});
     $user->save;
 
     my $balance = 0;
@@ -68,7 +69,7 @@ sub get_settings_mt5 {
 
     # MT5 login not belongs to user
     my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { $login eq $_ } $user->loginid) {
+    if (not grep { 'MT'.$login eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
@@ -79,9 +80,29 @@ sub get_settings_mt5 {
                 message_to_client => $settings->{error}
             });
     }
-
     return $settings;
 }
 
+sub set_settings_mt5 {
+    my $params = shift;
+    my $client = $params->{client};
+    my $args = $params->{args};
+    my $login = $args->{login};
+
+    # MT5 login not belongs to user
+    my $user = BOM::Platform::User->new({email => $client->email});
+    if (not grep { 'MT'.$login eq $_->loginid } ($user->loginid)) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
+
+    my $settings = BOM::Mt5::User::update_user($args);
+    if ($settings->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'Mt5UpdateUserError',
+                message_to_client => $settings->{error}
+            });
+    }
+    return $settings;
+}
 
 1;

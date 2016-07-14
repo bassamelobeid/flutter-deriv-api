@@ -179,6 +179,7 @@ sub startup {
         ['get_settings',             \&BOM::RPC::v3::Accounts::get_settings,             1],
         ['get_settings_mt5',         \&BOM::RPC::v3::Mt5::NewAccount::get_settings_mt5,  1],
         ['set_settings',             \&BOM::RPC::v3::Accounts::set_settings,             1],
+        ['set_settings_mt5',         \&BOM::RPC::v3::Mt5::NewAccount::set_settings_mt5,  1],
         ['get_self_exclusion',       \&BOM::RPC::v3::Accounts::get_self_exclusion,       1],
         ['set_self_exclusion',       \&BOM::RPC::v3::Accounts::set_self_exclusion,       1],
         ['balance',                  \&BOM::RPC::v3::Accounts::balance,                  1],
