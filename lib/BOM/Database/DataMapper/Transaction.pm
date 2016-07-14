@@ -516,64 +516,6 @@ sub get_transactions {
     return $transactions;
 }
 
-=head2 get_transaction_before($date)
-
-Returns a single transaction before the specified date.
-
-=cut
-
-sub get_transaction_before {
-    my $self = shift;
-    my $before = shift || Date::Utility->new()->datetime_yyyymmdd_hhmmss;
-
-    my $sql = q{
-                SELECT * FROM TRANSACTION.TRANSACTION
-                WHERE
-                    account_id = $1
-                    AND transaction_time < $2
-                ORDER BY transaction_time DESC
-                LIMIT 1
-        };
-
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-
-    $sth->bind_param(1, $self->account->id);
-    $sth->bind_param(2, $before);
-
-    $sth->execute();
-    return $sth->fetchall_hashref('id');
-}
-
-=head2 get_transaction_after($date)
-
-Returns a single transaction after the specified date.
-
-=cut
-
-sub get_transaction_after {
-    my $self = shift;
-    my $after = shift || '1970-01-01 00:00:00';
-
-    my $sql = q{
-                SELECT * FROM TRANSACTION.TRANSACTION
-                WHERE
-                    account_id = $1
-                    AND transaction_time > $2
-                ORDER BY transaction_time DESC
-                LIMIT 1
-        };
-
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-
-    $sth->bind_param(1, $self->account->id);
-    $sth->bind_param(2, $after);
-
-    $sth->execute();
-    return $sth->fetchall_hashref('id');
-}
-
 sub get_bet_transactions_for_broker {
     my $self        = shift;
     my $arg         = shift;
