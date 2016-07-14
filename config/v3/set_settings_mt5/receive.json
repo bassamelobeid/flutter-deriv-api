@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Update MT5 account Receive",
+  "description": "Update MT5 account Receive",
+  "properties": {
+    "echo_req": {
+      "title":"Echo request",
+      "description":"Echo of the request made"
+    },
+    "set_settings_mt5": {
+      "type": "object",
+      "title": "Update MT5 account details",
+      "description": "Update MT5 account details",
+      "properties": {
+        "login": {
+          "type": "string",
+          "description": "Login of new MT5 account"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address"
+        },
+        "name": {
+          "type": "string",
+          "description": "Client's name. The maximum length of a client's symbol name is 128 characters. Optional field."
+        },
+        "leverage": {
+          "pattern": "^([1-4][0-9]?[0-9]?)|500$",
+          "description": "The size of a client's leverage in the leverage from 1 to 500"
+        },
+        "address": {
+          "type" : "string",
+          "description": "The address of the user. The maximum length of the address is 128 characters. Optional field."
+        },
+        "state": {
+          "type" : "string",
+          "description": "User's state (region) of residence. Optional field."
+        },
+        "city": {
+          "type" : "string",
+          "description": "User's city of residence. Optional field."
+        },
+        "zipCode": {
+          "type" : "string",
+          "description": "User's zip code. Optional field."
+        },
+        "country": {
+          "type" : "string",
+          "description": "The user's country of residence. Optional field."
+        },
+        "company": {
+          "type" : "string",
+          "description": "Name of the client's company. The maximum length of the company name is 64 characters. Optional field."
+        },
+        "phone": {
+          "type" : "string",
+          "description": "User's phone number. Optional field."
+        },
+        "phonePassword": {
+          "type": "string",
+          "description": "the user's phone password."
+        },
+        "balance": {
+          "type": "string",
+          "description": "Account balance"
+        }
+      }
+    },
+    "msg_type": {
+      "type": "string",
+      "description": "new_account_mt5"
+    },
+    "req_id": {
+      "type": "integer",
+      "description": "Optional field send in request to map to response, present only when request contains req_id"
+    }
+  },
+  "required": [
+    "echo_req",
+    "msg_type"
+  ]
+}

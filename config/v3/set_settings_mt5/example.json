@@ -1,0 +1,14 @@
+{
+    "set_settings_mt5": "1",
+    "email": "test@mailinator.com",
+    "name": "Peter Pan",
+    "leverage": "100",
+    "address": "20 Broadway Av, East Melbourne VIC",
+    "state": "Victoria",
+    "city": "Melbourne",
+    "zipCode": "3002",
+    "country": "Australia",
+    "company": "Binary Limited",
+    "phone": "+6123456789",
+    "phonePassword": "Abc1234"
+}
