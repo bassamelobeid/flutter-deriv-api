@@ -3,46 +3,62 @@
   "type": "object",
   "properties": {
     "echo_req": {
-      "granularity": 60,
-      "count": 10,
-      "ticks_history": "R_50",
-      "style": "ticks",
-      "end": "latest"
+      "granularity": {
+        "type": "number",
+        "pattern": "^60$"
+        },
+      "count": {
+        "type": "number",
+        "pattern": "^10$"
+      },
+      "ticks_history": {
+        "type": "string",
+        "pattern": "^R_50$"
+      },
+      "style": {
+        "type": "string",
+        "pattern": "^ticks$"
+      },
+      "end": {
+        "type": "string",
+        "pattern": "^latest$"
+      },
+      "required": "1"
     },
     "history": {
       "type": "object",
+      "required": "1",
       "properties": {
+        "required": "1",
         "times": {
           "type": ["array","null"],
           "maxItems": 10,
           "minItems": 10,
+          "required": "1",
           "items":
             {
               "type": "integer",
-              "pattern": "^\\d{10}$"
+              "pattern": "^\\d{10}$",
+              "required": "1"
             }
         },
         "prices": {
           "type": ["array","null"],
           "maxItems": 10,
           "minItems": 10,
+          "required": "1",
           "items":
             {
               "type": "string",
-              "pattern": "^\\d+\\.\\d+$"
+              "pattern": "^\\d+\\.\\d+$",
+              "required": "1"
             }
         }
       }
     },
     "msg_type": {
-      "type": "string"
-    },
-    "req_id": {
-      "type": "integer"
+      "type": "string",
+      "required": "1"
     }
-  },
-  "required": [
-    "echo_req",
-    "msg_type"
-  ]
+  }
 }
