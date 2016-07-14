@@ -2535,7 +2535,7 @@ sub _validate_lifetime {
     {
         return {
             message           => 'waiting for settlement',
-            message_to_client => localize('Waiting for settlement.'),
+            message_to_client => localize('Please wait for contract settlement.'),
         };
     }
 
