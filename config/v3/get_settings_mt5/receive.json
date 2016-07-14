@@ -17,6 +17,10 @@
           "type": "string",
           "description": "Login of new MT5 account"
         },
+        "group": {
+          "type": "string",
+          "description": "The group where account belongs to"
+        },
         "email": {
           "type": "string",
           "description": "Email address"
