@@ -84,11 +84,10 @@ sub get_open_bets_of_account {
     my $sql = q{
         SELECT fmb.*, t.id buy_transaction_id, t.app_markup, t.source
         FROM
-            bet.financial_market_bet fmb
+            bet.financial_market_bet_open fmb
             JOIN transaction.transaction t on (action_type='buy' and t.financial_market_bet_id=fmb.id)
         WHERE
             fmb.account_id = ?
-            AND is_sold = false
             AND (0=? or expiry_time < now())
         ORDER BY
             expiry_time
