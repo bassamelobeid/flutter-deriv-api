@@ -23,10 +23,6 @@
 					"type": "string",
 					"pattern": "^VRTC\\d+$",
 					"required": "1"
-				},
-				"id": {
-					"type": "string",
-					"required": "1"
 				}
 			}
 		},
