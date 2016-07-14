@@ -142,7 +142,7 @@ print qq~
 <br>PRICE: <select name=curr><option>~ . get_currency_options() . qq~</select>
 <input type=hidden size=12 name=price value=0><a>0</a>
 <br>QUANTITY: <input type=text size=12 name=qty value=1>
-<br>BET REFERENCE: <input type=text size=12 name=ref value=''>
+<br>BET REFERENCE (not TXNID) : <input type=text size=12 name=ref value=''>
 <br>CLIENT LOGINID: <input type=text size=12 name=loginid value=$broker>
 <br>COMMENT: <input type=text size=45 maxlength=90 name=comment>
 <tr><td><input type=submit value='- Close Contract -'></td></tr>
