@@ -10,6 +10,12 @@ use YAML::XS;
 use BOM::Platform::Context::I18N;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
+use Locale::Maketext::ManyPluralForms {
+    'EN'      => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/en.po'],
+    '*'       => ['Gettext' => '/home/git/binary-com/translations-websockets-api/src/locales/*.po'],
+    '_auto'   => 1,
+    '_decode' => 1,
+};
 
 sub register {
     my ($self, $app) = @_;
@@ -20,11 +26,14 @@ sub register {
         l => sub {
             my $c = shift;
 
+            state %handles;
             my $language = $c->stash->{language} || 'EN';
-            my $lh = BOM::Platform::Context::I18N::handle_for($language)
-                || die("could not build locale for language $language");
 
-            return $lh->maketext(@_);
+            $handles{$language} //= Locale::Maketext::ManyPluralForms->get_handle(lc $language);
+
+            die("could not build locale for language $language") unless $handles{$language};
+
+            return $handles{$language}->maketext(@_);
         });
 
     $app->helper(
