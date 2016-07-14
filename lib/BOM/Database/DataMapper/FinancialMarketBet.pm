@@ -79,6 +79,7 @@ sub get_sold_bets_of_account {
 
 sub get_open_bets_of_account {
     my $self = shift;
+    my $args = shift;
 
     my $sql = q{
         SELECT fmb.*, t.id buy_transaction_id, t.app_markup, t.source
@@ -88,33 +89,13 @@ sub get_open_bets_of_account {
         WHERE
             fmb.account_id = ?
             AND is_sold = false
+            AND (0=? or expiry_time < now())
         ORDER BY
             expiry_time
     };
 
     my $sth = $self->db->dbh->prepare($sql);
-    $sth->execute($self->account->id);
-
-    return $sth->fetchall_arrayref({});
-}
-
-sub get_fmbs_by_loginid_and_currency {
-    my $self = shift;
-    my $args = shift;
-
-    my $sql = <<'SQL';
-SELECT b.*
-  FROM bet.financial_market_bet b
-  JOIN transaction.account a ON a.id=b.account_id
- WHERE a.client_loginid=$1
-   AND a.currency_code=$2
-SQL
-
-    $sql .= "   AND NOT b.is_sold\n"         if $args->{exclude_sold};
-    $sql .= "   AND b.expiry_time < now()\n" if $args->{only_expired};
-
-    my $sth = $self->db->dbh->prepare($sql);
-    $sth->execute($self->client_loginid, $self->currency_code);
+    $sth->execute($self->account->id, $args->{only_expired} || 0);
 
     return $sth->fetchall_arrayref({});
 }
