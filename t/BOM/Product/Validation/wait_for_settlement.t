@@ -101,3 +101,4 @@ sub test_with_feed {
     subtest($testname, $test);
 }
 
+done_testing;
