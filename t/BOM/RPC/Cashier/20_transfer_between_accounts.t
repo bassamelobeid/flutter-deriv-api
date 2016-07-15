@@ -164,7 +164,7 @@ subtest $method => sub {
             $rpc_ct->call_ok($method, $params)
                 ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount $amount")
                 ->error_message_is('Invalid amount. Minimum transfer amount is 0.10, and up to 2 decimal places.',
-                'Correct error message for transfering to random client');
+                'Correct error message for transfering invalid amount');
         }
 
         $params->{args} = {};
@@ -202,6 +202,46 @@ subtest $method => sub {
         $client_mf  = BOM::Platform::Client->new({loginid => $client_mf->loginid});
         ok $client_mlt->default_account->balance == 90, '-10';
         ok $client_mf->default_account->balance == 10,  '+10';
+    };
+
+    subtest 'Sub account transfer' => sub {
+        $params->{args}->{sub_account} = 1;
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Sub account transfer error")
+            ->error_message_is('The account transfer is unavailable for your account.',
+            'Correct error message for sub account as client is not marked as allow_omnibus');
+
+        $client_mlt = BOM::Platform::Client->new({loginid => $client_mlt->loginid});
+        ok $client_mlt->get_status('disabled'), 'Client MLT disabled';
+        $client_mlt->clr_status('disabled');
+        # set allow_omnibus (master account has this set)
+        $client_mlt->allow_omnibus(1);
+        $client_mlt->save();
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Sub account transfer error")
+            ->error_message_is('The account transfer is unavailable for your account.',
+            'Correct error message for sub account as client has no sub account');
+
+        $client_mlt = BOM::Platform::Client->new({loginid => $client_mlt->loginid});
+        ok $client_mlt->get_status('disabled'), 'Client MLT disabled';
+        $client_mlt->clr_status('disabled');
+        $client_mlt->allow_omnibus(1);
+        $client_mlt->save();
+
+        $client_mf = BOM::Platform::Client->new({loginid => $client_mf->loginid});
+        # set mf client as sub account of mlt
+        $client_mf->sub_account_of($client_mlt->loginid);
+        $client_mf->save();
+
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        is $result->{client_to_loginid}, $client_mf->loginid, 'Client to loginid is correct';
+
+        # after withdraw, check both balance
+        $client_mlt = BOM::Platform::Client->new({loginid => $client_mlt->loginid});
+        $client_mf  = BOM::Platform::Client->new({loginid => $client_mf->loginid});
+        ok $client_mlt->default_account->balance == 80, '-10';
+        ok $client_mf->default_account->balance == 20,  '+10';
     };
 };
 
