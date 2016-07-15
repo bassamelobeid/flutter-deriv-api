@@ -198,7 +198,6 @@ my $table_header =
     . '<th>Referer</th>'
     . '<th>IP address</th>'
     . '<th>Turnover</th>'
-    . '<th># of bets bought</th>'
     . '<th>Account age</th>'
     . '<th>Authenticated?</th>'
     . '<th>Account status</th>'
@@ -275,11 +274,8 @@ foreach my $client (@clients) {
         $total_turnover .= $currency . sprintf("%.2f", $account_turnover) . ' ';
     }
 
-    my $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({client_loginid => $client_login});
-    my $total_bets = $bet_mapper->get_bet_count_of_client;
 
     $total_turnover ||= '&nbsp;';
-    $total_bets     ||= '&nbsp;';
 
     my $clientdetail_link = '<a href="'
         . request()->url_for(
@@ -318,7 +314,6 @@ foreach my $client (@clients) {
             <td><font color="$color">&nbsp;</font></td>
             <td><font color="$color">$client_ip</font></td>
             <td><font color="$color">$total_turnover</font></td>
-            <td><font color="$color">$total_bets</font></td>
             <td><font color="$color">$account_age</font></td>
             <td><font color="$color">$client_authenticated</font></td>
             <td><font color="$color">$check_account</font</td>
