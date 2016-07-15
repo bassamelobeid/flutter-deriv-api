@@ -198,8 +198,10 @@ sub _build_expiry_daily {
 
 sub _build_is_intraday {
     my $self              = shift;
+    my $date_expiry = $self->date_expiry;
+    my $daily_trading_hours = ($self->calendar->closes_early_on($date_expiry)) ? $self->calendar->closing_on($date_expiry)->epoch - $self->calendar->opening_on($date_expiry)->epoch : 86400; 
     my $contract_duration = $self->date_expiry->epoch - $self->effective_start->epoch;
-    return ($contract_duration <= 86400) ? 1 : 0;
+    return ($contract_duration <= $daily_trading_hours) ? 1 : 0;
 }
 
 sub _build_expiry_type {
