@@ -54,6 +54,24 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     }) for qw(GDAXI R_75 R_50);
 
 my $bet_mapper;
+lives_ok {
+    $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
+        'client_loginid' => 'CR0005',
+        'currency_code'  => 'USD',
+    });
+
+}
+'Expect to initialize the object';
+
+lives_ok {
+    $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
+        'client_loginid' => 'CR0021',
+        'currency_code'  => 'USD',
+    });
+}
+'Expect to initialize the object';
+
+cmp_ok($bet_mapper->get_bet_count_of_client, '==', 67, 'Count number of bets for CR0021 (default currency = USD)');
 
 lives_ok {
     $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
