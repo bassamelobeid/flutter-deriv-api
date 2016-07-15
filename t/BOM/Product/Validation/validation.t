@@ -20,16 +20,6 @@ use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
-use Quant::Framework::TradingCalendar;
-use Quant::Framework::StorageAccessor;
-use Quant::Framework::Holiday;
-
-my $storage_accessor = Quant::Framework::StorageAccessor->new(
-    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-);
-
 initialize_realtime_ticks_db();
 
 my $oft_used_date   = Date::Utility->new('2013-03-29 15:00:34');
@@ -44,33 +34,32 @@ my $tick_params = {
 
 my $tick = BOM::Market::Data::Tick->new($tick_params);
 
-my $past = Date::Utility->new('2011-03-29');
-Quant::Framework::Holiday->create(
-        storage_accessor => $storage_accessor,
-        for_date         => $past,
-    )->update({
-        "25-Dec-12" => {
-            "Christmas Day" => ['FSE'],
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'holiday',
+    {
+        recorded_date => Date::Utility->new('2013-03-27'),
+        calendar      => {
+            "25-Dec-12" => {
+                "Christmas Day" => ['FSE'],
+            },
+            "26-Dec-12" => {
+                "Christmas Holiday" => ['FSE'],
+            },
+            "31-Dec-12" => {
+                " New Year's Eve" => ['FSE'],
+            },
+            "1-Jan-13" => {
+                "New Year" => ['FSE'],
+            },
+            "29-Mar-13" => {
+                "Good Friday" => ['FSE'],
+            },
+            "1-Apr-13" => {
+                "Easter Monday" => ['FSE'],
+            },
         },
-        "26-Dec-12" => {
-            "Christmas Holiday" => ['FSE'],
-        },
-        "31-Dec-12" => {
-            " New Year's Eve" => ['FSE'],
-        },
-        "1-Jan-13" => {
-            "New Year" => ['FSE'],
-        },
-        "29-Mar-13" => {
-            "Good Friday" => ['FSE'],
-        },
-        "1-Apr-13" => {
-            "Easter Monday" => ['FSE'],
-        },
-    }, $past)
-    ->save;
-
-  BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
