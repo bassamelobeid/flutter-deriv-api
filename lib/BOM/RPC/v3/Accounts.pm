@@ -14,6 +14,7 @@ use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Japan::NewAccount;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::LandingCompany::Registry;
 use BOM::Platform::Locale;
@@ -54,7 +55,7 @@ sub landing_company {
     my $params = shift;
 
     my $country  = $params->{args}->{landing_company};
-    my $configs  = BOM::Platform::Runtime->instance->countries_list;
+    my $configs  = BOM::Platform::Countries->instance->countries_list;
     my $c_config = $configs->{$country};
     unless ($c_config) {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
@@ -507,7 +508,7 @@ sub get_settings {
     $dob_epoch = Date::Utility->new($client->date_of_birth)->epoch if ($client->date_of_birth);
     if ($client->residence) {
         $country_code = $client->residence;
-        $country = BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $params->{language});
+        $country = BOM::Platform::Countries->instance->countries->localized_code2country($client->residence, $params->{language});
     }
 
     my $client_tnc_status = $client->get_status('tnc_approval');
@@ -570,8 +571,12 @@ sub set_settings {
         return BOM::RPC::v3::Utility::permission_error();
     } else {
         # real client not allow to update residence
-        # Japanese client not allow to update settings
-        return BOM::RPC::v3::Utility::permission_error() if ($residence or $client->residence eq 'jp');
+        return BOM::RPC::v3::Utility::permission_error() if ($residence);
+
+        # handle Japan settings update separately
+        if ($client->residence eq 'jp') {
+            return BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
+        }
     }
 
     my $now             = Date::Utility->new;
