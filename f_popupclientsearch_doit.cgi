@@ -34,7 +34,7 @@ my %fields = (
 );
 my %non_empty_fields = (map { ($_, $fields{$_}) } (grep { $fields{$_} } (keys %fields)));
 my $results;
-if (defined %non_empty_fields && keys %non_empty_fields) {
+if (%non_empty_fields) {
     my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
         operation   => 'collector'
