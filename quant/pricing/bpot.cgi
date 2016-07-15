@@ -31,7 +31,7 @@ my $bet =
     (request()->param('shortcode') and request()->param('currency'))
     ? produce_contract(request()->param('shortcode'), request()->param('currency'))
     : '';
-my ($start, $end, $timestep, $graph_url, $debug_link);
+my ($start, $end, $timestep, $debug_link);
 if ($bet) {
     $start = (request()->param('start')) ? Date::Utility->new(request()->param('start')) : $bet->date_start;
     $end =
@@ -46,18 +46,6 @@ if ($bet) {
     $timestep = Time::Duration::Concise::Localize->new(interval => int($duration / 100))
         if ($duration / $timestep->seconds > 100);    # Don't let them go crazy asking for hundreds of points.
 
-    $graph_url =
-          'bpot_graph.cgi?shortcode='
-        . request()->param('shortcode')
-        . '&currency='
-        . request()->param('currency')
-        . '&start='
-        . $start->epoch . '&end='
-        . $end->epoch
-        . '&timestep='
-        . $timestep->as_concise_string . '&'
-        . rand(100000);
-
     my $start_bet = make_similar_contract($bet, {priced_at => $start});
     $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
 }
@@ -70,7 +58,6 @@ BOM::Platform::Context::template->process(
         end        => $end ? $end->datetime : '',
         timestep   => $timestep ? $timestep->as_concise_string : '',
         debug_link => $debug_link,
-        graph_url  => $graph_url,
     }) || die BOM::Platform::Context::template->error;
 
 code_exit_BO();
