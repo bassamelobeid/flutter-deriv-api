@@ -108,7 +108,11 @@ sub _get_stashed {
     my $r = $response;
 
     foreach my $l (@hierarchy) {
-        $r = $r->{$l};
+        if ($l =~ /^[0-9,.E]+$/) {
+            $r = @{$r}[$l];
+        } else {
+            $r = $r->{$l};
+        }
     }
 
     return $r;
