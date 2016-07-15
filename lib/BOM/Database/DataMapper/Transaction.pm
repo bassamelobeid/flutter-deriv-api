@@ -528,6 +528,8 @@ sub get_details_by_transaction_ref {
     SELECT 
         a.client_loginid AS loginid,
         b.short_code AS shortcode,
+        b.buy_price as ask_price,
+        b.sell_price as bid_price,
         a.currency_code AS currency_code
     FROM
         transaction.transaction t
