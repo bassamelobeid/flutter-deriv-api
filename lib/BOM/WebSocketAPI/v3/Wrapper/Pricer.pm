@@ -13,7 +13,6 @@ use Time::HiRes qw(gettimeofday);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::RPC::v3::Contract;
-use Data::Dumper;
 
 sub proposal {
     my ($c, $req_storage) = @_;
@@ -81,12 +80,12 @@ sub proposal_open_contract {
                         short_code      => $response->{$contract_id}->{shortcode},
                         contract_id     => $response->{$contract_id}->{contract_id},
                         currency        => $response->{$contract_id}->{currency},
-                        is_sold         => $response->{$contract_id}->{is_sold},
-                        sell_time       => $response->{$contract_id}->{sell_time},
-                        sell_price      => $response->{$contract_id}->{sell_price},
-                        transaction_ids => $response->{$contract_id}->{transaction_ids},
-                        purchase_time   => $response->{$contract_id}->{purchase_time},
                         buy_price       => $response->{$contract_id}->{buy_price},
+                        sell_price      => $response->{$contract_id}->{sell_price},
+                        sell_time       => $response->{$contract_id}->{sell_time},
+                        purchase_time   => $response->{$contract_id}->{purchase_time},
+                        is_sold         => $response->{$contract_id}->{is_sold},
+                        transaction_ids => $response->{$contract_id}->{transaction_ids},
                     };
 
                     if (not $uuid = _pricing_channel_for_bid($c, 'subscribe', $args, $cache)) {
@@ -124,8 +123,10 @@ sub _serialized_args {
 }
 
 sub _pricing_channel_for_ask {
-    my ($c, $subs, $args, $cache) = @_;
+    my ($c, $subs, $args, $rpc_response) = @_;
     my $price_daemon_cmd = 'price';
+    my $cache = {map { ($_ => $rpc_response->{$_}) } qw(longcode contract_parameters)};
+    delete $rpc_response->{contract_parameters};
 
     my %args_hash = %{$args};
 
@@ -241,8 +242,6 @@ sub process_bid_event {
             $response->{transaction_ids} = $passed_fields->{transaction_ids};
             $response->{buy_price}       = $passed_fields->{buy_price};
             $response->{purchase_time}   = $passed_fields->{purchase_time};
-            $response->{sell_price}      = $passed_fields->{sell_price} if $passed_fields->{sell_price};
-            $response->{sell_time}       = $passed_fields->{sell_time} if $passed_fields->{sell_time};
             $results                     = {
                 msg_type                 => 'proposal_open_contract',
                 'proposal_open_contract' => {%$response,},
@@ -255,9 +254,8 @@ sub process_bid_event {
                 method => 'proposal_open_contract',
             };
         }
+        delete $results->{proposal_open_contract}->{$_} for qw(rpc_time);
         $c->send({json => $results});
-        # remove price subscription when contract is sold
-        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $response->{id}) if exists $response->{sell_time};
     }
     return;
 }
@@ -282,7 +280,6 @@ sub process_ask_event {
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
-            delete $response->{longcode};
             my $adjusted_results = _price_stream_results_adjustment(
                 $pricing_channel->{$redis_channel}->{$subchannel}->{args},
                 $pricing_channel->{$redis_channel}->{$subchannel}->{cache}->{contract_parameters},
@@ -310,6 +307,7 @@ sub process_ask_event {
                 method => 'proposal',
             };
         }
+        delete $results->{proposal}->{$_} for qw(contract_parameters rpc_time);
         $c->send({json => $results});
     }
     return;
@@ -369,6 +367,45 @@ sub _price_stream_results_adjustment {
     delete $results->{theo_probability};
 
     return $results;
+}
+
+sub send_proposal_open_contract_last_time {
+    my ($c, $args) = @_;
+    my $uuid = $args->{uuid};
+
+    my $pricing_channel = $c->stash('pricing_channel');
+    return if not $pricing_channel or not $pricing_channel->{uuid}->{$uuid};
+    my $cache = $pricing_channel->{uuid}->{$uuid}->{cache};
+
+    $c->call_rpc({
+            args        => $pricing_channel->{uuid}->{$uuid}->{args},
+            method      => 'get_bid',
+            msg_type    => 'proposal_open_contract',
+            call_params => {
+                short_code  => $args->{short_code},
+                contract_id => $args->{financial_market_bet_id},
+                currency    => $args->{currency_code},
+                sell_time   => $args->{sell_time},
+                is_sold     => 1,
+            },
+            success => sub {
+                my ($c, $rpc_response) = @_;
+
+                $rpc_response->{buy_price}               = $cache->{buy_price};
+                $rpc_response->{purchase_time}           = $cache->{purchase_time};
+                $rpc_response->{transaction_ids}         = $cache->{transaction_ids};
+                $rpc_response->{transaction_ids}->{sell} = $args->{id};
+                $rpc_response->{sell_price}              = sprintf('%.2f', $args->{amount});
+                $rpc_response->{sell_time}               = $args->{sell_time};
+
+                # cancel proposal open contract streaming which will cancel transaction subscription also
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
+            },
+            error => sub {
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
+            }
+        });
+    return;
 }
 
 1;

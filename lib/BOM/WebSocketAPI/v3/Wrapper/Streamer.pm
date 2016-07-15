@@ -441,15 +441,11 @@ sub process_transaction_updates {
                         and exists $payload->{financial_market_bet_id}
                         and $payload->{financial_market_bet_id} eq $channel->{$type}->{contract_id})
                     {
-                        # forget_one for this subscr will be performed after sending final response with sell_time set
-                        if (my $pricing_channel = $c->stash('pricing_channel')) {
-                            if (    exists $pricing_channel->{uuid}
-                                and exists $pricing_channel->{uuid}->{$type})
-                            {
-                                $pricing_channel->{uuid}->{$type}->{cache}->{sell_price} = $payload->{amount};
-                                $pricing_channel->{uuid}->{$type}->{cache}->{sell_time}  = Date::Utility->new($payload->{sell_time})->epoch;
-                            }
-                        }
+                        $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
+                        $payload->{uuid}      = $type;
+
+                        # send proposal details last time
+                        BOM::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload);
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
                     _transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
