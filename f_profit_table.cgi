@@ -4,6 +4,7 @@ use strict 'vars';
 
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
+use Machine::Epsilon;
 
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
@@ -72,6 +73,7 @@ my @bet_type;
 my $cumulative_pnl = 0;
 
 my $performance_probability;
+my $inv_performance_probability;
 
 if (defined $do_calculation) {
 
@@ -101,6 +103,10 @@ if (defined $do_calculation) {
             start_time   => \@start_time,
             sell_time    => \@sell_time,
         });
+
+        $inv_performance_probability = roundnear(0.01, 1 / ($performance_probability + machine_epsilon()));
+        $performance_probability     = (1 - $performance_probability) * 100;
+        $performance_probability     = roundnear(0.001, $performance_probability);
     }
 }
 
@@ -112,18 +118,19 @@ foreach my $contract (@{$open_contracts}) {
 BOM::Platform::Context::template->process(
     'backoffice/account/profit_table.html.tt',
     {
-        sold_contracts          => $sold_contracts,
-        open_contracts          => $open_contracts,
-        markets                 => [BOM::Market::Registry->instance->display_markets],
-        email                   => $client->email,
-        full_name               => $client->full_name,
-        loginid                 => $client->loginid,
-        posted_startdate        => $startdate,
-        posted_enddate          => $enddate,
-        currency                => $client->currency,
-        residence               => $client->residence,
-        contract_details        => \&BOM::ContractInfo::get_info,
-        performance_probability => $performance_probability,
+        sold_contracts              => $sold_contracts,
+        open_contracts              => $open_contracts,
+        markets                     => [BOM::Market::Registry->instance->display_markets],
+        email                       => $client->email,
+        full_name                   => $client->full_name,
+        loginid                     => $client->loginid,
+        posted_startdate            => $startdate,
+        posted_enddate              => $enddate,
+        currency                    => $client->currency,
+        residence                   => $client->residence,
+        contract_details            => \&BOM::ContractInfo::get_info,
+        performance_probability     => $performance_probability,
+        inv_performance_probability => $inv_performance_probability,
     }) || die BOM::Platform::Context::template->error();
 
 code_exit_BO();

@@ -86,7 +86,7 @@
 </FORM>
 
 [% IF performance_probability %]
-        <p>Performance Probability: [% display_performance_probability(performance_probability) %]</p>
+        <p>Performance Probability: [% display_performance_probability(performance_probability) %] percentile or [% inv_performance_probability %] </p>
 [% END %]
 
 <div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
