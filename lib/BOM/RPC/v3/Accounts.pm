@@ -573,8 +573,12 @@ sub set_settings {
         return BOM::RPC::v3::Utility::permission_error();
     } else {
         # real client not allow to update residence
-        # Japanese client not allow to update settings
-        return BOM::RPC::v3::Utility::permission_error() if ($residence or $client->residence eq 'jp');
+        return BOM::RPC::v3::Utility::permission_error() if ($residence);
+
+        # handle Japan settings update separately
+        if ($client->residence eq 'jp') {
+            return BOM::RPC::v3::Japan::NewAccount::set_jp_settings($params);
+        }
     }
 
     my $now             = Date::Utility->new;
