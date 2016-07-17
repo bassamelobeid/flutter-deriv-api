@@ -1151,7 +1151,7 @@ sub connect_add {
     );
     my $data = $oneall->connection($connection_token) or die $oneall->errstr;
 
-    if ($data->{response}->{request}->{status} != 200) {
+    if ($data->{response}->{result}->{status}->{code} != 200) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'ConnectAdd',
                 message_to_client => localize('Failed to get user identity.')});
