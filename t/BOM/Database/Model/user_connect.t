@@ -16,6 +16,13 @@ $c->dbh->do("INSERT INTO users.binary_user (id, email, password) VALUES ($test_u
 my $res = $c->insert_connect($test_user_id, $provider_data);
 ok $res->{success}, 'insert connect ok';
 
+## someone else try same provider data is not ok
+$res = $c->insert_connect(998, $provider_data);
+is $res->{error}, 'CONNECTED_BY_OTHER', 'CONNECTED_BY_OTHER';
+
+$res = $c->insert_connect($test_user_id, $provider_data);
+ok $res->{success}, 'update connect ok';
+
 my $get_user_id = $c->get_user_id_by_connect($provider_data);
 is $get_user_id, $test_user_id, 'get_user_id_by_connect ok';
 
