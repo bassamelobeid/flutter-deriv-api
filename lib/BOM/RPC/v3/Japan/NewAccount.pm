@@ -5,8 +5,11 @@ use warnings;
 
 use JSON qw(from_json encode_json);
 use DateTime;
+use Date::Utility;
 
 use BOM::RPC::v3::Utility;
+use BOM::Platform::Locale;
+use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::Platform::Context qw (localize);
@@ -254,6 +257,128 @@ sub get_jp_settings {
         );
     }
     return $jp_settings;
+}
+
+sub set_jp_settings {
+    my $params = shift;
+    my ($client, $website_name, $client_ip, $user_agent, $language, $args) =
+        @{$params}{qw/client website_name client_ip user_agent language args/};
+
+    return BOM::RPC::v3::Utility::permission_error() unless ($client->residence eq 'jp' and $args->{jp_settings});
+    $args = $args->{jp_settings};
+
+    my $text = {
+        'annual_income'                               => localize('{JAPAN ONLY}Annual income'),
+        'financial_asset'                             => localize('{JAPAN ONLY}Financial asset'),
+        'trading_experience_equities'                 => localize('{JAPAN ONLY}Trading Experience for Equities'),
+        'trading_experience_commodities'              => localize('{JAPAN ONLY}Trading Experience for Commodities'),
+        'trading_experience_foreign_currency_deposit' => localize('{JAPAN ONLY}Trading Experience for Foreign currency deposit'),
+        'trading_experience_margin_fx'                => localize('{JAPAN ONLY}Trading Experience for Margin FX'),
+        'trading_experience_investment_trust'         => localize('{JAPAN ONLY}Trading Experience for Investment trust'),
+        'trading_experience_public_bond'              => localize('{JAPAN ONLY}Trading Experience for Public and corporation bond'),
+        'trading_experience_option_trading'           => localize('{JAPAN ONLY}Trading Experience for OTC derivative (Option) trading'),
+        'trading_purpose'                             => localize('{JAPAN ONLY}Purpose of trading'),
+        'hedge_asset'                                 => localize('{JAPAN ONLY}Classification of assets requiring hedge'),
+        'hedge_asset_amount'                          => localize('{JAPAN ONLY}Amount of hedging assets'),
+    };
+
+    my @updated;
+    if ($client->occupation ne $args->{occupation}) {
+        push @updated, [localize('{JAPAN ONLY}Occupation'), $client->occupation, $args->{occupation}];
+        $client->occupation($args->{occupation});
+    }
+
+    my $ori_fin    = JSON::from_json($client->financial_assessment->data);
+    my $fin_change = 0;
+
+    foreach my $key (qw(
+        trading_purpose
+        hedge_asset
+        hedge_asset_amount
+        annual_income
+        financial_asset
+        trading_experience_equities
+        trading_experience_commodities
+        trading_experience_foreign_currency_deposit
+        trading_experience_margin_fx
+        trading_experience_investment_trust
+        trading_experience_public_bond
+        trading_experience_option_trading
+        ))
+    {
+        my $ori = $ori_fin->{$key};
+
+        if (not grep { $key eq $_ } qw(trading_purpose hedge_asset hedge_asset_amount)) {
+            $ori = $ori->{answer};
+        }
+        $ori //= '';
+
+        my $new = $args->{$key} // '';
+
+        if ($ori ne $new) {
+            push @updated, [$text->{$key}, $ori, $new];
+            $fin_change = 1;
+        }
+    }
+
+    # no settings change
+    return {status => 1} unless (@updated > 0);
+
+    if ($fin_change == 1) {
+        delete $args->{occupation};
+        my $new_fin = BOM::Platform::Account::Real::japan::get_financial_assessment_score($args);
+
+        # keep other existing fields, eg: agreement, jp_knowledge_test
+        foreach (keys %$ori_fin) {
+            if (not exists $new_fin->{$_}) {
+                $new_fin->{$_} = $ori_fin->{$_};
+            }
+        }
+        $client->financial_assessment({data => encode_json($new_fin)});
+    }
+
+    $client->latest_environment(Date::Utility::new->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
+    if (not $client->save()) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InternalServerError',
+                message_to_client => localize('Sorry, an error occurred while processing your account.')});
+    }
+
+    my $message =
+        localize('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
+        . "\n\n";
+
+    $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
+
+    $message .= "<table>";
+    foreach my $field (@updated) {
+        $message .=
+              "<tr><td style='text-align:left'><strong>"
+            . $field->[0]
+            . "</strong></td><td>:</td><td style='text-align:left'>"
+            . $field->[2]
+            . "</td></tr>";
+    }
+    $message .= "</table>";
+    $message .= "\n" . localize('The [_1] team.', $website_name);
+
+    send_email({
+        from               => BOM::Platform::Runtime->instance->app_config->cs->email,
+        to                 => $client->email,
+        subject            => $client->loginid . ' ' . localize('Change in account settings'),
+        message            => [$message],
+        use_email_template => 1,
+        template_loginid   => $client->loginid,
+    });
+    BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
+
+    my $cs_msg = "Please note that client " . $client->loginid . " settings has been updated as below:\n\n";
+    foreach my $field (@updated) {
+        $cs_msg .= $field->[0] . ":" . "\n\t old value: " . $field->[1] . "\n\t new value: " . $field->[2] . "\n\n";
+    }
+    $client->add_note($client->loginid . ' ' . 'Japan Client Change in account settings notification', $cs_msg);
+
+    return {status => 1};
 }
 
 1;
