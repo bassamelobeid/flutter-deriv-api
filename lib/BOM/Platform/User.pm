@@ -55,8 +55,8 @@ Returns hashref, {success => 1} if successfully authenticated user or {error => 
 
 sub login {
     my ($self, %args) = @_;
-    my $password    = $args{password}    || die "requires password argument";
-    my $environment = $args{environment} || '';
+    my $password        = $args{password}        || die "requires password argument";
+    my $environment     = $args{environment}     || '';
     my $is_social_login = $args{is_social_login} || 0;
 
     my ($error, $cfl, @clients, @self_excluded);
