@@ -22,7 +22,7 @@ sub callback {
     );
     my $data = $oneall->connection($connection_token) or die $oneall->errstr;
 
-    if ($data->{response}->{request}->{status} != 200) {
+    if ($data->{response}->{result}->{status}->{code} != 200) {
         $c->session(__oneall_error => localize('Failed to get user identity.'));
         return $c->redirect_to( $redirect_uri );
     }
