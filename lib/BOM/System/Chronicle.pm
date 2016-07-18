@@ -275,12 +275,6 @@ sub _config {
     return $config;
 }
 
-# this code should be deleted after some time
-sub _redis_read {
-    warn "Chronicle::_redis_read is deprecated. Please, use RedisReplicated::redis_read";
-    return BOM::System::RedisReplicated::redis_read;
-}
-
 sub _redis_write {
     warn "Chronicle::_redis_write is deprecated. Please, use RedisReplicated::redis_write";
     return BOM::System::RedisReplicated::redis_write;

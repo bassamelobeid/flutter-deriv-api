@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 package t::Validation::Transaction::Payment::Withdrawal;
 
 use strict;
