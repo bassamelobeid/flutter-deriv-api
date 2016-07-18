@@ -16,15 +16,6 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Test::MockModule;
 
-use Quant::Framework::StorageAccessor;
-use Quant::Framework::Holiday;
-
-
-my $storage_accessor = Quant::Framework::StorageAccessor->new(
-    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-    chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-);
-
 my $weekend             = Date::Utility->new('2016-03-26');
 my $weekday             = Date::Utility->new('2016-03-29');
 my $usdjpy_weekend_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -234,21 +225,19 @@ subtest 'too many holiday for multiday indices contracts' => sub {
             symbol        => 'HSI',
             recorded_date => $monday_open
         });
-
-
-    Quant::Framework::Holiday->create(
-            storage_accessor => $storage_accessor,
-            for_date         => $monday_open,
-        )->update({
-              $monday_open->plus_time_interval('2d')->date => {
-                  'Test Holiday' => ['HKSE'],
-              },
-              $monday_open->plus_time_interval('1d')->date => {
-                  'Test Holiday 2' => ['HKSE'],
-              },
-        }, $monday_open)
-        ->save;
-
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'holiday',
+        {
+            recorded_date => $monday_open,
+            calendar      => {
+                $monday_open->plus_time_interval('2d')->date => {
+                    'Test Holiday' => ['HKSE'],
+                },
+                $monday_open->plus_time_interval('1d')->date => {
+                    'Test Holiday 2' => ['HKSE'],
+                },
+            },
+        });
     my $hsi_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'HSI',
         epoch      => $monday_open->epoch,
