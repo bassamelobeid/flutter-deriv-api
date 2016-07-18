@@ -24,7 +24,7 @@ sub write_dbh {
     $ip = shift if @_;
     my $db_postfix = $ENV{DB_POSTFIX} // '';
     return DBI->connect_cached(
-        "dbi:Pg:dbname=feed$db_postfix;port=5433;host=" . $config->{write}->{$ip},
+        "dbi:Pg:dbname=feed$db_postfix;port=".($config->{write}->{port} || 5433).";host=" . $config->{write}->{$ip},
         "write", $config->{password} )
       || die($DBI::errstr);
 }
