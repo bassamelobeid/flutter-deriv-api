@@ -515,13 +515,15 @@ sub print_comparison_between_volsurface {
             my $vol = roundnear(
                 0.0001,
                 $surface->get_volatility({
-                        days      => $days[$i],
+                        from      => $surface->recorded_date,
+                        to        => $surface->recorded_date->plus_time_interval($days[$i] . 'd'),
                         $vol_type => $col_point
                     }));
             my $ref_vol = roundnear(
                 0.0001,
                 $ref_surface->get_volatility({
-                        days      => $days[$i],
+                        from      => $ref_surface->recorded_date,
+                        to        => $ref_surface->recorded_date->plus_time_interval($days[$i] . 'd'),
                         $vol_type => $col_point
                     }));
 
@@ -618,7 +620,8 @@ sub plot_smile_or_termstructure {
                 (
                 $moneyness . ' '
                     . 100 * $surface->get_volatility({
-                        days      => $days_to_expiry_fix,
+                        from      => $surface->recorded_date,
+                        to        => $surface->recorded_date->plus_time_interval($days_to_expiry_fix . 'd'),
                         $vol_type => $moneyness,
                     }));
         }
@@ -631,7 +634,8 @@ sub plot_smile_or_termstructure {
                 (
                 $day_to_expiry . ' '
                     . 100 * $surface->get_volatility({
-                        days      => $day_to_expiry,
+                        from      => $surface->recorded_date,
+                        to        => $surface->recorded_date->plus_time_interval($day_to_expiry . 'd'),
                         $vol_type => $moneyness_fix,
                     }));
         }
@@ -686,7 +690,12 @@ sub calculate_moneyness_vol_for_display {
         #my @headers = qw(days date forward_vol RR 2vBF 1vBF skew kurtosis);
         push @row, 100 * roundnear(0.0001, $fv->{$term});
 
-        my %delta_smile = map { $_ => $volsurface->get_volatility({delta => $_, days => $term}) } qw(25 50 75);
+        my %delta_smile = map {
+            $_ => $volsurface->get_volatility({
+                    delta => $_,
+                    from  => $volsurface->recorded_date,
+                    to    => $volsurface->recorded_date->plus_time_interval($term . 'd')})
+        } qw(25 50 75);
         my $rr_bf = $volsurface->get_rr_bf_for_smile(\%delta_smile);
         push @row, roundnear(0.0001, $rr_bf->{RR_25});
         push @row, roundnear(0.0001, $rr_bf->{BF_25});
