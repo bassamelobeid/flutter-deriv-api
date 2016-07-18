@@ -5,9 +5,7 @@
   "description": "Binary.com provides an Omnibus account facility for corporate partners. This call opens a new sub account [available for omnibus accounts only]",
   "properties": {
     "new_sub_account": {
-      "enum": [
-        1
-      ],
+      "pattern": "^1$",
       "description": "Must be 1",
       "required": "1"
     },
