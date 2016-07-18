@@ -117,10 +117,7 @@ sub password_check_mt5 {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $status = BOM::Mt5::User::password_check({
-            login    => $login,
-            password => $args->{password}
-        });
+    my $status = BOM::Mt5::User::password_check($args);
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'Mt5PasswordCheckError',
