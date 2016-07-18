@@ -102,6 +102,16 @@ sub _cached_db {
     return $db;
 }
 
+sub fetchall_arrayref {
+    my $self = shift;
+    my ($query, @params) = @_;
+
+    my $sth = $self->db->dbh->prepare($query);
+    $sth->execute(@params);
+
+    return $sth->fetchall_arrayref({});
+}
+
 no Moose;
 
 __PACKAGE__->meta->make_immutable;
