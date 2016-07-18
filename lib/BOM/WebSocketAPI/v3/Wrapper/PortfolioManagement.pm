@@ -118,47 +118,30 @@ sub send_proposal_open_contract {
                 is_sold     => delete $details->{is_sold},
                 sell_time   => $sell_time,
             },
-            rpc_response_cb => sub {
+            error => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
-                my $args = $req_storage->{args};
-                if ($rpc_response) {
-                    if (exists $rpc_response->{error}) {
-                        if ($id) {
-                            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-                            BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
-                        }
-                        return $c->new_error('proposal_open_contract', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
-                    } elsif (exists $rpc_response->{is_expired} and $rpc_response->{is_expired} eq '1' and not $rpc_response->{is_valid_to_sell}) {
-                        # this case actually should not happen
-                        # problems wich could freeze 'is_expired' contract will generate error in RPC Client get_bid (see previous case)
-                        # otherwise contract will be sold by expiryd or by client
-                        # and transaction 'sell event' will unsubscribe client and send last message with proper data
-                        if ($id) {
-                            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-                            BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
-                            $id = undef;
-                        }
-
-                    }
-
-                    return {
-                        msg_type               => 'proposal_open_contract',
-                        proposal_open_contract => {
-                            $id ? (id => $id) : (),
-                            buy_price       => $buy_price,
-                            purchase_time   => $purchase_time,
-                            transaction_ids => $transaction_ids,
-                            (defined $sell_price) ? (sell_price => sprintf('%.2f', $sell_price)) : (),
-                            (defined $sell_time) ? (sell_time => $sell_time) : (),
-                            %$rpc_response
-                        }};
-                } else {
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                return;
+            },
+            success => sub {
+                my ($c, $rpc_response, $req_storage) = @_;
+                if (exists $rpc_response->{is_expired} and $rpc_response->{is_expired} eq '1' and not $rpc_response->{is_valid_to_sell}) {
                     if ($id) {
+                        warn "Unexpected proposal_open_contract message for account_id: $account_id,  id: $id";
                         BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $id);
+                        $id = undef;
                     }
                 }
-            }
+
+                $rpc_response->{id}              = $id if $id;
+                $rpc_response->{buy_price}       = $buy_price;
+                $rpc_response->{purchase_time}   = $purchase_time;
+                $rpc_response->{transaction_ids} = $transaction_ids;
+                $rpc_response->{sell_price}      = $sell_price if $sell_price;
+                $rpc_response->{sell_time}       = $sell_time if $sell_time;
+
+                return;
+            },
         });
     return;
 }
