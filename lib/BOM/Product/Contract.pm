@@ -178,7 +178,7 @@ has starts_as_forward_starting => (
 );
 
 #expiry_daily - Does this bet expire at close of the exchange?
-has [qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries)]
+has [qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries effective_daily_trading_hours)]
     => (
     is         => 'ro',
     lazy_build => 1,
@@ -196,12 +196,16 @@ sub _build_expiry_daily {
     return $self->is_intraday ? 0 : 1;
 }
 
-sub _build_is_intraday {
+sub _build_effective_daily_trading_hours {
     my $self              = shift;
     my $date_expiry = $self->date_expiry;
     my $daily_trading_hours = ($self->calendar->closes_early_on($date_expiry)) ? $self->calendar->closing_on($date_expiry)->epoch - $self->calendar->opening_on($date_expiry)->epoch : 86400; 
+    return $daily_trading_hours;
+}
+sub _build_is_intraday {
+    my $self              = shift;
     my $contract_duration = $self->date_expiry->epoch - $self->effective_start->epoch;
-    return ($contract_duration <= $daily_trading_hours) ? 1 : 0;
+    return ($contract_duration <= $self->effective_daily_trading_hours) ? 1 : 0;
 }
 
 sub _build_expiry_type {
@@ -792,7 +796,7 @@ sub _build_longcode {
     # When we are building the longcode, we should always take the date_start to date_expiry as duration.
     # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
     my $contract_duration = $self->date_expiry->epoch - $self->date_start->epoch;
-    my $expiry_type = $self->tick_expiry ? 'tick' : $contract_duration > 86400 ? 'daily' : 'intraday';
+    my $expiry_type = $self->tick_expiry ? 'tick' : $contract_duration > $self->effective_daily_trading_hours ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->starts_as_forward_starting and $self->fixed_expiry;
     my $localizable_description = $self->localizable_description->{$expiry_type};
 
