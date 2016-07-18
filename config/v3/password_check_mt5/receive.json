@@ -15,7 +15,7 @@
       "properties": {
         "status": {
           "type": "integer",
-          "pattern": "^1$",
+          "pattern": "^1$"
         }
       }
     },
