@@ -1890,10 +1890,9 @@ sub _vols_at_point {
     my ($self, $end_date, $days_attr) = @_;
 
     my $vol_args = {
-        delta     => 50,
-        from      => $self->effective_start,
-        to        => $self->date_expiry,
-        for_epoch => $self->effective_start->epoch,
+        delta => 50,
+        from  => $self->effective_start,
+        to    => $self->date_expiry,
     };
 
     my $market_name = $self->underlying->market->name;
