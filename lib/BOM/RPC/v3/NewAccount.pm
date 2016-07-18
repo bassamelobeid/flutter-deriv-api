@@ -387,7 +387,8 @@ sub new_sub_account {
     # we still need to call because some may provide details, some may not provide client details
     # we pass broker code of omnibus master client as we don't care about residence or any other details
     # of sub accounts as they are just for record keeping purpose
-    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($params->{args}, $client, $client->broker_code, $params->{source});
+    my $details_ref =
+        BOM::Platform::Account::Real::default::validate_account_details($params->{args}, $client, $client->broker_code, $params->{source});
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err,

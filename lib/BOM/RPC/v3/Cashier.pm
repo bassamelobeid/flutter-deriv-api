@@ -1007,7 +1007,8 @@ sub transfer_between_accounts {
     unless ($loginid_from and $loginid_to and $currency and $amount) {
         return {
             status   => 0,
-            accounts => \@accounts};
+            accounts => \@accounts
+        };
     }
 
     if (not looks_like_number($amount) or $amount < 0.1 or $amount !~ /^\d+.?\d{0,2}$/) {
@@ -1018,7 +1019,8 @@ sub transfer_between_accounts {
 
     if ($client_from && $client_to) {
         # for sub account we need to check if it fulfils sub_account_of criteria and allow_omnibus is set
-        if (($client_from->allow_omnibus || $client_to->allow_omnibus)
+        if (
+            ($client_from->allow_omnibus || $client_to->allow_omnibus)
             && (   ($client_from->sub_account_of && $client_from->sub_account_of eq $loginid_to)
                 || ($client_to->sub_account_of && $client_to->sub_account_of eq $loginid_from)))
         {
