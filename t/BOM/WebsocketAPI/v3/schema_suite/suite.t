@@ -91,7 +91,7 @@ sub _test_schema {
     my $validator = JSON::Schema->new(JSON::from_json($content));
     my $result    = $validator->validate($data);
     if ($fail) {
-        ok not $result, "$schema_file response is valid while it must fail.";
+        ok (!$result, "$schema_file response is valid while it must fail.");
         if ($result) {
             diag Dumper(\$data);
             diag " - $_" foreach $result->errors;
