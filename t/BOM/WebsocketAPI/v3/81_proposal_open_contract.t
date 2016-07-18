@@ -140,7 +140,9 @@ my $msg = {
     action_type             => 'sell',
     account_id              => $contract_details->[0]->{account_id},
     financial_market_bet_id => $contract_id,
-    amount                  => 2500
+    amount                  => 2500,
+    short_code              => $contract_details->[0]->{short_code},
+    currency_code           => 'USD',
 };
 my $json = JSON::to_json($msg);
 BOM::System::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
