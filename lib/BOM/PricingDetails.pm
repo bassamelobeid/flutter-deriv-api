@@ -517,7 +517,8 @@ sub _get_overview {
     # Delta for Strike
     my $atm_vol = $bet->volsurface->get_volatility({
         delta => 50,
-        days  => $bet->timeinyears->amount * 365,
+        from  => $bet->effective_start,
+        to    => $bet->date_expiry,
     });
     my ($delta_strike1, $delta_strike2) = (0, 0);
     if ($bet->category_code ne 'digits') {
