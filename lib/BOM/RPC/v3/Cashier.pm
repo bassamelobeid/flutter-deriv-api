@@ -980,40 +980,49 @@ sub transfer_between_accounts {
         return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
     }
 
-    my $args          = $params->{args};
-    my $is_subaccount = $args->{sub_account};
-    my $loginid_from  = $args->{account_from};
-    my $loginid_to    = $args->{account_to};
-    my $currency      = $args->{currency};
-    my $amount        = $args->{amount};
+    my $args         = $params->{args};
+    my $loginid_from = $args->{account_from};
+    my $loginid_to   = $args->{account_to};
+    my $currency     = $args->{currency};
+    my $amount       = $args->{amount};
 
     my %siblings = map { $_->loginid => $_ } $client->siblings;
+
+    my @accounts;
+    foreach my $account (values %{$siblings}) {
+        # check if client has any sub_account_of as we allow omnibus transfers also
+        # for MLT MF transfer check landing company
+        if ($client->loginid ne $account->sub_account_of or (grep { $account->landing_company->short ne $_ } ('malta', 'maltainvest'))) {
+            next;
+        }
+        push @accounts,
+            {
+            loginid => $account->loginid,
+            balance => $account->default_account ? sprintf('%.2f', $account->default_account->balance) : 0.00,
+            currency => $account->default_account ? $account->default_account->currency_code : '',
+            };
+    }
 
     # get clients
     unless ($loginid_from and $loginid_to and $currency and $amount) {
         return {
             status   => 0,
-            accounts => _get_sibling_accounts(\%siblings, $is_subaccount)};
+            accounts => \@accounts};
     }
 
     if (not looks_like_number($amount) or $amount < 0.1 or $amount !~ /^\d+.?\d{0,2}$/) {
         return $error_sub->(localize('Invalid amount. Minimum transfer amount is 0.10, and up to 2 decimal places.'));
     }
 
-    my $err_msg = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
-
     my ($is_good, $client_from, $client_to) = (0, $siblings{$loginid_from}, $siblings{$loginid_to});
 
     if ($client_from && $client_to) {
         # for sub account we need to check if it fulfils sub_account_of criteria and allow_omnibus is set
-        if ($is_subaccount) {
-            if (
-                ($client_from->allow_omnibus || $client_to->allow_omnibus)
-                && (   ($client_from->sub_account_of && $client_from->sub_account_of eq $loginid_to)
-                    || ($client_to->sub_account_of && $client_to->sub_account_of eq $loginid_from)))
-            {
-                $is_good = 1;
-            }
+        if (($client_from->allow_omnibus || $client_to->allow_omnibus)
+            && (   ($client_from->sub_account_of && $client_from->sub_account_of eq $loginid_to)
+                || ($client_to->sub_account_of && $client_to->sub_account_of eq $loginid_from)))
+        {
+            $is_good = 1;
         } else {
             my %landing_companies = (
                 $client_from->landing_company->short => 1,
@@ -1068,6 +1077,7 @@ sub transfer_between_accounts {
         $error_unfreeze_msg_sub->($err, '', @unfreeze);
     };
 
+    my $err_msg = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
     if (not BOM::Database::Transaction->freeze_client($client_from->loginid)) {
         return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $client_from->loginid . ']');
     }
@@ -1173,26 +1183,6 @@ sub transfer_between_accounts {
         client_to_full_name => $client_to->full_name,
         client_to_loginid   => $client_to->loginid
     };
-}
-
-sub _get_sibling_accounts {
-    my ($siblings, $is_subaccount) = @_;
-
-    my @accounts;
-    foreach my $account (values %{$siblings}) {
-        if ($is_subaccount) {
-            next if $account->is_virtual;
-        } else {
-            next unless (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'));
-        }
-        push @accounts,
-            {
-            loginid => $account->loginid,
-            balance => $account->default_account ? sprintf('%.2f', $account->default_account->balance) : 0.00,
-            currency => $account->default_account ? $account->default_account->currency_code : '',
-            };
-    }
-    return \@accounts;
 }
 
 sub topup_virtual {
