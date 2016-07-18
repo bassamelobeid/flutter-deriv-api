@@ -381,23 +381,13 @@ sub new_sub_account {
 
     my $args = $params->{args};
 
-    my ($company, $broker);
-    if ($args->{residence}) {
-        $company = $countries_list->{$args->{residence}}->{gaming_company};
-        $company = $countries_list->{$args->{residence}}->{financial_company} if (not $company or $company eq 'none');
-    }
-
-    if (not $company) {
-        $broker = $client->broker_code;
-    } else {
-        $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
-    }
-
-    # call populate fields as some merchant accounts may not provide their client details
+    # call populate fields as some omnibus merchant accounts may not provide their client details
     $params->{args} = BOM::Platform::Account::Real::subaccount::populate_details($client, $args);
 
     # we still need to call because some may provide details, some may not provide client details
-    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($params->{args}, $client, $broker, $params->{source});
+    # we pass broker code of omnibus master client as we don't care about residence or any other details
+    # of sub accounts as they are just for record keeping purpose
+    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($params->{args}, $client, $client->broker_code, $params->{source});
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err,
