@@ -15,7 +15,7 @@
       "description": "MT5 user login",
       "required": "1"
     },
-    "password": {
+    "new_password": {
       "type": "string",
       "description": "New master password of the account.",
       "required": "1"
