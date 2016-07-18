@@ -61,7 +61,9 @@ subtest $method => sub {
 
     my $result = $c->call_ok($method, $params)->has_no_system_error->result;
     my $expected_keys =
-        [qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended )];
+        [
+        qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended allow_forward_starting)
+        ];
 
     my ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');

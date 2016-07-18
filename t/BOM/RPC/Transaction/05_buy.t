@@ -87,6 +87,7 @@ subtest 'buy' => sub {
             longcode
             shortcode
             payout
+            stash
     ));
     is_deeply([sort keys %$result], [sort @expected_keys], 'result keys is ok');
     my $new_balance = $client->default_account->load->balance;
@@ -153,6 +154,7 @@ subtest 'app_markup' => sub {
             longcode
             shortcode
             payout
+            stash
     ));
     is_deeply([sort keys %$result], [sort @expected_keys], 'result keys is ok');
     is $payout, $result->{payout}, "contract and transaction payout are equal";

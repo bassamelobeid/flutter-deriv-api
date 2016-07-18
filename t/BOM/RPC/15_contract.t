@@ -244,7 +244,8 @@ subtest 'send_ask' => sub {
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
-    my $expected_keys = [sort { $a cmp $b } (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout theo_probability))];
+    my $expected_keys =
+        [sort { $a cmp $b } (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout theo_probability contract_parameters))];
     is_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
@@ -258,11 +259,13 @@ subtest 'send_ask' => sub {
                 print STDERR $msg;
             }
         };
-        $c->call_ok('send_ask', {args => {}})->has_error->error_code_is('ContractCreationFailure')->error_message_is('Cannot create contract');
+        $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('ContractCreationFailure')
+            ->error_message_is('Cannot create contract');
 
         my $mock_contract = Test::MockModule->new('BOM::RPC::v3::Contract');
         $mock_contract->mock('_get_ask', sub { die });
-        $c->call_ok('send_ask', {args => {}})->has_error->error_code_is('pricing error')->error_message_is('Unable to price the contract.');
+        $c->call_ok('send_ask', {args => {symbol => 'R_50'}})->has_error->error_code_is('pricing error')
+            ->error_message_is('Unable to price the contract.');
     }
 };
 

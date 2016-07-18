@@ -106,7 +106,8 @@ subtest 'Auth client' => sub {
 };
 
 subtest 'Return empty client portfolio' => sub {
-    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({contracts => []}, 'It should return empty array');
+    my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
+    is_deeply($result->{contracts}, [], 'It should return empty array');
 };
 
 subtest 'Sell expired contracts' => sub {
@@ -119,7 +120,8 @@ subtest 'Sell expired contracts' => sub {
     }
     'Create expired contract for sell';
 
-    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({contracts => []}, 'It should return empty array');
+    my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
+    is_deeply($result->{contracts}, [], 'It should return empty array');
 };
 
 subtest 'Return not expired client contracts' => sub {
@@ -158,8 +160,8 @@ subtest 'Return not expired client contracts' => sub {
     }
     'Create not expired contract and expected data';
 
-    $rpc_ct->call_ok(@params)
-        ->has_no_system_error->has_no_error->result_is_deeply({contracts => [$expected_contract_data]}, 'Should return contract data',);
+    my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
+    is_deeply($result->{contracts}, [$expected_contract_data], 'Should return contract data',);
 };
 
 done_testing();
