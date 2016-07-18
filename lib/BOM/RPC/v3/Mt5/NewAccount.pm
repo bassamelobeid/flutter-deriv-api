@@ -127,7 +127,7 @@ sub password_check_mt5 {
                 message_to_client => $status->{error}
             });
     }
-    return { status => 1 };
+    return 1;
 }
 
 
