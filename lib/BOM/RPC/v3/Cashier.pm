@@ -989,7 +989,7 @@ sub transfer_between_accounts {
     my %siblings = map { $_->loginid => $_ } $client->siblings;
 
     my @accounts;
-    foreach my $account (values %{$siblings}) {
+    foreach my $account (values %siblings) {
         # check if client has any sub_account_of as we allow omnibus transfers also
         # for MLT MF transfer check landing company
         if ($client->loginid ne $account->sub_account_of or (grep { $account->landing_company->short ne $_ } ('malta', 'maltainvest'))) {
