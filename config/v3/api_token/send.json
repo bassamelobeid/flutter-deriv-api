@@ -30,7 +30,7 @@
     },
     "sub_account": {
       "type": "string",
-      "pattern": "^([A-Z0-9]{1,25})$",
+      "pattern": "^[A-Z]{2,4}[0-9]{1,10})$",
       "description": "[For omnibus accounts only] Loginid of sub account. If this field is present then it will create token for this sub account."
     },
     "passthrough": {

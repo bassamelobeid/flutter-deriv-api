@@ -23,7 +23,7 @@
         },
         "sub_account": {
           "type": "string",
-          "pattern": "^([A-Z0-9]{1,25})$",
+          "pattern": "^[A-Z]{2,4}[0-9]{1,10})$",
           "description": "Loginid of sub account, only present when request was for sub account"
         }
       }
