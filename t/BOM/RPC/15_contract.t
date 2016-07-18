@@ -536,11 +536,7 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
             type           => 'STOCK_SPLT',
         }};
 
-    Quant::Framework::CorporateAction->create(
-        storage_accessor => $storage_accessor,
-        symbol           => 'USAAPL',
-        for_date         => $opening,
-    )->update($action, $opening)->save;
+    Quant::Framework::CorporateAction::create($storage_accessor, 'USAAPL', $opening)->update($action, $opening)->save;
 
     my $contract = create_contract(
         client        => $client,
