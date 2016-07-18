@@ -10,10 +10,12 @@
             "properties": {
                 "message": {
                     "type": "string",
+                    "pattern": "^Password should be at least six characters\\, including lower and uppercase letters with numbers\\.$",
                     "required": "1"
                 },
                 "code": {
                     "type": "string",
+                    "pattern": "^PasswordError$",
                     "required": "1"
                 }
             },
@@ -21,7 +23,7 @@
         },
         "msg_type":{
             "type": "string",
-            "pattern": "^get_limits$",
+            "pattern": "^cashier_password$",
             "required": "1"
         }
     }

@@ -118,8 +118,8 @@ sub _test_schema {
     }
 }
 
-# fetch the token related to an specific email
-# e.x _get_token('test@binary.com')
+# fetch the token related to a specific email
+# e.g. _get_token('test@binary.com')
 sub _get_token {
     my $email  = shift;
     my $redis  = BOM::System::RedisReplicated::redis_read;
