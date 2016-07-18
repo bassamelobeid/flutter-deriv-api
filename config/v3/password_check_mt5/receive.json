@@ -9,15 +9,9 @@
       "description":"Echo of the request made"
     },
     "password_check_mt5": {
-      "type": "object",
-      "title": "password check MT5",
-      "description": "password check MT5",
-      "properties": {
-        "status": {
-          "type": "integer",
-          "pattern": "^1$"
-        }
-      }
+      "type": "integer",
+      "title": "Password Check Status",
+      "description": "1 on success"
     },
     "msg_type": {
       "type": "string",
