@@ -132,14 +132,6 @@ sub debug_link {
         content => $volsurface,
         };
 
-    my $dvol = $self->_get_dvol();
-    push @{$tabs_content},
-        {
-        label   => 'DVol',
-        url     => 'dv',
-        content => $dvol,
-        };
-
     # rates
     if (grep { $bet->underlying->market->name eq $_ } ('forex', 'commodities', 'indices')) {
         push @{$tabs_content},
@@ -204,112 +196,6 @@ sub _get_rates {
     ) || die BOM::Platform::Context::template->error;
 
     return $rates_content;
-}
-
-sub _get_dvol {
-    my $self = shift;
-    my $bet  = $self->bet;
-
-    my $surfaces = {master => $self->master_surface};
-    if (
-        $bet->underlying->market->name eq 'forex'
-        or (    $bet->underlying->market->name eq 'commodities'
-            and $bet->underlying->symbol ne 'frxBROUSD'))
-    {
-        $surfaces->{used} = $bet->volsurface;
-    }
-
-    my $spot = $bet->underlying->spot;
-    my $days = {
-        0.000694444444444 => '1Min',
-        0.041666666667    => '1H',
-        1                 => '1D',
-        7                 => '1W',
-        30                => '1M',
-        60                => '2M',
-        90                => '3M',
-        180               => '6M',
-        270               => '9M',
-        365               => '1Y',
-    };
-    my @deltas = qw(95 90 85 80 75 70 50 30 25 20 15 10 5);
-    my @days_display =
-        (map { $days->{$_} } (sort { $a <=> $b } keys %{$days}));
-
-    my $tabs;
-    foreach my $key (keys %{$surfaces}) {
-        my $surface = $surfaces->{$key};
-        my $vols_table;
-        foreach my $day (sort { $a <=> $b } keys %{$days}) {
-            my $args;
-            $args->{spot}   = $spot;
-            $args->{t}      = $day / 365;
-            $args->{r_rate} = $bet->underlying->interest_rate_for($args->{t});
-            $args->{q_rate} = $bet->underlying->dividend_rate_for($args->{t});
-            $args->{premium_adjusted} =
-                $bet->underlying->{market_convention}->{delta_premium_adjusted};
-            $args->{atm_vol} = $surface->get_volatility({
-                delta => 50,
-                days  => $day
-            });
-            DELTA:
-
-            foreach my $delta (@deltas) {
-                $args->{delta}       = $delta / 100;
-                $args->{option_type} = 'VANILLA_CALL';
-                if ($args->{delta} > 0.5) {
-                    $args->{delta} =
-                        exp(-$args->{r_rate} * $args->{t}) - $args->{delta};
-                    $args->{option_type} = 'VANILLA_PUT';
-                }
-                my ($strike, $vol);
-                try {
-                    $strike = get_strike_for_spot_delta($args);
-                    $vol    = $surface->get_volatility({
-                        delta => $delta,
-                        days  => $day
-                    });
-                    if ($vol and $strike) {
-                        $vols_table->{$days->{$day}}->{$delta} = {
-                            vol    => sprintf('%.3f', $vol * 100),
-                            strike => sprintf('%.3f', $strike),
-                        };
-                    }
-                }
-            }
-        }
-
-        my ($url, $label);
-        if ($key eq 'master') {
-            $url   = 'dvm';
-            $label = 'Master DVol';
-        } elsif ($key eq 'used') {
-            $url   = 'dvu';
-            $label = 'Used DVol';
-        }
-
-        push @{$tabs},
-            {
-            url        => $url,
-            vols_table => $vols_table,
-            cut        => $surface->cutoff->code,
-            label      => $self->_get_cutoff_label($surface->cutoff),
-            };
-    }
-
-    my $vol_content;
-    BOM::Platform::Context::template->process(
-        'backoffice/price_debug/dvol_tab.html.tt',
-        {
-            bet_id => $bet->id,
-            deltas => [@deltas],
-            days   => [@days_display],
-            tabs   => $tabs,
-        },
-        \$vol_content
-    ) || die BOM::Platform::Context::template->error;
-
-    return $vol_content;
 }
 
 sub _get_cutoff_label {
