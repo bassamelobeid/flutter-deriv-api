@@ -205,7 +205,6 @@ subtest $method => sub {
     };
 
     subtest 'Sub account transfer' => sub {
-        $params->{args}->{sub_account} = 1;
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Sub account transfer error")
             ->error_message_is('The account transfer is unavailable for your account.',
