@@ -25,7 +25,11 @@ sub proposal {
             msg_type => 'proposal',
             success  => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
-                $req_storage->{uuid} = _pricing_channel($c, 'subscribe', $req_storage->{args}, $rpc_response);
+                my $subscription_cache = {
+                    contract_parameters => delete $rpc_response->{contract_parameters},
+                    longcode            => $rpc_response->{longcode},
+                };
+                $req_storage->{uuid} = _pricing_channel($c, 'subscribe', $req_storage->{args}, $subscription_cache);
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
@@ -124,6 +128,8 @@ sub process_pricing_events {
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
         my $results;
 
+        delete $response->{contract_parameters};
+        my $rpc_time = delete $response->{rpc_time};
         if ($response and exists $response->{error}) {
             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$serialized_args}->{$amount}->{uuid});
             # in pricer_dameon everything happens in Eng to maximize the collisions. If translations has params it will come as message_to_client_array.
@@ -170,7 +176,7 @@ sub process_pricing_events {
 
         if ($c->stash('debug')) {
             $results->{debug} = {
-                time   => $results->{price_stream}->{rpc_time},
+                time   => $rpc_time,
                 method => 'proposal',
             };
         }
