@@ -29,7 +29,7 @@ sub proposal {
                     contract_parameters => delete $rpc_response->{contract_parameters},
                     longcode            => $rpc_response->{longcode},
                 };
-                $req_storage->{uuid} = _pricing_channel($c, 'subscribe', $req_storage->{args}, $subscription_cache);
+                $req_storage->{uuid} = _pricing_channel_for_ask($c, 'subscribe', $req_storage->{args}, $subscription_cache);
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
