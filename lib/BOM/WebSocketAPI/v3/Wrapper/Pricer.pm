@@ -69,7 +69,6 @@ sub _pricing_channel {
     }
 
     delete $args_hash{passthrough};
-    delete $args_hash{req_id};
 
     $args_hash{language} = $c->stash('language') || 'EN';
     my $serialized_args = _serialized_args(\%args_hash);
