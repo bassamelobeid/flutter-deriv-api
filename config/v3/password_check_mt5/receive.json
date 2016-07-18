@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "MT5 user password check receive",
+  "description": "MT5 user password check receive",
+  "properties": {
+    "echo_req": {
+      "title":"Echo request",
+      "description":"Echo of the request made"
+    },
+    "password_check_mt5": {
+      "type": "object",
+      "title": "password check MT5",
+      "description": "password check MT5",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "pattern": "^1$",
+        }
+      }
+    },
+    "msg_type": {
+      "type": "string",
+      "description": "password_check_mt5"
+    },
+    "req_id": {
+      "type": "integer",
+      "description": "Optional field send in request to map to response, present only when request contains req_id"
+    }
+  },
+  "required": [
+    "echo_req",
+    "msg_type"
+  ]
+}
