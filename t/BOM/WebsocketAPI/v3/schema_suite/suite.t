@@ -60,6 +60,10 @@ my $response;
 foreach my $line (@lines) {
     next if ($line =~ /^(#.*|)$/);
     my ($send_file, $receive_file, @template_func) = split(',', $line);
+    my $fail;
+    if ($send_file =~ s/^!//) {
+        $fail = 1;
+    }
     chomp $receive_file;
     diag("Running [$send_file, $receive_file]\n");
 
@@ -86,20 +90,28 @@ foreach my $line (@lines) {
         my $template_content = eval $f;
         $content =~ s/\[_$c\]/$template_content/mg;
     }
-    _test_schema($receive_file, $content, $result);
+    _test_schema($receive_file, $content, $result, $fail);
 }
 
 done_testing();
 
 sub _test_schema {
-    my ($schema_file, $content, $data) = @_;
+    my ($schema_file, $content, $data, $fail) = @_;
 
     my $validator = JSON::Schema->new(JSON::from_json($content));
     my $result    = $validator->validate($data);
-    ok $result, "$schema_file response is valid";
-    if (not $result) {
-        diag Dumper(\$data);
-        diag " - $_" foreach $result->errors;
+    if ($fail) {
+        ok (!$result, "$schema_file response is valid while it must fail.");
+        if ($result) {
+            diag Dumper(\$data);
+            diag " - $_" foreach $result->errors;
+        }
+    } else {
+        ok $result, "$schema_file response is valid";
+        if (not $result) {
+            diag Dumper(\$data);
+            diag " - $_" foreach $result->errors;
+        }
     }
 }
 
