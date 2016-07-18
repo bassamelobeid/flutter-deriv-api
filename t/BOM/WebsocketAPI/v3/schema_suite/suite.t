@@ -10,6 +10,7 @@ use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
+use BOM::Platform::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -39,6 +40,15 @@ $module->mock(
             @$stash{keys %$values} = values %$values;
         }
         Mojo::Util::_stash(stash => @_);
+    });
+
+# for new sub account call, allow_omnibus is set by CS/marketing
+# after validating documents
+my $cliet_mock = Test::MockModule->new('BOM::Platform::Client');
+$module->mock(
+    'allow_omnibus',
+    sub {
+        return 1;
     });
 
 my $t = build_mojo_test();
