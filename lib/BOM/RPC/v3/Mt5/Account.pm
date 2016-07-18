@@ -1,4 +1,4 @@
-package BOM::RPC::v3::Mt5::NewAccount;
+package BOM::RPC::v3::Mt5::Account;
 
 use strict;
 use warnings;
