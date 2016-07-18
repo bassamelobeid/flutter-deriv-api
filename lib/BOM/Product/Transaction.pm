@@ -1575,8 +1575,7 @@ sub sell_expired_contracts {
     my $bets =
           (defined $contract_ids)
         ? [map { $_->financial_market_bet_record } @{$mapper->get_fmb_by_id($contract_ids)}]
-        : $mapper->get_fmbs_by_loginid_and_currency({
-            exclude_sold => 1,
+        : $mapper->get_open_bets_of_account({
             only_expired => $args->{only_expired},
         });
 
