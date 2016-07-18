@@ -109,6 +109,7 @@ sub password_check_mt5 {
     my $params = shift;
     my $client = $params->{client};
     my $args = $params->{args};
+    my $login = $params->{login};
 
     # MT5 login not belongs to user
     my $user = BOM::Platform::User->new({email => $client->email});
