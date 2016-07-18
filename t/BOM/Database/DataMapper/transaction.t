@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::Most (tests => 39);
+use Test::Most (tests => 31);
 use Test::NoWarnings;
 use Test::MockTime qw( set_absolute_time restore_time );
 use Test::Exception;
@@ -16,27 +16,6 @@ use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 
 my $txn_data_mapper;
-lives_ok {
-    $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({client_loginid => 'CR0021'});
-
-}
-'Expect to initialize the object';
-
-lives_ok {
-    $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
-        client_loginid => 'CR0021',
-        currency_code  => 'USD'
-    });
-}
-'Expect to initialize the object';
-cmp_ok($txn_data_mapper->get_balance_after_transaction({transaction_time => '2005-09-21 06:14:00'}), '==', 600,
-    "after first transaction balance 600");
-cmp_ok($txn_data_mapper->get_balance_after_transaction({transaction_time => '2005-09-21 06:41:00'}),
-    '==', 553.50, "after third transaction balance 604.5");
-
-throws_ok { $txn_data_mapper->get_balance_after_transaction(); } qr/Must pass transaction_time argument/, 'Croaks unless transaction_time specified';
-throws_ok { $txn_data_mapper->get_balance_after_transaction({transaction_id => 1234567890}); } qr/Must pass transaction_time argument/,
-    'Croaks unless transaction_time specified';
 
 lives_ok {
     $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
@@ -234,42 +213,6 @@ subtest get_open_bets_at_end_of => sub {
 
     $account_id = 200359;
     is_deeply([sort { $a <=> $b } keys %{$client_ref->{$account_id}}], [201679, 201699, 201719, 201739, 201759, 201779, 201799, 201819]);
-};
-
-subtest 'get_transaction_before' => sub {
-    my $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
-        client_loginid => 'CR0021',
-        currency_code  => 'USD'
-    });
-
-    subtest 'There is a transaction before' => sub {
-        my $transaction = $txn_data_mapper->get_transaction_before('2005-09-21 06:16:00');
-        cmp_deeply([keys %$transaction], [201399], 'Got only one transaction and id is correct');
-        is $transaction->{201399}->{transaction_time}, '2005-09-21 06:14:00', "Transaction time of previous transaction";
-    };
-
-    subtest 'There is no transaction before' => sub {
-        my $transaction = $txn_data_mapper->get_transaction_before('2005-09-21 06:14:00');
-        is scalar keys %$transaction, 0, 'No transactions before';
-    };
-};
-
-subtest 'get_transaction_after' => sub {
-    my $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
-        client_loginid => 'CR0021',
-        currency_code  => 'USD'
-    });
-
-    subtest 'There is a transaction after' => sub {
-        my $transaction = $txn_data_mapper->get_transaction_after('2005-09-21 06:45:00');
-        cmp_deeply([keys %$transaction], [204459], 'Got only one transaction and id is correct');
-        is $transaction->{204459}->{transaction_time}, '2005-09-21 06:46:00', "Transaction time of next transaction";
-    };
-
-    subtest 'There is no transaction after' => sub {
-        my $transaction = $txn_data_mapper->get_transaction_after('2005-09-21 06:46:00');
-        is scalar keys %$transaction, 0, 'No transactions after';
-    };
 };
 
 subtest 'get_transactions' => sub {
