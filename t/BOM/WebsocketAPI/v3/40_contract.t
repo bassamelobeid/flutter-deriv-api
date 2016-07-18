@@ -63,7 +63,6 @@ $t = $t->send_ok({
             "subscribe" => 1,
             %contractParameters
         }});
-BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 $t->message_ok;
 my $proposal = decode_json($t->message->[1]);
 ok $proposal->{proposal}->{id};
