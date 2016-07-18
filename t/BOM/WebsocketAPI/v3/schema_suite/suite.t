@@ -12,7 +12,21 @@ use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use File::Slurp;
+
+initialize_realtime_ticks_db();
+
+for my $i (1..10) {
+    for my $symbol (qw/R_50 R_100/) {
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => $symbol,
+            epoch      => Date::Utility->new->epoch,
+            quote      => 100
+        });
+    }
+    sleep 1;
+}
 
 my $stash  = {};
 my $module = Test::MockModule->new('Mojolicious::Controller');
@@ -101,6 +115,7 @@ sub _get_token {
 
 # responses are stashed in a hash-ref. For example for a sucessful new_account_virtual there will be an new_account_virtual item and there {new_account_virtual}->{oauth_token}
 # you can access the stashed values as a template in your test_receive ([_1]) like _get_stashed('new_account_virtual/oauth_token')
+# you can also use array index like _get_stashed('api_token/tokens/0/token')
 # look at suite.conf for examples
 sub _get_stashed {
     my @hierarchy = split '/', shift;
@@ -108,7 +123,11 @@ sub _get_stashed {
     my $r = $response;
 
     foreach my $l (@hierarchy) {
-        $r = $r->{$l};
+        if ($l =~ /^[0-9,.E]+$/) {
+            $r = @{$r}[$l];
+        } else {
+            $r = $r->{$l};
+        }
     }
 
     return $r;
