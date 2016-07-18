@@ -31,7 +31,7 @@
     "sub_account": {
       "type": "string",
       "pattern": "^([A-Z0-9]{1,25})$",
-      "description": "Loginid of sub account. If this field is present then it will create token for this sub account."
+      "description": "[For omnibus accounts only] Loginid of sub account. If this field is present then it will create token for this sub account."
     },
     "passthrough": {
       "type": "object",
