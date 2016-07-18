@@ -1380,7 +1380,8 @@ sub _build_pricing_vol {
     my $pen = $self->pricing_engine_name;
     if ($pen =~ /VannaVolga/) {
         $vol = $self->volsurface->get_volatility({
-            days  => $self->timeindays->amount,
+            from  => $self->effective_date,
+            to    => $self->date_expiry,
             delta => 50
         });
     } elsif ($self->priced_with_intraday_model) {
@@ -1512,7 +1513,8 @@ sub _build_vol_at_strike {
         q_rate => $self->q_rate,
         r_rate => $self->r_rate,
         spot   => $pricing_spot,
-        days   => $self->timeindays->amount,
+        from   => $self->effective_date,
+        to     => $self->date_expiry,
     };
 
     if ($self->two_barriers) {
@@ -1705,11 +1707,6 @@ sub _market_convention {
     my $self = shift;
 
     return {
-        calculate_expiry => sub {
-            my ($start, $expiry) = @_;
-            my $utils = Quant::Framework::VolSurface::Utils->new;
-            return $utils->effective_date_for($expiry)->days_between($utils->effective_date_for($start));
-        },
         get_rollover_time => sub {
             my $when = shift;
             return Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($when);
@@ -1894,7 +1891,8 @@ sub _vols_at_point {
 
     my $vol_args = {
         delta     => 50,
-        days      => $self->$days_attr->amount,
+        from      => $self->effective_start,
+        to        => $self->date_expiry,
         for_epoch => $self->effective_start->epoch,
     };
 
