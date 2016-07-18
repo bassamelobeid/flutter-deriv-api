@@ -574,6 +574,7 @@ sub _build_risk_profile {
         expiry_type       => 'intraday',             # making this intraday.
         start_type        => 'spot',
         currency          => $self->currency,
+        barrier_category  => 'spread',
     );
 }
 

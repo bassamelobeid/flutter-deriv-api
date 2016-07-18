@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use base qw( Exporter );
-our @EXPORT_OK = qw( get_offerings_with_filter get_offerings_flyby get_permitted_expiries get_historical_pricer_durations get_contract_specifics );
+our @EXPORT_OK = qw( get_offerings_with_filter get_offerings_flyby get_permitted_expiries get_contract_specifics );
 
 use Cache::RedisDB;
 use FlyBy;
@@ -62,7 +62,7 @@ sub _make_new_flyby {
         ? @legal_allowed_underlyings
         : (keys %{$BOM::Market::Underlying::PRODUCT_OFFERINGS});
 
-    foreach my $underlying_symbol (@underlyings) {
+    foreach my $underlying_symbol (sort @underlyings) {
         next if exists $suspended_underlyings{$underlying_symbol};
         my $ul = BOM::Market::Underlying->new($underlying_symbol);
         next unless $legal_allowed_markets{$ul->market->name};
@@ -72,7 +72,7 @@ sub _make_new_flyby {
             underlying_symbol => $ul->symbol,
             exchange_name     => $ul->exchange_name,
         );
-        foreach my $cc_code (keys %{$ul->contracts}) {
+        foreach my $cc_code (sort keys %{$ul->contracts}) {
             $record{contract_category} = $cc_code;
             $category_cache{$cc_code} //= BOM::Product::Contract::Category->new($cc_code);
             $record{contract_category_display} = $category_cache{$cc_code}->{display_name};
@@ -180,12 +180,6 @@ sub get_permitted_expiries {
     my $args = shift;
 
     return _do_min_max('min_contract_duration', 'max_contract_duration', $args);
-}
-
-sub get_historical_pricer_durations {
-    my $args = shift;
-
-    return _do_min_max('min_historical_pricer_duration', 'max_historical_pricer_duration', $args);
 }
 
 sub _do_min_max {

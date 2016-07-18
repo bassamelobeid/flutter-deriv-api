@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 
 use strict;
 use warnings;
@@ -19,6 +19,7 @@ subtest 'init' => sub {
             start_type        => 'spot',
             expiry_type       => 'tick',
             currency          => 'USD',
+            barrier_category  => 'euro_atm',
             )
     }
     'ok if required args provided';
@@ -30,6 +31,7 @@ my %args = (
     start_type        => 'spot',
     expiry_type       => 'tick',
     currency          => 'USD',
+    barrier_category  => 'euro_atm',
 );
 subtest 'get_risk_profile' => sub {
     note("no custom profile set, gets the default risk profile for underlying");

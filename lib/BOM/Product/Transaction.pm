@@ -16,6 +16,7 @@ use Try::Tiny;
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
+use BOM::Platform::Countries;
 use BOM::Platform::Client;
 use BOM::System::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
@@ -1691,7 +1692,7 @@ sub __validate_jurisdictional_restrictions {
         );
     }
 
-    if ($residence && $market_name eq 'volidx' && BOM::Platform::Runtime->instance->volidx_restricted_country($residence)) {
+    if ($residence && $market_name eq 'volidx' && BOM::Platform::Countries->instance->volidx_restricted_country($residence)) {
         return Error::Base->cuss(
             -type => 'RandomRestrictedCountry',
             -mesg => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
@@ -1806,8 +1807,7 @@ sub sell_expired_contracts {
     my $bets =
           (defined $contract_ids)
         ? [map { $_->financial_market_bet_record } @{$mapper->get_fmb_by_id($contract_ids)}]
-        : $mapper->get_fmbs_by_loginid_and_currency({
-            exclude_sold => 1,
+        : $mapper->get_open_bets_of_account({
             only_expired => $args->{only_expired},
         });
 

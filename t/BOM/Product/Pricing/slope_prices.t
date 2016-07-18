@@ -1,9 +1,9 @@
-#!/usr/bin/perl
+#!/etc/rmg/bin/perl
 
 use strict;
 use warnings;
 
-use Test::More tests => 709;
+use Test::More tests => 661;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -30,6 +30,30 @@ my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pri
 my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', 'R_100', 'R_25', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
 my $payout_currency    = 'USD';
 my $spot               = 100;
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => $_,
+        recorded_date => $now,
+        rates => { 365 => 0 },
+    }) for qw(R_100 R_25);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => 'RDBULL',
+        recorded_date => $now,
+        rates => { 365 => -35 },
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => 'RDBEAR',
+        recorded_date => $now,
+        rates => { 365 => 20 },
+    });
 
 foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
     BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
@@ -60,6 +84,9 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         spot       => $spot,
                         volatility => $vol,
                     })};
+
+            @barriers = ({barrier => 'S0P'}, {barrier => 'S100P'}, {high_barrier => '103', low_barrier=>'94'}) if $ul->market->name eq 'volidx';
+
             foreach my $barrier (@barriers) {
                 my %equal = (
                     CALLE        => 1,
@@ -69,6 +96,8 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                 );
                 foreach my $contract_type (grep { !$equal{$_} } get_offerings_with_filter('contract_type', {contract_category => $contract_category}))
                 {
+                    $duration /= 15 if $ul->market->name eq 'volidx';
+
                     my $args = {
                         bet_type     => $contract_type,
                         underlying   => $ul,
@@ -77,6 +106,8 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         duration     => $duration . 's',
                         currency     => $payout_currency,
                         payout       => 1000,
+                        $ul->market->name eq 'volidx' ?  (pricing_vol  => 0.12):(),
+                        $ul->market->name eq 'volidx' ?  (spot  => 100):(),
                         %$barrier,
                     };
 
@@ -90,7 +121,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         }
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
-                        is roundnear(0.00001,$c->theo_probability->amount), roundnear(0.00001,$expectation->{$code}), 'theo probability matches [' . $c->shortcode . ']';
+                        is roundnear(0.00001,$c->theo_probability->amount), roundnear(0.00001,$expectation->{$code}), 'theo probability matches [' . $code . " - " . $c->shortcode . ']';
                     }
                     'survived';
                 }
