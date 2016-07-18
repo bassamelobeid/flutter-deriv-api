@@ -1380,7 +1380,7 @@ sub _build_pricing_vol {
     my $pen = $self->pricing_engine_name;
     if ($pen =~ /VannaVolga/) {
         $vol = $self->volsurface->get_volatility({
-            from  => $self->effective_date,
+            from  => $self->effective_start,
             to    => $self->date_expiry,
             delta => 50
         });
@@ -1513,7 +1513,7 @@ sub _build_vol_at_strike {
         q_rate => $self->q_rate,
         r_rate => $self->r_rate,
         spot   => $pricing_spot,
-        from   => $self->effective_date,
+        from   => $self->effective_start,
         to     => $self->date_expiry,
     };
 
