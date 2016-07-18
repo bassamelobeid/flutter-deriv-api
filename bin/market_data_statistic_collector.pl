@@ -192,10 +192,7 @@ sub _collect_pipsize_stats {
     my @underlyings = map { BOM::Market::Underlying->new($_) } BOM::Market::UnderlyingDB->get_symbols_for(market => ['volidx']);
     foreach my $underlying (@underlyings) {
         my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-        my $vol = $volsurface->get_volatility({
-            delta => 50,
-            days  => 7
-        });
+        my $vol = $volsurface->get_volatility();
         my $pipsize   = $underlying->pip_size;
         my $spot      = $underlying->spot;
         my $sigma     = sqrt($vol**2 / 365 / 86400 * 10);
