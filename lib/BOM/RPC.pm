@@ -190,7 +190,8 @@ sub startup {
         ['set_financial_assessment', \&BOM::RPC::v3::Accounts::set_financial_assessment, 1],
         ['get_financial_assessment', \&BOM::RPC::v3::Accounts::get_financial_assessment, 1],
         ['reality_check',            \&BOM::RPC::v3::Accounts::reality_check,            1],
-        ['password_check_mt5',       \&BOM::RPC::v3::Mt5::NewAccount::password_check_mt5,1],
+        ['password_check_mt5',       \&BOM::RPC::v3::Mt5::NewAccount::password_check_mt5,   1],
+        ['password_change_mt5',      \&BOM::RPC::v3::Mt5::NewAccount::password_change_mt5,  1],
 
         ['verify_email', \&BOM::RPC::v3::NewAccount::verify_email],
 

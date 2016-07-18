@@ -130,5 +130,29 @@ sub password_check_mt5 {
     return 1;
 }
 
+sub password_change_mt5 {
+    my $params = shift;
+    my $client = $params->{client};
+    my $args = $params->{args};
+    my $login = $args->{login};
+
+    # MT5 login not belongs to user
+    my $user = BOM::Platform::User->new({email => $client->email});
+    if (not grep { 'MT'.$login eq $_->loginid } ($user->loginid)) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
+
+    my $status = BOM::Mt5::User::password_change({
+            login    => $login,
+            password => $args->{password}
+        });
+    if ($status->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'Mt5PasswordChangeError',
+                message_to_client => $status->{error}
+            });
+    }
+    return 1;
+}
 
 1;
