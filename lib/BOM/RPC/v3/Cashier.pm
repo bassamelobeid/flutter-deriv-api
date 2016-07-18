@@ -992,7 +992,8 @@ sub transfer_between_accounts {
     foreach my $account (values %siblings) {
         # check if client has any sub_account_of as we allow omnibus transfers also
         # for MLT MF transfer check landing company
-        if ($client->loginid ne $account->sub_account_of or (grep { $account->landing_company->short ne $_ } ('malta', 'maltainvest'))) {
+        my $sub_account = $account->sub_account_of // '';
+        if ($client->loginid ne $sub_account || (grep { $account->landing_company->short ne $_ } ('malta', 'maltainvest'))) {
             next;
         }
         push @accounts,
