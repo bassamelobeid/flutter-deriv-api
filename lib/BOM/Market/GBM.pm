@@ -71,7 +71,6 @@ sub random_index_gbm {
         my $vol             = $volsurface->get_volatility({
             strike    => $spot_for_strike,
             days      => $interval * 365,
-            for_epoch => $when,
         });
         my $crand;
         $crand = \&crand if BOM::System::Config::env ne 'development';
