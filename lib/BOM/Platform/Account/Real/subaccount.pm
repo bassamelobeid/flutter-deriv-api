@@ -9,13 +9,13 @@ sub create_sub_account {
     my $args = shift;
     my ($from_client, $user) = @{$args}{'from_client', 'user'};
 
+    # we need to mark new client to be sub_account_of master client
     $args->{details}->{sub_account_of} = $from_client->loginid;
     my $details = $args->{details};
     if (my $error = BOM::Platform::Account::Real::default::validate($args)) {
         return $error;
     }
 
-    # we need to mark new client to be sub_account_of master client
     my $register = BOM::Platform::Account::Real::default::register_client($details);
     return $register if ($register->{error});
 
@@ -26,8 +26,8 @@ sub create_sub_account {
     });
 }
 
-# as some traders don't want to provide their client details so we
-# need to populate details based on traders/master account
+# as some omnibus partners don't want to provide their client details so we
+# need to populate details based on omnibus partner/master account
 sub populate_details {
     my ($master_client, $params) = @_;
 
