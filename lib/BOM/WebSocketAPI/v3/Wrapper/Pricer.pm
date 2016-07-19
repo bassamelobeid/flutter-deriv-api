@@ -143,9 +143,8 @@ sub _pricing_channel_for_ask {
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel = $args->{amount_per_point} || $args->{amount};
 
-    my $skip = BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
-
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip);
+    _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache)
+        unless BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
 }
 
 sub _pricing_channel_for_bid {
@@ -168,7 +167,7 @@ sub _pricing_channel_for_bid {
 }
 
 sub _create_pricer_channel {
-    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip_redis_subscr) = @_;
+    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache) = @_;
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
@@ -182,8 +181,7 @@ sub _create_pricer_channel {
     # subscribe if it is not already subscribed
     if (    exists $args->{subscribe}
         and $args->{subscribe} == 1
-        and not exists $pricing_channel->{$redis_channel}
-        and not $skip_redis_subscr)
+        and not exists $pricing_channel->{$redis_channel})
     {
         $c->redis_pricer->set($redis_channel, 1);
         $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
