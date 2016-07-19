@@ -158,7 +158,7 @@ sub _set_allow_omnibus {
             $r = $r->{$l};
         }
     }
-    print "Response is " . $r . "\n\n";
+    warn ">>> Response is " . $r . "\n\n";
 
     my $client = BOM::Platform::Client->new({loginid => $r});
     $client->allow_omnibus(1);
