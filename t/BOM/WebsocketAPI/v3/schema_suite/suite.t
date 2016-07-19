@@ -46,17 +46,18 @@ my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.con
 my $response;
 
 my $t;
-my $lang;
+my $lang = '';
 foreach my $line (@lines) {
     next if ($line =~ /^(#.*|)$/);
     my $fail;
-    if ($line =~ s/^!//) {
-        $fail = 1;
-    }
 
     if ($line =~ s/^\[(A-Z+)\]//) {
         $lang = $1;
         next;
+    }
+
+    if ($line =~ s/^!//) {
+        $fail = 1;
     }
 
     my ($send_file, $receive_file, @template_func) = split(',', $line);
@@ -76,6 +77,7 @@ foreach my $line (@lines) {
 
     if ($lang || !$t) {
         $t = build_mojo_test({language=>$lang});
+        $lang='';
     }
 
     $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
