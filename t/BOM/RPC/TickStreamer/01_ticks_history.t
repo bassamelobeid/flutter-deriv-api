@@ -32,6 +32,9 @@ set_fixed_time($now->epoch);
 $t = Test::Mojo->new('BOM::RPC');
 $rpc_ct = Test::BOM::RPC::Client->new(ua => $t->app->ua);
 
+my $feed_dir = File::Temp->newdir;
+$ENV{BOM_POPULATOR_ROOT} = "$feed_dir";
+
 subtest 'Initialization' => sub {
     lives_ok {
         my ($fill_start, $populator, @ticks, $fh);

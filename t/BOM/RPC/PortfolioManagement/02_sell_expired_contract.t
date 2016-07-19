@@ -11,7 +11,7 @@ use RateLimitations qw(within_rate_limits);
 
 use Test::BOM::RPC::Client;
 
-use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
@@ -110,10 +110,7 @@ subtest 'Auth client' => sub {
 };
 
 subtest 'Sell expired contract' => sub {
-    lives_ok {
-        create_fmb($client, is_expired => 1);
-    }
-    'Create expired contract for sell';
+    create_fmb($client, is_expired => 1, buy_bet=>1);
 
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({count => 1}, 'It should return counts of sold contracts');
 
@@ -133,57 +130,18 @@ subtest 'Emergency error while sell contract' => sub {
     $rpc_ct->call_ok(@params)->has_error->error_code_is('SellExpiredError');
 };
 
-subtest 'Sell virtual client expired contract' => sub {
-    $params[1]->{token} = $vclient_token;
-
-    lives_ok {
-        create_fmb($vclient, is_expired => 1);
-    }
-    'Create expired contract for sell';
-
-    {
-        my $module = Test::MockModule->new('BOM::Product::Contract');
-        $module->mock('is_valid_to_sell', sub { });
-
-        $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({count => 1},
-            'if cannot settle bet due to missing market data, sell contract with buy price');
-    }
-
-    lives_ok {
-        create_fmb($vclient, is_expired => 1);
-    }
-    'Create expired contract for sell';
-
-    for (0 .. 8) {
-        ok within_rate_limits({
-                service  => 'virtual_batch_sell',
-                consumer => $vclient->loginid
-            }
-            ),
-            'Virtual client has no lookup';
-    }    # 9 times because we had one from previous test
-    ok !within_rate_limits({
-            service  => 'virtual_batch_sell',
-            consumer => $vclient->loginid
-        }
-        ),
-        'Virtual client has reached 10 lookups in one min';
-
-    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({count => 0}, 'Apply rate limits before doing the full lookup');
-};
-
 done_testing();
 
 sub create_fmb {
     my ($client, %params) = @_;
 
     my $account = $client->set_default_account('USD');
-    return BOM::Test::Data::Utility::UnitTestDatabase::create_fmb_with_ticks({
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb_with_ticks({
         %params,
         type               => 'fmb_higher_lower_call_buy',
         short_code_prefix  => 'CALL_R_100_26.49',
         short_code_postfix => 'S0P_0',
         account_id         => $account->id,
-        buy_bet            => 0,
+        buy_bet            => $params{buy_bet} || 0,
     });
 }
