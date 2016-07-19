@@ -106,10 +106,10 @@ sub _cached_db {
 # result must be always rows of JSON
 sub fetchall_arrayref {
     my $self = shift;
-    my ($query, @params) = @_;
+    my ($query, $params) = @_;
 
     my $sth = $self->db->dbh->prepare($query);
-    $sth->execute(@params);
+    $sth->execute(@{$params});
 
     my @result = map {JSON::XS::decode_json($_->[0])} @{$sth->fetchall_arrayref([0])};
     return \@result;
