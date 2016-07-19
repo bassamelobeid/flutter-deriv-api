@@ -25,7 +25,6 @@ use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
 use Quant::Framework::Spot;
 
-initialize_realtime_ticks_db();
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -48,6 +47,8 @@ Quant::Framework::Utils::Test::create_doc(
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
+
+initialize_realtime_ticks_db();
 
 # INCORRECT DATA in support of in_quiet_period testing, only.
 # Update if you want to test some other exchange info here.
@@ -84,6 +85,7 @@ subtest 'display_decimals' => sub {
         };
         my $underlying;
         foreach my $symbol (keys %$symbols_decimals) {
+            print "trying dd for $symbol...\n";
             $underlying = BOM::Market::Underlying->new({symbol => $symbol});
             my $decimals = $symbols_decimals->{$symbol};
             is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
@@ -117,6 +119,7 @@ subtest 'display_decimals' => sub {
         }
 
         my $r100 = BOM::Market::Underlying->new({symbol => 'R_100'});
+        $DB::single=1;
         is $r100->dividend_rate_for(0.5), 3.5, 'correct dividend rate';
         is $r100->dividend_rate_for(1.0), 3.5, 'correct dividend rate';
 
@@ -408,12 +411,18 @@ subtest 'all methods on a selection of underlyings' => sub {
         low   => 1,
         ticks => 1
     };
-    $FRW_frxEURUSD_ON->set_combined_realtime($fake_forward_data);
-    $FRW_frxEURUSD_TN->set_combined_realtime($fake_forward_data);
-    $FRW_frxEURUSD_1W->set_combined_realtime($fake_forward_data);
-    $FRW_frxUSDEUR_ON->set_combined_realtime($fake_forward_data);
-    $FRW_frxUSDEUR_TN->set_combined_realtime($fake_forward_data);
-    $FRW_frxUSDEUR_1W->set_combined_realtime($fake_forward_data);
+
+    warnings_like {
+        $FRW_frxEURUSD_ON->set_combined_realtime($fake_forward_data);
+        $FRW_frxEURUSD_TN->set_combined_realtime($fake_forward_data);
+        $FRW_frxEURUSD_1W->set_combined_realtime($fake_forward_data);
+        $FRW_frxUSDEUR_ON->set_combined_realtime($fake_forward_data);
+        $FRW_frxUSDEUR_TN->set_combined_realtime($fake_forward_data);
+        $FRW_frxUSDEUR_1W->set_combined_realtime($fake_forward_data);
+    } 
+    [qr/^Unknown symbol/, qr/^Unknown symbol/, qr/^Unknown symbol/, 
+        qr/^Unknown symbol/, qr/^Unknown symbol/, qr/^Unknown symbol/], "Expected warning is thrown";
+
     $USDEUR->set_combined_realtime($fake_forward_data);
     lives_ok {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
