@@ -34,10 +34,7 @@ sub proposal {
                 if (my $uuid = $req_storage->{uuid}) {
                     $api_response->{proposal}->{id} = $uuid;
                 } else {
-                    $api_response =
-                        $c->new_error('proposal',
-                        'AlreadySubscribedOrLimit',
-                        $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+                    $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
                 }
                 return $api_response;
             },
