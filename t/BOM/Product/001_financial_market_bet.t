@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::Most (tests => 20);
+use Test::Most (tests => 13);
 use Test::NoWarnings;
 use Test::MockModule;
 use Test::MockTime::HiRes;
@@ -71,7 +71,6 @@ lives_ok {
 }
 'Expect to initialize the object';
 
-cmp_ok($bet_mapper->get_bet_count_of_client, '==', 67, 'Count number of bets for CR0021 (default currency = USD)');
 
 lives_ok {
     $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
@@ -288,33 +287,6 @@ lives_ok {
 }
 'Expect to initialize the object';
 
-lives_ok {
-    $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
-        'client_loginid' => 'CR0021',
-        'currency_code'  => 'USD',
-    });
-}
-'Expect to initialize the object';
-cmp_ok(0 + @{$bet_mapper->get_open_bets_of_account()}, '==', 35, 'Check number of open bets');
-
-lives_ok {
-    $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
-        'client_loginid' => 'MLT0014',
-        'currency_code'  => 'GBP',
-    });
-}
-'Expect to initialize the object';
-cmp_ok(0 + @{$bet_mapper->get_open_bets_of_account()}, '==', 2, 'Check number of open bets');
-
-# test with acc that does not exist
-lives_ok {
-    $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
-        'client_loginid' => 'CR444444',
-        'currency_code'  => 'USD',
-    });
-}
-'Expect to initialize the object';
-cmp_ok(0 + @{$bet_mapper->get_open_bets_of_account()}, '==', 0, 'Check number of open bets');
 subtest 'get_fmb_by_id' => sub {
     plan tests => 14;
     my @bet_ids;
