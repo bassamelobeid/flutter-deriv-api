@@ -48,7 +48,8 @@ sub validate {
 
     if ($details) {
         # sub account can have different residence then omnibus master account
-        if (BOM::Platform::Client::check_country_restricted($residence) or (not $details->{sub_account_of} and $from_client->residence ne $residence)) {
+        if (BOM::Platform::Client::check_country_restricted($residence) or (not $details->{sub_account_of} and $from_client->residence ne $residence))
+        {
             warn($msg . "restricted residence [$residence], or mismatch with from_client residence: " . $from_client->residence);
             return {error => 'invalid residence'};
         }
