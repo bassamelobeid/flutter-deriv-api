@@ -164,7 +164,7 @@ sub include_client_profiles {
     if ($client_loginid) {
         my $custom_client = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
         if (exists $custom_client->{$client_loginid} and my $limits = $custom_client->{$client_loginid}->{custom_limits}) {
-            my @matches = map { $limits->{$_} } grep { $self->_match_conditions($limits->{$_}) } keys %$limits;
+            my @matches = grep { $self->_match_conditions($_) } values %$limits;
             push @{$self->custom_client_profiles}, @matches;
         }
     }
