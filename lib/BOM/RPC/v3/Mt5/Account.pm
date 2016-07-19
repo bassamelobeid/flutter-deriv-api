@@ -11,8 +11,8 @@ use BOM::Mt5::User;
 sub new_account_mt5 {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $args = $params->{args};
+    my $client       = $params->{client};
+    my $args         = $params->{args};
     my $account_type = delete $args->{account_type};
 
     my $group;
@@ -23,8 +23,7 @@ sub new_account_mt5 {
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccountType',
-                message_to_client => localize('Invalid account type.')
-            });
+                message_to_client => localize('Invalid account type.')});
     }
     $args->{group} = $group;
 
@@ -32,8 +31,7 @@ sub new_account_mt5 {
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'Mt5CreateUserError',
-                message_to_client => $status->{error}
-            });
+                message_to_client => $status->{error}});
     }
     my $mt5_login = $status->{login};
 
@@ -46,11 +44,11 @@ sub new_account_mt5 {
     # funds in Virtual money
     if ($account_type eq 'demo') {
         $balance = 5000;
-        $status = BOM::Mt5::User::deposit({
-                login   => $mt5_login,
-                amount  => $balance,
-                comment => 'Binary MT5 Virtual Money deposit.'
-            });
+        $status  = BOM::Mt5::User::deposit({
+            login   => $mt5_login,
+            amount  => $balance,
+            comment => 'Binary MT5 Virtual Money deposit.'
+        });
 
         # deposit failed
         if ($status->{error}) {
@@ -59,21 +57,21 @@ sub new_account_mt5 {
     }
 
     return {
-        login           => $mt5_login,
-        account_type    => $account_type,
-        balance         => $balance
+        login        => $mt5_login,
+        account_type => $account_type,
+        balance      => $balance
     };
 }
 
 sub get_settings_mt5 {
     my $params = shift;
     my $client = $params->{client};
-    my $args = $params->{args};
-    my $login = $args->{login};
+    my $args   = $params->{args};
+    my $login  = $args->{login};
 
     # MT5 login not belongs to user
     my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT'.$login eq $_->loginid } ($user->loginid)) {
+    if (not grep { 'MT' . $login eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
@@ -81,8 +79,7 @@ sub get_settings_mt5 {
     if ($settings->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'Mt5GetUserError',
-                message_to_client => $settings->{error}
-            });
+                message_to_client => $settings->{error}});
     }
     return $settings;
 }
@@ -90,12 +87,12 @@ sub get_settings_mt5 {
 sub set_settings_mt5 {
     my $params = shift;
     my $client = $params->{client};
-    my $args = $params->{args};
-    my $login = $args->{login};
+    my $args   = $params->{args};
+    my $login  = $args->{login};
 
     # MT5 login not belongs to user
     my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT'.$login eq $_->loginid } ($user->loginid)) {
+    if (not grep { 'MT' . $login eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
@@ -103,8 +100,7 @@ sub set_settings_mt5 {
     if ($settings->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'Mt5UpdateUserError',
-                message_to_client => $settings->{error}
-            });
+                message_to_client => $settings->{error}});
     }
     return $settings;
 }
@@ -112,12 +108,12 @@ sub set_settings_mt5 {
 sub password_check_mt5 {
     my $params = shift;
     my $client = $params->{client};
-    my $args = $params->{args};
-    my $login = $args->{login};
+    my $args   = $params->{args};
+    my $login  = $args->{login};
 
     # MT5 login not belongs to user
     my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT'.$login eq $_->loginid } ($user->loginid)) {
+    if (not grep { 'MT' . $login eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
@@ -125,8 +121,7 @@ sub password_check_mt5 {
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'Mt5PasswordCheckError',
-                message_to_client => $status->{error}
-            });
+                message_to_client => $status->{error}});
     }
     return 1;
 }
@@ -134,12 +129,12 @@ sub password_check_mt5 {
 sub password_change_mt5 {
     my $params = shift;
     my $client = $params->{client};
-    my $args = $params->{args};
-    my $login = $args->{login};
+    my $args   = $params->{args};
+    my $login  = $args->{login};
 
     # MT5 login not belongs to user
     my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT'.$login eq $_->loginid } ($user->loginid)) {
+    if (not grep { 'MT' . $login eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
@@ -147,8 +142,7 @@ sub password_change_mt5 {
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'Mt5PasswordChangeError',
-                message_to_client => $status->{error}
-            });
+                message_to_client => $status->{error}});
     }
     return 1;
 }
@@ -165,14 +159,14 @@ sub deposit {
 
     if ($amount <= 0) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'Mt5DepositError',
-                message_to_client => localize("Amount must be greater than zero."),
-            });
+            code              => 'Mt5DepositError',
+            message_to_client => localize("Amount must be greater than zero."),
+        });
     }
 
     # MT5 login or binary loginid not belongs to user
     my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT'.$to_mt5 eq $_->loginid } ($user->loginid)) {
+    if (not grep { 'MT' . $to_mt5 eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
     if (not grep { $from_binary eq $_->loginid } ($user->loginid)) {
@@ -182,7 +176,7 @@ sub deposit {
     my $comment = "Transfer from $from_binary to MT5 account $to_mt5.";
 
     # withdraw from Binary a/c
-    my $fmClient = BOM::Platform::Client->new({ loginid => $from_binary });
+    my $fmClient = BOM::Platform::Client->new({loginid => $from_binary});
     my $fmAccount = $fmClient->set_default_account('USD');
 
     my ($fmPayment) = $fmAccount->add_payment({
@@ -207,16 +201,15 @@ sub deposit {
 
     # deposit to MT5 a/c
     my $status = BOM::Mt5::User::deposit({
-            login   => $to_mt5,
-            amount  => $amount,
-            comment => $comment
-        });
+        login   => $to_mt5,
+        amount  => $amount,
+        comment => $comment
+    });
 
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'Mt5DepositError',
-                message_to_client => $status->{error}
-            });
+                message_to_client => $status->{error}});
     }
     return 1;
 }
@@ -233,14 +226,14 @@ sub withdrawal {
 
     if ($amount <= 0) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'Mt5WithdrawalError',
-                message_to_client => localize("Amount must be greater than zero."),
-            });
+            code              => 'Mt5WithdrawalError',
+            message_to_client => localize("Amount must be greater than zero."),
+        });
     }
 
     # MT5 login or binary loginid not belongs to user
     my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT'.$from_mt5 eq $_->loginid } ($user->loginid)) {
+    if (not grep { 'MT' . $from_mt5 eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
     if (not grep { $to_binary eq $_->loginid } ($user->loginid)) {
@@ -251,20 +244,19 @@ sub withdrawal {
 
     # withdraw from MT5 a/c
     my $status = BOM::Mt5::User::withdrawal({
-            login   => $from_mt5,
-            amount  => $amount,
-            comment => $comment
-        });
+        login   => $from_mt5,
+        amount  => $amount,
+        comment => $comment
+    });
 
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'Mt5WithdrawalError',
-                message_to_client => $status->{error}
-            });
+                message_to_client => $status->{error}});
     }
 
     # deposit to Binary a/c
-    my $toClient = BOM::Platform::Client->new({ loginid => $to_binary });
+    my $toClient = BOM::Platform::Client->new({loginid => $to_binary});
     my $toAccount = $toClient->set_default_account('USD');
 
     my ($toPayment) = $toAccount->add_payment({
