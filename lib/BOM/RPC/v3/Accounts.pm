@@ -24,6 +24,7 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Token;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
+use BOM::System::Config;
 use BOM::System::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
