@@ -8,7 +8,7 @@ use BOM::Platform::Context qw (localize);
 use BOM::Platform::User;
 use BOM::Mt5::User;
 
-sub new_account_mt5 {
+sub mt5_new_account {
     my $params = shift;
 
     my $client       = $params->{client};
@@ -63,7 +63,7 @@ sub new_account_mt5 {
     };
 }
 
-sub get_settings_mt5 {
+sub mt5_get_settings {
     my $params = shift;
     my $client = $params->{client};
     my $args   = $params->{args};
@@ -84,7 +84,7 @@ sub get_settings_mt5 {
     return $settings;
 }
 
-sub set_settings_mt5 {
+sub mt5_set_settings {
     my $params = shift;
     my $client = $params->{client};
     my $args   = $params->{args};
@@ -105,7 +105,7 @@ sub set_settings_mt5 {
     return $settings;
 }
 
-sub password_check_mt5 {
+sub mt5_password_check {
     my $params = shift;
     my $client = $params->{client};
     my $args   = $params->{args};
@@ -126,7 +126,7 @@ sub password_check_mt5 {
     return 1;
 }
 
-sub password_change_mt5 {
+sub mt5_password_change {
     my $params = shift;
     my $client = $params->{client};
     my $args   = $params->{args};

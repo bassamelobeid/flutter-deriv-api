@@ -177,9 +177,9 @@ sub startup {
         ['cashier_password',         \&BOM::RPC::v3::Accounts::cashier_password,         1],
         ['reset_password',           \&BOM::RPC::v3::Accounts::reset_password],
         ['get_settings',             \&BOM::RPC::v3::Accounts::get_settings,             1],
-        ['get_settings_mt5',         \&BOM::RPC::v3::Mt5::Account::get_settings_mt5,     1],
+        ['mt5_get_settings',         \&BOM::RPC::v3::Mt5::Account::mt5_get_settings,     1],
         ['set_settings',             \&BOM::RPC::v3::Accounts::set_settings,             1],
-        ['set_settings_mt5',         \&BOM::RPC::v3::Mt5::Account::set_settings_mt5,     1],
+        ['mt5_set_settings',         \&BOM::RPC::v3::Mt5::Account::mt5_set_settings,     1],
         ['get_self_exclusion',       \&BOM::RPC::v3::Accounts::get_self_exclusion,       1],
         ['set_self_exclusion',       \&BOM::RPC::v3::Accounts::set_self_exclusion,       1],
         ['balance',                  \&BOM::RPC::v3::Accounts::balance,                  1],
@@ -190,8 +190,8 @@ sub startup {
         ['set_financial_assessment', \&BOM::RPC::v3::Accounts::set_financial_assessment, 1],
         ['get_financial_assessment', \&BOM::RPC::v3::Accounts::get_financial_assessment, 1],
         ['reality_check',            \&BOM::RPC::v3::Accounts::reality_check,            1],
-        ['password_check_mt5',       \&BOM::RPC::v3::Mt5::Account::password_check_mt5,   1],
-        ['password_change_mt5',      \&BOM::RPC::v3::Mt5::Account::password_change_mt5,  1],
+        ['mt5_password_check',       \&BOM::RPC::v3::Mt5::Account::mt5_password_check,   1],
+        ['mt5_password_change',      \&BOM::RPC::v3::Mt5::Account::mt5_password_change,  1],
 
         ['verify_email', \&BOM::RPC::v3::NewAccount::verify_email],
 
@@ -203,7 +203,7 @@ sub startup {
         ['new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest,  1],
         ['new_account_japan',       \&BOM::RPC::v3::NewAccount::new_account_japan,        1],
         ['new_account_virtual',     \&BOM::RPC::v3::NewAccount::new_account_virtual],
-        ['new_account_mt5',         \&BOM::RPC::v3::Mt5::Account::new_account_mt5,        1],
+        ['mt5_new_account',         \&BOM::RPC::v3::Mt5::Account::mt5_new_account,        1],
         ['jp_knowledge_test',       \&BOM::RPC::v3::Japan::NewAccount::jp_knowledge_test, 1],
 
         ['portfolio',              \&BOM::RPC::v3::PortfolioManagement::portfolio,              1],
