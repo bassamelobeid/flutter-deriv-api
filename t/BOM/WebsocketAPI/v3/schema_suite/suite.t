@@ -42,15 +42,6 @@ $module->mock(
         Mojo::Util::_stash(stash => @_);
     });
 
-# for new sub account call, allow_omnibus is set by CS/marketing
-# after validating documents
-my $cliet_mock = Test::MockModule->new('BOM::Platform::Client');
-$module->mock(
-    'allow_omnibus',
-    sub {
-        return 1;
-    });
-
 my $t = build_mojo_test();
 
 my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.conf');
@@ -151,6 +142,27 @@ sub _get_stashed {
             $r = $r->{$l};
         }
     }
+
+    return $r;
+}
+
+sub _set_allow_omnibus {
+    my @hierarchy = split '/', shift;
+
+    my $r = $response;
+
+    foreach my $l (@hierarchy) {
+        if ($l =~ /^[0-9,.E]+$/) {
+            $r = @{$r}[$l];
+        } else {
+            $r = $r->{$l};
+        }
+    }
+    print "Response is " . $r . "\n\n";
+
+    my $client = BOM::Platform::Client->new({loginid => $r});
+    $client->allow_omnibus(1);
+    $client->save();
 
     return $r;
 }
