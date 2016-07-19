@@ -48,14 +48,16 @@ my $response;
 my $t;
 my $lang = '';
 foreach my $line (@lines) {
-    next if ($line =~ /^(#.*|)$/);
-    my $fail;
+    chomp $line;
 
-    if ($line =~ s/^\[(A-Z+)\]//) {
+    next if ($line =~ /^(#.*|)$/);
+
+    if ($line =~ s/^\[(\w+)\]//) {
         $lang = $1;
         next;
     }
 
+    my $fail;
     if ($line =~ s/^!//) {
         $fail = 1;
     }
@@ -86,7 +88,6 @@ foreach my $line (@lines) {
 
     $content = File::Slurp::read_file('config/v3/' . $receive_file);
     $c       = 0;
-
     foreach my $f (@template_func) {
         $c++;
         my $template_content = eval $f;
