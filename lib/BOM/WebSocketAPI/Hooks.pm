@@ -5,7 +5,6 @@ use warnings;
 use Try::Tiny;
 use Data::UUID;
 use RateLimitations qw(within_rate_limits);
-use BOM::System::Config;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -194,17 +193,7 @@ sub before_forward {
 sub get_rpc_url {
     my ($c, $req_storage) = @_;
 
-    my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
-    if (BOM::System::Config::env eq 'production') {
-        if (BOM::System::Config::node->{node}->{www2}) {
-            $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
-        } else {
-            $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
-        }
-    }
-
-    $req_storage->{url} = $url;
-
+    $req_storage->{url} = $ENV{RPC_URL} || $c->app->config->{rpc_url};
     return;
 }
 
