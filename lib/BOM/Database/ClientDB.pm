@@ -4,6 +4,7 @@ use Moose;
 use feature "state";
 use BOM::Database::Rose::DB;
 use YAML::XS qw(LoadFile);
+use JSON::XS;
 
 use Carp;
 
@@ -109,7 +110,9 @@ sub fetchall_arrayref {
     my $sth = $self->db->dbh->prepare($query);
     $sth->execute(@params);
 
-    return $sth->fetchall_arrayref({});
+    return  $sth->fetchall_arrayref({});
+    my @result = map {JSON::XS::decode_json($_->{result})} @{$sth->fetchall_arrayref({})};
+    return \@result;
 }
 
 no Moose;
