@@ -177,9 +177,7 @@ sub closing_tick_on {
 sub spot {
     my $self = shift;
 
-    my $spot_value = $self->spot_source->spot_quote;
-
-    return $self->pipsized_value($spot_value);
+    return $self->spot_source->spot_quote;
 }
 
 # Can not be made into an attribute to avoid the caching problem.
@@ -320,7 +318,7 @@ sub _build_config {
     $default_interest_rate = 0 if $zero_irate{$self->market->name};
 
     my $build_args = {underlying => $self->system_symbol};
-    
+
     if ($self->use_official_ohlc) {
         $build_args->{use_official_ohlc} = 1;
     }
@@ -349,7 +347,6 @@ sub _build_config {
         exchange_name                         => $self->exchange_name,
         uses_implied_rate_for_asset           => $self->uses_implied_rate($self->asset_symbol) // '',
         uses_implied_rate_for_quoted_currency => $self->uses_implied_rate($self->quoted_currency_symbol) // '',
-        spot                                  => $self->spot,
         asset_symbol                          => $self->asset_symbol,
         quoted_currency_symbol                => $self->quoted_currency_symbol,
         extra_vol_diff_by_delta               => BOM::System::Config::quants->{market_data}->{extra_vol_diff_by_delta},
@@ -360,6 +357,7 @@ sub _build_config {
         default_volatility_duration           => $default_vol_duration,
         use_official_ohlc                     => $self->use_official_ohlc,
         spot_db_args                          => $build_args,
+        pip_size                              => $self->pip_size,
     });
 }
 
@@ -1515,14 +1513,7 @@ Resize a value to conform to the pip size of this underlying
 sub pipsized_value {
     my ($self, $value, $custom) = @_;
 
-    my ($pip_size, $display_decimals) =
-          ($custom)
-        ? ($custom, log(1 / $custom) / log(10))
-        : ($self->pip_size, $self->display_decimals);
-    if (defined $value and looks_like_number($value)) {
-        $value = sprintf '%.' . $display_decimals . 'f', $value;
-    }
-    return $value;
+    return $self->spot_source->pipsized_value($value, $custom);
 }
 
 sub breaching_tick {
