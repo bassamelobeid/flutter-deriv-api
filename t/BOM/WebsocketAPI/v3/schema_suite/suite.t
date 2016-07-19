@@ -46,6 +46,7 @@ my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.con
 my $response;
 
 my $t;
+my $lang;
 foreach my $line (@lines) {
     next if ($line =~ /^(#.*|)$/);
     my $fail;
@@ -53,9 +54,9 @@ foreach my $line (@lines) {
         $fail = 1;
     }
 
-    my $lang;
     if ($line =~ s/^\[(A-Z+)\]//) {
         $lang = $1;
+        next;
     }
 
     my ($send_file, $receive_file, @template_func) = split(',', $line);
