@@ -146,6 +146,7 @@ sub _get_stashed {
     return $r;
 }
 
+# set allow omnibus flag, as it is required for creating new sub account
 sub _set_allow_omnibus {
     my @hierarchy = split '/', shift;
 
@@ -158,7 +159,6 @@ sub _set_allow_omnibus {
             $r = $r->{$l};
         }
     }
-    warn ">>> Response is " . $r . "\n\n";
 
     my $client = BOM::Platform::Client->new({loginid => $r});
     $client->allow_omnibus(1);
