@@ -162,13 +162,7 @@ has spot_source => (
 sub _build_spot_source {
     my $self = shift;
 
-    return Quant::Framework::Spot->new({
-        symbol            => $self->symbol,
-        feed_api          => $self->feed_api,
-        calendar          => $self->calendar,
-        for_date          => $self->for_date,
-        use_official_ohlc => $self->use_official_ohlc,
-    });
+    return $self->_builder->build_spot;
 }
 
 sub closing_tick_on {
@@ -325,6 +319,25 @@ sub _build_config {
 
     $default_interest_rate = 0 if $zero_irate{$self->market->name};
 
+    my $build_args = {underlying => $self->system_symbol};
+    
+    if ($self->use_official_ohlc) {
+        $build_args->{use_official_ohlc} = 1;
+    }
+
+    if ($self->ohlc_daily_open) {
+        $build_args->{ohlc_daily_open} = $self->ohlc_daily_open;
+    }
+
+    if ($self->inverted) {
+        $build_args->{invert_values} = 1;
+    }
+
+    my $dbh = BOM::Database::FeedDB::read_dbh;
+    $dbh->{RaiseError} = 1;
+
+    $build_args->{dbh} = $dbh;
+
     return Quant::Framework::Utils::UnderlyingConfig->new({
         symbol                                => $self->symbol,
         system_symbol                         => $self->system_symbol,
@@ -345,6 +358,8 @@ sub _build_config {
         default_interest_rate                 => $default_interest_rate,
         default_dividend_rate                 => $default_dividend_rate,
         default_volatility_duration           => $default_vol_duration,
+        use_official_ohlc                     => $self->use_official_ohlc,
+        spot_db_args                          => $build_args,
     });
 }
 
@@ -1046,25 +1061,7 @@ Returns, an instance of I<Quant::Framework::Spot::DatabaseAPI> based on informat
 sub _build_feed_api {
     my $self = shift;
 
-    my $build_args = {underlying => $self->system_symbol};
-    if ($self->use_official_ohlc) {
-        $build_args->{use_official_ohlc} = 1;
-    }
-
-    if ($self->ohlc_daily_open) {
-        $build_args->{ohlc_daily_open} = $self->ohlc_daily_open;
-    }
-
-    if ($self->inverted) {
-        $build_args->{invert_values} = 1;
-    }
-
-    my $dbh = BOM::Database::FeedDB::read_dbh;
-    $dbh->{RaiseError} = 1;
-
-    $build_args->{dbh} = $dbh;
-
-    return Quant::Framework::Spot::DatabaseAPI->new($build_args);
+    return $self->_builder->build_feed_api;
 }
 
 # End of builders.
