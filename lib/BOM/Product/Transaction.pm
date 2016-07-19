@@ -33,6 +33,7 @@ use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
 use BOM::Platform::LandingCompany::Registry;
+use BOM::Database::ClientDB;
 
 extends 'BOM::Database::Transaction';
 
