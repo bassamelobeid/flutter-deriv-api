@@ -10,7 +10,6 @@
             "properties": {
                 "message": {
                     "type": "string",
-                    "pattern": "^Not Found$",
                     "required": "1"
                 },
                 "code": {

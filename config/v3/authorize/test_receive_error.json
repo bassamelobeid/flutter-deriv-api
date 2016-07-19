@@ -10,7 +10,6 @@
             "properties": {
                 "message": {
                     "type": "string",
-                    "pattern": "^The token is invalid\\.$",
                     "required": "1"
                 },
                 "code": {

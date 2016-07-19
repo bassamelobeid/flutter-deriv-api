@@ -10,7 +10,6 @@
             "properties": {
                 "message": {
                     "type": "string",
-                    "pattern": "^Your cashier was not locked\\.$",
                     "required": "1"
                 },
                 "code": {

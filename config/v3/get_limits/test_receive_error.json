@@ -10,7 +10,6 @@
             "properties": {
                 "message": {
                     "type": "string",
-                    "pattern": "^Sorry\\, this feature is not available\\.$",
                     "required": "1"
                 },
                 "code": {

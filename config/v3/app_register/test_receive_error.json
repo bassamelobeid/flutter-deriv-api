@@ -10,7 +10,6 @@
             "properties": {
                 "message": {
                     "type": "string",
-                    "pattern": "^The name is taken\\.$",
                     "required": "1"
                 },
                 "code": {

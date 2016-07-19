@@ -5,17 +5,21 @@
         "echo_req": {
             "required": "1"
         },
-        "error": {
+        "get_settings": {
             "type": "object",
             "properties": {
-                "message": {
+                "email": {
                     "type": "string",
-                    "pattern": "^Please use a different password than your login password\\.$",
                     "required": "1"
                 },
-                "code": {
+                "country": {
                     "type": "string",
-                    "pattern": "^CashierPassword$",
+                    "pattern": "^[_1]$",
+                    "required": "1"
+                },
+                "country_code": {
+                    "type": "string",
+                    "pattern": "^[_2]$",
                     "required": "1"
                 }
             },
@@ -23,7 +27,7 @@
         },
         "msg_type":{
             "type": "string",
-            "pattern": "^cashier_password$",
+            "pattern": "^get_settings$",
             "required": "1"
         }
     }

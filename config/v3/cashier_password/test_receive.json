@@ -4,7 +4,7 @@
   "properties": {
     "cashier_password": {
       "type": "integer",
-      "pattern": "^1$",
+      "pattern": "^[_1]$",
       "required": 1
     },
     "echo_req": {
