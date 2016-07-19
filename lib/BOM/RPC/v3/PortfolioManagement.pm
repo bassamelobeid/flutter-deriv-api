@@ -49,7 +49,7 @@ sub portfolio {
 sub __get_open_contracts {
     my $client = shift;
 
-    $query = BOM::Database::ClientDB->new({
+    my $query = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
         operation      => 'replica',
     });

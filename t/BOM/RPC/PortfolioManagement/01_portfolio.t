@@ -130,7 +130,7 @@ subtest 'Return not expired client contracts' => sub {
     lives_ok {
         create_fmb($client, buy_bet => 1);
 
-        $query = BOM::Database::ClientDB->new({
+        my $query = BOM::Database::ClientDB->new({
             broker_code => 'CR'
         });
 
