@@ -1150,8 +1150,8 @@ sub connect_add {
     my $connection_token = $params->{connection_token};
     my $oneall           = WWW::OneAll->new(
         subdomain   => 'binary',
-        public_key  => '48a20118-629b-4020-83fe-38af46e27b06',
-        private_key => '1970bcf0-a7ec-48f5-b9bc-737eb74146a4',
+        public_key  => BOM::System::Config::third_party->{oneall}->{public_key},
+        private_key => BOM::System::Config::third_party->{oneall}->{private_key},
     );
     my $data = $oneall->connection($connection_token) or die $oneall->errstr;
 
