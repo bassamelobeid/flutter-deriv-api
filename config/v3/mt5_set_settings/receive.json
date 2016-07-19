@@ -27,7 +27,7 @@
         },
         "leverage": {
           "type": "string",
-          "description": "The size of a client's leverage in the leverage from 1 to 500"
+          "description": "Client leverage (from 1 to 500)."
         },
         "address": {
           "type" : "string",

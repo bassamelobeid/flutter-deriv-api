@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title":"MT5 user main password check",
-  "description": "This call validate main password for MT5 user",
+  "description": "This call validates the main password for the MT5 user",
   "properties": {
     "mt5_password_check": {
       "type": "integer",
