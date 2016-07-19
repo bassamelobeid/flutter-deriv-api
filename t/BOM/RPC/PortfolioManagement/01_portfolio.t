@@ -130,17 +130,11 @@ subtest 'Return not expired client contracts' => sub {
     lives_ok {
         create_fmb($client, buy_bet => 1);
 
-        my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
-                client_loginid => $client->loginid,
-                currency_code  => $client->currency,
-                db             => BOM::Database::ClientDB->new({
-                        client_loginid => $client->loginid,
-                        operation      => 'replica',
-                    }
-                )->db,
-            });
+        $query = BOM::Database::ClientDB->new({
+            broker_code => 'CR'
+        });
 
-        $fmb = $fmb_dm->get_open_bets_of_account()->[0];
+        $fmb = $query->fetchall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false'])->[0];
 
         $expected_contract_data = {
             contract_id    => $fmb->{id},
