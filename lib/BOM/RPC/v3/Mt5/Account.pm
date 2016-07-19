@@ -16,10 +16,10 @@ sub mt5_new_account {
     my $account_type = delete $args->{account_type};
 
     my $group;
-    if ($account_type eq 'real_money') {
-        $group = 'real\real';
-    } elsif ($account_type eq 'demo') {
+    if ($account_type eq 'demo') {
         $group = 'demo\demoforex';
+    } elsif ( grep { $account_type eq $_ } qw(costarica iom malta maltainvest japan) ) {
+        $group = 'real\\' . $account_type;
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccountType',
