@@ -6,8 +6,8 @@ use warnings;
 use MooseX::Singleton;
 use BOM::Platform::Runtime;
 use BOM::Database::FeedDB;
-use Finance::Spot::Tick;
-use Finance::Spot::OHLC;
+use Quant::Framework::Spot::Tick;
+use Quant::Framework::Spot::OHLC;
 use Try::Tiny;
 
 use base qw( Exporter );
@@ -117,7 +117,7 @@ EOD
     $sth->bind_param(5, $defaults{quote});
     $sth->execute();
 
-    return Finance::Spot::Tick->new(\%defaults);
+    return Quant::Framework::Spot::Tick->new(\%defaults);
 }
 
 sub create_ohlc_daily {
@@ -159,7 +159,7 @@ EOD
     $sth->execute();
 
     delete $defaults{underlying};
-    return Finance::Spot::OHLC->new(\%defaults);
+    return Quant::Framework::Spot::OHLC->new(\%defaults);
 }
 
 sub _create_table_for_date {

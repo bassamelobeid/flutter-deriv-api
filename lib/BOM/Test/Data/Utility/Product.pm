@@ -104,7 +104,7 @@ sub create_contract {
     push @epoches, @$tick_epoches;
     @epoches = sort { $a <=> $b } @epoches;
     for my $epoch (@epoches) {
-        my $api = Finance::Spot::DatabaseAPI->new(
+        my $api = Quant::Framework::Spot::DatabaseAPI->new(
             underlying => $underlying_symbol,
             dbh        => $dbh
         );

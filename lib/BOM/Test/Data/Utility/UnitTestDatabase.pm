@@ -274,7 +274,7 @@ sub create_fmb_with_ticks {
     $dbh->{RaiseError} = 1;
 
     for my $epoch ($start->epoch, $start->epoch + 1, $expire->epoch) {
-        my $api = Finance::Spot::DatabaseAPI->new({
+        my $api = Quant::Framework::Spot::DatabaseAPI->new({
             underlying => 'R_100',
             dbh        => $dbh
         });
