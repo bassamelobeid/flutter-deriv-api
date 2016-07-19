@@ -48,10 +48,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 Quant::Framework::Utils::Test::create_doc(
     'volsurface_delta',
     {
-        underlying_config        => BOM::Market::Underlying->new($_)->config,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader,
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
-        recorded_date => Date::Utility->new,
+        underlying_config => BOM::Market::Underlying->new($_)->config,
+        chronicle_reader  => BOM::System::Chronicle::get_chronicle_reader,
+        chronicle_writer  => BOM::System::Chronicle::get_chronicle_writer,
+        recorded_date     => Date::Utility->new,
     }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
 
 subtest 'Basics.' => sub {
@@ -86,11 +86,11 @@ my $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         underlying_config => $usdjpy_config,
-        surface       => $data,
-        recorded_date => Date::Utility->new(time - 7210),
+        surface           => $data,
+        recorded_date     => Date::Utility->new(time - (4 * 3600 + 1)),
     });
 
-subtest 'more than 2 hours old' => sub {
+subtest 'more than 4 hours old' => sub {
     my $au = BOM::MarketData::AutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
@@ -99,7 +99,7 @@ subtest 'more than 2 hours old' => sub {
     is keys %{$au->report}, 1, 'only process one underlying';
     ok $au->report->{frxUSDJPY}, 'process frxUSDJPY';
     ok !$au->report->{frxUSDJPY}->{success}, 'update failed';
-    like $au->report->{frxUSDJPY}->{reason}, qr/more than 2 hours/, 'reason: more than 2 hours old';
+    like $au->report->{frxUSDJPY}->{reason}, qr/more than 4 hours/, 'reason: more than 4 hours old';
 };
 
 subtest 'does not exists' => sub {
@@ -135,8 +135,8 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         underlying_config => $usdjpy_config,
-        recorded_date => Date::Utility->new(time - 7199),
-        surface       => $data
+        recorded_date     => Date::Utility->new(time - 7199),
+        surface           => $data
     });
 
 subtest 'big jump' => sub {
@@ -156,16 +156,21 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         underlying_config => $usdjpy_config,
-        recorded_date => Date::Utility->new(time - 7199),
-        surface       => $clone,
-        save          => 0,
+        recorded_date     => Date::Utility->new(time - 7199),
+        surface           => $clone,
+        save              => 0,
     });
 
 subtest 'big difference' => sub {
     my $au = BOM::MarketData::AutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
-        surfaces_from_file => {frxUSDJPY => $fake_surface});
+        surfaces_from_file => {
+            frxUSDJPY => {
+                surface       => $fake_surface->surface_data,
+                recorded_date => $fake_surface->recorded_date,
+                type          => $fake_surface->type
+            }});
     lives_ok { $au->run } 'run without dying';
     ok !$au->report->{frxUSDJPY}->{success}, 'update failed';
     like $au->report->{frxUSDJPY}->{reason}, qr/big jump/, 'reason: big jump';
@@ -175,15 +180,19 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         underlying_config => $usdjpy_config,
-        recorded_date => Date::Utility->new(time - 7199),
-        save          => 0,
+        recorded_date     => Date::Utility->new(time - 7199),
     });
 
 subtest 'save valid' => sub {
     my $au = BOM::MarketData::AutoUpdater::Forex->new(
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
-        surfaces_from_file => {frxUSDJPY => $fake_surface});
+        surfaces_from_file => {
+            frxUSDJPY => {
+                surface       => $fake_surface->surface_data,
+                recorded_date => $fake_surface->recorded_date,
+                type          => $fake_surface->type
+            }});
     lives_ok { $au->run } 'run without dying';
     ok $au->report->{frxUSDJPY}->{success}, 'update successful';
 };
@@ -221,7 +230,7 @@ subtest "Friday after close, weekend, won't open check." => sub {
             'volsurface_delta',
             {
                 underlying_config => $usdjpy_config,
-                recorded_date => Date::Utility->new($details->{datetime}),
+                recorded_date     => Date::Utility->new($details->{datetime}),
             });
 
         my $result = $auf->passes_additional_check($surface);
