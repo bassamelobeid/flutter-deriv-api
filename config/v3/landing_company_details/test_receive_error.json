@@ -4,26 +4,26 @@
     "properties": {
         "error": {
             "type": "object",
-            "required": 1,
-            "code": {
-                "shortcode": {
+            "required": "1",
+            "properties": {
+                "code": {
                     "type": "string",
                     "pattern": "^UnknownLandingCompany$",
-                    "required": 1
+                    "required": "1"
                 },
                 "message": {
                     "type": "string",
-                    "required": 1
+                    "required": "1"
                 }
             }
         },
         "echo_req": {
-            "required": 1
+            "required": "1"
         },
         "msg_type": {
             "type": "string",
             "pattern": "^landing_company_details$",
-            "required": 1
+            "required": "1"
         }
     }
 }
