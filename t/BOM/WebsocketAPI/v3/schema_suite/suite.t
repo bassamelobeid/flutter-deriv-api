@@ -41,19 +41,25 @@ $module->mock(
         Mojo::Util::_stash(stash => @_);
     });
 
-my $t = build_mojo_test();
-
 my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.conf');
 
 my $response;
 
 foreach my $line (@lines) {
     next if ($line =~ /^(#.*|)$/);
-    my ($send_file, $receive_file, @template_func) = split(',', $line);
     my $fail;
-    if ($send_file =~ s/^!//) {
+    if ($line =~ s/^!//) {
         $fail = 1;
     }
+
+    my $lang = 'EN';
+    if ($line =~ s/^\[(A-Z+)\]//) {
+        $lang = $1;
+    }
+
+    my $t = build_mojo_test({language=>$lang});
+
+    my ($send_file, $receive_file, @template_func) = split(',', $line);
     chomp $receive_file;
     diag("Running [$send_file, $receive_file]\n");
 
