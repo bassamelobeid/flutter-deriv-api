@@ -57,8 +57,6 @@ foreach my $line (@lines) {
         $lang = $1;
     }
 
-    my $t = build_mojo_test({language=>$lang});
-
     my ($send_file, $receive_file, @template_func) = split(',', $line);
     chomp $receive_file;
     diag("Running [$send_file, $receive_file]\n");
@@ -74,9 +72,11 @@ foreach my $line (@lines) {
         $content =~ s/\[_$c\]/$template_content/mg;
     }
 
+    my $t = build_mojo_test({language=>$lang});
     $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
     my $result = decode_json($t->message->[1]);
     $response->{$call} = $result->{$call};
+    $t->finish_ok;
 
     $content = File::Slurp::read_file('config/v3/' . $receive_file);
     $c       = 0;
