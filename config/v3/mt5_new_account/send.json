@@ -11,7 +11,7 @@
       "required": "1"
     },
     "account_type": {
-      "enum": ["demo", "real_money"],
+      "enum": ["demo", "costarica", "iom", "malta", "maltainvest", "japan"],
       "description": "Account type, either demo account or real money account",
       "required": "1"
     },
