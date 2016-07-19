@@ -18,7 +18,7 @@ use File::Slurp;
 
 initialize_realtime_ticks_db();
 
-for my $i (1..10) {
+for my $i (1 .. 10) {
     for my $symbol (qw/R_50 R_100/) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => $symbol,
@@ -42,31 +42,41 @@ $module->mock(
         Mojo::Util::_stash(stash => @_);
     });
 
-my $t = build_mojo_test();
-
 my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.conf');
 
 my $response;
+my $counter = 0;
 
+my $t;
+my $lang = '';
 foreach my $line (@lines) {
+    chomp $line;
+    $counter++;
     next if ($line =~ /^(#.*|)$/);
-    my ($send_file, $receive_file, @template_func) = split(',', $line);
+
+    if ($line =~ s/^\[(\w+)\]//) {
+        $lang = $1;
+        next;
+    }
+
     my $fail;
-    if ($send_file =~ s/^!//) {
+    if ($line =~ s/^!//) {
         $fail = 1;
     }
+
+    my ($send_file, $receive_file, @template_func) = split(',', $line);
     chomp $receive_file;
-    diag("Running [$send_file, $receive_file]\n");
+    diag("Running line $counter [$send_file, $receive_file]\n");
 
     $send_file =~ /^(.*)\//;
     my $call = $1;
 
     my $content = File::Slurp::read_file('config/v3/' . $send_file);
-    my $c       = 0;
-    foreach my $f (@template_func) {
-        $c++;
-        my $template_content = eval $f;
-        $content =~ s/\[_$c\]/$template_content/mg;
+    $content = _get_values($content, @template_func);
+
+    if ($lang || !$t) {
+        $t = build_mojo_test({language=>$lang});
+        $lang='';
     }
 
     $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
@@ -74,17 +84,30 @@ foreach my $line (@lines) {
     $response->{$call} = $result->{$call};
 
     $content = File::Slurp::read_file('config/v3/' . $receive_file);
-    $c       = 0;
 
-    foreach my $f (@template_func) {
-        $c++;
-        my $template_content = eval $f;
-        $content =~ s/\[_$c\]/$template_content/mg;
-    }
+    $content = _get_values($content, @template_func);
     _test_schema($receive_file, $content, $result, $fail);
 }
 
 done_testing();
+
+sub _get_values {
+    my ($content, @template_func) = @_;
+    my $c = 0;
+    foreach my $f (@template_func) {
+        $c++;
+        $f =~ s/^\s+|\s+$//g;
+        my $template_content;
+        if ($f =~ /^\_.*$/) {
+            $template_content = eval $f;
+        } else {
+            $f =~ s/^\'|\'$//g;
+            $template_content = $f;
+        }
+        $content =~ s/\[_$c\]/$template_content/mg;
+    }
+    return $content;
+}
 
 sub _test_schema {
     my ($schema_file, $content, $data, $fail) = @_;
@@ -106,8 +129,8 @@ sub _test_schema {
     }
 }
 
-# fetch the token related to an specific email
-# e.x _get_token('test@binary.com')
+# fetch the token related to a specific email
+# e.g. _get_token('test@binary.com')
 sub _get_token {
     my $email  = shift;
     my $redis  = BOM::System::RedisReplicated::redis_read;
