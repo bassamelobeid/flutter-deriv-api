@@ -49,12 +49,12 @@ sub portfolio {
 sub __get_open_contracts {
     my $client = shift;
 
-    my $query = BOM::Database::ClientDB->new({
+    my $clientdb = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
         operation      => 'replica',
     });
 
-    return $query->fetchall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
+    return $clientdb->fetchall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
 
 }
 
