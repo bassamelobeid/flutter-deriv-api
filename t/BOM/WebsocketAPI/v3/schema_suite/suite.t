@@ -41,19 +41,28 @@ $module->mock(
         Mojo::Util::_stash(stash => @_);
     });
 
-my $t = build_mojo_test();
-
 my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.conf');
 
 my $response;
 
+my $t;
+my $lang = '';
 foreach my $line (@lines) {
+    chomp $line;
+
     next if ($line =~ /^(#.*|)$/);
-    my ($send_file, $receive_file, @template_func) = split(',', $line);
+
+    if ($line =~ s/^\[(\w+)\]//) {
+        $lang = $1;
+        next;
+    }
+
     my $fail;
-    if ($send_file =~ s/^!//) {
+    if ($line =~ s/^!//) {
         $fail = 1;
     }
+
+    my ($send_file, $receive_file, @template_func) = split(',', $line);
     chomp $receive_file;
     diag("Running [$send_file, $receive_file]\n");
 
@@ -68,13 +77,17 @@ foreach my $line (@lines) {
         $content =~ s/\[_$c\]/$template_content/mg;
     }
 
+    if ($lang || !$t) {
+        $t = build_mojo_test({language=>$lang});
+        $lang='';
+    }
+
     $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
     my $result = decode_json($t->message->[1]);
     $response->{$call} = $result->{$call};
 
     $content = File::Slurp::read_file('config/v3/' . $receive_file);
     $c       = 0;
-
     foreach my $f (@template_func) {
         $c++;
         my $template_content = eval $f;
