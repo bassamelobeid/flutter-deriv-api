@@ -55,8 +55,8 @@
     },
     "country": {
       "type" : "string",
-      "maxLength": 50,
-      "description": "The user's country of residence. Optional field."
+      "pattern": "^[a-z]{2}$",
+      "description": "2-letter country code (value received from residence_list call)"
     },
     "company": {
       "type" : "string",

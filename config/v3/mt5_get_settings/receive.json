@@ -51,7 +51,7 @@
         },
         "country": {
           "type" : "string",
-          "description": "The user's country of residence. Optional field."
+          "description": "2-letter country code. Optional field."
         },
         "company": {
           "type" : "string",
