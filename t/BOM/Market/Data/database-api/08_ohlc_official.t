@@ -7,8 +7,8 @@ use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use Finance::Spot::DatabaseAPI;
-use Finance::Spot::OHLC;
+use Quant::Framework::Spot::DatabaseAPI;
+use Quant::Framework::Spot::OHLC;
 use DateTime;
 use Date::Utility;
 use BOM::Market::Underlying;
@@ -303,12 +303,12 @@ subtest 'prepare ohlc - DJI' => sub {
 };
 
 subtest 'Daily - Start-End - Simple' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'DJI',
         use_official_ohlc => 1,
         dbh               => $dbh,
     );
-    my $unofficial_api = Finance::Spot::DatabaseAPI->new(underlying => 'DJI', dbh => $dbh);
+    my $unofficial_api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'DJI', dbh => $dbh);
     my ($ohlcs, $unofficial, $official);
     my $start_time = '2012-06-01';
     my $end_time   = '2012-07-01';
@@ -653,7 +653,7 @@ subtest 'prepare ohlc minute' => sub {
 };
 
 subtest 'Minutely - Start-End - Simple' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
     my $ohlcs;
     my $start_time = '2012-07-09 00:00:00';
     my $end_time   = '2012-07-09 23:00:00';

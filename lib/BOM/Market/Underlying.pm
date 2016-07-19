@@ -25,8 +25,8 @@ use Scalar::Util qw( looks_like_number );
 use Memoize;
 use Time::HiRes;
 use Finance::Asset;
-use Finance::Spot;
-use Finance::Spot::Tick;
+use Quant::Framework::Spot;
+use Quant::Framework::Spot::Tick;
 
 use Quant::Framework::Exchange;
 use Quant::Framework::TradingCalendar;
@@ -39,7 +39,7 @@ use POSIX;
 use YAML::XS qw(LoadFile);
 use Try::Tiny;
 use BOM::Platform::Runtime;
-use Finance::Spot::DatabaseAPI;
+use Quant::Framework::Spot::DatabaseAPI;
 use BOM::Database::FeedDB;
 use BOM::Platform::Context qw(request localize);
 use BOM::Market::Types;
@@ -162,7 +162,7 @@ has spot_source => (
 sub _build_spot_source {
     my $self = shift;
 
-    return Finance::Spot->new({
+    return Quant::Framework::Spot->new({
         symbol            => $self->symbol,
         feed_api          => $self->feed_api,
         calendar          => $self->calendar,
@@ -417,7 +417,7 @@ has forward_feed => (
 
 has 'feed_api' => (
     is      => 'ro',
-    isa     => 'Finance::Spot::DatabaseAPI',
+    isa     => 'Quant::Framework::Spot::DatabaseAPI',
     handles => {
         ticks_in_between_start_end   => 'ticks_start_end',
         ticks_in_between_start_limit => 'ticks_start_limit',
@@ -1039,7 +1039,7 @@ sub _build_quoted_currency_symbol {
 
 =head2 feed_api
 
-Returns, an instance of I<Finance::Spot::DatabaseAPI> based on information that it can collect from underlying.
+Returns, an instance of I<Quant::Framework::Spot::DatabaseAPI> based on information that it can collect from underlying.
 
 =cut
 
@@ -1064,7 +1064,7 @@ sub _build_feed_api {
 
     $build_args->{dbh} = $dbh;
 
-    return Finance::Spot::DatabaseAPI->new($build_args);
+    return Quant::Framework::Spot::DatabaseAPI->new($build_args);
 }
 
 # End of builders.
@@ -1410,21 +1410,21 @@ Get next tick after a given time. What is the next tick on this underlying after
     my $tick = $underlying->next_tick_after(1234567890);
 
 Return:
-    'Finance::Spot::Tick' Object
+    'Quant::Framework::Spot::Tick' Object
 
 =head2 breaching_tick
 
 Get first tick in a provided period which breaches a barrier (either 'higher' or 'lower')
 
 Return:
-    'Finance::Spot::Tick' Object or undef
+    'Quant::Framework::Spot::Tick' Object or undef
 
 =head2 ticks_in_between_start_end
 
 Gets ticks for specified start_time, end_time as all ticks between start_time and end_time
 
 Returns,
-    ArrayRef[Finance::Spot::Tick] on success
+    ArrayRef[Quant::Framework::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ticks_in_between_start_limit
@@ -1432,7 +1432,7 @@ Returns,
 Get ticks for specified start_time, limit as limit number of ticks from start_time
 
 Returns,
-    ArrayRef[Finance::Spot::Tick] on success
+    ArrayRef[Quant::Framework::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ticks_in_between_end_limit
@@ -1440,7 +1440,7 @@ Returns,
 Get ticks for specified end_time, limit as limit number of ticks from end_time.
 
 Returns,
-    ArrayRef[Finance::Spot::Tick] on success
+    ArrayRef[Quant::Framework::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ohlc_between_start_end
@@ -1448,7 +1448,7 @@ Returns,
 Gets ohlc for specified start_time, end_time, aggregation_period
 
 Returns,
-    ArrayRef[Finance::Spot::OHLC] on success
+    ArrayRef[Quant::Framework::Spot::OHLC] on success
     empty ArrayRef on failure
 
 

@@ -23,7 +23,7 @@ use BOM::System::Chronicle;
 use BOM::Market::SubMarket;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
-use Finance::Spot;
+use Quant::Framework::Spot;
 
 initialize_realtime_ticks_db();
 

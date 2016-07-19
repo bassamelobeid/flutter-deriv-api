@@ -10,8 +10,8 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use Finance::Spot::DatabaseAPI;
-use Finance::Spot::OHLC;
+use Quant::Framework::Spot::DatabaseAPI;
+use Quant::Framework::Spot::OHLC;
 use DateTime;
 use Date::Utility;
 
@@ -116,7 +116,7 @@ subtest 'Preparing records' => sub {
 };
 
 subtest 'Simple OHLC fetch' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1,
         dbh               => $dbh,
@@ -208,7 +208,7 @@ subtest 'Simple OHLC fetch' => sub {
 };
 
 subtest 'Testing selection when both are present' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1,
         dbh               => $dbh,
@@ -251,8 +251,8 @@ subtest 'Testing selection when both are present' => sub {
 };
 
 subtest 'Tail End ticks' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
-    my $official_api = Finance::Spot::DatabaseAPI->new(
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $official_api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1,
         dbh               => $dbh,
@@ -379,7 +379,7 @@ subtest 'Tail End ticks' => sub {
 };
 
 subtest 'Non Official OHLC' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
 
     subtest 'One OHLC Data' => sub {
         my $data = $api->ohlc_daily_list({

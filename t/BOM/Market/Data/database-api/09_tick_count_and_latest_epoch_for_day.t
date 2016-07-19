@@ -10,11 +10,11 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use Finance::Spot::DatabaseAPI;
+use Quant::Framework::Spot::DatabaseAPI;
 use DateTime;
 use Date::Utility;
 
-use Finance::Spot::DatabaseAPI;
+use Quant::Framework::Spot::DatabaseAPI;
 my $dbh = BOM::Database::FeedDB::read_dbh;
 $dbh->{RaiseError} = 1;
 
@@ -81,14 +81,14 @@ subtest 'prepare ticks' => sub {
 };
 
 subtest 'Basic test' => sub {
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
 
     subtest 'Ideal date 2012-05-15' => sub {
         my $output = $api->combined_realtime_tick({
             start_time => '2012-05-15 00:00:00',
             end_time   => '2012-05-15 11:00:00'
         });
-        isa_ok $output, 'Finance::Spot::Tick';
+        isa_ok $output, 'Quant::Framework::Spot::Tick';
         ok $output->epoch, 'Has epoch';
         my $date = Date::Utility->new({epoch => $output->epoch});
         is $date->datetime_yyyymmdd_hhmmss, '2012-05-15 10:10:01', 'Date Ok';
@@ -100,7 +100,7 @@ subtest 'Basic test' => sub {
             start_time => '2012-05-15 06:00:00',
             end_time   => '2012-05-15 09:00:00'
         });
-        isa_ok $output, 'Finance::Spot::Tick';
+        isa_ok $output, 'Quant::Framework::Spot::Tick';
         ok $output->epoch, 'Has epoch';
         my $date = Date::Utility->new({epoch => $output->epoch});
         is $date->datetime_yyyymmdd_hhmmss, '2012-05-15 08:10:01', 'Date Ok';
@@ -112,7 +112,7 @@ subtest 'Basic test' => sub {
             start_time => '2012-05-14 00:00:00',
             end_time   => '2012-05-14 20:00:00'
         });
-        isa_ok $output, 'Finance::Spot::Tick';
+        isa_ok $output, 'Quant::Framework::Spot::Tick';
         ok $output->epoch, 'Has epoch';
         my $date = Date::Utility->new({epoch => $output->epoch});
         is $date->datetime_yyyymmdd_hhmmss, '2012-05-14 05:10:01', 'Date Ok';
@@ -140,13 +140,13 @@ subtest 'New tick induction' => sub {
     }
     'Tick - 2012-05-15 12:10:01';
 
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
 
     my $output = $api->combined_realtime_tick({
         start_time => '2012-05-15 00:00:00',
         end_time   => '2012-05-15 15:00:00'
     });
-    isa_ok $output, 'Finance::Spot::Tick';
+    isa_ok $output, 'Quant::Framework::Spot::Tick';
     ok $output->epoch, 'Has epoch';
     my $date = Date::Utility->new({epoch => $output->epoch});
     is $date->datetime_yyyymmdd_hhmmss, '2012-05-15 12:10:01', 'Date Ok - Last tick counted';
@@ -165,14 +165,14 @@ subtest 'Next day induction' => sub {
     }
     'Tick - 2012-05-16 05:10:01';
 
-    my $api = Finance::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
 
     subtest 'Date 2012-05-15' => sub {
         my $output = $api->combined_realtime_tick({
             start_time => '2012-05-15 00:00:00',
             end_time   => '2012-05-15 23:00:00'
         });
-        isa_ok $output, 'Finance::Spot::Tick';
+        isa_ok $output, 'Quant::Framework::Spot::Tick';
         ok $output->epoch, 'Has epoch';
         my $date = Date::Utility->new({epoch => $output->epoch});
         is $date->datetime_yyyymmdd_hhmmss, '2012-05-15 12:10:01', 'Date Ok';
@@ -183,7 +183,7 @@ subtest 'Next day induction' => sub {
             start_time => '2012-05-16 00:00:00',
             end_time   => '2012-12-06 23:00:00'
         });
-        isa_ok $output, 'Finance::Spot::Tick';
+        isa_ok $output, 'Quant::Framework::Spot::Tick';
         ok $output->epoch, 'Has epoch';
         my $date = Date::Utility->new({epoch => $output->epoch});
         is $date->datetime_yyyymmdd_hhmmss, '2012-05-16 05:10:01', 'Date Ok';
