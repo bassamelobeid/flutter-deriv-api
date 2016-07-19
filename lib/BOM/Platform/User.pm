@@ -147,6 +147,12 @@ sub clients {
     return grep { $args{disabled_ok} || !$_->get_status('disabled') } @bom_clients;
 }
 
+sub mt5_logins {
+    my $self = shift;
+    my @mt5_logins = sort map { $_->loginid } grep { $_->loginid =~ /^MT\d+$/ } $self->loginid;
+    return @mt5_logins;
+}
+
 sub loginid_list_cookie_val {
     my $self = shift;
     $self->{_cookie_val} || $self->clients;
