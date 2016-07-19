@@ -36,29 +36,27 @@ my $params = {
     args     => {},
 };
 
-my $method = 'transfer_between_accounts';
+my ($method, $email, $client_cr, $client_cr1, $client_mlt, $client_mf, $user) = ('transfer_between_accounts');
 
 subtest 'check_landing_company' => sub {
-    my $email     = 'dummy' . rand(999) . '@binary.com';
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    $email     = 'dummy' . rand(999) . '@binary.com';
+    $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email
     });
-    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+
+    $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MLT',
         email       => $email
     });
-    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
         email       => $email
     });
 
-    my $password = 'jskjd8292922';
-    my $hash_pwd = BOM::System::Password::hashpw($password);
-    my $user     = BOM::Platform::User->create(
+    $user = BOM::Platform::User->create(
         email    => $email,
-        password => $hash_pwd
-    );
+        password => BOM::System::Password::hashpw('jskjd8292922'));
     $user->email_verified(1);
     $user->save;
 
@@ -93,8 +91,6 @@ subtest 'check_landing_company' => sub {
 };
 
 subtest $method => sub {
-    my ($user, $client_mlt, $client_mf, $auth_token, $email);
-
     subtest 'Initialization' => sub {
         lives_ok {
             $email = 'new_email' . rand(999) . '@binary.com';
@@ -103,14 +99,10 @@ subtest $method => sub {
                 broker_code => 'MLT',
                 email       => $email
             });
-            $auth_token = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
 
-            my $password = 'jskjd8292922';
-            my $hash_pwd = BOM::System::Password::hashpw($password);
             $user = BOM::Platform::User->create(
                 email    => $email,
-                password => $hash_pwd
-            );
+                password => BOM::System::Password::hashpw('jskjd8292922'));
             $user->email_verified(1);
             $user->save;
 
@@ -166,7 +158,9 @@ subtest $method => sub {
                 ->error_message_is('Invalid amount. Minimum transfer amount is 0.10, and up to 2 decimal places.',
                 'Correct error message for transfering invalid amount');
         }
+    };
 
+    subtest 'Transfer between mlt and mf' => sub {
         $params->{args} = {};
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
         is scalar(@{$result->{accounts}}), 2, 'two accounts';
@@ -204,43 +198,78 @@ subtest $method => sub {
         ok $client_mf->default_account->balance == 10,  '+10';
     };
 
-    subtest 'Sub account transfer' => sub {
+};
+
+subtest 'Sub account transfer' => sub {
+    subtest 'validate sub transfer' => sub {
+        $email     = 'new_cr_email' . rand(999) . '@sample.com';
+        $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => $email
+        });
+
+        $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => $email
+        });
+
+        $client_cr->set_default_account('USD');
+        $client_cr1->set_default_account('USD');
+
+        $user = BOM::Platform::User->create(
+            email    => $email,
+            password => BOM::System::Password::hashpw('jskjd8292922'));
+        $user->email_verified(1);
+
+        $user->add_loginid({loginid => $client_cr->loginid});
+        $user->add_loginid({loginid => $client_cr1->loginid});
+        $user->save;
+
+        $params->{args} = {
+            "account_from" => $client_cr->loginid,
+            "account_to"   => $client_cr1->loginid,
+            "currency"     => "USD",
+            "amount"       => 10
+        };
+
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Sub account transfer error")
             ->error_message_is('The account transfer is unavailable for your account.',
             'Correct error message for sub account as client is not marked as allow_omnibus');
 
-        $client_mlt = BOM::Platform::Client->new({loginid => $client_mlt->loginid});
-        ok $client_mlt->get_status('disabled'), 'Client MLT disabled';
-        $client_mlt->clr_status('disabled');
+        $client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});
+        ok $client_cr->get_status('disabled'), 'Client CR disabled';
+        $client_cr->clr_status('disabled');
         # set allow_omnibus (master account has this set)
-        $client_mlt->allow_omnibus(1);
-        $client_mlt->save();
+        $client_cr->allow_omnibus(1);
+        $client_cr->save();
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Sub account transfer error")
             ->error_message_is('The account transfer is unavailable for your account.',
             'Correct error message for sub account as client has no sub account');
 
-        $client_mlt = BOM::Platform::Client->new({loginid => $client_mlt->loginid});
-        ok $client_mlt->get_status('disabled'), 'Client MLT disabled';
-        $client_mlt->clr_status('disabled');
-        $client_mlt->allow_omnibus(1);
-        $client_mlt->save();
+        $client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});
+        ok $client_cr->get_status('disabled'), 'Client MLT disabled';
+        $client_cr->clr_status('disabled');
+        $client_cr->allow_omnibus(1);
+        $client_cr->save();
 
-        $client_mf = BOM::Platform::Client->new({loginid => $client_mf->loginid});
-        # set mf client as sub account of mlt
-        $client_mf->sub_account_of($client_mlt->loginid);
-        $client_mf->save();
+        $client_cr1 = BOM::Platform::Client->new({loginid => $client_cr1->loginid});
+        # set cr1 client as sub account of cr
+        $client_cr1->sub_account_of($client_cr1->loginid);
+        $client_cr1->save();
+    };
 
+    subtest 'Sub account transfer' => sub {
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-        is $result->{client_to_loginid}, $client_mf->loginid, 'Client to loginid is correct';
+        is $result->{client_to_loginid}, $client_cr1->loginid, 'Client to loginid is correct';
 
         # after withdraw, check both balance
-        $client_mlt = BOM::Platform::Client->new({loginid => $client_mlt->loginid});
-        $client_mf  = BOM::Platform::Client->new({loginid => $client_mf->loginid});
-        ok $client_mlt->default_account->balance == 80, '-10';
-        ok $client_mf->default_account->balance == 20,  '+10';
+        $client_cr  = BOM::Platform::Client->new({loginid => $client_cr->loginid});
+        $client_cr1 = BOM::Platform::Client->new({loginid => $client_cr1->loginid});
+        ok $client_cr->default_account->balance == 80,  '-10';
+        ok $client_cr1->default_account->balance == 20, '+10';
     };
 };
 

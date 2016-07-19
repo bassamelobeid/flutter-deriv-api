@@ -993,15 +993,17 @@ sub transfer_between_accounts {
         # check if client has any sub_account_of as we allow omnibus transfers also
         # for MLT MF transfer check landing company
         my $sub_account = $account->sub_account_of // '';
-        if ($client->loginid ne $sub_account || (grep { $account->landing_company->short ne $_ } ('malta', 'maltainvest'))) {
+        if ($client->loginid eq $sub_account || (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'))) {
+            push @accounts,
+                {
+                loginid => $account->loginid,
+                balance => $account->default_account ? sprintf('%.2f', $account->default_account->balance) : 0.00,
+                currency => $account->default_account ? $account->default_account->currency_code : '',
+                };
+        } else {
             next;
         }
-        push @accounts,
-            {
-            loginid => $account->loginid,
-            balance => $account->default_account ? sprintf('%.2f', $account->default_account->balance) : 0.00,
-            currency => $account->default_account ? $account->default_account->currency_code : '',
-            };
+
     }
 
     # get clients
