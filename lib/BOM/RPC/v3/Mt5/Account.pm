@@ -7,6 +7,7 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::User;
 use BOM::Mt5::User;
+use Locale::Country::Extra;
 
 sub mt5_new_account {
     my $params = shift;
@@ -26,6 +27,9 @@ sub mt5_new_account {
                 message_to_client => localize('Invalid account type.')});
     }
     $args->{group} = $group;
+
+    my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
+    $args->{country} = $country_name if ($country_name);
 
     my $status = BOM::Mt5::User::create_user($args);
     if ($status->{error}) {
@@ -81,6 +85,10 @@ sub mt5_get_settings {
                 code              => 'Mt5GetUserError',
                 message_to_client => $settings->{error}});
     }
+
+    my $country_code = Locale::Country::Extra->new()->code_from_country($settings->{country});
+    $settings->{country} = $country_code if ($country_code);
+
     return $settings;
 }
 
@@ -95,6 +103,9 @@ sub mt5_set_settings {
     if (not grep { 'MT' . $login eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
+
+    my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
+    $args->{country} = $country_name if ($country_name);
 
     my $settings = BOM::Mt5::User::update_user($args);
     if ($settings->{error}) {
