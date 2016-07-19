@@ -1,3 +1,4 @@
+requires 'Quant::Framework::Spot' ,'0.01';
 #!/etc/rmg/bin/perl
 
 use strict;
@@ -34,7 +35,7 @@ my $bet_params = {
 
 };
 
-my $fake_tick = Finance::Spot::Tick->new({
+my $fake_tick = Quant::Framework::Spot::Tick->new({
     underlying => 'frxUSDJPY',
     epoch => 1,
     quote => 100,

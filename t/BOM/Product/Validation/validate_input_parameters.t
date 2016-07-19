@@ -17,7 +17,7 @@ my $now = Date::Utility->new('2016-03-18 01:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD', recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('index', {symbol => 'R_100', recorded_date => $now});
 
-my $fake_tick = Finance::Spot::Tick->new({
+my $fake_tick = Quant::Framework::Spot::Tick->new({
     underlying => 'R_100',
     epoch => $now->epoch,
     quote => 100,

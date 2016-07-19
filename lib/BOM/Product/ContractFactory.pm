@@ -19,7 +19,7 @@ use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use YAML::XS qw(LoadFile);
 
-use Finance::Spot::Tick;
+use Quant::Framework::Spot::Tick;
 use BOM::Platform::Context qw(request);
 use BOM::Product::ContractFactory::Parser qw(
     shortcode_to_parameters
@@ -289,7 +289,7 @@ This whole thing needs to be reconsidered, eventually.
         if (not $result) {
             # Uncacheable or cache miss, so we do the full routine.
             my $params = _args_to_ref($build_arg, $maybe_currency);
-            $params->{entry_tick} = Finance::Spot::Tick->new({
+            $params->{entry_tick} = Quant::Framework::Spot::Tick->new({
                 quote => 1,
                 epoch => 1,
             });

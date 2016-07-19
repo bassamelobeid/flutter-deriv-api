@@ -18,7 +18,7 @@ use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
 use BOM::Market::Underlying;
-use Finance::Spot::Tick;
+use Quant::Framework::Spot::Tick;
 use Quant::Framework::CorrelationMatrix;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use Time::Duration::Concise;
@@ -138,7 +138,7 @@ has [qw(backtest tick_expiry)] => (
 
 has basis_tick => (
     is         => 'ro',
-    isa        => 'Finance::Spot::Tick',
+    isa        => 'Quant::Framework::Spot::Tick',
     lazy_build => 1,
 );
 
@@ -157,7 +157,7 @@ sub _build_basis_tick {
 
     # if there's no basis tick, don't die but catch the error.
     unless ($basis_tick) {
-        $basis_tick = Finance::Spot::Tick->new({
+        $basis_tick = Quant::Framework::Spot::Tick->new({
             # slope pricer will die with illegal division by zero error when we get the slope
             quote  => $self->underlying->pip_size * 2,
             epoch  => 1,

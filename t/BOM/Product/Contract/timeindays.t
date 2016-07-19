@@ -265,7 +265,7 @@ sub _sample_bet {
         quote => 99.840
     });
 
-    my $current_tick = Finance::Spot::Tick->new({
+    my $current_tick = Quant::Framework::Spot::Tick->new({
         underlying => $underlying,
         epoch => $overrides{date_pricing}->epoch,
         quote => 100,
