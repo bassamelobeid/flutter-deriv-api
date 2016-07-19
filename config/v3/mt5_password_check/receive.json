@@ -1,21 +1,21 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "MT5 user password change receive",
-  "description": "MT5 user password change receive",
+  "title": "MT5 user password check receive",
+  "description": "MT5 user password check receive",
   "properties": {
     "echo_req": {
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "password_change_mt5": {
+    "mt5_password_check": {
       "type": "integer",
-      "title": "Password Change Status",
+      "title": "Password Check Status",
       "description": "1 on success"
     },
     "msg_type": {
       "type": "string",
-      "description": "password_change_mt5"
+      "description": "mt5_password_check"
     },
     "req_id": {
       "type": "integer",

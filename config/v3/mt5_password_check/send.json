@@ -4,7 +4,7 @@
   "title":"MT5 user main password check",
   "description": "This call validate main password for MT5 user",
   "properties": {
-    "password_check_mt5": {
+    "mt5_password_check": {
       "type": "integer",
       "description": "Must be 1",
       "pattern": "^1$",

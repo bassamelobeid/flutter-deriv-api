@@ -1,10 +1,7 @@
 {
-    "new_account_mt5": "1",
-    "account_type": "demo",
+    "mt5_set_settings": "1",
     "email": "test@mailinator.com",
     "name": "Peter Pan",
-    "mainPassword": "Abc1234",
-    "investPassword": "Abc1234",
     "leverage": "100",
     "address": "20 Broadway Av, East Melbourne VIC",
     "state": "Victoria",

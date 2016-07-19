@@ -1,10 +1,10 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title":"Get MT5 user setting",
-  "description": "Get MT5 user account settings",
+  "title":"MT5 user main password change",
+  "description": "This call change main password for MT5 user",
   "properties": {
-    "get_settings_mt5": {
+    "mt5_password_change": {
       "type": "integer",
       "description": "Must be 1",
       "pattern": "^1$",
@@ -13,6 +13,11 @@
     "login": {
       "type": "string",
       "description": "MT5 user login",
+      "required": "1"
+    },
+    "new_password": {
+      "type": "string",
+      "description": "New master password of the account.",
       "required": "1"
     },
     "passthrough": {

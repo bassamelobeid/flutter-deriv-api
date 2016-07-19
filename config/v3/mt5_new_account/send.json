@@ -4,7 +4,7 @@
   "title":"Create MT5 account",
   "description": "This call creates new MT5 user, either demo or real money user.",
   "properties": {
-    "new_account_mt5": {
+    "mt5_new_account": {
       "type": "integer",
       "description": "Must be 1",
       "pattern": "^1$",

@@ -8,7 +8,7 @@
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "new_account_mt5": {
+    "mt5_new_account": {
       "type": "object",
       "title": "New MT5 account",
       "description": "New MT5 account details",
@@ -29,7 +29,7 @@
     },
     "msg_type": {
       "type": "string",
-      "description": "new_account_mt5"
+      "description": "mt5_new_account"
     },
     "req_id": {
       "type": "integer",

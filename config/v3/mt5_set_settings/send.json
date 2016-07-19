@@ -4,7 +4,7 @@
   "title":"Update MT5 account details",
   "description": "This call update user details in MT5 system",
   "properties": {
-    "set_settings_mt5": {
+    "mt5_set_settings": {
       "type": "integer",
       "description": "Must be 1",
       "pattern": "^1$",

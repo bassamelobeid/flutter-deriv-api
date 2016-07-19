@@ -164,7 +164,7 @@ sub startup {
                 stash_params => [qw/ token_type client_ip /]}
         ],
         ['get_settings', {require_auth => 'read'}],
-        ['get_settings_mt5', {require_auth => 'read'}],
+        ['mt5_get_settings', {require_auth => 'read'}],
         [
             'set_settings',
             {
@@ -172,19 +172,19 @@ sub startup {
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
-            'set_settings_mt5',
+            'mt5_set_settings',
             {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
-            'password_check_mt5',
+            'mt5_password_check',
             {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
-            'password_change_mt5',
+            'mt5_password_change',
             {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
@@ -324,7 +324,7 @@ sub startup {
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
-            'new_account_mt5',
+            'mt5_new_account',
             {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}

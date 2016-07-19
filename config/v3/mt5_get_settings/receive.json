@@ -1,21 +1,25 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Update MT5 account Receive",
-  "description": "Update MT5 account Receive",
+  "title": "Get MT5 user settings Receive",
+  "description": "Get MT5 user settings",
   "properties": {
     "echo_req": {
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "set_settings_mt5": {
+    "mt5_get_settings": {
       "type": "object",
-      "title": "Update MT5 account details",
-      "description": "Update MT5 account details",
+      "title": "",
+      "description": "MT5 user account details",
       "properties": {
         "login": {
           "type": "string",
           "description": "Login of new MT5 account"
+        },
+        "group": {
+          "type": "string",
+          "description": "The group where account belongs to"
         },
         "email": {
           "type": "string",
@@ -69,7 +73,7 @@
     },
     "msg_type": {
       "type": "string",
-      "description": "new_account_mt5"
+      "description": "mt5_get_settings"
     },
     "req_id": {
       "type": "integer",
