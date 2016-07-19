@@ -179,7 +179,7 @@ subtest $method => sub {
         $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
         is scalar(@{$result->{accounts}}), 2, 'two accounts';
         ($tmp) = grep { $_->{loginid} eq $client_mlt->loginid } @{$result->{accounts}};
-        is $tmp->{balance}, "100.00", 'balance is 0';
+        is $tmp->{balance}, "100.00", 'balance is 100';
 
         $params->{args} = {
             "account_from" => $client_mlt->loginid,
@@ -225,6 +225,7 @@ subtest 'Sub account transfer' => sub {
         $user->add_loginid({loginid => $client_cr1->loginid});
         $user->save;
 
+        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token omnibus');
         $params->{args} = {
             "account_from" => $client_cr->loginid,
             "account_to"   => $client_cr1->loginid,
@@ -250,26 +251,42 @@ subtest 'Sub account transfer' => sub {
             'Correct error message for sub account as client has no sub account');
 
         $client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});
-        ok $client_cr->get_status('disabled'), 'Client MLT disabled';
+        ok $client_cr->get_status('disabled'), 'Client CR disabled';
         $client_cr->clr_status('disabled');
         $client_cr->allow_omnibus(1);
         $client_cr->save();
 
         $client_cr1 = BOM::Platform::Client->new({loginid => $client_cr1->loginid});
         # set cr1 client as sub account of cr
-        $client_cr1->sub_account_of($client_cr1->loginid);
+        $client_cr1->sub_account_of($client_cr->loginid);
         $client_cr1->save();
     };
 
     subtest 'Sub account transfer' => sub {
+        $client_cr->payment_free_gift(
+            currency => 'USD',
+            amount   => 100,
+            remark   => 'free gift',
+        );
+
+        $client_cr->clr_status('cashier_locked');    # clear locked
+        $client_cr->save();
+
+        $params->{args} = {
+            "account_from" => $client_cr->loginid,
+            "account_to"   => $client_cr1->loginid,
+            "currency"     => "USD",
+            "amount"       => 10
+        };
+
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
         is $result->{client_to_loginid}, $client_cr1->loginid, 'Client to loginid is correct';
 
         # after withdraw, check both balance
         $client_cr  = BOM::Platform::Client->new({loginid => $client_cr->loginid});
         $client_cr1 = BOM::Platform::Client->new({loginid => $client_cr1->loginid});
-        ok $client_cr->default_account->balance == 80,  '-10';
-        ok $client_cr1->default_account->balance == 20, '+10';
+        ok $client_cr->default_account->balance == 90,  '-10';
+        ok $client_cr1->default_account->balance == 10, '+10';
     };
 };
 
