@@ -17,7 +17,7 @@ use File::Slurp;
 
 initialize_realtime_ticks_db();
 
-for my $i (1..10) {
+for my $i (1 .. 10) {
     for my $symbol (qw/R_50 R_100/) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => $symbol,
