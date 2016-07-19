@@ -45,6 +45,7 @@ my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/suite.con
 
 my $response;
 
+my $t;
 foreach my $line (@lines) {
     next if ($line =~ /^(#.*|)$/);
     my $fail;
@@ -52,7 +53,7 @@ foreach my $line (@lines) {
         $fail = 1;
     }
 
-    my $lang = 'EN';
+    my $lang;
     if ($line =~ s/^\[(A-Z+)\]//) {
         $lang = $1;
     }
@@ -72,11 +73,13 @@ foreach my $line (@lines) {
         $content =~ s/\[_$c\]/$template_content/mg;
     }
 
-    my $t = build_mojo_test({language=>$lang});
+    if ($lang || !$t) {
+        $t = build_mojo_test({language=>$lang});
+    }
+
     $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
     my $result = decode_json($t->message->[1]);
     $response->{$call} = $result->{$call};
-    $t->finish_ok;
 
     $content = File::Slurp::read_file('config/v3/' . $receive_file);
     $c       = 0;
