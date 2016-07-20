@@ -512,7 +512,7 @@ sub _skip_streaming {
     return;
 }
 
-open my $RAND, "<", "/dev/urandom";
+open my $RAND, "<", "/dev/urandom";    ## no critic (InputOutput::RequireBriefOpen)
 
 sub _generate_random_str {
     local $/ = \16;
