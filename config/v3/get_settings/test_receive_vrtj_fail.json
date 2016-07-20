@@ -33,7 +33,7 @@
             },
             "last_test_epoch": {
               "type": "integer",
-              "pattern": "^[_1]$",
+              "pattern": "^\\d{10}$",
               "required": "1"
             },
             "next_test_epoch": {

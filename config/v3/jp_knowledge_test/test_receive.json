@@ -10,13 +10,16 @@
       "properties": {
         "test_taken_epoch": {
           "type": "integer",
+          "pattern": "\\d{10}",
           "required": "1"
         }
-      }
+      },
+      "required": "1"
     },
     "msg_type": {
       "type": "string",
-      "description": "jp_knowledge_test"
+      "description": "jp_knowledge_test",
+      "required": "1"
     }
   }
 }
