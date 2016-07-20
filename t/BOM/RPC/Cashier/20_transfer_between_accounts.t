@@ -180,6 +180,8 @@ subtest $method => sub {
         is scalar(@{$result->{accounts}}), 2, 'two accounts';
         ($tmp) = grep { $_->{loginid} eq $client_mlt->loginid } @{$result->{accounts}};
         is $tmp->{balance}, "100.00", 'balance is 100';
+        ($tmp) = grep { $_->{loginid} eq $client_mf->loginid } @{$result->{accounts}};
+        is $tmp->{balance}, "0.00", 'balance is 0.00 for other account';
 
         $params->{args} = {
             "account_from" => $client_mlt->loginid,
