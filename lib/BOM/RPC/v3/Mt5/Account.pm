@@ -3,6 +3,7 @@ package BOM::RPC::v3::Mt5::Account;
 use strict;
 use warnings;
 
+use Try::Tiny;
 use Locale::Country::Extra;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
