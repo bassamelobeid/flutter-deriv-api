@@ -514,7 +514,7 @@ sub _skip_streaming {
 
 sub _generate_random_str {
     my $len = shift || 20;
-    return join("", map{("a".."z","A".."Z",0..9)[rand 62]} 0..$len);
+    return join("", map { ("a" .. "z", "A" .. "Z", 0 .. 9)[rand 62] } 0 .. $len);
 }
 
 1;
