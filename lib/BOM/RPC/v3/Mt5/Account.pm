@@ -362,7 +362,7 @@ sub mt5_withdrawal {
     $account->save(cascade => 1);
     $payment->save(cascade => 1);
 
-    BOM::Database::Transaction->unfreeze_client($fm_loginid);
+    BOM::Database::Transaction->unfreeze_client($to_loginid);
     return {
         status                => 1,
         binary_transaction_id => $txn->id
