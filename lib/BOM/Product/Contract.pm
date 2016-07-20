@@ -2545,16 +2545,6 @@ sub _validate_lifetime {
         ? localize('Resale of this contract is not offered.')
         : localize('Trading is not offered for this duration.');
 
-    #if (    $self->for_sale
-    #    and $self->expiry_daily
-    #    and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
-    #{
-    #    return {
-    #        message           => 'waiting for settlement',
-    #        message_to_client => localize('Please wait for contract settlement.'),
-    #    };
-    #}
-
     # This might be empty because we don't have short-term expiries on some contracts, even though
     # it's a valid bet type for multi-day contracts.
     if (not($min_duration and $max_duration)) {
