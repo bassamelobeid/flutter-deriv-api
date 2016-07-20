@@ -2035,7 +2035,7 @@ sub get_time_to_settlement {
     my $zero_duration = Time::Duration::Concise->new(
         interval => 0,
     );
-    return $zero_duration if $time > $self->date_settlement->epoch;
+    return $zero_duration if ($time >= $self->date_settlement->epoch and $self->expiry_daily);
 
     return $self->_get_time_to_end($attributes);
 }
