@@ -3,7 +3,7 @@ package BOM::Platform::Account::Real::default;
 use strict;
 use warnings;
 
-use DateTime;
+use Date::Utility;
 use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
@@ -349,12 +349,7 @@ sub validate_account_details {
     if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
         my $dob_error;
         try {
-            my $dob = DateTime->new(
-                year  => $1,
-                month => $2,
-                day   => $3,
-            );
-            $args->{date_of_birth} = $dob->ymd;
+            $args->{date_of_birth} = Date::Utility->new($args->{date_of_birth})->date;
         }
         catch {
             $dob_error = {error => 'InvalidDateOfBirth'};
