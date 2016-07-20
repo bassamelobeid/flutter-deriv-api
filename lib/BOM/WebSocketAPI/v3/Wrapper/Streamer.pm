@@ -512,11 +512,15 @@ sub _skip_streaming {
     return;
 }
 
-open my $RAND, "<", "/dev/urandom";    ## no critic (InputOutput::RequireBriefOpen)
+my $RAND;
+
+BEGIN {
+    open $RAND, "<", "/dev/urandom" or die "Could not open /dev/urandom : $!";    ## no critic (InputOutput::RequireBriefOpen)
+}
 
 sub _generate_random_str {
     local $/ = \16;
-    return join "-", unpack "H8H4H4H4H12", scalar <$RAND>;
+    return join "-", unpack "H8H4H4H4H12", (scalar <$RAND> or die "Could not read from /dev/urandom : $!");
 }
 
 1;
