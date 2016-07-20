@@ -425,8 +425,8 @@ sub _get_expired_barriers {
 
 =head2 _get_barriers_pair
 
-- For staysinout contract, we need to pair the barriers symmetry, ie (42, 58), (34,66), (26,74), (18,82), (2,98) 
-- For endsinout contract, we need to pair barriers as follow: (42,58), (34,50), (50,66), (26,42), (58,74), (18,34), (66,82)
+- For staysinout contract, we need to pair the barriers symmetry, ie (42, 58), (34,66), (26,74), (18,82) 
+- For endsinout contract, we need to pair barriers as follow: (42,58), (34,50), (50,66), (26,42), (58,74), (18,34), (66,82), (2, 26), (74, 98)
 
 Note: 42 is -8d from the spot at start and 58 is +8d from spot at start
 where d is the minimum increment that determine by divided the distance of boundaries by 96 (48 each side) 
@@ -442,8 +442,8 @@ sub _get_barriers_pair {
     my $list_of_expired_barriers = $args->{expired_barriers};
     my @barrier_pairs =
         $contract_category eq 'staysinout'
-        ? ([42, 58], [34, 66], [26, 74], [18, 82], [2, 98])
-        : ([42, 58], [34, 50], [50, 66], [26, 42], [58, 74], [18, 34], [66, 82]);
+        ? ([42, 58], [34, 66], [26, 74], [18, 82])
+        : ([42, 58], [34, 50], [50, 66], [26, 42], [58, 74], [18, 34], [66, 82], [2, 26], [74, 98]);
     my @barriers;
     my @expired_barriers;
     for my $pair (@barrier_pairs) {
