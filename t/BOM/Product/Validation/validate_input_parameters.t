@@ -13,6 +13,8 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestPrice;
 use Test::MockModule;
+use Quant::Framework::Spot::Tick;
+use Quant::Framework::VolSurface::Delta;
 
 my $now = Date::Utility->new('2016-03-18 01:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => 'USD', recorded_date => $now});
