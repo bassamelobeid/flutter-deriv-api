@@ -646,7 +646,7 @@ sub _build_timeinyears {
 sub _build_timeindays {
     my $self = shift;
 
-    my $atid ||= $self->get_time_to_expiry({
+    my $atid = $self->get_time_to_expiry({
             from => $self->effective_start,
         })->days;
 
