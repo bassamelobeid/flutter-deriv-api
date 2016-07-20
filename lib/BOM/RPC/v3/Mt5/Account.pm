@@ -3,11 +3,13 @@ package BOM::RPC::v3::Mt5::Account;
 use strict;
 use warnings;
 
+use Locale::Country::Extra;
 use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Cashier;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::User;
 use BOM::Mt5::User;
-use Locale::Country::Extra;
+use BOM::Database::Transaction;
 
 sub mt5_new_account {
     my $params = shift;
@@ -163,21 +165,27 @@ sub mt5_password_change {
     return 1;
 }
 
-sub deposit {
+sub mt5_deposit {
     my $params = shift;
     my $client = $params->{client};
     my $args   = $params->{args};
     my $source = $params->{source};
 
-    my $from_binary = $args->{from_binary};
-    my $to_mt5      = $args->{to_mt5};
-    my $amount      = $args->{amount};
+    my $fm_loginid = $args->{from_binary};
+    my $to_mt5     = $args->{to_mt5};
+    my $amount     = $args->{amount};
+
+    my $error_sub = sub {
+        my ($msg_client, $msg) = @_;
+        BOM::RPC::v3::Utility::create_error({
+            code              => 'Mt5DepositError',
+            message_to_client => localize('There was an error processing the request.') . $msg_client,
+            ($msg) ? (message => $msg) : (),
+        });
+    };
 
     if ($amount <= 0) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'Mt5DepositError',
-            message_to_client => localize("Amount must be greater than zero."),
-        });
+        return $error_sub->(localize("Deposit amount must be greater than zero."));
     }
 
     # MT5 login or binary loginid not belongs to user
@@ -185,35 +193,71 @@ sub deposit {
     if (not grep { 'MT' . $to_mt5 eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
-    if (not grep { $from_binary eq $_->loginid } ($user->loginid)) {
+    if (not grep { $fm_loginid eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $comment = "Transfer from $from_binary to MT5 account $to_mt5.";
+    my $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
 
     # withdraw from Binary a/c
-    my $fmClient = BOM::Platform::Client->new({loginid => $from_binary});
-    my $fmAccount = $fmClient->set_default_account('USD');
+    my $fm_client = BOM::Platform::Client->new({loginid => $fm_loginid});
 
-    my ($fmPayment) = $fmAccount->add_payment({
+    if ($fm_client->currency ne 'USD') {
+        return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $fm_loginid, $fm_client->currency));
+    }
+
+    if ($fm_client->get_status('disabled')) {
+        return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid));
+    }
+    if ($fm_client->get_status('cashier_locked') || $fm_client_to->documents_expired) {
+        return $error_sub->(localize('Your account [_1] cashier section was locked.', $fm_loginid));
+    }
+
+    if (not BOM::Database::Transaction->freeze_client($fm_loginid)) {
+        return $error_sub->(localize('If this error persists, please contact customer support.'),
+            "Account stuck in previous transaction $fm_loginid");
+    }
+
+    my $withdraw_error;
+    try {
+        $fm_client->validate_payment(
+            currency => 'USD',
+            amount   => -$amount,
+        );
+    }
+    catch {
+        $withdraw_error = $_;
+    };
+
+    if ($withdraw_error) {
+        return $error_sub->(
+            BOM::RPC::v3::Cashier::__client_withdrawal_notes({
+                    client => $fm_client,
+                    amount => $amount,
+                    error  => $withdraw_error
+                }));
+    }
+
+    my $account = $fm_client->set_default_account('USD');
+    my ($payment) = $account->add_payment({
         amount               => -$amount,
         payment_gateway_code => 'account_transfer',
         payment_type_code    => 'internal_transfer',
         status               => 'OK',
-        staff_loginid        => $from_binary,
+        staff_loginid        => $fm_loginid,
         remark               => $comment,
     });
-    my ($fmTrx) = $fmPayment->add_transaction({
-        account_id    => $fmAccount->id,
+    my ($txn) = $payment->add_transaction({
+        account_id    => $account->id,
         amount        => -$amount,
-        staff_loginid => $from_binary,
+        staff_loginid => $fm_loginid,
         referrer_type => 'payment',
         action_type   => 'withdrawal',
         quantity      => 1,
         source        => $source,
     });
-    $fmAccount->save(cascade => 1);
-    $fmPayment->save(cascade => 1);
+    $account->save(cascade => 1);
+    $payment->save(cascade => 1);
 
     # deposit to MT5 a/c
     my $status = BOM::Mt5::User::deposit({
@@ -223,79 +267,106 @@ sub deposit {
     });
 
     if ($status->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'Mt5DepositError',
-                message_to_client => $status->{error}});
+        return $error_sub->($status->{error});
     }
-    return 1;
+
+    BOM::Database::Transaction->unfreeze_client($fm_loginid);
+    return {
+        status                => 1,
+        binary_transaction_id => $txn->id
+    };
 }
 
-sub withdrawal {
+sub mt5_withdrawal {
     my $params = shift;
     my $client = $params->{client};
     my $args   = $params->{args};
     my $source = $params->{source};
 
-    my $from_mt5  = $args->{from_mt5};
-    my $to_binary = $args->{to_binary};
-    my $amount    = $args->{amount};
+    my $fm_mt5     = $args->{from_mt5};
+    my $to_loginid = $args->{to_binary};
+    my $amount     = $args->{amount};
+
+    my $error_sub = sub {
+        my ($msg_client, $msg) = @_;
+        BOM::RPC::v3::Utility::create_error({
+            code              => 'Mt5WithdrawalError',
+            message_to_client => localize('There was an error processing the request.') . $msg_client,
+            ($msg) ? (message => $msg) : (),
+        });
+    };
 
     if ($amount <= 0) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'Mt5WithdrawalError',
-            message_to_client => localize("Amount must be greater than zero."),
-        });
+        return $error_sub->(localize("Withdrawal amount must be greater than zero."));
     }
 
     # MT5 login or binary loginid not belongs to user
     my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT' . $from_mt5 eq $_->loginid } ($user->loginid)) {
+    if (not grep { 'MT' . $fm_mt5 eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
-    if (not grep { $to_binary eq $_->loginid } ($user->loginid)) {
+    if (not grep { $to_loginid eq $_->loginid } ($user->loginid)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $comment = "Transfer from MT5 account $from_mt5 to $to_binary.";
+    my $to_client = BOM::Platform::Client->new({loginid => $to_loginid});
+
+    if ($to_client->currency ne 'USD') {
+        return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $to_loginid, $to_client->currency));
+    }
+
+    if ($to_client->get_status('disabled')) {
+        return $error_sub->(localize('Your account [_1] was disabled.', $to_loginid));
+    }
+    if ($to_client->get_status('cashier_locked') || $to_client->documents_expired) {
+        return $error_sub->(localize('Your account [_1] cashier section was locked.', $to_loginid));
+    }
+
+    if (not BOM::Database::Transaction->freeze_client($to_loginid)) {
+        return $error_sub->(localize('If this error persists, please contact customer support.'),
+            "Account stuck in previous transaction $to_loginid");
+    }
+
+    my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
 
     # withdraw from MT5 a/c
     my $status = BOM::Mt5::User::withdrawal({
-        login   => $from_mt5,
+        login   => $fm_mt5,
         amount  => $amount,
         comment => $comment
     });
 
     if ($status->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'Mt5WithdrawalError',
-                message_to_client => $status->{error}});
+        return $error_sub->($status->{error});
     }
 
     # deposit to Binary a/c
-    my $toClient = BOM::Platform::Client->new({loginid => $to_binary});
-    my $toAccount = $toClient->set_default_account('USD');
-
-    my ($toPayment) = $toAccount->add_payment({
+    my $account = $to_client->set_default_account('USD');
+    my ($payment) = $account->add_payment({
         amount               => $amount,
         payment_gateway_code => 'account_transfer',
         payment_type_code    => 'internal_transfer',
         status               => 'OK',
-        staff_loginid        => $to_binary,
+        staff_loginid        => $to_loginid,
         remark               => $comment,
     });
-    my ($toTrx) = $toPayment->add_transaction({
-        account_id    => $toAccount->id,
+    my ($txn) = $payment->add_transaction({
+        account_id    => $account->id,
         amount        => $amount,
-        staff_loginid => $to_binary,
+        staff_loginid => $to_loginid,
         referrer_type => 'payment',
         action_type   => 'deposit',
         quantity      => 1,
         source        => $source,
     });
-    $toAccount->save(cascade => 1);
-    $toPayment->save(cascade => 1);
+    $account->save(cascade => 1);
+    $payment->save(cascade => 1);
 
-    return 1;
+    BOM::Database::Transaction->unfreeze_client($fm_loginid);
+    return {
+        status                => 1,
+        binary_transaction_id => $txn->id
+    };
 }
 
 1;
