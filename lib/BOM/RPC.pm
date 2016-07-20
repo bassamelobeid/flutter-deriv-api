@@ -212,6 +212,7 @@ sub startup {
         ['app_delete',   \&BOM::RPC::v3::App::delete,     1],
         ['oauth_apps',   \&BOM::RPC::v3::App::oauth_apps, 1],
 
+        ['mt5_login_list',      \&BOM::RPC::v3::Mt5::Account::mt5_login_list,      1],
         ['mt5_new_account',     \&BOM::RPC::v3::Mt5::Account::mt5_new_account,     1],
         ['mt5_get_settings',    \&BOM::RPC::v3::Mt5::Account::mt5_get_settings,    1],
         ['mt5_set_settings',    \&BOM::RPC::v3::Mt5::Account::mt5_set_settings,    1],

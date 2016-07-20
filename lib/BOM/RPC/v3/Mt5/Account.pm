@@ -12,6 +12,14 @@ use BOM::Platform::User;
 use BOM::Mt5::User;
 use BOM::Database::Transaction;
 
+sub mt5_login_list {
+    my $params = shift;
+    my $client = $params->{client};
+
+    my $user = BOM::Platform::User->new({email => $client->email});
+    return {list => join(',', $user->mt5_logins)};
+}
+
 sub mt5_new_account {
     my $params = shift;
 
