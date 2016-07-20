@@ -16,8 +16,12 @@ sub mt5_login_list {
     my $params = shift;
     my $client = $params->{client};
 
-    my $user = BOM::Platform::User->new({email => $client->email});
-    return {list => join(',', $user->mt5_logins)};
+    my @array;
+    foreach (BOM::Platform::User->new({email => $client->email})->mt5_logins) {
+        $_ =~ /^MT(\d+)$/;
+        push @array, {login => $1};
+    }
+    return \@array;
 }
 
 sub mt5_new_account {
