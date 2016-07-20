@@ -513,8 +513,9 @@ sub _skip_streaming {
 }
 
 open my $RAND, "<", "/dev/urandom";
+
 sub _generate_random_str {
-    local $/=\16;
+    local $/ = \16;
     return join "-", unpack "H8H4H4H4H12", scalar <$RAND>;
 }
 
