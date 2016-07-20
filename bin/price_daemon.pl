@@ -59,11 +59,7 @@ while (1) {
         my $payload = JSON::XS::decode_json($next);
         my $params  = {@{$payload}};
 
-        my $price_daemon_cmd = delete $params->{price_daemon_cmd};
-        unless ($price_daemon_cmd) {
-            warn "Pricer command missed! Payload is: " . $next;
-            next;
-        }
+        my $price_daemon_cmd = delete $params->{price_daemon_cmd} || '';
         my $current_time     = time;
         my $response;
 

@@ -302,7 +302,6 @@ sub get_bid {
 
 sub send_bid {
     my $params  = shift;
-    my %details = %{$params->{args}};
 
     my $tv = [Time::HiRes::gettimeofday];
 
@@ -323,10 +322,9 @@ sub send_bid {
 
 sub send_ask {
     my $params             = shift;
-    my %details            = %{$params->{args}};
     my $from_pricer_daemon = shift;
 
-    my $symbol   = $details{symbol};
+    my $symbol   = $params->{args}->{symbol};
     my $response = validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -339,7 +337,7 @@ sub send_ask {
     try {
         my $arguments = {
             from_pricer_daemon => $from_pricer_daemon,
-            %details,
+            %{$params->{args}}
         };
         my $contract_parameters = prepare_ask($arguments);
         $response = _get_ask($contract_parameters, $params->{app_markup_percentage});
