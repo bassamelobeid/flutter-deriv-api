@@ -180,7 +180,7 @@ sub mt5_deposit {
         my ($msg_client, $msg) = @_;
         BOM::RPC::v3::Utility::create_error({
             code              => 'Mt5DepositError',
-            message_to_client => localize('There was an error processing the request.') . $msg_client,
+            message_to_client => localize('There was an error processing the request.') . ' ' . $msg_client,
             ($msg) ? (message => $msg) : (),
         });
     };
@@ -292,7 +292,7 @@ sub mt5_withdrawal {
         my ($msg_client, $msg) = @_;
         BOM::RPC::v3::Utility::create_error({
             code              => 'Mt5WithdrawalError',
-            message_to_client => localize('There was an error processing the request.') . $msg_client,
+            message_to_client => localize('There was an error processing the request.') . ' ' . $msg_client,
             ($msg) ? (message => $msg) : (),
         });
     };
