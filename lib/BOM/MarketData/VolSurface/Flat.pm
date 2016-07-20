@@ -36,6 +36,23 @@ has '+type' => (
     default => 'flat',
 );
 
+=head2 effective_date
+
+Effective date for the volatility surface.
+For moneyness where there's no concept of rollover, the effective_date is the recorded date.
+
+=cut
+
+has effective_date => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_effective_date {
+    my $self = shift;
+    return $self->recorded_date;
+}
+
 has atm_spread_point => (
     is      => 'ro',
     default => '50',
