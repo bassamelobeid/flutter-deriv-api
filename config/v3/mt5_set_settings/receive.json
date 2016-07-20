@@ -69,7 +69,7 @@
     },
     "msg_type": {
       "type": "string",
-      "description": "mt5_new_account"
+      "description": "mt5_set_settings"
     },
     "req_id": {
       "type": "integer",

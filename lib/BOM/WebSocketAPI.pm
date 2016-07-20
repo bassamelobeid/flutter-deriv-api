@@ -330,6 +330,18 @@ sub startup {
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
+            'mt5_deposit',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'mt5_withdrawal',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
             'jp_knowledge_test',
             {
                 require_auth => 'admin',
