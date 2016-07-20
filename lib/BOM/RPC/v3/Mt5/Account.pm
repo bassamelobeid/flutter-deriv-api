@@ -100,6 +100,21 @@ sub mt5_get_settings {
     return $settings;
 }
 
+sub __mt5_is_real_account {
+    my ($client, $mt_login) = @_;
+
+    my $settings = mt5_get_settings({
+        client => $client,
+        args   => {login => $mt_login},
+    });
+
+    my $group = $settings->{group} // '';
+    if ($group =~ /^real\\/) {
+        return 1;
+    }
+    return;
+}
+
 sub mt5_set_settings {
     my $params = shift;
     my $client = $params->{client};
@@ -112,7 +127,8 @@ sub mt5_set_settings {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
+    my $country_code = $args->{country};
+    my $country_name = Locale::Country::Extra->new()->country_from_code($country_code);
     $args->{country} = $country_name if ($country_name);
 
     my $settings = BOM::Mt5::User::update_user($args);
@@ -121,6 +137,8 @@ sub mt5_set_settings {
                 code              => 'Mt5UpdateUserError',
                 message_to_client => $settings->{error}});
     }
+
+    $settings->{country} = $country_code;
     return $settings;
 }
 
@@ -198,15 +216,19 @@ sub mt5_deposit {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
-
-    # withdraw from Binary a/c
     my $fm_client = BOM::Platform::Client->new({loginid => $fm_loginid});
+
+    # only for real money account
+    if ($fm_client->is_virtual) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
+    if (not __mt5_is_real_account($fm_client, $to_mt5)) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
     if ($fm_client->currency ne 'USD') {
         return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $fm_loginid, $fm_client->currency));
     }
-
     if ($fm_client->get_status('disabled')) {
         return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid));
     }
@@ -214,6 +236,7 @@ sub mt5_deposit {
         return $error_sub->(localize('Your account [_1] cashier section was locked.', $fm_loginid));
     }
 
+    # withdraw from Binary a/c
     if (not BOM::Database::Transaction->freeze_client($fm_loginid)) {
         return $error_sub->(localize('If this error persists, please contact customer support.'),
             "Account stuck in previous transaction $fm_loginid");
@@ -239,7 +262,8 @@ sub mt5_deposit {
                 }));
     }
 
-    my $account = $fm_client->set_default_account('USD');
+    my $comment   = "Transfer from $fm_loginid to MT5 account $to_mt5.";
+    my $account   = $fm_client->set_default_account('USD');
     my ($payment) = $account->add_payment({
         amount               => -$amount,
         payment_gateway_code => 'account_transfer',
@@ -311,6 +335,14 @@ sub mt5_withdrawal {
     }
 
     my $to_client = BOM::Platform::Client->new({loginid => $to_loginid});
+
+    # only for real money account
+    if ($to_client->is_virtual) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
+    if (not __mt5_is_real_account($to_client, $fm_mt5)) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
     if ($to_client->currency ne 'USD') {
         return $error_sub->(localize('Your account [_1] has a different currency [_2] than USD.', $to_loginid, $to_client->currency));
