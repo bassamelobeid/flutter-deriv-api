@@ -14,7 +14,6 @@ use Mojo::Server::Daemon;
 use Net::EmptyPort qw/empty_port/;
 
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-initialize_realtime_ticks_db();
 
 SKIP: {
     skip "need further investigation, why sometimes it reports memory leaks";
@@ -26,6 +25,7 @@ SKIP: {
         listen => ["http://127.0.0.1:$port"],
     );
     $daemon->start;
+    initialize_realtime_ticks_db();
 
 #my $pass = 0;
     sub might_leak {
