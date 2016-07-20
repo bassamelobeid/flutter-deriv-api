@@ -307,7 +307,7 @@ sub _get_daily_trading_window {
 
 }
 
-=head2 _set_predefined_iarriers
+=head2 _set_predefined_barriers
 
 To set the predefined barriers on each trading period.
 We do a binary search to find out the boundaries barriers associated with theo_prob [0.02,0.98] of a digital call,

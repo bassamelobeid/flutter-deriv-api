@@ -88,10 +88,8 @@ subtest "predefined trading_period" => sub {
         },
         range_daily => {
             duration => ['1W', '1M', '3M'],
-            date_expiry =>
-                [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59',)],
-            date_start =>
-                [map { Date::Utility->new($_)->epoch } ('2015-08-31 00:00:00', '2015-09-01 00:00:00', '2015-07-01 00:00:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59',)],
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-08-31 00:00:00', '2015-09-01 00:00:00', '2015-07-01 00:00:00',)],
         },
     );
 
@@ -287,29 +285,29 @@ subtest "check_intraday trading_period_non_JPY" => sub {
 subtest "predefined barriers" => sub {
     my %expected_barriers = (
         call_intraday => {
-            available_barriers => [1.15441, 1.15591, 1.15491, 1.16041, 1.15891, 1.15291, 1.15691, 1.15541, 1.15741, 1.15641, 1.15141],
-            barrier            => 1.15141,
+            available_barriers => [1.15015, 1.15207, 1.15303, 1.15399, 1.15495, 1.15591, 1.15687, 1.15783, 1.15879, 1.15975, 1.16167],
+            barrier            => 1.15207,
             expired_barriers   => [],
         },
         onetouch_daily => {
-            available_barriers => [1.14661, 1.15126, 1.15281, 1.15436, 1.14196, 1.15591, 1.15746, 1.15901, 1.16056, 1.16521, 1.16986],
+            available_barriers => [1.13815, 1.14407, 1.14703, 1.14999, 1.15295, 1.15591, 1.15887, 1.16183, 1.16479, 1.16775, 1.17367],
             barrier            => 1.15141,
-            expired_barriers => [1.15281, 1.15436],
+            expired_barriers   => [1.15295],
         },
 
         range_daily => {
-            available_barriers => [[1.15436, 1.15746], [1.15281, 1.15901], [1.15126, 1.16056], [1.14661, 1.16521], [1.14196, 1.16986]],
-            expired_barriers => [[1.15436, 1.15746], [1.15281, 1.15901]],
+            available_barriers => [[1.15295, 1.15887], [1.14999, 1.16183], [1.14703, 1.16479], [1.14407, 1.16775], [1.13815, 1.17367]],
+            expired_barriers => [[1.15295, 1.15887]],
         },
         expiryrange_daily => {
             available_barriers => [
-                [1.15436, 1.15746],
-                [1.15281, 1.15591],
-                [1.15591, 1.15901],
-                [1.15126, 1.15436],
-                [1.15746, 1.16056],
-                [1.14661, 1.15281],
-                [1.15901, 1.16521]
+                [1.15295, 1.15887],
+                [1.14999, 1.15591],
+                [1.15591, 1.16183],
+                [1.14703, 1.15295],
+                [1.15887, 1.16479],
+                [1.14407, 1.14999],
+                [1.16183, 1.16775],
             ],
             expired_barriers => [],
         },
@@ -358,7 +356,8 @@ subtest "predefined barriers" => sub {
         date         => $now
     });
     cmp_bag($contract->{available_barriers}, $expected_barriers{call_intraday}{available_barriers}, "Expected available barriers for intraday call");
-    cmp_bag($contract->{expired_barriers},   $expected_barriers{call_intraday}{expired_barriers},   "Expected expired barriers for intraday call");
+
+    cmp_bag($contract->{expired_barriers}, $expected_barriers{call_intraday}{expired_barriers}, "Expected expired barriers for intraday call");
     is($contract->{barrier}, $expected_barriers{call_intraday}{barrier}, "Expected default barrier for intraday call");
 
     my $contract_2 = {
@@ -456,14 +455,14 @@ subtest "predefined barriers" => sub {
 
     my %expected_barriers_2 = (
         onetouch_daily => {
-            available_barriers => [1.14661, 1.15126, 1.15281, 1.15436, 1.14196, 1.15591, 1.15746, 1.15901, 1.16056, 1.16521, 1.16986],
+            available_barriers => [1.13815, 1.14407, 1.14703, 1.14999, 1.15295, 1.15591, 1.15887, 1.16183, 1.16479, 1.16775, 1.17367],
             barrier            => 1.15141,
-            expired_barriers => [1.15126, 1.15281, 1.15436],
+            expired_barriers   => [1.15295],
         },
 
         range_daily => {
-            available_barriers => [[1.15436, 1.15746], [1.15281, 1.15901], [1.15126, 1.16056], [1.14661, 1.16521], [1.14196, 1.16986]],
-            expired_barriers => [[1.15436, 1.15746], [1.15281, 1.15901], [1.15126, 1.16056]],
+            available_barriers => [[1.15295, 1.15887], [1.14999, 1.16183], [1.14703, 1.16479], [1.14407, 1.16775], [1.13815, 1.17367]],
+            expired_barriers => [[1.15295, 1.15887]],
         },
 
     );
