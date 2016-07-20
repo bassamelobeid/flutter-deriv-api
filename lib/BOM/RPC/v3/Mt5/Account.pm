@@ -209,7 +209,7 @@ sub mt5_deposit {
     if ($fm_client->get_status('disabled')) {
         return $error_sub->(localize('Your account [_1] was disabled.', $fm_loginid));
     }
-    if ($fm_client->get_status('cashier_locked') || $fm_client_to->documents_expired) {
+    if ($fm_client->get_status('cashier_locked') || $fm_client->documents_expired) {
         return $error_sub->(localize('Your account [_1] cashier section was locked.', $fm_loginid));
     }
 
