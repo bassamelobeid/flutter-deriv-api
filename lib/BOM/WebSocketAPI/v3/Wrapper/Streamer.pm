@@ -512,9 +512,10 @@ sub _skip_streaming {
     return;
 }
 
+open my $RAND, "<", "/dev/urandom";
 sub _generate_random_str {
-    my $len = shift || 20;
-    return join("", map { ("a" .. "z", "A" .. "Z", 0 .. 9)[rand 62] } 0 .. $len);
+    local $/=\16;
+    return join "-", unpack "H8H4H4H4H12", scalar <$RAND>;
 }
 
 1;
