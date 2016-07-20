@@ -2253,14 +2253,14 @@ sub _validate_input_parameters {
     my $epoch_expiry = $self->date_expiry->epoch;
     my $epoch_start  = $self->date_start->epoch;
 
-    #if ($self->for_sale
-    #    and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
-    #{
-    #    return {
-    #        message           => 'waiting for settlement',
-    #        message_to_client => localize('Please wait for contract settlement.'),
-    #    };
-    #}
+    if ($self->for_sale
+        and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
+    {
+        return {
+            message           => 'waiting for settlement',
+            message_to_client => localize('Please wait for contract settlement.'),
+        };
+    }
 
     if ($epoch_expiry == $epoch_start) {
         return {
