@@ -184,8 +184,8 @@ sub _get_minimum_stop_loss {
     my $spread = $underlying->calculate_spread(
         $vs->get_volatility({
                 delta => 50,
-                from  => $now,
-                to    => $now->plus_time_interval('7d'),
+                from  => $from,
+                to    => $from->plus_time_interval('7d'),
             }));
     return 1.5 * $spread;
 }
