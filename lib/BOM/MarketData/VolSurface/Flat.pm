@@ -134,6 +134,18 @@ sub _build_surface {
     return {map { $_ => {vol_spread => {$self->atm_spread_point => $self->flat_atm_spread}, smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
 }
 
+has surface_data => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_surface_data',
+);
+
+sub _build_surface_data {
+    my $self = shift;
+
+    return $self->surface;
+}
+
 has recorded_date => (
     is      => 'ro',
     default => sub { Date::Utility->new },
