@@ -366,13 +366,18 @@ for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
         cmp_ok($current{$symbol}->{date}, 'le', $price_date, $symbol . ' data is in the past from the pricing date.');
         foreach my $wha (qw(date value)) {
             $previous{$symbol}->{$wha} ||= $current{$symbol}->{$wha};
-            $previous{$symbol}->{$wha . '_changed'}++ if ($current{$symbol}->{$wha} ne $previous{$symbol}->{$wha});
+            if ($wha eq 'date' and $current{$symbol}->{$wha} ne $previous{$symbol}->{$wha}) {
+                $previous{$symbol}->{$wha . '_changed'}++;
+            # get_volatility interface changes, it won't exactly match the numbers but close enough.
+            } elsif ($wha eq 'value' and abs($current{$symbol}->{$wha} - $previous{$symbol}->{$wha}) > 0.0000001) {
+                $previous{$symbol}->{$wha . '_changed'}++;
+            }
             $previous{$symbol}->{$wha} = $current{$symbol}->{$wha};
         }
     }
     # This is mostly here so that if the integral days thing changes we'll notice.
     # It will break other tests later, if not.
-    is($bet->timeindays->amount, 2, 'One day long bet.');
+    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->effective_start->epoch) / 86400, 'exact duration of bet.');
 }
 
 foreach my $symbol (sort keys %previous) {
