@@ -725,7 +725,7 @@ sub _build_opposite_contract {
                 }
             }
             # We should be looking to move forward in time to a bet starting now.
-            $opp_parameters{date_start}  = $self->date_pricing;
+            $opp_parameters{date_start}  = $self->effective_start;
             $opp_parameters{pricing_new} = 1;
             # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
             # Currently, 'sell at market' button will appear when current spot == barrier when the duration
@@ -2031,6 +2031,12 @@ sub get_time_to_settlement {
 
     $attributes->{to} = $self->date_settlement;
 
+    my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
+    my $zero_duration = Time::Duration::Concise->new(
+        interval => 0,
+    );
+    return $zero_duration if $time > $self->date_settlement->epoch;
+
     return $self->_get_time_to_end($attributes);
 }
 
@@ -2247,14 +2253,14 @@ sub _validate_input_parameters {
     my $epoch_expiry = $self->date_expiry->epoch;
     my $epoch_start  = $self->date_start->epoch;
 
-    if ($self->for_sale
-        and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
-    {
-        return {
-            message           => 'waiting for settlement',
-            message_to_client => localize('Please wait for contract settlement.'),
-        };
-    }
+    #if ($self->for_sale
+    #    and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
+    #{
+    #    return {
+    #        message           => 'waiting for settlement',
+    #        message_to_client => localize('Please wait for contract settlement.'),
+    #    };
+    #}
 
     if ($epoch_expiry == $epoch_start) {
         return {
@@ -2538,6 +2544,16 @@ sub _validate_lifetime {
         $self->for_sale
         ? localize('Resale of this contract is not offered.')
         : localize('Trading is not offered for this duration.');
+
+    if (    $self->for_sale
+        and $self->expiry_daily
+        and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
+    {
+        return {
+            message           => 'waiting for settlement',
+            message_to_client => localize('Please wait for contract settlement.'),
+        };
+    }
 
     # This might be empty because we don't have short-term expiries on some contracts, even though
     # it's a valid bet type for multi-day contracts.
