@@ -76,7 +76,7 @@ subtest 'invalid start and expiry time' => sub {
     ok $c->is_valid_to_buy, 'valid to buy';
 };
 
-$fake_tick = BOM::Market::Data::Tick->new({
+$fake_tick = Quant::Framework::Spot::Tick->new({
     underlying => 'frxUSDJPY',
     epoch => $now->epoch,
     quote => 100,
