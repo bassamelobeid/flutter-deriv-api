@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use JSON;
-use Data::UUID;
 use Scalar::Util qw (looks_like_number);
 use List::MoreUtils qw(last_index);
 use Format::Util::Numbers qw(roundnear);
@@ -299,7 +298,7 @@ sub _feed_channel {
             return;
         }
 
-        $uuid = Data::UUID->new->create_str();
+        $uuid = _generate_random_str();
         $feed_channel->{$symbol} += 1;
         $feed_channel_type->{"$symbol;$type"}->{args}  = $args if $args;
         $feed_channel_type->{"$symbol;$type"}->{uuid}  = $uuid;
@@ -344,7 +343,7 @@ sub _transaction_channel {
     if ($action) {
         my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
-            $uuid = Data::UUID->new->create_str();
+            $uuid = _generate_random_str();
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
@@ -511,6 +510,11 @@ sub _skip_streaming {
 
     return 1 if ($skip_tick_expiry or $skip_intraday_atm_non_fixed_expiry);
     return;
+}
+
+sub _generate_random_str {
+    my $len = shift || 20;
+    return join("", map{("a".."z","A".."Z",0..9)[rand 62]} 0..$len);
 }
 
 1;

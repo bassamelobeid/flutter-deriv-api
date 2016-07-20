@@ -3,8 +3,8 @@ package BOM::WebSocketAPI::Hooks;
 use strict;
 use warnings;
 use Try::Tiny;
-use Data::UUID;
 use RateLimitations qw(within_rate_limits);
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -132,7 +132,7 @@ sub before_forward {
 
     my $args = $req_storage->{args};
     if (not $c->stash('connection_id')) {
-        $c->stash('connection_id' => Data::UUID->new()->create_str());
+        $c->stash('connection_id' => &BOM::WebSocketAPI::v3::Wrapper::Streamer::_generate_random_str());
     }
 
     # For authorized calls that are heavier we will limit based on loginid
