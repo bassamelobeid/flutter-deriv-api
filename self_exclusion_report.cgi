@@ -22,6 +22,7 @@ $head .= '<th>Max Open Position</th>';
 $head .= '<th>Daily Turnover Limit</th>';
 $head .= '<th>Max Cash Balance</th>';
 $head .= '<th>Exclude Until</th>';
+$head .= '<th>Timeout Until</th>';
 $head .= '<th>Session Duration</th>';
 $head .= '<th>Last Modified Date</th>';
 $head .= '</tr>';
