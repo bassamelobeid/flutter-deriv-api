@@ -84,7 +84,7 @@ sub new_account_virtual {
         client_id   => $client->loginid,
         email       => $email,
         currency    => $account->currency_code,
-        balance     => $account->balance,
+        balance     => sprintf('%.2f', $account->balance),
         oauth_token => _create_oauth_token($client->loginid),
     };
 }

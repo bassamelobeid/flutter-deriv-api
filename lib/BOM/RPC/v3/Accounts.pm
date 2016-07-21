@@ -231,7 +231,7 @@ sub balance {
     return {
         currency => '',
         loginid  => $client_loginid,
-        balance  => 0
+        balance  => "0.00"
     } unless ($client->default_account);
 
     return {
