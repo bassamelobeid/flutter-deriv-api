@@ -3,6 +3,7 @@ package BOM::Platform::Account::Real::default;
 use strict;
 use warnings;
 
+use Date::Utility;
 use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
@@ -17,7 +18,7 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Account;
 
-sub _validate {
+sub validate {
     my $args = shift;
     my ($from_client, $user) = @{$args}{'from_client', 'user'};
     my $country = $args->{country} || '';
@@ -46,7 +47,9 @@ sub _validate {
     }
 
     if ($details) {
-        if (BOM::Platform::Client::check_country_restricted($residence) or $from_client->residence ne $residence) {
+        # sub account can have different residence then omnibus master account
+        if (BOM::Platform::Client::check_country_restricted($residence) or (not $details->{sub_account_of} and $from_client->residence ne $residence))
+        {
             warn($msg . "restricted residence [$residence], or mismatch with from_client residence: " . $from_client->residence);
             return {error => 'invalid residence'};
         }
@@ -58,7 +61,8 @@ sub _validate {
         {
             return {error => 'invalid PO Box'};
         }
-        if (any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
+        # check for duplicate email when sub_account_of is not present (omnibus)
+        if ((any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) and not $details->{sub_account_of}) {
             return {error => 'duplicate email'};
         }
         if (BOM::Database::DataMapper::Client->new({broker_code => $broker})->get_duplicate_client($details)) {
@@ -88,22 +92,26 @@ sub _validate {
 
 sub create_account {
     my $args = shift;
-    my ($from_client, $user, $details) = @{$args}{'from_client', 'user', 'details'};
+    my ($user, $details) = @{$args}{'user', 'details'};
 
-    if (my $error = _validate($args)) {
+    if (my $error = validate($args)) {
         return $error;
     }
-    my $register = _register_client($details);
+    my $register = register_client($details);
     return $register if ($register->{error});
 
-    return _after_register_client({
+    my $response = after_register_client({
         client  => $register->{client},
         user    => $user,
         details => $details,
     });
+
+    add_details_to_desk($register->{client}, $details);
+
+    return $response;
 }
 
-sub _register_client {
+sub register_client {
     my $details = shift;
 
     my ($client, $error);
@@ -118,7 +126,7 @@ sub _register_client {
     return {client => $client};
 }
 
-sub _after_register_client {
+sub after_register_client {
     my $args = shift;
     my ($client, $user, $details) = @{$args}{'client', 'user', 'details'};
 
@@ -135,21 +143,33 @@ sub _after_register_client {
         $client->add_note('UNTERR', "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
     }
 
-    my $emailmsg = "$client_loginid - Name and Address\n\n\n\t\t $client_name \n\t\t";
+    my $notemsg = "$client_loginid - Name and Address\n\n\n\t\t $client_name \n\t\t";
     my @address = map { $client->$_ } qw(address_1 address_2 city state postcode);
-    $emailmsg .= join("\n\t\t", @address, Locale::Country::code2country($client->residence));
-    $client->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$emailmsg\n");
+    $notemsg .= join("\n\t\t", @address, Locale::Country::code2country($client->residence));
+    $client->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$notemsg\n");
 
     if ($client->landing_company->short eq 'iom'
         and (length $client->first_name < 3 or length $client->last_name < 3))
     {
-        $emailmsg = "$client_loginid - first name or last name less than 3 characters \n\n\n\t\t";
-        $emailmsg .= join("\n\t\t",
+        $notemsg = "$client_loginid - first name or last name less than 3 characters \n\n\n\t\t";
+        $notemsg .= join("\n\t\t",
             'first name: ' . $client->first_name,
             'last name: ' . $client->last_name,
             'residence: ' . Locale::Country::code2country($client->residence));
-        $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$emailmsg\n");
+        $client->add_note("MX Client [$client_loginid] - first name or last name less than 3 characters", "$notemsg\n");
     }
+
+    stats_inc("business.new_account.real");
+    stats_inc("business.new_account.real." . $client->broker);
+
+    return {
+        client => $client,
+        user   => $user,
+    };
+}
+
+sub add_details_to_desk {
+    my ($client, $details) = @_;
 
     if (BOM::Platform::Runtime->instance->app_config->system->on_production) {
         try {
@@ -161,21 +181,16 @@ sub _after_register_client {
                 token_secret => BOM::System::Config::third_party->{desk}->{access_token_secret},
             });
 
-            $details->{loginid}  = $client_loginid;
+            $details->{loginid}  = $client->loginid;
             $details->{language} = request()->language;
             $desk_api->upload($details);
         }
         catch {
-            warn("Unable to add loginid $client_loginid (" . $client->email . ") to desk.com API: $_");
+            warn("Unable to add loginid " . $client->loginid . "(" . $client->email . ") to desk.com API: $_");
         };
     }
-    stats_inc("business.new_account.real");
-    stats_inc("business.new_account.real." . $client->broker);
 
-    return {
-        client => $client,
-        user   => $user,
-    };
+    return;
 }
 
 sub get_financial_input_mapping {
@@ -312,6 +327,55 @@ sub get_financial_assessment_score {
     $evaluated_data->{user_data}   = $json_data;
 
     return $evaluated_data;
+}
+
+sub validate_account_details {
+    my ($args, $client, $broker, $source) = @_;
+
+    my $details = {
+        broker_code                   => $broker,
+        email                         => $client->email,
+        client_password               => $client->password,
+        myaffiliates_token_registered => 0,
+        checked_affiliate_exposures   => 0,
+        latest_environment            => '',
+        source                        => $source,
+    };
+
+    my $affiliate_token;
+    $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
+    $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
+
+    if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
+        my $dob_error;
+        try {
+            $args->{date_of_birth} = Date::Utility->new($args->{date_of_birth})->date;
+        }
+        catch {
+            $dob_error = {error => 'InvalidDateOfBirth'};
+        };
+        return $dob_error if $dob_error;
+    }
+
+    foreach my $key (get_account_fields()) {
+        my $value = $args->{$key};
+        $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
+
+        if (not $client->is_virtual) {
+            $value ||= $client->$key;
+        }
+        $details->{$key} = $value || '';
+
+        # Japan real a/c has NO salutation
+        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode salutation));
+        return {error => 'InsufficientAccountDetails'} if (not $details->{$key});
+    }
+    return {details => $details};
+}
+
+sub get_account_fields {
+    return qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
+        address_city address_state address_postcode phone secret_question secret_answer);
 }
 
 1;
