@@ -57,9 +57,10 @@ sub proposal_open_contract {
                         $details->{is_sold}         = $response->{$contract_id}->{is_sold};
                         $details->{transaction_ids} = $response->{$contract_id}->{transaction_ids};
 
-                        # as passthrough can change so we should not send them in type else
+                        # as req_id and passthrough can change so we should not send them in type else
                         # client can subscribe to multiple proposal_open_contract as feed channel type will change
-                        my %type_args = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
+                        # req_id will be used separately for subscription, check feed subscribe
+                        my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
 
                         # pass account_id, transaction_id so that we can categorize it based on type, can't use contract_id
                         # as we send contract_id also, we want both request to stream i.e one with contract_id
