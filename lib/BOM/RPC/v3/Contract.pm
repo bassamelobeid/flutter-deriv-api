@@ -315,7 +315,7 @@ sub send_bid {
                 message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
     };
 
-    $response->{tv} = Time::HiRes::tv_interval($tv);
+    $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
 
     return $response;
 }
@@ -348,7 +348,7 @@ sub send_ask {
                 message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
     };
 
-    $response->{tv} = Time::HiRes::tv_interval($tv);
+    $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
 
     return $response;
 }
