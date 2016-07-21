@@ -47,7 +47,7 @@ my $response;
 my $counter = 0;
 
 my $t;
-my $lang = '';
+my ($lang, $last_lang, $reset) = '';
 foreach my $line (@lines) {
     chomp $line;
     $counter++;
@@ -55,6 +55,10 @@ foreach my $line (@lines) {
 
     if ($line =~ s/^\[(\w+)\]//) {
         $lang = $1;
+        next;
+    }
+    if ($line =~ s/^\{(\w+)\}//) {
+        $reset = $1;
         next;
     }
 
@@ -73,9 +77,11 @@ foreach my $line (@lines) {
     my $content = File::Slurp::read_file('config/v3/' . $send_file);
     $content = _get_values($content, @template_func);
 
-    if ($lang || !$t) {
-        $t = build_mojo_test({language => $lang});
-        $lang = '';
+    if ($lang || !$t || $reset) {
+        $t         = build_mojo_test({($lang ne '' ? (language => $lang) : (language => $last_lang))});
+        $last_lang = $lang;
+        $lang      = '';
+        $reset     = '';
     }
 
     $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
