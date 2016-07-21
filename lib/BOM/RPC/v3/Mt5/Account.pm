@@ -40,7 +40,8 @@ sub mt5_new_account {
         } qw(vanuatu costarica iom malta maltainvest japan)
         )
     {
-        $group = 'real\vanuatu';
+        $group        = 'real\vanuatu';
+        $account_type = 'vanuatu';
         unless ($landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
             return BOM::RPC::v3::Utility::permission_error();
         }
@@ -49,6 +50,32 @@ sub mt5_new_account {
                 code              => 'InvalidAccountType',
                 message_to_client => localize('Invalid account type.')});
     }
+
+    # client can have only 1 MT demo & 1 MT real a/c
+    my $user = BOM::Platform::User->new({email => $client->email});
+
+    my $acc = {};
+    foreach ($user->mt5_logins) {
+        $_ =~ /^MT(\d+)$/;
+        my $login = $1;
+
+        my $setting = mt5_get_settings({
+                client => $client,
+                args   => {login => $login}});
+
+        if ($setting->{group} =~ /^demo\\/) {
+            $acc->{demo} = $login;
+        } elsif ($setting->{group} =~ /^real\\(\w+)$/) {
+            $acc->{$1} = $login;
+        }
+    }
+
+    if (exists $acc_exist->{$account_type}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'Mt5CreateUserError',
+                message_to_client => localize('You already have a [_1] account [_2]', $account_type, $acc_exist->{$account_type})});
+    }
+
     $args->{group} = $group;
 
     my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
@@ -62,7 +89,6 @@ sub mt5_new_account {
     }
     my $mt5_login = $status->{login};
 
-    my $user = BOM::Platform::User->new({email => $client->email});
     # eg: MT5 login: 1000, we store MT1000
     $user->add_loginid({loginid => 'MT' . $mt5_login});
     $user->save;
