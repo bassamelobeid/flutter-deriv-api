@@ -100,10 +100,10 @@ sub remove_by_loginid {
 }
 
 sub remove_by_token {
-    my ($self, $token) = @_;
+    my ($self, $token, $loginid) = @_;
 
     return $self->dbh->do(
-        "DELETE FROM auth.access_token WHERE token = ?", undef, $token
+        "DELETE FROM auth.access_token WHERE token = ? and client_loginid = ?", undef, $token, $loginid
     );
 }
 
