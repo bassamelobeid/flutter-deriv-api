@@ -74,8 +74,8 @@ foreach my $line (@lines) {
     $content = _get_values($content, @template_func);
 
     if ($lang || !$t) {
-        $t = build_mojo_test({language=>$lang});
-        $lang='';
+        $t = build_mojo_test({language => $lang});
+        $lang = '';
     }
 
     $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
@@ -114,7 +114,7 @@ sub _test_schema {
     my $validator = JSON::Schema->new(JSON::from_json($content));
     my $result    = $validator->validate($data);
     if ($fail) {
-        ok (!$result, "$schema_file response is valid while it must fail.");
+        ok(!$result, "$schema_file response is valid while it must fail.");
         if ($result) {
             diag Dumper(\$data);
             diag " - $_" foreach $result->errors;

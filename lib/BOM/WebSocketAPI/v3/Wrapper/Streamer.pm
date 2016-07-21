@@ -203,7 +203,7 @@ sub process_realtime_events {
     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
     foreach my $channel (keys %{$feed_channels_type}) {
-        my ($symbol, $type, $req_id) = split(/;/, $channel);
+        my ($symbol, $type, $req_id) = split(";", $channel);
         my $arguments = $feed_channels_type->{$channel}->{args};
         my $cache     = $feed_channels_type->{$channel}->{cache};
 
