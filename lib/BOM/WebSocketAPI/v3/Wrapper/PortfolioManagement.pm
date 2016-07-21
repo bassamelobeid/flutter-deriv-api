@@ -132,15 +132,21 @@ sub send_proposal_open_contract {
                         $id = undef;
                     }
                 }
-
-                $rpc_response->{id}              = $id if $id;
-                $rpc_response->{buy_price}       = $buy_price;
-                $rpc_response->{purchase_time}   = $purchase_time;
-                $rpc_response->{transaction_ids} = $transaction_ids;
-                $rpc_response->{sell_price}      = $sell_price if $sell_price;
-                $rpc_response->{sell_time}       = $sell_time if $sell_time;
-
                 return;
+            },
+            response => sub {
+                my ($rpc_response, $api_response, $req_storage) = @_;
+
+                return $api_response if $rpc_response->{error};
+
+                $api_response->{proposal_open_contract}->{id}              = $id if $id;
+                $api_response->{proposal_open_contract}->{buy_price}       = $buy_price;
+                $api_response->{proposal_open_contract}->{purchase_time}   = $purchase_time;
+                $api_response->{proposal_open_contract}->{transaction_ids} = $transaction_ids;
+                $api_response->{proposal_open_contract}->{sell_price}      = $sell_price if $sell_price;
+                $api_response->{proposal_open_contract}->{sell_time}       = $sell_time if $sell_time;
+
+                return $api_response;
             },
         });
     return;
