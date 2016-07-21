@@ -346,8 +346,8 @@ sub startup {
             before_get_rpc_response  => [\&BOM::WebSocketAPI::Hooks::log_call_timing],
             after_got_rpc_response   => [\&BOM::WebSocketAPI::Hooks::log_call_timing_connection, \&BOM::WebSocketAPI::Hooks::error_check],
             before_send_api_response => [
-                \&BOM::WebSocketAPI::Hooks::output_validation, \&BOM::WebSocketAPI::Hooks::add_call_debug,
-                \&BOM::WebSocketAPI::Hooks::add_req_data,      \&BOM::WebSocketAPI::Hooks::start_timing
+                \&BOM::WebSocketAPI::Hooks::add_req_data,      \&BOM::WebSocketAPI::Hooks::start_timing,
+                \&BOM::WebSocketAPI::Hooks::output_validation, \&BOM::WebSocketAPI::Hooks::add_call_debug
             ],
             after_sent_api_response => [\&BOM::WebSocketAPI::Hooks::log_call_timing_sent, \&BOM::WebSocketAPI::Hooks::close_bad_connection],
 
