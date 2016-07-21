@@ -1,6 +1,6 @@
 <style type="text/css">
 table#client_edit{
-	width:100%;
+    width:100%;
 }
 table#client_edit td{
     padding-top:4px;
@@ -386,7 +386,7 @@ table#client_edit td{
             ]
         %]
 
-        <td>: 
+        <td>:
             <select name="promo_code_status" [% maybe_disabled %]>
                 [% IF not client.promo_code_status %]
                     <option value="" selected="selected">no status</option>
@@ -454,13 +454,15 @@ table#client_edit td{
             <td>Client acknowledges T&C [% client_tnc_version %]</td>
         </tr>
     [% END %]
-    <tr>
-        <td class="small_header" colspan="2">#Omnibus</td>
-    </tr>
-    <tr>
-        <td class="label">Allow Omnibus</td>
-        <td>
-            <input type="checkbox" value="1" name="allow_omnibus" [% IF client.allow_omnibus %]checked[% END %]/>
-        </td>
-    </tr>
+    [% IF show_allow_omnibus %]
+        <tr>
+            <td class="small_header" colspan="2">#Omnibus</td>
+        </tr>
+        <tr>
+            <td class="label">Allow Omnibus</td>
+            <td>
+                <input type="checkbox" value="1" name="allow_omnibus" [% IF client.allow_omnibus %]checked[% END %]/>
+            </td>
+        </tr>
+    [% END %]
 </table>
