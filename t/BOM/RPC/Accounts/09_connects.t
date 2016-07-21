@@ -6,6 +6,7 @@ use TestHelper qw/create_test_user/;
 use Test::More;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::System::Config;
 use WWW::OneAll;
 use BOM::RPC::v3::Accounts;
 
@@ -13,6 +14,13 @@ my $client = create_test_user();
 
 my $module = Test::MockModule->new('WWW::OneAll');
 $module->mock('connection', sub { return sample_oneall_data() });
+my $module2 = Test::MockModule->new('BOM::System::Config');
+$module2->mock('third_party', sub { return +{
+    oneall => {
+        public_key  => 'public_key',
+        private_key => 'private_key'
+    }
+} });
 
 my $res = BOM::RPC::v3::Accounts::connect_add({
     client           => $client,
