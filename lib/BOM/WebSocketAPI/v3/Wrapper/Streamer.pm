@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use JSON;
-use Data::UUID;
 use Scalar::Util qw (looks_like_number);
 use List::MoreUtils qw(last_index);
 
@@ -256,7 +255,7 @@ sub _feed_channel_subscribe {
     my $redis = $c->stash('redis');
 
     my $req_id = ($args and exists $args->{req_id}) ? $args->{req_id} : undef;
-    $key = "$symbol;$type;$req_id" if $req_id;
+    $key .= ";$req_id" if $req_id;
 
     # already subscribe
     if (exists $feed_channel_type->{$key}) {
@@ -317,7 +316,7 @@ sub _transaction_channel {
     if ($action) {
         my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
-            $uuid = Data::UUID->new->create_str();
+            $uuid = _generate_uuid_string();
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
@@ -460,6 +459,17 @@ sub _skip_streaming {
 
     return 1 if ($skip_tick_expiry or $skip_intraday_atm_non_fixed_expiry);
     return;
+}
+
+my $RAND;
+
+BEGIN {
+    open $RAND, "<", "/dev/urandom" or die "Could not open /dev/urandom : $!";    ## no critic (InputOutput::RequireBriefOpen)
+}
+
+sub _generate_uuid_string {
+    local $/ = \16;
+    return join "-", unpack "H8H4H4H4H12", (scalar <$RAND> or die "Could not read from /dev/urandom : $!");
 }
 
 1;
