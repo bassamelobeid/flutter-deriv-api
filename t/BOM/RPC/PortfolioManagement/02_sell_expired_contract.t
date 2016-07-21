@@ -110,7 +110,11 @@ subtest 'Auth client' => sub {
 };
 
 subtest 'Sell expired contract' => sub {
-    create_fmb($client, is_expired => 1, buy_bet=>1);
+    create_fmb(
+        $client,
+        is_expired => 1,
+        buy_bet    => 1
+    );
 
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result_is_deeply({count => 1}, 'It should return counts of sold contracts');
 

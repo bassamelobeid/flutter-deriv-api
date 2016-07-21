@@ -436,14 +436,14 @@ subtest $method => sub {
         'check authorization'
     );
 
-    is($c->tcall($method, {token => $token1})->{balance},  0,  'have 0 balance if no default account');
-    is($c->tcall($method, {token => $token1})->{currency}, '', 'have no currency if no default account');
+    is($c->tcall($method, {token => $token1})->{balance},  '0.00', 'have 0 balance if no default account');
+    is($c->tcall($method, {token => $token1})->{currency}, '',     'have no currency if no default account');
     my $result = $c->tcall($method, {token => $token_21});
     is_deeply(
         $result,
         {
             'currency' => 'USD',
-            'balance'  => '1505.0000',
+            'balance'  => '1505.00',
             'loginid'  => 'CR0021'
         },
         'result is correct'
