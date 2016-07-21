@@ -76,7 +76,6 @@ my %rate_limit_map = (
     statement_real                 => 'websocket_call_expensive',
     profit_table_real              => 'websocket_call_expensive',
     proposal_real                  => 'websocket_real_pricing',
-    pricing_table_real             => 'websocket_real_pricing',
     proposal_open_contract_real    => 'websocket_real_pricing',
     verify_email_real              => 'websocket_call_email',
     buy_real                       => 'websocket_real_pricing',
@@ -88,7 +87,6 @@ my %rate_limit_map = (
     statement_virtual              => 'websocket_call_expensive',
     profit_table_virtual           => 'websocket_call_expensive',
     proposal_virtual               => 'websocket_call_pricing',
-    pricing_table_virtual          => 'websocket_call_pricing',
     proposal_open_contract_virtual => 'websocket_call_pricing',
     verify_email_virtual           => 'websocket_call_email',
 );

@@ -10,6 +10,7 @@ use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
+use BOM::Platform::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -170,6 +171,27 @@ sub _get_stashed {
             $r = $r->{$l};
         }
     }
+
+    return $r;
+}
+
+# set allow omnibus flag, as it is required for creating new sub account
+sub _set_allow_omnibus {
+    my @hierarchy = split '/', shift;
+
+    my $r = $response;
+
+    foreach my $l (@hierarchy) {
+        if ($l =~ /^[0-9,.E]+$/) {
+            $r = @{$r}[$l];
+        } else {
+            $r = $r->{$l};
+        }
+    }
+
+    my $client = BOM::Platform::Client->new({loginid => $r});
+    $client->allow_omnibus(1);
+    $client->save();
 
     return $r;
 }
