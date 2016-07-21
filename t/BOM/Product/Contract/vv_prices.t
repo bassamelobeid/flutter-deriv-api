@@ -118,7 +118,7 @@ $c = produce_contract({
 });
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 is roundnear(0.0001, $c->bs_probability->amount), 0.6241, 'correct bs probability for indices contract';
-is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), -0.0249, 'correct market supplement';
+is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), -0.0247, 'correct market supplement';
 
 $c = produce_contract({
     %$params,
