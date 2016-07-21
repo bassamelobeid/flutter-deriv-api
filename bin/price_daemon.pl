@@ -79,7 +79,7 @@ while (1) {
             $response = BOM::RPC::v3::Contract::send_bid({args => $params});
 
         } else {
-            warn "Unrecognized Pricer command! Payload is: " . $next;
+            warn "Unrecognized Pricer command! Payload is: " . ($next // 'undefined');
             next;
         }
 

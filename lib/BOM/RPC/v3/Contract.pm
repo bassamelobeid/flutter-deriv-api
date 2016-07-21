@@ -301,7 +301,7 @@ sub get_bid {
 }
 
 sub send_bid {
-    my $params  = shift;
+    my $params = shift;
 
     my $tv = [Time::HiRes::gettimeofday];
 
@@ -337,8 +337,7 @@ sub send_ask {
     try {
         my $arguments = {
             from_pricer_daemon => $from_pricer_daemon,
-            %{$params->{args}}
-        };
+            %{$params->{args}}};
         my $contract_parameters = prepare_ask($arguments);
         $response = _get_ask($contract_parameters, $params->{app_markup_percentage});
         $response->{contract_parameters} = $contract_parameters;
