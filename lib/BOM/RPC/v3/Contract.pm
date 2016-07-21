@@ -164,8 +164,7 @@ sub get_bid {
     try {
         my $tv = [Time::HiRes::gettimeofday];
         my $bet_params = shortcode_to_parameters($short_code, $currency);
-        $bet_params->{is_sold}               = $is_sold;
-        $bet_params->{is_expired}            = 1 if $is_sold;
+        $bet_params->{is_sold} = $is_sold;
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
         my $contract = produce_contract($bet_params);
 
@@ -272,6 +271,7 @@ sub get_bid {
             # sell_spot and sell_spot_time are updated if the contract is sold
             # or when the contract is expired.
             if ($sell_time or $contract->is_expired) {
+                $response->{is_expired} = 1;
                 my $sell_tick =
                     ($contract->is_path_dependent and $contract->hit_tick)
                     ? $contract->hit_tick
