@@ -31,16 +31,20 @@ sub mt5_new_account {
     my $args         = $params->{args};
     my $account_type = delete $args->{account_type};
 
+    unless ($landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
+
     my $group;
     if ($account_type eq 'demo') {
         $group = 'demo\demoforex';
     } elsif (
         grep {
             $account_type eq $_
-        } qw(costarica iom malta maltainvest japan)
+        } qw(vanuatu costarica iom malta maltainvest japan)
         )
     {
-        $group = 'real\\' . $account_type;
+        $group = 'real\vanuatu';
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccountType',
