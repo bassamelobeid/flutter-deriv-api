@@ -285,9 +285,11 @@ sub _feed_channel_unsubscribe {
     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
     $feed_channel->{$symbol} -= 1;
-    my $key = $req_id ? "$symbol;$type;$req_id" : "$symbol:$type";
-    my $args = $feed_channel_type->{$key}->{args};
 
+    my $key = "$symbol;$type";
+    $key .= ";$req_id" if $req_id;
+
+    my $args = $feed_channel_type->{$key}->{args};
     my $uuid = $feed_channel_type->{$key}->{uuid};
     delete $feed_channel_type->{$key};
     # delete cache on unsubscribe
