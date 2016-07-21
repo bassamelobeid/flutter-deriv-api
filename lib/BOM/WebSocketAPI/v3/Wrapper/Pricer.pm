@@ -25,7 +25,11 @@ sub proposal {
             msg_type => 'proposal',
             success  => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
-                $req_storage->{uuid} = _pricing_channel_for_ask($c, 'subscribe', $req_storage->{args}, $rpc_response);
+                my $cache = {
+                    longcode => $rpc_response->{longcode},
+                    contract_parameters => delete $rpc_response->{contract_parameters}
+                };
+                $req_storage->{uuid} = _pricing_channel_for_ask($c, 'subscribe', $req_storage->{args}, $cache);
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
@@ -120,10 +124,8 @@ sub _serialized_args {
 }
 
 sub _pricing_channel_for_ask {
-    my ($c, $subs, $args, $rpc_response) = @_;
+    my ($c, $subs, $args, $cache) = @_;
     my $price_daemon_cmd = 'price';
-    my $cache = {map { ($_ => $rpc_response->{$_}) } qw(longcode contract_parameters)};
-    delete $rpc_response->{contract_parameters};
 
     my %args_hash = %{$args};
 
@@ -140,8 +142,10 @@ sub _pricing_channel_for_ask {
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel = $args->{amount_per_point} || $args->{amount};
 
-    _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache)
-        unless BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
+    my $skip = BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
+
+    # uuid is needed regardles redis subscription
+    _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip)
 }
 
 sub _pricing_channel_for_bid {
@@ -164,7 +168,7 @@ sub _pricing_channel_for_bid {
 }
 
 sub _create_pricer_channel {
-    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache) = @_;
+    my ($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip_redis_subscr) = @_;
 
     my $pricing_channel = $c->stash('pricing_channel') || {};
 
@@ -178,21 +182,22 @@ sub _create_pricer_channel {
     # subscribe if it is not already subscribed
     if (    exists $args->{subscribe}
         and $args->{subscribe} == 1
-        and not exists $pricing_channel->{$redis_channel})
+        and not exists $pricing_channel->{$redis_channel}
+        and not $skip_redis_subscr)
     {
         $c->redis_pricer->set($redis_channel, 1);
         $c->stash('redis_pricer')->subscribe([$redis_channel], sub { });
     }
 
-    $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}  = $uuid;
-    $pricing_channel->{$redis_channel}->{$subchannel}->{args}  = $args;
-    $pricing_channel->{$redis_channel}->{$subchannel}->{cache} = $cache;
-    $pricing_channel->{uuid}->{$uuid}->{redis_channel}         = $redis_channel;
-    $pricing_channel->{uuid}->{$uuid}->{subchannel}            = $subchannel;
-    $pricing_channel->{uuid}->{$uuid}->{price_daemon_cmd}      = $price_daemon_cmd;
-    $pricing_channel->{uuid}->{$uuid}->{args}                  = $args;               # for buy rpc call
-    $pricing_channel->{uuid}->{$uuid}->{cache}                 = $cache;
-    $pricing_channel->{$price_daemon_cmd}->{$uuid}             = 1;                   # for forget_all
+    $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}          = $uuid;
+    $pricing_channel->{$redis_channel}->{$subchannel}->{args}          = $args;
+    $pricing_channel->{$redis_channel}->{$subchannel}->{cache}         = $cache;
+    $pricing_channel->{uuid}->{$uuid}->{redis_channel}                 = $redis_channel;
+    $pricing_channel->{uuid}->{$uuid}->{subchannel}                    = $subchannel;
+    $pricing_channel->{uuid}->{$uuid}->{price_daemon_cmd}              = $price_daemon_cmd;
+    $pricing_channel->{uuid}->{$uuid}->{args}                          = $args;               # for buy rpc call
+    $pricing_channel->{uuid}->{$uuid}->{cache}                         = $cache;
+    $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid} = 1;                   # for forget_all
 
     $c->stash('pricing_channel' => $pricing_channel);
     return $uuid;
@@ -209,11 +214,13 @@ sub process_pricing_events {
     my $response         = decode_json($message);
     my $price_daemon_cmd = delete $response->{price_daemon_cmd};
 
-    if ($price_daemon_cmd eq 'price') {
-        process_ask_event($c, $response, $channel_name, $pricing_channel);
-    } elsif ($price_daemon_cmd eq 'bid') {
-        process_bid_event($c, $response, $channel_name, $pricing_channel);
-    }
+    my %handler = (
+            price => \&process_ask_event,
+            bid => \&process_bid_event,
+    );
+
+    $handler{$price_daemon_cmd}->($c, $response, $channel_name, $pricing_channel);
+
     return;
 }
 
@@ -243,14 +250,7 @@ sub process_bid_event {
             };
             _prepare_results($results, $pricing_channel, $redis_channel, $subchannel);
         }
-        if ($c->stash('debug')) {
-            $results->{debug} = {
-                time   => $results->{proposal_open_contract}->{rpc_time},
-                method => 'proposal_open_contract',
-            };
-        }
-        delete $results->{proposal_open_contract}->{$_} for qw(rpc_time);
-        $c->send({json => $results});
+        $c->send({json => $results}, {method => 'proposal_open_contract', tv => delete $results->{proposal_open_contract}->{tv}});
     }
     return;
 }
@@ -296,14 +296,8 @@ sub process_ask_event {
             }
             _prepare_results($results, $pricing_channel, $redis_channel, $subchannel);
         }
-        if ($c->stash('debug')) {
-            $results->{debug} = {
-                time   => $results->{proposal}->{rpc_time},
-                method => 'proposal',
-            };
-        }
-        delete $results->{proposal}->{$_} for qw(contract_parameters rpc_time);
-        $c->send({json => $results});
+        delete $results->{proposal}->{contract_parameters};
+        $c->send({json => $results}, {method => 'proposal', tv => delete $results->{proposal}->{tv}});
     }
     return;
 }

@@ -130,10 +130,26 @@ $res = decode_json($t->message->[1]);
 
 is $res->{proposal_open_contract}->{id}, undef, 'passthrough should not allow multiple proposal_open_contract subscription';
 
+sleep 2; # be sure next mock will not intersept last call
+
+# It is hack to emulate contract selling and test subcribtion
+my ($url, $call_params);
+
+my $fake_res = Test::MockObject->new();
+$fake_res->mock('result', sub { +{ok => 1 }});
+$fake_res->mock('is_error', sub { '' });
+
+my $fake_rpc_client = Test::MockObject->new();
+$fake_rpc_client->mock('call', sub { shift; $url = $_[0]; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
+
+my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
+$module->mock('new', sub { return $fake_rpc_client });
+
 my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
     broker_code => $client->broker_code,
     operation   => 'replica'
 });
+
 my $contract_details = $mapper->get_contract_details_with_transaction_ids($contract_id);
 
 my $msg = {
@@ -147,19 +163,23 @@ my $msg = {
 my $json = JSON::to_json($msg);
 BOM::System::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
 
-my $cnt = 3;
-while ($cnt-- > 0) {
-    $t   = $t->message_ok;
-    $res = decode_json($t->message->[1]);
-    last if exists $res->{proposal_open_contract}->{sell_time};
-}
+$t   = $t->message_ok;
+$res = decode_json($t->message->[1]);
+
 is $res->{msg_type}, 'proposal_open_contract', 'Got message about selling contract';
 ok $res->{proposal_open_contract}->{sell_time},  'Got message about selling contract';
 ok $res->{proposal_open_contract}->{sell_price}, 'Got message about selling contract';
+is $res->{proposal_open_contract}->{ok},         1, 'Got message about selling contract';
+is $call_params->{contract_id}, $contract_id, 'Request RPC to sell contract';
+ok $call_params->{short_code},  'Request RPC to sell contract';
+ok $call_params->{sell_time},   'Request RPC to sell contract';
+ok $url =~ /get_bid/;
+
+$module->unmock_all;
+
 
 $t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok;
 
-my $call_params;
 ($res, $call_params) = call_mocked_client(
     $t,
     {

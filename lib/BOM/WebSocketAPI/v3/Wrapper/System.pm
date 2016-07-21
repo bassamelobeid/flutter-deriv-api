@@ -19,36 +19,36 @@ sub forget {
 sub forget_all {
     my ($c, $req_storage) = @_;
 
-    my $removed_ids = {};
+    my %removed_ids;
     if (my $type = $req_storage->{args}->{forget_all}) {
         if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
-            $removed_ids->{$_} = 1 for @{_forget_transaction_subscription($c, $type)};
+            @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
         }
         if ($type eq 'proposal' or $type eq 'proposal_open_contract') {
-            $removed_ids->{$_} = 1 for @{_forget_all_pricing_subscriptions($c, $type)};
+            @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
         }
         if ($type ne 'proposal_open_contract') {
-            $removed_ids->{$_} = 1 for @{_forget_feed_subscription($c, $type)};
+            @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
         }
     }
 
     return {
         msg_type   => 'forget_all',
-        forget_all => [keys %$removed_ids],
+        forget_all => [keys %removed_ids],
     };
 }
 
 sub forget_one {
     my ($c, $id, $reason) = @_;
 
-    my $removed_ids = {};
+    my %removed_ids;
     if ($id && ($id =~ /-/)) {
-        $removed_ids->{$_} = 1 for @{_forget_feed_subscription($c, $id)};
-        $removed_ids->{$_} = 1 for @{_forget_transaction_subscription($c, $id)};
-        $removed_ids->{$_} = 1 for @{_forget_pricing_subscription($c, $id)};
+        @removed_ids{@{_forget_feed_subscription($c, $id)}}        = ();
+        @removed_ids{@{_forget_transaction_subscription($c, $id)}} = ();
+        @removed_ids{@{_forget_pricing_subscription($c, $id)}}     = ();
     }
 
-    return scalar keys %$removed_ids;
+    return scalar keys %removed_ids;
 }
 
 sub ping {
@@ -88,14 +88,13 @@ sub _forget_pricing_subscription {
     if ($pricing_channel) {
         foreach my $channel (keys %{$pricing_channel}) {
             foreach my $subchannel (keys %{$pricing_channel->{$channel}}) {
-                next unless ref $pricing_channel->{$channel}->{$subchannel};
                 next unless exists $pricing_channel->{$channel}->{$subchannel}->{uuid};
                 if ($pricing_channel->{$channel}->{$subchannel}->{uuid} eq $uuid) {
                     push @$removed_ids, $pricing_channel->{$channel}->{$subchannel}->{uuid};
                     my $price_daemon_cmd = $pricing_channel->{uuid}->{$uuid}->{price_daemon_cmd};
                     delete $pricing_channel->{uuid}->{$uuid};
                     delete $pricing_channel->{$channel}->{$subchannel};
-                    delete $pricing_channel->{$price_daemon_cmd}->{$uuid};
+                    delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid};
                 }
             }
 
@@ -112,15 +111,15 @@ sub _forget_pricing_subscription {
 
 sub _forget_all_pricing_subscriptions {
     my ($c, $type) = @_;
-    my $price_daemon_cmd = {
-        proposal               => 'price',
-        proposal_open_contract => 'bid'
-    }->{$type};
+    my $price_daemon_cmd =
+          $type eq 'proposal' ?  'price'
+        : $type eq 'proposal_open_contract' ? 'bid'
+        : undef; 
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
-        foreach my $uuid (keys %{$pricing_channel->{$price_daemon_cmd}}) {
-            push @$removed_ids, $uuid;
+        @$removed_ids = keys %{$pricing_channel->{$price_daemon_cmd}};
+        foreach my $uuid (@$removed_ids) {
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
             if ($pricing_channel->{$redis_channel}) {
                 $c->stash('redis_pricer')->unsubscribe([$redis_channel]);
@@ -128,7 +127,7 @@ sub _forget_all_pricing_subscriptions {
             }
             delete $pricing_channel->{uuid}->{$uuid};
         }
-        delete $pricing_channel->{$price_daemon_cmd};
+        delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd};
         $c->stash('pricing_channel' => $pricing_channel);
     }
     return $removed_ids;
