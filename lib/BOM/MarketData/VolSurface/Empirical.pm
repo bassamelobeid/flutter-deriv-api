@@ -281,11 +281,12 @@ has long_term_vol => (
 
 sub _build_long_term_vol {
     my $self       = shift;
+
     my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $self->underlying});
-    my $now        = Date::Utility->new;
+    my $recorded_date = $volsurface->recorded_date;
     return $volsurface->get_volatility({
-        from              => $now,
-        to                => $now->plus_time_interval('7d'),
+        from              => $recorded_date,
+        to                => $recorded_date->plus_time_interval('7d'),
         $volsurface->type => $volsurface->atm_spread_point
     });
 }
