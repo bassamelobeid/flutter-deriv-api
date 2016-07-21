@@ -12,39 +12,46 @@
     "app_register": {
       "type": "object",
       "title": "Application object",
-      "required": 1,
       "properties": {
         "name": {
           "type": "string",
-          "description":"Application name"
+          "description":"Application name",
+          "required": 1
         },
         "app_id": {
           "type": "integer",
-          "description":"Application id"
+          "description":"Application id",
+          "required": 1
         },
         "redirect_uri": {
           "type": "string",
-          "description":"Application redirect_uri"
+          "description":"Application redirect_uri",
+          "required": 1
         },
         "homepage": {
           "type": "string",
-          "description":"Application's homepage"
+          "description":"Application's homepage",
+          "required": 1
         },
         "github": {
           "type": "string",
-          "description":"Application's GitHub page (for open-source projects)"
+          "description":"Application's GitHub page (for open-source projects)",
+          "required": 1
         },
         "appstore": {
           "type": "string",
-          "description":"Application's App Store URL"
+          "description":"Application's App Store URL",
+          "required": 1
         },
         "googleplay": {
           "type": "string",
-          "description":"Application's Google Play URL"
+          "description":"Application's Google Play URL",
+          "required": 1
         },
         "app_markup_percentage": {
           "type": "number",
-          "description": "Markup added to contract prices (as a percentage of contract payout)"
+          "description": "Markup added to contract prices (as a percentage of contract payout)",
+          "required": 1
         }
       }
     },
