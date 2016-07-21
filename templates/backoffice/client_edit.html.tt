@@ -454,15 +454,25 @@ table#client_edit td{
             <td>Client acknowledges T&C [% client_tnc_version %]</td>
         </tr>
     [% END %]
+    <tr>
+        <td class="small_header" colspan="2">#Omnibus</td>
+    </tr>
     [% IF show_allow_omnibus %]
-        <tr>
-            <td class="small_header" colspan="2">#Omnibus</td>
-        </tr>
         <tr>
             <td class="label">Allow Omnibus</td>
             <td>
                 <input type="checkbox" value="1" name="allow_omnibus" [% IF client.allow_omnibus %]checked[% END %]/>
             </td>
+        </tr>
+    [% ELSIF client.sub_account_of %]
+        <tr>
+            <td class="label">Sub account of:</td>
+            <td>[% client.sub_account_of %]</td>
+        </tr>
+    [% ELSE %]
+        <tr>
+            <td class="label">Facility not available</td>
+            <td></td>
         </tr>
     [% END %]
 </table>

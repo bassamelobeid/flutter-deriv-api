@@ -116,7 +116,7 @@ sub print_client_details {
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
         tnc_approval_status => $tnc_status,
         client_tnc_version  => $tnc_status ? $tnc_status->reason : '',
-        show_allow_omnibus  => (not $client->is_virtual and $client->landing_company->short eq 'costarica') ? 1 : 0
+        show_allow_omnibus  => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0
     };
 
     BOM::Platform::Context::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
