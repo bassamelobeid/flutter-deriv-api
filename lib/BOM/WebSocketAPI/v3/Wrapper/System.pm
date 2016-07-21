@@ -170,10 +170,10 @@ sub forget_buy_proposal {
     my $subscription = $c->stash('feed_channel_type');
     if ($uuid =~ /-/ and $subscription) {
         foreach my $channel (keys %{$subscription}) {
-            $channel =~ /(.*);(.*)/;
+            my ($symbol, $type, $req_id) = split(";", $channel);
             if ($subscription->{$channel}->{uuid} eq $uuid) {
                 my $args = $subscription->{$channel}->{args};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $1, $2);
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_unsubscribe($c, $symbol, $type, $req_id);
                 return $args;
             }
         }
