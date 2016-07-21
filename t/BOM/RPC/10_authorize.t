@@ -64,7 +64,7 @@ subtest $method => sub {
         'currency'             => '',
         'email'                => 'dummy@binary.com',
         'scopes'               => ['read', 'admin', 'trade', 'payments'],
-        'balance'              => '0',
+        'balance'              => '0.00',
         'landing_company_name' => 'costarica',
         'fullname'             => $test_client->full_name,
         'loginid'              => $test_client->loginid,
@@ -81,7 +81,7 @@ subtest $method => sub {
     );
     $expected_result->{stash}->{account_id} = $test_client->default_account->id;
     $expected_result->{currency} = $expected_result->{stash}->{currency} = 'USD';
-    $expected_result->{balance} = '1000.0000';
+    $expected_result->{balance} = '1000.00';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is correct');
 
     $params->{token} = $token_vr;

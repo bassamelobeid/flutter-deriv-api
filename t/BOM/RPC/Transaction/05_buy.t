@@ -90,7 +90,7 @@ subtest 'buy' => sub {
             stash
     ));
     is_deeply([sort keys %$result], [sort @expected_keys], 'result keys is ok');
-    my $new_balance = $client->default_account->load->balance;
+    my $new_balance = sprintf('%.2f', $client->default_account->load->balance);
     is($new_balance, $result->{balance_after}, 'balance is changed');
     ok($old_balance - $new_balance - $result->{buy_price} < 0.0001, 'balance reduced');
     like($result->{shortcode}, qr/CALL_R_50_100_\d{10}_\d{10}_S0P_0/, 'shortcode is correct');
