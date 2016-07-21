@@ -3,7 +3,6 @@ package BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use strict;
 use warnings;
 use JSON;
-use Data::UUID;
 use List::Util qw(first);
 use Format::Util::Numbers qw(roundnear);
 use BOM::WebSocketAPI::v3::Wrapper::System;
@@ -177,7 +176,7 @@ sub _create_pricer_channel {
         return;
     }
 
-    my $uuid = Data::UUID->new->create_str();
+    my $uuid = &BOM::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
 
     # subscribe if it is not already subscribed
     if (    exists $args->{subscribe}
