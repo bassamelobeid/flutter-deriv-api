@@ -79,7 +79,7 @@ sub _pricing_channel {
         return;
     }
 
-    my $uuid = &BOM::WebSocketAPI::v3::Wrapper::Streamer::_generate_random_str();
+    my $uuid = &BOM::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string();
 
     # subscribe if it is not already subscribed
     if (    not $pricing_channel->{$serialized_args}

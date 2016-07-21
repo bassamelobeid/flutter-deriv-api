@@ -130,7 +130,7 @@ sub before_forward {
 
     my $args = $req_storage->{args};
     if (not $c->stash('connection_id')) {
-        $c->stash('connection_id' => &BOM::WebSocketAPI::v3::Wrapper::Streamer::_generate_random_str());
+        $c->stash('connection_id' => &BOM::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string());
     }
 
     # For authorized calls that are heavier we will limit based on loginid

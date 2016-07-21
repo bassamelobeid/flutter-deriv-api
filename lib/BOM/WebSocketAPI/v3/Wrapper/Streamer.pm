@@ -261,7 +261,7 @@ sub _feed_channel {
             return;
         }
 
-        $uuid = _generate_random_str();
+        $uuid = _generate_uuid_string();
         $feed_channel->{$symbol} += 1;
         $feed_channel_type->{"$symbol;$type"}->{args}  = $args if $args;
         $feed_channel_type->{"$symbol;$type"}->{uuid}  = $uuid;
@@ -304,7 +304,7 @@ sub _transaction_channel {
     if ($action) {
         my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
-            $uuid = _generate_random_str();
+            $uuid = _generate_uuid_string();
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
@@ -455,7 +455,7 @@ BEGIN {
     open $RAND, "<", "/dev/urandom" or die "Could not open /dev/urandom : $!";    ## no critic (InputOutput::RequireBriefOpen)
 }
 
-sub _generate_random_str {
+sub _generate_uuid_string {
     local $/ = \16;
     return join "-", unpack "H8H4H4H4H12", (scalar <$RAND> or die "Could not read from /dev/urandom : $!");
 }
