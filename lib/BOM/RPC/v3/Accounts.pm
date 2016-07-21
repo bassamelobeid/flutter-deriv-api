@@ -134,7 +134,7 @@ sub statement {
             transaction_id => $txn->{id},
             amount         => $txn->{amount},
             action_type    => $txn->{action_type},
-            balance_after  => $txn->{balance_after},
+            balance_after  => sprintf('%.2f', $txn->{balance_after}),
             contract_id    => $txn->{financial_market_bet_id},
             payout         => $txn->{payout_price}};
 
@@ -234,14 +234,13 @@ sub balance {
     return {
         currency => '',
         loginid  => $client_loginid,
-        balance  => 0
+        balance  => "0.00"
     } unless ($client->default_account);
 
     return {
         loginid  => $client_loginid,
         currency => $client->default_account->currency_code,
-        balance  => $client->default_account->balance
-    };
+        balance => sprintf('%.2f', $client->default_account->balance)};
 }
 
 sub get_account_status {
@@ -886,10 +885,25 @@ sub api_token {
 
     my $client = $params->{client};
     my $args   = $params->{args};
-    my $rtn;
+
+    # check if sub_account loginid is present then check if its valid
+    # and assign it to client object
+    my $sub_account_loginid = $params->{args}->{sub_account};
+    my ($rtn, $sub_account_client);
+    if ($sub_account_loginid) {
+        $sub_account_client = BOM::Platform::Client->new({loginid => $sub_account_loginid});
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidSubAccount',
+                message_to_client => localize('Please provide a valid sub account loginid.')}
+        ) if (not $sub_account_client or ($sub_account_client->sub_account_of ne $client->loginid));
+
+        $client = $sub_account_client;
+        $rtn->{sub_account} = $sub_account_loginid;
+    }
+
     my $m = BOM::Database::Model::AccessToken->new;
     if ($args->{delete_token}) {
-        $m->remove_by_token($args->{delete_token});
+        $m->remove_by_token($args->{delete_token}, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
