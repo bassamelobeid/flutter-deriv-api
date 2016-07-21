@@ -1,6 +1,6 @@
 <style type="text/css">
 table#client_edit{
-	width:100%;
+    width:100%;
 }
 table#client_edit td{
     padding-top:4px;
@@ -386,7 +386,7 @@ table#client_edit td{
             ]
         %]
 
-        <td>: 
+        <td>:
             <select name="promo_code_status" [% maybe_disabled %]>
                 [% IF not client.promo_code_status %]
                     <option value="" selected="selected">no status</option>
@@ -457,10 +457,22 @@ table#client_edit td{
     <tr>
         <td class="small_header" colspan="2">#Omnibus</td>
     </tr>
-    <tr>
-        <td class="label">Allow Omnibus</td>
-        <td>
-            <input type="checkbox" value="1" name="allow_omnibus" [% IF client.allow_omnibus %]checked[% END %]/>
-        </td>
-    </tr>
+    [% IF show_allow_omnibus %]
+        <tr>
+            <td class="label">Allow Omnibus</td>
+            <td>
+                <input type="checkbox" value="1" name="allow_omnibus" [% IF client.allow_omnibus %]checked[% END %]/>
+            </td>
+        </tr>
+    [% ELSIF client.sub_account_of %]
+        <tr>
+            <td class="label">Sub account of:</td>
+            <td>[% client.sub_account_of %]</td>
+        </tr>
+    [% ELSE %]
+        <tr>
+            <td class="label">Facility not available</td>
+            <td></td>
+        </tr>
+    [% END %]
 </table>
