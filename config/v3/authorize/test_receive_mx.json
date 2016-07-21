@@ -10,7 +10,7 @@
       "properties": {
         "email": {
           "type": "string",
-          "pattern": "^test-mlt@binary.com$",
+          "pattern": "^test-mx@binary.com$",
           "required": "1"
         },
         "currency": {
@@ -25,7 +25,7 @@
         },
         "loginid": {
           "type": "string",
-          "pattern": "^MLT\\d+$",
+          "pattern": "^MX\\d+$",
           "required": "1"
         },
         "is_virtual": {
@@ -35,12 +35,12 @@
         },
         "landing_company_name": {
           "type": "string",
-          "pattern": "^malta$",
+          "pattern": "^iom$",
           "required": "1"
         },
         "fullname": {
           "type": "string",
-          "pattern": "^Mr Jack Pan$",
+          "pattern": "^Mr John Pan$",
           "required": "1"
         },
         "scopes": {
