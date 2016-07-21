@@ -272,13 +272,7 @@ has [qw(
     default => 0,
     );
 
-has 'config' => (
-    is         => 'ro',
-    isa        => 'Quant::Framework::Utils::UnderlyingConfig',
-    lazy_build => 1
-);
-
-sub _build_config {
+sub config {
     my $self = shift;
 
     my $asset_class =
