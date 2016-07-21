@@ -11,7 +11,7 @@ use BOM::Platform::Email qw(send_email);
 
 sub _validate {
     my $args = shift;
-    if (my $error = BOM::Platform::Account::Real::default::_validate($args)) {
+    if (my $error = BOM::Platform::Account::Real::default::validate($args)) {
         return $error;
     }
 
@@ -38,7 +38,7 @@ sub create_account {
         return {error => 'show risk disclaimer'};
     }
 
-    my $register = BOM::Platform::Account::Real::default::_register_client($details);
+    my $register = BOM::Platform::Account::Real::default::register_client($details);
     return $register if ($register->{error});
 
     my $client = $register->{client};
@@ -49,11 +49,13 @@ sub create_account {
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     $client->save;
 
-    my $status = BOM::Platform::Account::Real::default::_after_register_client({
+    my $status = BOM::Platform::Account::Real::default::after_register_client({
         client  => $client,
         user    => $user,
         details => $details,
     });
+
+    BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
     if ($financial_assessment->{total_score} > 59) {
         send_email({
