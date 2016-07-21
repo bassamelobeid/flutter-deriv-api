@@ -331,10 +331,11 @@ sub _build_config {
         $build_args->{invert_values} = 1;
     }
 
-    my $dbh = BOM::Database::FeedDB::read_dbh;
-    $dbh->{RaiseError} = 1;
-
-    $build_args->{dbh} = $dbh;
+    $build_args->{dbh_getter} = sub {
+        my $dbh = BOM::Database::FeedDB::read_dbh;
+        $dbh->{RaiseError} = 1;
+        return $dbh;
+    };
 
     return Quant::Framework::Utils::UnderlyingConfig->new({
         symbol                                => $self->symbol,
