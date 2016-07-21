@@ -158,7 +158,8 @@ sub error_map {
         'insufficient score'   => localize(
             'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.'
         ),
-    };
+        'InvalidDateOfBirth'         => localize('Date of birth is invalid'),
+        'InsufficientAccountDetails' => localize('Please provide complete details for account opening.')};
 }
 
 sub get_payment_agent_banks {
