@@ -39,6 +39,7 @@ sub proposal {
                 } else {
                     $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
                 }
+                #delete $api_response->{proposal}->{tv};
                 return $api_response;
             },
         });
@@ -249,7 +250,14 @@ sub process_bid_event {
             };
             _prepare_results($results, $pricing_channel, $redis_channel, $subchannel);
         }
-        $c->send({json => $results}, {method => 'proposal_open_contract', tv => delete $results->{proposal_open_contract}->{tv}});
+        if ($c->stash('debug')) {
+            $results->{debug} = {
+                time   => $results->{proposal_open_contract}->{rpc_time},
+                method => 'proposal_open_contract',
+            };
+        }
+        #delete $results->{proposal_open_contract}->{$_} for qw(rpc_time);
+        $c->send({json => $results});
     }
     return;
 }
@@ -295,8 +303,15 @@ sub process_ask_event {
             }
             _prepare_results($results, $pricing_channel, $redis_channel, $subchannel);
         }
+        if ($c->stash('debug')) {
+            $results->{debug} = {
+                time   => $results->{proposal}->{rpc_time},
+                method => 'proposal',
+            };
+        }
         delete $results->{proposal}->{contract_parameters};
-        $c->send({json => $results}, {method => 'proposal', tv => delete $results->{proposal}->{tv}});
+        #delete $results->{proposal}->{$_} for qw(contract_parameters rpc_time);
+        $c->send({json => $results});
     }
     return;
 }
