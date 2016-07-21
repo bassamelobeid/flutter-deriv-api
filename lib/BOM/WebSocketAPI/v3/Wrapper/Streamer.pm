@@ -9,7 +9,6 @@ use Scalar::Util qw (looks_like_number);
 use List::MoreUtils qw(last_index);
 use Format::Util::Numbers qw(roundnear);
 
-use BOM::RPC::v3::Japan::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
@@ -164,37 +163,6 @@ sub ticks_history {
     return;
 }
 
-sub pricing_table {
-    my ($c, $req_storage) = @_;
-
-    my $args     = $req_storage->{args};
-    my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args);
-
-    if ($response and exists $response->{error}) {
-        return $c->new_error('pricing_table',
-            $response->{error}->{code}, $c->l($response->{error}->{message}, @{$response->{error}->{params} || []}));
-    }
-
-    my $feed_channel_type = $c->stash('feed_channel_type') || {};
-    my @pricing = grep { $_ =~ /^.*;pricing_table:/ } (keys %$feed_channel_type);
-
-    # subscribe limit exceeded
-    if (scalar @pricing > 5) {
-        return $c->new_error('pricing_table', 'RateLimit', $c->l('You have reached the limit for pricing table subscription.'));
-    }
-
-    my $symbol = $args->{symbol};
-    my $id;
-
-    if (not $id = _feed_channel_subscribe($c, $symbol, 'pricing_table:' . JSON::to_json($args, {canonical => 1}), $args)) {
-        return $c->new_error('pricing_table', 'AlreadySubscribed', $c->l('You are already subscribed to pricing table.'));
-    }
-    my $msg = BOM::RPC::v3::Japan::Contract::get_table($args);
-    send_pricing_table($c, $id, $args, $msg);
-
-    return;
-}
-
 sub process_realtime_events {
     my ($c, $message, $chan) = @_;
 
@@ -232,10 +200,6 @@ sub process_realtime_events {
                             : (),
                             tick => $tick
                         }}) if $c->tx;
-            }
-        } elsif ($type =~ /^pricing_table:/) {
-            if ($chan eq BOM::RPC::v3::Japan::Contract::get_channel_name($arguments)) {
-                send_pricing_table($c, $feed_channels_type->{$channel}->{uuid}, $arguments, $message);
             }
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
             BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
@@ -306,8 +270,7 @@ sub _feed_channel_subscribe {
     $feed_channel_type->{$key}->{uuid}  = $uuid;
     $feed_channel_type->{$key}->{cache} = $cache || 0;
 
-    my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
-    $redis->subscribe([$channel_name], $callback // sub { });
+    $redis->subscribe(["FEED::$symbol"], $callback // sub { });
 
     $c->stash('feed_channel'      => $feed_channel);
     $c->stash('feed_channel_type' => $feed_channel_type);
@@ -335,8 +298,7 @@ sub _feed_channel_unsubscribe {
     _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
 
     if ($feed_channel->{$symbol} <= 0) {
-        my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
-        $c->stash('redis')->unsubscribe([$channel_name], sub { });
+        $c->stash('redis')->unsubscribe(["FEED::$symbol"], sub { });
         delete $feed_channel->{$symbol};
     }
 
@@ -474,30 +436,6 @@ sub process_transaction_updates {
             }
         }
     }
-    return;
-}
-
-sub send_pricing_table {
-    my $c            = shift;
-    my $id           = shift;
-    my $arguments    = shift;
-    my $message      = shift;
-    my $params_table = JSON::from_json($message // "{}");                                        # BOM::RPC::v3::Japan::Contract::get_table
-                                                                                                 # returns undef while running tests
-    my $table        = BOM::RPC::v3::Japan::Contract::update_table($arguments, $params_table);
-
-    $c->send({
-            json => {
-                msg_type => 'pricing_table',
-                echo_req => $arguments,
-                (exists $arguments->{req_id})
-                ? (req_id => $arguments->{req_id})
-                : (),
-                (
-                    pricing_table => {
-                        id     => $id,
-                        prices => $table,
-                    })}});
     return;
 }
 
