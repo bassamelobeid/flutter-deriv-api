@@ -48,11 +48,11 @@ sub authorize {
     }
 
     return {
-        fullname             => $client->full_name,
-        loginid              => $client->loginid,
-        balance              => ($account ? $account->balance : 0),
-        currency             => ($account ? $account->currency_code : ''),
-        email                => $client->email,
+        fullname => $client->full_name,
+        loginid  => $client->loginid,
+        balance  => ($account ? sprintf('%.2f', $account->balance) : "0.00"),
+        currency => ($account ? $account->currency_code : ''),
+        email => $client->email,
         landing_company_name => $client->landing_company->short,
         scopes               => $scopes,
         is_virtual           => ($client->is_virtual ? 1 : 0),
