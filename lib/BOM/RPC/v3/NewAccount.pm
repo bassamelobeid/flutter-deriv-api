@@ -17,6 +17,7 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::japan;
+use BOM::Platform::Account::Real::subaccount;
 use BOM::Platform::Locale;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
@@ -83,7 +84,7 @@ sub new_account_virtual {
         client_id   => $client->loginid,
         email       => $email,
         currency    => $account->currency_code,
-        balance     => $account->balance,
+        balance     => sprintf('%.2f', $account->balance),
         oauth_token => _create_oauth_token($client->loginid),
     };
 }
@@ -178,7 +179,6 @@ sub new_account_real {
 
     my $client = $params->{client};
 
-    my $response  = 'new_account_real';
     my $error_map = BOM::Platform::Locale::error_map();
 
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
@@ -202,11 +202,11 @@ sub new_account_real {
     }
     my $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
-    my $details_ref = _get_client_details($params, $client, $broker);
+    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => $err->{code},
-                message_to_client => $err->{message}});
+                code              => $err,
+                message_to_client => $error_map->{$err}});
     }
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
@@ -246,7 +246,6 @@ sub new_account_maltainvest {
 
     my $client = $params->{client};
 
-    my $response  = 'new_account_maltainvest';
     my $args      = $params->{args};
     my $error_map = BOM::Platform::Locale::error_map();
 
@@ -256,11 +255,11 @@ sub new_account_maltainvest {
                 message_to_client => $error_map->{'invalid'}});
     }
 
-    my $details_ref = _get_client_details($params, $client, 'MF');
+    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, 'MF', $params->{source});
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => $err->{code},
-                message_to_client => $err->{message}});
+                code              => $err,
+                message_to_client => $error_map->{$err}});
     }
 
     my %financial_data = map { $_ => $args->{$_} } (keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
@@ -302,9 +301,7 @@ sub new_account_maltainvest {
 sub new_account_japan {
     my $params = shift;
 
-    my $client = $params->{client};
-
-    my $response  = 'new_account_japan';
+    my $client    = $params->{client};
     my $error_map = BOM::Platform::Locale::error_map();
 
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
@@ -323,11 +320,11 @@ sub new_account_japan {
     my $broker = BOM::Platform::LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
     my $args = $params->{args};
-    my $details_ref = _get_client_details($params, $client, $broker);
+    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => $err->{code},
-                message_to_client => $err->{message}});
+                code              => $err,
+                message_to_client => $error_map->{$err}});
     }
 
     my $details = $details_ref->{details};
@@ -372,64 +369,50 @@ sub new_account_japan {
     };
 }
 
-sub _get_client_details {
-    my ($params, $client, $broker) = @_;
+sub new_sub_account {
+    my $params = shift;
 
-    my $args    = $params->{args};
-    my $details = {
-        broker_code                   => $broker,
-        email                         => $client->email,
-        client_password               => $client->password,
-        myaffiliates_token_registered => 0,
-        checked_affiliate_exposures   => 0,
-        latest_environment            => '',
-        source                        => $params->{source},
+    my $error_map = BOM::Platform::Locale::error_map();
+
+    my $client = $params->{client};
+    if ($client->is_virtual or not $client->allow_omnibus) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
+
+    my $args = $params->{args};
+
+    # call populate fields as some omnibus merchant accounts may not provide their client details
+    $params->{args} = BOM::Platform::Account::Real::subaccount::populate_details($client, $args);
+
+    # we still need to call because some may provide details, some may not provide client details
+    # we pass broker code of omnibus master client as we don't care about residence or any other details
+    # of sub accounts as they are just for record keeping purpose
+    my $details_ref =
+        BOM::Platform::Account::Real::default::validate_account_details($params->{args}, $client, $client->broker_code, $params->{source});
+    if (my $err = $details_ref->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err,
+                message_to_client => $error_map->{$err}});
+    }
+
+    my $acc = BOM::Platform::Account::Real::subaccount::create_sub_account({
+        from_client => $client,
+        user        => BOM::Platform::User->new({email => $client->email}),
+        details     => $details_ref->{details},
+    });
+
+    if (my $err_code = $acc->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err_code,
+                message_to_client => $error_map->{$err_code}});
+    }
+
+    my $new_client = $acc->{client};
+    return {
+        client_id                 => $new_client->loginid,
+        landing_company           => $new_client->landing_company->name,
+        landing_company_shortcode => $new_client->landing_company->short,
     };
-
-    my $affiliate_token;
-    $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
-    $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
-
-    my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
-        address_city address_state address_postcode phone secret_question secret_answer);
-
-    if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
-        my $dob_error;
-        try {
-            my $dob = DateTime->new(
-                year  => $1,
-                month => $2,
-                day   => $3,
-            );
-            $args->{date_of_birth} = $dob->ymd;
-        }
-        catch {
-            $dob_error = {
-                error => {
-                    code    => 'InvalidDateOfBirth',
-                    message => localize('Date of birth is invalid')}};
-        };
-        return $dob_error if $dob_error;
-    }
-
-    foreach my $key (@fields) {
-        my $value = $args->{$key};
-        $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
-
-        if (not $client->is_virtual) {
-            $value ||= $client->$key;
-        }
-        $details->{$key} = $value || '';
-
-        # Japan real a/c has NO salutation
-        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode salutation));
-        return {
-            error => {
-                code    => 'InsufficientAccountDetails',
-                message => localize('Please provide complete details for account opening.')}}
-            if (not $details->{$key});
-    }
-    return {details => $details};
 }
 
 1;
