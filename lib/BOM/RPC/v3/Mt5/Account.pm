@@ -31,10 +31,6 @@ sub mt5_new_account {
     my $args         = $params->{args};
     my $account_type = delete $args->{account_type};
 
-    unless ($landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
-
     my $group;
     if ($account_type eq 'demo') {
         $group = 'demo\demoforex';
@@ -45,6 +41,9 @@ sub mt5_new_account {
         )
     {
         $group = 'real\vanuatu';
+        unless ($landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
+            return BOM::RPC::v3::Utility::permission_error();
+        }
     } else {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidAccountType',
