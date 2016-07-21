@@ -19,7 +19,7 @@
         },
         "account_type": {
           "enum": ["demo", "costarica", "iom", "malta", "maltainvest", "japan"],
-          "description": "landing company full name"
+          "description": "Landing company short name."
         },
         "balance": {
           "type": "string",
