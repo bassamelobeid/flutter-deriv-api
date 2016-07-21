@@ -10,6 +10,7 @@ use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
+use BOM::Platform::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -47,7 +48,7 @@ my $response;
 my $counter = 0;
 
 my $t;
-my $lang = '';
+my ($lang, $last_lang, $reset) = '';
 foreach my $line (@lines) {
     chomp $line;
     $counter++;
@@ -55,6 +56,10 @@ foreach my $line (@lines) {
 
     if ($line =~ s/^\[(\w+)\]//) {
         $lang = $1;
+        next;
+    }
+    if ($line =~ s/^\{(\w+)\}//) {
+        $reset = $1;
         next;
     }
 
@@ -73,9 +78,11 @@ foreach my $line (@lines) {
     my $content = File::Slurp::read_file('config/v3/' . $send_file);
     $content = _get_values($content, @template_func);
 
-    if ($lang || !$t) {
-        $t = build_mojo_test({language=>$lang});
-        $lang='';
+    if ($lang || !$t || $reset) {
+        $t = build_mojo_test({($lang ne '' ? (language=>$lang) : (language=>$last_lang))});
+        $last_lang = $lang;
+        $lang = '';
+        $reset = '';
     }
 
     $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
@@ -164,6 +171,27 @@ sub _get_stashed {
             $r = $r->{$l};
         }
     }
+
+    return $r;
+}
+
+# set allow omnibus flag, as it is required for creating new sub account
+sub _set_allow_omnibus {
+    my @hierarchy = split '/', shift;
+
+    my $r = $response;
+
+    foreach my $l (@hierarchy) {
+        if ($l =~ /^[0-9,.E]+$/) {
+            $r = @{$r}[$l];
+        } else {
+            $r = $r->{$l};
+        }
+    }
+
+    my $client = BOM::Platform::Client->new({loginid => $r});
+    $client->allow_omnibus(1);
+    $client->save();
 
     return $r;
 }
