@@ -203,15 +203,13 @@ sub process_realtime_events {
     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
     foreach my $channel (keys %{$feed_channels_type}) {
-        $channel =~ /(.*);(.*)/;
-        my $symbol    = $1;
-        my $type      = $2;
+        my ($symbol, $type, $req_id) = split(/;/, $channel);
         my $arguments = $feed_channels_type->{$channel}->{args};
         my $cache     = $feed_channels_type->{$channel}->{cache};
 
         if ($type eq 'tick' and $m[0] eq $symbol) {
             unless ($c->tx) {
-                _feed_channel_unsubscribe($c, $symbol, $type);
+                _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
                 return;
             }
 
@@ -244,7 +242,7 @@ sub process_realtime_events {
                 if $c->tx;
         } elsif ($m[0] eq $symbol) {
             unless ($c->tx) {
-                _feed_channel_unsubscribe($c, $symbol, $type);
+                _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
                 return;
             }
 
