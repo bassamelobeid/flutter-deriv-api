@@ -13,12 +13,13 @@
                     "required": "1"
                 },
                 "country": {
-                    "type": ["string", "null"],
+                    "type": "string",
+                    "pattern": "^[_1]$",
                     "required": "1"
                 },
                 "country_code": {
-                    "type": ["string", "null"],
-                    "pattern": "^[a-z]{2}$",
+                    "type": "string",
+                    "pattern": "^[_2]$",
                     "required": "1"
                 }
             },
