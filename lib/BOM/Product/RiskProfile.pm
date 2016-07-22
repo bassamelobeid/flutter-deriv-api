@@ -56,49 +56,47 @@ sub get_risk_profile {
 sub get_turnover_limit_parameters {
     my $self = shift;
 
-    my @turnover_params;
+    return [
+        map {
+            my $params = {
+                name  => $_->{name},
+                limit => $self->limits->{$_->{risk_profile}}{turnover}{$self->currency},
+            };
 
-    foreach my $profile (@{$self->applicable_profiles}) {
-        my $params = {
-            name  => $profile->{name},
-            limit => $self->limits->{$profile->{risk_profile}}{turnover}{$self->currency},
-        };
-
-        if (my $exp = $profile->{expiry_type}) {
-            if ($exp eq 'tick') {
-                $params->{tick_expiry} = 1;
-            } elsif ($exp eq 'daily') {
-                $params->{daily} = 1;
-            } else {
-                $params->{daily} = 0;
+            if (my $exp = $_->{expiry_type}) {
+                if ($exp eq 'tick') {
+                    $params->{tick_expiry} = 1;
+                } elsif ($exp eq 'daily') {
+                    $params->{daily} = 1;
+                } else {
+                    $params->{daily} = 0;
+                }
             }
-        }
 
-        # we only need to distinguish atm and non_atm for callput.
-        if (    $profile->{barrier_category}
-            and $profile->{barrier_category} eq 'euro_non_atm'
-            and $profile->{contract_category}
-            and $profile->{contract_category} eq 'callput')
-        {
-            $params->{non_atm} = 1;
-        }
+            # we only need to distinguish atm and non_atm for callput.
+            if (    $_->{barrier_category}
+                and $_->{barrier_category} eq 'euro_non_atm'
+                and $_->{contract_category}
+                and $_->{contract_category} eq 'callput')
+            {
+                $params->{non_atm} = 1;
+            }
 
-        if ($profile->{market}) {
-            $params->{symbols} = [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => $profile->{market}})];
-        } elsif ($profile->{submarket}) {
-            $params->{symbols} = [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => $profile->{submarket}})];
-        } elsif ($profile->{underlying_symbol}) {
-            $params->{symbols} = [{n => $profile->{underlying_symbol}}];
-        }
+            if ($_->{market}) {
+                $params->{symbols} = [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => $_->{market}})];
+            } elsif ($_->{submarket}) {
+                $params->{symbols} = [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => $_->{submarket}})];
+            } elsif ($_->{underlying_symbol}) {
+                $params->{symbols} = [{n => $_->{underlying_symbol}}];
+            }
 
-        if ($profile->{contract_category}) {
-            $params->{bet_type} =
-                [map { {n => $_} } get_offerings_with_filter('contract_type', {contract_category => $profile->{contract_category}})];
-        }
-        push @turnover_params, $params;
-    }
+            if ($_->{contract_category}) {
+                $params->{bet_type} =
+                    [map { {n => $_} } get_offerings_with_filter('contract_type', {contract_category => $_->{contract_category}})];
+            }
 
-    return \@turnover_params;
+            $params;
+        } @{$self->applicable_profiles}];
 }
 
 sub applicable_profiles {
