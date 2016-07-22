@@ -4,12 +4,9 @@ use strict;
 use warnings;
 
 use JSON;
-use Data::UUID;
 use Scalar::Util qw (looks_like_number);
 use List::MoreUtils qw(last_index);
-use Format::Util::Numbers qw(roundnear);
 
-use BOM::RPC::v3::Japan::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
@@ -164,37 +161,6 @@ sub ticks_history {
     return;
 }
 
-sub pricing_table {
-    my ($c, $req_storage) = @_;
-
-    my $args     = $req_storage->{args};
-    my $response = BOM::RPC::v3::Japan::Contract::validate_table_props($args);
-
-    if ($response and exists $response->{error}) {
-        return $c->new_error('pricing_table',
-            $response->{error}->{code}, $c->l($response->{error}->{message}, @{$response->{error}->{params} || []}));
-    }
-
-    my $feed_channel_type = $c->stash('feed_channel_type') || {};
-    my @pricing = grep { $_ =~ /^.*;pricing_table:/ } (keys %$feed_channel_type);
-
-    # subscribe limit exceeded
-    if (scalar @pricing > 5) {
-        return $c->new_error('pricing_table', 'RateLimit', $c->l('You have reached the limit for pricing table subscription.'));
-    }
-
-    my $symbol = $args->{symbol};
-    my $id;
-
-    if (not $id = _feed_channel($c, 'subscribe', $symbol, 'pricing_table:' . JSON::to_json($args, {canonical => 1}), $args)) {
-        return $c->new_error('pricing_table', 'AlreadySubscribed', $c->l('You are already subscribed to pricing table.'));
-    }
-    my $msg = BOM::RPC::v3::Japan::Contract::get_table($args);
-    send_pricing_table($c, $id, $args, $msg);
-
-    return;
-}
-
 sub process_realtime_events {
     my ($c, $message, $chan) = @_;
 
@@ -234,10 +200,6 @@ sub process_realtime_events {
                             : (),
                             tick => $tick
                         }}) if $c->tx;
-            }
-        } elsif ($type =~ /^pricing_table:/) {
-            if ($chan eq BOM::RPC::v3::Japan::Contract::get_channel_name($arguments)) {
-                send_pricing_table($c, $feed_channels_type->{$channel}->{uuid}, $arguments, $message);
             }
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
             BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
@@ -299,14 +261,13 @@ sub _feed_channel {
             return;
         }
 
-        $uuid = Data::UUID->new->create_str();
+        $uuid = _generate_uuid_string();
         $feed_channel->{$symbol} += 1;
         $feed_channel_type->{"$symbol;$type"}->{args}  = $args if $args;
         $feed_channel_type->{"$symbol;$type"}->{uuid}  = $uuid;
         $feed_channel_type->{"$symbol;$type"}->{cache} = $cache || 0;
 
-        my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
-        $redis->subscribe([$channel_name], $callback // sub { });
+        $redis->subscribe(["FEED::$symbol"], $callback // sub { });
     }
 
     if ($subs eq 'unsubscribe') {
@@ -321,8 +282,7 @@ sub _feed_channel {
         _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
 
         if ($feed_channel->{$symbol} <= 0) {
-            my $channel_name = ($type =~ /pricing_table/) ? BOM::RPC::v3::Japan::Contract::get_channel_name($args) : "FEED::$symbol";
-            $redis->unsubscribe([$channel_name], sub { });
+            $redis->unsubscribe(["FEED::$symbol"], sub { });
             delete $feed_channel->{$symbol};
         }
     }
@@ -344,7 +304,7 @@ sub _transaction_channel {
     if ($action) {
         my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
-            $uuid = Data::UUID->new->create_str();
+            $uuid = _generate_uuid_string();
             $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
             $channel->{$type}->{args}        = $args;
             $channel->{$type}->{uuid}        = $uuid;
@@ -393,10 +353,10 @@ sub process_transaction_updates {
                     if ($type eq 'balance') {
                         $details->{$type}->{loginid}  = $c->stash('loginid');
                         $details->{$type}->{currency} = $c->stash('currency');
-                        $details->{$type}->{balance}  = $payload->{balance_after};
+                        $details->{$type}->{balance}  = sprintf('%.2f', $payload->{balance_after});
                         $c->send({json => $details}) if $c->tx;
                     } elsif ($type eq 'transaction') {
-                        $details->{$type}->{balance}        = $payload->{balance_after};
+                        $details->{$type}->{balance}        = sprintf('%.2f', $payload->{balance_after});
                         $details->{$type}->{action}         = $payload->{action_type};
                         $details->{$type}->{amount}         = $payload->{amount};
                         $details->{$type}->{transaction_id} = $payload->{id};
@@ -451,9 +411,10 @@ sub process_transaction_updates {
                         # cancel proposal open contract streaming which will cancel transaction subscription also
                         BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $type);
 
-                        $args->{is_sold}    = 1;
-                        $args->{sell_price} = $payload->{amount};
-                        $args->{sell_time}  = Date::Utility->new($payload->{sell_time})->epoch;
+                        $args->{is_sold}                 = 1;
+                        $args->{sell_price}              = $payload->{amount};
+                        $args->{sell_time}               = Date::Utility->new($payload->{sell_time})->epoch;
+                        $args->{transaction_ids}->{sell} = $payload->{id};
 
                         # send proposal details last time
                         BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, undef, $args);
@@ -464,30 +425,6 @@ sub process_transaction_updates {
             }
         }
     }
-    return;
-}
-
-sub send_pricing_table {
-    my $c            = shift;
-    my $id           = shift;
-    my $arguments    = shift;
-    my $message      = shift;
-    my $params_table = JSON::from_json($message // "{}");                                        # BOM::RPC::v3::Japan::Contract::get_table
-                                                                                                 # returns undef while running tests
-    my $table        = BOM::RPC::v3::Japan::Contract::update_table($arguments, $params_table);
-
-    $c->send({
-            json => {
-                msg_type => 'pricing_table',
-                echo_req => $arguments,
-                (exists $arguments->{req_id})
-                ? (req_id => $arguments->{req_id})
-                : (),
-                (
-                    pricing_table => {
-                        id     => $id,
-                        prices => $table,
-                    })}});
     return;
 }
 
@@ -511,6 +448,17 @@ sub _skip_streaming {
 
     return 1 if ($skip_tick_expiry or $skip_intraday_atm_non_fixed_expiry);
     return;
+}
+
+my $RAND;
+
+BEGIN {
+    open $RAND, "<", "/dev/urandom" or die "Could not open /dev/urandom : $!";    ## no critic (InputOutput::RequireBriefOpen)
+}
+
+sub _generate_uuid_string {
+    local $/ = \16;
+    return join "-", unpack "H8H4H4H4H12", (scalar <$RAND> or die "Could not read from /dev/urandom : $!");
 }
 
 1;

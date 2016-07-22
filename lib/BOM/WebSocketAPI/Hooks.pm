@@ -3,9 +3,8 @@ package BOM::WebSocketAPI::Hooks;
 use strict;
 use warnings;
 use Try::Tiny;
-use Data::UUID;
 use RateLimitations qw(within_rate_limits);
-use BOM::System::Config;
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub start_timing {
     my ($c, $req_storage) = @_;
@@ -77,7 +76,6 @@ my %rate_limit_map = (
     statement_real                 => 'websocket_call_expensive',
     profit_table_real              => 'websocket_call_expensive',
     proposal_real                  => 'websocket_real_pricing',
-    pricing_table_real             => 'websocket_real_pricing',
     proposal_open_contract_real    => 'websocket_real_pricing',
     verify_email_real              => 'websocket_call_email',
     buy_real                       => 'websocket_real_pricing',
@@ -89,7 +87,6 @@ my %rate_limit_map = (
     statement_virtual              => 'websocket_call_expensive',
     profit_table_virtual           => 'websocket_call_expensive',
     proposal_virtual               => 'websocket_call_pricing',
-    pricing_table_virtual          => 'websocket_call_pricing',
     proposal_open_contract_virtual => 'websocket_call_pricing',
     verify_email_virtual           => 'websocket_call_email',
 );
@@ -133,7 +130,7 @@ sub before_forward {
 
     my $args = $req_storage->{args};
     if (not $c->stash('connection_id')) {
-        $c->stash('connection_id' => Data::UUID->new()->create_str());
+        $c->stash('connection_id' => &BOM::WebSocketAPI::v3::Wrapper::Streamer::_generate_uuid_string());
     }
 
     # For authorized calls that are heavier we will limit based on loginid
@@ -194,17 +191,7 @@ sub before_forward {
 sub get_rpc_url {
     my ($c, $req_storage) = @_;
 
-    my $url = $ENV{RPC_URL} || 'http://127.0.0.1:5005/';
-    if (BOM::System::Config::env eq 'production') {
-        if (BOM::System::Config::node->{node}->{www2}) {
-            $url = 'http://internal-rpc-www2-703689754.us-east-1.elb.amazonaws.com:5005/';
-        } else {
-            $url = 'http://internal-rpc-1484966228.us-east-1.elb.amazonaws.com:5005/';
-        }
-    }
-
-    $req_storage->{url} = $url;
-
+    $req_storage->{url} = $ENV{RPC_URL} || $c->app->config->{rpc_url};
     return;
 }
 
