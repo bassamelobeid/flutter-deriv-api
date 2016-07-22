@@ -42,7 +42,7 @@ sub mt5_new_account {
     {
         $group        = 'real\vanuatu';
         $account_type = 'vanuatu';
-        unless ($landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
+        unless ($client->landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
             return BOM::RPC::v3::Utility::permission_error();
         }
     } else {
