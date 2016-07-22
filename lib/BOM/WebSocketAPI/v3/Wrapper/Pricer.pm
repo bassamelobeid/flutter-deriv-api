@@ -150,7 +150,7 @@ sub _pricing_channel_for_ask {
     my $skip = BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
 
     # uuid is needed regardles redis subscription
-    _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip);
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip);
 }
 
 sub _pricing_channel_for_bid {

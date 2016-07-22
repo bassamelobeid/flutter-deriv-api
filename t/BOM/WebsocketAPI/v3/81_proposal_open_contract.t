@@ -122,7 +122,7 @@ $t = $t->send_ok({
             proposal_open_contract => 1,
             subscribe              => 1,
             req_id                 => 123,
-            passthrough            => { 'sample' => 1 }
+            passthrough            => {'sample' => 1},
         }});
 
 $t   = $t->message_ok;
@@ -130,13 +130,11 @@ $res = decode_json($t->message->[1]);
 
 is $res->{proposal_open_contract}->{id}, undef, 'passthrough should not allow multiple proposal_open_contract subscription';
 
-sleep 3; # be sure next mock will not intersept last call
-
 # It is hack to emulate contract selling and test subcribtion
 my ($url, $call_params);
 
 my $fake_res = Test::MockObject->new();
-$fake_res->mock('result', sub { +{ok => 1 }});
+$fake_res->mock('result', sub { +{ok => 1} });
 $fake_res->mock('is_error', sub { '' });
 
 my $fake_rpc_client = Test::MockObject->new();
@@ -149,7 +147,6 @@ my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
     broker_code => $client->broker_code,
     operation   => 'replica'
 });
-
 my $contract_details = $mapper->get_contract_details_with_transaction_ids($contract_id);
 
 my $msg = {
@@ -165,20 +162,17 @@ BOM::System::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' .
 
 $t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
-note '================================';
 note explain $res;
-
 is $res->{msg_type}, 'proposal_open_contract', 'Got message about selling contract';
 ok $res->{proposal_open_contract}->{sell_time},  'Got message about selling contract';
 ok $res->{proposal_open_contract}->{sell_price}, 'Got message about selling contract';
 is $res->{proposal_open_contract}->{ok},         1, 'Got message about selling contract';
-is $call_params->{contract_id}, $contract_id, 'Request RPC to sell contract';
-ok $call_params->{short_code},  'Request RPC to sell contract';
-ok $call_params->{sell_time},   'Request RPC to sell contract';
+is $call_params->{contract_id}, $contract_id, 'Request RPC to sell contract 1';
+ok $call_params->{short_code},  'Request RPC to sell contract 2';
+ok $call_params->{sell_time},   'Request RPC to sell contract 3';
 ok $url =~ /get_bid/;
 
 $module->unmock_all;
-
 
 $t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok;
 
