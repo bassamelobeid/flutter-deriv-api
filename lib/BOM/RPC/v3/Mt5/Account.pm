@@ -70,10 +70,10 @@ sub mt5_new_account {
         }
     }
 
-    if (exists $acc_exist->{$account_type}) {
+    if (exists $acc->{$account_type}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'Mt5CreateUserError',
-                message_to_client => localize('You already have a [_1] account [_2]', $account_type, $acc_exist->{$account_type})});
+                message_to_client => localize('You already have a [_1] account [_2]', $account_type, $acc->{$account_type})});
     }
 
     $args->{group} = $group;
