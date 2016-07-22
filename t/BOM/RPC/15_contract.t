@@ -574,19 +574,19 @@ subtest 'get_bid_affected_by_corporate_action' => sub {
             'contract_type'         => 'PUT',
             'is_expired'            => '0',
             'is_valid_to_sell'      => '0',
-            'shortcode'             => 'PUT_USAAPL_1333.33_1127312400_1127592000_S0P_0',
+            'shortcode'             => 'PUT_USAAPL_1000_1127312400_1127592000_S0P_0',
             'is_forward_starting'   => '0',
             'bid_price'             => '0.00',
             'longcode'              => 'Win payout if Apple is strictly lower than entry spot at close on 2005-09-24.',
             'date_expiry'           => '1127592000',
             'is_path_dependent'     => '0',
             'display_name'          => 'Apple',
-            'ask_price'             => '133.33',
+            'ask_price'             => '100.00',
             'entry_tick_time'       => '1127312430',
             'entry_spot'            => '111.00',
             'has_corporate_actions' => '1',
             'current_spot_time'     => '1127312490',
-            'payout'                => '1333.33'
+            'payout'                => '1000'
         };
 
         my $wd = (gmtime time)[6];
