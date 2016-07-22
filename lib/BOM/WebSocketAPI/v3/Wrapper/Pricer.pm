@@ -32,14 +32,16 @@ sub proposal {
             },
             response => sub {
                 my ($rpc_response, $api_response, $req_storage) = @_;
-
                 return $api_response if $rpc_response->{error};
+
+                if (my $passthrough = $req_storage->{args}->{passthrough}) {
+                    $api_response->{passthrough} = $passthrough;
+                }
                 if (my $uuid = $req_storage->{uuid}) {
                     $api_response->{proposal}->{id} = $uuid;
                 } else {
                     $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to proposal.'));
                 }
-                #delete $api_response->{proposal}->{tv};
                 return $api_response;
             },
         });
@@ -54,10 +56,13 @@ sub proposal_open_contract {
     if (scalar @contract_ids) {
         my $send_details = sub {
             my $result = shift;
+            my $passthrough = $req_storage->{args}->{passthrough};
+            delete $result->{rpc_time};
             $c->send({
                     json => {
                         msg_type               => 'proposal_open_contract',
-                        proposal_open_contract => {%$result}}
+                        proposal_open_contract => {%$result}},
+                        $passthrough ? (passthrough => $passthrough) : (),
                 },
                 $req_storage
             );
@@ -256,7 +261,7 @@ sub process_bid_event {
                 method => 'proposal_open_contract',
             };
         }
-        #delete $results->{proposal_open_contract}->{$_} for qw(rpc_time);
+        delete $results->{proposal_open_contract}->{rpc_time};
         $c->send({json => $results});
     }
     return;
@@ -309,8 +314,7 @@ sub process_ask_event {
                 method => 'proposal',
             };
         }
-        delete $results->{proposal}->{contract_parameters};
-        #delete $results->{proposal}->{$_} for qw(contract_parameters rpc_time);
+        delete $results->{proposal}->{$_} for qw(contract_parameters rpc_time);
         $c->send({json => $results});
     }
     return;
