@@ -437,7 +437,8 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
     my $self    = shift;
     my %options = @_;
 
-    @{$self->contract->risk_profil->custom_client_profiles} = $self->contract->risk_profile->get_client_profiles($self->client->loginid);
+    my $rp = $self->contract->risk_profile;
+    @{$rp->custom_client_profiles} = $rp->get_client_profiles($self->client->loginid);
 
     my $error_status;
 
