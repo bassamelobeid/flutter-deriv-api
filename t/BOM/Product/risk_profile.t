@@ -72,9 +72,9 @@ subtest 'custom client profile' => sub {
     BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(
         '{"XYZ": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "volidx", "risk_profile": "no_business", "name": "test custom"}}}}');
     my $rp = BOM::Product::RiskProfile->new(%args);
-    $rp->set_client_profiles('ABC');
+    @{$rp->custom_client_profiles} = $rp->get_client_profiles('ABC');
     ok !@{$rp->custom_client_profiles}, 'no custom client limit';
-    $rp->set_client_profiles('XYZ');
+    @{$rp->custom_client_profiles} = $rp->get_client_profiles('XYZ');
     ok @{$rp->custom_client_profiles}, 'custom client limit';
 };
 

@@ -154,16 +154,15 @@ has custom_client_profiles => (
 
 my $custom_limits_txt = '';
 my $custom_limits_compiled = {};
-sub set_client_profiles {
+sub get_client_profiles {
     my ($self, $loginid) = @_;
 
-    @{$self->custom_client_profiles} = ();
     if ($loginid) {
         my $tmp = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles; # use a pointer to avoid copying
         $custom_limits_compiled = from_json($custom_limits_txt = $$tmp) # copy and compile
             unless $$tmp eq $custom_limits_txt;
 
-        @{$self->custom_client_profiles} = grep { $self->_match_conditions($_) } values %$tmp
+        return grep { $self->_match_conditions($_) } values %$tmp
             if $tmp = $custom_limits_compiled->{$loginid} and $tmp = $tmp->{custom_limits};
     }
 
