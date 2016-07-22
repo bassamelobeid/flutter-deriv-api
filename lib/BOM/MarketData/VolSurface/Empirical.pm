@@ -280,7 +280,7 @@ has long_term_vol => (
 );
 
 sub _build_long_term_vol {
-    my $self       = shift;
+    my $self = shift;
 
     my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $self->underlying});
     my $recorded_date = $volsurface->recorded_date;
