@@ -97,8 +97,7 @@ sub proposal_open_contract {
                     if (not $uuid = _pricing_channel_for_bid($c, 'subscribe', $args, $cache)) {
                         my $error =
                             $c->new_error('proposal_open_contract',
-                            'AlreadySubscribedOrLimit',
-                            $c->l('You are either already subscribed or you have reached the limit for proposal_open_contract subscription.'));
+                            'AlreadySubscribed', $c->l('You are already subscribed to proposal_open_contract.'));
                         $c->send({json => $error}, $req_storage);
                         return;
                     } else {
@@ -150,7 +149,7 @@ sub _pricing_channel_for_ask {
 
     my $skip = BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
 
-    # uuid is needed regardles redis subscription
+    # uuid is needed regardless of whether its subscription or not
     return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip);
 }
 
