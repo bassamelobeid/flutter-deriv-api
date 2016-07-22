@@ -3,6 +3,7 @@ package BOM::RPC::v3::MT5::Account;
 use strict;
 use warnings;
 
+use List::Util qw(any);
 use Try::Tiny;
 use Locale::Country::Extra;
 use BOM::RPC::v3::Utility;
@@ -35,13 +36,17 @@ sub mt5_new_account {
     if ($account_type eq 'demo') {
         $group = 'demo\demoforex';
     } elsif (
-        grep {
+        any {
             $account_type eq $_
-        } qw(vanuatu costarica iom malta maltainvest japan)
+        }
+        qw(vanuatu costarica iom malta maltainvest japan)
         )
     {
+        # only enable vanuatu for now, so default all real a/c type to vanuatu
         $group        = 'real\vanuatu';
         $account_type = 'vanuatu';
+
+        # only CR fully authenticated client can open MT real a/c
         unless ($client->landing_company->short eq 'costarica' and $client->client_fully_authenticated) {
             return BOM::RPC::v3::Utility::permission_error();
         }
@@ -116,6 +121,15 @@ sub mt5_new_account {
     };
 }
 
+sub _check_mt_login {
+    my ($client, $mt_login) = @_;
+
+    my $user = BOM::Platform::User->new({email => $client->email});
+    my $mt_login = 'MT' . $mt_login;
+
+    return (any { $mt_login eq $_->loginid } ($user->loginid));
+}
+
 sub mt5_get_settings {
     my $params = shift;
     my $client = $params->{client};
@@ -123,10 +137,7 @@ sub mt5_get_settings {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT' . $login eq $_->loginid } ($user->loginid)) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
+    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $login);
 
     my $settings = BOM::MT5::User::get_user($login);
     if ($settings->{error}) {
@@ -141,7 +152,7 @@ sub mt5_get_settings {
     return $settings;
 }
 
-sub __mt5_is_real_account {
+sub _mt5_is_real_account {
     my ($client, $mt_login) = @_;
 
     my $settings = mt5_get_settings({
@@ -149,11 +160,7 @@ sub __mt5_is_real_account {
         args   => {login => $mt_login},
     });
 
-    my $group = $settings->{group} // '';
-    if ($group =~ /^real\\/) {
-        return 1;
-    }
-    return;
+    return ($settings->{group} // '') =~ /^real\\/;
 }
 
 sub mt5_set_settings {
@@ -163,10 +170,7 @@ sub mt5_set_settings {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT' . $login eq $_->loginid } ($user->loginid)) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
+    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $login);
 
     my $country_code = $args->{country};
     my $country_name = Locale::Country::Extra->new()->country_from_code($country_code);
@@ -190,10 +194,7 @@ sub mt5_password_check {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT' . $login eq $_->loginid } ($user->loginid)) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
+    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $login);
 
     my $status = BOM::MT5::User::password_check($args);
     if ($status->{error}) {
@@ -211,10 +212,7 @@ sub mt5_password_change {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT' . $login eq $_->loginid } ($user->loginid)) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
+    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $login);
 
     my $status = BOM::MT5::User::password_change($args);
     if ($status->{error}) {
@@ -249,13 +247,8 @@ sub mt5_deposit {
     }
 
     # MT5 login or binary loginid not belongs to user
-    my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT' . $to_mt5 eq $_->loginid } ($user->loginid)) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
-    if (not grep { $fm_loginid eq $_->loginid } ($user->loginid)) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
+    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $to_mt5);
+    return BOM::RPC::v3::Utility::permission_error() unless (any { $fm_loginid eq $_->loginid } ($user->loginid));
 
     my $fm_client = BOM::Platform::Client->new({loginid => $fm_loginid});
 
@@ -263,7 +256,7 @@ sub mt5_deposit {
     if ($fm_client->is_virtual) {
         return BOM::RPC::v3::Utility::permission_error();
     }
-    if (not __mt5_is_real_account($fm_client, $to_mt5)) {
+    if (not _mt5_is_real_account($fm_client, $to_mt5)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
@@ -367,13 +360,8 @@ sub mt5_withdrawal {
     }
 
     # MT5 login or binary loginid not belongs to user
-    my $user = BOM::Platform::User->new({email => $client->email});
-    if (not grep { 'MT' . $fm_mt5 eq $_->loginid } ($user->loginid)) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
-    if (not grep { $to_loginid eq $_->loginid } ($user->loginid)) {
-        return BOM::RPC::v3::Utility::permission_error();
-    }
+    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $fm_mt5);
+    return BOM::RPC::v3::Utility::permission_error() unless (any { $to_loginid eq $_->loginid } ($user->loginid));
 
     my $to_client = BOM::Platform::Client->new({loginid => $to_loginid});
 
@@ -381,7 +369,7 @@ sub mt5_withdrawal {
     if ($to_client->is_virtual) {
         return BOM::RPC::v3::Utility::permission_error();
     }
-    if (not __mt5_is_real_account($to_client, $fm_mt5)) {
+    if (not _mt5_is_real_account($to_client, $fm_mt5)) {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
