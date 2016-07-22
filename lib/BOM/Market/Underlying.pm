@@ -317,20 +317,12 @@ sub _build_config {
 
     $default_interest_rate = 0 if $zero_irate{$self->market->name};
 
-    my $build_args = {underlying => $self->system_symbol};
+    my $build_args = {
+        underlying => $self->system_symbol
+    };
 
-    if ($self->use_official_ohlc) {
-        $build_args->{use_official_ohlc} = 1;
-    }
-
-    if ($self->ohlc_daily_open) {
-        $build_args->{ohlc_daily_open} = $self->ohlc_daily_open;
-    }
-
-    if ($self->inverted) {
-        $build_args->{invert_values} = 1;
-    }
-
+    $build_args->{use_official_ohlc} = 1 if ($self->use_official_ohlc);
+    $build_args->{invert_values} = 1 if $self->inverted;
     $build_args->{db_handle} = sub {
         my $dbh = BOM::Database::FeedDB::read_dbh;
         $dbh->{RaiseError} = 1;
@@ -357,8 +349,8 @@ sub _build_config {
         default_dividend_rate                 => $default_dividend_rate,
         default_volatility_duration           => $default_vol_duration,
         use_official_ohlc                     => $self->use_official_ohlc,
-        spot_db_args                          => $build_args,
         pip_size                              => $self->pip_size,
+        spot_db_args                          => $build_args,
     });
 }
 
