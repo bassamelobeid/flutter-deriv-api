@@ -152,15 +152,19 @@ has custom_client_profiles => (
     default => sub { [] },
 );
 
+my $custom_limits_txt = '';
+my $custom_limits_compiled = {};
 sub set_client_profiles {
-    my ($self, $client_loginid) = @_;
+    my ($self, $loginid) = @_;
 
     @{$self->custom_client_profiles} = ();
     if ($client_loginid) {
-        my $custom_client = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
-        if (exists $custom_client->{$client_loginid} and my $limits = $custom_client->{$client_loginid}->{custom_limits}) {
-            @{$self->custom_client_profiles} = grep { $self->_match_conditions($_) } values %$limits;
-        }
+        my $tmp = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles; # use a pointer to avoid copying
+        $custom_limits_compiled = from_json($custom_limits_txt = $$tmp) # copy and compile
+            unless $$tmp eq $custom_limits_txt;
+
+        @{$self->custom_client_profiles} = grep { $self->_match_conditions($_) } values %$tmp
+            if $tmp = $custom_limits_compiled->{$loginid} and $tmp = $tmp->{custom_limits};
     }
 
     return;

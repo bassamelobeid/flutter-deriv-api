@@ -1626,13 +1626,12 @@ sub __validate_payout_limit {
 
     return if $contract->is_spread;
 
-    my $payout = $self->payout;
-    my $rp     = $self->contract->risk_profile;
+    my $rp = $self->contract->risk_profile;
 
     # setups client specific payout and turnover limits, if any.
     if (@{$rp->custom_client_profiles}) {
         my $custom_limit = BOM::System::Config::quants->{risk_profile}{$rp->get_risk_profile}{payout}{$contract->currency};
-        if (defined $custom_limit and $payout > $custom_limit) {
+        if (defined $custom_limit and (my $payout = $self->payout) > $custom_limit) {
             return Error::Base->cuss(
                 -type              => 'PayoutLimitExceeded',
                 -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
