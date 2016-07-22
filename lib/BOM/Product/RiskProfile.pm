@@ -159,12 +159,13 @@ sub get_client_profiles {
     my ($self, $loginid) = @_;
 
     if ($loginid) {
-        my $tmp = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
-        $custom_limits_compiled = from_json($custom_limits_txt = $$tmp)                             # copy and compile
-            unless $$tmp eq $custom_limits_txt;
+        my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
+        $custom_limits_compiled = from_json($custom_limits_txt = $$ptr)                             # copy and compile
+            unless $$ptr eq $custom_limits_txt;
 
-        return grep { $self->_match_conditions($_) } values %$tmp
-            if $tmp = $custom_limits_compiled->{$loginid} and $tmp = $tmp->{custom_limits};
+        my $cl;
+        return grep { $self->_match_conditions($_) } values %$cl
+            if $cl = $custom_limits_compiled->{$loginid} and $cl = $cl->{custom_limits};
     }
 
     return;
