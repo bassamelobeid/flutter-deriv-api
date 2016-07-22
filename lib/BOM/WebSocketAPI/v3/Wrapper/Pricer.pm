@@ -100,6 +100,7 @@ sub proposal_open_contract {
                             'AlreadySubscribedOrLimit',
                             $c->l('You are either already subscribed or you have reached the limit for proposal_open_contract subscription.'));
                         $c->send({json => $error}, $req_storage);
+                        return;
                     } else {
                         # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
                         BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id,
