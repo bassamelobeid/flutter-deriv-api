@@ -116,6 +116,7 @@ sub print_client_details {
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
         tnc_approval_status => $tnc_status,
         client_tnc_version  => $tnc_status ? $tnc_status->reason : '',
+        show_allow_omnibus  => (not $client->is_virtual and $client->landing_company->short eq 'costarica' and not $client->sub_account_of) ? 1 : 0
     };
 
     BOM::Platform::Context::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
@@ -412,7 +413,6 @@ sub client_statement_for_backoffice {
             limit  => $max_number_of_lines
         });
         foreach my $transaction (@{$transactions}) {
-            $transaction->{balance_after} = $txn_dm->get_balance_after_transaction({transaction_time => $transaction->{transaction_time}});
             $transaction->{amount} = abs($transaction->{amount});
         }
     } else {

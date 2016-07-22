@@ -22,9 +22,10 @@
 [% ELSE %]
 <div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
     <div class="grd-parent grd-grid-12 table-header grd-row-padding">
-        <div class="grd-grid-2">Date</div>
+        <div class="grd-grid-1">Date</div>
         <div class="grd-grid-1">Staff</div>
         <div class="grd-grid-1">Ref.</div>
+        <div class="grd-grid-1">Payout</div>
         <div class="grd-grid-4">Item</div>
         <div class="grd-grid-1 right-aligned">Debit</div>
         <div class="grd-grid-1 right-aligned">Credit</div>
@@ -33,11 +34,14 @@
 
     [% FOREACH transaction IN transactions %]
     <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
-        <div class="grd-grid-2">[% transaction.date.datetime %]</div>
+        <div class="grd-grid-1">[% transaction.date.datetime %]</div>
         <div class="grd-grid-1">[% transaction.staff_loginid %]</div>
         [% IF transaction.financial_market_bet_id.defined %]
                 <div class="grd-grid-1">
                         <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => transaction.short_code }) %]">[% transaction.id %]</a>
+                </div>
+                <div class="grd-grid-1">
+                    [% transaction.payout_price %]
                 </div>
                 [% IF transaction.action_type == 'sell' %]
                         <div class="grd-grid-4">
@@ -56,6 +60,7 @@
                 [% END %]
         [% ELSE %]
                 <div class="grd-grid-1">[% transaction.id %]</div>
+                <div class="grd-grid-1"></div>
                 <div class="grd-grid-4">[% transaction.payment_remark | replace('\s+:\s+', ': ') %]</div>
                 [% IF transaction.action_type == 'deposit' %]
                         <div class="grd-grid-1 right-aligned"></div>
