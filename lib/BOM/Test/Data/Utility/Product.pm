@@ -105,8 +105,8 @@ sub create_contract {
     @epoches = sort { $a <=> $b } @epoches;
     for my $epoch (@epoches) {
         my $api = Quant::Framework::Spot::DatabaseAPI->new(
-            underlying => $underlying_symbol,
-            dbh        => $dbh
+            underlying       => $underlying_symbol,
+            db_handle        => $dbh
         );
         my $tick = $api->tick_at({end_time => $epoch});
 

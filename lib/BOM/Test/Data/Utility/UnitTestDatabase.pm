@@ -276,7 +276,7 @@ sub create_fmb_with_ticks {
     for my $epoch ($start->epoch, $start->epoch + 1, $expire->epoch) {
         my $api = Quant::Framework::Spot::DatabaseAPI->new({
             underlying => 'R_100',
-            dbh        => $dbh
+            db_handle  => $dbh
         });
 
         my $tick = $api->tick_at({end_time => $epoch});
