@@ -331,7 +331,7 @@ sub _build_config {
         $build_args->{invert_values} = 1;
     }
 
-    $build_args->{dbh_getter} = sub {
+    $build_args->{db_handle} = sub {
         my $dbh = BOM::Database::FeedDB::read_dbh;
         $dbh->{RaiseError} = 1;
         return $dbh;
