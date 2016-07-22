@@ -272,6 +272,7 @@ sub get_bid {
             # sell_spot and sell_spot_time are updated if the contract is sold
             # or when the contract is expired.
             if ($sell_time or $contract->is_expired) {
+                $response->{is_expired} = 1;
                 my $sell_tick =
                     ($contract->is_path_dependent and $contract->hit_tick)
                     ? $contract->hit_tick
