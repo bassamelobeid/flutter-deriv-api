@@ -1122,7 +1122,13 @@ sub _build_payout {
 sub _calculate_payout {
     my ($self, $base_commission) = @_;
 
-    return $self->ask_price / ($self->theo_probability->amount + $base_commission);
+    # This is an approximation way of getting ask_prob to solve the issue where min ask price does not apply with predefined ask price.
+    # If the issue still persists, a better quaratic solution is required.
+    my $approximate_ask_prob = $self->theo_probability->amount + $base_commission;
+    my $min_ask_prob         = $self->market->deep_otm_threshold;
+
+    my $payout = ($approximate_ask_prob > $min_ask_prob) ? ($self->ask_price / $approximate_ask_prob) : ($self->ask_price / $min_ask_prob);
+    return $payout;
 }
 
 my $commission_base_multiplier = 1;
