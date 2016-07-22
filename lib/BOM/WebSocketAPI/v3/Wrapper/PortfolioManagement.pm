@@ -98,25 +98,16 @@ sub proposal_open_contract {
 sub send_proposal_open_contract {
     my ($c, $id, $args) = @_;
 
-    my $details         = {%$args};
-    my $contract_id     = delete $details->{contract_id};
-    my $sell_time       = delete $details->{sell_time};
-    my $account_id      = delete $details->{account_id};
-    my $buy_price       = delete $details->{buy_price};
-    my $purchase_time   = delete $details->{purchase_time};
-    my $sell_price      = delete $details->{sell_price};
-    my $transaction_ids = delete $details->{transaction_ids};
-
     $c->call_rpc({
-            args        => delete $details->{echo_req},
+            args        => $args->{echo_req},
             method      => 'get_bid',
             msg_type    => 'proposal_open_contract',
             call_params => {
-                short_code  => delete $details->{short_code},
-                contract_id => $contract_id,
-                currency    => delete $details->{currency},
-                is_sold     => delete $details->{is_sold},
-                sell_time   => $sell_time,
+                short_code  => $args->{short_code},
+                contract_id => $args->{contract_id},
+                currency    => $args->{currency},
+                is_sold     => $args->{is_sold},
+                sell_time   => $args->{sell_time},
             },
             error => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
@@ -127,7 +118,7 @@ sub send_proposal_open_contract {
                 my ($c, $rpc_response, $req_storage) = @_;
                 if (exists $rpc_response->{is_expired} and $rpc_response->{is_expired} eq '1' and not $rpc_response->{is_valid_to_sell}) {
                     if ($id) {
-                        warn "Unexpected proposal_open_contract message for account_id: $account_id,  id: $id";
+                        warn "Unexpected proposal_open_contract message for account_id: ".$args->{account_id}.",  id: $id";
                         BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
                         $id = undef;
                     }
@@ -140,11 +131,11 @@ sub send_proposal_open_contract {
                 return $api_response if $rpc_response->{error};
 
                 $api_response->{proposal_open_contract}->{id}              = $id if $id;
-                $api_response->{proposal_open_contract}->{buy_price}       = $buy_price;
-                $api_response->{proposal_open_contract}->{purchase_time}   = $purchase_time;
-                $api_response->{proposal_open_contract}->{transaction_ids} = $transaction_ids;
-                $api_response->{proposal_open_contract}->{sell_price}      = $sell_price if $sell_price;
-                $api_response->{proposal_open_contract}->{sell_time}       = $sell_time if $sell_time;
+                $api_response->{proposal_open_contract}->{buy_price}       = $args->{buy_price};
+                $api_response->{proposal_open_contract}->{purchase_time}   = $args->{purchase_time};
+                $api_response->{proposal_open_contract}->{transaction_ids} = $args->{transaction_ids};
+                $api_response->{proposal_open_contract}->{sell_price}      = $args->{sell_price} if $args->{sell_price};
+                $api_response->{proposal_open_contract}->{sell_time}       = $args->{sell_time} if $args->{sell_time};
 
                 return $api_response;
             },
