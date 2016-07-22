@@ -13,6 +13,11 @@ use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::RPC::v3::Contract;
 
+my %pricer_cmd_handler = (
+    price => \&process_ask_event,
+    bid   => \&process_bid_event,
+);
+
 sub proposal {
     my ($c, $req_storage) = @_;
 
@@ -33,9 +38,7 @@ sub proposal {
                 my ($rpc_response, $api_response, $req_storage) = @_;
                 return $api_response if $rpc_response->{error};
 
-                if (my $passthrough = $req_storage->{args}->{passthrough}) {
-                    $api_response->{passthrough} = $passthrough;
-                }
+                $api_response->{passthrough} = $req_storage->{args}->{passthrough};
                 if (my $uuid = $req_storage->{uuid}) {
                     $api_response->{proposal}->{id} = $uuid;
                 } else {
@@ -52,9 +55,53 @@ sub proposal_open_contract {
 
     my $args         = $req_storage->{args};
     my @contract_ids = keys %$response;
-    if (scalar @contract_ids) {
-        my $send_details = sub {
-            my $result      = shift;
+    return {
+        msg_type               => 'proposal_open_contract',
+        proposal_open_contract => {}} unless @contract_ids;
+
+    my $send_details = sub {
+        my $result = shift;
+    };
+
+    foreach my $contract_id (@contract_ids) {
+        if (exists $response->{$contract_id}->{error}) {
+            my $error =
+                $c->new_error('proposal_open_contract', 'ContractValidationError', $c->l($response->{$contract_id}->{error}->{message_to_client}));
+            $c->send({json => $error}, $req_storage);
+        } else {
+            my $uuid;
+
+            if (    exists $args->{subscribe}
+                and $args->{subscribe} eq '1'
+                and not $response->{$contract_id}->{is_expired}
+                and not $response->{$contract_id}->{is_sold})
+            {
+                my $account_id = delete $response->{$contract_id}->{account_id};
+                my $cache      = {
+                    account_id      => $account_id,
+                    short_code      => $response->{$contract_id}->{shortcode},
+                    contract_id     => $response->{$contract_id}->{contract_id},
+                    currency        => $response->{$contract_id}->{currency},
+                    buy_price       => $response->{$contract_id}->{buy_price},
+                    sell_price      => $response->{$contract_id}->{sell_price},
+                    sell_time       => $response->{$contract_id}->{sell_time},
+                    purchase_time   => $response->{$contract_id}->{purchase_time},
+                    is_sold         => $response->{$contract_id}->{is_sold},
+                    transaction_ids => $response->{$contract_id}->{transaction_ids},
+                };
+
+                if (not $uuid = _pricing_channel_for_bid($c, 'subscribe', $args, $cache)) {
+                    my $error =
+                        $c->new_error('proposal_open_contract', 'AlreadySubscribed', $c->l('You are already subscribed to proposal_open_contract.'));
+                    $c->send({json => $error}, $req_storage);
+                    next;
+                } else {
+                    # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id,
+                        $uuid, {contract_id => $contract_id});
+                }
+            }
+            my $result = {$uuid ? (id => $uuid) : (), %{$response->{$contract_id}}};
             my $passthrough = $req_storage->{args}->{passthrough};
             delete $result->{rpc_time};
             $c->send({
@@ -66,55 +113,7 @@ sub proposal_open_contract {
                 },
                 $req_storage
             );
-        };
-        foreach my $contract_id (@contract_ids) {
-            if (exists $response->{$contract_id}->{error}) {
-                my $error = $c->new_error('proposal_open_contract',
-                    'ContractValidationError', $c->l($response->{$contract_id}->{error}->{message_to_client}));
-                $c->send({json => $error}, $req_storage);
-            } else {
-                my $uuid;
-
-                if (    exists $args->{subscribe}
-                    and $args->{subscribe} eq '1'
-                    and not $response->{$contract_id}->{is_expired}
-                    and not $response->{$contract_id}->{is_sold})
-                {
-                    my $account_id = delete $response->{$contract_id}->{account_id};
-                    my $cache      = {
-                        account_id      => $account_id,
-                        short_code      => $response->{$contract_id}->{shortcode},
-                        contract_id     => $response->{$contract_id}->{contract_id},
-                        currency        => $response->{$contract_id}->{currency},
-                        buy_price       => $response->{$contract_id}->{buy_price},
-                        sell_price      => $response->{$contract_id}->{sell_price},
-                        sell_time       => $response->{$contract_id}->{sell_time},
-                        purchase_time   => $response->{$contract_id}->{purchase_time},
-                        is_sold         => $response->{$contract_id}->{is_sold},
-                        transaction_ids => $response->{$contract_id}->{transaction_ids},
-                    };
-
-                    if (not $uuid = _pricing_channel_for_bid($c, 'subscribe', $args, $cache)) {
-                        my $error =
-                            $c->new_error('proposal_open_contract',
-                            'AlreadySubscribed', $c->l('You are already subscribed to proposal_open_contract.'));
-                        $c->send({json => $error}, $req_storage);
-                        return;
-                    } else {
-                        # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id,
-                            $uuid, {contract_id => $contract_id});
-                    }
-                }
-                my $res = {$uuid ? (id => $uuid) : (), %{$response->{$contract_id}}};
-                $send_details->($res);
-            }
         }
-        return;
-    } else {
-        return {
-            msg_type               => 'proposal_open_contract',
-            proposal_open_contract => {}};
     }
     return;
 }
@@ -145,7 +144,7 @@ sub _pricing_channel_for_ask {
     $args_hash{language} = $c->stash('language') || 'EN';
     $args_hash{price_daemon_cmd} = $price_daemon_cmd;
     my $redis_channel = _serialized_args(\%args_hash);
-    my $subchannel = $args->{amount_per_point} || $args->{amount};
+    my $subchannel = $args->{amount_per_point} // $args->{amount};
 
     my $skip = BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
 
@@ -158,7 +157,7 @@ sub _pricing_channel_for_bid {
     my $price_daemon_cmd = 'bid';
 
     my %hash;
-    $hash{$_} = delete $cache->{$_} for qw(short_code contract_id currency is_sold sell_time);
+    @hash{qw(short_code contract_id currency is_sold sell_time)} = delete @{$cache}{qw(short_code contract_id currency is_sold sell_time)};
     $hash{language} = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
     my $redis_channel = _serialized_args(\%hash);
@@ -218,12 +217,11 @@ sub process_pricing_events {
     my $response         = decode_json($message);
     my $price_daemon_cmd = delete $response->{price_daemon_cmd};
 
-    my %handler = (
-        price => \&process_ask_event,
-        bid   => \&process_bid_event,
-    );
-
-    $handler{$price_daemon_cmd}->($c, $response, $channel_name, $pricing_channel);
+    if (exists $pricer_cmd_handler{$price_daemon_cmd}) {
+        $pricer_cmd_handler{$price_daemon_cmd}->($c, $response, $channel_name, $pricing_channel);
+    } else {
+        warn "Unknown command received from pricer daemon : " . ($price_daemon_cmd // 'undef');
+    }
 
     return;
 }
