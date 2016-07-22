@@ -1,4 +1,4 @@
-package BOM::RPC::v3::Mt5::Account;
+package BOM::RPC::v3::MT5::Account;
 
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::User;
-use BOM::Mt5::User;
+use BOM::MT5::User;
 use BOM::Database::Transaction;
 
 sub mt5_login_list {
@@ -72,7 +72,7 @@ sub mt5_new_account {
 
     if (exists $acc->{$account_type}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'Mt5CreateUserError',
+                code              => 'MT5CreateUserError',
                 message_to_client => localize('You already have a [_1] account [_2]', $account_type, $acc->{$account_type})});
     }
 
@@ -81,10 +81,10 @@ sub mt5_new_account {
     my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
     $args->{country} = $country_name if ($country_name);
 
-    my $status = BOM::Mt5::User::create_user($args);
+    my $status = BOM::MT5::User::create_user($args);
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'Mt5CreateUserError',
+                code              => 'MT5CreateUserError',
                 message_to_client => $status->{error}});
     }
     my $mt5_login = $status->{login};
@@ -97,7 +97,7 @@ sub mt5_new_account {
     # funds in Virtual money
     if ($account_type eq 'demo') {
         $balance = 5000;
-        $status  = BOM::Mt5::User::deposit({
+        $status  = BOM::MT5::User::deposit({
             login   => $mt5_login,
             amount  => $balance,
             comment => 'Binary MT5 Virtual Money deposit.'
@@ -128,10 +128,10 @@ sub mt5_get_settings {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $settings = BOM::Mt5::User::get_user($login);
+    my $settings = BOM::MT5::User::get_user($login);
     if ($settings->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'Mt5GetUserError',
+                code              => 'MT5GetUserError',
                 message_to_client => $settings->{error}});
     }
 
@@ -172,10 +172,10 @@ sub mt5_set_settings {
     my $country_name = Locale::Country::Extra->new()->country_from_code($country_code);
     $args->{country} = $country_name if ($country_name);
 
-    my $settings = BOM::Mt5::User::update_user($args);
+    my $settings = BOM::MT5::User::update_user($args);
     if ($settings->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'Mt5UpdateUserError',
+                code              => 'MT5UpdateUserError',
                 message_to_client => $settings->{error}});
     }
 
@@ -195,10 +195,10 @@ sub mt5_password_check {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $status = BOM::Mt5::User::password_check($args);
+    my $status = BOM::MT5::User::password_check($args);
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'Mt5PasswordCheckError',
+                code              => 'MT5PasswordCheckError',
                 message_to_client => $status->{error}});
     }
     return 1;
@@ -216,10 +216,10 @@ sub mt5_password_change {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $status = BOM::Mt5::User::password_change($args);
+    my $status = BOM::MT5::User::password_change($args);
     if ($status->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'Mt5PasswordChangeError',
+                code              => 'MT5PasswordChangeError',
                 message_to_client => $status->{error}});
     }
     return 1;
@@ -238,7 +238,7 @@ sub mt5_deposit {
     my $error_sub = sub {
         my ($msg_client, $msg) = @_;
         BOM::RPC::v3::Utility::create_error({
-            code              => 'Mt5DepositError',
+            code              => 'MT5DepositError',
             message_to_client => localize('There was an error processing the request.') . ' ' . $msg_client,
             ($msg) ? (message => $msg) : (),
         });
@@ -326,7 +326,7 @@ sub mt5_deposit {
     $payment->save(cascade => 1);
 
     # deposit to MT5 a/c
-    my $status = BOM::Mt5::User::deposit({
+    my $status = BOM::MT5::User::deposit({
         login   => $to_mt5,
         amount  => $amount,
         comment => $comment
@@ -356,7 +356,7 @@ sub mt5_withdrawal {
     my $error_sub = sub {
         my ($msg_client, $msg) = @_;
         BOM::RPC::v3::Utility::create_error({
-            code              => 'Mt5WithdrawalError',
+            code              => 'MT5WithdrawalError',
             message_to_client => localize('There was an error processing the request.') . ' ' . $msg_client,
             ($msg) ? (message => $msg) : (),
         });
@@ -404,7 +404,7 @@ sub mt5_withdrawal {
     my $comment = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
 
     # withdraw from MT5 a/c
-    my $status = BOM::Mt5::User::withdrawal({
+    my $status = BOM::MT5::User::withdrawal({
         login   => $fm_mt5,
         amount  => $amount,
         comment => $comment
