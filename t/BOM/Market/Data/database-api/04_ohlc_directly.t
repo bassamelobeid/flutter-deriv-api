@@ -70,7 +70,7 @@ subtest 'Daily - Start-End - Official' => sub {
     my $api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1,
-        dbh               => $dbh,
+        db_handle         => $dbh,
     );
 
     my $ticks = $api->ohlc_start_end({
@@ -109,7 +109,7 @@ subtest 'Daily - Start-End - Simple' => sub {
     my $api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
         use_official_ohlc => 1,
-        dbh               => $dbh,
+        db_handle         => $dbh,
     );
 
     my $ticks = $api->ohlc_start_end({
@@ -145,7 +145,7 @@ subtest 'Daily - Start-End - Simple' => sub {
 };
 
 subtest 'Daily - Start-End - Beserk User' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     throws_ok {
         warnings_like {

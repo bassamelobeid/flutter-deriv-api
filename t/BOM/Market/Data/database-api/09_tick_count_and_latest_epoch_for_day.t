@@ -81,7 +81,7 @@ subtest 'prepare ticks' => sub {
 };
 
 subtest 'Basic test' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => $symbol, db_handle => $dbh);
 
     subtest 'Ideal date 2012-05-15' => sub {
         my $output = $api->combined_realtime_tick({
@@ -140,7 +140,7 @@ subtest 'New tick induction' => sub {
     }
     'Tick - 2012-05-15 12:10:01';
 
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => $symbol, db_handle => $dbh);
 
     my $output = $api->combined_realtime_tick({
         start_time => '2012-05-15 00:00:00',
@@ -165,7 +165,7 @@ subtest 'Next day induction' => sub {
     }
     'Tick - 2012-05-16 05:10:01';
 
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => $symbol, dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => $symbol, db_handle => $dbh);
 
     subtest 'Date 2012-05-15' => sub {
         my $output = $api->combined_realtime_tick({

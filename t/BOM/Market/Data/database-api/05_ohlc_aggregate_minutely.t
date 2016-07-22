@@ -521,7 +521,7 @@ subtest 'prepare ohlc minutely' => sub {
 };
 
 subtest '5min OHLC Fetch - Start-End' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     my $end_time = '2012-06-01 10:25:00';
     my $ohlcs    = $api->ohlc_start_end({
@@ -605,7 +605,7 @@ subtest '5min OHLC Fetch - Start-End' => sub {
 };
 
 subtest '5min OHLC Fetch - Start-End - Narrower' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     my $start_time = '2012-06-01 10:05:00';
     my $end_time   = '2012-06-01 10:20:00';
@@ -656,7 +656,7 @@ subtest '5min OHLC Fetch - Start-End - Narrower' => sub {
 };
 
 subtest '5min OHLC Fetch - Start-End - Way off mark' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     my $ohlcs = $api->ohlc_start_end({
         start_time         => '2012-03-15 00:00:00',
@@ -668,7 +668,7 @@ subtest '5min OHLC Fetch - Start-End - Way off mark' => sub {
 };
 
 subtest '5min OHLC Fetch - Start-End - Beserk User' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     throws_ok {
         warning_like {

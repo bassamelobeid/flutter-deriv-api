@@ -648,7 +648,7 @@ subtest 'prepare ohlc daily' => sub {
 };
 
 subtest '1 week OHLC Fetch - Start-End' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     my $ohlcs = $api->ohlc_start_end({
         start_time         => '2012-05-27 00:00:00',
@@ -731,7 +731,7 @@ subtest '1 week OHLC Fetch - Start-End' => sub {
 };
 
 subtest '1 week OHLC Fetch - Start-End - Narrower' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     my $start_time = '2012-06-04 00:00:00';
     my $end_time   = '2012-06-18 00:00:00';
@@ -777,7 +777,7 @@ subtest '1 week OHLC Fetch - Start-End - Narrower' => sub {
 };
 
 subtest '1 week OHLC Fetch - Start-End - Way off mark' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     my $ohlcs = $api->ohlc_start_end({
         start_time         => '2012-01-15 00:00:00',
@@ -789,7 +789,7 @@ subtest '1 week OHLC Fetch - Start-End - Way off mark' => sub {
 };
 
 subtest '1 week OHLC Fetch - Start-End - Beserk User' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     throws_ok {
         warning_like {

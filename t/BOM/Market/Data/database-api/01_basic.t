@@ -18,7 +18,7 @@ $dbh->{RaiseError} = 1;
 subtest 'Object creation' => sub {
     my $api;
     lives_ok {
-        $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+        $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
     }
     'Able to create api object';
 
@@ -26,12 +26,12 @@ subtest 'Object creation' => sub {
 };
 
 subtest 'Creation makes no sense without underlying or db handler' => sub {
-    throws_ok { Quant::Framework::Spot::DatabaseAPI->new(dbh => undef); } qr/Attribute \(underlying\) is required/, 'No Underlying';
-    throws_ok { Quant::Framework::Spot::DatabaseAPI->new(underlying => undef); } qr/Attribute \(dbh\) is required/, 'No Underlying';
+    throws_ok { Quant::Framework::Spot::DatabaseAPI->new(db_handle => undef); } qr/Attribute \(underlying\) is required/, 'No Underlying';
+    throws_ok { Quant::Framework::Spot::DatabaseAPI->new(underlying => undef); } qr/Attribute \(db_handle\) is required/, 'No Underlying';
 };
 
 subtest 'read dbh set' => sub {
-    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     ok $api->dbh->ping, 'Able to connect to database';
 };
@@ -42,11 +42,11 @@ subtest 'Historical Object creation' => sub {
         $api = Quant::Framework::Spot::DatabaseAPI->new(
             underlying => 'frxUSDJPY',
             historical => 1,
-            dbh        => $dbh,
+            db_handle  => $dbh,
         );
     }
     'Able to create api object';
 
     isa_ok $api, 'Quant::Framework::Spot::DatabaseAPI';
-    ok $api->dbh->ping, 'Able to connect to database';
+    ok $api->db_handle->ping, 'Able to connect to database';
 };

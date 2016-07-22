@@ -151,7 +151,7 @@ subtest 'Test ohlc daily from tick table' => sub {
 
 my $start_time = '2012-07-08 00:00:00';
 my $end_time   = '2012-07-08 11:00:00';
-my $api        = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+my $api        = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 my ($ohlcs, $ohlc);
 
 subtest 'ohlc_daily_list - within 1 day' => sub {
