@@ -180,26 +180,13 @@ sub _match_conditions {
     my $real_tests_performed;
     my $ci = $self->contract_info;
     while (my ($k, $v) = each %$custom) {
-        next if exists $_no_condition{$k}; # skip test
+        next if exists $_no_condition{$k};    # skip test
         $real_tests_performed = 1;
-        next if $v eq $ci->{$k};           # match: continue with next condition
-        return;                            # no match
+        next if $v eq $ci->{$k};              # match: continue with next condition
+        return;                               # no match
     }
 
-    return $real_tests_performed;          # all conditions match
-
-    # my %copy = %$custom;
-    # delete $copy{$_} for qw(name risk_profile updated_by updated_on);
-
-    # # if there's no condition, exit.
-    # return if not keys %copy;
-
-    # my %reversed = reverse %copy;
-    # if (all { $reversed{$self->contract_info->{$_}} } values %reversed) {
-    #     return $custom;
-    # }
-
-    # return;
+    return $real_tests_performed;             # all conditions match
 }
 
 no Moose;
