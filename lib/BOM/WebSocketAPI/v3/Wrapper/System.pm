@@ -23,11 +23,11 @@ sub forget_all {
     if (my $type = $req_storage->{args}->{forget_all}) {
         if ($type eq 'balance' or $type eq 'transaction' or $type eq '1') {
             $removed_ids = _forget_transaction_subscription($c, $type);
-        }
-        if ($type eq 'proposal' or $type eq '1') {
+        } elsif ($type eq 'proposal' or $type eq '1') {
             $removed_ids = _forget_all_pricing_subscriptions($c);
+        } else {
+            $removed_ids = _forget_feed_subscription($c, $type);
         }
-        $removed_ids = _forget_feed_subscription($c, $type);
     }
 
     return {
@@ -126,8 +126,13 @@ sub _forget_all_pricing_subscriptions {
             return $removed_ids;
         }
         foreach my $serialized_args (keys %{$pricing_channel}) {
-            $c->stash('redis_pricer')->unsubscribe([$serialized_args]);
-            delete $pricing_channel->{$serialized_args};
+            if ($serialized_args ne 'uuid') {
+                $c->stash('redis_pricer')->unsubscribe([$serialized_args]);
+                delete $pricing_channel->{$serialized_args};
+            }
+        }
+        foreach my $id (keys %{$pricing_channel->{uuid}}) {
+            push @$removed_ids, $id;
         }
         delete $pricing_channel->{uuid};
         $c->stash('pricing_channel' => $pricing_channel);
