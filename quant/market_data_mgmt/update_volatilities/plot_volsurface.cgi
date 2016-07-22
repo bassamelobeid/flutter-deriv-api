@@ -35,7 +35,7 @@ print "</form>";
 
 Bar("Smile Flags for $underlying_symbol");
 print '<h3>Volatility Surface in use:</h3>';
-print $vol_surface->get_smile_flags;
+print $vol_surface->validation_error;
 
 Bar('Volatility Smiles for ' . $underlying->symbol);
 my $display = BOM::MarketData::Display::VolatilitySurface->new(surface => $vol_surface);
