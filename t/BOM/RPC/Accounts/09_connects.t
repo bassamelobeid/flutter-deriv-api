@@ -34,7 +34,7 @@ ok $res->{status}, 'connect_add';
 $res = BOM::RPC::v3::Accounts::connect_list({
     client => $client,
 });
-is_deeply $res->{records}, ['google'], 'connect_list ok';
+is_deeply $res, ['google'], 'connect_list ok';
 
 $res = BOM::RPC::v3::Accounts::connect_del({
     client => $client,
@@ -45,7 +45,7 @@ ok $res->{status}, 'connect_del';
 $res = BOM::RPC::v3::Accounts::connect_list({
     client => $client,
 });
-is_deeply $res->{records}, [], 'connect_list ok';
+is_deeply $res, [], 'connect_list ok';
 
 done_testing();
 

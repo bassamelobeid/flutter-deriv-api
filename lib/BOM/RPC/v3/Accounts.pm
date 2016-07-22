@@ -1212,9 +1212,7 @@ sub connect_list {
     my $user_connect = BOM::Database::Model::UserConnect->new;
     my @providers    = $user_connect->get_connects_by_user_id($user->id);
 
-    return {
-        records => \@providers
-    };
+    return \@providers;
 }
 
 1;
