@@ -25,9 +25,8 @@ sub proposal {
             success  => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $cache = {
-                    longcode => $rpc_response->{longcode},
-                    contract_parameters => delete $rpc_response->{contract_parameters}
-                };
+                    longcode            => $rpc_response->{longcode},
+                    contract_parameters => delete $rpc_response->{contract_parameters}};
                 $req_storage->{uuid} = _pricing_channel_for_ask($c, 'subscribe', $req_storage->{args}, $cache);
             },
             response => sub {
@@ -55,14 +54,15 @@ sub proposal_open_contract {
     my @contract_ids = keys %$response;
     if (scalar @contract_ids) {
         my $send_details = sub {
-            my $result = shift;
+            my $result      = shift;
             my $passthrough = $req_storage->{args}->{passthrough};
             delete $result->{rpc_time};
             $c->send({
                     json => {
                         msg_type               => 'proposal_open_contract',
-                        proposal_open_contract => {%$result}},
-                        $passthrough ? (passthrough => $passthrough) : (),
+                        proposal_open_contract => {%$result}
+                    },
+                    $passthrough ? (passthrough => $passthrough) : (),
                 },
                 $req_storage
             );
@@ -150,7 +150,7 @@ sub _pricing_channel_for_ask {
     my $skip = BOM::WebSocketAPI::v3::Wrapper::Streamer::_skip_streaming($args);
 
     # uuid is needed regardles redis subscription
-    _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip)
+    _create_pricer_channel($c, $args, $redis_channel, $subchannel, $price_daemon_cmd, $cache, $skip);
 }
 
 sub _pricing_channel_for_bid {
@@ -220,8 +220,8 @@ sub process_pricing_events {
     my $price_daemon_cmd = delete $response->{price_daemon_cmd};
 
     my %handler = (
-            price => \&process_ask_event,
-            bid => \&process_bid_event,
+        price => \&process_ask_event,
+        bid   => \&process_bid_event,
     );
 
     $handler{$price_daemon_cmd}->($c, $response, $channel_name, $pricing_channel);

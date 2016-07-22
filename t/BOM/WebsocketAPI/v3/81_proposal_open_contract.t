@@ -130,7 +130,7 @@ $res = decode_json($t->message->[1]);
 
 is $res->{proposal_open_contract}->{id}, undef, 'passthrough should not allow multiple proposal_open_contract subscription';
 
-sleep 2; # be sure next mock will not intersept last call
+sleep 3; # be sure next mock will not intersept last call
 
 # It is hack to emulate contract selling and test subcribtion
 my ($url, $call_params);
@@ -165,6 +165,8 @@ BOM::System::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' .
 
 $t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
+note '================================';
+note explain $res;
 
 is $res->{msg_type}, 'proposal_open_contract', 'Got message about selling contract';
 ok $res->{proposal_open_contract}->{sell_time},  'Got message about selling contract';

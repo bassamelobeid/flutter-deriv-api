@@ -43,9 +43,9 @@ sub forget_one {
 
     my %removed_ids;
     if ($id && ($id =~ /-/)) {
-        @removed_ids{@{_forget_feed_subscription($c, $id)}}        = ();
+        @removed_ids{@{_forget_feed_subscription($c, $id)}} = ();
         @removed_ids{@{_forget_transaction_subscription($c, $id)}} = ();
-        @removed_ids{@{_forget_pricing_subscription($c, $id)}}     = ();
+        @removed_ids{@{_forget_pricing_subscription($c, $id)}} = ();
     }
 
     return scalar keys %removed_ids;
@@ -112,9 +112,9 @@ sub _forget_pricing_subscription {
 sub _forget_all_pricing_subscriptions {
     my ($c, $type) = @_;
     my $price_daemon_cmd =
-          $type eq 'proposal' ?  'price'
+          $type eq 'proposal'               ? 'price'
         : $type eq 'proposal_open_contract' ? 'bid'
-        : undef; 
+        :                                     undef;
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
