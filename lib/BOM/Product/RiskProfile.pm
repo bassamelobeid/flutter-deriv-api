@@ -111,6 +111,7 @@ has custom_profiles => (
     lazy_build => 1,
 );
 
+# this is a cache to avoid from_json for each contract
 my $product_profiles_txt      = '';
 my $product_profiles_compiled = {};
 
@@ -151,6 +152,7 @@ has custom_client_profiles => (
     default => sub { [] },
 );
 
+# this is a cache to avoid from_json for each contract
 my $custom_limits_txt      = '';
 my $custom_limits_compiled = {};
 
