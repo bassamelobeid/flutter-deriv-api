@@ -411,9 +411,10 @@ sub process_transaction_updates {
                         # cancel proposal open contract streaming which will cancel transaction subscription also
                         BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $type);
 
-                        $args->{is_sold}    = 1;
-                        $args->{sell_price} = $payload->{amount};
-                        $args->{sell_time}  = Date::Utility->new($payload->{sell_time})->epoch;
+                        $args->{is_sold}                 = 1;
+                        $args->{sell_price}              = $payload->{amount};
+                        $args->{sell_time}               = Date::Utility->new($payload->{sell_time})->epoch;
+                        $args->{transaction_ids}->{sell} = $payload->{id};
 
                         # send proposal details last time
                         BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal_open_contract($c, undef, $args);
