@@ -118,7 +118,7 @@ sub send_proposal_open_contract {
                 my ($c, $rpc_response, $req_storage) = @_;
                 if (exists $rpc_response->{is_expired} and $rpc_response->{is_expired} eq '1' and not $rpc_response->{is_valid_to_sell}) {
                     if ($id) {
-                        warn "Unexpected proposal_open_contract message for account_id: ".$args->{account_id}.",  id: $id";
+                        warn "Unexpected proposal_open_contract message for account_id: " . $args->{account_id} . ",  id: $id";
                         BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
                         $id = undef;
                     }
