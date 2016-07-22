@@ -381,6 +381,12 @@ sub send_proposal_open_contract_last_time {
     return if not $pricing_channel or not $pricing_channel->{uuid}->{$uuid};
     my $cache = $pricing_channel->{uuid}->{$uuid}->{cache};
 
+    my $forget_subscr_sub = sub {
+        my ($c, $rpc_response) = @_;
+        # cancel proposal open contract streaming which will cancel transaction subscription also
+        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
+    };
+
     $c->call_rpc({
             args        => $pricing_channel->{uuid}->{$uuid}->{args},
             method      => 'get_bid',
@@ -392,22 +398,22 @@ sub send_proposal_open_contract_last_time {
                 sell_time   => $args->{sell_time},
                 is_sold     => 1,
             },
-            success => sub {
-                my ($c, $rpc_response) = @_;
+            response => sub {
+                my ($rpc_response, $api_response, $req_storage) = @_;
 
-                $rpc_response->{buy_price}               = $cache->{buy_price};
-                $rpc_response->{purchase_time}           = $cache->{purchase_time};
-                $rpc_response->{transaction_ids}         = $cache->{transaction_ids};
-                $rpc_response->{transaction_ids}->{sell} = $args->{id};
-                $rpc_response->{sell_price}              = sprintf('%.2f', $args->{amount});
-                $rpc_response->{sell_time}               = $args->{sell_time};
+                return $api_response if $rpc_response->{error};
 
-                # cancel proposal open contract streaming which will cancel transaction subscription also
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
+                $api_response->{proposal_open_contract}->{buy_price}               = $cache->{buy_price};
+                $api_response->{proposal_open_contract}->{purchase_time}           = $cache->{purchase_time};
+                $api_response->{proposal_open_contract}->{transaction_ids}         = $cache->{transaction_ids};
+                $api_response->{proposal_open_contract}->{transaction_ids}->{sell} = $args->{id};
+                $api_response->{proposal_open_contract}->{sell_price}              = sprintf('%.2f', $args->{amount});
+                $api_response->{proposal_open_contract}->{sell_time}               = $args->{sell_time};
+
+                return $api_response;
             },
-            error => sub {
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
-            }
+            success => $forget_subscr_sub,
+            error   => $forget_subscr_sub,
         });
     return;
 }
