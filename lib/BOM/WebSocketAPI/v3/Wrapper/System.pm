@@ -118,7 +118,7 @@ sub _forget_all_pricing_subscriptions {
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
-        @$removed_ids = keys %{$pricing_channel->{$price_daemon_cmd}};
+        @$removed_ids = keys %{$pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}};
         foreach my $uuid (@$removed_ids) {
             my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
             if ($pricing_channel->{$redis_channel}) {
