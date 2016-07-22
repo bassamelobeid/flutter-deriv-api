@@ -1188,7 +1188,7 @@ sub connect_add {
                 message_to_client => $res->{error}});
     }
 
-    return {connect_add => 1};
+    return {status => 1};
 }
 
 sub connect_del {
@@ -1200,7 +1200,7 @@ sub connect_del {
     my $user_connect = BOM::Database::Model::UserConnect->new;
     my $res = $user_connect->remove_connect($user->id, $params->{args}->{provider});
 
-    return {connect_del => $res ? 1 : 0};
+    return {status => $res ? 1 : 0};
 }
 
 sub connect_list {
@@ -1213,8 +1213,7 @@ sub connect_list {
     my @providers    = $user_connect->get_connects_by_user_id($user->id);
 
     return {
-        connect_list => 1,
-        providers    => \@providers
+        records => \@providers
     };
 }
 

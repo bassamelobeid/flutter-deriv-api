@@ -29,23 +29,23 @@ my $res = BOM::RPC::v3::Accounts::connect_add({
     client => $client,
     args   => {connection_token => 'mock'},
 });
-ok $res->{connect_add}, 'connect_add';
+ok $res->{status}, 'connect_add';
 
 $res = BOM::RPC::v3::Accounts::connect_list({
     client => $client,
 });
-is_deeply $res->{providers}, ['google'], 'connect_list ok';
+is_deeply $res->{records}, ['google'], 'connect_list ok';
 
 $res = BOM::RPC::v3::Accounts::connect_del({
     client => $client,
     args   => {provider => 'google'},
 });
-ok $res->{connect_del}, 'connect_del';
+ok $res->{status}, 'connect_del';
 
 $res = BOM::RPC::v3::Accounts::connect_list({
     client => $client,
 });
-is_deeply $res->{providers}, [], 'connect_list ok';
+is_deeply $res->{records}, [], 'connect_list ok';
 
 done_testing();
 
