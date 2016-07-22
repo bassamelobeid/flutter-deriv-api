@@ -10,6 +10,8 @@ use JSON qw(from_json);
 use List::Util qw(first);
 use List::MoreUtils qw(all);
 
+use constant RISK_PROFILES => [qw(no_business extreme_risk high_risk medium_risk low_risk)];
+
 has [qw(contract_category underlying expiry_type start_type currency barrier_category)] => (
     is       => 'ro',
     required => 1,
@@ -34,29 +36,21 @@ sub _build_contract_info {
     };
 }
 
-has limits => (
-    is      => 'ro',
-    default => sub {
-        return BOM::System::Config::quants->{risk_profile};
-    },
-);
-
-has risk_profiles => (
-    is      => 'ro',
-    default => sub { [qw(no_business extreme_risk high_risk medium_risk low_risk)] },
-);
+sub limits {
+    return BOM::System::Config::quants->{risk_profile};
+}
 
 sub get_risk_profile {
     my $self = shift;
 
-    foreach my $p (@{$self->risk_profiles}) {
+    foreach my $p (@{RISK_PROFILES()}) {
         if (first { $_->{risk_profile} eq $p } @{$self->applicable_profiles}) {
             return $p;
         }
     }
 
     # if it is unknown, set it to no business profile
-    return $self->risk_profiles->[0];
+    return RISK_PROFILES->[0];
 }
 
 sub get_turnover_limit_parameters {
@@ -158,14 +152,14 @@ has custom_client_profiles => (
     default => sub { [] },
 );
 
-sub include_client_profiles {
+sub set_client_profiles {
     my ($self, $client_loginid) = @_;
 
+    @{$self->custom_client_profiles} = ();
     if ($client_loginid) {
         my $custom_client = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
         if (exists $custom_client->{$client_loginid} and my $limits = $custom_client->{$client_loginid}->{custom_limits}) {
-            my @matches = grep { $self->_match_conditions($_) } values %$limits;
-            push @{$self->custom_client_profiles}, @matches;
+            @{$self->custom_client_profiles} = grep { $self->_match_conditions($_) } values %$limits;
         }
     }
 
