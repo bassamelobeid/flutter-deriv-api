@@ -246,4 +246,30 @@ subtest "Friday after close, weekend, won't open check." => sub {
     }
 };
 
+subtest 'do not update one hour after rollover' => sub {
+    my $rollover_date = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($fake_date);
+    my $au = BOM::MarketData::AutoUpdater::Forex->new(
+        symbols_to_update  => ['frxUSDJPY'],
+        _connect_ftp       => 0,
+        surfaces_from_file => {
+            frxUSDJPY => {
+                surface       => $fake_surface->surface_data,
+                recorded_date => $rollover_date,
+                type          => $fake_surface->type
+            }});
+    lives_ok { $au->run } 'run without dying';
+    ok !$au->report->{frxUSDJPY}, 'update skipped';
+    $au = BOM::MarketData::AutoUpdater::Forex->new(
+        symbols_to_update  => ['frxUSDJPY'],
+        _connect_ftp       => 0,
+        surfaces_from_file => {
+            frxUSDJPY => {
+                surface       => $fake_surface->surface_data,
+                recorded_date => $rollover_date->plus_time_interval('1h1s'),
+                type          => $fake_surface->type
+            }});
+    lives_ok { $au->run } 'run without dying';
+    ok $au->report->{frxUSDJPY}->{success}, 'update successful';
+};
+
 restore_time();
