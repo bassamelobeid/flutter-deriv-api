@@ -28,6 +28,7 @@ use VolSurface::Utils qw( get_delta_for_strike get_strike_for_spot_delta get_1vo
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 use BOM::Greeks::FiniteDifference;
+use BOM::System::Chronicle;
 
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::DisplayGreeks;
@@ -224,7 +225,7 @@ sub _get_moneyness_surface {
     my $dates = [];
     my $bet   = $self->bet;
     try {
-        $dates = $bet->volsurface->fetch_historical_surface_date({back_to => 20});
+        $dates = $self->_fetch_historical_surface_date({back_to => 20, symbol => $bet->underlying->symbol});
     }
     catch {
         warn("caught error in _get_moneyness_surface: $_");
@@ -242,6 +243,29 @@ sub _get_moneyness_surface {
     return $master_surface_content;
 }
 
+#Get historical vol surface dates going back a given number of historical revisions.
+sub _fetch_historical_surface_date {
+    my ($self, $args) = @_;
+
+    my $back_to = $args->{back_to} || 1;
+    my $symbol = $args->{symbol} or die "Must pass in symbol to fetch surface dates.";
+
+    my $reader = BOM::System::Chronicle::get_chronicle_reader(1);
+    my $vdoc = $reader->get('volatility_surfaces', $symbol);
+    my $current_date = $vdoc->{date};
+
+    my @dates = ($current_date);
+
+    for (2 .. $back_to) {
+        $vdoc = $reader->get_for('volatility_surfaces', $symbol, Date::Utility->new($current_date)->epoch - 1); 
+        last if not $vdoc or not keys %{$vdoc};
+        $current_date = $vdoc->{date};
+        push @dates, $current_date;
+    }
+
+    return \@dates;
+}
+
 sub _get_volsurface {
     my $self = shift;
     my $bet  = $self->bet;
@@ -250,7 +274,7 @@ sub _get_volsurface {
     # If we do, just carry on; we don't need to show these dates.
     my $dates = [];
     try {
-        $dates = $bet->volsurface->fetch_historical_surface_date({back_to => 20})
+        $dates = $self->_fetch_historical_surface_date({back_to => 20, $bet->underlying->symbol});
     };
 
     my $tabs;
