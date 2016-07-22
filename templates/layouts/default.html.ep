@@ -22,7 +22,6 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/oauth2/images/favicons/favicon-16x16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/oauth2/images/favicons/favicon-32x32.png" />
 
-    <% if ($app->{id} == 1) { %>
     <script type="text/javascript">
         var oneall_subdomain = 'binary';
 
@@ -33,7 +32,6 @@
         var s = document.getElementsByTagName('script')[0];
         s.parentNode.insertBefore(oa, s);
     </script>
-    <% } %>
 
   </head>
   <body><%= content %></body>
