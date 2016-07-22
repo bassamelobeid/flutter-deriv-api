@@ -484,7 +484,7 @@ subtest 'volsurfaces become old and invalid' => sub {
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet = produce_contract($bet_params);
-    ok($bet->volsurface->set_smile_flag(1, 'fake broken surface'), 'Set smile flags');
+    ok($bet->volsurface->validation_error('fake broken surface'), 'Set broken surface');
     $expected_reasons = [qr/has smile flags/];
     test_error_list('buy', $bet, $expected_reasons);
 
