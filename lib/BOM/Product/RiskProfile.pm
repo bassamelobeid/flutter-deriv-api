@@ -111,18 +111,17 @@ has custom_profiles => (
     lazy_build => 1,
 );
 
+my $product_profiles_txt      = '';
+my $product_profiles_compiled = {};
+
 sub _build_custom_profiles {
     my $self = shift;
 
-    my $custom_product_profiles = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
+    my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;    # use a pointer to avoid copying
+    $product_profiles_compiled = from_json($product_profiles_txt = $$ptr)                        # copy and compile
+        unless $$ptr eq $product_profiles_txt;
 
-    my @profiles;
-    foreach my $id (keys %$custom_product_profiles) {
-        my $p = $custom_product_profiles->{$id};
-        if ($self->_match_conditions($p)) {
-            push @profiles, $p;
-        }
-    }
+    my @profiles = grep { $self->_match_conditions($_) } values %$product_profiles_compiled;
 
     my $ul           = $self->underlying;
     my $risk_profile = $ul->risk_profile;
