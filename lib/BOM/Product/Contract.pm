@@ -2253,11 +2253,21 @@ sub validate_price {
 sub _validate_input_parameters {
     my $self = shift;
 
-    my $when_epoch   = $self->date_pricing->epoch;
-    my $epoch_expiry = $self->date_expiry->epoch;
-    my $epoch_start  = $self->date_start->epoch;
+    my $when_epoch       = $self->date_pricing->epoch;
+    my $epoch_expiry     = $self->date_expiry->epoch;
+    my $epoch_start      = $self->date_start->epoch;
+    my $epoch_settlement = $self->date_settlement->epoch;
 
-    if ($self->for_sale
+    if (    $self->for_sale
+        and defined $self->_date_pricing_milliseconds
+        and $self->_date_pricing_milliseconds > $epoch_expiry
+        and $self->_date_pricing_milliseconds < $epoch_settlement)
+    {
+        return {
+            message           => 'waiting for settlement',
+            message_to_client => localize('Please wait for contract settlement.'),
+        };
+    } elsif ($self->for_sale
         and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
     {
         return {
