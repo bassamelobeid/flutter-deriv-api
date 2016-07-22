@@ -123,7 +123,7 @@ subtest 'Prepare ticks' => sub {
 my $dbh = BOM::Database::FeedDB::read_dbh;
 $dbh->{RaiseError} = 1;
 
-my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', dbh => $dbh);
+my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
 subtest 'get all aggregated ticks' => sub {
     my $start_date          = Date::Utility->new('2013-01-01 00:00:00');
