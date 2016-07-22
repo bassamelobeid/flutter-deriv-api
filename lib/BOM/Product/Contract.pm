@@ -2564,7 +2564,7 @@ sub _validate_volsurface {
     my $message_to_client = localize('Trading is suspended due to missing market data.');
     my $surface_age       = ($now->epoch - $volsurface->recorded_date->epoch) / 3600;
 
-    if ($volsurface->get_smile_flags) {
+    if ($volsurface->validation_error) {
         return {
             message           => "Volsurface has smile flags [symbol: " . $self->underlying->symbol . "]",
             message_to_client => $message_to_client,
