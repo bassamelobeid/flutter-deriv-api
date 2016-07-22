@@ -89,8 +89,7 @@ while (1) {
 $t = $t->send_ok({
         json => {
             proposal_open_contract => 1,
-            subscribe              => 1,
-            req_id                 => 123
+            subscribe              => 1
         }});
 
 $t   = $t->message_ok;
@@ -98,7 +97,6 @@ $res = decode_json($t->message->[1]);
 note explain $res;
 is $res->{msg_type}, 'proposal_open_contract';
 ok $res->{echo_req};
-ok $res->{req_id};
 ok $res->{proposal_open_contract}->{contract_id};
 ok $res->{proposal_open_contract}->{id};
 test_schema('proposal_open_contract', $res);
@@ -115,13 +113,13 @@ $t = $t->send_ok({
 $t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
 
-is $res->{proposal_open_contract}->{id}, undef, 'different req_id should not allow multiple proposal_open_contract subscription';
+ok $res->{proposal_open_contract}->{id}, 'different req_id should allow multiple proposal_open_contract subscription';
+ok $res->{req_id};
 
 $t = $t->send_ok({
         json => {
             proposal_open_contract => 1,
             subscribe              => 1,
-            req_id                 => 123,
             passthrough            => 'sample'
         }});
 
