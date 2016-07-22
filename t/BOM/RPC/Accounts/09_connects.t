@@ -15,16 +15,19 @@ my $client = create_test_user();
 my $module = Test::MockModule->new('WWW::OneAll');
 $module->mock('connection', sub { return sample_oneall_data() });
 my $module2 = Test::MockModule->new('BOM::System::Config');
-$module2->mock('third_party', sub { return +{
-    oneall => {
-        public_key  => 'public_key',
-        private_key => 'private_key'
-    }
-} });
+$module2->mock(
+    'third_party',
+    sub {
+        return +{
+            oneall => {
+                public_key  => 'public_key',
+                private_key => 'private_key'
+            }};
+    });
 
 my $res = BOM::RPC::v3::Accounts::connect_add({
-    client           => $client,
-    connection_token => 'mock',
+    client => $client,
+    args   => {connection_token => 'mock'},
 });
 ok $res->{connect_add}, 'connect_add';
 
@@ -34,8 +37,8 @@ $res = BOM::RPC::v3::Accounts::connect_list({
 is_deeply $res->{providers}, ['google'], 'connect_list ok';
 
 $res = BOM::RPC::v3::Accounts::connect_del({
-    client   => $client,
-    provider => 'google',
+    client => $client,
+    args   => {provider => 'google'},
 });
 ok $res->{connect_del}, 'connect_del';
 

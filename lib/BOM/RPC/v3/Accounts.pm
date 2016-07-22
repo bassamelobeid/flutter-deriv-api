@@ -1162,7 +1162,7 @@ sub reality_check {
 sub connect_add {
     my $params = shift;
 
-    my $connection_token = $params->{connection_token};
+    my $connection_token = $params->{args}->{connection_token};
     my $oneall           = WWW::OneAll->new(
         subdomain   => 'binary',
         public_key  => BOM::System::Config::third_party->{oneall}->{public_key},
@@ -1198,7 +1198,7 @@ sub connect_del {
     my $user = BOM::Platform::User->new({email => $client->email});
 
     my $user_connect = BOM::Database::Model::UserConnect->new;
-    my $res = $user_connect->remove_connect($user->id, $params->{provider});
+    my $res = $user_connect->remove_connect($user->id, $params->{args}->{provider});
 
     return {connect_del => $res ? 1 : 0};
 }
