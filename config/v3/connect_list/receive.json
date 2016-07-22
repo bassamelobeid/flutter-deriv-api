@@ -8,13 +8,10 @@
       "description":"Echo of the request made"
     },
     "connect_list": {
-      "type": "string",
-      "description": "1 on success"
-    },
-    "providers": {
       "type": "array",
       "items": {
-        "type": "string"
+          "type": "string",
+          "description": "provider name, eg: google"
       }
     },
     "msg_type": {
