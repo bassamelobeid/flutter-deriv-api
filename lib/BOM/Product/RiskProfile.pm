@@ -7,10 +7,13 @@ use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
 
 use JSON qw(from_json);
-use List::Util qw(first);
-use List::MoreUtils qw(all);
 
 use constant RISK_PROFILES => [qw(no_business extreme_risk high_risk medium_risk low_risk)];
+
+my %risk_profile_rank;
+for (my $i = 0; $i < @{RISK_PROFILES()}; $i++) {
+    $risk_profile_rank{RISK_PROFILES->[$i]} = $i;
+}
 
 has [qw(contract_category underlying expiry_type start_type currency barrier_category)] => (
     is       => 'ro',
@@ -43,14 +46,26 @@ sub limits {
 sub get_risk_profile {
     my $self = shift;
 
-    foreach my $p (@{RISK_PROFILES()}) {
-        if (first { $_->{risk_profile} eq $p } @{$self->applicable_profiles}) {
-            return $p;
-        }
-    }
+    my $ap = $self->applicable_profiles;
 
     # if it is unknown, set it to no business profile
-    return RISK_PROFILES->[0];
+    return RISK_PROFILES->[0] unless @$ap;
+
+    my $min = @{RISK_PROFILES()};
+    for (@$ap}) {
+        my $tmp = $risk_profile_rank{$_->{risk_profile}};
+        return RISK_PROFILES->[0] if $tmp == 0; # short cut: it cannot get less
+        $min = $tmp if $tmp < $min;
+    }
+    return RISK_PROFILES->[$min];
+    
+    # foreach my $p (@{RISK_PROFILES()}) {
+    #     $_->{risk_profile} eq $p and return $p
+    #         for (@{$self->applicable_profiles});
+    # }
+
+    # # if it is unknown, set it to no business profile
+    # return RISK_PROFILES->[0];
 }
 
 sub get_turnover_limit_parameters {
