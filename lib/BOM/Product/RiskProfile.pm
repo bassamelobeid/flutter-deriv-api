@@ -43,15 +43,40 @@ sub limits {
     return BOM::System::Config::quants->{risk_profile};
 }
 
+has [qw(base_profile)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+# this is the risk profile of a contract without taking into account the client.
+sub _build_base_profile {
+    my $self    = shift;
+
+    my $ap = $self->custom_profiles;
+
+    # if it is unknown, set it to no business profile
+    return '' unless @$ap;
+
+    my $min = @{RISK_PROFILES()};
+    for (@$ap) {
+        my $tmp = $risk_profile_rank{$_->{risk_profile}};
+        $min = $tmp if $tmp < $min;
+        last if $min == 0;
+    }
+    return RISK_PROFILES->[$min];
+}
+
+# this one is the risk profile including the client profile
 sub get_risk_profile {
     my $self = shift;
 
-    my $ap = $self->applicable_profiles;
+    my $base = $self->base_profile;
+    my $ap   = $self->custom_client_profiles;
 
     # if it is unknown, set it to no business profile
-    return RISK_PROFILES->[0] unless @$ap;
+    return $base eq '' ? RISK_PROFILES->[0] : $base unless @$ap;
 
-    my $min = @{RISK_PROFILES()};
+    my $min = $base eq '' ? @{RISK_PROFILES()} : $risk_profile_rank{$base};
     for (@$ap) {
         my $tmp = $risk_profile_rank{$_->{risk_profile}};
         return RISK_PROFILES->[0] if $tmp == 0;    # short cut: it cannot get less
@@ -103,12 +128,7 @@ sub get_turnover_limit_parameters {
             }
 
             $params;
-        } @{$self->applicable_profiles}];
-}
-
-sub applicable_profiles {
-    my $self = shift;
-    return [@{$self->custom_profiles}, @{$self->custom_client_profiles}];
+        } @{$self->custom_profiles}, @{$self->custom_client_profiles}];
 }
 
 has custom_profiles => (
