@@ -58,14 +58,6 @@ sub get_risk_profile {
         $min = $tmp if $tmp < $min;
     }
     return RISK_PROFILES->[$min];
-    
-    # foreach my $p (@{RISK_PROFILES()}) {
-    #     $_->{risk_profile} eq $p and return $p
-    #         for (@{$self->applicable_profiles});
-    # }
-
-    # # if it is unknown, set it to no business profile
-    # return RISK_PROFILES->[0];
 }
 
 sub get_turnover_limit_parameters {
