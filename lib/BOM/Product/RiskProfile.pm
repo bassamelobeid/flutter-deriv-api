@@ -69,9 +69,9 @@ sub _build_base_profile {
 # this one is the risk profile including the client profile
 sub get_risk_profile {
     my $self = shift;
+    my $ap   = shift || [];
 
     my $base = $self->base_profile;
-    my $ap   = $self->custom_client_profiles;
 
     # if it is unknown, set it to no business profile
     return $base eq '' ? RISK_PROFILES->[0] : $base unless @$ap;
@@ -87,6 +87,7 @@ sub get_risk_profile {
 
 sub get_turnover_limit_parameters {
     my $self = shift;
+    my $ap   = shift || [];
 
     return [
         map {
@@ -128,7 +129,7 @@ sub get_turnover_limit_parameters {
             }
 
             $params;
-        } @{$self->custom_profiles}, @{$self->custom_client_profiles}];
+        } @{$self->custom_profiles}, @$ap];
 }
 
 has custom_profiles => (
@@ -171,11 +172,6 @@ sub _build_custom_profiles {
 
     return \@profiles;
 }
-
-has custom_client_profiles => (
-    is      => 'rw',
-    default => sub { [] },
-);
 
 # this is a cache to avoid from_json for each contract
 my $custom_limits_txt      = '';
