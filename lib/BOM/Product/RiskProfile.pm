@@ -54,7 +54,7 @@ sub get_risk_profile {
     my $min = @{RISK_PROFILES()};
     for (@$ap) {
         my $tmp = $risk_profile_rank{$_->{risk_profile}};
-        return RISK_PROFILES->[0] if $tmp == 0; # short cut: it cannot get less
+        return RISK_PROFILES->[0] if $tmp == 0;    # short cut: it cannot get less
         $min = $tmp if $tmp < $min;
     }
     return RISK_PROFILES->[$min];
