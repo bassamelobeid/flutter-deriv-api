@@ -335,11 +335,13 @@ sub calculate_limits {
 
     $limits{max_turnover} = $client->get_limit_for_daily_turnover;
 
+    my $rp    = $contract->risk_profile;
+    my @cl_rp = $rp->get_client_profiles($client->loginid);
     if ($contract->is_spread) {
         # limits are calculated differently for spreads
-        $limits{spread_bet_profit_limit} = $static_config->{risk_profile}{$contract->risk_profile->get_risk_profile}{turnover}{$currency};
+        $limits{spread_bet_profit_limit} = $static_config->{risk_profile}{$rp->get_risk_profile(\@cl_rp)}{turnover}{$currency};
     } else {
-        push @{$limits{specific_turnover_limits}}, @{$self->contract->risk_profile->get_turnover_limit_parameters};
+        push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
     }
 
     return \%limits;
@@ -437,8 +439,8 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
     my $self    = shift;
     my %options = @_;
 
-    my $rp = $self->contract->risk_profile;
-    @{$rp->custom_client_profiles} = $rp->get_client_profiles($self->client->loginid);
+    # my $rp = $self->contract->risk_profile;
+    # @{$rp->custom_client_profiles} = $rp->get_client_profiles($self->client->loginid);
 
     my $error_status;
 
@@ -1627,11 +1629,12 @@ sub __validate_payout_limit {
 
     return if $contract->is_spread;
 
-    my $rp = $self->contract->risk_profile;
+    my $rp    = $self->contract->risk_profile;
+    my @cl_rp = $rp->get_client_profiles($client->loginid);
 
     # setups client specific payout and turnover limits, if any.
-    if (@{$rp->custom_client_profiles}) {
-        my $custom_limit = BOM::System::Config::quants->{risk_profile}{$rp->get_risk_profile}{payout}{$contract->currency};
+    if (@cl_rp) {
+        my $custom_limit = BOM::System::Config::quants->{risk_profile}{$rp->get_risk_profile(\@cl_rp)}{payout}{$contract->currency};
         if (defined $custom_limit and (my $payout = $self->payout) > $custom_limit) {
             return Error::Base->cuss(
                 -type              => 'PayoutLimitExceeded',
