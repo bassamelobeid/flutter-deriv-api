@@ -1634,7 +1634,16 @@ sub __validate_payout_limit {
 
     # setups client specific payout and turnover limits, if any.
     if (@cl_rp) {
-        my $custom_limit = BOM::System::Config::quants->{risk_profile}{$rp->get_risk_profile(\@cl_rp)}{payout}{$contract->currency};
+        my $custom_profile = $rp->get_risk_profile(\@cl_rp);
+        if ($custom_profile eq 'no_business') {
+            return Error::Base->cuss(
+                -type              => 'NoBusiness',
+                -mesg              => $client->loginid . ' manually disabled by quants',
+                -message_to_client => BOM::Platform::Context::localize('This contract is unavailable on this account.'),
+            );
+        }
+
+        my $custom_limit = BOM::System::Config::quants->{risk_profile}{$custom_profile}{payout}{$contract->currency};
         if (defined $custom_limit and (my $payout = $self->payout) > $custom_limit) {
             return Error::Base->cuss(
                 -type              => 'PayoutLimitExceeded',
