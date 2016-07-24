@@ -988,18 +988,26 @@ sub transfer_between_accounts {
 
     my %siblings = map { $_->loginid => $_ } $client->siblings;
 
-    # get clients
-    unless ($loginid_from and $loginid_to and $currency and $amount) {
-        my @accounts;
-        foreach my $account (values %siblings) {
-            next unless (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'));
+    my @accounts;
+    foreach my $account (values %siblings) {
+        # check if client has any sub_account_of as we allow omnibus transfers also
+        # for MLT MF transfer check landing company
+        my $sub_account = $account->sub_account_of // '';
+        if ($client->loginid eq $sub_account || (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'))) {
             push @accounts,
                 {
                 loginid => $account->loginid,
-                balance => $account->default_account ? roundnear(0.01, $account->default_account->balance) : 0,
+                balance => $account->default_account ? sprintf('%.2f', $account->default_account->balance) : "0.00",
                 currency => $account->default_account ? $account->default_account->currency_code : '',
                 };
+        } else {
+            next;
         }
+
+    }
+
+    # get clients
+    unless ($loginid_from and $loginid_to and $currency and $amount) {
         return {
             status   => 0,
             accounts => \@accounts
@@ -1010,30 +1018,34 @@ sub transfer_between_accounts {
         return $error_sub->(localize('Invalid amount. Minimum transfer amount is 0.10, and up to 2 decimal places.'));
     }
 
-    my $err_msg = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
+    my ($is_good, $client_from, $client_to) = (0, $siblings{$loginid_from}, $siblings{$loginid_to});
 
-    my $is_good = 0;
-    if ($siblings{$loginid_from} && $siblings{$loginid_to}) {
-        my %landing_companies = (
-            $siblings{$loginid_from}->landing_company->short => 1,
-            $siblings{$loginid_to}->landing_company->short   => 1,
-        );
+    if ($client_from && $client_to) {
+        # for sub account we need to check if it fulfils sub_account_of criteria and allow_omnibus is set
+        if (
+            ($client_from->allow_omnibus || $client_to->allow_omnibus)
+            && (   ($client_from->sub_account_of && $client_from->sub_account_of eq $loginid_to)
+                || ($client_to->sub_account_of && $client_to->sub_account_of eq $loginid_from)))
+        {
+            $is_good = 1;
+        } else {
+            my %landing_companies = (
+                $client_from->landing_company->short => 1,
+                $client_to->landing_company->short   => 1,
+            );
 
-        # check for transfer between malta & maltainvest
-        $is_good = $landing_companies{malta} && $landing_companies{maltainvest};
+            # check for transfer between malta & maltainvest
+            $is_good = $landing_companies{malta} && $landing_companies{maltainvest};
+        }
     }
 
     unless ($is_good) {
-        # $c->app->log->warn("DISABLED " . $client->loginid . ". Tried tampering with transfer input for account transfer. $err_msg");
         $client->set_status('disabled', 'SYSTEM',
             "Tried tampering with transfer input for account transfer, illegal from [$loginid_from], to [$loginid_to]");
         $client->save;
 
         return $error_sub->(localize('The account transfer is unavailable for your account.'));
     }
-
-    my $client_from = $siblings{$loginid_from};
-    my $client_to   = $siblings{$loginid_to};
 
     my %deposited = (
         $loginid_from => $client_from->default_account ? $client_from->default_account->currency_code : '',
@@ -1070,6 +1082,7 @@ sub transfer_between_accounts {
         $error_unfreeze_msg_sub->($err, '', @unfreeze);
     };
 
+    my $err_msg = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
     if (not BOM::Database::Transaction->freeze_client($client_from->loginid)) {
         return $error_unfreeze_sub->("$err_msg error[Account stuck in previous transaction " . $client_from->loginid . ']');
     }
