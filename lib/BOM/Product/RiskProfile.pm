@@ -50,7 +50,7 @@ has [qw(base_profile)] => (
 
 # this is the risk profile of a contract without taking into account the client.
 sub _build_base_profile {
-    my $self    = shift;
+    my $self = shift;
 
     my $ap = $self->custom_profiles;
 
@@ -69,7 +69,7 @@ sub _build_base_profile {
 # this one is the risk profile including the client profile
 sub get_risk_profile {
     my $self = shift;
-    my $ap   = shift || [];
+    my $ap = shift || [];
 
     my $base = $self->base_profile;
 
@@ -87,7 +87,7 @@ sub get_risk_profile {
 
 sub get_turnover_limit_parameters {
     my $self = shift;
-    my $ap   = shift || [];
+    my $ap = shift || [];
 
     return [
         map {
@@ -129,7 +129,9 @@ sub get_turnover_limit_parameters {
             }
 
             $params;
-        } @{$self->custom_profiles}, @$ap];
+            } @{$self->custom_profiles},
+        @$ap
+    ];
 }
 
 has custom_profiles => (
