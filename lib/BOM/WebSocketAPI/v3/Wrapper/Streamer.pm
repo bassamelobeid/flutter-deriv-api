@@ -84,6 +84,7 @@ sub ticks_history {
                     }
 
                     my $channel = $args->{ticks_history} . ';' . $publish;
+                    $channel .= ";" . $args->{req_id} if exists $args->{req_id};
                     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
                     # stash display_decimals
