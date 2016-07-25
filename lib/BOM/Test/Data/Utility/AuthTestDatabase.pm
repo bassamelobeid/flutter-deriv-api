@@ -2,6 +2,12 @@ package BOM::Test::Data::Utility::AuthTestDatabase;
 
 use MooseX::Singleton;
 
+use BOM::System::Config;
+
+BEGIN {
+    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^qa\d+$/);
+}
+
 sub _db_name {
     my $db_postfix = $ENV{DB_POSTFIX} // '';
     return 'auth' . $db_postfix;

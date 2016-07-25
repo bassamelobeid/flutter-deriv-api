@@ -12,6 +12,12 @@ use Try::Tiny;
 use base qw( Exporter );
 our @EXPORT_OK = qw( setup_ticks );
 
+use BOM::System::Config;
+
+BEGIN {
+    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^qa\d+$/);
+}
+
 sub _db_name {
     my $db_postfix = $ENV{DB_POSTFIX} // '';
     return "feed$db_postfix";
