@@ -77,28 +77,6 @@ sub get_sold_bets_of_account {
     return $sth->fetchall_arrayref({});
 }
 
-sub get_open_bets_of_account {
-    my $self = shift;
-    my $args = shift;
-
-    my $sql = q{
-        SELECT fmb.*, t.id buy_transaction_id, t.app_markup, t.source
-        FROM
-            bet.financial_market_bet_open fmb
-            JOIN transaction.transaction t on (action_type='buy' and t.financial_market_bet_id=fmb.id)
-        WHERE
-            fmb.account_id = ?
-            AND (0=? or expiry_time < now())
-        ORDER BY
-            expiry_time
-    };
-
-    my $sth = $self->db->dbh->prepare($sql);
-    $sth->execute($self->account->id, $args->{only_expired} || 0);
-
-    return $sth->fetchall_arrayref({});
-}
-
 =head2 get_fmb_by_id
 
 Get bets by id (it can be an ARRAYREF of financial_market_bet_id)

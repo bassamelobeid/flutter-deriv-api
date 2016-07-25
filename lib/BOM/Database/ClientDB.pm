@@ -115,7 +115,6 @@ sub fetchall_arrayref {
     return \@result;
 }
 
-
 no Moose;
 
 __PACKAGE__->meta->make_immutable;
