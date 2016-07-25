@@ -43,15 +43,15 @@ if ($enddate) {
     $enddate = Date::Utility->new($enddate)->plus_time_interval('1d')->date_yyyymmdd;
 }
 
-my $db = BOM::Database::ClientDB->new({
+my $clientdb = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
-    })->db;
+    });
 
 Bar($loginID . " - Contracts");
 my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     client_loginid => $client->loginid,
     currency_code  => $client->currency,
-    db             => $db,
+    db             => $clientdb->db,
 });
 
 my $sold_contracts = $fmb_dm->get_sold({
@@ -110,7 +110,7 @@ if (defined $do_calculation) {
     }
 }
 
-my $open_contracts = $fmb_dm->get_open_bets_of_account();
+my $open_contracts = $clientdb->fetchall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
 foreach my $contract (@{$open_contracts}) {
     $contract->{purchase_date} = Date::Utility->new($contract->{purchase_time});
 }
