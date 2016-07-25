@@ -1,5 +1,3 @@
-#!perl
-
 use strict;
 use warnings;
 use Test::More;
@@ -8,100 +6,109 @@ use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
-use BOM::System::RedisReplicated;
-use BOM::Populator::InsertTicks;
-use BOM::Populator::TickFile;
 use File::Temp;
 use Date::Utility;
 
-my $now = Date::Utility->new('2016-05-13 00:00:00');
-set_fixed_time($now->epoch);
-my $work_dir = File::Temp->newdir();
-$ENV{BOM_POPULATOR_ROOT} = "$work_dir";
+use BOM::System::RedisReplicated;
+use BOM::Test::Data::Utility::FeedTestDatabase;
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+initialize_realtime_ticks_db();
 
-my $buffer     = BOM::Populator::TickFile->new(base_dir => "$work_dir");
-my $fill_start = $now;
-my $populator  = BOM::Populator::InsertTicks->new({
-    symbols            => [qw/ frxUSDJPY /],
-    last_migrated_time => $fill_start,
-    buffer             => $buffer,
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'R_50',
+    epoch      => Date::Utility->new->epoch,
+    quote      => 100
 });
 
-my $fh;
-# Just to insert dummy tick
-open($fh, "<", "/home/git/regentmarkets/bom-test/feed/combined/frxUSDJPY/13-Apr-12.fullfeed") or die $!;
-my @ticks = <$fh>;
-close $fh;
-$populator->insert_to_db({
-    ticks  => \@ticks,
-    date   => $fill_start,
-    symbol => 'frxUSDJPY',
-});
+sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
+    my ($i, $symbol) = @_;
+    $i ||= 700;
+    BOM::System::RedisReplicated::redis_write->publish("FEED::$symbol",
+              "$symbol;"
+            . Date::Utility->new->epoch . ';'
+            . $i
+            . ';60:7807.4957,7811.9598,7807.1055,7807.1055;120:7807.0929,7811.9598,7806.6856,7807.1055;180:7793.6775,7811.9598,7793.5814,7807.1055;300:7807.0929,7811.9598,7806.6856,7807.1055;600:7807.0929,7811.9598,7806.6856,7807.1055;900:7789.5519,7811.9598,7784.1465,7807.1055;1800:7789.5519,7811.9598,7784.1465,7807.1055;3600:7723.5128,7811.9598,7718.4277,7807.1055;7200:7723.5128,7811.9598,7718.4277,7807.1055;14400:7743.3676,7811.9598,7672.4463,7807.1055;28800:7743.3676,7811.9598,7672.4463,7807.1055;86400:7743.3676,7811.9598,7672.4463,7807.1055;'
+    );
+}
 
 my $t = build_mojo_test();
 
+my ($res, $ticks);
+
+# both these subscribtion should work as req_id is different
 $t->send_ok({json => {ticks => 'R_50'}});
-
-# waiting to avoid to process next message first
-Mojo::IOLoop->one_tick for (1 .. 5);
-
 $t->send_ok({
         json => {
             ticks  => 'R_50',
-            req_id => 123
-        }})->message_ok;
-my $res = decode_json($t->message->[1]);
-ok $res->{echo_req};
-is $res->{req_id}, 123;
-is $res->{error}->{code}, 'AlreadySubscribed', 'Already subscribed for tick';
+            req_id => 1
+        }});
+my $pid = fork;
+die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
+unless ($pid) {
+    sleep 1;
+    _create_tick(700, 'R_50');
+    sleep 1;
+    exit;
+}
+
+for (my $i = 0; $i < 2; $i++) {
+    $t->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok(
+        ($res->{tick}->{symbol} eq 'R_50' && $res->{tick}->{quote} =~ /\d+\.\d{4,}/)
+            || ($res->{tick}->{symbol} eq 'R_100' && $res->{tick}->{quote} =~ /\d+\.\d{2,}/),
+        'Tick should be pipsized value'
+    );
+    $ticks->{$res->{tick}->{symbol}}++;
+}
 
 $t->send_ok({json => {forget_all => 'ticks'}});
-$t = $t->message_ok;
-my $m = JSON::from_json($t->message->[1]);
-ok $m->{forget_all}, "Manage to forget_all: ticks" or diag explain $m;
-is scalar(@{$m->{forget_all}}), 1, "Forget the relevant tick channel";
-test_schema('forget_all', $m);
+$t   = $t->message_ok;
+$res = decode_json($t->message->[1]);
+ok $res->{forget_all}, "Manage to forget_all: ticks" or diag explain $res;
+is scalar(@{$res->{forget_all}}), 2, "Forget the relevant tick channel";
 
-my $start = $now;
-my $end   = $start->plus_time_interval('30m');
 $t->send_ok({
         json => {
-            ticks_history => 'frxUSDJPY',
-            style         => 'candles',
-            granularity   => 60,
-            end           => $end->epoch,
-            start         => $start->epoch,
+            ticks_history => 'R_50',
+            end           => "latest",
+            count         => 10,
+            style         => "candles",
             subscribe     => 1
         }});
-Mojo::IOLoop->one_tick for (1 .. 5);
+
 $t->send_ok({
         json => {
-            ticks_history => 'frxUSDJPY',
-            style         => 'candles',
-            granularity   => 60,
-            end           => $end->epoch,
-            start         => $start->epoch,
-            subscribe     => 1
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-is $res->{error}->{code}, 'AlreadySubscribed', 'Already subscribed for candles';
+            ticks_history => 'R_50',
+            end           => "latest",
+            count         => 10,
+            style         => "candles",
+            subscribe     => 1,
+            req_id        => 1
+        }});
+
+$pid = fork;
+die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
+unless ($pid) {
+    sleep 1;
+    _create_tick(701, 'R_50');
+    sleep 1;
+    exit;
+}
+
+for (my $i = 0; $i < 2; $i++) {
+    $t->message_ok;
+    $res = decode_json($t->message->[1]);
+    is $res->{msg_type}, "candles", 'correct message type';
+}
 
 $t->send_ok({json => {forget_all => 'candles'}});
 $t = $t->message_ok;
-$m = JSON::from_json($t->message->[1]);
+my $m = JSON::from_json($t->message->[1]);
 ok $m->{forget_all}, "Manage to forget_all: candles" or diag explain $m;
-is scalar(@{$m->{forget_all}}), 1, "Forget the relevant candle feed channel";
+is scalar(@{$m->{forget_all}}), 2, "Forget the relevant candle feed channel";
 test_schema('forget_all', $m);
-$t->send_ok({
-        json => {
-            ticks_history => 'frxUSDJPY',
-            style         => 'candles',
-            granularity   => 60,
-            end           => $end->epoch,
-            start         => $start->epoch,
-            subscribe     => 1
-        }})->message_ok;
-$m = JSON::from_json($t->message->[1]);
-ok $m->{candles}, "Manage to get candles" or diag explain $m;
+
 $t->finish_ok;
+
 done_testing();
