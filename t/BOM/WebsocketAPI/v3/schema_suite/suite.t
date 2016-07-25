@@ -54,6 +54,12 @@ foreach my $line (@lines) {
     $counter++;
     next if ($line =~ /^(#.*|)$/);
 
+# arbitrary perl code
+    if ($line =~ s/^\[%(.*?)%\]//) {
+        eval $1;
+        die $@ if $@;
+    }
+
     if ($line =~ s/^\[(\w+)\]//) {
         $lang = $1;
         next;
@@ -70,7 +76,7 @@ foreach my $line (@lines) {
 
     my ($send_file, $receive_file, @template_func) = split(',', $line);
     chomp $receive_file;
-    diag("Running line $counter [$send_file, $receive_file]\n");
+    diag("\nRunning line $counter [$send_file, $receive_file]\n");
 
     $send_file =~ /^(.*)\//;
     my $call = $1;
