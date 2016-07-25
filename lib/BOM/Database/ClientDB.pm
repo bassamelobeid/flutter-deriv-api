@@ -4,6 +4,7 @@ use Moose;
 use feature "state";
 use BOM::Database::Rose::DB;
 use YAML::XS qw(LoadFile);
+use JSON::XS;
 
 use Carp;
 
@@ -101,6 +102,19 @@ sub _cached_db {
 
     return $db;
 }
+# this will help in calling functions in DB.
+# result must be always rows of JSON
+sub fetchall_arrayref {
+    my $self = shift;
+    my ($query, $params) = @_;
+
+    my $sth = $self->db->dbh->prepare($query);
+    $sth->execute(@{$params});
+
+    my @result = map {JSON::XS::decode_json($_->[0])} @{$sth->fetchall_arrayref([0])};
+    return \@result;
+}
+
 
 no Moose;
 
