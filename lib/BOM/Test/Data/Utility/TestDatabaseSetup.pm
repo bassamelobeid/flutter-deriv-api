@@ -11,6 +11,7 @@ use BOM::Platform::Runtime;
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
 use BOM::System::Config;
+
 BEGIN {
     die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^qa\d+$/);
 }

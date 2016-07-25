@@ -13,9 +13,11 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(initialize_realtime_ticks_db update_combined_realtime);
 
 use BOM::System::Config;
+
 BEGIN {
     die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^qa\d+$/);
 }
+
 sub initialize_realtime_ticks_db {
     my %ticks = %{get_test_realtime_ticks()};
     for my $symbol (keys %ticks) {

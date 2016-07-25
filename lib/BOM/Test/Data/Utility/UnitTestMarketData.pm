@@ -33,6 +33,7 @@ use Quant::Framework::Dividend;
 use JSON;
 
 use BOM::System::Config;
+
 BEGIN {
     die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^qa\d+$/);
 }
