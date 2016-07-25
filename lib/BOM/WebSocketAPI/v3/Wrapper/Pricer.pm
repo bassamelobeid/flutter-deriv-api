@@ -161,7 +161,8 @@ sub _pricing_channel_for_bid {
     my $price_daemon_cmd = 'bid';
 
     my %hash;
-    @hash{qw(short_code contract_id currency is_sold sell_time)} = delete @{$cache}{qw(short_code contract_id currency is_sold sell_time)};
+    @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(short_code contract_id currency sell_time)};
+    $hash{is_sold} = $cache->{is_sold};
     $hash{language} = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
     my $redis_channel = _serialized_args(\%hash);
@@ -250,6 +251,7 @@ sub process_bid_event {
             $response->{transaction_ids} = $passed_fields->{transaction_ids};
             $response->{buy_price}       = $passed_fields->{buy_price};
             $response->{purchase_time}   = $passed_fields->{purchase_time};
+            $response->{is_sold}         = $passed_fields->{is_sold};
             $results                     = {
                 msg_type                 => 'proposal_open_contract',
                 'proposal_open_contract' => {%$response,},
@@ -420,6 +422,7 @@ sub send_proposal_open_contract_last_time {
                 $api_response->{proposal_open_contract}->{transaction_ids}->{sell} = $args->{id};
                 $api_response->{proposal_open_contract}->{sell_price}              = sprintf('%.2f', $args->{amount});
                 $api_response->{proposal_open_contract}->{sell_time}               = $args->{sell_time};
+                $api_response->{proposal_open_contract}->{is_sold}                 = 1;
 
                 return $api_response;
             },
