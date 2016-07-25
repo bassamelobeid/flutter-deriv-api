@@ -28,7 +28,6 @@ use Sereal::Decoder;
 use BOM::Market::Underlying;
 
 my $encoder = Sereal::Encoder->new({
-    protocol_version => 2,
     canonical        => 1,
 });
 my $decoder = Sereal::Decoder->new;
