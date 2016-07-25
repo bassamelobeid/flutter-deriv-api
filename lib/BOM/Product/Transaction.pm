@@ -1620,7 +1620,6 @@ Validate if payout is not over the client limits
 
 =cut
 
-# TODO: Checked with Quants, this is unused. Can be removed.
 sub __validate_payout_limit {
     my $self   = shift;
     my $client = shift;
