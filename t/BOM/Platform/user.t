@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 
@@ -69,7 +69,7 @@ my $cr_2;
 subtest 'default loginid & cookie' => sub {
     subtest 'only VR acc' => sub {
         @loginids = ($vr_1);
-        cmp_deeply(@loginids, (map { $_->loginid } $user->loginid), 'loginid match');
+        cmp_deeply(\@loginids, [map { $_->loginid } $user->loginid], 'loginid match');
 
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $vr_1, 'no real acc, VR as default';
@@ -83,7 +83,7 @@ subtest 'default loginid & cookie' => sub {
         $user->save;
 
         push @loginids, $cr_1;
-        cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
+        cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
 
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'real acc as default';
@@ -104,7 +104,7 @@ subtest 'default loginid & cookie' => sub {
         $user->save;
 
         push @loginids, $cr_2;
-        cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
+        cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
 
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'still first real acc as default';
@@ -121,7 +121,7 @@ subtest 'default loginid & cookie' => sub {
             }
             'disable';
 
-            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
+            cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
 
             my $def_client = ($user->clients)[0];
             is $def_client->loginid, $cr_2, '2nd real acc as default';
@@ -137,7 +137,7 @@ subtest 'default loginid & cookie' => sub {
             }
             'disable';
 
-            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
+            cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
 
             my $def_client = ($user->clients)[0];
             is $def_client->loginid, $vr_1, 'VR acc as default';
@@ -153,7 +153,7 @@ subtest 'default loginid & cookie' => sub {
             }
             'disable';
 
-            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
+            cmp_deeply([sort @loginids], [sort map { $_->loginid } $user->loginid], 'loginids array match');
 
             my $def_client = ($user->clients)[0];
             is $def_client, undef, 'all acc disabled, no default';
@@ -295,4 +295,18 @@ subtest 'User Login' => sub {
         $failed_login->last_attempt(DateTime->now->subtract(days => 1));
         ok $user->login(%pass)->{success}, 'clear failed login attempts; can now login';
     };
+};
+
+subtest 'MT5 logins' => sub {
+    $user->add_loginid({loginid => 'MT1000'});
+    $user->save;
+    my @mt5_logins = $user->mt5_logins;
+    cmp_deeply(\@mt5_logins, ['MT1000'], 'MT5 logins match');
+
+    $user->add_loginid({loginid => 'MT2000'});
+    $user->save;
+    @mt5_logins = $user->mt5_logins;
+    cmp_deeply(\@mt5_logins, ['MT1000', 'MT2000'], 'MT5 logins match');
+
+    ok $_->loginid !~ /^MT\d+$/, 'should not include MT logins-'.$_->loginid for ($user->clients);
 };
