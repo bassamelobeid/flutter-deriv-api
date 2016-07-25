@@ -144,13 +144,7 @@ print '</table>';
 foreach my $market (@markets) {
     Bar("$market matrices");
 
-    print qq~<TABLE width="99%" BORDER="2" bgcolor="#00AAAA">
-		<TR>
-		<TH>
-			<a title="Click To Plot Volsurface" href="~
-        . request()->url_for('backoffice/quant/market_data_mgmt/update_volatilities/plot_volsurface.cgi', {underlying => $market}) . qq~"></a>
-		</TH>
-		</TR>~;
+    print '<TABLE width="99%" BORDER="2" bgcolor="#00AAAA">';
     print '<TR>';
 
     # The 'Volatily in Use'
