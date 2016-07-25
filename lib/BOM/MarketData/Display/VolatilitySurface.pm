@@ -512,20 +512,8 @@ sub print_comparison_between_volsurface {
         push @output, "<TH>$days[$i]</TH>";
         foreach my $col_point (sort { $a <=> $b } @surface_vol_point) {
 
-            my $vol = roundnear(
-                0.0001,
-                $surface->get_volatility({
-                        from      => $surface->recorded_date,
-                        to        => $surface->recorded_date->plus_time_interval($days[$i] . 'd'),
-                        $vol_type => $col_point
-                    }));
-            my $ref_vol = roundnear(
-                0.0001,
-                $ref_surface->get_volatility({
-                        from      => $ref_surface->recorded_date,
-                        to        => $ref_surface->recorded_date->plus_time_interval($days[$i] . 'd'),
-                        $vol_type => $col_point
-                    }));
+            my $vol = roundnear(0.0001, $surface->get_surface_volatility($days[$i], $col_point));
+            my $ref_vol = roundnear(0.0001, $ref_surface->get_surface_volatility($days[$i], $col_point));
 
             my $vol_picture =
                 (abs($vol - $ref_vol) < 0.001)
