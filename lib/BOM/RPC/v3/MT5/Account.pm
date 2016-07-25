@@ -121,13 +121,14 @@ sub mt5_new_account {
     };
 }
 
-sub _check_mt_login {
-    my ($client, $mt_login) = @_;
-
+sub _check_logins {
+    my ($client, $logins) = @_;
     my $user = BOM::Platform::User->new({email => $client->email});
-    $mt_login = 'MT' . $mt_login;
 
-    return (any { $mt_login eq $_->loginid } ($user->loginid));
+    foreach my $login (@{$logins}) {
+        return unless (any { $login eq $_->loginid } ($user->loginid));
+    }
+    return 1;
 }
 
 sub mt5_get_settings {
@@ -137,7 +138,7 @@ sub mt5_get_settings {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $login);
+    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
     my $settings = BOM::MT5::User::get_user($login);
     if ($settings->{error}) {
@@ -170,7 +171,7 @@ sub mt5_set_settings {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $login);
+    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
     my $country_code = $args->{country};
     my $country_name = Locale::Country::Extra->new()->country_from_code($country_code);
@@ -194,7 +195,7 @@ sub mt5_password_check {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $login);
+    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
     my $status = BOM::MT5::User::password_check($args);
     if ($status->{error}) {
@@ -212,7 +213,7 @@ sub mt5_password_change {
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $login);
+    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $login]);
 
     my $status = BOM::MT5::User::password_change($args);
     if ($status->{error}) {
@@ -247,8 +248,7 @@ sub mt5_deposit {
     }
 
     # MT5 login or binary loginid not belongs to user
-    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $to_mt5);
-    return BOM::RPC::v3::Utility::permission_error() unless (any { $fm_loginid eq $_->loginid } ($user->loginid));
+    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $to_mt5, $fm_loginid]);
 
     my $fm_client = BOM::Platform::Client->new({loginid => $fm_loginid});
 
@@ -360,8 +360,7 @@ sub mt5_withdrawal {
     }
 
     # MT5 login or binary loginid not belongs to user
-    return BOM::RPC::v3::Utility::permission_error() unless _check_mt_login($client, $fm_mt5);
-    return BOM::RPC::v3::Utility::permission_error() unless (any { $to_loginid eq $_->loginid } ($user->loginid));
+    return BOM::RPC::v3::Utility::permission_error() unless _check_logins($client, ['MT' . $fm_mt5, $to_loginid]);
 
     my $to_client = BOM::Platform::Client->new({loginid => $to_loginid});
 
