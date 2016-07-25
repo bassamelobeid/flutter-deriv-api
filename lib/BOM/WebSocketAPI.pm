@@ -161,9 +161,28 @@ sub startup {
                 require_auth => 'admin',
                 stash_params => [qw/ token_type client_ip /]}
         ],
-        ['get_settings', {require_auth => 'read'}],
+        ['get_settings',     {require_auth => 'read'}],
+        ['mt5_get_settings', {require_auth => 'read'}],
         [
             'set_settings',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'mt5_set_settings',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'mt5_password_check',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'mt5_password_change',
             {
                 require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /]}
@@ -306,6 +325,32 @@ sub startup {
             'new_sub_account',
             {
                 require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'mt5_login_list',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'mt5_new_account',
+            {
+                require_auth => 'admin',
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'mt5_deposit',
+            {
+                require_auth => 'admin',
+                response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_deposit'),
+                stash_params => [qw/ server_name client_ip user_agent /]}
+        ],
+        [
+            'mt5_withdrawal',
+            {
+                require_auth => 'admin',
+                response     => BOM::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_withdrawal'),
                 stash_params => [qw/ server_name client_ip user_agent /]}
         ],
         [
