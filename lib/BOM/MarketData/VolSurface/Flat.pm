@@ -95,6 +95,13 @@ sub get_volatility {
     return $self->flat_vol;
 }
 
+sub get_surface_volatility {
+    my $self = shift;
+
+    # get the same answer, not matter what you ask.
+    return $self->flat_vol;
+}
+
 =head2 get_smile
 
 Returns default flat smile for flat volatility surface

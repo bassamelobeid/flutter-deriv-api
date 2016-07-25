@@ -68,10 +68,7 @@ sub random_index_gbm {
             ($when - $info_ref->{generation_time}) / (365 * 24 * 60 * 60);
         my $spot_for_strike = $info_ref->{spot};
         my $volsurface      = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-        my $vol             = $volsurface->get_volatility({
-            strike => $spot_for_strike,
-            days   => $interval * 365,
-        });
+        my $vol             = $volsurface->get_volatility();
         my $crand;
         $crand = \&crand if BOM::System::Config::env ne 'development';
         $info_ref->{spot}      = gbm_sample($info_ref->{spot}, $vol, $interval, $info_ref->{int_rate}, $info_ref->{div_rate}, $crand);
