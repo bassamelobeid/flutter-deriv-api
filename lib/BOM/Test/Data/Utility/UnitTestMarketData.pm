@@ -32,6 +32,11 @@ use Quant::Framework::Utils::Test;
 use Quant::Framework::Dividend;
 use JSON;
 
+use BOM::System::Config;
+BEGIN {
+    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^qa\d+$/);
+}
+
 sub initialize_symbol_dividend {
     my $symbol = shift;
     my $rate   = shift;
