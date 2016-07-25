@@ -125,7 +125,7 @@ sub _check_mt_login {
     my ($client, $mt_login) = @_;
 
     my $user = BOM::Platform::User->new({email => $client->email});
-    my $mt_login = 'MT' . $mt_login;
+    $mt_login = 'MT' . $mt_login;
 
     return (any { $mt_login eq $_->loginid } ($user->loginid));
 }
