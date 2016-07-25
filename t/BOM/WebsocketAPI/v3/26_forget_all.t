@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Deep;
 use Test::MockTime qw/:all/;
 use JSON;
 use FindBin qw/$Bin/;
@@ -33,8 +34,6 @@ sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
 
 my $t = build_mojo_test();
 
-my ($res, $ticks);
-
 # both these subscribtion should work as req_id is different
 $t->send_ok({json => {ticks => 'R_50'}});
 $t->send_ok({
@@ -51,9 +50,11 @@ unless ($pid) {
     exit;
 }
 
+my ($res, $ticks, @ids);
 for (my $i = 0; $i < 2; $i++) {
     $t->message_ok;
     $res = decode_json($t->message->[1]);
+    push @ids, $res->{tick}->{id};
     ok(
         ($res->{tick}->{symbol} eq 'R_50' && $res->{tick}->{quote} =~ /\d+\.\d{4,}/)
             || ($res->{tick}->{symbol} eq 'R_100' && $res->{tick}->{quote} =~ /\d+\.\d{2,}/),
@@ -67,6 +68,10 @@ $t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{forget_all}, "Manage to forget_all: ticks" or diag explain $res;
 is scalar(@{$res->{forget_all}}), 2, "Forget the relevant tick channel";
+
+@ids = sort @ids;
+my @forget_ids = sort @{$res->{forget_all}};
+cmp_bag(\@ids, \@forget_ids, 'correct forget ids for ticks');
 
 $t->send_ok({
         json => {
@@ -102,12 +107,23 @@ for (my $i = 0; $i < 2; $i++) {
     is $res->{msg_type}, "candles", 'correct message type';
 }
 
+@ids = ();
+for (my $j = 0; $j < 2; $j++) {
+    $t->message_ok;
+    $res = decode_json($t->message->[1]);
+    push @ids, $res->{ohlc}->{id};
+    is $res->{msg_type}, "ohlc", 'correct message type';
+}
+
 $t->send_ok({json => {forget_all => 'candles'}});
-$t = $t->message_ok;
-my $m = JSON::from_json($t->message->[1]);
-ok $m->{forget_all}, "Manage to forget_all: candles" or diag explain $m;
-is scalar(@{$m->{forget_all}}), 2, "Forget the relevant candle feed channel";
-test_schema('forget_all', $m);
+$t   = $t->message_ok;
+$res = JSON::from_json($t->message->[1]);
+ok $res->{forget_all}, "Manage to forget_all: candles" or diag explain $res;
+is scalar(@{$res->{forget_all}}), 2, "Forget the relevant candle feed channel";
+test_schema('forget_all', $res);
+
+@forget_ids = sort @{$res->{forget_all}};
+cmp_bag(\@ids, \@forget_ids, 'correct forget ids for ticks history');
 
 $t->finish_ok;
 
