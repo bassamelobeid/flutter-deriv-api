@@ -439,9 +439,6 @@ sub prepare_buy {    ## no critic (RequireArgUnpacking)
     my $self    = shift;
     my %options = @_;
 
-    # my $rp = $self->contract->risk_profile;
-    # @{$rp->custom_client_profiles} = $rp->get_client_profiles($self->client->loginid);
-
     my $error_status;
 
     unless ($options{skip_validation}) {
