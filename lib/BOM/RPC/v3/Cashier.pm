@@ -24,7 +24,7 @@ use BOM::Platform::CurrencyConverter qw(amount_from_to_currency in_USD);
 use BOM::Database::Transaction;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
-use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
+use BOM::Database::ClientDB;
 use BOM::Platform::Email qw(send_email);
 use BOM::System::AuditLog;
 
@@ -538,8 +538,7 @@ sub paymentagent_transfer {
     }
 
     # check that there's no identical transaction
-    my $datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({client_loginid => $loginid_fm});
-    my ($amount_transferred, $count) = $datamapper->get_today_payment_agent_withdrawal_sum_count;
+    my ($amount_transferred, $count) = _get_amount_and_count($loginid_fm);
 
     # maximum amount USD 100000 per day
     if (($amount_transferred + $amount) >= 100000) {
@@ -778,11 +777,7 @@ sub paymentagent_withdraw {
     }
 
     # check that there's no identical transaction
-    my $data_mapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
-        client_loginid => $client_loginid,
-        currency_code  => $currency,
-    });
-    my ($amount_transferred, $count) = $data_mapper->get_today_payment_agent_withdrawal_sum_count();
+    my ($amount_transferred, $count) = _get_amount_and_count($client_loginid);
 
     # max withdrawal daily limit: weekday = $5000, weekend = $1500
     my $daily_limit = (DateTime->now->day_of_week() > 5) ? 1500 : 5000;
@@ -1256,5 +1251,16 @@ sub _get_market_limit_profile {
 
     return \%limits;
 }
+
+sub _get_amount_and_count {
+    my $loginid = shift;
+    my $clientdb = BOM::Database::ClientDB->new({
+        client_loginid => $loginid,
+        operation      => 'replica',
+    });
+    my $amount_data = $clientdb->fetchall_arrayref('select * payment.get_today_payment_agent_withdrawal_sum_count(?)', [$loginid]);
+    return ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
+}
+
 
 1;
