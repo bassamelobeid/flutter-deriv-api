@@ -54,6 +54,12 @@ foreach my $line (@lines) {
     $counter++;
     next if ($line =~ /^(#.*|)$/);
 
+    # arbitrary perl code
+    if ($line =~ s/^\{.*\}//) {
+        eval $1;
+        die $@ if $@;
+    }
+
     if ($line =~ s/^\[(\w+)\]//) {
         $lang = $1;
         next;
