@@ -33,6 +33,7 @@ use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
 use BOM::Platform::LandingCompany::Registry;
+use BOM::Database::ClientDB;
 
 extends 'BOM::Database::Transaction';
 
@@ -1812,12 +1813,16 @@ sub sell_expired_contracts {
         operation      => 'replica',
     });
 
+    my $clientdb = BOM::Database::ClientDB->new({
+        broker_code => $client->broker_code,
+        operation   => 'replica',
+    });
+
     my $bets =
           (defined $contract_ids)
         ? [map { $_->financial_market_bet_record } @{$mapper->get_fmb_by_id($contract_ids)}]
-        : $mapper->get_open_bets_of_account({
-            only_expired => $args->{only_expired},
-        });
+        : $clientdb->fetchall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)',
+        [$client->loginid, $client->currency, ($args->{only_expired} ? 'true' : 'false')]);
 
     return unless $bets and @$bets;
 
