@@ -76,7 +76,11 @@ sub proposal_open_contract {
                 and not $response->{$contract_id}->{is_expired}
                 and not $response->{$contract_id}->{is_sold})
             {
-                my $account_id = delete $response->{$contract_id}->{account_id};
+                # short_code contract_id currency is_sold sell_time are passed to pricer daemon and
+                # are used to to identify redis channel and as arguments to get_bid rpc call
+                # transaction_ids purchase_time buy_price should be stored and will be added to
+                # every get_bid results and sent to client while streaming
+                my $account_id = delete $response->{$contract_id}->{account_id};    # should not go to client
                 my $cache      = {
                     account_id      => $account_id,
                     short_code      => $response->{$contract_id}->{shortcode},
@@ -259,6 +263,11 @@ sub process_bid_event {
             };
         }
         delete $results->{proposal_open_contract}->{rpc_time};
+        # creating full response message here.
+        # to use hooks for adding debug or other info it will be needed to fully re-create 'req_storage' and
+        # pass it as a second argument for 'send'.
+        # not storing req_storage in channel cache because it contains validation code
+        # same is for process_ask_event.
         $c->send({json => $results});
     }
     return;
@@ -374,6 +383,8 @@ sub _price_stream_results_adjustment {
 }
 
 sub send_proposal_open_contract_last_time {
+    # last message (contract is sold) of proposal_open_contract stream could not be done from pricer
+    # because it should be performed with other parameters
     my ($c, $args) = @_;
     my $uuid = $args->{uuid};
 
