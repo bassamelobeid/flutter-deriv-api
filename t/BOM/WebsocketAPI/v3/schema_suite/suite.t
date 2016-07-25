@@ -55,7 +55,7 @@ foreach my $line (@lines) {
     next if ($line =~ /^(#.*|)$/);
 
 # arbitrary perl code
-    if ($line =~ s/^\[%.*\%]//) {
+    if ($line =~ s/^\[%.*%\]//) {
         eval $1;
         die $@ if $@;
     }
