@@ -1624,12 +1624,12 @@ sub _build_staking_limits {
     my $underlying = $self->underlying;
     my $curr       = $self->currency;
 
-    my $static                    = BOM::System::Config::quants;
-    my $bet_limits                = $static->{bet_limits};
+    my $static     = BOM::System::Config::quants;
+    my $bet_limits = $static->{bet_limits};
     # NOTE: this evaluates only the contract-specific payout limit. There may be further
     # client-specific restrictions which are evaluated in B:P::Transaction.
     my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
-    my @possible_payout_maxes     = ($bet_limits->{maximum_payout}->{$curr}, $per_contract_payout_limit);
+    my @possible_payout_maxes = ($bet_limits->{maximum_payout}->{$curr}, $per_contract_payout_limit);
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $payout_min =
