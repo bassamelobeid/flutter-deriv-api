@@ -25,7 +25,7 @@
       "type": "string",
       "maxLength": 128,
       "description": "Client's name. The maximum length of a client's symbol name is 128 characters. Optional field.",
-      "required": 1
+      "required": "1"
     },
     "leverage": {
       "type": "string",
