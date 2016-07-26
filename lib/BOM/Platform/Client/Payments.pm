@@ -674,7 +674,7 @@ sub validate_agent_payment {
         operation      => 'replica',
     });
     my $amount_from_db =
-        $clientdb->fetchall_arrayref('select * from payment.get_today_client_payment_agent_transfer_total_amount(?)', [$payment_agent->loginid]);
+        $clientdb->fetchall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$payment_agent->loginid]);
     # db function returns 1 row with 'amount' key
     my $pa_total_amount = $amount_from_db->[0]->{amount};
     $pa_total_amount = amount_from_to_currency($pa_total_amount + abs($amount), $payment_agent->default_account->currency_code, 'USD');

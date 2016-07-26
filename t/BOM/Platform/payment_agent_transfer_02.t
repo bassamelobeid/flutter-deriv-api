@@ -21,7 +21,7 @@ subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
         client_loginid => $pa_client->loginid,
         operation      => 'replica',
     });
-    my $pa_total_amount = $clientdb->fetchall_arrayref('select * from payment.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]->{amount};
+    my $pa_total_amount = $clientdb->fetchall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]->{amount};
     is($pa_total_amount, 0);
     $client->payment_account_transfer(
         toClient => $pa_client,
@@ -33,7 +33,7 @@ subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
         currency => 'USD',
         amount   => 1000
     );
-    $pa_total_amount = $clientdb->fetchall_arrayref('select * from payment.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]->{amount};
+    $pa_total_amount = $clientdb->fetchall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]->{amount};
     is($pa_total_amount + 0, 2000, "payment agent transfer total amount is correct");
 };
 
