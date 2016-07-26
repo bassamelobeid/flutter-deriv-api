@@ -145,7 +145,8 @@ sub startup {
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
         ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
 
-        ['buy', \&BOM::RPC::v3::Transaction::buy],
+        ['buy',                                \&BOM::RPC::v3::Transaction::buy],
+        ['buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts],
         ['sell', \&BOM::RPC::v3::Transaction::sell, 1],
 
         ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
