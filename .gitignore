@@ -20,4 +20,5 @@ nytprof.out
 *.bs
 /_eumm/
 *.bak
+*~
 *.swp
