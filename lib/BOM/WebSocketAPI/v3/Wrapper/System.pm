@@ -160,7 +160,7 @@ sub _forget_feed_subscription {
 sub forget_buy_proposal {
     my ($c, $uuid) = @_;
     my $subscription = $c->stash('feed_channel_type');
-    if ($uuid =~ /-/ and $subscription) {
+    if (defined $uuid and $uuid =~ /-/ and $subscription) {
         foreach my $channel (keys %{$subscription}) {
             $channel =~ /(.*);(.*)/;
             if ($subscription->{$channel}->{uuid} eq $uuid) {

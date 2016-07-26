@@ -240,6 +240,13 @@ sub startup {
             }
         ],
         [
+            'buy_contract_for_multiple_accounts',
+            {
+                require_auth   => 'trade',
+                before_forward => \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
+            }
+        ],
+        [
             'transaction',
             {
                 require_auth   => 'read',
