@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::Exception;
 use Test::NoWarnings;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -86,4 +86,38 @@ subtest 'asian' => sub {
         cmp_ok $c->value, '==', $c->payout, 'full payout';
     }
     'expiry checks';
+};
+
+subtest 'supplied barrier build' => sub {
+    my $now          = Date::Utility->new;
+    my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch,
+        quote      => 101
+    });
+    # next tick
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch + 1,
+        quote      => 102
+    });
+    my $params = {
+        bet_type     => 'ASIANU',
+        underlying   => 'R_100',
+        duration     => '5t',
+        currency     => 'USD',
+        payout       => 10,
+        current_tick => $current_tick,
+    };
+    my $c = produce_contract($params);
+    ok $c->pricing_new, 'pricing new';
+    ok !defined $c->barrier, 'undefined barrier';
+    is $c->barriers_for_pricing->{barrier1}, 101, 'correct barrier for pricing';
+    $params->{date_start}   = $now;
+    $params->{date_pricing} = $now->plus_time_interval('1s');
+    $c                      = produce_contract($params);
+    ok !$c->pricing_new, 'not pricing new';
+    ok $c->barrier, 'barrier defined';
+    is $c->barrier->as_absolute + 0, 102, 'correct barrier at date_pricing';
+    is $c->barriers_for_pricing->{barrier1} + 0, 102, 'correct barrier for pricing';
 };
