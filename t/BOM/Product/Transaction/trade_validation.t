@@ -271,7 +271,7 @@ subtest 'valid currency test' => sub {
             contract => $contract,
         });
 
-        my $error = $transaction->_validate_currency;
+        my $error = $transaction->_validate_available_currency;
 
         my $curr = $contract->currency;
         is($error->get_type, 'InvalidCurrency', 'Invalid currency: _validate_currency - error type');
