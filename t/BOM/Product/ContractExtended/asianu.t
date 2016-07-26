@@ -111,7 +111,7 @@ subtest 'supplied barrier build' => sub {
     };
     my $c = produce_contract($params);
     ok $c->pricing_new, 'pricing new';
-    ok !$c->barrier, 'undefined barrier';
+    ok !defined $c->barrier, 'undefined barrier';
     is $c->barriers_for_pricing->{barrier1}, 101, 'correct barrier for pricing';
     $params->{date_start}   = $now;
     $params->{date_pricing} = $now->plus_time_interval('1s');
