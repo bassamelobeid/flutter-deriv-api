@@ -263,7 +263,7 @@ sub _feed_channel_subscribe {
         return;
     }
 
-    my $uuid = Data::UUID->new->create_str();
+    my $uuid = _generate_uuid_string();
     $feed_channel->{$symbol} += 1;
     $feed_channel_type->{$key}->{args}  = $args if $args;
     $feed_channel_type->{$key}->{uuid}  = $uuid;

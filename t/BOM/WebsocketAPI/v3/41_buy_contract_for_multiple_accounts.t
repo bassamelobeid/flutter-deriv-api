@@ -26,7 +26,7 @@ $client->email($email);
 $client->save;
 
 my $loginid = $client->loginid;
-my $user = BOM::Platform::User->create(
+my $user    = BOM::Platform::User->create(
     email    => $email,
     password => '1234',
 );
@@ -41,16 +41,16 @@ $client->smart_payment(
     remark       => 'test deposit'
 );
 
-
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 # login
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
-is $authorize->{authorize}->{email},   $email, 'login result: email';
+is $authorize->{authorize}->{email},   $email,   'login result: email';
 is $authorize->{authorize}->{loginid}, $loginid, 'login result: loginid';
 
 my ($price, $proposal_id);
+
 sub get_proposal {
     #BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 
@@ -71,7 +71,7 @@ sub get_proposal {
             }});
     $t->message_ok;
     my $proposal = decode_json($t->message->[1]);
-    isnt $proposal->{proposal}->{id}, undef, 'got proposal id';
+    isnt $proposal->{proposal}->{id},        undef, 'got proposal id';
     isnt $proposal->{proposal}->{ask_price}, undef, 'got ask_price';
 
     $proposal_id = $proposal->{proposal}->{id};
@@ -83,8 +83,8 @@ sub get_proposal {
 sub filter_proposal {
     ## skip proposal
     my $res;
-    for (my $i=0; $i<100; $i++) {   # prevent infinite loop
-        $t = $t->message_ok;
+    for (my $i = 0; $i < 100; $i++) {    # prevent infinite loop
+        $t   = $t->message_ok;
         $res = decode_json($t->message->[1]);
         # note explain $res;
         return $res unless $res->{msg_type} eq 'proposal';
@@ -97,9 +97,10 @@ sub filter_proposal {
 
 {
     my %t;
+
     sub get_token {
         my @scopes = @_;
-        my $cnt = keys %t;
+        my $cnt    = keys %t;
         $t = $t->send_ok({
                 json => {
                     api_token        => 1,
@@ -138,20 +139,21 @@ subtest "2nd try: dummy tokens => success", sub {
     my $res = filter_proposal;
     isa_ok $res->{buy_contract_for_multiple_accounts}, 'HASH';
 
-    is_deeply $res->{buy_contract_for_multiple_accounts}, {
-        'result' => [
-            {
-                'code' => 'InvalidToken',
+    is_deeply $res->{buy_contract_for_multiple_accounts},
+        {
+        'result' => [{
+                'code'              => 'InvalidToken',
                 'message_to_client' => 'Invalid token',
-                'token' => 'DUMMY0'
+                'token'             => 'DUMMY0'
             },
             {
-                'code' => 'InvalidToken',
+                'code'              => 'InvalidToken',
                 'message_to_client' => 'Invalid token',
-                'token' => 'DUMMY1'
+                'token'             => 'DUMMY1'
             }
         ],
-    }, 'got expected result';
+        },
+        'got expected result';
 
     test_schema('buy_contract_for_multiple_accounts', $res);
 
@@ -165,10 +167,10 @@ subtest "3rd try: the real thing => success", sub {
     # Here we trust that the function in bom-rpc works correctly. We
     # are not going to test all possible variations. In particular,
     # all the tokens used belong to the same account.
-    my @tokens = map { get_token 'trade' } (1,2);
-    push @tokens, get_token 'read'; # generates an error
-    push @tokens, $token;           # add the login token as well
-    # note explain \@tokens;
+    my @tokens = map { get_token 'trade' } (1, 2);
+    push @tokens, get_token 'read';    # generates an error
+    push @tokens, $token;              # add the login token as well
+                                       # note explain \@tokens;
     get_proposal;
     $t = $t->send_ok({
             json => {
@@ -196,13 +198,17 @@ subtest "3rd try: the real thing => success", sub {
     my $stmt = filter_proposal;
     # note explain $stmt;
 
-    is_deeply ([sort {$a->[0] <=> $b->[0]}
-                map {[$_->{contract_id}, $_->{transaction_id}, -$_->{amount}]}
-                @{$stmt->{statement}->{transactions}}],
-               [sort {$a->[0] <=> $b->[0]}
-                map {$_->{code} ? () : [$_->{contract_id}, $_->{transaction_id}, $_->{buy_price}]}
-                @{$res->{buy_contract_for_multiple_accounts}->{result}}],
-               'got all 3 contracts via statement call');
+    is_deeply([
+            sort { $a->[0] <=> $b->[0] }
+            map { [$_->{contract_id}, $_->{transaction_id}, -$_->{amount}] } @{$stmt->{statement}->{transactions}}
+        ],
+        [
+            sort { $a->[0] <=> $b->[0] }
+                map { $_->{code} ? () : [$_->{contract_id}, $_->{transaction_id}, $_->{buy_price}] }
+                @{$res->{buy_contract_for_multiple_accounts}->{result}}
+        ],
+        'got all 3 contracts via statement call'
+    );
 };
 
 $t->finish_ok;
