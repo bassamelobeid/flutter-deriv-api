@@ -9,7 +9,7 @@ use Time::HiRes qw(tv_interval gettimeofday time);
 use List::Util qw(min max first);
 use JSON qw( from_json );
 use Date::Utility;
-use ExpiryQueue qw( enqueue_new_transaction );
+use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Format::Util::Numbers qw(roundnear to_monetary_number_format);
 use RateLimitations qw(within_rate_limits);
 use Try::Tiny;
@@ -40,6 +40,11 @@ extends 'BOM::Database::Transaction';
 has client => (
     is  => 'ro',
     isa => 'BOM::Platform::Client',
+);
+
+has multiple => (
+    is  => 'ro',
+    isa => 'Maybe[ArrayRef]',
 );
 
 has contract => (
@@ -173,6 +178,7 @@ sub BUILDARGS {
     return $args;
 }
 
+my %known_errors;              # forward declaration
 sub sell_expired_contracts;    # forward declaration
 
 sub _build_purchase_date {
@@ -189,14 +195,13 @@ sub stats_start {
     my $client   = $self->client;
     my $contract = $self->contract;
 
-    my $loginid   = lc($client->loginid);
     my $broker    = lc($client->broker_code);
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
     my $rmgenv    = BOM::System::Config::env;
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
     my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",]};
 
-    if ($what eq 'buy') {
+    if ($what eq 'buy' or $what eq 'batch_buy') {
         if ($self->contract->is_spread) {
             push @{$tags->{tags}}, "stop_type:" . lc($contract->stop_type);
         } else {
@@ -252,73 +257,95 @@ sub _normalize_error {
 }
 
 sub stats_stop {
-    my ($self, $data, $error) = @_;
+    my ($self, $data, $error, $extra) = @_;
 
     my $what = $data->{what};
     my $tags = $data->{tags};
 
     if ($error) {
-        stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, 'reason:' . _normalize_error($error),]});
-    } else {
-        my $now = [gettimeofday];
-        stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
-        stats_timing("transaction.$what.db_time",      1000 * tv_interval($data->{validation_done}, $now), $tags);
-        stats_inc("transaction.$what.success", $tags);
+        stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, 'reason:' . _normalize_error($error)]});
 
-        if ($data->{rmgenv} eq 'production' and $data->{virtual} eq 'no') {
-            my $usd_amount = int(in_USD($self->price, $self->contract->currency) * 100);
-            if ($what eq 'buy') {
-                stats_count('business.turnover_usd',       $usd_amount, $tags);
-                stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
-            } elsif ($what eq 'sell') {
-                stats_count('business.buy_minus_sell_usd', -$usd_amount, $tags);
-            }
+        return $error;
+    }
+
+    my $now = [gettimeofday];
+    stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
+    stats_timing("transaction.$what.db_time",      1000 * tv_interval($data->{validation_done}, $now), $tags);
+    stats_inc("transaction.$what.success", $tags);
+
+    if ($what eq 'batch_buy') {
+        my @tags = grep { !/^(?:broker|virtual):/ } @{$tags->{tags}};
+        while (my ($broker, $xd) = each %$extra) {
+            my $tags = {tags => ["broker:" . lc($broker), "virtual:" . ($broker =~ /^VR/ ? "yes" : "no"), @tags]};
+            stats_count("transaction.buy.attempt", $xd->{attempt}, $tags);
+            stats_count("transaction.buy.success", $xd->{success}, $tags);
+
+            next if $broker =~ /^VR/ or $data->{rmgenv} ne 'production';
+
+            my $usd_amount = $xd->{success} * int(in_USD($self->price, $self->contract->currency) * 100);
+            stats_count('business.turnover_usd',       $usd_amount, $tags);
+            stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
+        }
+        return;
+    }
+
+    if ($data->{rmgenv} eq 'production' and $data->{virtual} eq 'no') {
+        my $usd_amount = int(in_USD($self->price, $self->contract->currency) * 100);
+        if ($what eq 'buy') {
+            stats_count('business.turnover_usd',       $usd_amount, $tags);
+            stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
+        } elsif ($what eq 'sell') {
+            stats_count('business.buy_minus_sell_usd', -$usd_amount, $tags);
         }
     }
 
-    return $error;
+    return;
 }
 
 sub calculate_limits {
     my $self = shift;
+    my $client = shift || $self->client;
+
+    my %limits;
 
     my $static_config = BOM::System::Config::quants;
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
-    my $client   = $self->client;
 
-    $self->limits->{max_balance} = $client->get_limit_for_account_balance;
+    $limits{max_balance} = $client->get_limit_for_account_balance;
 
     if (not $contract->tick_expiry) {
-        $self->limits->{max_open_bets}        = $client->get_limit_for_open_positions;
-        $self->limits->{max_payout_open_bets} = $client->get_limit_for_payout;
-        $self->limits->{max_payout_per_symbol_and_bet_type} =
+        $limits{max_open_bets}        = $client->get_limit_for_open_positions;
+        $limits{max_payout_open_bets} = $client->get_limit_for_payout;
+        $limits{max_payout_per_symbol_and_bet_type} =
             $static_config->{client_limits}->{open_positions_payout_per_symbol_and_bet_type_limit}->{$currency};
     }
 
     my $lim;
     defined($lim = $client->get_limit_for_daily_losses)
-        and $self->limits->{max_losses} = $lim;
+        and $limits{max_losses} = $lim;
     defined($lim = $client->get_limit_for_7day_turnover)
-        and $self->limits->{max_7day_turnover} = $lim;
+        and $limits{max_7day_turnover} = $lim;
     defined($lim = $client->get_limit_for_7day_losses)
-        and $self->limits->{max_7day_losses} = $lim;
+        and $limits{max_7day_losses} = $lim;
     defined($lim = $client->get_limit_for_30day_turnover)
-        and $self->limits->{max_30day_turnover} = $lim;
+        and $limits{max_30day_turnover} = $lim;
     defined($lim = $client->get_limit_for_30day_losses)
-        and $self->limits->{max_30day_losses} = $lim;
+        and $limits{max_30day_losses} = $lim;
 
-    $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
+    $limits{max_turnover} = $client->get_limit_for_daily_turnover;
 
+    my $rp    = $contract->risk_profile;
+    my @cl_rp = $rp->get_client_profiles($client->loginid);
     if ($contract->is_spread) {
         # limits are calculated differently for spreads
-        $self->limits->{spread_bet_profit_limit} = $static_config->{risk_profile}{$contract->risk_profile->get_risk_profile}{turnover}{$currency};
+        $limits{spread_bet_profit_limit} = $static_config->{risk_profile}{$rp->get_risk_profile(\@cl_rp)}{turnover}{$currency};
     } else {
-        push @{$self->limits->{specific_turnover_limits}}, @{$self->contract->risk_profile->get_turnover_limit_parameters};
+        push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
     }
 
-    return;
+    return \%limits;
 }
 
 sub prepare_bet_data_for_buy {
@@ -326,8 +353,6 @@ sub prepare_bet_data_for_buy {
 
     my $client   = $self->client;
     my $contract = $self->contract;
-    my $loginid  = $client->loginid;
-    my $currency = $contract->currency;
 
     if ($self->purchase_date->is_after($contract->date_start)) {
         my $d1 = $self->purchase_date->datetime_yyyymmdd_hhmmss;
@@ -344,8 +369,6 @@ sub prepare_bet_data_for_buy {
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
 
     my $bet_params = {
-        loginid           => $loginid,
-        currency          => $currency,
         quantity          => 1,
         short_code        => scalar $contract->shortcode,
         buy_price         => $self->price,
@@ -408,25 +431,16 @@ sub prepare_bet_data_for_buy {
                 source        => $self->source,
                 app_markup    => $self->app_markup
             },
-            bet_data     => $bet_params,
-            account_data => {
-                client_loginid => $loginid,
-                currency_code  => $currency
-            },
+            bet_data             => $bet_params,
             quants_bet_variables => $quants_bet_variables,
-            limits               => $self->limits,
         });
 }
 
-sub buy {    ## no critic (RequireArgUnpacking)
+sub prepare_buy {    ## no critic (RequireArgUnpacking)
     my $self    = shift;
     my %options = @_;
 
-    $self->contract->risk_profile->include_client_profiles($self->client->loginid);
-
     my $error_status;
-
-    my $stats_data = $self->stats_start('buy');
 
     unless ($options{skip_validation}) {
         # all these validations MUST NOT use the database
@@ -434,23 +448,33 @@ sub buy {    ## no critic (RequireArgUnpacking)
         # ask your friendly DBA team if in doubt
         #
         # Keep the transaction rate test first to limit the impact of abusive buyers
-        $error_status = $self->$_ and return $self->stats_stop($stats_data, $error_status)
+        $error_status = $self->$_ and return $error_status
             for (
             qw/
             _validate_buy_transaction_rate
             _validate_iom_withdrawal_limit
-            _is_valid_to_buy
-            _validate_date_pricing
-            _validate_trade_pricing_adjustment
-            _validate_stake_limit
-            _validate_payout_limit
+            _validate_available_currency
+            _validate_currency
             _validate_jurisdictional_restrictions
             _validate_client_status
             _validate_client_self_exclusion
-            _validate_currency/
+
+            _is_valid_to_buy
+            _validate_date_pricing
+            _validate_trade_pricing_adjustment
+
+            _validate_payout_limit
+            _validate_stake_limit/
             );
 
-        $self->calculate_limits;
+        if ($self->multiple) {
+            for my $m (@{$self->multiple}) {
+                next if $m->{code};
+                $m->{limits} = $self->calculate_limits($m->{client});
+            }
+        } else {
+            $self->limits($self->calculate_limits);
+        }
 
         $self->comment(
             _build_pricing_comment({
@@ -461,13 +485,30 @@ sub buy {    ## no critic (RequireArgUnpacking)
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
+    return $error_status if $error_status;
+
+    return $error_status, $bet_data;
+}
+
+sub buy {    ## no critic (RequireArgUnpacking)
+    my $self    = shift;
+    my @options = @_;
+
+    my $stats_data = $self->stats_start('buy');
+
+    my ($error_status, $bet_data) = $self->prepare_buy(@options);
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
-        db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
+        account_data => {
+            client_loginid => $self->client->loginid,
+            currency_code  => $self->contract->currency,
+        },
+        limits => $self->limits,
+        db     => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
     );
 
     my $try   = 0;
@@ -503,6 +544,140 @@ sub buy {    ## no critic (RequireArgUnpacking)
     $self->contract_id($fmb->{id});
 
     enqueue_new_transaction($self);    # For soft realtime expiration notification.
+
+    return;
+}
+
+# expected parameters:
+# $self->multiple
+#   an array of hashes. Elements with a key "code" are ignored. They are
+#   thought to be already erroneous. Otherwise the element should contain
+#   a "loginid" key.
+#   The following keys are added:
+#   * client: the BOM::Platform::Client object corresponding to the loginid
+#   * limits: a hash representing the betting limits of this client
+#   * fmb and txn: the FMB and transaction records that have been written
+#     to the database in case of success
+#   * code and error: in case of an error during the transaction these keys
+#     contain the error description corresponding to the usual -type and
+#     -message_to_client members of an Error::Base object.
+# $self->contract
+#   the contract
+# $self->staff
+# $self->source
+# ...
+#
+# set or modified during operation:
+# $self->price
+#   the price
+# @{$self->multiple}
+#   see above
+#
+# return value:
+#   - empty list on success. Success means the database function has been called.
+#     It does not mean any contract has been bought.
+#   - an Error::Base object indicates that something more fundamental went wrong.
+#     For instance the contract's start date may be in the past.
+#
+# Exceptions:
+#   The function may throw exceptions. However, it is guaranteed that after
+#   contract validation no exception whatsoever is thrown. That means there
+#   is no way for a contract to be bought but not reported back to the caller.
+
+sub batch_buy {    ## no critic (RequireArgUnpacking)
+    my $self    = shift;
+    my @options = @_;
+
+    # TODO: shall we allow this operation only if $self->client is real-money?
+    #       Or allow virtual $self->client only if all other clients are also
+    #       virtual?
+
+    my $stats_data = $self->stats_start('batch_buy');
+
+    for my $m (@{$self->multiple}) {
+        next if $m->{code};
+        my $c = try { BOM::Platform::Client->new({loginid => $m->{loginid}}) };
+        unless ($c) {
+            $m->{code}  = 'InvalidLoginid';
+            $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
+            next;
+        }
+
+        $m->{client} = $c;
+    }
+
+    my ($error_status, $bet_data) = $self->prepare_buy(@options);
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
+
+    $self->stats_validation_done($stats_data);
+
+    my %per_broker;
+    for my $m (@{$self->multiple}) {
+        next if $m->{code};
+        push @{$per_broker{$m->{client}->broker_code}}, $m;
+    }
+
+    my %stat = map { $_ => {attempt => 0 + @{$per_broker{$_}}} } keys %per_broker;
+
+    for my $broker (keys %per_broker) {
+        my $list = $per_broker{$broker};
+        # with hash key caching introduced in recent perl versions
+        # the "map sort map" pattern does not make sense anymore.
+
+        # this sorting is to prevent deadlocks in the database
+        @$list = sort { $a->{loginid} cmp $b->{loginid} } @$list;
+
+        my @general_error = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'));
+
+        try {
+            my $currency   = $self->contract->currency;
+            my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
+                %$bet_data,
+                # great readablility provided by our tidy rules
+                account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
+                limits       => [map                                      { $_->{limits} } @$list],
+                db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+            );
+
+            my $success = 0;
+            my $result  = $fmb_helper->batch_buy_bet;
+            for my $el (@$list) {
+                my $res = shift @$result;
+                if (my $ecode = $res->{e_code}) {
+                    # map DB errors to client messages
+                    if (my $ref = $known_errors{$ecode}) {
+                        my $error = (
+                            ref $ref eq 'CODE'
+                            ? $ref->(
+                                $self, $el->{client},
+                                1_000_000,    # fake an insanely high retry count
+                                $res->{e_description})
+                            : $ref
+                        );
+                        $el->{code}  = $error->{-type};
+                        $el->{error} = $error->{-message_to_client};
+                    } else {
+                        @{$el}{qw/code error/} = @general_error;
+                    }
+                } else {
+                    $el->{fmb} = $res->{fmb};
+                    $el->{txn} = $res->{txn};
+                    $success++;
+                }
+            }
+            $stat{$broker}->{success} = $success;
+            enqueue_multiple_new_transactions $self, [grep { !$_->{code} } @$list];
+        }
+        catch {
+            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
+
+            for my $el (@$list) {
+                @{$el}{qw/code error/} = @general_error unless $el->{code} or $el->{fmb};
+            }
+        };
+    }
+
+    $self->stats_stop($stats_data, undef, \%stat);
 
     return;
 }
@@ -570,6 +745,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
             _validate_sell_transaction_rate
             _validate_iom_withdrawal_limit
             _is_valid_to_sell
+            _validate_available_currency
             _validate_currency
             _validate_sell_pricing_adjustment
             _validate_date_pricing/
@@ -685,13 +861,13 @@ In case of an unexpected error, the exception is re-thrown unmodified.
 
 =cut
 
-my %known_errors = (
+%known_errors = (
     BI001 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_daily_turnover, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_daily_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your daily turnover limit of [_1][_2].',
@@ -707,19 +883,20 @@ my %known_errors = (
         );
     },
     BI002 => sub {
-        my $self  = shift;
-        my $retry = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
 
         unless ($retry) {
             my $res = sell_expired_contracts +{
-                client       => $self->client,
+                client       => $client,
                 source       => $self->source,
                 only_expired => 1
             };
             return if $res and $res->{number_of_sold_bets} > 0;    # retry
         }
 
-        my $limit = $self->client->get_limit_for_open_positions;
+        my $limit = $client->get_limit_for_open_positions;
         return Error::Base->cuss(
             -type              => 'OpenPositionLimit',
             -mesg              => "Client has reached the limit of $limit open positions.",
@@ -730,12 +907,13 @@ my %known_errors = (
         );
     },
     BI003 => sub {
-        my $self  = shift;
-        my $retry = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
 
         unless ($retry) {
             my $res = sell_expired_contracts +{
-                client       => $self->client,
+                client       => $client,
                 source       => $self->source,
                 only_expired => 1
             };
@@ -744,7 +922,7 @@ my %known_errors = (
 
         my $currency = $self->contract->currency;
         my $account  = BOM::Database::DataMapper::Account->new({
-            client_loginid => $self->client->loginid,
+            client_loginid => $client->loginid,
             currency_code  => $currency,
         });
         my $balance = $account->get_balance();
@@ -758,12 +936,13 @@ my %known_errors = (
                 to_monetary_number_format($balance),                                                to_monetary_number_format($price)));
     },
     BI007 => sub {
-        my $self  = shift;
-        my $retry = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
 
         unless ($retry) {
             my $res = sell_expired_contracts +{
-                client       => $self->client,
+                client       => $client,
                 source       => $self->source,
                 only_expired => 1
             };
@@ -779,14 +958,15 @@ my %known_errors = (
         );
     },
     BI008 => sub {
-        my $self  = shift;
-        my $retry = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($self->client->get_limit_for_account_balance, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_account_balance, 1);
 
         my $account = BOM::Database::DataMapper::Account->new({
-            client_loginid => $self->client->loginid,
+            client_loginid => $client->loginid,
             currency_code  => $currency,
         });
         my $balance = $account->get_balance();
@@ -801,12 +981,13 @@ my %known_errors = (
         );
     },
     BI009 => sub {
-        my $self  = shift;
-        my $retry = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
 
         unless ($retry) {
             my $res = sell_expired_contracts +{
-                client       => $self->client,
+                client       => $client,
                 source       => $self->source,
                 only_expired => 1
             };
@@ -814,7 +995,7 @@ my %known_errors = (
         }
 
         my $currency = $self->contract->currency;
-        my $limit = to_monetary_number_format($self->client->get_limit_for_payout, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_payout, 1);
 
         return Error::Base->cuss(
             -type              => 'OpenPositionPayoutLimit',
@@ -832,9 +1013,10 @@ my %known_errors = (
             'Your account has exceeded the trading limit with free promo code, please deposit if you wish to continue trading.'),
     ),
     BI011 => sub {
-        my $self  = shift;
-        my $retry = shift;
-        my $msg   = shift;
+        my $self   = shift;
+        my $client = shift;
+        my $retry  = shift;
+        my $msg    = shift;
 
         my $limit_name = 'Unknown';
         $msg =~ /^.+: ([^,]+)/ and $limit_name = $1;
@@ -846,11 +1028,11 @@ my %known_errors = (
         );
     },
     BI012 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_daily_losses, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_daily_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your daily limit on losses of [_1][_2].', $currency, $limit);
 
@@ -861,11 +1043,11 @@ my %known_errors = (
         );
     },
     BI013 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_7day_turnover, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_7day_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 7-day turnover limit of [_1][_2].',
@@ -878,11 +1060,11 @@ my %known_errors = (
         );
     },
     BI014 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_7day_losses, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_7day_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 7-day limit on losses of [_1][_2].', $currency, $limit);
 
@@ -902,11 +1084,11 @@ my %known_errors = (
         );
     },
     BI016 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_30day_turnover, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_30day_turnover, 1);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 30-day turnover limit of [_1][_2].',
@@ -919,11 +1101,11 @@ my %known_errors = (
         );
     },
     BI017 => sub {
-        my $self = shift;
+        my $self   = shift;
+        my $client = shift;
 
-        my $client   = $self->client;
         my $currency = $self->contract->currency;
-        my $limit    = to_monetary_number_format($client->get_limit_for_30day_losses, 1);
+        my $limit = to_monetary_number_format($client->get_limit_for_30day_losses, 1);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 30-day limit on losses of [_1][_2].', $currency, $limit);
 
@@ -942,31 +1124,67 @@ sub _recover {
 
     if (ref($err) eq 'ARRAY') {    # special BINARY code
         my $ref = $known_errors{$err->[0]};
-        return ref $ref eq 'CODE' ? $ref->($self, $retry, $err->[1]) : $ref if $ref;
+        return ref $ref eq 'CODE' ? $ref->($self, $self->client, $retry, $err->[1]) : $ref if $ref;
     } else {
         # TODO: recover from deadlocks & co.
     }
     die $err;
 }
 
-sub _validate_currency {
+sub _validate_available_currency {
     my $self     = shift;
-    my $broker   = $self->client->broker_code;
     my $currency = $self->contract->currency;
-
-    if ($currency ne $self->client->currency) {
-        return Error::Base->cuss(
-            -type              => 'NotDefaultCurrency',
-            -mesg              => "not default currency for client [$currency], client currency[" . $self->client->currency . "]",
-            -message_to_client => BOM::Platform::Context::localize("The provided currency [_1] is not the default currency", $currency),
-        );
-    }
 
     if (not grep { $currency eq $_ } @{request()->available_currencies}) {
         return Error::Base->cuss(
             -type              => 'InvalidCurrency',
             -mesg              => "Invalid $currency",
             -message_to_client => BOM::Platform::Context::localize("The provided currency [_1] is invalid.", $currency),
+        );
+    }
+    return;
+}
+
+sub _create_validator {
+    my $name   = shift;
+    my $method = "_$name";
+
+    my $sub = sub {
+        my $self = shift;
+
+        if ($self->multiple) {
+            for my $m (@{$self->multiple}) {
+                next if $m->{code};
+                my $res = $self->$method($m->{client});
+                if ($res) {
+                    $m->{code}  = $res->{-type};
+                    $m->{error} = $res->{-message_to_client};
+                }
+            }
+            return;
+        } else {
+            return $self->$method($self->client);
+        }
+    };
+
+    no warnings 'redefine';    ## no critic
+    no strict 'refs';
+    *{$name} = $sub;
+
+    return;
+}
+
+sub __validate_currency {
+    my $self     = shift;
+    my $client   = shift;
+    my $broker   = $client->broker_code;
+    my $currency = $self->contract->currency;
+
+    if ($currency ne $client->currency) {
+        return Error::Base->cuss(
+            -type              => 'NotDefaultCurrency',
+            -mesg              => "not default currency for client [$currency], client currency[" . $client->currency . "]",
+            -message_to_client => BOM::Platform::Context::localize("The provided currency [_1] is not the default currency", $currency),
         );
     }
 
@@ -979,6 +1197,7 @@ sub _validate_currency {
     }
     return;
 }
+BEGIN { _create_validator '_validate_currency' }
 
 sub _build_pricing_comment {
     my $args = shift;
@@ -1306,9 +1525,9 @@ Validate the withdrawal limit for IOM region
 
 =cut
 
-sub _validate_iom_withdrawal_limit {
+sub __validate_iom_withdrawal_limit {
     my $self   = shift;
-    my $client = $self->client;
+    my $client = shift;
 
     return if $client->is_virtual;
 
@@ -1350,17 +1569,14 @@ sub _validate_iom_withdrawal_limit {
     }
     return;
 }
+BEGIN { _create_validator '_validate_iom_withdrawal_limit' }
 
 # This validation should always come after _validate_trade_pricing_adjustment
 # because we recompute the price and that's the price that we going to transact with!
-sub _validate_stake_limit {
-    my $self = shift;
+sub ___validate_stake_limit {
+    my $self   = shift;
+    my $client = shift;
 
-    # spread stake validation is within its module.
-    # spread bet won't be offered to maltainvest.
-    return if $self->contract->is_spread;
-
-    my $client          = $self->client;
     my $contract        = $self->contract;
     my $landing_company = $client->landing_company;
     my $currency        = $contract->currency;
@@ -1385,6 +1601,16 @@ sub _validate_stake_limit {
     }
     return;
 }
+BEGIN { _create_validator '__validate_stake_limit' }
+
+sub _validate_stake_limit {
+    my $self = shift;
+
+    # spread stake validation is within its module.
+    # spread bet won't be offered to maltainvest.
+    return if $self->contract->is_spread;
+    return $self->__validate_stake_limit;
+}
 
 =head2 $self->_validate_payout_limit
 
@@ -1392,21 +1618,30 @@ Validate if payout is not over the client limits
 
 =cut
 
-sub _validate_payout_limit {
-    my $self = shift;
+sub __validate_payout_limit {
+    my $self   = shift;
+    my $client = shift;
 
     my $contract = $self->contract;
 
     return if $contract->is_spread;
 
-    my $client = $self->client;
-    my $payout = $self->payout;
-    my $rp     = $self->contract->risk_profile;
+    my $rp    = $self->contract->risk_profile;
+    my @cl_rp = $rp->get_client_profiles($client->loginid);
 
     # setups client specific payout and turnover limits, if any.
-    if (@{$rp->custom_client_profiles}) {
-        my $custom_limit = BOM::System::Config::quants->{risk_profile}{$rp->get_risk_profile}{payout}{$contract->currency};
-        if (defined $custom_limit and $payout > $custom_limit) {
+    if (@cl_rp) {
+        my $custom_profile = $rp->get_risk_profile(\@cl_rp);
+        if ($custom_profile eq 'no_business') {
+            return Error::Base->cuss(
+                -type              => 'NoBusiness',
+                -mesg              => $client->loginid . ' manually disabled by quants',
+                -message_to_client => BOM::Platform::Context::localize('This contract is unavailable on this account.'),
+            );
+        }
+
+        my $custom_limit = BOM::System::Config::quants->{risk_profile}{$custom_profile}{payout}{$contract->currency};
+        if (defined $custom_limit and (my $payout = $self->payout) > $custom_limit) {
             return Error::Base->cuss(
                 -type              => 'PayoutLimitExceeded',
                 -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
@@ -1421,6 +1656,7 @@ sub _validate_payout_limit {
 
     return;
 }
+BEGIN { _create_validator '_validate_payout_limit' }
 
 =head2 $self->_validate_jurisdictional_restrictions
 
@@ -1428,9 +1664,10 @@ Validates whether the client has provided his residence country
 
 =cut
 
-sub _validate_jurisdictional_restrictions {
-    my $self        = shift;
-    my $client      = $self->client;
+sub __validate_jurisdictional_restrictions {
+    my $self   = shift;
+    my $client = shift;
+
     my $contract    = $self->contract;
     my $residence   = $client->residence;
     my $loginid     = $client->loginid;
@@ -1484,6 +1721,7 @@ sub _validate_jurisdictional_restrictions {
 
     return;
 }
+BEGIN { _create_validator '_validate_jurisdictional_restrictions' }
 
 =head2 $self->_validate_client_status
 
@@ -1492,9 +1730,9 @@ is not able to purchase contract
 
 =cut
 
-sub _validate_client_status {
+sub __validate_client_status {
     my $self   = shift;
-    my $client = $self->client;
+    my $client = shift;
 
     if ($client->get_status('unwelcome') or $client->get_status('disabled')) {
         return Error::Base->cuss(
@@ -1506,6 +1744,7 @@ sub _validate_client_status {
 
     return;
 }
+BEGIN { _create_validator '_validate_client_status' }
 
 =head2 $self->_validate_client_self_exclusion
 
@@ -1514,9 +1753,9 @@ is not able to purchase contract
 
 =cut
 
-sub _validate_client_self_exclusion {
+sub __validate_client_self_exclusion {
     my $self   = shift;
-    my $client = $self->client;
+    my $client = shift;
 
     if (my $limit_excludeuntil = $client->get_self_exclusion_until_dt) {
         return Error::Base->cuss(
@@ -1529,6 +1768,7 @@ sub _validate_client_self_exclusion {
 
     return;
 }
+BEGIN { _create_validator '_validate_client_self_exclusion' }
 
 =head2 sell_expired_contracts
 
