@@ -177,7 +177,7 @@ sub closing_tick_on {
 sub spot {
     my $self = shift;
 
-    return $self->spot_source->spot_quote;
+    return $self->pipsized_value($self->spot_source->spot_quote);
 }
 
 # Can not be made into an attribute to avoid the caching problem.
@@ -1495,18 +1495,6 @@ sub _build_display_decimals {
     return log(1 / $self->pip_size) / log(10);
 }
 
-=head2 pipsized_value
-
-Resize a value to conform to the pip size of this underlying
-
-=cut
-
-sub pipsized_value {
-    my ($self, $value, $custom) = @_;
-
-    return $self->spot_source->pipsized_value($value, $custom);
-}
-
 sub breaching_tick {
     my ($self, %args) = @_;
 
@@ -1647,6 +1635,25 @@ sub _build_corporate_actions {
         keys %grouped_by_date;
 
     return \@ordered_actions;
+}
+
+=head2 pipsized_value
+
+Resize a value to conform to the pip size of this underlying
+
+=cut
+
+sub pipsized_value {
+    my ($self, $value, $custom) = @_;
+
+    my ($pip_size, $display_decimals) =
+          ($custom)
+        ? ($custom, log(1 / $custom) / log(10))
+        : ($self->pip_size, $self->display_decimals);
+    if (defined $value and looks_like_number($value)) {
+        $value = sprintf '%.' . $display_decimals . 'f', $value;
+    }
+    return $value;
 }
 
 sub _build_applicable_corporate_actions {
