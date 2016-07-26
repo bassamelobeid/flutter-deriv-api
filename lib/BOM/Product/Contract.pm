@@ -200,10 +200,7 @@ sub _build_expiry_daily {
 sub _build_effective_daily_trading_hours {
     my $self        = shift;
     my $date_expiry = $self->date_expiry;
-    my $daily_trading_hours =
-        ($self->calendar->closes_early_on($date_expiry))
-        ? $self->calendar->closing_on($date_expiry)->epoch - $self->calendar->opening_on($date_expiry)->epoch
-        : 86400;
+    my $daily_trading_hours = $self->calendar->closing_on($date_expiry)->epoch - $self->calendar->opening_on($date_expiry)->epoch;
     return $daily_trading_hours;
 }
 

@@ -198,12 +198,12 @@ subtest 'longcode misbehaving for daily contracts' => sub {
     $bet_params->{duration} = '2d';
     my $c = produce_contract($bet_params);
     ok $c->expiry_daily, 'multiday contract';
-    is $c->effective_daily_trading_hours, 86400;
+    is $c->effective_daily_trading_hours, 86399;
     is $c->expiry_type, 'daily';
     my $expiry_daily_longcode = $c->longcode;
     $bet_params->{date_pricing} = $c->date_start->plus_time_interval('2d');
     $c = produce_contract($bet_params);
-    is $c->effective_daily_trading_hours, 86400;
+    is $c->effective_daily_trading_hours, 86399;
     is $c->expiry_type, 'intraday';
     ok $c->is_intraday, 'date_pricing reaches intraday';
     is $c->longcode, $expiry_daily_longcode, 'longcode does not change';
@@ -228,12 +228,17 @@ subtest 'longcode daily contracts crossing Thursday 21GMT expiring on Friday' =>
 subtest 'longcode index daily contracts' => sub {
     my $c = produce_contract('PUT_GDAXI_166.27_1469523600_1469633400_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
-    ok $c2->expiry_daily, 'multiday contract';
+    ok $c2->expiry_daily, 'is daily contract';
     is $c2->longcode, 'Win payout if German Index is strictly lower than entry spot at close on 2016-07-27.';
     is $c->effective_daily_trading_hours, 30600;
     is $c->expiry_type, 'daily';
     my $expiry_daily_longcode = $c2->longcode;
     $c2 = make_similar_contract($c , {date_pricing => $c->date_start->plus_time_interval('8h')});
+    ok $c2->expiry_daily, 'is daily contract';
+    is $c2->longcode, $expiry_daily_longcode, 'longcode does not change';
+    is $c->effective_daily_trading_hours, 30600;
+    is $c->expiry_type, 'daily';
+    $c2 = make_similar_contract($c , {date_pricing => $c->date_start->plus_time_interval('24h')});
     ok $c2->is_intraday, 'date_pricing reaches intraday';
     is $c2->longcode, $expiry_daily_longcode, 'longcode does not change';
     is $c->effective_daily_trading_hours, 30600;
