@@ -26,6 +26,7 @@ use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::App;
 use BOM::RPC::v3::Japan::NewAccount;
+use BOM::RPC::v3::MT5::Account;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -144,7 +145,8 @@ sub startup {
         ['ticks_history', \&BOM::RPC::v3::TickStreamer::ticks_history],
         ['ticks',         \&BOM::RPC::v3::TickStreamer::ticks],
 
-        ['buy', \&BOM::RPC::v3::Transaction::buy],
+        ['buy',                                \&BOM::RPC::v3::Transaction::buy],
+        ['buy_contract_for_multiple_accounts', \&BOM::RPC::v3::Transaction::buy_contract_for_multiple_accounts],
         ['sell', \&BOM::RPC::v3::Transaction::sell, 1],
 
         ['trading_times',         \&BOM::RPC::v3::MarketDiscovery::trading_times],
@@ -215,6 +217,15 @@ sub startup {
         ['connect_add',  \&BOM::RPC::v3::Accounts::connect_add,  1],
         ['connect_del',  \&BOM::RPC::v3::Accounts::connect_del,  1],
         ['connect_list', \&BOM::RPC::v3::Accounts::connect_list, 1],
+
+        ['mt5_login_list',      \&BOM::RPC::v3::MT5::Account::mt5_login_list,      1],
+        ['mt5_new_account',     \&BOM::RPC::v3::MT5::Account::mt5_new_account,     1],
+        ['mt5_get_settings',    \&BOM::RPC::v3::MT5::Account::mt5_get_settings,    1],
+        ['mt5_set_settings',    \&BOM::RPC::v3::MT5::Account::mt5_set_settings,    1],
+        ['mt5_password_check',  \&BOM::RPC::v3::MT5::Account::mt5_password_check,  1],
+        ['mt5_password_change', \&BOM::RPC::v3::MT5::Account::mt5_password_change, 1],
+        ['mt5_deposit',         \&BOM::RPC::v3::MT5::Account::mt5_deposit,         1],
+        ['mt5_withdrawal',      \&BOM::RPC::v3::MT5::Account::mt5_withdrawal,      1],
     );
     my $services = {};
     foreach my $srv (@services) {

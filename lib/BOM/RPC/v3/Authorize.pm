@@ -10,6 +10,7 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Context qw (localize request);
+use BOM::RPC::v3::Utility;
 
 sub authorize {
     my $params        = shift;
