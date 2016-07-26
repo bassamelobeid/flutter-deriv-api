@@ -1258,7 +1258,7 @@ sub _get_amount_and_count {
         client_loginid => $loginid,
         operation      => 'replica',
     });
-    my $amount_data = $clientdb->fetchall_arrayref('select * payment.get_today_payment_agent_withdrawal_sum_count(?)', [$loginid]);
+    my $amount_data = $clientdb->fetchall_arrayref('select * from payment.get_today_payment_agent_withdrawal_sum_count(?)', [$loginid]);
     return ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
 }
 
