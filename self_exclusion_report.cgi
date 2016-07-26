@@ -26,20 +26,21 @@ $head .= '<th>Timeout Until</th>';
 $head .= '<th>Session Duration</th>';
 $head .= '<th>Last Modified Date</th>';
 $head .= '</tr>';
-my $rows;
+my ($rows, $timeout);
 
 foreach my $login_id (keys %{$all_clients_self_exclusion_hashref}) {
-    $rows .= "<tr>";
+    $timeout = $all_clients_self_exclusion_hashref->{$login_id}->{'timeout_until'} // '';
+    $timeout = Date::Utility->new($timeout)->datetime_ddmmmyy_hhmmss if $timeout;
 
+    $rows .= "<tr>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'client_loginid'}</td>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'max_open_bets'}</td>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'max_turnover'}</td>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'max_balance'}</td>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'exclude_until'}</td>";
-    $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'timeout_until'}</td>";
+    $rows .= "<td>$timeout</td>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'session_duration_limit'}</td>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'last_modified_date'}</td>";
-
     $rows .= "</tr>";
 }
 
