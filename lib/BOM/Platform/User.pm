@@ -138,14 +138,23 @@ sub login {
 sub clients {
     my ($self, %args) = @_;
 
-    my @all = sort { (($a->is_virtual ? 'V' : 'R') . $a->loginid) cmp(($b->is_virtual ? 'V' : 'R') . $b->loginid) }
-        map { BOM::Platform::Client->new({loginid => $_, db_operation => 'replica'}) } $self->loginid;
+    # filter out non binary's loginid, eg: MT5 login
+    my @bom_loginids = grep { $_->loginid !~ /^MT\d+$/ } $self->loginid;
+
+    my @bom_clients = sort { (($a->is_virtual ? 'V' : 'R') . $a->loginid) cmp(($b->is_virtual ? 'V' : 'R') . $b->loginid) }
+        map { BOM::Platform::Client->new({loginid => $_->loginid, db_operation => 'replica'}) } @bom_loginids;
 
     # generate the string needed by the loginid_list cookie (but remove the loginid_list cookie next!)
-    my @parts = map { join ':', $_->loginid, $_->is_virtual ? 'V' : 'R', $_->get_status('disabled') ? 'D' : 'E' } @all;
+    my @parts = map { join ':', $_->loginid, $_->is_virtual ? 'V' : 'R', $_->get_status('disabled') ? 'D' : 'E' } @bom_clients;
     $self->{_cookie_val} = join('+', @parts);
 
-    return grep { $args{disabled_ok} || !$_->get_status('disabled') } @all;
+    return grep { $args{disabled_ok} || !$_->get_status('disabled') } @bom_clients;
+}
+
+sub mt5_logins {
+    my $self = shift;
+    my @mt5_logins = sort map { $_->loginid } grep { $_->loginid =~ /^MT\d+$/ } $self->loginid;
+    return @mt5_logins;
 }
 
 sub loginid_list_cookie_val {
