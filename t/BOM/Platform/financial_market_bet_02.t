@@ -1453,7 +1453,7 @@ subtest 'batch_buy', sub {
         my $acc     = $acc1;
         my $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
-            my $r = $res->{$loginid};
+            my $r = shift @$res;
             isnt $r, undef, 'got result hash';
             is $r->{loginid}, $loginid, 'found loginid';
             is $r->{e_code},        undef, 'e_code is undef';
@@ -1485,7 +1485,7 @@ subtest 'batch_buy', sub {
         $acc     = $acc2;
         $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
-            my $r = $res->{$loginid};
+            my $r = shift @$res;
             isnt $r, undef, 'got result hash';
             is $r->{loginid}, $loginid, 'found loginid';
             is $r->{e_code},          'BI003',                  'e_code is BI003';
@@ -1497,7 +1497,7 @@ subtest 'batch_buy', sub {
         $acc     = $acc3;
         $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
-            my $r = $res->{$loginid};
+            my $r = shift @$res;
             isnt $r, undef, 'got result hash';
             is $r->{loginid}, $loginid, 'found loginid';
             is $r->{e_code},        undef, 'e_code is undef';
