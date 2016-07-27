@@ -30,6 +30,9 @@ sub send_email {
     my $skip_text2html     = $args_ref->{'skip_text2html'};
     my $template_loginid   = $args_ref->{template_loginid};
 
+    my $request = request();
+    my $language = $request ? $request->language : 'EN';
+
     die 'No email provided' unless $email;
 
     if (not $fromemail) {
@@ -117,6 +120,9 @@ sub send_email {
                 email_template_loginid => $template_loginid,
                 content                => $message,
             };
+            if ($language eq 'JA') {
+                $vars->{email_template_japan} = $language;
+            }
             BOM::Platform::Context::template->process('common_email.html.tt', $vars, \$mail_message)
                 || die BOM::Platform::Context::template->error();
         } else {
