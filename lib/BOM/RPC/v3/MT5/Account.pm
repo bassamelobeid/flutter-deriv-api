@@ -83,8 +83,10 @@ sub mt5_new_account {
 
     $args->{group} = $group;
 
-    my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
-    $args->{country} = $country_name if ($country_name);
+    if ($args->{country}) {
+        my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
+        $args->{country} = $country_name if ($country_name);
+    }
 
     my $status = BOM::MT5::User::create_user($args);
     if ($status->{error}) {
