@@ -365,7 +365,7 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Please enter date in the format YYYY-MM-DD or YYYY-MM-DD hh::mm::ss')}};
+            'text'  => localize('Please enter date in the format YYYY-MM-DD or YYYY-MM-DD hh::mm::ss. It will save in GMT format.')}};
 
     my $input_hidden_fields = {
         'input' => [{
