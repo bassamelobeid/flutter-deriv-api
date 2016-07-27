@@ -23,9 +23,9 @@ sub get_self_exclusion_form {
     my $broker  = $client->broker;
 
     my (
-        $limit_max_ac_bal,  $limit_daily_turn_over,  $limit_open_position, $limit_daily_losses,   $limit_7day_turnover,
-        $limit_7day_losses, $limit_session_duration, $limit_exclude_until, $limit_30day_turnover, $limit_30day_losses,
-        $limit_timeout_until,
+        $limit_max_ac_bal,     $limit_daily_turn_over, $limit_open_position,    $limit_daily_losses,
+        $limit_7day_turnover,  $limit_7day_losses,     $limit_session_duration, $limit_exclude_until,
+        $limit_30day_turnover, $limit_30day_losses,    $limit_timeout_until,
     );
     my $self_exclusion = $client->get_self_exclusion;
     my $se_map         = '{}';
@@ -40,6 +40,7 @@ sub get_self_exclusion_form {
         $limit_30day_turnover   = $self_exclusion->max_30day_turnover;
         $limit_session_duration = $self_exclusion->session_duration_limit;
         $limit_exclude_until    = $self_exclusion->exclude_until;
+
         if ($limit_exclude_until) {
             $limit_exclude_until = Date::Utility->new($limit_exclude_until);
             if (Date::Utility::today->days_between($limit_exclude_until) < 0) {
@@ -48,7 +49,7 @@ sub get_self_exclusion_form {
                 undef $limit_exclude_until;
             }
         }
-        $limit_timeout_until    = $self_exclusion->timeout_until;
+        $limit_timeout_until = $self_exclusion->timeout_until;
         if ($limit_timeout_until) {
             $limit_timeout_until = Date::Utility->new($limit_timeout_until);
             if ($limit_timeout_until->is_after(Date::Utility->new)) {
@@ -354,8 +355,8 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d*)$',
-                'err_msg' => localize('Please enter an integer value.'),
+                'regexp'  => '^(\d{4}-\d{2}-\d{2})+(\s\d{2}:\d{2}:\d{2})?$',
+                'err_msg' => localize('Please enter date in the format YYYY-MM-DD or YYYY-MM-DD hh::mm::ss'),
             },
         ],
         'error' => {
@@ -364,7 +365,7 @@ sub get_self_exclusion_form {
         },
         'comment' => {
             'class' => 'hint',
-            'text'  => localize('Please enter an epoch time.')}};
+            'text'  => localize('Please enter date in the format YYYY-MM-DD or YYYY-MM-DD hh::mm::ss')}};
 
     my $input_hidden_fields = {
         'input' => [{

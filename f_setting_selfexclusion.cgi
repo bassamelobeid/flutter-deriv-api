@@ -125,7 +125,10 @@ $client->set_exclusion->session_duration_limit(looks_like_number($v) ? $v : unde
 
 # by or-ing to 'undef' here we turn any blank exclude_until date to no-date.
 $client->set_exclusion->exclude_until(request()->param('EXCLUDEUNTIL') || undef);
-$client->set_exclusion->timeout_until(request()->param('TIMEOUTUNTIL') || undef);
+
+my $timeout_until = request()->param('TIMEOUTUNTIL') || undef;
+$timeout_until = Date::Utility->new($timeout_until)->epoch if $timeout_until;
+$client->set_exclusion->timeout_until($timeout_until);
 
 if ($client->save) {
     #print message inform Client everything is ok
