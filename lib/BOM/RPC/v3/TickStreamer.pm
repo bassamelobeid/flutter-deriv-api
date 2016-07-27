@@ -17,7 +17,7 @@ sub ticks {
     my $params = shift;
 
     my $symbol   = $params->{symbol};
-    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
+    my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
     if ($response and exists $response->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $response->{error}->{code},
@@ -46,6 +46,13 @@ sub ticks_history {
 
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
         my $license = BOM::RPC::v3::Contract::validate_license($symbol);
+        if ($license and exists $license->{error}) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => $license->{error}->{code},
+                    message_to_client => BOM::Platform::Context::localize($license->{error}->{message}, $symbol)});
+        }
+
+        $license = BOM::RPC::v3::Contract::validate_is_open($symbol);
         if ($license and exists $license->{error}) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $license->{error}->{code},
