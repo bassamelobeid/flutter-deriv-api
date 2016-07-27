@@ -3,6 +3,8 @@ package main;
 use strict 'vars';
 
 use Scalar::Util qw(looks_like_number);
+use Date::Utility;
+
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
 
@@ -79,7 +81,7 @@ if (my $self_exclusion = $client->get_self_exclusion) {
         $page .= '<li>' . localize('Website exclusion is currently set to <strong>[_1].</strong>', $self_exclusion->exclude_until) . '</li>';
     }
     if ($self_exclusion->timeout_until) {
-        $page .= '<li>' . localize('Website Timeout until is currently set to <strong>[_1].</strong>', $self_exclusion->timeout_until) . '</li>';
+        $page .= '<li>' . localize('Website Timeout until is currently set to <strong>[_1].</strong>', Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss) . '</li>';
     }
     $page .= '</ul>';
 }
@@ -123,7 +125,10 @@ $client->set_exclusion->session_duration_limit(looks_like_number($v) ? $v : unde
 
 # by or-ing to 'undef' here we turn any blank exclude_until date to no-date.
 $client->set_exclusion->exclude_until(request()->param('EXCLUDEUNTIL') || undef);
-$client->set_exclusion->timeout_until(request()->param('TIMEOUTUNTIL') || undef);
+
+my $timeout_until = request()->param('TIMEOUTUNTIL') || undef;
+$timeout_until = Date::Utility->new($timeout_until)->epoch if $timeout_until;
+$client->set_exclusion->timeout_until($timeout_until);
 
 if ($client->save) {
     #print message inform Client everything is ok
