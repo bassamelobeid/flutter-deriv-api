@@ -5,6 +5,7 @@
 </head>
 <body leftmargin="0" marginwidth="0" topmargin="0" marginheight="0" offset="0">
     <style type="text/css">
+        @import url(https://fonts.googleapis.com/css?family=Roboto:300,400,700&subset=latin,vietnamese,cyrillic-ext,latin-ext,cyrillic);
         /* /\/\/\/\/\/\/\/\/ CLIENT-SPECIFIC STYLES /\/\/\/\/\/\/\/\/ */
         #outlook a {
             padding: 0;
@@ -86,7 +87,7 @@
         #templateContainer h1 {
             color: #ed8021 !important;
             display: block;
-            font-family: Arial;
+            font-family: Roboto, Arial;
             font-size: 48px;
             font-style: normal;
             font-weight: bold;
@@ -101,7 +102,7 @@
         h2 {
             color: #090b4c !important;
             display: block;
-            font-family: Arial;
+            font-family: Roboto, Arial;
             font-size: 22px;
             font-style: normal;
             font-weight: bold;
@@ -116,7 +117,7 @@
         h3 {
             color: #999999 !important;
             display: block;
-            font-family: Arial;
+            font-family: Roboto, Arial;
             font-size: 1.17em;
             font-style: normal;
             font-weight: bold;
@@ -131,7 +132,7 @@
         h4 {
             color: #579b6c !important;
             display: block;
-            font-family: Arial;
+            font-family: Roboto, Arial;
             font-size: 12px;
             font-style: normal;
             font-weight: bold;
@@ -152,7 +153,7 @@
         }
         .headerContent {
             color: #505050;
-            font-family: Arial;
+            font-family: Roboto, Arial;
             font-size: 20px;
             font-weight: bold;
             line-height: 100%;
@@ -186,7 +187,7 @@
         }
         .bodyContent {
             color: #505050;
-            font-family: Arial;
+            font-family: Roboto, Arial;
             font-size: 14px;
             line-height: 150%;
             padding-top: 10px;
@@ -270,7 +271,7 @@
         }
         .leftColumnContent {
             color: #777777;
-            font-family: Arial;
+            font-family: Roboto, Arial;
             font-size: 11px;
             line-height: 100%;
             padding-top: 0;
@@ -281,7 +282,7 @@
         }
         .leftColumnContent-footer {
             color: #777777;
-            font-family: verdana;
+            font-family: Roboto, verdana;
             font-size: 10px;
             line-height: 150%;
             padding-top: 0;
@@ -301,7 +302,7 @@
         }
         .centerColumnContent {
             color: #777777;
-            font-family: Arial;
+            font-family: Roboto, Arial;
             font-size: 11px;
             line-height: 100%;
             padding-top: 0;
@@ -312,7 +313,7 @@
         }
         .centerColumnContent-footer {
             color: #777777;
-            font-family: verdana;
+            font-family: Roboto, verdana;
             font-size: 10px;
             line-height: 150%;
             padding-top: 0;
@@ -332,7 +333,7 @@
         }
         .rightColumnContent {
             color: #777777;
-            font-family: Arial;
+            font-family: Roboto, Arial;
             font-size: 11px;
             line-height: 100%;
             padding-top: 0;
@@ -343,7 +344,7 @@
         }
         .rightColumnContent-footer {
             color: #777777;
-            font-family: verdana;
+            font-family: Roboto, verdana;
             font-size: 10px;
             line-height: 150%;
             padding-top: 0;
@@ -384,7 +385,7 @@
             font-weight: bold;
             color: #999999;
             font-size: 16px;
-            font-family: arial;
+            font-family: Roboto, arial;
             padding-top: 30px;
             margin-bottom: 20px;
         }
@@ -579,6 +580,11 @@
             .footer-border {
                 display: none!important
             }
+            .footer {
+                font-size: 10px;
+                padding: 10px;
+                font-family: Roboto, Arial;
+            }
             /* Place footer social and utility links on their own lines, for easier access */
         }
     </style>
@@ -622,6 +628,25 @@
                                 <!-- // END BODY -->
                             </td>
                         </tr>
+                        [% IF email_template_japan %]
+                        <tr>
+                            <td align="center" valign="top">
+                                <!-- BEGIN FOOTER // -->
+                                <tr>
+                                    <td align="center" valign="top" style="background-color: #F2F2F2;">
+                                        <table>
+                                            <tr>
+                                                <td>
+                                                    <div class="footer" style="padding: 10px;">[% l("{JAPAN ONLY}footer text of email template for Japan") %]</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <!-- // END FOOTER -->
+                            </td>
+                        </tr>
+                        [% END %]
                     </table>
                     <!-- // END TEMPLATE -->
                 </td>
