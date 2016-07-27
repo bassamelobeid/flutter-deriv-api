@@ -28,9 +28,7 @@ sub forget_all {
             @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
         }
         @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
-        }
     }
-
     return {
         msg_type   => 'forget_all',
         forget_all => [keys %removed_ids],
