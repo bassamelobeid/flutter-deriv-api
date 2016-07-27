@@ -1,6 +1,7 @@
 package BOM::Product::Contract;
 
 use Moose;
+use Try::Tiny;
 
 # very bad name, not sure why it needs to be
 # attached to Validatable.
@@ -200,8 +201,12 @@ sub _build_expiry_daily {
 sub _build_effective_daily_trading_hours {
     my $self        = shift;
     my $date_expiry = $self->date_expiry;
-    my $daily_trading_hours = $self->calendar->closing_on($date_expiry)->epoch - $self->calendar->opening_on($date_expiry)->epoch;
-    return $daily_trading_hours;
+    my ($daily_trading_hours, $error);
+    try { $daily_trading_hours = $self->calendar->closing_on($date_expiry)->epoch - $self->calendar->opening_on($date_expiry)->epoch; }
+    catch { $error = 1; };
+
+    # This default daily trading hours to 24 hours
+    return $error ? 86400 : $daily_trading_hours;
 }
 
 sub _build_is_intraday {
