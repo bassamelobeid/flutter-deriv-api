@@ -30,7 +30,7 @@ my ($rows, $timeout);
 
 foreach my $login_id (keys %{$all_clients_self_exclusion_hashref}) {
     $timeout = $all_clients_self_exclusion_hashref->{$login_id}->{'timeout_until'} // '';
-    $timeout = Date::Utility->new($timeout)->datetime_ddmmmyy_hhmmss if $timeout;
+    $timeout = Date::Utility->new($timeout)->datetime_yyyymmdd_hhmmss if $timeout;
 
     $rows .= "<tr>";
     $rows .= "<td>$all_clients_self_exclusion_hashref->{$login_id}->{'client_loginid'}</td>";

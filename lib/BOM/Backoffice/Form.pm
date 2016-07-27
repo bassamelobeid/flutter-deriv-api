@@ -53,7 +53,7 @@ sub get_self_exclusion_form {
         if ($limit_timeout_until) {
             $limit_timeout_until = Date::Utility->new($limit_timeout_until);
             if ($limit_timeout_until->is_after(Date::Utility->new)) {
-                $limit_timeout_until = $limit_timeout_until->epoch;
+                $limit_timeout_until = $limit_timeout_until->datetime_yyyymmdd_hhmmss;
             } else {
                 undef $limit_timeout_until;
             }
@@ -355,7 +355,7 @@ sub get_self_exclusion_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(\d{4}-\d{2}-\d{2})+(\s\d{2}:\d{2}:\d{2})?$',
+                'regexp'  => '^(|((\d{4}-\d{2}-\d{2})+(\s\d{2}:\d{2}:\d{2})?))$',
                 'err_msg' => localize('Please enter date in the format YYYY-MM-DD or YYYY-MM-DD hh::mm::ss'),
             },
         ],
