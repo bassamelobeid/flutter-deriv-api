@@ -3,6 +3,8 @@ package main;
 use strict 'vars';
 
 use Scalar::Util qw(looks_like_number);
+use Date::Utility;
+
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
 
@@ -79,7 +81,7 @@ if (my $self_exclusion = $client->get_self_exclusion) {
         $page .= '<li>' . localize('Website exclusion is currently set to <strong>[_1].</strong>', $self_exclusion->exclude_until) . '</li>';
     }
     if ($self_exclusion->timeout_until) {
-        $page .= '<li>' . localize('Website Timeout until is currently set to <strong>[_1].</strong>', $self_exclusion->timeout_until) . '</li>';
+        $page .= '<li>' . localize('Website Timeout until is currently set to <strong>[_1].</strong>', Date::Utility->new($self_exclusion->timeout_until)->datetime_ddmmmyy_hhmmss) . '</li>';
     }
     $page .= '</ul>';
 }
