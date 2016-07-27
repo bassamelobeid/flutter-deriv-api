@@ -7,6 +7,14 @@ use Test::BOM::RPC::Client;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
+use Test::MockTime qw/:all/;
+use Date::Utility;
+
+use Data::Dumper;
+use Quant::Framework::Utils::Test;
+use Quant::Framework::CorporateAction;
+use Quant::Framework::StorageAccessor;
+
 use BOM::RPC::v3::Contract;
 use BOM::Platform::Context qw (request);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -16,10 +24,6 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::System::RedisReplicated;
 use BOM::Product::ContractFactory qw( produce_contract );
-use Data::Dumper;
-use Quant::Framework::Utils::Test;
-use Quant::Framework::CorporateAction;
-use Quant::Framework::StorageAccessor;
 use BOM::Database::Model::OAuth;
 
 initialize_realtime_ticks_db();
@@ -77,7 +81,7 @@ subtest 'validate_symbol' => sub {
 };
 
 subtest 'validate_license' => sub {
-    is(BOM::RPC::v3::Contract::validate_license('R_50'), undef, "return undef if symbol is is realtime ");
+    is(BOM::RPC::v3::Contract::validate_license('R_50'), undef, "return undef if symbol is realtime");
 
     is_deeply(
         BOM::RPC::v3::Contract::validate_license('JCI'),
@@ -90,7 +94,26 @@ subtest 'validate_license' => sub {
         },
         "return error if symbol is not realtime"
     );
+};
 
+subtest 'validate_is_open' => sub {
+    is(BOM::RPC::v3::Contract::validate_is_open('R_50'), undef, "Random is always open");
+
+    # weekend
+    set_fixed_time(Date::Utility->new('2016-07-23')->epoch);
+
+    is_deeply(
+        BOM::RPC::v3::Contract::validate_is_open('frxUSDJPY'),
+        {
+            error => {
+                message => 'This market is presently closed.',
+                code    => 'MarketIsClosed',
+                params  => [qw/ frxUSDJPY /],
+            }
+        },
+        "return error if market is not open"
+    );
+    restore_time();
 };
 
 subtest 'validate_underlying' => sub {
