@@ -12,10 +12,10 @@ use Date::Utility;
 use BOM::Market::Underlying;
 
 my @date_start = ('2016-02-15 08:15:00', '2016-02-15 08:30:00', '2016-02-16 08:30:00');
-my @duration   = ('20m',                 '24h',                 '2m');
+my @duration   = ('20m', '24h', '2m');
 my @error      = (
     qr/Trading is not available from 08:15:00 to 08:25:00/,
-    qr/Contracts on this market with a duration of under 24 hours must expire on the same trading day./,
+    qr/Trading is not offered for this duration./,
     qr/Trading is not offered for this duration./,
 );
 my $u     = BOM::Market::Underlying->new('frxBROUSD');
