@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Deep;
 use JSON;
 use Data::Dumper;
 use Date::Utility;
@@ -89,8 +90,7 @@ while (1) {
 $t = $t->send_ok({
         json => {
             proposal_open_contract => 1,
-            subscribe              => 1,
-            req_id                 => 123
+            subscribe              => 1
         }});
 
 $t   = $t->message_ok;
@@ -98,7 +98,6 @@ $res = decode_json($t->message->[1]);
 note explain $res;
 is $res->{msg_type}, 'proposal_open_contract';
 ok $res->{echo_req};
-ok $res->{req_id};
 ok $res->{proposal_open_contract}->{contract_id};
 ok $res->{proposal_open_contract}->{id};
 test_schema('proposal_open_contract', $res);
@@ -115,7 +114,8 @@ $t = $t->send_ok({
 $t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
 
-is $res->{proposal_open_contract}->{id}, undef, 'different req_id should not allow multiple proposal_open_contract subscription';
+ok $res->{proposal_open_contract}->{id}, 'different req_id should allow multiple proposal_open_contract subscription';
+ok $res->{req_id};
 
 $t = $t->send_ok({
         json => {
@@ -174,7 +174,16 @@ ok $url =~ /get_bid/;
 
 $module->unmock_all;
 
-$t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok;
+$t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}});
+my $flag = 1;
+while ($flag) {
+    $t->message_ok;
+    $res = decode_json($t->message->[1]);
+    if ($res->{msg_type} eq 'forget_all') {
+        $flag = 0;
+    }
+}
+is scalar @{$res->{forget_all}}, 0, 'Forget all returns empty as contracts are already sold';
 
 ($res, $call_params) = call_mocked_client(
     $t,
@@ -184,6 +193,70 @@ $t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok
     });
 is $call_params->{token}, $token;
 is $call_params->{args}->{contract_id}, 1;
+
+$t = $t->send_ok({
+        json => {
+            "proposal"      => 1,
+            "subscribe"     => 1,
+            "amount"        => "2",
+            "basis"         => "payout",
+            "contract_type" => "CALL",
+            "currency"      => "USD",
+            "symbol"        => "R_50",
+            "duration"      => "2",
+            "duration_unit" => "m"
+        }});
+BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
+$t->message_ok;
+$proposal = decode_json($t->message->[1]);
+
+sleep 1;
+$t = $t->send_ok({
+        json => {
+            buy   => $proposal->{proposal}->{id},
+            price => $proposal->{proposal}->{ask_price}}});
+
+## skip proposal until we meet buy
+while (1) {
+    $t   = $t->message_ok;
+    $res = decode_json($t->message->[1]);
+    next if $res->{msg_type} eq 'proposal';
+    last;
+}
+
+my @ids = ();
+$t = $t->send_ok({
+        json => {
+            proposal_open_contract => 1,
+            subscribe              => 1
+        }});
+
+$t   = $t->message_ok;
+$res = decode_json($t->message->[1]);
+
+push @ids, $res->{proposal_open_contract}->{id};
+
+$t = $t->send_ok({
+        json => {
+            proposal_open_contract => 1,
+            subscribe              => 1,
+            req_id                 => 1
+        }});
+
+$t   = $t->message_ok;
+$res = decode_json($t->message->[1]);
+
+push @ids, $res->{proposal_open_contract}->{id};
+
+$t   = $t->send_ok({json => {forget_all => 'proposal_open_contract'}});
+$t   = $t->message_ok;
+$res = decode_json($t->message->[1]);
+
+@ids = sort @ids;
+my @forget_ids = sort @{$res->{forget_all}};
+
+is scalar @forget_ids, 2, 'Correct number of subscription forget';
+cmp_bag(\@ids, \@forget_ids, 'Subscription and forget ids match correctly');
 
 $t->finish_ok;
 

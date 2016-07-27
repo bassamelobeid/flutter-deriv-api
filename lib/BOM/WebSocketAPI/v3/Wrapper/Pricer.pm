@@ -143,7 +143,6 @@ sub _pricing_channel_for_ask {
     }
 
     delete $args_hash{passthrough};
-    delete $args_hash{req_id};
 
     $args_hash{language} = $c->stash('language') || 'EN';
     $args_hash{price_daemon_cmd} = $price_daemon_cmd;
