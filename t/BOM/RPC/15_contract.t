@@ -65,6 +65,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 my $c = Test::BOM::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC')->app->ua);
 request(BOM::Platform::Context::Request->new(params => {}));
+
 subtest 'validate_symbol' => sub {
     is(BOM::RPC::v3::Contract::validate_symbol('R_50'), undef, "return undef if symbol is valid");
     is_deeply(
@@ -97,10 +98,10 @@ subtest 'validate_license' => sub {
 };
 
 subtest 'validate_is_open' => sub {
-    is(BOM::RPC::v3::Contract::validate_is_open('R_50'), undef, "Random is always open");
-
     # weekend
     set_fixed_time(Date::Utility->new('2016-07-23')->epoch);
+
+    is(BOM::RPC::v3::Contract::validate_is_open('R_50'), undef, "Random is always open");
 
     is_deeply(
         BOM::RPC::v3::Contract::validate_is_open('frxUSDJPY'),
@@ -113,7 +114,7 @@ subtest 'validate_is_open' => sub {
         },
         "return error if market is not open"
     );
-    restore_time();
+    set_fixed_time(Date::Utility->new()->epoch);
 };
 
 subtest 'validate_underlying' => sub {
@@ -141,8 +142,21 @@ subtest 'validate_underlying' => sub {
         "return error if symbol is not realtime"
     );
 
-    is_deeply(BOM::RPC::v3::Contract::validate_underlying('R_50'), {status => 1}, 'status 1 if everything ok');
+    set_fixed_time(Date::Utility->new('2016-07-24')->epoch);
+    is_deeply(
+        BOM::RPC::v3::Contract::validate_is_open('frxUSDJPY'),
+        {
+            error => {
+                message => 'This market is presently closed.',
+                code    => 'MarketIsClosed',
+                params  => [qw/ frxUSDJPY /],
+            }
+        },
+        "return error if market is not open"
+    );
+    set_fixed_time(Date::Utility->new()->epoch);
 
+    is_deeply(BOM::RPC::v3::Contract::validate_underlying('R_50'), {status => 1}, 'status 1 if everything ok');
 };
 
 subtest 'prepare_ask' => sub {
