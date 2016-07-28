@@ -49,17 +49,13 @@ sub portfolio {
 sub __get_open_contracts {
     my $client = shift;
 
-    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
-            client_loginid => $client->loginid,
-            currency_code  => $client->currency,
-            db             => BOM::Database::ClientDB->new({
-                    client_loginid => $client->loginid,
-                    operation      => 'replica',
-                }
-            )->db,
-        });
+    my $clientdb = BOM::Database::ClientDB->new({
+        client_loginid => $client->loginid,
+        operation      => 'replica',
+    });
 
-    return $fmb_dm->get_open_bets_of_account();
+    return $clientdb->fetchall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
+
 }
 
 sub sell_expired {
