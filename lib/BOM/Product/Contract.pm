@@ -160,7 +160,7 @@ sub _build_basis_tick {
         $basis_tick = BOM::Market::Data::Tick->new({
             # slope pricer will die with illegal division by zero error when we get the slope
             quote  => $self->underlying->pip_size * 2,
-            epoch  => 1,
+            epoch  => time,
             symbol => $self->underlying->symbol,
         });
         $self->add_error({
