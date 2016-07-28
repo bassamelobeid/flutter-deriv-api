@@ -901,10 +901,10 @@ subtest 'custom client limit' => sub {
             skip 'no error', 6
                 unless (defined $error and (isa_ok $error, 'Error::Base'));
 
-            is $error->get_type, 'PayoutLimitExceeded', 'error is payout limit exceeding';
+            is $error->get_type, 'NoBusiness', 'error is NoBusiness';
 
             is $error->{-message_to_client}, 'This contract is unavailable on this account.', 'message_to_client';
-            like($error->{-mesg}, qr/payout \[100\] over custom limit\[0\]/,   'mesg');
+            like($error->{-mesg}, qr/^\D+\d+ manually disabled by quants$/,   'mesg');
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
