@@ -40,6 +40,9 @@ has supplied_barrier => (
 sub _build_supplied_barrier {
     my $self = shift;
 
+    # barrier is undef on asians before the contract starts.
+    return if $self->pricing_new;
+
     my $hmt               = $self->tick_count;
     my @ticks_since_start = @{
         $self->underlying->ticks_in_between_start_limit({

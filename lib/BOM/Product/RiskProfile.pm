@@ -7,8 +7,13 @@ use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
 
 use JSON qw(from_json);
-use List::Util qw(first);
-use List::MoreUtils qw(all);
+
+use constant RISK_PROFILES => [qw(no_business extreme_risk high_risk medium_risk low_risk)];
+
+my %risk_profile_rank;
+for (my $i = 0; $i < @{RISK_PROFILES()}; $i++) {
+    $risk_profile_rank{RISK_PROFILES->[$i]} = $i;
+}
 
 has [qw(contract_category underlying expiry_type start_type currency barrier_category)] => (
     is       => 'ro',
@@ -34,82 +39,99 @@ sub _build_contract_info {
     };
 }
 
-has limits => (
-    is      => 'ro',
-    default => sub {
-        return BOM::System::Config::quants->{risk_profile};
-    },
+sub limits {
+    return BOM::System::Config::quants->{risk_profile};
+}
+
+has [qw(base_profile)] => (
+    is         => 'ro',
+    lazy_build => 1,
 );
 
-has risk_profiles => (
-    is      => 'ro',
-    default => sub { [qw(no_business extreme_risk high_risk medium_risk low_risk)] },
-);
-
-sub get_risk_profile {
+# this is the risk profile of a contract without taking into account the client.
+sub _build_base_profile {
     my $self = shift;
 
-    foreach my $p (@{$self->risk_profiles}) {
-        if (first { $_->{risk_profile} eq $p } @{$self->applicable_profiles}) {
-            return $p;
-        }
-    }
+    my $ap = $self->custom_profiles;
 
     # if it is unknown, set it to no business profile
-    return $self->risk_profiles->[0];
+    return '' unless @$ap;
+
+    my $min = @{RISK_PROFILES()};
+    for (@$ap) {
+        my $tmp = $risk_profile_rank{$_->{risk_profile}};
+        $min = $tmp if $tmp < $min;
+        last if $min == 0;
+    }
+    return RISK_PROFILES->[$min];
+}
+
+# this one is the risk profile including the client profile
+sub get_risk_profile {
+    my $self = shift;
+    my $ap = shift || [];
+
+    my $base = $self->base_profile;
+
+    # if it is unknown, set it to no business profile
+    return $base eq '' ? RISK_PROFILES->[0] : $base unless @$ap;
+
+    my $min = $base eq '' ? @{RISK_PROFILES()} : $risk_profile_rank{$base};
+    for (@$ap) {
+        my $tmp = $risk_profile_rank{$_->{risk_profile}};
+        return RISK_PROFILES->[0] if $tmp == 0;    # short cut: it cannot get less
+        $min = $tmp if $tmp < $min;
+    }
+    return RISK_PROFILES->[$min];
 }
 
 sub get_turnover_limit_parameters {
     my $self = shift;
+    my $ap = shift || [];
 
-    my @turnover_params;
+    return [
+        map {
+            my $params = {
+                name  => $_->{name},
+                limit => $self->limits->{$_->{risk_profile}}{turnover}{$self->currency},
+            };
 
-    foreach my $profile (@{$self->applicable_profiles}) {
-        my $params = {
-            name  => $profile->{name},
-            limit => $self->limits->{$profile->{risk_profile}}{turnover}{$self->currency},
-        };
-
-        if (my $exp = $profile->{expiry_type}) {
-            if ($exp eq 'tick') {
-                $params->{tick_expiry} = 1;
-            } elsif ($exp eq 'daily') {
-                $params->{daily} = 1;
-            } else {
-                $params->{daily} = 0;
+            if (my $exp = $_->{expiry_type}) {
+                if ($exp eq 'tick') {
+                    $params->{tick_expiry} = 1;
+                } elsif ($exp eq 'daily') {
+                    $params->{daily} = 1;
+                } else {
+                    $params->{daily} = 0;
+                }
             }
-        }
 
-        # we only need to distinguish atm and non_atm for callput.
-        if (    $profile->{barrier_category}
-            and $profile->{barrier_category} eq 'euro_non_atm'
-            and $profile->{contract_category}
-            and $profile->{contract_category} eq 'callput')
-        {
-            $params->{non_atm} = 1;
-        }
+            # we only need to distinguish atm and non_atm for callput.
+            if (    $_->{barrier_category}
+                and $_->{barrier_category} eq 'euro_non_atm'
+                and $_->{contract_category}
+                and $_->{contract_category} eq 'callput')
+            {
+                $params->{non_atm} = 1;
+            }
 
-        if ($profile->{market}) {
-            $params->{symbols} = [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => $profile->{market}})];
-        } elsif ($profile->{submarket}) {
-            $params->{symbols} = [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => $profile->{submarket}})];
-        } elsif ($profile->{underlying_symbol}) {
-            $params->{symbols} = [{n => $profile->{underlying_symbol}}];
-        }
+            if ($_->{market}) {
+                $params->{symbols} = [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => $_->{market}})];
+            } elsif ($_->{submarket}) {
+                $params->{symbols} = [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => $_->{submarket}})];
+            } elsif ($_->{underlying_symbol}) {
+                $params->{symbols} = [{n => $_->{underlying_symbol}}];
+            }
 
-        if ($profile->{contract_category}) {
-            $params->{bet_type} =
-                [map { {n => $_} } get_offerings_with_filter('contract_type', {contract_category => $profile->{contract_category}})];
-        }
-        push @turnover_params, $params;
-    }
+            if ($_->{contract_category}) {
+                $params->{bet_type} =
+                    [map { {n => $_} } get_offerings_with_filter('contract_type', {contract_category => $_->{contract_category}})];
+            }
 
-    return \@turnover_params;
-}
-
-sub applicable_profiles {
-    my $self = shift;
-    return [@{$self->custom_profiles}, @{$self->custom_client_profiles}];
+            $params;
+            } @{$self->custom_profiles},
+        @$ap
+    ];
 }
 
 has custom_profiles => (
@@ -117,18 +139,18 @@ has custom_profiles => (
     lazy_build => 1,
 );
 
+# this is a cache to avoid from_json for each contract
+my $product_profiles_txt      = '';
+my $product_profiles_compiled = {};
+
 sub _build_custom_profiles {
     my $self = shift;
 
-    my $custom_product_profiles = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles);
+    my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_product_profiles;    # use a pointer to avoid copying
+    $product_profiles_compiled = from_json($product_profiles_txt = $$ptr)                        # copy and compile
+        unless $$ptr eq $product_profiles_txt;
 
-    my @profiles;
-    foreach my $id (keys %$custom_product_profiles) {
-        my $p = $custom_product_profiles->{$id};
-        if ($self->_match_conditions($p)) {
-            push @profiles, $p;
-        }
-    }
+    my @profiles = grep { $self->_match_conditions($_) } values %$product_profiles_compiled;
 
     my $ul           = $self->underlying;
     my $risk_profile = $ul->risk_profile;
@@ -153,40 +175,42 @@ sub _build_custom_profiles {
     return \@profiles;
 }
 
-has custom_client_profiles => (
-    is      => 'rw',
-    default => sub { [] },
-);
+# this is a cache to avoid from_json for each contract
+my $custom_limits_txt      = '';
+my $custom_limits_compiled = {};
 
-sub include_client_profiles {
-    my ($self, $client_loginid) = @_;
+sub get_client_profiles {
+    my ($self, $loginid) = @_;
 
-    if ($client_loginid) {
-        my $custom_client = from_json(BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles);
-        if (exists $custom_client->{$client_loginid} and my $limits = $custom_client->{$client_loginid}->{custom_limits}) {
-            my @matches = map { $limits->{$_} } grep { $self->_match_conditions($limits->{$_}) } keys %$limits;
-            push @{$self->custom_client_profiles}, @matches;
-        }
+    if ($loginid) {
+        my $ptr = \BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
+        $custom_limits_compiled = from_json($custom_limits_txt = $$ptr)                             # copy and compile
+            unless $$ptr eq $custom_limits_txt;
+
+        my $cl;
+        return grep { $self->_match_conditions($_) } values %$cl
+            if $cl = $custom_limits_compiled->{$loginid} and $cl = $cl->{custom_limits};
     }
 
     return;
 }
 
+my %_no_condition;
+@_no_condition{qw(name risk_profile updated_by updated_on)} = ();
+
 sub _match_conditions {
     my ($self, $custom) = @_;
 
-    my %copy = %$custom;
-    delete $copy{$_} for qw(name risk_profile updated_by updated_on);
-
-    # if there's no condition, exit.
-    return if not keys %copy;
-
-    my %reversed = reverse %copy;
-    if (all { $reversed{$self->contract_info->{$_}} } values %reversed) {
-        return $custom;
+    my $real_tests_performed;
+    my $ci = $self->contract_info;
+    while (my ($k, $v) = each %$custom) {
+        next if exists $_no_condition{$k};    # skip test
+        $real_tests_performed = 1;
+        next if $v eq $ci->{$k};              # match: continue with next condition
+        return;                               # no match
     }
 
-    return;
+    return $real_tests_performed;             # all conditions match
 }
 
 no Moose;
