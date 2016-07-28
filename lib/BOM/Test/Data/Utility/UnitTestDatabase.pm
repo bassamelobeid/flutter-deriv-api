@@ -12,6 +12,12 @@ use BOM::Database::FeedDB;
 
 use Date::Utility;
 
+use BOM::System::Config;
+
+BEGIN {
+    die "wrong env. Can't run test" if (BOM::System::Config::env !~ /^(qa\d+|development)$/);
+}
+
 sub _db_name {
     my $db_postfix = $ENV{DB_POSTFIX} // '';
     return 'regentmarkets' . $db_postfix;
