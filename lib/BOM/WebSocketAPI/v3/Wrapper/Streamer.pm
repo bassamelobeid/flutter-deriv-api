@@ -31,7 +31,7 @@ sub ticks {
                 },
                 success => sub {
                     my ($c, $rpc_response, $req_storage) = @_;
-                    $req_storage->{id} = _feed_channel($c, 'subscribe', $req_storage->{symbol}, 'tick', $req_storage->{args});
+                    $req_storage->{id} = _feed_channel_subscribe($c, $req_storage->{symbol}, 'tick', $req_storage->{args});
                 },
                 response => sub {
                     my ($rpc_response, $api_response, $req_storage) = @_;
@@ -79,11 +79,12 @@ sub ticks_history {
                     my $args = $req_storage->{args};
                     if (exists $rpc_response->{error}) {
                         # cancel subscription if response has error
-                        _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $publish, $args);
+                        _feed_channel_unsubscribe($c, $args->{ticks_history}, $publish, $args->{req_id});
                         return $c->new_error('ticks_history', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                     }
 
                     my $channel = $args->{ticks_history} . ';' . $publish;
+                    $channel .= ";" . $args->{req_id} if exists $args->{req_id};
                     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
                     # stash display_decimals
@@ -151,7 +152,7 @@ sub ticks_history {
 
     # subscribe first with flag of cache passed as 1 to indicate to cache the feed data
     if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $publish, $args, $callback, 1)) {
+        if (not _feed_channel_subscribe($c, $args->{ticks_history}, $publish, $args, $callback, 1)) {
             return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
         }
     } else {
@@ -169,15 +170,13 @@ sub process_realtime_events {
     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
     foreach my $channel (keys %{$feed_channels_type}) {
-        $channel =~ /(.*);(.*)/;
-        my $symbol    = $1;
-        my $type      = $2;
+        my ($symbol, $type, $req_id) = split(";", $channel);
         my $arguments = $feed_channels_type->{$channel}->{args};
         my $cache     = $feed_channels_type->{$channel}->{cache};
 
         if ($type eq 'tick' and $m[0] eq $symbol) {
             unless ($c->tx) {
-                _feed_channel($c, 'unsubscribe', $symbol, $type, $arguments);
+                _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
                 return;
             }
 
@@ -206,7 +205,7 @@ sub process_realtime_events {
                 if $c->tx;
         } elsif ($m[0] eq $symbol) {
             unless ($c->tx) {
-                _feed_channel($c, 'unsubscribe', $symbol, $type, $arguments);
+                _feed_channel_unsubscribe($c, $symbol, $type, $req_id);
                 return;
             }
 
@@ -246,49 +245,63 @@ sub process_realtime_events {
     return;
 }
 
-sub _feed_channel {
-    my ($c, $subs, $symbol, $type, $args, $callback, $cache) = @_;
+sub _feed_channel_subscribe {
+    my ($c, $symbol, $type, $args, $callback, $cache) = @_;
 
-    my $uuid;
     my $feed_channel       = $c->stash('feed_channel')       || {};
     my $feed_channel_type  = $c->stash('feed_channel_type')  || {};
     my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
 
+    my $key   = "$symbol;$type";
     my $redis = $c->stash('redis');
-    if ($subs eq 'subscribe') {
-        # already subscribe
-        if (exists $feed_channel_type->{"$symbol;$type"}) {
-            return;
-        }
 
-        $uuid = _generate_uuid_string();
-        $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{"$symbol;$type"}->{args}  = $args if $args;
-        $feed_channel_type->{"$symbol;$type"}->{uuid}  = $uuid;
-        $feed_channel_type->{"$symbol;$type"}->{cache} = $cache || 0;
+    my $req_id = ($args and exists $args->{req_id}) ? $args->{req_id} : undef;
+    $key .= ";$req_id" if $req_id;
 
-        $redis->subscribe(["FEED::$symbol"], $callback // sub { });
+    # already subscribe
+    if (exists $feed_channel_type->{$key}) {
+        return;
     }
 
-    if ($subs eq 'unsubscribe') {
-        $feed_channel->{$symbol} -= 1;
-        my $args = $feed_channel_type->{"$symbol;$type"}->{args};
-        $uuid = $feed_channel_type->{"$symbol;$type"}->{uuid};
-        delete $feed_channel_type->{"$symbol;$type"};
-        # delete cache on unsubscribe
-        delete $feed_channel_cache->{"$symbol;$type"};
+    my $uuid = _generate_uuid_string();
+    $feed_channel->{$symbol} += 1;
+    $feed_channel_type->{$key}->{args}  = $args if $args;
+    $feed_channel_type->{$key}->{uuid}  = $uuid;
+    $feed_channel_type->{$key}->{cache} = $cache || 0;
 
-        # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
-        _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
-
-        if ($feed_channel->{$symbol} <= 0) {
-            $redis->unsubscribe(["FEED::$symbol"], sub { });
-            delete $feed_channel->{$symbol};
-        }
-    }
+    $redis->subscribe(["FEED::$symbol"], $callback // sub { });
 
     $c->stash('feed_channel'      => $feed_channel);
     $c->stash('feed_channel_type' => $feed_channel_type);
+
+    return $uuid;
+}
+
+sub _feed_channel_unsubscribe {
+    my ($c, $symbol, $type, $req_id) = @_;
+
+    my $feed_channel       = $c->stash('feed_channel')       || {};
+    my $feed_channel_type  = $c->stash('feed_channel_type')  || {};
+    my $feed_channel_cache = $c->stash('feed_channel_cache') || {};
+
+    $feed_channel->{$symbol} -= 1;
+
+    my $key = "$symbol;$type";
+    $key .= ";$req_id" if $req_id;
+
+    my $args = $feed_channel_type->{$key}->{args};
+    my $uuid = $feed_channel_type->{$key}->{uuid};
+    delete $feed_channel_type->{$key};
+    # delete cache on unsubscribe
+    delete $feed_channel_cache->{$key};
+
+    # as we subscribe to transaction channel for proposal_open_contract so need to forget that also
+    _transaction_channel($c, 'unsubscribe', $args->{account_id}, $uuid) if $type =~ /^proposal_open_contract:/;
+
+    if ($feed_channel->{$symbol} <= 0) {
+        $c->stash('redis')->unsubscribe(["FEED::$symbol"], sub { });
+        delete $feed_channel->{$symbol};
+    }
 
     return $uuid;
 }

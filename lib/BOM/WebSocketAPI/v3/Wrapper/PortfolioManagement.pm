@@ -62,6 +62,7 @@ sub proposal_open_contract {
 
                         # as req_id and passthrough can change so we should not send them in type else
                         # client can subscribe to multiple proposal_open_contract as feed channel type will change
+                        # req_id will be used separately for subscription, check feed subscribe
                         my %type_args = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
 
                         # pass account_id, transaction_id so that we can categorize it based on type, can't use contract_id
@@ -72,8 +73,8 @@ sub proposal_open_contract {
 
                         my $keystr = join("", map { $_ . ":" . $type_args{$_} } sort keys %type_args);
 
-                        $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
-                            $c, 'subscribe',
+                        $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel_subscribe(
+                            $c,
                             $response->{$contract_id}->{underlying},
                             'proposal_open_contract:' . md5_hex($keystr), $details
                         );
