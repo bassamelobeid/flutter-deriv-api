@@ -646,7 +646,7 @@ subtest combined_realtime => sub {
     my $SPC = BOM::Market::Underlying->new('SPC');
     ok($SPC->trades_on($eleventh), 'SPC trades on our chosen date.');
 
-    Cache::RedisDB->del('COMBINED_REALTIME', $SPC->symbol);
+    Cache::RedisDB->del('QUOTE', $SPC->symbol);
 
     my $ticks;
     lives_ok {

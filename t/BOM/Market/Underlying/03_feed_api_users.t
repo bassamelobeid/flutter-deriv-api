@@ -25,20 +25,20 @@ subtest 'get_combined_realtime' => sub {
 
     my $orig_cache;
     subtest 'Empty redis cache for frxUSDJPY' => sub {
-        my $cache = Cache::RedisDB->get('COMBINED_REALTIME', 'frxUSDJPY');
+        my $cache = Cache::RedisDB->get('QUOTE', 'frxUSDJPY');
         $orig_cache = $cache;
         lives_ok {
-            Cache::RedisDB->set_nw('COMBINED_REALTIME', 'frxUSDJPY', undef);
+            Cache::RedisDB->set_nw('QUOTE', 'frxUSDJPY', undef);
         }
         'We are able to set COMBINED_REALTIME to undef';
 
-        $cache = Cache::RedisDB->get('COMBINED_REALTIME', 'frxUSDJPY');
-        ok !$cache, 'COMBINED_REALTIME is now empty';
+        $cache = Cache::RedisDB->get('QUOTE', 'frxUSDJPY');
+        ok !$cache, 'QUOTE is now empty';
     };
 
     my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxUSDJPY'}]);
     subtest 'Fetch from empty cache' => sub {
-        my $cache = Cache::RedisDB->get('COMBINED_REALTIME', 'frxUSDJPY');
+        my $cache = Cache::RedisDB->get('QUOTE', 'frxUSDJPY');
         ok !$cache, 'Nothing is available on cache';
 
     };
@@ -76,7 +76,7 @@ subtest 'get_combined_realtime' => sub {
     };
 
     subtest 'Call with data at t and now at t' => sub {
-        my $cache = Cache::RedisDB->get('COMBINED_REALTIME', 'frxUSDJPY');
+        my $cache = Cache::RedisDB->get('QUOTE', 'frxUSDJPY');
         ok !$cache, 'Nothing is available on cache';
 
         my $realtime;
@@ -121,7 +121,7 @@ subtest 'get_combined_realtime' => sub {
         };
 
         subtest 'Redis Cache' => sub {
-            my $cache = Cache::RedisDB->get('COMBINED_REALTIME', 'frxUSDJPY');
+            my $cache = Cache::RedisDB->get('QUOTE', 'frxUSDJPY');
             ok $cache, 'Cache is not empty anymore';
         };
 
@@ -176,7 +176,7 @@ subtest 'get_combined_realtime' => sub {
     };
 
     # Reset Redis to original value
-    Cache::RedisDB->set_nw('COMBINED_REALTIME', 'frxUSDJPY', $orig_cache);
+    Cache::RedisDB->set_nw('QUOTE', 'frxUSDJPY', $orig_cache);
     Test::MockTime::restore_time();
 };
 
