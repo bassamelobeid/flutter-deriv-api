@@ -198,6 +198,7 @@ sub _build_expiry_daily {
     return $self->is_intraday ? 0 : 1;
 }
 
+# daily trading hours based on the market's trading hour
 sub _build_effective_daily_trading_hours {
     my $self        = shift;
     my $date_expiry = $self->date_expiry;
