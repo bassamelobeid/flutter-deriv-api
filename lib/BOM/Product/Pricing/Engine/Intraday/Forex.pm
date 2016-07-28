@@ -244,7 +244,13 @@ sub _build_intraday_trend {
         base_amount => $average,
     });
 
-    my $trend            = (($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($duration_in_secs);
+    my $ticks_per_sec    = scalar(@ticks) / (2 * $duration_in_secs);
+    my $slope            = sqrt(1 - (($ticks_per_sec - 2)**2) / 4);
+# print "slope: $slope";
+# print "\n";
+    my $trend            = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($duration_in_secs)) * $slope;
+# print "trend: $trend";
+# print "\n";
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
     my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
         name        => 'intraday_trend',
