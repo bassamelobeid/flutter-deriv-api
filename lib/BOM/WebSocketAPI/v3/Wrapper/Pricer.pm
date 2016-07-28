@@ -166,7 +166,7 @@ sub _pricing_channel_for_bid {
     $hash{price_daemon_cmd} = $price_daemon_cmd;
     my $redis_channel = _serialized_args(\%hash);
 
-    %hash = map { $_ =~ /req_id|passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
+    %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
     $hash{account_id}     = delete $cache->{account_id};
     $hash{transaction_id} = $cache->{transaction_ids}->{buy};    # transaction is going to be stored
     my $subchannel = _serialized_args(\%hash);

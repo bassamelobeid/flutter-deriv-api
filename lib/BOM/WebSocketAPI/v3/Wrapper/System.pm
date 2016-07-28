@@ -21,13 +21,15 @@ sub forget_all {
 
     my %removed_ids;
     if (my $type = $req_storage->{args}->{forget_all}) {
-        if ($type eq 'balance' or $type eq 'transaction') {
+        if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
             @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
         }
-        if ($type eq 'proposal') {
+        if ($type eq 'proposal' or $type eq 'proposal_open_contract') {
             @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
         }
-        @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
+        if ($type ne 'proposal_open_contract') {
+            @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
+        }
     }
     return {
         msg_type   => 'forget_all',

@@ -121,7 +121,7 @@ $t = $t->send_ok({
         json => {
             proposal_open_contract => 1,
             subscribe              => 1,
-            req_id                 => 123,
+            req_id                 => 456,
             passthrough            => {'sample' => 1},
         }});
 
