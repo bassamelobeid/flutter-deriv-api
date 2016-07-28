@@ -161,7 +161,7 @@ sub _pricing_channel_for_bid {
 
     my %hash;
     @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(short_code contract_id currency sell_time)};
-    $hash{is_sold} = $cache->{is_sold};
+    $hash{is_sold} = $cache->{is_sold} + 0;
     $hash{language} = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
     my $redis_channel = _serialized_args(\%hash);
