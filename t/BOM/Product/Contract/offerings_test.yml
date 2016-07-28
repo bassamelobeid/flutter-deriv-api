@@ -452,12 +452,10 @@ R_100: &6
   callput:
     daily:
       spot:
-        euro_atm:
-          max: 365d
-          min: 0d
-        euro_non_atm: &7
+        euro_atm: &7
           max: 365d
           min: 1d
+        euro_non_atm: *7
     intraday:
       forward:
         euro_atm: &8
@@ -623,7 +621,7 @@ frxAUDCAD: &11
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
     intraday:
       forward:
         euro_atm:
@@ -642,7 +640,7 @@ frxAUDJPY:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -693,7 +691,7 @@ frxAUDUSD:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -749,7 +747,7 @@ frxEURAUD:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -798,7 +796,7 @@ frxEURCAD:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -847,7 +845,7 @@ frxEURCHF:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -896,7 +894,7 @@ frxEURGBP:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -945,7 +943,7 @@ frxEURJPY:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -995,7 +993,7 @@ frxEURUSD:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -1044,7 +1042,7 @@ frxGBPAUD:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -1091,12 +1089,10 @@ frxGBPCAD:
   callput:
     daily:
       spot:
-        euro_atm: 
-          max: 365d
-          min: 0d
-        euro_non_atm: &12
+        euro_atm: &12
           max: 365d
           min: 1d
+        euro_non_atm: *12
     intraday:
       forward:
         euro_atm:
@@ -1127,7 +1123,7 @@ frxGBPJPY:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -1191,7 +1187,7 @@ frxGBPUSD:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -1250,12 +1246,10 @@ frxNZDUSD:
   callput:
     daily:
       spot:
-        euro_atm:
-          max: 365d
-          min: 0d
-        euro_non_atm: &13
+        euro_atm: &13
           max: 365d
           min: 1d
+        euro_non_atm: *13
     intraday:
       forward:
         euro_atm:
@@ -1285,7 +1279,7 @@ frxUSDCAD:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -1334,7 +1328,7 @@ frxUSDCHF:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
@@ -1383,7 +1377,7 @@ frxUSDJPY:
       spot:
         euro_atm:
           max: 365d
-          min: 0d
+          min: 1d
         euro_non_atm:
           max: 365d
           min: 1d
