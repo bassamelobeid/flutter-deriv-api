@@ -299,10 +299,6 @@ system:
   description: "Various parameters determining core application functionality"
   isa: section
   contains:
-    send_email_to_clients:
-      description: "Are we allowed to send email outside company domains?"
-      isa: Bool
-      default: 0
     email:
       description: "Dummy email address to indicate email sent from our system"
       isa: Str
