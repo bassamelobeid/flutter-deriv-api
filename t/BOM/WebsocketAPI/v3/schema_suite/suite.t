@@ -54,6 +54,12 @@ foreach my $line (@lines) {
     $counter++;
     next if ($line =~ /^(#.*|)$/);
 
+# arbitrary perl code
+    if ($line =~ s/^\[%(.*?)%\]//) {
+        eval $1;
+        die $@ if $@;
+    }
+
     if ($line =~ s/^\[(\w+)\]//) {
         $lang = $1;
         next;
@@ -70,7 +76,7 @@ foreach my $line (@lines) {
 
     my ($send_file, $receive_file, @template_func) = split(',', $line);
     chomp $receive_file;
-    diag("Running line $counter [$send_file, $receive_file]\n");
+    diag("\nRunning line $counter [$send_file, $receive_file]\n");
 
     $send_file =~ /^(.*)\//;
     my $call = $1;
@@ -79,10 +85,10 @@ foreach my $line (@lines) {
     $content = _get_values($content, @template_func);
 
     if ($lang || !$t || $reset) {
-        $t = build_mojo_test({($lang ne '' ? (language=>$lang) : (language=>$last_lang))});
+        $t         = build_mojo_test({($lang ne '' ? (language => $lang) : (language => $last_lang))});
         $last_lang = $lang;
-        $lang = '';
-        $reset = '';
+        $lang      = '';
+        $reset     = '';
     }
 
     $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
@@ -121,7 +127,7 @@ sub _test_schema {
     my $validator = JSON::Schema->new(JSON::from_json($content));
     my $result    = $validator->validate($data);
     if ($fail) {
-        ok (!$result, "$schema_file response is valid while it must fail.");
+        ok(!$result, "$schema_file response is valid while it must fail.");
         if ($result) {
             diag Dumper(\$data);
             diag " - $_" foreach $result->errors;
