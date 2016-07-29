@@ -199,26 +199,6 @@ sub get_sold {
     return $transactions;
 }
 
-# defining separate sub instead of using get_fmb_by_id
-# as that does all kind of rose to fmb model mapping
-sub get_contract_by_id {
-    my $self        = shift;
-    my $contract_id = shift;
-
-    my $sql = q{
-        SELECT fmb.*
-        FROM
-            bet.financial_market_bet fmb
-        WHERE
-            fmb.id = ?
-    };
-
-    my $sth = $self->db->dbh->prepare($sql);
-    $sth->execute($contract_id);
-
-    return $sth->fetchall_arrayref({});
-}
-
 # we need to get buy sell transactions id for particular contract
 sub get_contract_details_with_transaction_ids {
     my $self        = shift;
