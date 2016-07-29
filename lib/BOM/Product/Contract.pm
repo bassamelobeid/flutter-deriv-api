@@ -180,7 +180,7 @@ has starts_as_forward_starting => (
 
 #expiry_daily - Does this bet expire at close of the exchange?
 has [
-    qw( is_atm_bet expiry_daily expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
+    qw( is_atm_bet expiry_daily  expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -200,29 +200,31 @@ sub _build_expiry_daily {
 
 # daily trading seconds based on the market's trading hour
 sub _build_effective_daily_trading_seconds {
-    my $self        = shift;
-    my $date_expiry = $self->date_expiry;
-    my ($daily_trading_hours, $error);
-    try { $daily_trading_hours = $self->calendar->closing_on($date_expiry)->epoch - $self->calendar->opening_on($date_expiry)->epoch; }
-    catch { $error = 1; };
+    my $self                  = shift;
+    my $date_expiry           = $self->date_expiry;
+    my $calendar              = $self->calendar;
+    my $daily_trading_seconds = $calendar->closing_on($date_expiry)->epoch - $calendar->opening_on($date_expiry)->epoch;
 
-    # This default daily trading hours to 24 hours
-    return $error ? 86400 : $daily_trading_hours;
+    return $daily_trading_seconds;
 }
 
 sub is_intraday {
     my ($self, $start) = @_;
 
-    my $date_start        = $start // $self->effective_start;
-    my $date_expiry       = $self->date_expiry;
-    my $contract_duration = $date_expiry->epoch - $date_start->epoch;
+    my $date_start             = $start // $self->effective_start;
+    my $date_expriy            = $self->date_expiry;
+    my $closing_on_expiry_date = $calendar->closing_on($date_expiry);
+    my $contract_duration      = $date_expiry->epoch - $date_start->epoch;
     my $is_intraday;
 
-    if ($contract_duration <= $self->effective_daily_trading_seconds) {
-        $is_intraday = 1;
+    if ($date_expiry->is_same($closing_on_expiry_date)) {
+        # For contract bought on thursday after 21 expires on Friday 21, should be treated as daily contract
+        $is_intraday = $contract_duration > $self->effective_daily_trading_seconds ? 1 : 0;
+
     } else {
-        $is_intraday = $date_expiry->is_before($self->calendar->closing_on($date_expiry)) ? 1 : 0;
+        $is_intraday = $contract_duration <= 86400 ? 1 : 0;
     }
+
     return $is_intraday;
 }
 
