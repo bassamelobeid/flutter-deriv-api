@@ -12,6 +12,7 @@ use Try::Tiny;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
+use BOM::System::Config;
 
 use base 'Exporter';
 our @EXPORT_OK = qw(send_email);
@@ -62,7 +63,7 @@ sub send_email {
 
     # DON'T send email on devbox except to RMG emails
     return 1
-        if (not BOM::Platform::Runtime->instance->app_config->system->send_email_to_clients
+        if (BOM::System::Config::env ne 'production'
         and $email !~ /(?:binary|regentmarkets|betonmarkets)\.com$/);
 
     my @toemails = split(/\s*\,\s*/, $email);
