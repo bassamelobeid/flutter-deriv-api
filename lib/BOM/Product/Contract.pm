@@ -180,7 +180,7 @@ has starts_as_forward_starting => (
 
 #expiry_daily - Does this bet expire at close of the exchange?
 has [
-    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
+    qw( is_atm_bet expiry_daily expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -210,7 +210,7 @@ sub _build_effective_daily_trading_seconds {
     return $error ? 86400 : $daily_trading_hours;
 }
 
-sub _build_is_intraday {
+sub is_intraday {
     my ($self, $start) = @_;
 
     my $date_start        = $start // $self->effective_start;
