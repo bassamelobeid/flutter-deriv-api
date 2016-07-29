@@ -401,13 +401,13 @@ sub __get_details_from_environment {
     my ($ip) = $env =~ /(IP=(\d{1,3}\.){3}\d{1,3})/i;
     $ip =~ s/IP=//i;
     my ($country) = $env =~ /(IP_COUNTRY=\w{1,2})/i;
-    $country =~ s/IP_COUNTRY=//i;
+    $country =~ s/IP_COUNTRY=//i if $country;
     my ($user_agent) = $env =~ /(User_AGENT.+(?=\sLANG))/i;
     $user_agent =~ s/User_AGENT=//i;
 
     return {
         ip         => $ip,
-        country    => uc $country,
+        country    => uc ($country // 'unknown'),
         user_agent => $user_agent
     };
 }
