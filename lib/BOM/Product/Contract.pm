@@ -2141,6 +2141,67 @@ sub _build_exit_tick {
 
 # Validation methods.
 
+sub _validate_trading_times {
+    my $self = shift;
+
+    my $underlying  = $self->underlying;
+    my $calendar    = $underlying->calendar;
+    my $date_expiry = $self->date_expiry;
+    my $date_start  = $self->date_start;
+
+    if (not($calendar->trades_on($date_start) and $calendar->is_open_at($date_start))) {
+        my $message =
+            ($self->is_forward_starting) ? localize("The market must be open at the start time.") : localize('This market is presently closed.');
+        return {
+            message => 'underlying is closed at start ' . "[symbol: " . $underlying->symbol . "] " . "[start: " . $date_start->datetime . "]",
+            message_to_client => $message . " " . localize("Try out the Volatility Indices which are always open.")};
+    } elsif (not $calendar->trades_on($date_expiry)) {
+        return ({
+            message           => "Exchange is closed on expiry date [expiry: " . $date_expiry->date . "]",
+            message_to_client => localize("The contract must expire on a trading day."),
+        });
+    }
+
+    if ($self->is_intraday) {
+        if (not $calendar->is_open_at($date_expiry)) {
+            return {
+                message => 'underlying closed at expiry ' . "[symbol: " . $underlying->symbol . "] " . "[expiry: " . $date_expiry->datetime . "]",
+                message_to_client => localize("Contract must expire during trading hours."),
+            };
+        } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($date_start)->epoch < $date_expiry->epoch) {
+            return {
+                message           => "Intraday duration must expire on same day [symbol: " . $underlying->symbol . "]",
+                message_to_client => localize('Contracts on this market with a duration of under 24 hours must expire on the same trading day.'),
+            };
+        }
+    } elsif ($self->expiry_daily and not $self->is_atm_bet) {
+        # For definite ATM contracts we do not have to check for upcoming holidays.
+        my $trading_days = $self->calendar->trading_days_between($date_start, $date_expiry);
+        my $holiday_days = $self->calendar->holiday_days_between($date_start, $date_expiry);
+        my $calendar_days = $date_expiry->days_between($date_start);
+
+        if ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
+            my $safer_expiry = $date_expiry;
+            my $trade_count  = $trading_days;
+            while ($trade_count < 4) {
+                $safer_expiry = $underlying->trade_date_after($safer_expiry);
+                $trade_count++;
+            }
+            my $message =
+                ($self->for_sale)
+                ? localize('Resale of this contract is not offered due to market holidays during contract period.')
+                : localize("Too many market holidays during the contract period.");
+            return {
+                message => 'Not enough trading days for calendar days ' . "[trading: " . $trading_days . "] " . "[calendar: " . $calendar_days . "]",
+                message_to_client => $message,
+            };
+        }
+    }
+
+    return;
+}
+
+
 # Is this underlying or contract is disabled/suspended from trading.
 sub _validate_offerings {
     my $self = shift;
@@ -2351,66 +2412,6 @@ sub _validate_input_parameters {
                     . $self->underlying->symbol . "]",
                 message_to_client =>
                     localize('Contracts on this market with a duration of more than 24 hours must expire at the end of a trading day.'),
-            };
-        }
-    }
-
-    return;
-}
-
-sub _validate_trading_times {
-    my $self = shift;
-
-    my $underlying  = $self->underlying;
-    my $calendar    = $underlying->calendar;
-    my $date_expiry = $self->date_expiry;
-    my $date_start  = $self->date_start;
-
-    if (not($calendar->trades_on($date_start) and $calendar->is_open_at($date_start))) {
-        my $message =
-            ($self->is_forward_starting) ? localize("The market must be open at the start time.") : localize('This market is presently closed.');
-        return {
-            message => 'underlying is closed at start ' . "[symbol: " . $underlying->symbol . "] " . "[start: " . $date_start->datetime . "]",
-            message_to_client => $message . " " . localize("Try out the Volatility Indices which are always open.")};
-    } elsif (not $calendar->trades_on($date_expiry)) {
-        return ({
-            message           => "Exchange is closed on expiry date [expiry: " . $date_expiry->date . "]",
-            message_to_client => localize("The contract must expire on a trading day."),
-        });
-    }
-
-    if ($self->is_intraday) {
-        if (not $calendar->is_open_at($date_expiry)) {
-            return {
-                message => 'underlying closed at expiry ' . "[symbol: " . $underlying->symbol . "] " . "[expiry: " . $date_expiry->datetime . "]",
-                message_to_client => localize("Contract must expire during trading hours."),
-            };
-        } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($date_start)->epoch < $date_expiry->epoch) {
-            return {
-                message           => "Intraday duration must expire on same day [symbol: " . $underlying->symbol . "]",
-                message_to_client => localize('Contracts on this market with a duration of under 24 hours must expire on the same trading day.'),
-            };
-        }
-    } elsif ($self->expiry_daily and not $self->is_atm_bet) {
-        # For definite ATM contracts we do not have to check for upcoming holidays.
-        my $trading_days = $self->calendar->trading_days_between($date_start, $date_expiry);
-        my $holiday_days = $self->calendar->holiday_days_between($date_start, $date_expiry);
-        my $calendar_days = $date_expiry->days_between($date_start);
-
-        if ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
-            my $safer_expiry = $date_expiry;
-            my $trade_count  = $trading_days;
-            while ($trade_count < 4) {
-                $safer_expiry = $underlying->trade_date_after($safer_expiry);
-                $trade_count++;
-            }
-            my $message =
-                ($self->for_sale)
-                ? localize('Resale of this contract is not offered due to market holidays during contract period.')
-                : localize("Too many market holidays during the contract period.");
-            return {
-                message => 'Not enough trading days for calendar days ' . "[trading: " . $trading_days . "] " . "[calendar: " . $calendar_days . "]",
-                message_to_client => $message,
             };
         }
     }
