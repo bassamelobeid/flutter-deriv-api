@@ -160,7 +160,7 @@ sub _build_basis_tick {
         $basis_tick = BOM::Market::Data::Tick->new({
             # slope pricer will die with illegal division by zero error when we get the slope
             quote  => $self->underlying->pip_size * 2,
-            epoch  => 1,
+            epoch  => time,
             symbol => $self->underlying->symbol,
         });
         $self->add_error({
@@ -725,7 +725,7 @@ sub _build_opposite_contract {
                 }
             }
             # We should be looking to move forward in time to a bet starting now.
-            $opp_parameters{date_start}  = $self->date_pricing;
+            $opp_parameters{date_start}  = $self->effective_start;
             $opp_parameters{pricing_new} = 1;
             # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
             # Currently, 'sell at market' button will appear when current spot == barrier when the duration
@@ -2039,7 +2039,11 @@ sub get_time_to_settlement {
 
     $attributes->{to} = $self->date_settlement;
 
-    return $self->_get_time_to_end($attributes);
+    my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
+    my $zero_duration = Time::Duration::Concise->new(
+        interval => 0,
+    );
+    return ($time >= $self->date_settlement->epoch and $self->expiry_daily) ? $zero_duration : $self->_get_time_to_end($attributes);
 }
 
 # PRIVATE METHOD: _get_time_to_end
@@ -2253,9 +2257,28 @@ sub validate_price {
 sub _validate_input_parameters {
     my $self = shift;
 
-    my $when_epoch   = $self->date_pricing->epoch;
-    my $epoch_expiry = $self->date_expiry->epoch;
-    my $epoch_start  = $self->date_start->epoch;
+    my $when_epoch       = $self->date_pricing->epoch;
+    my $epoch_expiry     = $self->date_expiry->epoch;
+    my $epoch_start      = $self->date_start->epoch;
+    my $epoch_settlement = $self->date_settlement->epoch;
+
+    if (    $self->for_sale
+        and defined $self->_date_pricing_milliseconds
+        and $self->_date_pricing_milliseconds > $epoch_expiry
+        and $self->_date_pricing_milliseconds < $epoch_settlement)
+    {
+        return {
+            message           => 'waiting for settlement',
+            message_to_client => localize('Please wait for contract settlement.'),
+        };
+    } elsif ($self->for_sale
+        and ($self->date_pricing->is_after($self->date_expiry) and $self->date_pricing->is_before($self->date_settlement)))
+    {
+        return {
+            message           => 'waiting for settlement',
+            message_to_client => localize('Please wait for contract settlement.'),
+        };
+    }
 
     if ($epoch_expiry == $epoch_start) {
         return {
