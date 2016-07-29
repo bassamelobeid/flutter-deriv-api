@@ -211,9 +211,19 @@ sub _build_effective_daily_trading_hours {
 }
 
 sub _build_is_intraday {
-    my $self              = shift;
-    my $contract_duration = $self->date_expiry->epoch - $self->effective_start->epoch;
-    return ($contract_duration <= $self->effective_daily_trading_hours) ? 1 : 0;
+    my ($self, $start) = @_;
+
+    my $date_start        = $start // $self->effective_start;
+    my $date_expiry       = $self->date_expiry;
+    my $contract_duration = $date_expiry->epoch - $date_start->epoch;
+    my $is_intraday;
+
+    if ($contract_duration <= $self->effective_daily_trading_hours) {
+        $is_intraday = 1;
+    } else {
+        $is_intraday = $date_expiry->is_before($self->calendar->closing_on($date_expiry)) ? 1 : 0;
+    }
+    return $is_intraday;
 }
 
 sub _build_expiry_type {
@@ -803,8 +813,7 @@ sub _build_longcode {
 
     # When we are building the longcode, we should always take the date_start to date_expiry as duration.
     # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
-    my $contract_duration = $self->date_expiry->epoch - $self->date_start->epoch;
-    my $expiry_type = $self->tick_expiry ? 'tick' : $contract_duration > $self->effective_daily_trading_hours ? 'daily' : 'intraday';
+    my $expiry_type = $self->tick_expiry ? 'tick' : $self->is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->starts_as_forward_starting and $self->fixed_expiry;
     my $localizable_description = $self->localizable_description->{$expiry_type};
 
