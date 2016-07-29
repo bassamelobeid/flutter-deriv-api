@@ -212,14 +212,14 @@ sub is_intraday {
     my ($self, $start) = @_;
 
     my $date_start             = $start // $self->effective_start;
-    my $date_expriy            = $self->date_expiry;
-    my $closing_on_expiry_date = $calendar->closing_on($date_expiry);
+    my $date_expiry            = $self->date_expiry;
+    my $closing_on_expiry_date = $self->calendar->closing_on($date_expiry);
     my $contract_duration      = $date_expiry->epoch - $date_start->epoch;
     my $is_intraday;
 
-    if ($date_expiry->is_same($closing_on_expiry_date)) {
+    if ($date_expiry->is_same_as($closing_on_expiry_date)) {
         # For contract bought on thursday after 21 expires on Friday 21, should be treated as daily contract
-        $is_intraday = $contract_duration > $self->effective_daily_trading_seconds ? 1 : 0;
+        $is_intraday = $contract_duration > $self->effective_daily_trading_seconds ? 0 : 1;
 
     } else {
         $is_intraday = $contract_duration <= 86400 ? 1 : 0;
