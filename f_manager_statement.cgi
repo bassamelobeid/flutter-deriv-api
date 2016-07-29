@@ -67,21 +67,14 @@ BOM::Product::Transaction::sell_expired_contracts({
     client => $client,
 });
 
-my $db = BOM::Database::ClientDB->new({
+my $clientdb = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
         operation      => 'replica',
-    })->db;
+    });
 
-my $currency = $client->currency;
-my $bet_dm   = BOM::Database::DataMapper::FinancialMarketBet->new({
-    client_loginid => $client->loginid,
-    currency_code  => $currency,
-    db             => $db,
-});
-
-my $open_bets = $bet_dm->get_open_bets_of_account();
+my $open_bets = $clientdb->fetchall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
 foreach my $open_bet (@{$open_bets}) {
-    my $bet = produce_contract($open_bet->{short_code}, $currency);
+    my $bet = produce_contract($open_bet->{short_code}, $client->currency);
     $open_bet->{description} = $bet->longcode;
     if ($bet->may_settle_automatically) {
         $open_bet->{sale_price} = $bet->bid_price;
@@ -90,8 +83,8 @@ foreach my $open_bet (@{$open_bets}) {
 
 my $acnt_dm = BOM::Database::DataMapper::Account->new({
     client_loginid => $client->loginid,
-    currency_code  => $currency,
-    db             => $db,
+    currency_code  => $client->currency,
+    db             => $clientdb->db,
 });
 
 BOM::Platform::Context::template->process(
@@ -99,7 +92,7 @@ BOM::Platform::Context::template->process(
     {
         open_bets => $open_bets,
         balance   => $acnt_dm->get_balance(),
-        currency  => $currency,
+        currency  => $client->currency,
     },
 ) || die BOM::Platform::Context::template->error();
 
