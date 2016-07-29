@@ -118,7 +118,7 @@ subtest 'Probabilities etc.' => sub {
 
     my $bet = produce_contract($bet_params);
     isa_ok($bet->discounted_probability, 'Math::Util::CalculatedValue::Validatable', 'isa CalculatedValue.');
-    throws_ok {$bet->bid_probability} qr/Inverted dates/, 'throws an error if pricing with date start after expiry';
+    lives_ok {$bet->bid_probability} 'can call bid_probability for expired contract.';
 
 };
 
