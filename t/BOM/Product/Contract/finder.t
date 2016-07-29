@@ -33,7 +33,7 @@ subtest "available contracts for symbol" => sub {
         random  => ['R_100',     'RDBEAR'],
         forex   => ['frxUSDJPY', 'frxAUDCAD', 'WLDUSD'],
         indices => ['AEX',       'SYNAEX'],
-        stocks  => ['USAAPL'],
+        stocks      => ['USAAPL'],
         commodities => ['frxXAUUSD', 'frxXPDUSD'],
     );
     my %expected = (
@@ -114,7 +114,7 @@ subtest 'default barrier(s)' => sub {
 
     note("barriers for frxUSDJPY");
     my $usdjpy_contracts = available_contracts_for_symbol({symbol => 'frxUSDJPY'});
-    @daily_contracts = grep { $_->{barriers} > 0} @{$usdjpy_contracts->{available}};
+    @daily_contracts = grep { $_->{barriers} > 0 } @{$usdjpy_contracts->{available}};
     foreach my $data (@daily_contracts) {
         ok !isint($data->{barrier}),      'barrier is non integer'      if $data->{barrier};
         ok !isint($data->{high_barrier}), 'high_barrier is non integer' if $data->{high_barrier};

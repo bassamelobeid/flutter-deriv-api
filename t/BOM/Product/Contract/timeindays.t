@@ -267,8 +267,8 @@ sub _sample_bet {
 
     my $current_tick = BOM::Market::Data::Tick->new({
         underlying => $underlying,
-        epoch => $overrides{date_pricing}->epoch,
-        quote => 100,
+        epoch      => $overrides{date_pricing}->epoch,
+        quote      => 100,
     });
 
     my $start_epoch = Date::Utility->new($overrides{date_start})->epoch;
