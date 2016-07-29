@@ -68,7 +68,7 @@ my $contract   = produce_contract({
 subtest 'validate legal allowed contract categories' => sub {
     my $cr = BOM::Platform::Client->new({loginid => 'CR2002'});
     my $mocked_client = Test::MockModule->new('BOM::Platform::Client');
-    $mocked_client->mock('residence', sub {return 'al'});
+    $mocked_client->mock('residence', sub { return 'al' });
 
     my $loginid  = $cr->loginid;
     my $currency = 'USD';

@@ -16,7 +16,7 @@ my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'partial_trading',
     {
-        type          => 'early_closes',
+        type => 'early_closes',
         # very early date
         recorded_date => Date::Utility->new('2011-01-01'),
         calendar      => {
