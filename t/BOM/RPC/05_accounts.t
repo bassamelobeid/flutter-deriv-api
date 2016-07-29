@@ -737,7 +737,7 @@ subtest $method => sub {
     $mocked_client->unmock_all;
 
     is($c->tcall($method, $params)->{status}, 1, 'set password success');
-    my $subject = 'cashier password updated';
+    my $subject = 'Cashier password updated';
     my %msg     = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
@@ -781,8 +781,8 @@ subtest $method => sub {
     clear_mailbox();
     is($c->tcall($method, $params)->{status}, 0, 'unlock password ok');
     $test_client->load;
-    ok(!$test_client->cashier_setting_password, 'cashier password unset');
-    $subject = 'cashier password updated';
+    ok(!$test_client->cashier_setting_password, 'Cashier password unset');
+    $subject = 'Cashier password updated';
     %msg     = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
