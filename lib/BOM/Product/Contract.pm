@@ -2201,7 +2201,6 @@ sub _validate_trading_times {
     return;
 }
 
-
 # Is this underlying or contract is disabled/suspended from trading.
 sub _validate_offerings {
     my $self = shift;
