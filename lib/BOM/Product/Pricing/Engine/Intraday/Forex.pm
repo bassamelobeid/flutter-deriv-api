@@ -40,6 +40,8 @@ has [qw(pricing_vol news_adjusted_pricing_vol)] => (
     lazy_build => 1,
 );
 
+has slope => (is => 'rw');
+
 sub _build_news_adjusted_pricing_vol {
     return shift->bet->pricing_args->{iv_with_news};
 }
@@ -246,9 +248,9 @@ sub _build_intraday_trend {
     my $ticks_count = 0;
     $ticks_count = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
 
-    my $ticks_per_sec    = $ticks_count / $duration_in_secs;
-    my $slope            = sqrt(1 - (($ticks_per_sec - 2)**2) / 4);
-    my $trend            = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($duration_in_secs)) * $slope;
+    my $ticks_per_sec = $ticks_count / $duration_in_secs;
+    $self->slope(sqrt(1 - (($ticks_per_sec - 2)**2) / 4));
+    my $trend            = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($duration_in_secs)) * $self->slope;
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
     my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
         name        => 'intraday_trend',
@@ -281,6 +283,7 @@ sub calculate_intraday_bounceback {
     my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
     my ($coef_A, $coef_B, $coef_C, $coef_D) = map { $calibration_coef->{$_} } @coef_name;
     my $coef_D_multiplier = ($st_or_lt eq '_lt') ? 1 : 1 / $coef_D;
+    my $abs_max_trend_value = max(abs($calibration_coef->{trend_min}), $calibration_coef->{trend_max});
 
     my $duration_in_secs = $t_mins * 60;
     my $bounceback_base =
@@ -289,11 +292,14 @@ sub calculate_intraday_bounceback {
         $duration_in_secs**$coef_B *
         (1 / (1 + exp($coef_C * $self->intraday_trend->amount * $coef_D)) - 0.5);
 
+    my $slope = $self->slope || 1;
+    my $bounceback_safety = $bounceback_base * (-$abs_max_trend_value) - $bounceback_base * (-$abs_max_trend_value * $slope);
+
     if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
         $bounceback_base = ($self->bet->code eq 'CALL') ? $bounceback_base : $bounceback_base * -1;
     }
 
-    return $bounceback_base;
+    return ($bounceback_base + $bounceback_safety);
 }
 
 sub calculate_expected_spot {
