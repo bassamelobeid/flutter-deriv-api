@@ -335,7 +335,7 @@ sub rmg_text_format {
         my $row = $self->_construct_smile_line($day, $smile);
 
         foreach my $spread_point (@surface_spread_point) {
-            $row .= $self->_field_separator . $spread->{$spread_point};
+            $row .= $self->_field_separator . roundnear(0.0001, $spread->{$spread_point});
         }
 
         push @surface, $row;
@@ -427,20 +427,10 @@ sub html_volsurface_in_table {
         }
 
         foreach my $spread_point (@spreads_points) {
-
             my $hacked_spread_point = $spread_point;
             $hacked_spread_point =~ s/\./point/g;
-
-            my $display_spread;
-            if ($spread_point eq 'atm_spread') {
-                $display_spread = roundnear(0.0001, $spread->{$spread_point});
-            } else {
-
-                $display_spread = roundnear(0.0001, $spread->{vol_spread}->{$spread_point});
-            }
-
+            my $display_spread = roundnear(0.0001, $spread->{$spread_point});
             $output .= "<td data-jsonify-name=\"$day.vol_spread.$hacked_spread_point\" data-jsonify-getter=\"anything\">$display_spread</td>";
-
         }
 
         $output .= "</tr>";
@@ -506,8 +496,20 @@ sub print_comparison_between_volsurface {
         push @output, "<TH>$days[$i]</TH>";
         foreach my $col_point (sort { $a <=> $b } @surface_vol_point) {
 
-            my $vol = roundnear(0.0001, $surface->get_surface_volatility($days[$i], $col_point));
-            my $ref_vol = roundnear(0.0001, $ref_surface->get_surface_volatility($days[$i], $col_point));
+            my $vol = roundnear(
+                0.0001,
+                $surface->get_volatility({
+                        from           => $surface->recorded_date,
+                        to             => $surface->recorded_date->plus_time_interval($days[$i] . 'd'),
+                        $surface->type => $col_point
+                    }));
+            my $ref_vol = roundnear(
+                0.0001,
+                $ref_surface->get_volatility({
+                        from           => $ref_surface->recorded_date,
+                        to             => $ref_surface->recorded_date->plus_time_interval($days[$i] . 'd'),
+                        $surface->type => $col_point
+                    }));
 
             my $vol_picture =
                 (abs($vol - $ref_vol) < 0.001)
