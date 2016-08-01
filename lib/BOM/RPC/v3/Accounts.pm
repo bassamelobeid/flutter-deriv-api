@@ -369,7 +369,7 @@ sub cashier_password {
             send_email({
                     'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,
                     'to'      => $client->email,
-                    'subject' => localize("[_1] cashier password updated", $client->loginid),
+                    'subject' => localize("Cashier password updated"),
                     'message' => [
                         localize(
                             "This is an automated message to alert you that a change was made to your cashier settings section of your account [_1] from IP address [_2]. If you did not perform this update please login to your account and update settings.",
@@ -395,7 +395,7 @@ sub cashier_password {
             send_email({
                     'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,
                     'to'      => $client->email,
-                    'subject' => localize("[_1]-Failed attempt to unlock cashier section", $client->loginid),
+                    'subject' => localize("Failed attempt to unlock cashier section"),
                     'message' => [
                         localize(
                             'This is an automated message to alert you to the fact that there was a failed attempt to unlock the Cashier/Settings section of your account [_1] from IP address [_2]',
@@ -417,7 +417,7 @@ sub cashier_password {
             send_email({
                     'from'    => BOM::Platform::Runtime->instance->app_config->cs->email,
                     'to'      => $client->email,
-                    'subject' => localize("[_1] cashier password updated", $client->loginid),
+                    'subject' => localize("Cashier password updated"),
                     'message' => [
                         localize(
                             "This is an automated message to alert you that a change was made to your cashier settings section of your account [_1] from IP address [_2]. If you did not perform this update please login to your account and update settings.",
