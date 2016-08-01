@@ -107,26 +107,38 @@ sub _pricing_channel {
 }
 
 sub process_pricing_events {
-    my ($c, $message, $chan) = @_;
+    my ($c, $message, $serialized_args) = @_;
 
-    # in case that it is a spread
     return if not $message or not $c->tx;
-    $message =~ s/^PRICER_KEYS:://;
-
-    my $response         = decode_json($message);
-    my $serialized_args  = $chan;
-    my $theo_probability = $response->{theo_probability};
-
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
 
+    my $response         = decode_json($message);
+    my $theo_probability = delete $response->{theo_probability};
+    my $rpc_time         = delete $response->{rpc_time};
+    delete $response->{contract_parameters};
+    delete $response->{longcode};
+
     foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
         my $results;
+        my $stash_data = $pricing_channel->{$serialized_args}->{$amount};
+        if (   !ref $stash_data
+            || !exists $stash_data->{args}
+            || !exists $stash_data->{args}->{contract_type}
+            || !$stash_data->{args}->{contract_type}
+            || !exists $stash_data->{uuid}
+            || !$stash_data->{uuid}
+            || !exists $stash_data->{contract_parameters}
+            || !$stash_data->{contract_parameters})
+        {
+            my $keys_count = scalar keys %{$pricing_channel->{$serialized_args}};
+            warn "Proposal call pricing event processing: stash data missed! serialized_args: $serialized_args, total keys: $keys_count";
+            $response->{error}->{code}              = 'InternalServerError';
+            $response->{error}->{message_to_client} = 'Internal server error';
+        }
 
-        delete $response->{contract_parameters};
-        my $rpc_time = delete $response->{rpc_time};
         if ($response and exists $response->{error}) {
-            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$serialized_args}->{$amount}->{uuid});
+            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
             # in pricer_dameon everything happens in Eng to maximize the collisions. If translations has params it will come as message_to_client_array.
             # eitherway it need l10n here.
             if ($response->{error}->{message_to_client_array}) {
@@ -139,12 +151,8 @@ sub process_pricing_events {
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
-            delete $response->{longcode};
-            my $adjusted_results = _price_stream_results_adjustment(
-                $pricing_channel->{$serialized_args}->{$amount}->{args},
-                $pricing_channel->{$serialized_args}->{$amount}->{contract_parameters},
-                $response, $theo_probability
-            );
+            my $adjusted_results =
+                _price_stream_results_adjustment($stash_data->{args}, $stash_data->{contract_parameters}, $response, $theo_probability);
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
@@ -153,8 +161,8 @@ sub process_pricing_events {
                 $results = {
                     msg_type   => 'proposal',
                     'proposal' => {
-                        id       => $pricing_channel->{$serialized_args}->{$amount}->{uuid},
-                        longcode => $pricing_channel->{$serialized_args}->{$amount}->{longcode},
+                        id       => $stash_data->{uuid},
+                        longcode => $stash_data->{longcode},
                         %$adjusted_results,
                     },
                 };
@@ -219,8 +227,6 @@ sub _price_stream_results_adjustment {
 
     $results->{ask_price} = $results->{display_value} = $contract->ask_price;
     $results->{payout} = $contract->payout;
-    #cleanup
-    delete $results->{theo_probability};
 
     return $results;
 }
