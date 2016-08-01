@@ -40,8 +40,6 @@ has [qw(pricing_vol news_adjusted_pricing_vol)] => (
     lazy_build => 1,
 );
 
-has slope => (is => 'rw');
-
 sub _build_news_adjusted_pricing_vol {
     return shift->bet->pricing_args->{iv_with_news};
 }
@@ -222,6 +220,23 @@ sub _build_ticks_for_trend {
     });
 }
 
+has slope => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_slope {
+    my $self = shift;
+    my @ticks    = @{$self->ticks_for_trend};
+    my $duration_in_secs = $self->bet->timeindays->amount * 86400;
+    my $ticks_count = 0;
+
+    $ticks_count = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
+
+    my $ticks_per_sec = $ticks_count / $duration_in_secs;
+    return (sqrt(1 - (($ticks_per_sec - 2)**2) / 4));
+}
+
 =head1 intraday_trend
 
 ASSUMPTIONS: If there's no ticks to calculate trend, we will assume there's no trend. But we will not sell since volatility calculation (which uses the same set of ticks), will fail.
@@ -245,11 +260,6 @@ sub _build_intraday_trend {
         base_amount => $average,
     });
 
-    my $ticks_count = 0;
-    $ticks_count = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
-
-    my $ticks_per_sec = $ticks_count / $duration_in_secs;
-    $self->slope(sqrt(1 - (($ticks_per_sec - 2)**2) / 4));
     my $trend            = ((($bet->pricing_args->{spot} - $avg_spot->amount) / $avg_spot->amount) / sqrt($duration_in_secs)) * $self->slope;
     my $calibration_coef = $self->coefficients->{$bet->underlying->symbol};
     my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
@@ -279,27 +289,37 @@ sub _build_more_than_short_term_cutoff {
 sub calculate_intraday_bounceback {
     my ($self, $t_mins, $st_or_lt) = @_;
 
+    my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
+    my $abs_max_trend_value = max(abs($calibration_coef->{trend_min}), $calibration_coef->{trend_max});
+    my $slope = $self->slope || 1;
+
+    my $bounceback_base_intraday_trend = $self->calculate_bounceback_base($t_mins, $st_or_lt, $self->intraday_trend->amount);
+    my $bounceback_base_max_trend = $self->calculate_bounceback_base($t_mins, $st_or_lt, (-$abs_max_trend_value));
+    my $bounceback_base_max_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, $slope * (-$abs_max_trend_value));
+
+    my $bounceback_safety = $bounceback_base_max_trend - $bounceback_base_max_trend_with_slope;
+
+    if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
+        $bounceback_base_intraday_trend = ($self->bet->code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
+    }
+
+    return ($bounceback_base_intraday_trend + $bounceback_safety);
+}
+
+sub calculate_bounceback_base {
+    my ($self, $t_mins, $st_or_lt, $trend_value) = @_;
+
     my @coef_name = map { $_ . $st_or_lt } qw(A B C D);
     my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
     my ($coef_A, $coef_B, $coef_C, $coef_D) = map { $calibration_coef->{$_} } @coef_name;
     my $coef_D_multiplier = ($st_or_lt eq '_lt') ? 1 : 1 / $coef_D;
-    my $abs_max_trend_value = max(abs($calibration_coef->{trend_min}), $calibration_coef->{trend_max});
-
     my $duration_in_secs = $t_mins * 60;
-    my $bounceback_base =
+
+    return
         $coef_A /
         ($coef_D * $coef_D_multiplier) *
         $duration_in_secs**$coef_B *
-        (1 / (1 + exp($coef_C * $self->intraday_trend->amount * $coef_D)) - 0.5);
-
-    my $slope = $self->slope || 1;
-    my $bounceback_safety = $bounceback_base * (-$abs_max_trend_value) - $bounceback_base * (-$abs_max_trend_value * $slope);
-
-    if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
-        $bounceback_base = ($self->bet->code eq 'CALL') ? $bounceback_base : $bounceback_base * -1;
-    }
-
-    return ($bounceback_base + $bounceback_safety);
+        (1 / (1 + exp($coef_C * $trend_value * $coef_D)) - 0.5);
 }
 
 sub calculate_expected_spot {
@@ -307,7 +327,7 @@ sub calculate_expected_spot {
 
     my $bet = $self->bet;
     my $expected_spot =
-        $self->calculate_intraday_bounceback($t, "_lt") * $self->intraday_trend->peek_amount('average_spot') * sqrt($t * 60) +
+        $self->intraday_trend->peek_amount('average_spot') * $self->calculate_intraday_bounceback($t, "_lt") * sqrt($t * 60) +
         $bet->pricing_args->{spot};
     return $expected_spot;
 }
