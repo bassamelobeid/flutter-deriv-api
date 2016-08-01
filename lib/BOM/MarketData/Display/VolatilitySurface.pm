@@ -329,19 +329,13 @@ sub rmg_text_format {
     push @surface, join $self->_field_separator, ('day', @surface_vol_point, @formated_surface_spread_point);
 
     foreach my $day (@{$volsurface->term_by_day}) {
-        my $smile = $volsurface->get_smile($day);
+        my $smile = $volsurface->get_surface_smile($day);
 
         my $spread = $volsurface->get_smile_spread($day);
         my $row = $self->_construct_smile_line($day, $smile);
 
-        if ($atm_spread_point ne 'atm_spread') {
-            $spread = $spread->{'vol_spread'};
-        }
-
         foreach my $spread_point (@surface_spread_point) {
-
             $row .= $self->_field_separator . $spread->{$spread_point};
-
         }
 
         push @surface, $row;
