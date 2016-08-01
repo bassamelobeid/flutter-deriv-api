@@ -31,9 +31,9 @@ subtest 'buy' => sub {
     my $result = $c->call_ok(
         'buy_contract_for_multiple_accounts',
         {
-            language => 'EN',
-            token    => $token,
-            source   => 1,
+            language            => 'EN',
+            token               => $token,
+            source              => 1,
             contract_parameters => {
                 proposal      => 1,
                 amount        => "100",
@@ -51,8 +51,8 @@ subtest 'buy' => sub {
         })->has_no_system_error->has_no_error->result;
     # note explain $result;
     $result = $result->{result};
-    is_deeply $result, [
-        {
+    is_deeply $result,
+        [{
             token             => 'DUMMY1',
             code              => 'InvalidToken',
             message_to_client => 'Invalid token',
@@ -62,7 +62,8 @@ subtest 'buy' => sub {
             code              => 'InvalidToken',
             message_to_client => 'Invalid token',
         },
-    ], 'got expected result';
+        ],
+        'got expected result';
 };
 
 done_testing();
