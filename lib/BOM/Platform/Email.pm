@@ -12,6 +12,7 @@ use Try::Tiny;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
+use BOM::System::Config;
 
 use base 'Exporter';
 our @EXPORT_OK = qw(send_email);
@@ -29,6 +30,9 @@ sub send_email {
     my $ctype              = $args_ref->{'att_type'} // 'text/plain';
     my $skip_text2html     = $args_ref->{'skip_text2html'};
     my $template_loginid   = $args_ref->{template_loginid};
+
+    my $request = request();
+    my $language = $request ? $request->language : 'EN';
 
     die 'No email provided' unless $email;
 
@@ -59,7 +63,7 @@ sub send_email {
 
     # DON'T send email on devbox except to RMG emails
     return 1
-        if (not BOM::Platform::Runtime->instance->app_config->system->send_email_to_clients
+        if (BOM::System::Config::env ne 'production'
         and $email !~ /(?:binary|regentmarkets|betonmarkets)\.com$/);
 
     my @toemails = split(/\s*\,\s*/, $email);
@@ -117,6 +121,9 @@ sub send_email {
                 email_template_loginid => $template_loginid,
                 content                => $message,
             };
+            if ($language eq 'JA') {
+                $vars->{email_template_japan} = $language;
+            }
             BOM::Platform::Context::template->process('common_email.html.tt', $vars, \$mail_message)
                 || die BOM::Platform::Context::template->error();
         } else {

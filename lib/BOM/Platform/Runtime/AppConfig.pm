@@ -7,7 +7,6 @@ BOM::Platform::Runtime::AppConfig
 =head1 SYNOPSYS
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
-    send_email() if $app_config->system->send_email_to_clients;
 
 =head1 DESCRIPTION
 
