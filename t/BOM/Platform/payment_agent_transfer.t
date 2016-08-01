@@ -61,7 +61,7 @@ subtest 'Initialization' => sub {
 };
 
 subtest 'Client withdraw money via payment agent' => sub {
-    plan tests => 8;
+    plan tests => 9;
 
     lives_ok {
         transfer_from_client_to_pa();
