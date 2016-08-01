@@ -199,26 +199,6 @@ sub _get_rates {
     return $rates_content;
 }
 
-sub _get_cutoff_label {
-    my ($self, $cutoff) = @_;
-
-    $cutoff->code =~ /^(.+) (\d{1,2}:\d{2})/;
-    my $city = $1;
-    my $time = $2;
-    my %map  = (
-        'New York' => 'NY',
-        'Tokyo'    => 'TK',
-    );
-    my $code;
-    if ($city eq 'UTC') {
-        $code = 'GMT ' . $time;
-    } else {
-        $code = ((defined $map{$city}) ? $map{$city} : $city) . ' ' . $time;
-        $code .= ' (' . $cutoff->code_gmt . ')';
-    }
-    return $code;
-}
-
 sub _get_moneyness_surface {
     my $self = shift;
 
@@ -279,33 +259,6 @@ sub _get_volsurface {
 
     my $tabs;
 
-    # VolSurface for Tokyo 15 Cutoff
-    if ($bet->underlying->market->name eq 'forex') {
-        my $tokyo_vol_url = 'tv';
-
-        my $constructor_args = {
-            underlying => $bet->underlying,
-            cutoff     => 'Tokyo 15:00',
-        };
-        $constructor_args->{for_date} = $bet->date_pricing
-            if (not $bet->pricing_new);
-
-        my $tokyo_surface = $self->_volsurface_mapper->fetch_surface($constructor_args);
-
-        my $tokyo_display = BOM::MarketData::Display::VolatilitySurface->new(surface => $tokyo_surface);
-        my $tokyo_surface_content = $tokyo_display->rmg_table_format({
-            historical_dates => $dates,
-            tab_id           => $bet->id . $tokyo_vol_url,
-        });
-
-        push @{$tabs},
-            {
-            label   => $self->_get_cutoff_label($tokyo_surface->cutoff),
-            url     => $tokyo_vol_url,
-            content => $tokyo_surface_content,
-            };
-    }
-
     # master vol surface
     my $master_vol_url         = 'mv';
     my $master_display         = BOM::MarketData::Display::VolatilitySurface->new(surface => $self->master_surface);
@@ -315,33 +268,10 @@ sub _get_volsurface {
     });
     push @{$tabs},
         {
-        label   => $self->_get_cutoff_label($self->master_surface->cutoff),
+        label   => 'master surface',
         url     => $master_vol_url,
         content => $master_surface_content,
         };
-
-    # Used vol surface: display for forex & commodities (exclude Oil/USD)
-    if (
-        $bet->underlying->market->name eq 'forex'
-        or (    $bet->underlying->market->name eq 'commodities'
-            and $bet->underlying->symbol ne 'frxBROUSD'))
-    {
-        my $cost_greeks        = $self->_get_cost_of_greeks();
-        my $used_vol_url       = 'vs';
-        my $display            = BOM::MarketData::Display::VolatilitySurface->new(surface => $bet->volsurface);
-        my $volsurface_content = $display->rmg_table_format({
-            greeks           => $cost_greeks,
-            historical_dates => $dates,
-            tab_id           => $bet->id . $used_vol_url,
-        });
-
-        push @{$tabs},
-            {
-            label   => $self->_get_cutoff_label($bet->volsurface->cutoff),
-            url     => $used_vol_url,
-            content => $volsurface_content,
-            };
-    }
 
     my $vol_content;
     BOM::Platform::Context::template->process(
