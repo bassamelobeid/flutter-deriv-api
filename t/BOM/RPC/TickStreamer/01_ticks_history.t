@@ -103,6 +103,13 @@ subtest 'ticks_history' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('NoRealtimeQuotes', 'It should return error if realtime quotes not available for this symbol')
         ->error_message_is('Realtime quotes not available for TOP40', 'It should return error if realtime quotes not available for this symbol');
+
+    set_fixed_time(Date::Utility->new('2016-07-24')->epoch);
+    $params->{args}->{ticks_history} = 'frxUSDJPY';
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('MarketIsClosed', 'It should return error if market is closed')
+        ->error_message_is('This market is presently closed.', 'It should return error if market is closed');
+    set_fixed_time($now->epoch);
+
     delete $params->{args}->{subscribe};
 };
 

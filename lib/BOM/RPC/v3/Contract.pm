@@ -46,6 +46,21 @@ sub validate_license {
     return;
 }
 
+sub validate_is_open {
+    my $symbol = shift;
+    my $u      = BOM::Market::Underlying->new($symbol);
+
+    unless ($u->calendar->is_open) {
+        return {
+            error => {
+                code    => 'MarketIsClosed',
+                message => 'This market is presently closed.',
+                params  => [$symbol],
+            }};
+    }
+    return;
+}
+
 sub validate_underlying {
     my $symbol = shift;
 
@@ -53,6 +68,9 @@ sub validate_underlying {
     return $response if $response;
 
     $response = validate_license($symbol);
+    return $response if $response;
+
+    $response = validate_is_open($symbol);
     return $response if $response;
 
     return {status => 1};
