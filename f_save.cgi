@@ -109,10 +109,6 @@ if ($filen eq 'editvol') {
     );
     my $existing_surface_args = {
         underlying => $underlying,
-        (
-                   $underlying->market->name eq 'forex'
-                or $underlying->market->name eq 'commodities'
-        ) ? (cutoff => 'New York 10:00') : (),
     };
     my $surface = $model->new(%surface_args);
 
