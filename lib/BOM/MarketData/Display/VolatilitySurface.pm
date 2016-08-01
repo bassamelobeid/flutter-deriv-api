@@ -68,7 +68,6 @@ sub rmg_table_format {
     my @headers  = ('days');
     my $hour_age = sprintf('%.2f', (Date::Utility->new->epoch - $volsurface->recorded_date->epoch) / 3600);
     my $title    = $volsurface->recorded_date->datetime . ' (' . $hour_age . ' hours ago)';
-    my $cut      = $volsurface->cutoff->code;
 
     my $forward_vols = $self->get_forward_vol();
     my @surface;
@@ -188,15 +187,9 @@ sub rmg_table_format {
         notes   => 'Notes: 1-day forward vol of day-365, is actually the forward vol for day-271 to day-365, etc',
     };
 
-    my $ON_cut_date =
-        $volsurface->cutoff->cutoff_date_for_effective_day(Date::Utility->new($volsurface->effective_date->epoch + $volsurface->_ON_day * 86400),
-        $underlying);
-
     my $template_param = {
         historical_dates => $dates_tt,
         big_title        => $title,
-        cut              => $volsurface->cutoff->code,
-        ON_cut_datetime  => $ON_cut_date->datetime,
         underlying       => $underlying->symbol,
         tab_id           => $tab_id,
         table1           => $table1_param,
