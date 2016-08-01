@@ -45,7 +45,7 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
         $client->payment_account_transfer(
             toClient => $pa_client,
             currency => 'USD',
-            amount   => 1000,
+            amount   => 999,
             remark   => $remark
         );
     }
@@ -58,7 +58,7 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
         $client->payment_account_transfer(
             toClient => $pa_client,
             currency => 'USD',
-            amount   => 1000,
+            amount   => 999,
             remark   => $remark
         );
     }
