@@ -24,12 +24,15 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Token;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
+use BOM::System::Config;
 use BOM::System::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
+use WWW::OneAll;
+use BOM::Database::Model::UserConnect;
 
 sub payout_currencies {
     my $params = shift;
@@ -1154,6 +1157,62 @@ sub reality_check {
     $summary->{open_contract_count} = $data->{open_cnt}      // 0;
 
     return $summary;
+}
+
+sub connect_add {
+    my $params = shift;
+
+    my $connection_token = $params->{args}->{connection_token};
+    my $oneall           = WWW::OneAll->new(
+        subdomain   => 'binary',
+        public_key  => BOM::System::Config::third_party->{oneall}->{public_key},
+        private_key => BOM::System::Config::third_party->{oneall}->{private_key},
+    );
+    my $data = $oneall->connection($connection_token) or die $oneall->errstr;
+
+    if ($data->{response}->{result}->{status}->{code} != 200) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'ConnectAdd',
+                message_to_client => localize('Failed to get user identity.')});
+    }
+
+    my $client = $params->{client};
+    my $user = BOM::Platform::User->new({email => $client->email});
+
+    my $provider_data = $data->{response}->{result}->{data};
+    my $user_connect  = BOM::Database::Model::UserConnect->new;
+    my $res           = $user_connect->insert_connect($user->id, $provider_data);
+    if ($res->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'ConnectAdd',
+                message_to_client => $res->{error}});
+    }
+
+    return {status => 1};
+}
+
+sub connect_del {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my $user = BOM::Platform::User->new({email => $client->email});
+
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    my $res = $user_connect->remove_connect($user->id, $params->{args}->{provider});
+
+    return {status => $res ? 1 : 0};
+}
+
+sub connect_list {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my $user = BOM::Platform::User->new({email => $client->email});
+
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    my @providers    = $user_connect->get_connects_by_user_id($user->id);
+
+    return \@providers;
 }
 
 1;
