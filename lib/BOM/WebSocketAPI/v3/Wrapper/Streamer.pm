@@ -10,6 +10,7 @@ use List::MoreUtils qw(last_index);
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
+use BOM::Market::Underlying;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
 use Time::HiRes qw(gettimeofday);
@@ -180,6 +181,7 @@ sub process_realtime_events {
                 return;
             }
 
+            $c->stash("${symbol}_display_decimals" => BOM::Market::Underlying->new($symbol)->display_decimals);
             my $display_decimals = $c->stash("${symbol}_display_decimals");
             my $tick             = {
                 id     => $feed_channels_type->{$channel}->{uuid},
