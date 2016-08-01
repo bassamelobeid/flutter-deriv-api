@@ -221,15 +221,15 @@ sub _build_ticks_for_trend {
 }
 
 has slope => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
 sub _build_slope {
-    my $self = shift;
-    my @ticks    = @{$self->ticks_for_trend};
+    my $self             = shift;
+    my @ticks            = @{$self->ticks_for_trend};
     my $duration_in_secs = $self->bet->timeindays->amount * 86400;
-    my $ticks_count = 0;
+    my $ticks_count      = 0;
 
     $ticks_count = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
 
@@ -290,8 +290,8 @@ sub calculate_intraday_bounceback {
     my ($self, $t_mins, $st_or_lt) = @_;
 
     my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
-    my $max_abs_trend = max(abs($calibration_coef->{trend_min}), $calibration_coef->{trend_max});
-    my $slope = $self->slope || 1;
+    my $max_abs_trend    = max(abs($calibration_coef->{trend_min}), $calibration_coef->{trend_max});
+    my $slope            = $self->slope || 1;
 
     my $bounceback_base_intraday_trend = $self->calculate_bounceback_base($t_mins, $st_or_lt, $self->intraday_trend->amount);
 
@@ -316,11 +316,7 @@ sub calculate_bounceback_base {
     my $coef_D_multiplier = ($st_or_lt eq '_lt') ? 1 : 1 / $coef_D;
     my $duration_in_secs = $t_mins * 60;
 
-    return
-        $coef_A /
-        ($coef_D * $coef_D_multiplier) *
-        $duration_in_secs**$coef_B *
-        (1 / (1 + exp($coef_C * $trend_value * $coef_D)) - 0.5);
+    return $coef_A / ($coef_D * $coef_D_multiplier) * $duration_in_secs**$coef_B * (1 / (1 + exp($coef_C * $trend_value * $coef_D)) - 0.5);
 }
 
 sub calculate_expected_spot {
