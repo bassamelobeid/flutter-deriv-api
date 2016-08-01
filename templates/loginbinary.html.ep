@@ -24,5 +24,18 @@
             <a class="pjaxload" id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a> |
             <a class="pjaxload" id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Open an Account') %></a>
         </p>
+        <p class="links">
+            <div id="oa_social_login_container"></div>
+        </p>
     </fieldset>
 </div>
+
+<script type="text/javascript">
+var your_callback_script = '<%= $oneall_callback %>';
+
+/* Embeds the buttons into the container oa_social_login_container */
+var _oneall = _oneall || [];
+_oneall.push(['social_login', 'set_providers', ['facebook', 'google', 'twitter']]);
+_oneall.push(['social_login', 'set_callback_uri', your_callback_script]);
+_oneall.push(['social_login', 'do_render_ui', 'oa_social_login_container']);
+</script>

@@ -54,6 +54,8 @@ sub startup {
     my $r = $app->routes;
     $r->any('/authorize')->to('O#authorize');
     # $r->any('/access_token')->to('O#access_token');
+
+    $r->any('/oneall/callback')->to('OneAll#callback');
 }
 
 1;

@@ -107,7 +107,20 @@ sub authorize {
     } elsif ($c->req->method eq 'POST' and $c->session('__is_logined')) {
         # get loginid from Mojo Session
         $client = $c->__get_client;
+    } elsif ($c->session('__oneall_user_id')) {
+        ## from Oneall Social Login
+        my $oneall_user_id = $c->session('__oneall_user_id');
+        $client = $c->__login($app, $oneall_user_id) or return;
+        $c->session('__is_logined', 1);
+        $c->session('__loginid',    $client->loginid);
     }
+
+    ## setup oneall callback url
+    my $oneall_callback = $c->req->url->path('/oneall/callback')->to_abs;
+    if ($c->req->url->to_abs->host =~ 'binaryqa') { # for binaryqaXX
+        $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
+    }
+    $c->stash('oneall_callback' => $oneall_callback);
 
     # set session on first page visit (GET)
     # for binary.com, app id = 1
@@ -125,12 +138,19 @@ sub authorize {
 
     ## check user is logined
     unless ($client) {
+        ## taken error from oneall
+        my $error = '';
+        if ($error = $c->session('__oneall_error')) {
+            delete $c->session->{__oneall_error};
+        }
+
         ## show login form
         return $c->render(
             template => $app_id eq '1' ? 'loginbinary' : 'login',
             layout => 'default',
 
             app       => $app,
+            error     => $error,
             r         => $c->stash('request'),
             csrftoken => $c->csrf_token,
         );
@@ -208,32 +228,43 @@ sub authorize {
     delete $c->session->{__is_logined};
     delete $c->session->{__loginid};
     delete $c->session->{__is_app_approved};
+    delete $c->session->{__oneall_user_id};
 
     $c->redirect_to($uri);
 }
 
 sub __login {
-    my ($c, $app) = @_;
+    my ($c, $app, $oneall_user_id) = @_;
 
-    my ($email, $password) = ($c->param('email'), $c->param('password'));
     my ($user, $client, $last_login, $err);
 
+    my ($email, $password) = ($c->param('email'), $c->param('password'));
     LOGIN:
     {
-        if (not $email or not Email::Valid->address($email)) {
-            $err = localize('Email not given.');
-            last;
-        }
+        if ($oneall_user_id) {
+            $password = '**SOCIAL-LOGIN-ONEALL**';
 
-        if (not $password) {
-            $err = localize('Password not given.');
-            last;
-        }
+            $user = BOM::Platform::User->new({id => $oneall_user_id});
+            unless ($user) {
+                $err = localize('Invalid user.');
+                last;
+            }
+        } else {
+            if (not $email or not Email::Valid->address($email)) {
+                $err = localize('Email not given.');
+                last;
+            }
 
-        $user = BOM::Platform::User->new({email => $email});
-        unless ($user) {
-            $err = localize('Invalid email and password combination.');
-            last;
+            if (not $password) {
+                $err = localize('Password not given.');
+                last;
+            }
+
+            $user = BOM::Platform::User->new({email => $email});
+            unless ($user) {
+                $err = localize('Invalid email and password combination.');
+                last;
+            }
         }
 
         # get last login before current login to get last record
@@ -241,6 +272,7 @@ sub __login {
         my $result = $user->login(
             password    => $password,
             environment => $c->__login_env(),
+            is_social_login => $oneall_user_id ? 1 : 0,
         );
 
         last if ($err = $result->{error});
