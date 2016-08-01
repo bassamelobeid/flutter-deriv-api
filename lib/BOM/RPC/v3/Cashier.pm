@@ -591,7 +591,13 @@ sub paymentagent_transfer {
     BOM::Database::Transaction->unfreeze_client($loginid_to);
 
     if ($error) {
-        return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'), $error);
+        # too many attempts
+        if ($error =~ /BI102/) {
+            return $error_sub->(localize('Request too frequent. Please try again later.'), $error);
+        } else {
+            return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'),
+                $error);
+        }
     }
 
     stats_count('business.usd_deposit.paymentagent', int(in_USD($amount, $currency) * 100));
