@@ -301,6 +301,9 @@ sub mt5_deposit {
     };
 
     if ($withdraw_error) {
+        # should be save to unlock account
+        BOM::Database::Transaction->unfreeze_client($fm_loginid);
+
         return $error_sub->(
             BOM::RPC::v3::Cashier::__client_withdrawal_notes({
                     client => $fm_client,
