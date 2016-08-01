@@ -10,6 +10,7 @@ use VolSurface::Utils qw( get_1vol_butterfly );
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Underlying;
 use BOM::Backoffice::GNUPlot;
+use List::Util qw(uniq);
 use Try::Tiny;
 
 =head1 surface
@@ -453,7 +454,10 @@ sub print_comparison_between_volsurface {
     $ref_surface_source ||= "USED";
     $surface_source     ||= "NEW";
 
-    my @days = @{$surface->original_term_for_smile};
+    my @new_days = @{$surface->original_term_for_smile};
+    my @existing_days = @{$ref_surface->original_term_for_smile};
+    my @days = uniq(@new_days, @existing_days);
+
     my @column_names;
     my $vol_type = $surface->type;
 
@@ -489,50 +493,42 @@ sub print_comparison_between_volsurface {
         push @output, "<TH>$days[$i]</TH>";
         foreach my $col_point (sort { $a <=> $b } @surface_vol_point) {
 
-            my $vol = roundnear(
-                0.0001,
-                $surface->get_volatility({
-                        from           => $surface->recorded_date,
-                        to             => $surface->recorded_date->plus_time_interval($days[$i] . 'd'),
-                        $surface->type => $col_point
-                    }));
-            my $ref_vol = roundnear(
-                0.0001,
-                $ref_surface->get_volatility({
-                        from           => $ref_surface->recorded_date,
-                        to             => $ref_surface->recorded_date->plus_time_interval($days[$i] . 'd'),
-                        $surface->type => $col_point
-                    }));
+            my $vol = roundnear( 0.0001, $surface->get_surface_volatility($days[$i], $col_point));
+            my $ref_vol = roundnear( 0.0001, $ref_surface->get_surface_volatility($days[$i], $col_point));
 
-            my $vol_picture =
-                (abs($vol - $ref_vol) < 0.001)
-                ? ''
-                : (($vol > $ref_vol) ? 'change_up_1.gif' : 'change_down_1.gif');
+            if (defined $vol and defined $ref_vol) {
+                my $vol_picture =
+                    (abs($vol - $ref_vol) < 0.001)
+                    ? ''
+                    : (($vol > $ref_vol) ? 'change_up_1.gif' : 'change_down_1.gif');
 
-            my $volpoint_diff   = abs($vol - $ref_vol);
-            my $percentage_diff = $volpoint_diff / $ref_vol * 100;
-            my $big_difference  = ($volpoint_diff > 0.03 and $percentage_diff > 100) ? 1 : 0;
+                my $volpoint_diff   = abs($vol - $ref_vol);
+                my $percentage_diff = $volpoint_diff / $ref_vol * 100;
+                my $big_difference  = ($volpoint_diff > 0.03 and $percentage_diff > 100) ? 1 : 0;
+                if ($big_difference) {
+                    $found_big_difference++;
+                    $big_diff_msg =
+                          'Big difference found on term['
+                        . $days[$i]
+                        . '] for point ['
+                        . $col_point
+                        . '] with absolute diff ['
+                        . $volpoint_diff
+                        . '] percentage diff ['
+                        . $percentage_diff . ']';
+                }
 
-            if ($big_difference) {
-                $found_big_difference++;
-                $big_diff_msg =
-                      'Big difference found on term['
-                    . $days[$i]
-                    . '] for point ['
-                    . $col_point
-                    . '] with absolute diff ['
-                    . $volpoint_diff
-                    . '] percentage diff ['
-                    . $percentage_diff . ']';
+                my $bgcolor = ($big_difference) ? 'red' : '';
+                my $html_picture_tag =
+                    $vol_picture
+                    ? "<img src=\"" . request()->url_for("images/pages/flash-charts/$vol_picture") . "\" border=0>"
+                    : '==';
+
+                push @output, qq~<TD align="center" bgcolor="$bgcolor">$vol($surface_source) $html_picture_tag $ref_vol($ref_surface_source)</TD>~;
+            } else {
+                my $which_vol = defined$vol ? $vol : $ref_vol;
+                push @output, qq~<TD align="center">$which_vol($surface_source)</TD>~;
             }
-
-            my $bgcolor = ($big_difference) ? 'red' : '';
-            my $html_picture_tag =
-                $vol_picture
-                ? "<img src=\"" . request()->url_for("images/pages/flash-charts/$vol_picture") . "\" border=0>"
-                : '==';
-
-            push @output, qq~<TD align="center" bgcolor="$bgcolor">$vol($surface_source) $html_picture_tag $ref_vol($ref_surface_source)</TD>~;
         }
 
         foreach my $spread_point (sort { $a <=> $b } @surface_spread_point) {
@@ -540,18 +536,23 @@ sub print_comparison_between_volsurface {
             my $ref_spread = roundnear(0.0001, $ref_surface->{'surface'}->{$days[$i]}->{'vol_spread'}->{$spread_point});
             my $spread     = roundnear(0.0001, $surface->{'surface'}->{$days[$i]}->{'vol_spread'}->{$spread_point});
 
-            my $spread_picture =
-                (abs($spread - $ref_spread) < 0.001) ? ''
-                : (
-                ($spread > $ref_spread) ? 'change_up_1.gif'
-                : 'change_down_1.gif'
-                );
-            my $html_picture_tag =
-                $spread_picture
-                ? "<img src=\"" . request()->url_for("images/pages/flash-charts/$spread_picture") . "\" border=0>"
-                : '==';
+            if (defined $ref_spread and defined $spread) {
+                my $spread_picture =
+                    (abs($spread - $ref_spread) < 0.001) ? ''
+                    : (
+                    ($spread > $ref_spread) ? 'change_up_1.gif'
+                    : 'change_down_1.gif'
+                    );
+                my $html_picture_tag =
+                    $spread_picture
+                    ? "<img src=\"" . request()->url_for("images/pages/flash-charts/$spread_picture") . "\" border=0>"
+                    : '==';
 
-            push @output, qq~<TD align="center" >$spread ($surface_source) $html_picture_tag $ref_spread ($ref_surface_source)</TD>~;
+                push @output, qq~<TD align="center" >$spread ($surface_source) $html_picture_tag $ref_spread ($ref_surface_source)</TD>~;
+            } else {
+                my $which_spread = defined $spread ? $spread : $ref_spread;
+                push @output, qq~<TD align="center" >$which_spread($surface_source)</TD>~;
+            }
 
         }
     }
