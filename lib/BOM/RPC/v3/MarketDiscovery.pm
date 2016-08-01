@@ -243,10 +243,10 @@ sub active_symbols {
         join('::', ('legal_allowed_markets', $params->{args}->{active_symbols}, $language, $landing_company_name, $appconfig_revision));
 
     my $active_symbols;
-    if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($key)
+    if (my $cached_symbols = BOM::System::RedisReplicated::redis_read()->get($key)
         and BOM::System::RedisReplicated::redis_read->ttl($key) > 0)
     {
-        $active_symbols = Sereal::Decoder->new->decode($active_symbols);
+        $active_symbols = Sereal::Decoder->new->decode($cached_symbols);
     } else {
         my @all_active = get_offerings_with_filter('underlying_symbol', {landing_company => $landing_company_name});
         # symbols would be active if we allow forward starting contracts on them.

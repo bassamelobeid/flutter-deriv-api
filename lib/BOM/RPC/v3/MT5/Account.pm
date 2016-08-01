@@ -83,8 +83,10 @@ sub mt5_new_account {
 
     $args->{group} = $group;
 
-    my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
-    $args->{country} = $country_name if ($country_name);
+    if ($args->{country}) {
+        my $country_name = Locale::Country::Extra->new()->country_from_code($args->{country});
+        $args->{country} = $country_name if ($country_name);
+    }
 
     my $status = BOM::MT5::User::create_user($args);
     if ($status->{error}) {
@@ -299,6 +301,9 @@ sub mt5_deposit {
     };
 
     if ($withdraw_error) {
+        # should be save to unlock account
+        BOM::Database::Transaction->unfreeze_client($fm_loginid);
+
         return $error_sub->(
             BOM::RPC::v3::Cashier::__client_withdrawal_notes({
                     client => $fm_client,
