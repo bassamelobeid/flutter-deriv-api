@@ -3,7 +3,6 @@ package BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use strict;
 use warnings;
 use JSON;
-use List::Util qw(first);
 use Format::Util::Numbers qw(roundnear);
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
@@ -119,17 +118,17 @@ sub process_pricing_events {
     delete $response->{contract_parameters};
     delete $response->{longcode};
 
-    foreach my $amount (keys %{$pricing_channel->{$serialized_args}}) {
+    foreach my $stash_data (values %{$pricing_channel->{$serialized_args}}) {
         my $results;
-        my $stash_data = $pricing_channel->{$serialized_args}->{$amount};
-        if (   !ref $stash_data
-            || !exists $stash_data->{args}
-            || !exists $stash_data->{args}->{contract_type}
-            || !$stash_data->{args}->{contract_type}
-            || !exists $stash_data->{uuid}
-            || !$stash_data->{uuid}
-            || !exists $stash_data->{contract_parameters}
-            || !$stash_data->{contract_parameters})
+        if (
+            !exists $stash_data->{error} && (    # do not rewrite errors
+                !exists $stash_data->{args}      # but if something else is missed - create error
+                || !exists $stash_data->{args}->{contract_type}
+                || !$stash_data->{args}->{contract_type}
+                || !exists $stash_data->{uuid}
+                || !$stash_data->{uuid}
+                || !exists $stash_data->{contract_parameters}
+                || !$stash_data->{contract_parameters}))
         {
             my $keys_count = scalar keys %{$pricing_channel->{$serialized_args}};
             warn "Proposal call pricing event processing: stash data missed! serialized_args: $serialized_args, total keys: $keys_count";
@@ -169,11 +168,11 @@ sub process_pricing_events {
             }
         }
 
-        $results->{echo_req} = $pricing_channel->{$serialized_args}->{$amount}->{args};
-        if (my $passthrough = $pricing_channel->{$serialized_args}->{$amount}->{args}->{passthrough}) {
+        $results->{echo_req} = $stash_data->{args};
+        if (my $passthrough = $stash_data->{passthrough}) {
             $results->{passthrough} = $passthrough;
         }
-        if (my $req_id = $pricing_channel->{$serialized_args}->{$amount}->{args}->{req_id}) {
+        if (my $req_id = $stash_data->{args}->{req_id}) {
             $results->{req_id} = $req_id;
         }
 
@@ -196,7 +195,7 @@ sub _price_stream_results_adjustment {
     my $resp_theo_probability = shift;
 
     # skips for spreads
-    return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
+    $_ eq $orig_args->{contract_type} and return for qw(SPREADU SPREADD);
 
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
