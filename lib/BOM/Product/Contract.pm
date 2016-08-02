@@ -1722,8 +1722,40 @@ sub _pricing_parameters {
         contract_type     => $self->pricing_code,
         underlying_symbol => $self->underlying->symbol,
         market_data       => $self->_market_data,
+        qf_market_data    => $self->_generate_market_data,
         market_convention => $self->_market_convention,
     };
+}
+
+sub _generate_market_data {
+    my $underlying = $self->underlying;
+
+    my %applicable_symbols = (
+        USD                                 => 1,
+        AUD                                 => 1,
+        CAD                                 => 1,
+        CNY                                 => 1,
+        NZD                                 => 1,
+        $underlying->quoted_currency_symbol => 1,
+        $underlying->asset_symbol           => 1,
+    );
+
+    my $ee = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
+        }
+    )->get_latest_events_for_period({
+            from => $self->date_start->minus_time_interval('10m'),
+            to   => $self->date_start->plus_time_interval('10m')
+        });
+
+    my @applicable_news =
+    sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
+
+    my $result = {};
+
+    $result->{economic_events} = \@applicable_news;
+
+    return $result;
 }
 
 sub _market_convention {
@@ -1783,32 +1815,6 @@ sub _market_data {
             my $vol = $volsurface->get_volatility($args);
 
             return $vol;
-        },
-        economic_events => sub {
-            my $underlying = $self->underlying;
-
-            my %applicable_symbols = (
-                USD                                 => 1,
-                AUD                                 => 1,
-                CAD                                 => 1,
-                CNY                                 => 1,
-                NZD                                 => 1,
-                $underlying->quoted_currency_symbol => 1,
-                $underlying->asset_symbol           => 1,
-            );
-
-            my $ee = Quant::Framework::EconomicEventCalendar->new({
-                    chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
-                }
-                )->get_latest_events_for_period({
-                    from => $self->date_start->minus_time_interval('10m'),
-                    to   => $self->date_start->plus_time_interval('10m')
-                });
-
-            my @applicable_news =
-                sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
-
-            return scalar @applicable_news;
         },
         get_economic_event => sub {
             my $args = shift;
