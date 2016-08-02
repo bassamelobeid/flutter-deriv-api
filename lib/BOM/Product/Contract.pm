@@ -1722,17 +1722,16 @@ sub _pricing_parameters {
         contract_type     => $self->pricing_code,
         underlying_symbol => $self->underlying->symbol,
         market_data       => $self->_market_data,
-        qf_market_data    => $self->_generate_market_data,
+        qf_market_data    => _generate_market_data($self->underlying, $self->date_start),
         market_convention => $self->_market_convention,
     };
 }
 
 sub _generate_market_data {
-    my $self       = shift;
-    my $underlying = $self->underlying;
-    my $for_date   = $self->underlying->for_date;
+    my ($underlying, $date_start) = @_;
 
-    my $result = {};
+    my $for_date = $underlying->for_date;
+    my $result   = {};
 
     $result->{economic_events} = sub {
         my %applicable_symbols = (
@@ -1748,12 +1747,12 @@ sub _generate_market_data {
         my $ee = Quant::Framework::EconomicEventCalendar->new({
                 chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
             }
-        )->get_latest_events_for_period({
-                from => $self->date_start->minus_time_interval('10m'),
-                to   => $self->date_start->plus_time_interval('10m')});
+            )->get_latest_events_for_period({
+                from => $date_start->minus_time_interval('10m'),
+                to   => $date_start->plus_time_interval('10m')});
 
         my @applicable_news =
-        sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
+            sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
 
         return \@applicable_news;
     };
