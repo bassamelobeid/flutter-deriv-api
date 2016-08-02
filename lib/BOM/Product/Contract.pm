@@ -1728,8 +1728,9 @@ sub _pricing_parameters {
 }
 
 sub _generate_market_data {
-    my $self = shift;
+    my $self       = shift;
     my $underlying = $self->underlying;
+    my $for_date   = $self->underlying->for_date;
 
     my %applicable_symbols = (
         USD                                 => 1,
@@ -1744,13 +1745,12 @@ sub _generate_market_data {
     my $ee = Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
         }
-    )->get_latest_events_for_period({
+        )->get_latest_events_for_period({
             from => $self->date_start->minus_time_interval('10m'),
-            to   => $self->date_start->plus_time_interval('10m')
-        });
+            to   => $self->date_start->plus_time_interval('10m')});
 
     my @applicable_news =
-    sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
+        sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
 
     my $result = {};
 
