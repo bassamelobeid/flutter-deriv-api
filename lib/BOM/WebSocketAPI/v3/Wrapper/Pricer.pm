@@ -113,10 +113,7 @@ sub process_pricing_events {
     return if not $pricing_channel or not $pricing_channel->{$serialized_args};
 
     my $response         = decode_json($message);
-    my $theo_probability = delete $response->{theo_probability};
-    my $rpc_time         = delete $response->{rpc_time};
-    delete $response->{contract_parameters};
-    delete $response->{longcode};
+    my ($theo_probability, $rpc_time) = delete @{$response}{qw/theo_probability rpc_time contract_parameters longcode/};
 
     foreach my $stash_data (values %{$pricing_channel->{$serialized_args}}) {
         my $results;
