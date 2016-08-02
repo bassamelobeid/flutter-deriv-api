@@ -154,6 +154,9 @@ sub before_forward {
             }
         }
         my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
+        if (ref $details eq 'HASH' && $details->{req_id}) {
+            delete $req_storage->{args}->{req_id};
+        }
         return $c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $details);
     }
 
