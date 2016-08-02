@@ -181,9 +181,8 @@ sub process_realtime_events {
                 return;
             }
 
-            $c->stash("${symbol}_display_decimals" => BOM::Market::Underlying->new($symbol)->display_decimals);
-            my $display_decimals = $c->stash("${symbol}_display_decimals");
-            my $tick             = {
+            my $display_decimals = $c->stash("${symbol}_display_decimals") // BOM::Market::Underlying->new($symbol)->display_decimals;
+            my $tick = {
                 id     => $feed_channels_type->{$channel}->{uuid},
                 symbol => $symbol,
                 epoch  => $m[1],
@@ -211,8 +210,8 @@ sub process_realtime_events {
                 return;
             }
 
-            my $display_decimals = $c->stash("${symbol}_display_decimals");
-            my $quote_format     = '%.' . $display_decimals . 'f';
+            my $display_decimals = $c->stash("${symbol}_display_decimals") // BOM::Market::Underlying->new($symbol)->display_decimals;
+            my $quote_format = '%.' . $display_decimals . 'f';
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             my $ohlc = {
                 id        => $feed_channels_type->{$channel}->{uuid},
