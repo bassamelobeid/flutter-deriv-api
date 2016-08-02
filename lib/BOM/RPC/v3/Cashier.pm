@@ -853,7 +853,13 @@ sub paymentagent_withdraw {
     BOM::Database::Transaction->unfreeze_client($paymentagent_loginid);
 
     if ($error) {
-        return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'), $error);
+        # too many attempts
+        if ($error =~ /BI102/) {
+            return $error_sub->(localize('Request too frequent. Please try again later.'), $error);
+        } else {
+            return $error_sub->(localize('An error occurred while processing request. If this error persists, please contact customer support'),
+                $error);
+        }
     }
 
     my $client_name = $client->first_name . ' ' . $client->last_name;
