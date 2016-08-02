@@ -12,9 +12,9 @@
         <div><input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" /></div>
         <div><button type="submit" id="btnLogin" class="button" name="login" value='<%= l('Login') %>'><%= l('Login') %></button></div>
         <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
-        <p class="links">
+        <div class="links" style="display:none;">
             <div id="oa_social_login_container"></div>
-        </p>
+        </div>
     </form>
 </div>
 
