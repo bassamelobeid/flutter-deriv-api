@@ -24,9 +24,9 @@
             <a class="pjaxload" id="lost-password" href="https://www.binary.com/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Lost Password?') %></a> |
             <a class="pjaxload" id="create-account" href="https://www.binary.com/<%= lc($r->language) %>/home.html"><%= l('Open an Account') %></a>
         </p>
-        <p class="links">
+        <div class="links" style="display:none;">
             <div id="oa_social_login_container"></div>
-        </p>
+        </div>
     </fieldset>
 </div>
 
