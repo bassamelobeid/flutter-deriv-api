@@ -39,7 +39,7 @@ sub make_barrier {
         });
     }
 
-    if ($self->tick_expiry and $string_version !~ /^S-?\d+P|[-+]\d+(\.\d+)?$/i) {
+    if ($self->tick_expiry and $self->category_code ne 'asian' and $string_version !~ /^S-?\d+P|[-+]\d+(\.\d+)?$/i) {
         $self->add_error({
             severity          => 100,
             message           => 'Intend to buy tick expiry contract with absolute barrier.',
