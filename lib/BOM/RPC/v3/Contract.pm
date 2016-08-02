@@ -88,7 +88,7 @@ sub prepare_ask {
     if (defined $p2{barrier} && defined $p2{barrier2}) {
         $p2{low_barrier}  = delete $p2{barrier2};
         $p2{high_barrier} = delete $p2{barrier};
-    } elsif (exists $p1->{contract_type} && $p1->{contract_type} !~ /^(SPREAD|ASIAN|DIGITEVEN|DIGITODD)/) {
+    } elsif ($p1->{contract_type} !~ /^(SPREAD|ASIAN|DIGITEVEN|DIGITODD)/) {
         $p2{barrier} //= 'S0P';
         delete $p2{barrier2};
     }
