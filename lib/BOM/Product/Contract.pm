@@ -1728,6 +1728,7 @@ sub _pricing_parameters {
 }
 
 sub _generate_market_data {
+    my $self = shift;
     my $underlying = $self->underlying;
 
     my %applicable_symbols = (
