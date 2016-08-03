@@ -647,6 +647,21 @@ print qq{
   <input type=hidden name=whattodo value=uploadID>
   <input type=hidden name=broker value=$broker>
   <input type=hidden name=loginID value=$loginid>
+  <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence)</label>
+  <select id="docnationalityselect" name="docnationality">
+};
+
+foreach my $code (sort BOM::Platform::Countries->instance->countries->all_country_codes) {
+    my $country_name = BOM::Platform::Countries->instance->countries->country_from_code($country_name);
+    if (BOM::Platform::Countries->instance->restricted_country($code)) {
+        print "<option value='$code' disabled>$country_name</option>";
+    } else {
+        print "<option value='$code'>$country_name</option>";
+    }
+}
+
+print qq{
+  </select>
   Expiration date:<input type="text" size=10 name="expiration_date"><i> format YYYY-MM-DD </i>
   <input type=submit value="Upload new ID doc.">
 </form>
