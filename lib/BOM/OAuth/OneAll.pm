@@ -10,10 +10,7 @@ use BOM::Database::Model::UserConnect;
 sub callback {
     my $c = shift;
 
-    my $redirect_uri = $c->req->url->path('/authorize')->to_abs;
-    if ($c->req->url->to_abs->host =~ 'binaryqa') { # for binaryqaXX
-        $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
-    }
+    my $redirect_uri = $c->req->url->path('/oauth2/authorize')->to_abs;
 
     my $connection_token = $c->param('connection_token') // '';
     unless ($connection_token) {
