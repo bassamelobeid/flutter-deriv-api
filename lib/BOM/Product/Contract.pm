@@ -1742,16 +1742,17 @@ sub _generate_market_data {
         $underlying->quoted_currency_symbol => 1,
         $underlying->asset_symbol           => 1,
     );
+    $DB::single = 1;
 
     my $ee = Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
         }
-    )->get_latest_events_for_period({
+        )->get_latest_events_for_period({
             from => $date_start->minus_time_interval('10m'),
             to   => $date_start->plus_time_interval('10m')});
 
     my @applicable_news =
-    sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
+        sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
 
     $result->{economic_events} = \@applicable_news;
     return $result;
