@@ -232,6 +232,19 @@ sub process_bid_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
     for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         my $results;
+        if (
+            !exists $stash_data->{error} && (    # do not rewrite errors
+                !exists $stash_data->{args}      # but if something else is missed - create error
+                || !exists $stash_data->{uuid}
+                || !$stash_data->{uuid}
+                || !exists $stash_data->{cache}
+                || !$stash_data->{cache}))
+        {
+            my $keys_count = scalar keys %{$pricing_channel->{$redis_channel}};
+            warn "Proposal open contract call pricing event processing: stash data missed! serialized_args: $redis_channel, total keys: $keys_count";
+            $response->{error}->{code}              = 'InternalServerError';
+            $response->{error}->{message_to_client} = 'Internal server error';
+        }
         if ($response and exists $response->{error}) {
             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$redis_channel}->{uuid});
             if ($response->{error}->{message_to_client_array}) {
@@ -285,8 +298,8 @@ sub process_ask_event {
                 || !$stash_data->{args}->{contract_type}
                 || !exists $stash_data->{uuid}
                 || !$stash_data->{uuid}
-                || !exists $stash_data->{contract_parameters}
-                || !$stash_data->{contract_parameters}))
+                || !exists $stash_data->{cache}
+                || !$stash_data->{cache}))
         {
             my $keys_count = scalar keys %{$pricing_channel->{$redis_channel}};
             warn "Proposal call pricing event processing: stash data missed! serialized_args: $redis_channel, total keys: $keys_count";
@@ -356,7 +369,7 @@ sub _price_stream_results_adjustment {
     my $resp_theo_probability = shift;
 
     # skips for spreads
-    $_ eq $orig_args->{contract_type} and return for qw(SPREADU SPREADD);
+    $_ eq $orig_args->{contract_type} and return $results for qw(SPREADU SPREADD);
 
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
