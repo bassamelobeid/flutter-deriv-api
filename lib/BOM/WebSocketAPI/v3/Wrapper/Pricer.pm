@@ -236,9 +236,7 @@ sub process_bid_event {
             !exists $stash_data->{error} && (    # do not rewrite errors
                 !exists $stash_data->{args}      # but if something else is missed - create error
                 || !exists $stash_data->{uuid}
-                || !$stash_data->{uuid}
-                || !exists $stash_data->{cache}
-                || !$stash_data->{cache}))
+                || !$stash_data->{uuid} || !exists $stash_data->{cache} || !$stash_data->{cache}))
         {
             my $keys_count = scalar keys %{$pricing_channel->{$redis_channel}};
             warn "Proposal open contract call pricing event processing: stash data missed! serialized_args: $redis_channel, total keys: $keys_count";
