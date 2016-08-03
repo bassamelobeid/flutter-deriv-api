@@ -49,9 +49,12 @@ $report->{titlfy} = sub {
 };
 $report->{aff_titlfy} = sub {
     my $href = shift;
+    my $username = $href->{username};
+    my $email = $href->{email};
 
-    return $href->{username} . ' (' . $href->{email} . ')';
+    return ($email and $username) ? $username . ' (' . $email . ')'  : ($username // $email) ;
 };
+
 BOM::Platform::Context::template->process('backoffice/risk_dashboard.html.tt', $report);
 
 code_exit_BO();
