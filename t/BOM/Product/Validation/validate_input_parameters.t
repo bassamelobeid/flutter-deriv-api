@@ -179,6 +179,15 @@ subtest 'invalid barrier for tick expiry' => sub {
     $bet_params->{barrier} = 'S10P';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
+    $bet_params->{barrier} = 100;
+    $bet_params->{bet_type} = 'ASIANU';
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'invalid to buy for asian';
+    delete $bet_params->{date_pricing};
+    $bet_params->{entry_tick} = $fake_tick;
+    $bet_params->{exit_tick} = $fake_tick;
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_sell, 'valid to sell for asian';
 };
 
 done_testing();
