@@ -46,7 +46,7 @@ install:
     - /tmp/travis-scripts/setup_postfix.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
-    - prove --timer -lr --rc=.proverc t/
+    - prove --timer -lr --rc=.proverc --norc t/BOM/RPC/15_contract.t
 
 after_script:
     - /tmp/travis-scripts/wait_for_ssh.sh
