@@ -18,10 +18,11 @@ sub proposal {
     my $args = $req_storage->{args};
 
     $c->call_rpc({
-            args     => $args,
-            method   => 'send_ask',
-            msg_type => 'proposal',
-            success  => sub {
+            args        => $args,
+            method      => 'send_ask',
+            msg_type    => 'proposal',
+            call_params => {language => $c->stash('language')},
+            success     => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $subscription_cache = {
                     contract_parameters => delete $rpc_response->{contract_parameters},
