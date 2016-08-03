@@ -1733,30 +1733,27 @@ sub _generate_market_data {
     my $for_date = $underlying->for_date;
     my $result   = {};
 
-    $result->{economic_events} = sub {
-        my %applicable_symbols = (
-            USD                                 => 1,
-            AUD                                 => 1,
-            CAD                                 => 1,
-            CNY                                 => 1,
-            NZD                                 => 1,
-            $underlying->quoted_currency_symbol => 1,
-            $underlying->asset_symbol           => 1,
-        );
+    my %applicable_symbols = (
+        USD                                 => 1,
+        AUD                                 => 1,
+        CAD                                 => 1,
+        CNY                                 => 1,
+        NZD                                 => 1,
+        $underlying->quoted_currency_symbol => 1,
+        $underlying->asset_symbol           => 1,
+    );
 
-        my $ee = Quant::Framework::EconomicEventCalendar->new({
-                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
-            }
-            )->get_latest_events_for_period({
-                from => $date_start->minus_time_interval('10m'),
-                to   => $date_start->plus_time_interval('10m')});
+    my $ee = Quant::Framework::EconomicEventCalendar->new({
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
+        }
+    )->get_latest_events_for_period({
+            from => $date_start->minus_time_interval('10m'),
+            to   => $date_start->plus_time_interval('10m')});
 
-        my @applicable_news =
-            sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
+    my @applicable_news =
+    sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
 
-        return \@applicable_news;
-    };
-
+    $result->{economic_events} = \@applicable_news;
     return $result;
 }
 
