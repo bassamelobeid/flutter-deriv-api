@@ -10,6 +10,7 @@ use Data::Dumper;
 use BOM::RPC::v3::Utility;
 use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Locale;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
@@ -318,12 +319,31 @@ sub get_bid {
     return $response;
 }
 
+sub send_bid {
+    my $params = shift;
+
+    my $tv = [Time::HiRes::gettimeofday];
+
+    my $response;
+    try {
+        $response = get_bid($params->{args});
+    }
+    catch {
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'pricing error',
+                message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
+    };
+
+    $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
+
+    return $response;
+}
+
 sub send_ask {
     my $params             = shift;
-    my $args               = $params->{args};
     my $from_pricer_daemon = shift;
 
-    my $symbol   = $args->{symbol};
+    my $symbol   = $params->{args}->{symbol};
     my $response = validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -333,12 +353,10 @@ sub send_ask {
 
     my $tv = [Time::HiRes::gettimeofday];
 
-    my %details = %{$args};
     try {
         my $arguments = {
             from_pricer_daemon => $from_pricer_daemon,
-            %details,
-        };
+            %{$params->{args}}};
         my $contract_parameters = prepare_ask($arguments);
         $response = _get_ask($contract_parameters, $params->{app_markup_percentage});
         $response->{contract_parameters} = $contract_parameters;
