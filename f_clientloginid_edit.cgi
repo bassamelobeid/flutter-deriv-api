@@ -31,7 +31,10 @@ my %input = %{request()->params};
 
 PrintContentType();
 my $dbloc     = BOM::Platform::Runtime->instance->app_config->system->directory->db;
-my $loginid   = trim(uc $input{loginID}) || die 'failed to pass loginID (note mixed case!)';
+my $loginid   = $input{loginID};
+if (not $loginid) { print "<p> Empty loginID.</p>"; code_exit_BO();}
+$loginid = trim(uc $loginid);
+
 my $self_post = request()->url_for('backoffice/f_clientloginid_edit.cgi');
 my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
 
