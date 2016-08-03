@@ -3,7 +3,6 @@ package BOM::WebSocketAPI::v3::Wrapper::Pricer;
 use strict;
 use warnings;
 use JSON;
-use List::Util qw(first);
 use Format::Util::Numbers qw(roundnear);
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
@@ -213,7 +212,6 @@ sub _create_pricer_channel {
 sub process_pricing_events {
     my ($c, $message, $channel_name) = @_;
 
-    # in case that it is a spread
     return if not $message or not $c->tx;
     my $pricing_channel = $c->stash('pricing_channel');
     return if not $pricing_channel or not $pricing_channel->{$channel_name};
@@ -232,7 +230,7 @@ sub process_pricing_events {
 
 sub process_bid_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
-    for my $subchannel (keys %{$pricing_channel->{$redis_channel}}) {
+    for my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         my $results;
         if ($response and exists $response->{error}) {
             BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$redis_channel}->{uuid});
@@ -245,8 +243,8 @@ sub process_bid_event {
             $results = $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
             $results->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
         } else {
-            my $passed_fields = $pricing_channel->{$redis_channel}->{$subchannel}->{cache};
-            $response->{id}              = $pricing_channel->{$redis_channel}->{$subchannel}->{uuid};
+            my $passed_fields = $stash_data->{cache};
+            $response->{id}              = $stash_data->{uuid};
             $response->{transaction_ids} = $passed_fields->{transaction_ids};
             $response->{buy_price}       = $passed_fields->{buy_price};
             $response->{purchase_time}   = $passed_fields->{purchase_time};
@@ -255,7 +253,7 @@ sub process_bid_event {
                 msg_type                 => 'proposal_open_contract',
                 'proposal_open_contract' => {%$response,},
             };
-            _prepare_results($results, $pricing_channel, $redis_channel, $subchannel);
+            _prepare_results($results, $pricing_channel, $redis_channel, $stash_data);
         }
         if ($c->stash('debug')) {
             $results->{debug} = {
@@ -278,10 +276,25 @@ sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
 
     my $theo_probability = $response->{theo_probability};
-    foreach my $subchannel (keys %{$pricing_channel->{$redis_channel}}) {
+    foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         my $results;
+        if (
+            !exists $stash_data->{error} && (    # do not rewrite errors
+                !exists $stash_data->{args}      # but if something else is missed - create error
+                || !exists $stash_data->{args}->{contract_type}
+                || !$stash_data->{args}->{contract_type}
+                || !exists $stash_data->{uuid}
+                || !$stash_data->{uuid}
+                || !exists $stash_data->{contract_parameters}
+                || !$stash_data->{contract_parameters}))
+        {
+            my $keys_count = scalar keys %{$pricing_channel->{$redis_channel}};
+            warn "Proposal call pricing event processing: stash data missed! serialized_args: $redis_channel, total keys: $keys_count";
+            $response->{error}->{code}              = 'InternalServerError';
+            $response->{error}->{message_to_client} = 'Internal server error';
+        }
         if ($response and exists $response->{error}) {
-            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $pricing_channel->{$redis_channel}->{$subchannel}->{uuid});
+            BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $stash_data->{uuid});
             # in pricer_dameon everything happens in Eng to maximize the collisions. If translations has params it will come as message_to_client_array.
             # eitherway it need l10n here.
             if ($response->{error}->{message_to_client_array}) {
@@ -294,11 +307,8 @@ sub process_ask_event {
             $err->{error}->{details} = $response->{error}->{details} if (exists $response->{error}->{details});
             $results = $err;
         } else {
-            my $adjusted_results = _price_stream_results_adjustment(
-                $pricing_channel->{$redis_channel}->{$subchannel}->{args},
-                $pricing_channel->{$redis_channel}->{$subchannel}->{cache}->{contract_parameters},
-                $response, $theo_probability
-            );
+            my $adjusted_results =
+                _price_stream_results_adjustment($stash_data->{args}, $stash_data->{cache}->{contract_parameters}, $response, $theo_probability);
             if (my $ref = $adjusted_results->{error}) {
                 my $err = $c->new_error('proposal', $ref->{code}, $ref->{message_to_client});
                 $err->{error}->{details} = $ref->{details} if exists $ref->{details};
@@ -307,13 +317,13 @@ sub process_ask_event {
                 $results = {
                     msg_type   => 'proposal',
                     'proposal' => {
-                        id       => $pricing_channel->{$redis_channel}->{$subchannel}->{uuid},
-                        longcode => $pricing_channel->{$redis_channel}->{$subchannel}->{cache}->{longcode},
+                        id       => $stash_data->{uuid},
+                        longcode => $stash_data->{longcode},
                         %$adjusted_results,
                     },
                 };
             }
-            _prepare_results($results, $pricing_channel, $redis_channel, $subchannel);
+            _prepare_results($results, $pricing_channel, $redis_channel, $stash_data);
         }
         if ($c->stash('debug')) {
             $results->{debug} = {
@@ -328,12 +338,12 @@ sub process_ask_event {
 }
 
 sub _prepare_results {
-    my ($results, $pricing_channel, $redis_channel, $subchannel) = @_;
-    $results->{echo_req} = $pricing_channel->{$redis_channel}->{$subchannel}->{args};
-    if (my $passthrough = $pricing_channel->{$redis_channel}->{$subchannel}->{args}->{passthrough}) {
+    my ($results, $pricing_channel, $redis_channel, $stash_data) = @_;
+    $results->{echo_req} = $stash_data->{args};
+    if (my $passthrough = $stash_data->{args}->{passthrough}) {
         $results->{passthrough} = $passthrough;
     }
-    if (my $req_id = $pricing_channel->{$redis_channel}->{$subchannel}->{args}->{req_id}) {
+    if (my $req_id = $stash_data->{args}->{req_id}) {
         $results->{req_id} = $req_id;
     }
     return;
@@ -346,7 +356,7 @@ sub _price_stream_results_adjustment {
     my $resp_theo_probability = shift;
 
     # skips for spreads
-    return $results if first { $orig_args->{contract_type} eq $_ } qw(SPREADU SPREADD);
+    $_ eq $orig_args->{contract_type} and return for qw(SPREADU SPREADD);
 
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
@@ -377,8 +387,6 @@ sub _price_stream_results_adjustment {
 
     $results->{ask_price} = $results->{display_value} = $contract->ask_price;
     $results->{payout} = $contract->payout;
-    #cleanup
-    delete $results->{theo_probability};
 
     return $results;
 }
