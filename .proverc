@@ -1,2 +1,2 @@
 -MBOM::Test
--MTest::NoWarnings
+-MTest::FailWarnings
