@@ -1,7 +1,6 @@
 package BOM::Product::Contract;
 
 use Moose;
-use Try::Tiny;
 
 # very bad name, not sure why it needs to be
 # attached to Validatable.
