@@ -192,7 +192,7 @@ sub _price_stream_results_adjustment {
     my $resp_theo_probability = shift;
 
     # skips for spreads
-    $_ eq $orig_args->{contract_type} and return for qw(SPREADU SPREADD);
+    $_ eq $orig_args->{contract_type} and return $results for qw(SPREADU SPREADD);
 
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
