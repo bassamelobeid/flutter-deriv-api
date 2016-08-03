@@ -11,7 +11,6 @@ use BOM::WebSocketAPI::v3::Wrapper::Authorize;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Accounts;
 use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
-use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::Pricer;
 
@@ -264,7 +263,7 @@ sub startup {
             'proposal_open_contract',
             {
                 require_auth    => 'read',
-                rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
+                rpc_response_cb => \&BOM::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract,
             }
         ],
         [

@@ -121,7 +121,8 @@ $t = $t->send_ok({
         json => {
             proposal_open_contract => 1,
             subscribe              => 1,
-            passthrough            => 'sample'
+            req_id                 => 456,
+            passthrough            => {'sample' => 1},
         }});
 
 $t   = $t->message_ok;
@@ -152,20 +153,23 @@ my $msg = {
     action_type             => 'sell',
     account_id              => $contract_details->[0]->{account_id},
     financial_market_bet_id => $contract_id,
-    amount                  => 2500
+    amount                  => 2500,
+    short_code              => $contract_details->[0]->{short_code},
+    currency_code           => 'USD',
 };
 my $json = JSON::to_json($msg);
 BOM::System::RedisReplicated::redis_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
 
 $t   = $t->message_ok;
 $res = decode_json($t->message->[1]);
+note explain $res;
 is $res->{msg_type}, 'proposal_open_contract', 'Got message about selling contract';
 ok $res->{proposal_open_contract}->{sell_time},  'Got message about selling contract';
 ok $res->{proposal_open_contract}->{sell_price}, 'Got message about selling contract';
 is $res->{proposal_open_contract}->{ok},         1, 'Got message about selling contract';
-is $call_params->{contract_id}, $contract_id, 'Request RPC to sell contract';
-ok $call_params->{short_code},  'Request RPC to sell contract';
-ok $call_params->{sell_time},   'Request RPC to sell contract';
+is $call_params->{contract_id}, $contract_id, 'Request RPC to sell contract 1';
+ok $call_params->{short_code},  'Request RPC to sell contract 2';
+ok $call_params->{sell_time},   'Request RPC to sell contract 3';
 ok $url =~ /get_bid/;
 
 $module->unmock_all;
