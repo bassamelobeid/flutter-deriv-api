@@ -94,7 +94,7 @@ foreach my $i (@instrumentlist) {
             $timestamp = $tick->{epoch};
             $price     = $tick->{quote};
         } else {
-            my $quote = try { decode_json(path($feedloc, $p, $underlying->symbol)->slurp) };
+            my $quote = try { decode_json(path('/feed/provider-activity', $p, $underlying->symbol)->slurp) };
             ($timestamp, $price) = ($quote->{epoch}, $quote->{price}) if $quote and ref $quote eq 'HASH';
         }
         unless (defined $timestamp and defined $price) {
