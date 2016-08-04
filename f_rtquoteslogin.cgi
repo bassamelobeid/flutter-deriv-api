@@ -10,8 +10,9 @@ use BOM::Market::UnderlyingDB;
 use BOM::Market::Registry;
 use Proc::Killall;
 use BOM::Market::Registry;
-use Feed::Listener::Quote;
 use Try::Tiny;
+use Path::Tiny;
+use JSON::XS;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -93,8 +94,8 @@ foreach my $i (@instrumentlist) {
             $timestamp = $tick->{epoch};
             $price     = $tick->{quote};
         } else {
-            my $quote = try { Cache::RedisDB->get('PROVIDER_LAST_QUOTE', "$p/" . $underlying->symbol) };
-            ($timestamp, $price) = ($quote->epoch, $quote->price) if $quote and ref $quote eq 'Feed::Listener::Quote';
+            my $quote = try { decode_json(path($feedloc, $p, $underlying->symbol)->slurp) };
+            ($timestamp, $price) = ($quote->{epoch}, $quote->{price}) if $quote and ref $quote eq 'HASH';
         }
         unless (defined $timestamp and defined $price) {
             print "<td bgcolor=#FFFFCE>&nbsp;</td>";
