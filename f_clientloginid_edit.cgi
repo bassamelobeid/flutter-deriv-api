@@ -663,6 +663,7 @@ print qq{
   <br/>
   <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence)</label>
   <select id="docnationalityselect" name="docnationality">
+    <option value="">Please select</option>
 };
 
 foreach my $code (sort BOM::Platform::Countries->instance->countries->all_country_codes) {
