@@ -11,15 +11,15 @@ $ENV{'REDIS_CACHE_SERVER'} = $ENV{'REDIS_CACHE_SERVER'} // '127.0.0.1:6379';
 
 Cache::RedisDB->redis();
 
-Cache::RedisDB->set('COMBINED_REALTIME', 'frxNGNUSD', {quote => 167.10});
-Cache::RedisDB->set('COMBINED_REALTIME', 'frxMGNUSD', {quote => 2});
+Cache::RedisDB->set('QUOTE', 'frxNGNUSD', {quote => 167.10});
+Cache::RedisDB->set('QUOTE', 'frxMGNUSD', {quote => 2});
 
 #say Cache::RedisDB->get('COMBINED_REALTIME','frxNGNUSD')->{quote};
 
-is(BOM::Platform::CurrencyConverter::in_USD(1, 'NGN'), Cache::RedisDB->get('COMBINED_REALTIME', 'frxNGNUSD')->{quote}, "1 USD to NGN is 167.10 NGN");
+is(BOM::Platform::CurrencyConverter::in_USD(1, 'NGN'), Cache::RedisDB->get('QUOTE', 'frxNGNUSD')->{quote}, "1 USD to NGN is 167.10 NGN");
 is(
     BOM::Platform::CurrencyConverter::in_USD(3, 'NGN'),
-    Cache::RedisDB->get('COMBINED_REALTIME', 'frxNGNUSD')->{quote} * 3,
+    Cache::RedisDB->get('QUOTE', 'frxNGNUSD')->{quote} * 3,
     "3 USD to NGN is 501.30 NGN"
 );
 dies_ok { BOM::Platform::CurrencyConverter::in_USD('NGN', '') } 'No valid amount or source currency was provided - non-numeric amount';
@@ -41,8 +41,8 @@ is(BOM::Platform::CurrencyConverter::amount_from_to_currency(2,  'NGN', 'MGN'), 
 is(BOM::Platform::CurrencyConverter::amount_from_to_currency(2,  'USD', 'MGN'), 1,     'MGN => USD');
 is(BOM::Platform::CurrencyConverter::amount_from_to_currency(10, 'USD', 'USD'), 10,    'Calling on "in_USD" from dollar to dollar');
 
-Cache::RedisDB->del('COMBINED_REALTIME', 'frxNGNUSD', {quote => 167.10});
-Cache::RedisDB->del('COMBINED_REALTIME', 'frxMGNUSD', {quote => 2});
+Cache::RedisDB->del('QUOTE', 'frxNGNUSD', {quote => 167.10});
+Cache::RedisDB->del('QUOTE', 'frxMGNUSD', {quote => 2});
 
 done_testing();
 

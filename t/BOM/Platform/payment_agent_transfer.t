@@ -6,7 +6,7 @@ use Test::More tests => 3;
 use Test::NoWarnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
+use BOM::Database::ClientDB;
 
 use Test::MockModule;
 use DateTime;
@@ -14,7 +14,7 @@ use DateTime;
 my ($client,         $pa_client);
 my ($client_account, $pa_account);
 
-my ($client_datamapper, $pa_datamapper);
+my ($clientdb, $amount_data);
 my ($total_withdrawal,  $withdrawal_count);
 
 my $transfer_amount = 2000.2525;
@@ -69,12 +69,12 @@ subtest 'Client withdraw money via payment agent' => sub {
     'Client withdrawal: client transfer money to payment agent';
 
     lives_ok {
-        $pa_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
-            client_loginid => $pa_client->loginid,
-            currency_code  => 'USD',
-        });
-
-        ($total_withdrawal, $withdrawal_count) = $pa_datamapper->get_today_payment_agent_withdrawal_sum_count();
+            $clientdb = BOM::Database::ClientDB->new({
+                client_loginid => $pa_client->loginid,
+                operation      => 'replica',
+            });
+        $amount_data = $clientdb->fetchall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$pa_client->loginid]);
+        ($total_withdrawal, $withdrawal_count) = ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
     }
     'PA get_today_payment_agent_withdrawal_sum_count';
 
@@ -82,12 +82,12 @@ subtest 'Client withdraw money via payment agent' => sub {
     cmp_ok($withdrawal_count, '==', '0', 'PA withdrawal count');
 
     lives_ok {
-        $client_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
-            client_loginid => $client->loginid,
-            currency_code  => 'USD',
-        });
-
-        ($total_withdrawal, $withdrawal_count) = $client_datamapper->get_today_payment_agent_withdrawal_sum_count();
+            $clientdb = BOM::Database::ClientDB->new({
+                client_loginid => $client->loginid,
+                operation      => 'replica',
+            });
+        $amount_data = $clientdb->fetchall_arrayref('select * from payment_v1.get_today_payment_agent_withdrawal_sum_count(?)', [$client->loginid]);
+        ($total_withdrawal, $withdrawal_count) = ($amount_data->[0]->{amount}, $amount_data->[0]->{count});
     }
     'Client get_today_payment_agent_withdrawal_sum_count';
 

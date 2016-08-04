@@ -308,5 +308,5 @@ subtest 'MT5 logins' => sub {
     @mt5_logins = $user->mt5_logins;
     cmp_deeply(\@mt5_logins, ['MT1000', 'MT2000'], 'MT5 logins match');
 
-    ok $_->loginid !~ /^MT\d+$/, 'should not include MT logins-'.$_->loginid for ($user->clients);
+    ok $_->loginid !~ /^MT\d+$/, 'should not include MT logins-' . $_->loginid for ($user->clients);
 };

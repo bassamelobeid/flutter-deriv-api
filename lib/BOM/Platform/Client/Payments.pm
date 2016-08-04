@@ -12,7 +12,7 @@ use List::Util qw(min);
 use BOM::Platform::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Platform::Client::IDAuthentication;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
-use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
+use BOM::Database::ClientDB;
 
 # NOTE.. this is a 'mix-in' of extra subs for BOM::Platform::Client.  It is not a distinct Class.
 
@@ -669,9 +669,14 @@ sub validate_agent_payment {
 
     my $total_amount = scalar @$total ? $total->[0]->amount || 0 : 0;
 
-    my $payment_agent_transfer_datamapper =
-        BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({client_loginid => $payment_agent->loginid});
-    my $pa_total_amount = $payment_agent_transfer_datamapper->get_today_client_payment_agent_transfer_total_amount;
+    my $clientdb = BOM::Database::ClientDB->new({
+        client_loginid => $payment_agent->loginid,
+        operation      => 'replica',
+    });
+    my $amount_from_db =
+        $clientdb->fetchall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$payment_agent->loginid]);
+    # db function returns 1 row with 'amount' key
+    my $pa_total_amount = $amount_from_db->[0]->{amount};
     $pa_total_amount = amount_from_to_currency($pa_total_amount + abs($amount), $payment_agent->default_account->currency_code, 'USD');
 
     if ($pa_total_amount > 100_000) {
