@@ -23,8 +23,8 @@ use BOM::System::Chronicle;
 use BOM::Market::SubMarket;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Underlying;
+use Quant::Framework::Spot;
 
-initialize_realtime_ticks_db();
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -47,6 +47,8 @@ Quant::Framework::Utils::Test::create_doc(
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
+
+initialize_realtime_ticks_db();
 
 # INCORRECT DATA in support of in_quiet_period testing, only.
 # Update if you want to test some other exchange info here.
@@ -83,6 +85,7 @@ subtest 'display_decimals' => sub {
         };
         my $underlying;
         foreach my $symbol (keys %$symbols_decimals) {
+            print "trying dd for $symbol...\n";
             $underlying = BOM::Market::Underlying->new({symbol => $symbol});
             my $decimals = $symbols_decimals->{$symbol};
             is $underlying->display_decimals, $decimals, $symbol . ' display_decimals';
@@ -116,6 +119,7 @@ subtest 'display_decimals' => sub {
         }
 
         my $r100 = BOM::Market::Underlying->new({symbol => 'R_100'});
+        $DB::single=1;
         is $r100->dividend_rate_for(0.5), 3.5, 'correct dividend rate';
         is $r100->dividend_rate_for(1.0), 3.5, 'correct dividend rate';
 
@@ -345,16 +349,16 @@ subtest 'tick_at' => sub {
         underlying => 'frxEURUSD'
     });
 
-    is($u->tick_at(Date::Utility->new('2009-05-11 06:10:39')->epoch)->quote,
+    is($u->spot_source->tick_at(Date::Utility->new('2009-05-11 06:10:39')->epoch)->quote,
         1.3634, "We have tick for that time and it's not the last tick received");
-    is($u->tick_at(Date::Utility->new('2009-05-11 06:10:40')->epoch)->quote,
+    is($u->spot_source->tick_at(Date::Utility->new('2009-05-11 06:10:40')->epoch)->quote,
         1.3634, 'We dont have tick for that second but we do have a previous one and at least one more after that');
-    is($u->tick_at(Date::Utility->new('2009-05-11 06:10:41')->epoch)->quote,
+    is($u->spot_source->tick_at(Date::Utility->new('2009-05-11 06:10:41')->epoch)->quote,
         1.3633, "We have tick for that time and it's not the last tick received");
-    is($u->tick_at(Date::Utility->new('2009-05-11 06:11:26')->epoch)->quote,
+    is($u->spot_source->tick_at(Date::Utility->new('2009-05-11 06:11:26')->epoch)->quote,
         1.3634, 'That is the last tick we received but it happens to be at the exact time');
     #NOTE: Do not delete this test case. This is the scenario where we do not have the tick but we return a tick
-    is($u->tick_at(Date::Utility->new('2009-05-11 06:11:27')->epoch),
+    is($u->spot_source->tick_at(Date::Utility->new('2009-05-11 06:11:27')->epoch),
         undef, "The closest tick to that time is the last tick received that day. Cannot guarantee we won't receive a closer tick later.");
 };
 
@@ -407,12 +411,18 @@ subtest 'all methods on a selection of underlyings' => sub {
         low   => 1,
         ticks => 1
     };
-    $FRW_frxEURUSD_ON->set_combined_realtime($fake_forward_data);
-    $FRW_frxEURUSD_TN->set_combined_realtime($fake_forward_data);
-    $FRW_frxEURUSD_1W->set_combined_realtime($fake_forward_data);
-    $FRW_frxUSDEUR_ON->set_combined_realtime($fake_forward_data);
-    $FRW_frxUSDEUR_TN->set_combined_realtime($fake_forward_data);
-    $FRW_frxUSDEUR_1W->set_combined_realtime($fake_forward_data);
+
+    warnings_like {
+        $FRW_frxEURUSD_ON->set_combined_realtime($fake_forward_data);
+        $FRW_frxEURUSD_TN->set_combined_realtime($fake_forward_data);
+        $FRW_frxEURUSD_1W->set_combined_realtime($fake_forward_data);
+        $FRW_frxUSDEUR_ON->set_combined_realtime($fake_forward_data);
+        $FRW_frxUSDEUR_TN->set_combined_realtime($fake_forward_data);
+        $FRW_frxUSDEUR_1W->set_combined_realtime($fake_forward_data);
+    } 
+    [qr/^Unknown symbol/, qr/^Unknown symbol/, qr/^Unknown symbol/, 
+        qr/^Unknown symbol/, qr/^Unknown symbol/, qr/^Unknown symbol/], "Expected warning is thrown";
+
     $USDEUR->set_combined_realtime($fake_forward_data);
     lives_ok {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -527,15 +537,15 @@ subtest 'all methods on a selection of underlyings' => sub {
 
     my $test_date = $oldEU->for_date;
 
-    is($EURUSD->tick_at($test_date->epoch)->quote, '1.2859', 'tick_at has some value');
-    cmp_ok($EURUSD->tick_at($test_date->epoch)->quote, '==', $oldEU->spot, 'Spot for wormholed underlying and tick_at on standard underlying match');
+    is($EURUSD->spot_source->tick_at($test_date->epoch)->quote, '1.2859', 'spot_source->tick_at has some value');
+    cmp_ok($EURUSD->spot_source->tick_at($test_date->epoch)->quote, '==', $oldEU->spot, 'Spot for wormholed underlying and tick_at on standard underlying match');
 
-    cmp_ok($EURUSD->spot_tick->epoch, '>',  $test_date->epoch, 'current spot is newer than the wormhole date');
-    cmp_ok($oldEU->spot_tick->epoch,  '<=', $test_date->epoch, ' plus, spot_tick for old EURUSD is NOT');
-    cmp_ok($oldEU->spot_tick->epoch,  '==', 1326957371,        ' in fact, it is exactly the time we expect');
+    cmp_ok($EURUSD->spot_source->spot_tick->epoch, '>',  $test_date->epoch, 'current spot is newer than the wormhole date');
+    cmp_ok($oldEU->spot_source->spot_tick->epoch,  '<=', $test_date->epoch, ' plus, spot_tick for old EURUSD is NOT');
+    cmp_ok($oldEU->spot_source->spot_tick->epoch,  '==', 1326957371,        ' in fact, it is exactly the time we expect');
 
     cmp_ok($oldEU->spot,                               '==', 1.2859,           'spot for old EURUSD is correct');
-    cmp_ok($USDEUR->tick_at($test_date->epoch)->quote, '==', 1 / $oldEU->spot, 'And the inverted underlying is flipped');
+    cmp_ok($USDEUR->spot_source->tick_at($test_date->epoch)->quote, '==', 1 / $oldEU->spot, 'And the inverted underlying is flipped');
     my $next_tick     = $EURUSD->next_tick_after($test_date->epoch);
     my $inverted_next = $USDEUR->next_tick_after($test_date->epoch);
 
@@ -547,8 +557,8 @@ subtest 'all methods on a selection of underlyings' => sub {
     is(Date::Utility->new($next_tick->epoch)->date, $test_date->date, ' on the same day');
 
     subtest 'asking for very old ticks' => sub {
-        is($EURUSD->tick_at(123456789),  undef, 'Undefined prices way in history when no table');
-        is($EURUSD->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
+        is($EURUSD->spot_source->tick_at(123456789),  undef, 'Undefined prices way in history when no table');
+        is($EURUSD->spot_source->tick_at(1242022222), undef, 'Undefined prices way in history when no data');
     };
 
     my $eod =
@@ -636,7 +646,7 @@ subtest combined_realtime => sub {
     my $SPC = BOM::Market::Underlying->new('SPC');
     ok($SPC->trades_on($eleventh), 'SPC trades on our chosen date.');
 
-    Cache::RedisDB->del('COMBINED_REALTIME', $SPC->symbol);
+    Cache::RedisDB->del('QUOTE', $SPC->symbol);
 
     my $ticks;
     lives_ok {

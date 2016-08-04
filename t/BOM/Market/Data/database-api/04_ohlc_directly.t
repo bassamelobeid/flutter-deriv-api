@@ -10,9 +10,13 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Market::Data::DatabaseAPI;
+use Quant::Framework::Spot::DatabaseAPI;
+use Quant::Framework::Spot::OHLC;
 use DateTime;
 use Date::Utility;
+
+my $dbh = BOM::Database::FeedDB::read_dbh;
+$dbh->{RaiseError} = 1;
 
 subtest 'prepare ohlc' => sub {
     subtest 'Daily Official' => sub {
@@ -63,9 +67,10 @@ subtest 'prepare ohlc' => sub {
 };
 
 subtest 'Daily - Start-End - Official' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
-        use_official_ohlc => 1
+        use_official_ohlc => 1,
+        db_handle         => $dbh,
     );
 
     my $ticks = $api->ohlc_start_end({
@@ -79,7 +84,7 @@ subtest 'Daily - Start-End - Official' => sub {
     subtest 'OHLC datatype' => sub {
         foreach my $tick (@$ticks) {
             my $date = Date::Utility->new({epoch => $tick->epoch});
-            isa_ok $tick, 'BOM::Market::Data::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $tick, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -101,9 +106,10 @@ subtest 'Daily - Start-End - Official' => sub {
 };
 
 subtest 'Daily - Start-End - Simple' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
-        use_official_ohlc => 1
+        use_official_ohlc => 1,
+        db_handle         => $dbh,
     );
 
     my $ticks = $api->ohlc_start_end({
@@ -117,7 +123,7 @@ subtest 'Daily - Start-End - Simple' => sub {
     subtest 'OHLC datatype' => sub {
         foreach my $tick (@$ticks) {
             my $date = Date::Utility->new({epoch => $tick->epoch});
-            isa_ok $tick, 'BOM::Market::Data::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $tick, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -139,7 +145,7 @@ subtest 'Daily - Start-End - Simple' => sub {
 };
 
 subtest 'Daily - Start-End - Beserk User' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     throws_ok {
         warnings_like {

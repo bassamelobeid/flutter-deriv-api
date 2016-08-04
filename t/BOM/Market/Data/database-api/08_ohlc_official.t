@@ -7,11 +7,15 @@ use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Market::Data::DatabaseAPI;
+use Quant::Framework::Spot::DatabaseAPI;
+use Quant::Framework::Spot::OHLC;
 use DateTime;
 use Date::Utility;
 use BOM::Market::Underlying;
 use Date::Parse;
+
+my $dbh = BOM::Database::FeedDB::read_dbh;
+$dbh->{RaiseError} = 1;
 
 subtest 'prepare ohlc - DJI' => sub {
     subtest 'Daily Non-Official' => sub {
@@ -299,11 +303,12 @@ subtest 'prepare ohlc - DJI' => sub {
 };
 
 subtest 'Daily - Start-End - Simple' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'DJI',
-        use_official_ohlc => 1
+        use_official_ohlc => 1,
+        db_handle         => $dbh,
     );
-    my $unofficial_api = BOM::Market::Data::DatabaseAPI->new(underlying => 'DJI');
+    my $unofficial_api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'DJI', db_handle => $dbh);
     my ($ohlcs, $unofficial, $official);
     my $start_time = '2012-06-01';
     my $end_time   = '2012-07-01';
@@ -648,7 +653,7 @@ subtest 'prepare ohlc minute' => sub {
 };
 
 subtest 'Minutely - Start-End - Simple' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
     my $ohlcs;
     my $start_time = '2012-07-09 00:00:00';
     my $end_time   = '2012-07-09 23:00:00';
