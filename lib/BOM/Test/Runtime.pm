@@ -24,8 +24,6 @@ use strict;
 use warnings;
 
 use BOM::Platform::Runtime;
-use BOM::Test::Runtime::MockDS;
-use YAML::CacheLoader;
 use BOM::System::Chronicle;
 
 sub _normal {
