@@ -218,7 +218,7 @@ sub process_pricing_events {
     return if not $pricing_channel or not $pricing_channel->{$channel_name};
 
     my $response         = decode_json($message);
-    my $price_daemon_cmd = delete $response->{price_daemon_cmd};
+    my $price_daemon_cmd = delete $response->{price_daemon_cmd} || '';
 
     if (exists $pricer_cmd_handler{$price_daemon_cmd}) {
         $pricer_cmd_handler{$price_daemon_cmd}->($c, $response, $channel_name, $pricing_channel);
