@@ -24,6 +24,7 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::System::Config;
 use BOM::Backoffice::FormAccounts;
+use BOM::Platform::Countries;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -158,6 +159,7 @@ if ($input{whattodo} eq 'uploadID') {
     my $docformat       = $cgi->param('docformat');
     my $expiration_date = $cgi->param('expiration_date');
     my $broker_code     = $cgi->param('broker');
+    my $docnationality  = $cgi->param('docnationality');
 
     if (not $filetoupload) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />";
@@ -179,6 +181,13 @@ if ($input{whattodo} eq 'uploadID') {
             code_exit_BO();
         }
 
+    }
+
+    if ($docnationality && $docnationality =~ /[a-z]{2}/ && not BOM::Platform::Countries->instance->restricted_country($docnationality)) {
+        $client->citizen($docnationality);
+    } else {
+        print "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality and make sure its not in restricted list</p><br />";
+        code_exit_BO();
     }
 
     my $newfilename = "$dbloc/clientIDscans/$broker/$loginid.$doctype." . (time()) . ".$docformat";
