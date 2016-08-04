@@ -6,13 +6,14 @@ use File::Slurp;
 use File::Basename;
 use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-initialize_realtime_ticks_db();
 use Finance::Asset;
 #we need this import here so the market-data db will be fresh for the test
-use BOM::Test::Data::Utility::UnitTestMarketData;
+use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use Date::Utility;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::System::RedisReplicated;
+
+initialize_realtime_ticks_db();
 
 # R_50 is used in example.json for ticks and ticks_history Websocket API calls
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -20,6 +21,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => Date::Utility->new->epoch,
     quote      => 100
 });
+
 
 sub _create_tick {    #creates R_50 tick in redis channel FEED::R_50
     my $i = shift || 700;
