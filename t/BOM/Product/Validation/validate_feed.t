@@ -15,6 +15,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Test::MockModule;
+use Quant::Framework::Spot;
 
 my $now = Date::Utility->new('2016-03-15 01:00:00');
 my $delay = $now->minus_time_interval('901s');
@@ -34,7 +35,7 @@ my $bet_params = {
 
 };
 
-my $fake_tick = BOM::Market::Data::Tick->new({
+my $fake_tick = Quant::Framework::Spot::Tick->new({
     underlying => 'frxUSDJPY',
     epoch => 1,
     quote => 100,
