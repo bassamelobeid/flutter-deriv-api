@@ -16,7 +16,8 @@ is_deeply $res->{residence_list}->[0],
     {
     value     => 'af',
     text      => 'Afghanistan',
-    phone_idd => '93'
+    phone_idd => '93',
+    disabled  => 'DISABLED'
     };
 
 # test RU
@@ -40,7 +41,8 @@ is_deeply $res->{residence_list}->[0],
     {
     value     => 'af',
     text      => 'Afghanistan',
-    phone_idd => '93'
+    phone_idd => '93',
+    disabled  => 'DISABLED'
     };
 
 $t->finish_ok;
