@@ -16,11 +16,11 @@ sub in_USD {
 
     return $price if $price == 0 or $from_currency eq 'USD';
 
-    my $spot = Cache::RedisDB->get('COMBINED_REALTIME', "frx${from_currency}USD");
+    my $spot = Cache::RedisDB->get('QUOTE', "frx${from_currency}USD");
     return $price * $spot->{quote} if $spot and looks_like_number $spot->{quote};
 
     # look for invert currency pair
-    $spot = Cache::RedisDB->get('COMBINED_REALTIME', "frxUSD${from_currency}");
+    $spot = Cache::RedisDB->get('QUOTE', "frxUSD${from_currency}");
     if ($spot and looks_like_number $spot->{quote}) {
         return $price / $spot->{quote};
     }
