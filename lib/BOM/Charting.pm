@@ -7,7 +7,6 @@ use Crypt::NamedKeys;
 use Date::Utility;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
-use BOM::Market::Data::DatabaseAPI;
 use BOM::Market::Underlying;
 use Try::Tiny;
 

@@ -7,7 +7,7 @@ use Date::Utility;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
-use BOM::Market::Data::DatabaseAPI;
+use Quant::Framework::Spot::DatabaseAPI;
 use BOM::Market::Underlying;
 use BOM::Charting;
 
@@ -369,7 +369,7 @@ sub doDailyPlot {
 
     my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 
-    my $ohlcs = BOM::Market::Data::DatabaseAPI->new(underlying => $underlying_symbol)->ohlc_daily_until_now_for_charting({
+    my $ohlcs = Quant::Framework::Spot::DatabaseAPI->new($underlying->config->spot_db_args)->ohlc_daily_until_now_for_charting({
         limit => 99999,
     });
 
