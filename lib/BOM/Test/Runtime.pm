@@ -26,18 +26,19 @@ use warnings;
 use BOM::Platform::Runtime;
 use BOM::Test::Runtime::MockDS;
 use YAML::CacheLoader;
+use BOM::System::Chronicle;
 
 sub _normal {
     my $app_settings = '/home/git/regentmarkets/bom-test/data/app_settings.yml';
     if (!-f $app_settings) {
         $app_settings = '../' . $app_settings;
     }
-    my $hash = YAML::CacheLoader::LoadFile($app_settings);
-    $hash->{_rev} = 'a';
 
-    my $hdata = BOM::Test::Runtime::MockDS->new(data => $hash);
-
-    my $ac = BOM::Platform::Runtime::AppConfig->new(db => $hdata);
+    my $ac = App::Config->new(
+        definition_yml   => $app_settings,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    );
 
     return BOM::Platform::Runtime->instance(BOM::Platform::Runtime->new(app_config => $ac));
 }
