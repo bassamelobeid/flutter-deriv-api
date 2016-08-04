@@ -25,10 +25,11 @@ sub instance {
 
 sub _build_app_config {
     my $self = shift;
-    return App::Config->new(definition_yml => /home/git/regentmarkets/bom-platform/config/app_config_definitions.yml,
-                            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-                            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-                           );
+    return App::Config->new(
+        definition_yml   => '/home/git/regentmarkets/bom-platform/config/app_config_definitions.yml',
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    );
 }
 
 __PACKAGE__->meta->make_immutable;
