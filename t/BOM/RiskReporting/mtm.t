@@ -8,6 +8,7 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
@@ -16,7 +17,6 @@ use BOM::RiskReporting::MarkedToModel;
 use BOM::Platform::Runtime;
 use BOM::Database::DataMapper::CollectorReporting;
 
-initialize_realtime_ticks_db();
 
 my $now        = Date::Utility->new;
 my $plus5mins  = Date::Utility->new(time + 300);
@@ -31,6 +31,8 @@ my %date_string = (
     frxAUDJPY => ['10-May-09 11h00GMT', '5-Nov-09 14h00GMT',  '9-Nov-09 11h00GMT'],
 );
 
+initialize_realtime_ticks_db();
+
 foreach my $symbol (keys %date_string) {
     my @dates = @{$date_string{$symbol}};
     foreach my $date (@dates) {
@@ -42,6 +44,7 @@ foreach my $symbol (keys %date_string) {
         });
     }
 }
+
 
 subtest 'realtime report generation' => sub {
     plan tests => 3;
