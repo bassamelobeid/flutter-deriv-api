@@ -8,7 +8,7 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-use BOM::Market::Data::Tick;
+use Quant::Framework::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 

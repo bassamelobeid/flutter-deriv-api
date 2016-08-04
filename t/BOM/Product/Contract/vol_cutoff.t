@@ -11,7 +11,7 @@ use Date::Utility;
 use Quant::Framework::VolSurface::Utils;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::Underlying;
-initialize_realtime_ticks_db();
+
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'partial_trading',
@@ -31,6 +31,10 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             },
         },
     });
+#calling this before inserting holidays will call Underlying's build_feed_api which will in turn call ohlc_daily_open and then TradingCalendar's build_early_closes
+#As a result, it will be cached with empty data and remain untouched.
+initialize_realtime_ticks_db();
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
