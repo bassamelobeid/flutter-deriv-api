@@ -19,36 +19,35 @@ sub forget {
 sub forget_all {
     my ($c, $req_storage) = @_;
 
-    my $removed_ids = [];
+    my %removed_ids;
     if (my $type = $req_storage->{args}->{forget_all}) {
-        if ($type eq 'balance' or $type eq 'transaction' or $type eq '1') {
-            $removed_ids = _forget_transaction_subscription($c, $type);
-        } elsif ($type eq 'proposal' or $type eq '1') {
-            $removed_ids = _forget_all_pricing_subscriptions($c);
-        } else {
-            $removed_ids = _forget_feed_subscription($c, $type);
+        if ($type eq 'balance' or $type eq 'transaction' or $type eq 'proposal_open_contract') {
+            @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
+        }
+        if ($type eq 'proposal' or $type eq 'proposal_open_contract') {
+            @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
+        }
+        if ($type ne 'proposal_open_contract') {
+            @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
         }
     }
-
     return {
         msg_type   => 'forget_all',
-        forget_all => $removed_ids
+        forget_all => [keys %removed_ids],
     };
 }
 
 sub forget_one {
     my ($c, $id, $reason) = @_;
 
-    my $removed_ids = [];
+    my %removed_ids;
     if ($id && ($id =~ /-/)) {
-        # need to keep feed subscription first as in case of proposal_open_contract subscribes to transaction
-        # channel and forgets transaction channel internally when we forget it
-        $removed_ids = _forget_feed_subscription($c, $id) unless (scalar @$removed_ids);
-        $removed_ids = _forget_transaction_subscription($c, $id) unless (scalar @$removed_ids);
-        $removed_ids = _forget_pricing_subscription($c, $id) unless (scalar @$removed_ids);
+        @removed_ids{@{_forget_feed_subscription($c, $id)}} = ();
+        @removed_ids{@{_forget_transaction_subscription($c, $id)}} = ();
+        @removed_ids{@{_forget_pricing_subscription($c, $id)}} = ();
     }
 
-    return scalar @$removed_ids;
+    return scalar keys %removed_ids;
 }
 
 sub ping {
@@ -87,11 +86,14 @@ sub _forget_pricing_subscription {
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
         foreach my $channel (keys %{$pricing_channel}) {
-            foreach my $amount (keys %{$pricing_channel->{$channel}}) {
-                next unless exists $pricing_channel->{$channel}->{$amount}->{uuid};
-                if ($pricing_channel->{$channel}->{$amount}->{uuid} eq $uuid) {
-                    push @$removed_ids, $pricing_channel->{$channel}->{$amount}->{uuid};
-                    delete $pricing_channel->{$channel}->{$amount};
+            foreach my $subchannel (keys %{$pricing_channel->{$channel}}) {
+                next unless exists $pricing_channel->{$channel}->{$subchannel}->{uuid};
+                if ($pricing_channel->{$channel}->{$subchannel}->{uuid} eq $uuid) {
+                    push @$removed_ids, $pricing_channel->{$channel}->{$subchannel}->{uuid};
+                    my $price_daemon_cmd = $pricing_channel->{uuid}->{$uuid}->{price_daemon_cmd};
+                    delete $pricing_channel->{uuid}->{$uuid};
+                    delete $pricing_channel->{$channel}->{$subchannel};
+                    delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}->{$uuid};
                 }
             }
 
@@ -107,34 +109,24 @@ sub _forget_pricing_subscription {
 }
 
 sub _forget_all_pricing_subscriptions {
-    my ($c, $uuid) = @_;
+    my ($c, $type) = @_;
+    my $price_daemon_cmd =
+          $type eq 'proposal'               ? 'price'
+        : $type eq 'proposal_open_contract' ? 'bid'
+        :                                     undef;
     my $removed_ids     = [];
     my $pricing_channel = $c->stash('pricing_channel');
     if ($pricing_channel) {
-        if ($uuid) {
-            return if not exists $pricing_channel->{uuid}->{$uuid};
-            my $serialized_args = $pricing_channel->{uuid}->{$uuid}->{serialized_args};
-            my $amount          = $pricing_channel->{uuid}->{$uuid}->{amount};
+        @$removed_ids = keys %{$pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd}};
+        foreach my $uuid (@$removed_ids) {
+            my $redis_channel = $pricing_channel->{uuid}->{$uuid}->{redis_channel};
+            if ($pricing_channel->{$redis_channel}) {
+                $c->stash('redis_pricer')->unsubscribe([$redis_channel]);
+                delete $pricing_channel->{$redis_channel};
+            }
             delete $pricing_channel->{uuid}->{$uuid};
-            delete $pricing_channel->{$serialized_args}->{$amount};
-            if (scalar keys %{$pricing_channel->{$serialized_args}} == 0) {
-                $c->stash('redis_pricer')->unsubscribe([$serialized_args]);
-                delete $pricing_channel->{$serialized_args};
-            }
-            push @$removed_ids, $uuid;
-            $c->stash('pricing_channel' => $pricing_channel);
-            return $removed_ids;
         }
-        foreach my $serialized_args (keys %{$pricing_channel}) {
-            if ($serialized_args ne 'uuid') {
-                $c->stash('redis_pricer')->unsubscribe([$serialized_args]);
-                delete $pricing_channel->{$serialized_args};
-            }
-        }
-        foreach my $id (keys %{$pricing_channel->{uuid}}) {
-            push @$removed_ids, $id;
-        }
-        delete $pricing_channel->{uuid};
+        delete $pricing_channel->{price_daemon_cmd}->{$price_daemon_cmd};
         $c->stash('pricing_channel' => $pricing_channel);
     }
     return $removed_ids;

@@ -20,21 +20,18 @@ sub buy_get_contract_params {
         $req_storage->{call_params}->{contract_parameters} = $args->{parameters};
         return;
     }
-
     if (my $proposal_id = $args->{buy} // $args->{buy_contract_for_multiple_accounts}) {
         if (my $p = BOM::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $proposal_id)) {
             $req_storage->{call_params}->{contract_parameters} = $p;
             return;
         }
-
         my $ch = $c->stash('pricing_channel');
         if ($ch and $ch = $ch->{uuid} and $ch = $ch->{$proposal_id}) {
             $req_storage->{call_params}->{contract_parameters} = $ch->{args};
-            BOM::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $proposal_id);
+            BOM::WebSocketAPI::v3::Wrapper::System::_forget_pricing_subscription($c, $proposal_id);
             return;
         }
     }
-
     return $c->new_error(($args->{buy_contract_for_multiple_accounts} ? 'buy_contract_for_multiple_accounts' : 'buy'),
         'InvalidContractProposal', $c->l("Unknown contract proposal"));
 }
