@@ -4,6 +4,7 @@ use Moose;
 use feature 'state';
 
 use App::Config;
+use BOM::System::Chronicle;
 
 has 'app_config' => (
     is         => 'ro',
