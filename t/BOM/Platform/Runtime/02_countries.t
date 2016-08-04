@@ -72,7 +72,7 @@ subtest 'EU countries, no Volatility Indices' => sub {
     }
 };
 
-my @restricted_country = qw( cr gg hk iq ir je kp mt my um us vi );
+my @restricted_country = qw(af ba cr gg gy hk iq ir je kp la mt my sy ug um us vi vu ye);
 @countries = @restricted_country;
 subtest 'restricted countries' => sub {
     foreach my $c (@countries) {
@@ -110,7 +110,7 @@ subtest 'CR countries' => sub {
         next if (first { $cc eq $_ } @exclude);
         push @countries, $cc;
     }
-    is(@countries, 205, 'CR countries count');
+    is(@countries, 197, 'CR countries count');
 
     foreach my $c (@countries) {
         my $c_config = $configs->{$c};
