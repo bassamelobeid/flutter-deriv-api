@@ -12,15 +12,16 @@ use BOM::Platform::Client::PaymentAgent;
 use BOM::Platform::Client::Payments;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-use_ok('BOM::Database::DataMapper::Payment::PaymentAgentTransfer');
-
 my $pa        = BOM::Platform::Client::PaymentAgent->new({loginid => 'CR0020'});
 my $pa_client = $pa->client;
 my $client    = BOM::Platform::Client->new({loginid => 'CR0021'});
 
 subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
-    my $payment_agent_transfer_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({client_loginid => $pa_client->loginid});
-    my $pa_total_amount = $payment_agent_transfer_datamapper->get_today_client_payment_agent_transfer_total_amount;
+    my $clientdb = BOM::Database::ClientDB->new({
+        client_loginid => $pa_client->loginid,
+        operation      => 'replica',
+    });
+    my $pa_total_amount = $clientdb->fetchall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]->{amount};
     is($pa_total_amount, 0);
     $client->payment_account_transfer(
         toClient => $pa_client,
@@ -32,7 +33,7 @@ subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
         currency => 'USD',
         amount   => 1000
     );
-    $pa_total_amount = $payment_agent_transfer_datamapper->get_today_client_payment_agent_transfer_total_amount;
+    $pa_total_amount = $clientdb->fetchall_arrayref('select * from payment_v1.get_today_client_payment_agent_transfer_total_amount(?)', [$pa_client->loginid])->[0]->{amount};
     is($pa_total_amount + 0, 2000, "payment agent transfer total amount is correct");
 };
 
