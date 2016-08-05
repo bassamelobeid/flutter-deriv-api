@@ -45,6 +45,9 @@ Update Translation
 * $ apt-get install gettext
 
 ### Update translation files (.po, .pot):
+* Check under https://hosted.weblate.org/projects/binary-websocket/#repository if there are uncommitted changes, if any then commit them by clicking on commit.
+* Lock weblate so that during update there is no conflicts
+* Make sure your all repo are on master and its upto date with branch master
 * In `/home/git/binary-com/translations-websockets-api`, switch to `translations` branch
 * under `/home/git/regentmarkets/bom-backoffice`, run `make i18n`
 * In `/home/git/binary-com/translations-websockets-api`, `*.po , .pot` files will be updated. After `git push origin translations`, new text will appear in Weblate for translation
