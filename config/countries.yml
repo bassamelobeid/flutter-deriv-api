@@ -10,8 +10,8 @@ ae:
   virtual_company: fog
 af:
   name: "Afghanistan"
-  gaming_company: costarica
-  financial_company: costarica
+  gaming_company: none
+  financial_company: none
   virtual_company: fog
 ag:
   name: "Antigua and Barbuda"
@@ -85,8 +85,8 @@ az:
   virtual_company: fog
 ba:
   name: "Bosnia and Herzegovina"
-  gaming_company: costarica
-  financial_company: costarica
+  gaming_company: none
+  financial_company: none
   virtual_company: fog
 bb:
   name: "Barbados"
@@ -460,8 +460,8 @@ gw:
   virtual_company: fog
 gy:
   name: "Guyana"
-  gaming_company: costarica
-  financial_company: costarica
+  gaming_company: none
+  financial_company: none
   virtual_company: fog
 hk:
   name: "Hong Kong"
@@ -620,8 +620,8 @@ kz:
   virtual_company: fog
 la:
   name: "Lao People's Democratic Republic"
-  gaming_company: costarica
-  financial_company: costarica
+  gaming_company: none
+  financial_company: none
   virtual_company: fog
 lb:
   name: "Lebanon"
@@ -1040,8 +1040,8 @@ sv:
   virtual_company: fog
 sy:
   name: "Syrian Arab Republic"
-  gaming_company: costarica
-  financial_company: costarica
+  gaming_company: none
+  financial_company: none
   virtual_company: fog
 sz:
   name: "Swaziland"
@@ -1135,8 +1135,8 @@ ua:
   virtual_company: fog
 ug:
   name: "Uganda"
-  gaming_company: costarica
-  financial_company: costarica
+  gaming_company: none
+  financial_company: none
   virtual_company: fog
 um:
   name: "United States Minor Outlying Islands"
@@ -1190,8 +1190,8 @@ vn:
   virtual_company: fog
 vu:
   name: "Vanuatu"
-  gaming_company: costarica
-  financial_company: costarica
+  gaming_company: none
+  financial_company: none
   virtual_company: fog
 wf:
   name: "Wallis and Futuna"
@@ -1205,8 +1205,8 @@ ws:
   virtual_company: fog
 ye:
   name: "Yemen"
-  gaming_company: costarica
-  financial_company: costarica
+  gaming_company: none
+  financial_company: none
   virtual_company: fog
 yt:
   name: "Mayotte"
