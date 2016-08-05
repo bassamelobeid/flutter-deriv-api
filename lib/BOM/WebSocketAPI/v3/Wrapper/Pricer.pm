@@ -287,7 +287,7 @@ sub process_bid_event {
 sub process_ask_event {
     my ($c, $response, $redis_channel, $pricing_channel) = @_;
 
-    my $theo_probability = $response->{theo_probability};
+    my $theo_probability = delete $response->{theo_probability};
     foreach my $stash_data (values %{$pricing_channel->{$redis_channel}}) {
         my $results;
         if (
