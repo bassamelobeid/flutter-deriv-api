@@ -28,6 +28,7 @@ use VolSurface::Utils qw( get_delta_for_strike get_strike_for_spot_delta get_1vo
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 use BOM::Greeks::FiniteDifference;
+use BOM::System::Chronicle;
 
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::DisplayGreeks;
@@ -132,14 +133,6 @@ sub debug_link {
         content => $volsurface,
         };
 
-    my $dvol = $self->_get_dvol();
-    push @{$tabs_content},
-        {
-        label   => 'DVol',
-        url     => 'dv',
-        content => $dvol,
-        };
-
     # rates
     if (grep { $bet->underlying->market->name eq $_ } ('forex', 'commodities', 'indices')) {
         push @{$tabs_content},
@@ -206,139 +199,13 @@ sub _get_rates {
     return $rates_content;
 }
 
-sub _get_dvol {
-    my $self = shift;
-    my $bet  = $self->bet;
-
-    my $surfaces = {master => $self->master_surface};
-    if (
-        $bet->underlying->market->name eq 'forex'
-        or (    $bet->underlying->market->name eq 'commodities'
-            and $bet->underlying->symbol ne 'frxBROUSD'))
-    {
-        $surfaces->{used} = $bet->volsurface;
-    }
-
-    my $spot = $bet->underlying->spot;
-    my $days = {
-        0.000694444444444 => '1Min',
-        0.041666666667    => '1H',
-        1                 => '1D',
-        7                 => '1W',
-        30                => '1M',
-        60                => '2M',
-        90                => '3M',
-        180               => '6M',
-        270               => '9M',
-        365               => '1Y',
-    };
-    my @deltas = qw(95 90 85 80 75 70 50 30 25 20 15 10 5);
-    my @days_display =
-        (map { $days->{$_} } (sort { $a <=> $b } keys %{$days}));
-
-    my $tabs;
-    foreach my $key (keys %{$surfaces}) {
-        my $surface = $surfaces->{$key};
-        my $vols_table;
-        foreach my $day (sort { $a <=> $b } keys %{$days}) {
-            my $args;
-            $args->{spot}   = $spot;
-            $args->{t}      = $day / 365;
-            $args->{r_rate} = $bet->underlying->interest_rate_for($args->{t});
-            $args->{q_rate} = $bet->underlying->dividend_rate_for($args->{t});
-            $args->{premium_adjusted} =
-                $bet->underlying->{market_convention}->{delta_premium_adjusted};
-            $args->{atm_vol} = $surface->get_volatility({
-                delta => 50,
-                days  => $day
-            });
-            DELTA:
-
-            foreach my $delta (@deltas) {
-                $args->{delta}       = $delta / 100;
-                $args->{option_type} = 'VANILLA_CALL';
-                if ($args->{delta} > 0.5) {
-                    $args->{delta} =
-                        exp(-$args->{r_rate} * $args->{t}) - $args->{delta};
-                    $args->{option_type} = 'VANILLA_PUT';
-                }
-                my ($strike, $vol);
-                try {
-                    $strike = get_strike_for_spot_delta($args);
-                    $vol    = $surface->get_volatility({
-                        delta => $delta,
-                        days  => $day
-                    });
-                    if ($vol and $strike) {
-                        $vols_table->{$days->{$day}}->{$delta} = {
-                            vol    => sprintf('%.3f', $vol * 100),
-                            strike => sprintf('%.3f', $strike),
-                        };
-                    }
-                }
-            }
-        }
-
-        my ($url, $label);
-        if ($key eq 'master') {
-            $url   = 'dvm';
-            $label = 'Master DVol';
-        } elsif ($key eq 'used') {
-            $url   = 'dvu';
-            $label = 'Used DVol';
-        }
-
-        push @{$tabs},
-            {
-            url        => $url,
-            vols_table => $vols_table,
-            cut        => $surface->cutoff->code,
-            label      => $self->_get_cutoff_label($surface->cutoff),
-            };
-    }
-
-    my $vol_content;
-    BOM::Platform::Context::template->process(
-        'backoffice/price_debug/dvol_tab.html.tt',
-        {
-            bet_id => $bet->id,
-            deltas => [@deltas],
-            days   => [@days_display],
-            tabs   => $tabs,
-        },
-        \$vol_content
-    ) || die BOM::Platform::Context::template->error;
-
-    return $vol_content;
-}
-
-sub _get_cutoff_label {
-    my ($self, $cutoff) = @_;
-
-    $cutoff->code =~ /^(.+) (\d{1,2}:\d{2})/;
-    my $city = $1;
-    my $time = $2;
-    my %map  = (
-        'New York' => 'NY',
-        'Tokyo'    => 'TK',
-    );
-    my $code;
-    if ($city eq 'UTC') {
-        $code = 'GMT ' . $time;
-    } else {
-        $code = ((defined $map{$city}) ? $map{$city} : $city) . ' ' . $time;
-        $code .= ' (' . $cutoff->code_gmt . ')';
-    }
-    return $code;
-}
-
 sub _get_moneyness_surface {
     my $self = shift;
 
     my $dates = [];
     my $bet   = $self->bet;
     try {
-        $dates = $bet->volsurface->fetch_historical_surface_date({back_to => 20});
+        $dates = $self->_fetch_historical_surface_date({back_to => 20, symbol => $bet->underlying->symbol});
     }
     catch {
         warn("caught error in _get_moneyness_surface: $_");
@@ -356,6 +223,29 @@ sub _get_moneyness_surface {
     return $master_surface_content;
 }
 
+#Get historical vol surface dates going back a given number of historical revisions.
+sub _fetch_historical_surface_date {
+    my ($self, $args) = @_;
+
+    my $back_to = $args->{back_to} || 1;
+    my $symbol = $args->{symbol} or die "Must pass in symbol to fetch surface dates.";
+
+    my $reader = BOM::System::Chronicle::get_chronicle_reader(1);
+    my $vdoc = $reader->get('volatility_surfaces', $symbol);
+    my $current_date = $vdoc->{date};
+
+    my @dates = ($current_date);
+
+    for (2 .. $back_to) {
+        $vdoc = $reader->get_for('volatility_surfaces', $symbol, Date::Utility->new($current_date)->epoch - 1); 
+        last if not $vdoc or not keys %{$vdoc};
+        $current_date = $vdoc->{date};
+        push @dates, $current_date;
+    }
+
+    return \@dates;
+}
+
 sub _get_volsurface {
     my $self = shift;
     my $bet  = $self->bet;
@@ -364,37 +254,10 @@ sub _get_volsurface {
     # If we do, just carry on; we don't need to show these dates.
     my $dates = [];
     try {
-        $dates = $bet->volsurface->fetch_historical_surface_date({back_to => 20})
+        $dates = $self->_fetch_historical_surface_date({back_to => 20, $bet->underlying->symbol});
     };
 
     my $tabs;
-
-    # VolSurface for Tokyo 15 Cutoff
-    if ($bet->underlying->market->name eq 'forex') {
-        my $tokyo_vol_url = 'tv';
-
-        my $constructor_args = {
-            underlying => $bet->underlying,
-            cutoff     => 'Tokyo 15:00',
-        };
-        $constructor_args->{for_date} = $bet->date_pricing
-            if (not $bet->pricing_new);
-
-        my $tokyo_surface = $self->_volsurface_mapper->fetch_surface($constructor_args);
-
-        my $tokyo_display = BOM::MarketData::Display::VolatilitySurface->new(surface => $tokyo_surface);
-        my $tokyo_surface_content = $tokyo_display->rmg_table_format({
-            historical_dates => $dates,
-            tab_id           => $bet->id . $tokyo_vol_url,
-        });
-
-        push @{$tabs},
-            {
-            label   => $self->_get_cutoff_label($tokyo_surface->cutoff),
-            url     => $tokyo_vol_url,
-            content => $tokyo_surface_content,
-            };
-    }
 
     # master vol surface
     my $master_vol_url         = 'mv';
@@ -405,33 +268,10 @@ sub _get_volsurface {
     });
     push @{$tabs},
         {
-        label   => $self->_get_cutoff_label($self->master_surface->cutoff),
+        label   => 'master surface',
         url     => $master_vol_url,
         content => $master_surface_content,
         };
-
-    # Used vol surface: display for forex & commodities (exclude Oil/USD)
-    if (
-        $bet->underlying->market->name eq 'forex'
-        or (    $bet->underlying->market->name eq 'commodities'
-            and $bet->underlying->symbol ne 'frxBROUSD'))
-    {
-        my $cost_greeks        = $self->_get_cost_of_greeks();
-        my $used_vol_url       = 'vs';
-        my $display            = BOM::MarketData::Display::VolatilitySurface->new(surface => $bet->volsurface);
-        my $volsurface_content = $display->rmg_table_format({
-            greeks           => $cost_greeks,
-            historical_dates => $dates,
-            tab_id           => $bet->id . $used_vol_url,
-        });
-
-        push @{$tabs},
-            {
-            label   => $self->_get_cutoff_label($bet->volsurface->cutoff),
-            url     => $used_vol_url,
-            content => $volsurface_content,
-            };
-    }
 
     my $vol_content;
     BOM::Platform::Context::template->process(
@@ -631,7 +471,8 @@ sub _get_overview {
     # Delta for Strike
     my $atm_vol = $bet->volsurface->get_volatility({
         delta => 50,
-        days  => $bet->timeinyears->amount * 365,
+        from  => $bet->effective_start,
+        to    => $bet->date_expiry,
     });
     my ($delta_strike1, $delta_strike2) = (0, 0);
     if ($bet->category_code ne 'digits') {
