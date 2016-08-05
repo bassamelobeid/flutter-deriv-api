@@ -32,7 +32,6 @@ my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', '
 my $payout_currency    = 'USD';
 my $spot               = 100;
 
-my $output;
 foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
     BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -40,6 +39,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         quote      => $spot,
         epoch      => $now->epoch,
     });
+    my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul, for_date => $now});
     foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter('contract_category', {underlying_symbol => $ul->symbol}))
     {
         my $category_obj = BOM::Product::Contract::Category->new($contract_category);
@@ -52,13 +52,10 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         underlying => $ul,
                         duration   => $duration,
                         spot       => $spot,
-                        volatility => BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
-                                underlying => $ul,
-                                for_date   => $now
-                            }
-                            )->get_volatility({
+                        volatility => $volsurface->get_volatility({
                                 delta => 50,
-                                days  => $duration / 86400
+                                from  => $volsurface->recorded_date,
+                                to    => $volsurface->recorded_date->plus_time_interval($duration),
                             }
                             ),
                     })};
@@ -84,8 +81,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         }
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-                        is roundnear(0.00001, $c->theo_probability->amount), roundnear(0.00001, $c->risk_markup->amount + $expectation->{$code}),
-                            'theo probability matches [' . $code . ']';
+                        is roundnear(0.00001,$c->theo_probability->amount), roundnear(0.00001, $expectation->{$code}), 'theo probability matches [' . $code . ']';
                     }
                     'survived';
                 }
