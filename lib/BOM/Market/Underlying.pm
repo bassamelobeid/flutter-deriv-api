@@ -296,7 +296,7 @@ sub _build_config {
     $default_dividend_rate = 0 if $zero_rate{$self->submarket->name};
 
     if ($self->market->name eq 'volidx') {
-        my $div = Quant::Framework::Dividend->new({
+        my $div = Quant::Framework::Asset->new({
             symbol           => $self->symbol,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($self->for_date),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
@@ -304,15 +304,6 @@ sub _build_config {
         my @rates = values %{$div->rates};
         $default_dividend_rate = pop @rates;
     }
-
-    my $default_interest_rate = undef;
-
-    # list of markets that have zero rate
-    my %zero_irate = (
-        volidx => 1,
-    );
-
-    $default_interest_rate = 0 if $zero_irate{$self->market->name};
 
     my $build_args = {underlying => $self->system_symbol};
 
@@ -340,7 +331,6 @@ sub _build_config {
         extra_vol_diff_by_delta               => BOM::System::Config::quants->{market_data}->{extra_vol_diff_by_delta},
         market_convention                     => $self->market_convention,
         asset_class                           => $asset_class,
-        default_interest_rate                 => $default_interest_rate,
         default_dividend_rate                 => $default_dividend_rate,
         use_official_ohlc                     => $self->use_official_ohlc,
         pip_size                              => $self->pip_size,
