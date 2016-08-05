@@ -308,12 +308,12 @@ R_100: &random_index
   callput:
     daily:
       spot:
-        euro_atm: &zero_day_to_year
+        euro_atm:
           max: 365d
-          min: 0d
-        euro_non_atm: &one_day_to_year
+          min: 15s
+        euro_non_atm:
           max: 365d
-          min: 1d
+          min: 15s
     intraday:
       forward:
         euro_atm: *two_minutes_to_day
@@ -413,7 +413,9 @@ frxAUDCAD: &inactive_fx
   callput:
     daily:
       spot:
-        euro_atm: *zero_day_to_year
+        euro_atm:
+         max: 365d
+         min: 2m
     intraday:
       forward:
         euro_atm:
@@ -430,10 +432,12 @@ frxAUDJPY: &active_fx
   callput:
     daily:
       spot:
-        euro_atm: *zero_day_to_year
+        euro_atm:
+          max: 365d
+          min: 1m
         euro_non_atm:
           max: 365d
-          min: 1d
+          min: 15m
     intraday:
       forward:
         euro_atm:
@@ -495,8 +499,12 @@ frxGBPCAD: &no_intraday_pd_fx
   callput:
     daily:
       spot:
-        euro_atm: *zero_day_to_year
-        euro_non_atm: *one_day_to_year
+        euro_atm:
+          max: 365d
+          min: 1m
+        euro_non_atm:
+          max: 365d
+          min: 1m
     intraday:
       forward:
         euro_atm:
