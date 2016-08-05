@@ -35,7 +35,7 @@ my $test_surface = Quant::Framework::Utils::Test::create_doc(
         recorded_date => Date::Utility->new,
     });
 
-subtest 'more than 2 hours old' => sub {
+subtest 'more than 4 hours old' => sub {
     my $test_file = dirname(__FILE__) . '/combined_without_DJI.xls';
     my $au        = BOM::MarketData::AutoUpdater::Indices->new(
         file              => $test_file,
@@ -44,7 +44,7 @@ subtest 'more than 2 hours old' => sub {
     is keys %{$au->report}, 1, 'only atttempt one underlying if specified';
     ok $au->report->{TOP40}, 'attempts TOP40';
     ok !$au->report->{TOP40}->{success}, 'update failed';
-    like $au->report->{TOP40}->{reason}, qr/more than 2 hours old/, 'correct error message';
+    like $au->report->{TOP40}->{reason}, qr/more than 4 hours old/, 'correct error message';
 };
 
 subtest 'surface data not found' => sub {
