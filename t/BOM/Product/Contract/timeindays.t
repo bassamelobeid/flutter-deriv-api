@@ -41,7 +41,7 @@ my $fake_data = {
 
 {
     #we can have warnigns here because symbol name is invalid
-    local $SIG{__WARN__} = sub {};
+    local $SIG{__WARN__} = sub { };
     $FRW_frxUSDJPY_ON->set_combined_realtime($fake_data);
     $FRW_frxUSDJPY_TN->set_combined_realtime($fake_data);
     $FRW_frxUSDJPY_1W->set_combined_realtime($fake_data);
@@ -58,7 +58,7 @@ subtest Forex => sub {
     Test::Exception::lives_ok {
         my $date = Date::Utility->new('2012-01-11 10:00:00');
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                epoch => $date->epoch,
+            epoch => $date->epoch,
             quote => '99.840'
         });
     }
