@@ -229,7 +229,7 @@ sub _build_slope {
     my $self             = shift;
     my @ticks            = @{$self->ticks_for_trend};
     my $duration_in_secs = $self->bet->timeindays->amount * 86400;
-    my $tick_interval      = 0;
+    my $tick_interval    = 0;
 
     $tick_interval = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
 
@@ -295,7 +295,7 @@ sub calculate_intraday_bounceback {
 
     my $bounceback_base_intraday_trend = $self->calculate_bounceback_base($t_mins, $st_or_lt, $self->intraday_trend->amount);
 
-    my $bounceback_base_max_trend = $self->calculate_bounceback_base($t_mins, $st_or_lt, (-$max_abs_trend));
+    my $bounceback_base_max_trend            = $self->calculate_bounceback_base($t_mins, $st_or_lt, (-$max_abs_trend));
     my $bounceback_base_max_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, (-1 * $slope * $max_abs_trend));
 
     my $bounceback_safety = $bounceback_base_max_trend - $bounceback_base_max_trend_with_slope;
