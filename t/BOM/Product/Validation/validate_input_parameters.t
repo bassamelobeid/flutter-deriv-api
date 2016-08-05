@@ -13,6 +13,8 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestPrice;
 use Test::MockModule;
+use Quant::Framework::Spot::Tick;
+use Quant::Framework::VolSurface::Delta;
 
 my $now = Date::Utility->new('2016-03-18 01:00:00');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -28,7 +30,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     });
 
-my $fake_tick = BOM::Market::Data::Tick->new({
+my $fake_tick = Quant::Framework::Spot::Tick->new({
     underlying => 'R_100',
     epoch      => $now->epoch,
     quote      => 100,
@@ -88,7 +90,7 @@ subtest 'invalid start and expiry time' => sub {
     ok $c->is_valid_to_buy, 'valid to buy';
 };
 
-$fake_tick = BOM::Market::Data::Tick->new({
+$fake_tick = Quant::Framework::Spot::Tick->new({
     underlying => 'frxUSDJPY',
     epoch      => $now->epoch,
     quote      => 100,
