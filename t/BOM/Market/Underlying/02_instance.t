@@ -119,7 +119,6 @@ subtest 'display_decimals' => sub {
         }
 
         my $r100 = BOM::Market::Underlying->new({symbol => 'R_100'});
-        $DB::single=1;
         is $r100->dividend_rate_for(0.5), 3.5, 'correct dividend rate';
         is $r100->dividend_rate_for(1.0), 3.5, 'correct dividend rate';
 
