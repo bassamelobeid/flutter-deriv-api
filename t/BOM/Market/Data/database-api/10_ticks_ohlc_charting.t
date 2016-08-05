@@ -9,9 +9,14 @@ use DateTime;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-use BOM::Market::Data::DatabaseAPI;
+use Quant::Framework::Spot::DatabaseAPI;
+use Quant::Framework::Spot::OHLC;
 use BOM::Market::Underlying;
 use Date::Utility;
+
+use Quant::Framework::Spot::DatabaseAPI;
+my $dbh = BOM::Database::FeedDB::read_dbh;
+$dbh->{RaiseError} = 1;
 
 subtest 'prepare ticks' => sub {
     lives_ok {
@@ -181,7 +186,7 @@ subtest 'prepare ticks' => sub {
 };
 
 subtest 'Tick Fetch - Start-End-limit' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     my $ticks = $api->ticks_start_end_with_limit_for_charting({
         start_time => '2012-05-15 00:00:00',
@@ -194,7 +199,7 @@ subtest 'Tick Fetch - Start-End-limit' => sub {
     subtest 'Tick datatype' => sub {
         foreach my $tick (@$ticks) {
             my $date = Date::Utility->new({epoch => $tick->epoch});
-            isa_ok $tick, 'BOM::Market::Data::Tick', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $tick, 'Quant::Framework::Spot::Tick', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -258,7 +263,7 @@ my $start_time = '2012-05-15 00:00:00';
 my $end_time   = '2012-05-16 19:00:00';
 
 subtest 'Tick Fetch - Start-End-limit (Big limit)' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     my $end_epoch = Date::Utility->new($end_time)->epoch;
 
@@ -919,7 +924,7 @@ subtest 'prepare ohlc daily' => sub {
 };
 
 subtest '1 week OHLC Fetch - Start-End-limit' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     my $ohlcs = $api->ohlc_start_end_with_limit_for_charting({
         start_time         => '2012-05-27 00:00:00',
@@ -933,7 +938,7 @@ subtest '1 week OHLC Fetch - Start-End-limit' => sub {
     subtest 'ohlc datatype' => sub {
         foreach my $ohlc (@$ohlcs) {
             my $date = Date::Utility->new({epoch => $ohlc->epoch});
-            isa_ok $ohlc, 'BOM::Market::Data::OHLC', $date->datetime_yyyymmdd_hhmmss;
+            isa_ok $ohlc, 'Quant::Framework::Spot::OHLC', $date->datetime_yyyymmdd_hhmmss;
         }
     };
 
@@ -983,7 +988,7 @@ $start_time = '2012-06-04 00:00:00';
 $end_time   = '2012-06-18 00:00:00';
 
 subtest '1 week OHLC Fetch - Start-End-limit (Big limit)' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     $ohlcs = $api->ohlc_start_end_with_limit_for_charting({
         start_time         => $start_time,
