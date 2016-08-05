@@ -23,6 +23,7 @@ use File::Find::Rule;
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::VolSurface::Delta;
+use Quant::Framework::VolSurface::Utils;
 use List::Util qw( first );
 
 has file => (
@@ -153,7 +154,9 @@ sub run {
         quanto_only => 1,
     );
 
-    my $surfaces_from_file = $self->surfaces_from_file;
+    my $rollover_date           = Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on(Date::Utility->new);
+    my $one_hour_after_rollover = $rollover_date->plus_time_interval('1h');
+    my $surfaces_from_file      = $self->surfaces_from_file;
     foreach my $symbol (@{$self->symbols_to_update}) {
         my $quanto_only = 'NO';
         if (grep { $_ eq $symbol } (@quanto_currencies)) {
@@ -169,7 +172,10 @@ sub run {
         my $underlying = BOM::Market::Underlying->new($symbol);
         next if $underlying->volatility_surface_type eq 'flat';
         my $raw_volsurface = $surfaces_from_file->{$symbol};
-        my $volsurface     = Quant::Framework::VolSurface::Delta->new({
+        next
+            if $raw_volsurface->{recorded_date}->epoch >= $rollover_date->epoch
+            and $raw_volsurface->{recorded_date}->epoch <= $one_hour_after_rollover->epoch;
+        my $volsurface = Quant::Framework::VolSurface::Delta->new({
             underlying_config => $underlying->config,
             recorded_date     => $raw_volsurface->{recorded_date},
             surface           => $raw_volsurface->{surface},
@@ -195,11 +201,8 @@ sub run {
 
 sub _append_to_existing_surface {
     my ($new_surface, $underlying_symbol) = @_;
-    my $underlying       = BOM::Market::Underlying->new($underlying_symbol);
-    my $existing_surface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
-            underlying => $underlying,
-            cutoff     => 'New York 10:00'
-        })->surface;
+    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $existing_surface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying})->surface;
 
     foreach my $term (keys %{$existing_surface}) {
 

@@ -13,7 +13,6 @@ use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
-use Quant::Framework::VolSurface::Cutoff;
 use Quant::Framework::Utils::Test;
 
 initialize_realtime_ticks_db();
@@ -55,7 +54,6 @@ subtest 'Saving delta then moneyness.' => sub {
 
     my $saved = $dm->fetch_surface({
         underlying => $forex,
-        cutoff     => 'New York 10:00'
     });
 
     is_deeply($saved->surface, $delta_surface->surface, 'Delta surface matches.');
@@ -89,52 +87,6 @@ subtest 'Saving delta then moneyness.' => sub {
     is_deeply($saved->surface, $moneyness_surface->surface, 'Moneyness surface matches.');
 };
 
-subtest 'Fetch cut.' => sub {
-    plan tests => 4;
-
-    my $original = Quant::Framework::Utils::Test::create_doc(
-        'volsurface_delta',
-        {
-            underlying_config => BOM::Market::Underlying->new('frxUSDJPY')->config,
-            recorded_date => $now,
-            chronicle_reader =>  BOM::System::Chronicle::get_chronicle_reader,
-            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
-        });
-
-    my $cut_surface = $dm->fetch_surface({
-        underlying => BOM::Market::Underlying->new('frxUSDJPY'),
-        cutoff     => 'UTC 10:24',
-    });
-    is($cut_surface->cutoff->code, 'UTC 10:24', 'Fetched cut surface has intended cutoff.');
-
-    cmp_ok(
-        $cut_surface->get_volatility({
-                delta => 25,
-                days  => 7
-            }
-        ),
-        '!=',
-        $original->get_volatility({
-                delta => 25,
-                days  => 7
-            }
-        ),
-        'Cut surface has different vol from original.'
-    );
-
-    $cut_surface = $dm->fetch_surface({
-        underlying => BOM::Market::Underlying->new('frxUSDJPY'),
-        cutoff     => Quant::Framework::VolSurface::Cutoff->new('UTC 10:25'),
-    });
-    is($cut_surface->cutoff->code, 'UTC 10:25', 'Passing a Cutoff object to fetch_surface.');
-
-    $cut_surface = $dm->fetch_surface({
-        underlying => BOM::Market::Underlying->new('frxUSDJPY'),
-        cutoff     => 'UTC 10:25',
-    });
-    is($cut_surface->cutoff->code, 'UTC 10:25', 'Fetching a cut surface that has already been cut.');
-};
-
 subtest 'recorded_date on Randoms.' => sub {
     plan tests => 2;
 
@@ -153,7 +105,7 @@ subtest 'recorded_date on Randoms.' => sub {
 };
 
 subtest 'Consecutive saves.' => sub {
-    plan tests => 6;
+    plan tests => 4;
 
     my $underlying = BOM::Market::Underlying->new('frxEURUSD');
 
@@ -166,8 +118,6 @@ subtest 'Consecutive saves.' => sub {
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer,
         });
     my @recorded_dates = ($surface->recorded_date);    # keep track of all saved surface recorded_dates
-
-    is(scalar keys %{$surface->document->{surfaces}}, 3, 'saves the cut surface');
 
     for (0 .. 2) {
         my $recorded_date = $now->minus_time_interval(2 - $_ . 'h');
@@ -203,8 +153,6 @@ subtest 'Consecutive saves.' => sub {
         for_date   => Date::Utility->new($first_historical->recorded_date->epoch - 1),
     });
     is($second_historical->recorded_date->datetime, $recorded_dates[2]->datetime, 'Second historical surface has expected date.');
-
-    is(scalar keys %{$surface->document->{surfaces}}, 3, 'Cuts remain after surface has been saved to history.');
 };
 
 done_testing;

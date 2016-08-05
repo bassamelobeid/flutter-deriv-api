@@ -95,6 +95,13 @@ sub get_volatility {
     return $self->flat_vol;
 }
 
+sub get_surface_volatility {
+    my $self = shift;
+
+    # get the same answer, not matter what you ask.
+    return $self->flat_vol;
+}
+
 =head2 get_smile
 
 Returns default flat smile for flat volatility surface
@@ -134,6 +141,18 @@ sub _build_surface {
     return {map { $_ => {vol_spread => {$self->atm_spread_point => $self->flat_atm_spread}, smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
 }
 
+has surface_data => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_surface_data',
+);
+
+sub _build_surface_data {
+    my $self = shift;
+
+    return $self->surface;
+}
+
 has recorded_date => (
     is      => 'ro',
     default => sub { Date::Utility->new },
@@ -143,21 +162,6 @@ override is_valid => sub {
     # always true
     return 1;
 };
-
-has cutoff => (
-    is         => 'ro',
-    isa        => 'qf_cutoff_helper',
-    lazy_build => 1,
-    coerce     => 1,
-);
-
-sub _build_cutoff {
-    my $self = shift;
-
-    my $date = $self->for_date ? $self->for_date : Date::Utility->new;
-
-    return Quant::Framework::VolSurface::Cutoff->new('UTC ' . $self->underlying->calendar->standard_closing_on($date)->time_hhmm);
-}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

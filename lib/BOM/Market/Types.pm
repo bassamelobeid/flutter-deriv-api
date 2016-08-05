@@ -48,11 +48,9 @@ use MooseX::Types -declare => [
         financial_market
         submarket
         contract_type
-        cutoff_helper
         market_markups
         market_feed
         surface_type
-        cutoff_code
         date_object
         time_interval
         )];
@@ -65,12 +63,6 @@ coerce 'bom_time_interval', from 'Str', via { Time::Duration::Concise->new(inter
 
 subtype 'bom_date_object', as 'Date::Utility';
 coerce 'bom_date_object', from 'Str', via { Date::Utility->new($_) };
-
-subtype 'bom_cutoff_code', as Str, where {
-    /^(?:Bangkok|Beijing|Bucharest|Budapest|Colombia|Frankfurt|Hanoi|Istanbul|Jakarta|Kuala Lumpur|London|Manila|Mexico|Moscow|Mumbai|New York|PTAX \(Ask\)|Santiago|Sao Paulo|Seoul|Singapore|Taipei|Taiwan|Tel Aviv|Tokyo|UTC|GMT|Warsaw|Wellington) \d{1,2}:\d{2}$/;
-}, message {
-    'Invalid cutoff_code [' . $_ . ']';
-};
 
 my @surface_types = qw(delta flat moneyness);
 subtype 'bom_surface_type', as Str, where {

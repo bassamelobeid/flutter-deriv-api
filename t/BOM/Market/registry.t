@@ -45,7 +45,6 @@ subtest 'Market builds or configs test' => sub {
         is $config->base_commission, 0.05,              'base commission default to 0.05';
         ok !$config->markups->apply_butterfly_markup,      'Butterfly Markup';
         ok !$config->markups->apply_traded_markets_markup, 'Market Markup';
-        is $config->vol_cut_off, 'Default', 'Vol cut off';
         ok !$config->foreign_bs_probability;
         ok !$config->absolute_barrier_multiplier;
         ok !$config->display_order;
@@ -54,7 +53,6 @@ subtest 'Market builds or configs test' => sub {
         is $config->license, 'realtime';
         ok !$config->official_ohlc,         'Official OHLC';
         ok !$config->integer_barrier,       'non integer barrier';
-        ok !$config->integer_number_of_day, 'integer number of day';
     };
 
     subtest 'forex' => sub {
@@ -74,7 +72,6 @@ subtest 'Market builds or configs test' => sub {
         is $forex->base_commission, 0.05, 'base commission of 0.05';
         ok $forex->markups->apply_butterfly_markup,      'Butterfly Markup';
         ok $forex->markups->apply_traded_markets_markup, 'Market Markup';
-        is $forex->vol_cut_off, 'NY1000', 'Vol cut off';
         ok $forex->foreign_bs_probability;
         ok $forex->absolute_barrier_multiplier;
 
@@ -83,7 +80,6 @@ subtest 'Market builds or configs test' => sub {
         is $forex->license, 'realtime';
         ok !$forex->official_ohlc;
         ok !$forex->integer_barrier, 'non integer barrier';
-        ok $forex->integer_number_of_day, 'integer number of day';
     };
 
     subtest 'commodities' => sub {
@@ -103,7 +99,6 @@ subtest 'Market builds or configs test' => sub {
 
         ok !$commodities->markups->apply_butterfly_markup, 'Butterfly Markup';
         ok $commodities->markups->apply_traded_markets_markup, 'Market Markup';
-        is $commodities->vol_cut_off, 'NY1000', 'Vol cut off';
         ok !$commodities->foreign_bs_probability;
         ok $commodities->absolute_barrier_multiplier;
 
@@ -112,7 +107,6 @@ subtest 'Market builds or configs test' => sub {
         is $commodities->license, 'realtime';
         ok !$commodities->official_ohlc;
         ok !$commodities->integer_barrier, 'non integer barrier';
-        ok $commodities->integer_number_of_day, 'integer number of day';
     };
 
     subtest 'indices' => sub {
@@ -133,7 +127,6 @@ subtest 'Market builds or configs test' => sub {
 
         ok !$indices->markups->apply_butterfly_markup, 'Butterfly Markup';
         ok $indices->markups->apply_traded_markets_markup, 'Market Markup';
-        is $indices->vol_cut_off, 'Default', 'Vol cut off';
         ok !$indices->foreign_bs_probability;
         ok !$indices->absolute_barrier_multiplier;
 
@@ -142,7 +135,6 @@ subtest 'Market builds or configs test' => sub {
         is $indices->license, 'daily';
         ok $indices->official_ohlc;
         ok $indices->integer_barrier, 'Integer barrier';
-        ok !$indices->integer_number_of_day, 'integer number of day';
     };
 
     subtest 'random' => sub {
@@ -161,7 +153,6 @@ subtest 'Market builds or configs test' => sub {
         is $random->base_commission, 0.015, 'base commission of 0.015';
         ok !$random->markups->apply_butterfly_markup,      'Butterfly Markup';
         ok !$random->markups->apply_traded_markets_markup, 'Market Markup';
-        is $random->vol_cut_off, 'Default', 'Vol cut off';
         ok !$random->foreign_bs_probability;
         ok $random->absolute_barrier_multiplier;
 
@@ -169,7 +160,6 @@ subtest 'Market builds or configs test' => sub {
         is $random->license, 'realtime';
         ok !$random->official_ohlc;
         ok !$random->integer_barrier,       'non integer barrier';
-        ok !$random->integer_number_of_day, 'integer number of day';
     };
 };
 
