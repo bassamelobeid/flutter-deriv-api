@@ -409,11 +409,6 @@ has [qw(volsurface)] => (
 # discounted_probability - The discounted total probability, given the time value of the money at stake.
 # timeindays/timeinyears - note that for FX contracts of >=1 duration, these values will follow the market convention of integer days
 has [qw(
-        ask_probability
-        theo_probability
-        bid_probability
-        discounted_probability
-        bs_probability
         timeinyears
         timeindays
         )
@@ -875,6 +870,23 @@ sub _build_corporate_actions {
     return \@actions;
 }
 
+has probability => (
+    is         => 'ro',
+    lazy_build => 1,
+    handles    => [qw/ theo_probability ask_probability bid_probability discounted_probability bs_probability /],
+);
+
+sub _build_probability {
+    my $self = shift;
+
+    return Contract::Probability->new(
+        market_name => $self->market->name,
+        new_interface_engine => $self->new_interface_engine,
+        price_engine_name => $self->price_engine_name,
+        price_engine => $self->price_engine,
+    );
+}
+
 # We adopt "near-far" methodology to price in dividends by adjusting spot and strike.
 # This returns a hash reference with spot and barrrier adjustment for the bet period.
 
@@ -947,55 +959,10 @@ sub _build_discounted_probability {
     return $discount;
 }
 
-sub _build_bid_probability {
-    my $self = shift;
-
-    return $self->default_probabilities->{bid_probability} if $self->primary_validation_error;
-
-    # Effectively you get the same price as if you bought the other side to cancel.
-    my $marked_down = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'bid_probability',
-        description => 'The price we would pay for this contract.',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => 0,
-        maximum     => $self->theo_probability->amount,
-    });
-
-    $marked_down->include_adjustment('add', $self->discounted_probability);
-    $self->opposite_contract->ask_probability->exclude_adjustment('deep_otm_markup');
-    $marked_down->include_adjustment('subtract', $self->opposite_contract->ask_probability);
-
-    return $marked_down;
-}
-
 sub _build_bid_price {
     my $self = shift;
 
     return $self->_price_from_prob('bid_probability');
-}
-
-sub _build_ask_probability {
-    my $self = shift;
-
-    my $theo_probability = $self->theo_probability;
-    my $min_ask          = $self->market->deep_otm_threshold;
-    my $ask_cv           = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'ask_probability',
-        description => 'The price we request for this contract.',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => max($min_ask, $theo_probability->amount),
-        maximum     => 1,
-    });
-
-    $ask_cv->include_adjustment('reset', $self->theo_probability);
-    $ask_cv->include_adjustment('add',   $self->commission_markup);
-
-    my $max_ask = 1 - $min_ask;
-    if ($ask_cv->amount > $max_ask) {
-        $ask_cv->include_adjustment('reset', $self->default_probabilities->{ask_probability});
-    }
-
-    return $ask_cv;
 }
 
 sub is_valid_to_buy {
@@ -1090,7 +1057,7 @@ sub _price_from_prob {
     if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
         $price = $self->value;
     } else {
-        $price = (defined $self->$prob_method) ? $self->payout * $self->$prob_method->amount : undef;
+        $price = (defined $self->probability->$prob_method) ? $self->payout * $self->probability->$prob_method->amount : undef;
     }
     return (defined $price) ? roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $price) : undef;
 }
@@ -1191,23 +1158,6 @@ sub _build_commission_from_stake {
     return $base_commission * $self->commission_multiplier($initial_payout) + $app_commission;
 }
 
-sub _build_theo_probability {
-    my $self = shift;
-
-    if ($self->new_interface_engine) {
-        return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'theo_probability',
-            description => 'theorectical value of a contract',
-            set_by      => $self->pricing_engine_name,
-            base_amount => $self->pricing_engine->probability,
-            minimum     => 0,
-            maximum     => 1,
-        });
-    }
-
-    return $self->pricing_engine->probability;
-}
-
 # Application developer's commission.
 # Defaults to 0%
 has app_markup_percentage => (
@@ -1238,25 +1188,6 @@ sub _build_app_markup_dollar_amount {
     my $self = shift;
 
     return roundnear(0.01, $self->app_markup->amount * $self->payout);
-}
-
-sub _build_bs_probability {
-    my $self = shift;
-
-    my $bs_prob;
-    # Have to keep it this way until we remove CalculatedValue in Contract.
-    if ($self->new_interface_engine) {
-        $bs_prob = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'bs_probability',
-            description => 'BlackScholes value of a contract',
-            set_by      => $self->pricing_engine_name,
-            base_amount => $self->pricing_engine->bs_probability,
-        });
-    } else {
-        $bs_prob = $self->pricing_engine->bs_probability;
-    }
-
-    return $bs_prob;
 }
 
 sub _build_bs_price {
@@ -2704,36 +2635,6 @@ sub add_error {
     $err->{set_by} = __PACKAGE__;
     $self->primary_validation_error(MooseX::Role::Validatable::Error->new(%$err));
     return;
-}
-
-has default_probabilities => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_default_probabilities {
-    my $self = shift;
-
-    my %probabilities = (
-        ask_probability => {
-            description => 'The price we request for this contract.',
-            default     => 1,
-        },
-        bid_probability => {
-            description => 'The price we would pay for this contract.',
-            default     => 0,
-        },
-    );
-    my %map = map {
-        $_ => Math::Util::CalculatedValue::Validatable->new({
-            name        => $_,
-            description => $probabilities{$_}{description},
-            set_by      => __PACKAGE__,
-            base_amount => $probabilities{$_}{default},
-        });
-    } keys %probabilities;
-
-    return \%map;
 }
 
 has is_sold => (
