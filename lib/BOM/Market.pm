@@ -51,13 +51,9 @@ has suspicious_move => (
 
 Only allow integer barrier for this market. Default to false.
 
-=head2 integer_number_of_day
-
-Volatility surface expiry convention. For Forex and commodities it is integer number of day.
-
 =cut
 
-has [qw(integer_barrier integer_number_of_day)] => (
+has [qw(integer_barrier)] => (
     is      => 'ro',
     default => 0,
 );
@@ -148,20 +144,6 @@ has 'asset_type' => (
     is      => 'ro',
     isa     => 'Str',
     default => 'asset',
-);
-
-=head2 vol_cut_off
-
-Represents the vol_cut_off for the market, 
-    default - represents market close
-    NY1000 - represents a cutoff time of 'NY 11:00'
-
-=cut
-
-has 'vol_cut_off' => (
-    is      => 'ro',
-    isa     => 'Str',
-    default => 'Default',
 );
 
 =head2 foreign_bs_probability

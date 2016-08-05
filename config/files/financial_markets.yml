@@ -7,12 +7,10 @@ commodities:
     suspicious_move: 0.05
     display_name: "Commodities"
     display_order: 4
-    integer_number_of_day: 1
     eod_blackout_expiry: '59s'
     sod_blackout_start: '10m'
     reduced_display_decimals: 1
     asset_type: 'currency'
-    vol_cut_off: 'NY1000'
     absolute_barrier_multiplier: 1
     explanation: 'Commodities are traded items with directly usable qualities.'
     license: "realtime"
@@ -32,10 +30,8 @@ forex:
     deep_otm_threshold: 0.05
     display_name: "Forex"
     display_order: 1
-    integer_number_of_day: 1
     reduced_display_decimals: 1
     asset_type: 'currency'
-    vol_cut_off: 'NY1000'
     foreign_bs_probability: 1
     absolute_barrier_multiplier: 1
     explanation: 'Forex (or foreign exchange) represents the ratio between the values of two currencies.'

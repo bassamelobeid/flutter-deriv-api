@@ -33,7 +33,6 @@ subtest 'everything' => sub {
             underlying_config => BOM::Market::Underlying->new('R_25')->config,
         );
         is $flat->get_volatility, 0.25, '25% volatility for R_25';
-        is $flat->cutoff->code, 'UTC 23:59', 'has cutoff at close';
     }
     'nothing dies';
 };
