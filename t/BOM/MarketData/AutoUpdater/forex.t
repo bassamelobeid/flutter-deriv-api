@@ -236,7 +236,6 @@ subtest "Friday after close, weekend, won't open check." => sub {
 
         my $result = $auf->passes_additional_check($surface);
         cmp_ok($result, '==', $details->{success}, "Surface with recorded_date for the '$name' test doesn't update.");
-        $DB::single=1 if $name eq 'wont_open';
 
         if (not $result) {
             is(
