@@ -24,6 +24,7 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::System::Config;
 use BOM::Backoffice::FormAccounts;
+use BOM::Platform::Countries;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -158,6 +159,7 @@ if ($input{whattodo} eq 'uploadID') {
     my $docformat       = $cgi->param('docformat');
     my $expiration_date = $cgi->param('expiration_date');
     my $broker_code     = $cgi->param('broker');
+    my $docnationality  = $cgi->param('docnationality');
 
     if (not $filetoupload) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />";
@@ -179,6 +181,13 @@ if ($input{whattodo} eq 'uploadID') {
             code_exit_BO();
         }
 
+    }
+
+    if ($docnationality && $docnationality =~ /[a-z]{2}/ && not BOM::Platform::Countries->instance->restricted_country($docnationality)) {
+        $client->citizen($docnationality);
+    } else {
+        print "<br /><p style=\"color:red; font-weight:bold;\">Error: Please select correct nationality and make sure its not in restricted list</p><br />";
+        code_exit_BO();
     }
 
     my $newfilename = "$dbloc/clientIDscans/$broker/$loginid.$doctype." . (time()) . ".$docformat";
@@ -650,6 +659,26 @@ print qq{
   <input type=hidden name=whattodo value=uploadID>
   <input type=hidden name=broker value=$broker>
   <input type=hidden name=loginID value=$loginid>
+  <br/>
+  <br/>
+  <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence)</label>
+  <select id="docnationalityselect" name="docnationality">
+    <option value="">Please select</option>
+};
+
+foreach my $code (sort BOM::Platform::Countries->instance->countries->all_country_codes) {
+    my $country_name = BOM::Platform::Countries->instance->countries->country_from_code($code);
+    if (BOM::Platform::Countries->instance->restricted_country($code)) {
+        print "<option value='$code' disabled>$country_name</option>";
+    } else {
+        print "<option value='$code'>$country_name</option>";
+    }
+}
+
+print qq{
+  </select>
+  <br/>
+  <br/>
   Expiration date:<input type="text" size=10 name="expiration_date"><i> format YYYY-MM-DD </i>
   <input type=submit value="Upload new ID doc.">
 </form>
