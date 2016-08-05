@@ -230,14 +230,18 @@ sub _build_priced_portfolios {
 
     my %priced_portfolios;
 
-    my $expiry_days = $self->hedge_tid->amount + 1;
-    my $atm_vol     = $self->bet->volsurface->get_volatility({
-        days  => $expiry_days,
+    # Plus 1 day to get volatility seems to be hacky.
+    # Will backtest this to decide whether to keep/remove it.
+    my $from    = $self->bet->effective_start;
+    my $to      = $self->bet->date_expiry->plus_time_interval('1d');
+    my $atm_vol = $self->bet->volsurface->get_volatility({
+        from  => $from,
+        to    => $to,
         delta => 50,
     });
 
     foreach my $portfolio_name (keys %{$self->portfolios}) {
-        $priced_portfolios{$portfolio_name} = $self->portfolio_hedge($portfolio_name, $atm_vol, $expiry_days);
+        $priced_portfolios{$portfolio_name} = $self->portfolio_hedge($portfolio_name, $atm_vol, $from, $to);
     }
 
     return \%priced_portfolios;
@@ -252,7 +256,7 @@ Determine the hedge for a given portfolio name for the given ATM vol and expiry 
 =cut
 
 sub portfolio_hedge {
-    my ($self, $portfolio_name, $atm_vol, $expiry_days) = @_;
+    my ($self, $portfolio_name, $atm_vol, $from, $to) = @_;
 
     my $bet       = $self->bet;
     my $portfolio = $self->portfolios->{$portfolio_name};
@@ -278,7 +282,8 @@ sub portfolio_hedge {
         my $delta = $option->{delta};
 
         my $vv_vol = $bet->volsurface->get_volatility({
-            days  => $expiry_days,
+            from  => $from,
+            to    => $to,
             delta => ($option->{type} eq 'VANILLA_CALL' ? $delta : 100 - $delta),
         });
 

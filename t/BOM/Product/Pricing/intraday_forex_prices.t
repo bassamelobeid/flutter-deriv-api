@@ -60,13 +60,10 @@ my @ct = grep { !$equal{$_} } get_offerings_with_filter(
         expiry_type       => 'intraday',
         start_type        => 'spot'
     });
+my $vol = 0.15062438755219;
 subtest 'prices without economic events' => sub {
 
     foreach my $contract_type (@ct) {
-        my $vol = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying})->get_volatility({
-            delta => 50,
-            days  => $duration / 86400
-        });
         my @barriers = @{
             BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
                     type       => 'single',
@@ -89,7 +86,6 @@ subtest 'prices without economic events' => sub {
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
                 is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct ask probability [' . $c->shortcode . ']';
-
             }
             'survived';
         }
@@ -131,10 +127,6 @@ subtest 'prices with economic events' => sub {
                     event_name   => 'Construction Spending m/m'
                 }]});
     foreach my $contract_type (@ct) {
-        my $vol = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying})->get_volatility({
-            delta => 50,
-            days  => $duration / 86400
-        });
         my @barriers = @{
             BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
                     type       => 'single',
@@ -184,4 +176,3 @@ subtest 'atm prices with economic events' => sub {
         }
     }
 };
-

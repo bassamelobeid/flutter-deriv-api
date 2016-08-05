@@ -646,25 +646,8 @@ sub _build_timeinyears {
 sub _build_timeindays {
     my $self = shift;
 
-    my $start_date = $self->effective_start;
-
-    my $atid;
-    # If market is Forex, We go with integer days as per the market convention
-    if ($self->market->integer_number_of_day and not $self->priced_with_intraday_model) {
-        my $recorded_date = $self->volsurface->recorded_date;
-        my $utils         = Quant::Framework::VolSurface::Utils->new;
-        my $days_between  = $self->date_expiry->days_between($recorded_date);
-        $atid = $utils->is_before_rollover($recorded_date) ? ($days_between + 1) : $days_between;
-        if ($recorded_date->day_of_week >= 5 or ($recorded_date->day_of_week == 4 and not $utils->is_before_rollover($recorded_date))) {
-            $atid -= 1;
-        }
-        # On contract starting on Thursday expiring on Friday,
-        # this algorithm will be zero. We are flooring it at 1 day.
-        $atid = max(1, $atid);
-    }
-    # If intraday or not FX, then use the exact duration with fractions of a day.
-    $atid ||= $self->get_time_to_expiry({
-            from => $start_date,
+    my $atid = $self->get_time_to_expiry({
+            from => $self->effective_start,
         })->days;
 
     my $tid = Math::Util::CalculatedValue::Validatable->new({
@@ -1403,7 +1386,8 @@ sub _build_pricing_vol {
     my $pen = $self->pricing_engine_name;
     if ($pen =~ /VannaVolga/) {
         $vol = $self->volsurface->get_volatility({
-            days  => $self->timeindays->amount,
+            from  => $self->effective_start,
+            to    => $self->date_expiry,
             delta => 50
         });
     } elsif ($self->priced_with_intraday_model) {
@@ -1535,7 +1519,8 @@ sub _build_vol_at_strike {
         q_rate => $self->q_rate,
         r_rate => $self->r_rate,
         spot   => $pricing_spot,
-        days   => $self->timeindays->amount,
+        from   => $self->effective_start,
+        to     => $self->date_expiry,
     };
 
     if ($self->two_barriers) {
@@ -1730,11 +1715,6 @@ sub _market_convention {
     my $self = shift;
 
     return {
-        calculate_expiry => sub {
-            my ($start, $expiry) = @_;
-            my $utils = Quant::Framework::VolSurface::Utils->new;
-            return $utils->effective_date_for($expiry)->days_between($utils->effective_date_for($start));
-        },
         get_rollover_time => sub {
             my $when = shift;
             return Quant::Framework::VolSurface::Utils->new->NY1700_rollover_date_on($when);
@@ -1768,7 +1748,7 @@ sub _market_data {
             # if there's new surface data, calculate vol from that.
             my $vol;
             if ($surface_data) {
-                my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
+                my $new_volsurface_obj = $volsurface->clone({surface_data => $surface_data});
                 $vol = $new_volsurface_obj->get_volatility($args);
             } else {
                 $vol = $volsurface->get_volatility($args);
@@ -1918,9 +1898,9 @@ sub _vols_at_point {
     my ($self, $end_date, $days_attr) = @_;
 
     my $vol_args = {
-        delta     => 50,
-        days      => $self->$days_attr->amount,
-        for_epoch => $self->effective_start->epoch,
+        delta => 50,
+        from  => $self->effective_start,
+        to    => $self->date_expiry,
     };
 
     my $market_name = $self->underlying->market->name;
@@ -2617,7 +2597,7 @@ sub _validate_volsurface {
     my $message_to_client = localize('Trading is suspended due to missing market data.');
     my $surface_age       = ($now->epoch - $volsurface->recorded_date->epoch) / 3600;
 
-    if ($volsurface->get_smile_flags) {
+    if ($volsurface->validation_error) {
         return {
             message           => "Volsurface has smile flags [symbol: " . $self->underlying->symbol . "]",
             message_to_client => $message_to_client,
