@@ -11,7 +11,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Market::Data::Tick;
+use Quant::Framework::Spot::Tick;
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 
