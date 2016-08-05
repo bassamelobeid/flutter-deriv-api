@@ -25,6 +25,8 @@ use Scalar::Util qw( looks_like_number );
 use Memoize;
 use Time::HiRes;
 use Finance::Asset;
+use Quant::Framework::Spot;
+use Quant::Framework::Spot::Tick;
 
 use Quant::Framework::Exchange;
 use Quant::Framework::TradingCalendar;
@@ -37,7 +39,8 @@ use POSIX;
 use YAML::XS qw(LoadFile);
 use Try::Tiny;
 use BOM::Platform::Runtime;
-use BOM::Market::Data::DatabaseAPI;
+use Quant::Framework::Spot::DatabaseAPI;
+use BOM::Database::FeedDB;
 use BOM::Platform::Context qw(request localize);
 use BOM::Market::Types;
 use Quant::Framework::Asset;
@@ -142,6 +145,40 @@ has 'symbol' => (
     isa      => 'Str',
     required => 1,
 );
+
+has spot_source => (
+    is         => 'ro',
+    lazy_build => 1,
+    handles    => {
+        'set_combined_realtime'      => 'set_spot_tick',
+        'get_combined_realtime_tick' => 'spot_tick',
+        'get_combined_realtime'      => 'spot_tick_hash',
+        'spot_tick'                  => 'spot_tick',
+        'spot_time'                  => 'spot_time',
+        'spot_age'                   => 'spot_age',
+        'tick_at'                    => 'tick_at',
+    });
+
+sub _build_spot_source {
+    my $self = shift;
+
+    return $self->_builder->build_spot;
+}
+
+sub closing_tick_on {
+    my $self = shift;
+    my $end  = shift;
+
+    my $closing = $self->calendar->closing_on(Date::Utility->new($end));
+
+    return $self->spot_source->closing_tick_on($end, $closing);
+}
+
+sub spot {
+    my $self = shift;
+
+    return $self->pipsized_value($self->spot_source->spot_quote);
+}
 
 # Can not be made into an attribute to avoid the caching problem.
 
@@ -277,6 +314,16 @@ sub _build_config {
 
     $default_interest_rate = 0 if $zero_irate{$self->market->name};
 
+    my $build_args = {underlying => $self->system_symbol};
+
+    $build_args->{use_official_ohlc} = 1 if ($self->use_official_ohlc);
+    $build_args->{invert_values}     = 1 if $self->inverted;
+    $build_args->{db_handle}         = sub {
+        my $dbh = BOM::Database::FeedDB::read_dbh;
+        $dbh->{RaiseError} = 1;
+        return $dbh;
+    };
+
     return Quant::Framework::Utils::UnderlyingConfig->new({
         symbol                                => $self->symbol,
         system_symbol                         => $self->system_symbol,
@@ -288,7 +335,6 @@ sub _build_config {
         exchange_name                         => $self->exchange_name,
         uses_implied_rate_for_asset           => $self->uses_implied_rate($self->asset_symbol) // '',
         uses_implied_rate_for_quoted_currency => $self->uses_implied_rate($self->quoted_currency_symbol) // '',
-        spot                                  => $self->spot,
         asset_symbol                          => $self->asset_symbol,
         quoted_currency_symbol                => $self->quoted_currency_symbol,
         extra_vol_diff_by_delta               => BOM::System::Config::quants->{market_data}->{extra_vol_diff_by_delta},
@@ -296,6 +342,9 @@ sub _build_config {
         asset_class                           => $asset_class,
         default_interest_rate                 => $default_interest_rate,
         default_dividend_rate                 => $default_dividend_rate,
+        use_official_ohlc                     => $self->use_official_ohlc,
+        pip_size                              => $self->pip_size,
+        spot_db_args                          => $build_args,
     });
 }
 
@@ -368,7 +417,7 @@ has forward_feed => (
 
 has 'feed_api' => (
     is      => 'ro',
-    isa     => 'BOM::Market::Data::DatabaseAPI',
+    isa     => 'Quant::Framework::Spot::DatabaseAPI',
     handles => {
         ticks_in_between_start_end   => 'ticks_start_end',
         ticks_in_between_start_limit => 'ticks_start_limit',
@@ -990,27 +1039,14 @@ sub _build_quoted_currency_symbol {
 
 =head2 feed_api
 
-Returns, an instance of I<BOM::Market::Data::DatabaseAPI> based on information that it can collect from underlying.
+Returns, an instance of I<Quant::Framework::Spot::DatabaseAPI> based on information that it can collect from underlying.
 
 =cut
 
 sub _build_feed_api {
     my $self = shift;
 
-    my $build_args = {underlying => $self->system_symbol};
-    if ($self->use_official_ohlc) {
-        $build_args->{use_official_ohlc} = 1;
-    }
-
-    if ($self->ohlc_daily_open) {
-        $build_args->{ohlc_daily_open} = $self->ohlc_daily_open;
-    }
-
-    if ($self->inverted) {
-        $build_args->{invert_values} = 1;
-    }
-
-    return BOM::Market::Data::DatabaseAPI->new($build_args);
+    return $self->_builder->build_feed_api;
 }
 
 # End of builders.
@@ -1277,193 +1313,9 @@ sub is_in_quiet_period {
     return $quiet;
 }
 
-=head1 REALTIME TICK METHODS
-=head2 $self->set_combined_realtime($value)
-
-Save last tick value for symbol in Redis. Returns true if operation was
-successfull, false overwise. Tick value should be a hash reference like this:
-
-{
-    epoch => $unix_timestamp,
-    quote => $last_price,
-}
-
-=cut
-
-sub set_combined_realtime {
-    my ($self, $value) = @_;
-
-    my $tick;
-    if (ref $value eq 'BOM::Market::Data::Tick') {
-        $tick  = $value;
-        $value = $value->as_hash;
-    } else {
-        $tick = BOM::Market::Data::Tick->new($value);
-    }
-    Cache::RedisDB->set_nw('COMBINED_REALTIME', $self->symbol, $value);
-    return $tick;
-}
-
-=head2 $self->get_combined_realtime
-
-Get last tick value for symbol from Redis. It will rebuild value from
-feed db if it is not present in cache.
-
-=cut
-
-sub get_combined_realtime_tick {
-    my $self = shift;
-
-    my $value = Cache::RedisDB->get('COMBINED_REALTIME', $self->symbol);
-    my $tick;
-    if ($value) {
-        $tick = BOM::Market::Data::Tick->new($value);
-    } else {
-        $tick = $self->tick_at(time, {allow_inconsistent => 1});
-        if ($tick) {
-            $self->set_combined_realtime($tick);
-        }
-    }
-
-    return $tick;
-}
-
-sub get_combined_realtime {
-    my $self = shift;
-
-    my $tick = $self->get_combined_realtime_tick;
-
-    return ($tick) ? $tick->as_hash : undef;
-}
-
-=head2 spot
-
-What is the current spot price for this underlying?
-
-=cut
-
-# Get the last available value currently defined in realtime DB
-
-sub spot {
-    my $self = shift;
-    my $last_price;
-
-    my $last_tick = $self->spot_tick;
-    $last_price = $last_tick->quote if $last_tick;
-
-    return $self->pipsized_value($last_price);
-}
-
-=head2 spot_tick
-
-What is the current tick on this underlying
-
-=cut
-
-sub spot_tick {
-    my $self = shift;
-
-    return ($self->for_date)
-        ? $self->tick_at($self->for_date->epoch, {allow_inconsistent => 1})
-        : $self->get_combined_realtime_tick;
-}
-
-=head2 spot_time
-
-The epoch timestamp of the latest recorded tick in the .realtime file or undef if we can't find one.
-t
-=cut
-
-sub spot_time {
-    my $self      = shift;
-    my $last_tick = $self->spot_tick;
-    return $last_tick && $last_tick->epoch;
-}
-
-=head2 spot_age
-
-The age in seconds of the latest tick
-
-=cut
-
-sub spot_age {
-    my $self      = shift;
-    my $tick_time = $self->spot_time;
-    return defined $tick_time && time - $tick_time;
-}
-
 =head1 FEED METHODS
-=head2 tick_at
-
-What was the market tick at a given timestamp?  This will be the tick on or before the supplied timestamp.
 
 =cut
-
-sub tick_at {
-    my ($self, $timestamp, $allow_inconsistent_hash) = @_;
-
-    my $inconsistent_price;
-    if (defined $allow_inconsistent_hash->{allow_inconsistent}
-        and $allow_inconsistent_hash->{allow_inconsistent} == 1)
-    {
-        $inconsistent_price = 1;
-    }
-
-    my $pricing_date = Date::Utility->new($timestamp);
-    my $tick;
-
-    # get official close for previous trading day
-    if ($self->use_official_ohlc
-        and not $self->calendar->trades_on($pricing_date))
-    {
-        my $last_trading_day = $self->calendar->trade_date_before($pricing_date);
-        $tick = $self->closing_tick_on($last_trading_day->date_ddmmmyy);
-    } else {
-        my $request_hash = {};
-        $request_hash->{end_time} = $timestamp;
-        $request_hash->{allow_inconsistent} = 1 if ($inconsistent_price);
-
-        $tick = $self->feed_api->tick_at($request_hash);
-    }
-
-    return $tick;
-}
-
-=head2 closing_tick_on
-
-Get the market closing tick for a given date.
-
-Example : $underlying->closing_tick_on("10-Jan-00");
-
-=cut
-
-sub closing_tick_on {
-    my ($self, $end) = @_;
-    my $date = Date::Utility->new($end);
-
-    my $closing = $self->calendar->closing_on($date);
-    if ($closing and time > $closing->epoch) {
-        my $ohlc = $self->ohlc_between_start_end({
-            start_time         => $date,
-            end_time           => $date,
-            aggregation_period => 86400,
-        });
-
-        if ($ohlc and scalar @{$ohlc} > 0) {
-
-            # We need a tick, but we can only get an OHLC
-            # The epochs for these are set to be the START of the period.
-            # So we also need to change it to the closing time. Meh.
-            my $not_tick = $ohlc->[0];
-            return BOM::Market::Data::Tick->new({
-                symbol => $self->symbol,
-                epoch  => $closing->epoch,
-                quote  => $not_tick->close,
-            });
-        }
-    }
-    return;
-}
 
 sub get_ohlc_data_for_period {
     my ($self, $args) = @_;
@@ -1540,21 +1392,21 @@ Get next tick after a given time. What is the next tick on this underlying after
     my $tick = $underlying->next_tick_after(1234567890);
 
 Return:
-    'BOM::Market::Data::Tick' Object
+    'Quant::Framework::Spot::Tick' Object
 
 =head2 breaching_tick
 
 Get first tick in a provided period which breaches a barrier (either 'higher' or 'lower')
 
 Return:
-    'BOM::Market::Data::Tick' Object or undef
+    'Quant::Framework::Spot::Tick' Object or undef
 
 =head2 ticks_in_between_start_end
 
 Gets ticks for specified start_time, end_time as all ticks between start_time and end_time
 
 Returns,
-    ArrayRef[BOM::Market::Data::Tick] on success
+    ArrayRef[Quant::Framework::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ticks_in_between_start_limit
@@ -1562,7 +1414,7 @@ Returns,
 Get ticks for specified start_time, limit as limit number of ticks from start_time
 
 Returns,
-    ArrayRef[BOM::Market::Data::Tick] on success
+    ArrayRef[Quant::Framework::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ticks_in_between_end_limit
@@ -1570,7 +1422,7 @@ Returns,
 Get ticks for specified end_time, limit as limit number of ticks from end_time.
 
 Returns,
-    ArrayRef[BOM::Market::Data::Tick] on success
+    ArrayRef[Quant::Framework::Spot::Tick] on success
     empty ArrayRef on failure
 
 =head2 ohlc_between_start_end
@@ -1578,7 +1430,7 @@ Returns,
 Gets ohlc for specified start_time, end_time, aggregation_period
 
 Returns,
-    ArrayRef[BOM::Market::Data::OHLC] on success
+    ArrayRef[Quant::Framework::Spot::OHLC] on success
     empty ArrayRef on failure
 
 
@@ -1639,29 +1491,12 @@ sub _build_display_decimals {
     return log(1 / $self->pip_size) / log(10);
 }
 
-=head2 pipsized_value
-
-Resize a value to conform to the pip size of this underlying
-
-=cut
-
-sub pipsized_value {
-    my ($self, $value, $custom) = @_;
-
-    my ($pip_size, $display_decimals) =
-          ($custom)
-        ? ($custom, log(1 / $custom) / log(10))
-        : ($self->pip_size, $self->display_decimals);
-    if (defined $value and looks_like_number($value)) {
-        $value = sprintf '%.' . $display_decimals . 'f', $value;
-    }
-    return $value;
-}
-
 sub breaching_tick {
     my ($self, %args) = @_;
 
-    $args{underlying} = $self;
+    $args{underlying}    = $self->symbol;
+    $args{pip_size}      = $self->pip_size;
+    $args{system_symbol} = $self->system_symbol;
 
     return $self->feed_api->get_first_tick(%args);
 }
@@ -1796,6 +1631,25 @@ sub _build_corporate_actions {
         keys %grouped_by_date;
 
     return \@ordered_actions;
+}
+
+=head2 pipsized_value
+
+Resize a value to conform to the pip size of this underlying
+
+=cut
+
+sub pipsized_value {
+    my ($self, $value, $custom) = @_;
+
+    my ($pip_size, $display_decimals) =
+          ($custom)
+        ? ($custom, log(1 / $custom) / log(10))
+        : ($self->pip_size, $self->display_decimals);
+    if (defined $value and looks_like_number($value)) {
+        $value = sprintf '%.' . $display_decimals . 'f', $value;
+    }
+    return $value;
 }
 
 sub _build_applicable_corporate_actions {

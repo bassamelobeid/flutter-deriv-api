@@ -10,9 +10,13 @@ use Test::Warn;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Market::Data::DatabaseAPI;
+use Quant::Framework::Spot::DatabaseAPI;
+use Quant::Framework::Spot::OHLC;
 use DateTime;
 use Date::Utility;
+
+my $dbh = BOM::Database::FeedDB::read_dbh;
+$dbh->{RaiseError} = 1;
 
 subtest 'Preparing records' => sub {
 
@@ -112,9 +116,10 @@ subtest 'Preparing records' => sub {
 };
 
 subtest 'Simple OHLC fetch' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
-        use_official_ohlc => 1
+        use_official_ohlc => 1,
+        db_handle         => $dbh,
     );
 
     subtest 'from ohlc only' => sub {
@@ -203,9 +208,10 @@ subtest 'Simple OHLC fetch' => sub {
 };
 
 subtest 'Testing selection when both are present' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
-        use_official_ohlc => 1
+        use_official_ohlc => 1,
+        db_handle         => $dbh,
     );
 
     my $data = $api->ohlc_daily_list({
@@ -245,10 +251,11 @@ subtest 'Testing selection when both are present' => sub {
 };
 
 subtest 'Tail End ticks' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
-    my $official_api = BOM::Market::Data::DatabaseAPI->new(
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
+    my $official_api = Quant::Framework::Spot::DatabaseAPI->new(
         underlying        => 'frxUSDJPY',
-        use_official_ohlc => 1
+        use_official_ohlc => 1,
+        db_handle         => $dbh,
     );
 
     subtest 'Preparing ticks' => sub {
@@ -372,7 +379,7 @@ subtest 'Tail End ticks' => sub {
 };
 
 subtest 'Non Official OHLC' => sub {
-    my $api = BOM::Market::Data::DatabaseAPI->new(underlying => 'frxUSDJPY');
+    my $api = Quant::Framework::Spot::DatabaseAPI->new(underlying => 'frxUSDJPY', db_handle => $dbh);
 
     subtest 'One OHLC Data' => sub {
         my $data = $api->ohlc_daily_list({
