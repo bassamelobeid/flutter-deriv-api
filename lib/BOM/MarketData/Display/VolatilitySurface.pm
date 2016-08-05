@@ -10,6 +10,7 @@ use VolSurface::Utils qw( get_1vol_butterfly );
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Underlying;
 use BOM::Backoffice::GNUPlot;
+use List::Util qw(uniq);
 use Try::Tiny;
 
 =head1 surface
@@ -28,18 +29,6 @@ has _field_separator => (
     is      => 'ro',
     default => "\t",
 );
-
-has _output_format => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__output_format {
-    my $self = shift;
-
-    my $print_precision = $self->surface->print_precision;
-    return ($print_precision) ? '%.' . $print_precision . 'f' : undef;
-}
 
 =head1 rmg_table_format
 
@@ -80,7 +69,6 @@ sub rmg_table_format {
     my @headers  = ('days');
     my $hour_age = sprintf('%.2f', (Date::Utility->new->epoch - $volsurface->recorded_date->epoch) / 3600);
     my $title    = $volsurface->recorded_date->datetime . ' (' . $hour_age . ' hours ago)';
-    my $cut      = $volsurface->cutoff->code;
 
     my $forward_vols = $self->get_forward_vol();
     my @surface;
@@ -200,15 +188,9 @@ sub rmg_table_format {
         notes   => 'Notes: 1-day forward vol of day-365, is actually the forward vol for day-271 to day-365, etc',
     };
 
-    my $ON_cut_date =
-        $volsurface->cutoff->cutoff_date_for_effective_day(Date::Utility->new($volsurface->effective_date->epoch + $volsurface->_ON_day * 86400),
-        $underlying);
-
     my $template_param = {
         historical_dates => $dates_tt,
         big_title        => $title,
-        cut              => $volsurface->cutoff->code,
-        ON_cut_datetime  => $ON_cut_date->datetime,
         underlying       => $underlying->symbol,
         tab_id           => $tab_id,
         table1           => $table1_param,
@@ -341,19 +323,13 @@ sub rmg_text_format {
     push @surface, join $self->_field_separator, ('day', @surface_vol_point, @formated_surface_spread_point);
 
     foreach my $day (@{$volsurface->term_by_day}) {
-        my $smile = $volsurface->get_smile($day);
+        my $smile = $volsurface->get_surface_smile($day);
 
         my $spread = $volsurface->get_smile_spread($day);
         my $row = $self->_construct_smile_line($day, $smile);
 
-        if ($atm_spread_point ne 'atm_spread') {
-            $spread = $spread->{'vol_spread'};
-        }
-
         foreach my $spread_point (@surface_spread_point) {
-
-            $row .= $self->_field_separator . $spread->{$spread_point};
-
+            $row .= $self->_field_separator . roundnear(0.0001, $spread->{$spread_point});
         }
 
         push @surface, $row;
@@ -369,16 +345,8 @@ sub _construct_smile_line {
 
     my $volsurface = $self->surface;
 
-    my @surface_vol_point;
-    my $vol_type;
-    if ($volsurface->type eq 'delta') {
-        @surface_vol_point = @{$volsurface->deltas};
-        $vol_type          = 'delta';
-
-    } elsif ($volsurface->type eq 'moneyness') {
-        @surface_vol_point = @{$volsurface->moneynesses};
-        $vol_type          = 'moneyness';
-    }
+    my @surface_vol_point = @{$volsurface->smile_points};
+    my $vol_type          = $volsurface->type;
 
     my %deltas_to_use = map { $_ => 1 } @surface_vol_point;
 
@@ -388,10 +356,7 @@ sub _construct_smile_line {
 
     foreach my $point (sort { $a <=> $b } keys %{$smile_ref}) {
         next if not $deltas_to_use{$point};
-        my $output =
-            ($self->_output_format)
-            ? sprintf($self->_output_format, $smile_ref->{$point})
-            : $smile_ref->{$point};
+        my $output = sprintf('%.4f', $smile_ref->{$point});
         push @smile_line, $output;
     }
 
@@ -406,16 +371,11 @@ sub html_volsurface_in_table {
     my ($self, $args) = @_;
     my $class = $args->{class};
 
-    my $surface = $self->surface;
-    my @volatility_type;
-    my @spreads_points = @{$surface->spread_points};
+    my $surface         = $self->surface;
+    my @volatility_type = @{$surface->smile_points};
+    my @spreads_points  = @{$surface->spread_points};
 
     my @days = @{$surface->original_term_for_smile};
-    if ($surface->type eq 'delta') {
-        @volatility_type = @{$surface->deltas};
-    } elsif ($surface->type eq 'moneyness') {
-        @volatility_type = @{$surface->moneynesses};
-    }
 
     $class = $class ? ' class="' . $class . '"' : '';
 
@@ -461,20 +421,10 @@ sub html_volsurface_in_table {
         }
 
         foreach my $spread_point (@spreads_points) {
-
             my $hacked_spread_point = $spread_point;
             $hacked_spread_point =~ s/\./point/g;
-
-            my $display_spread;
-            if ($spread_point eq 'atm_spread') {
-                $display_spread = roundnear(0.0001, $spread->{$spread_point});
-            } else {
-
-                $display_spread = roundnear(0.0001, $spread->{vol_spread}->{$spread_point});
-            }
-
+            my $display_spread = roundnear(0.0001, $spread->{$spread_point});
             $output .= "<td data-jsonify-name=\"$day.vol_spread.$hacked_spread_point\" data-jsonify-getter=\"anything\">$display_spread</td>";
-
         }
 
         $output .= "</tr>";
@@ -504,11 +454,14 @@ sub print_comparison_between_volsurface {
     $ref_surface_source ||= "USED";
     $surface_source     ||= "NEW";
 
-    my @days = @{$surface->original_term_for_smile};
+    my @new_days = @{$surface->original_term_for_smile};
+    my @existing_days = @{$ref_surface->original_term_for_smile};
+    my @days = uniq(@new_days, @existing_days);
+
     my @column_names;
     my $vol_type = $surface->type;
 
-    my @surface_vol_point = $vol_type eq 'delta' ? @{$surface->deltas} : @{$surface->moneynesses};
+    my @surface_vol_point    = @{$surface->smile_points};
     my @surface_spread_point = @{$surface->spread_points};
 
     push @column_names, (@surface_vol_point, @surface_spread_point);
@@ -540,48 +493,42 @@ sub print_comparison_between_volsurface {
         push @output, "<TH>$days[$i]</TH>";
         foreach my $col_point (sort { $a <=> $b } @surface_vol_point) {
 
-            my $vol = roundnear(
-                0.0001,
-                $surface->get_volatility({
-                        days      => $days[$i],
-                        $vol_type => $col_point
-                    }));
-            my $ref_vol = roundnear(
-                0.0001,
-                $ref_surface->get_volatility({
-                        days      => $days[$i],
-                        $vol_type => $col_point
-                    }));
+            my $vol = roundnear( 0.0001, $surface->get_surface_volatility($days[$i], $col_point));
+            my $ref_vol = roundnear( 0.0001, $ref_surface->get_surface_volatility($days[$i], $col_point));
 
-            my $vol_picture =
-                (abs($vol - $ref_vol) < 0.001)
-                ? ''
-                : (($vol > $ref_vol) ? 'change_up_1.gif' : 'change_down_1.gif');
+            if (defined $vol and defined $ref_vol) {
+                my $vol_picture =
+                    (abs($vol - $ref_vol) < 0.001)
+                    ? ''
+                    : (($vol > $ref_vol) ? 'change_up_1.gif' : 'change_down_1.gif');
 
-            my $volpoint_diff   = abs($vol - $ref_vol);
-            my $percentage_diff = $volpoint_diff / $ref_vol * 100;
-            my $big_difference  = ($volpoint_diff > 0.03 and $percentage_diff > 100) ? 1 : 0;
+                my $volpoint_diff   = abs($vol - $ref_vol);
+                my $percentage_diff = $volpoint_diff / $ref_vol * 100;
+                my $big_difference  = ($volpoint_diff > 0.03 and $percentage_diff > 100) ? 1 : 0;
+                if ($big_difference) {
+                    $found_big_difference++;
+                    $big_diff_msg =
+                          'Big difference found on term['
+                        . $days[$i]
+                        . '] for point ['
+                        . $col_point
+                        . '] with absolute diff ['
+                        . $volpoint_diff
+                        . '] percentage diff ['
+                        . $percentage_diff . ']';
+                }
 
-            if ($big_difference) {
-                $found_big_difference++;
-                $big_diff_msg =
-                      'Big difference found on term['
-                    . $days[$i]
-                    . '] for point ['
-                    . $col_point
-                    . '] with absolute diff ['
-                    . $volpoint_diff
-                    . '] percentage diff ['
-                    . $percentage_diff . ']';
+                my $bgcolor = ($big_difference) ? 'red' : '';
+                my $html_picture_tag =
+                    $vol_picture
+                    ? "<img src=\"" . request()->url_for("images/pages/flash-charts/$vol_picture") . "\" border=0>"
+                    : '==';
+
+                push @output, qq~<TD align="center" bgcolor="$bgcolor">$vol($surface_source) $html_picture_tag $ref_vol($ref_surface_source)</TD>~;
+            } else {
+                my $which_vol = defined$vol ? $vol : $ref_vol;
+                push @output, qq~<TD align="center">$which_vol($surface_source)</TD>~;
             }
-
-            my $bgcolor = ($big_difference) ? 'red' : '';
-            my $html_picture_tag =
-                $vol_picture
-                ? "<img src=\"" . request()->url_for("images/pages/flash-charts/$vol_picture") . "\" border=0>"
-                : '==';
-
-            push @output, qq~<TD align="center" bgcolor="$bgcolor">$vol($surface_source) $html_picture_tag $ref_vol($ref_surface_source)</TD>~;
         }
 
         foreach my $spread_point (sort { $a <=> $b } @surface_spread_point) {
@@ -589,18 +536,23 @@ sub print_comparison_between_volsurface {
             my $ref_spread = roundnear(0.0001, $ref_surface->{'surface'}->{$days[$i]}->{'vol_spread'}->{$spread_point});
             my $spread     = roundnear(0.0001, $surface->{'surface'}->{$days[$i]}->{'vol_spread'}->{$spread_point});
 
-            my $spread_picture =
-                (abs($spread - $ref_spread) < 0.001) ? ''
-                : (
-                ($spread > $ref_spread) ? 'change_up_1.gif'
-                : 'change_down_1.gif'
-                );
-            my $html_picture_tag =
-                $spread_picture
-                ? "<img src=\"" . request()->url_for("images/pages/flash-charts/$spread_picture") . "\" border=0>"
-                : '==';
+            if (defined $ref_spread and defined $spread) {
+                my $spread_picture =
+                    (abs($spread - $ref_spread) < 0.001) ? ''
+                    : (
+                    ($spread > $ref_spread) ? 'change_up_1.gif'
+                    : 'change_down_1.gif'
+                    );
+                my $html_picture_tag =
+                    $spread_picture
+                    ? "<img src=\"" . request()->url_for("images/pages/flash-charts/$spread_picture") . "\" border=0>"
+                    : '==';
 
-            push @output, qq~<TD align="center" >$spread ($surface_source) $html_picture_tag $ref_spread ($ref_surface_source)</TD>~;
+                push @output, qq~<TD align="center" >$spread ($surface_source) $html_picture_tag $ref_spread ($ref_surface_source)</TD>~;
+            } else {
+                my $which_spread = defined $spread ? $spread : $ref_spread;
+                push @output, qq~<TD align="center" >$which_spread($surface_source)</TD>~;
+            }
 
         }
     }
@@ -615,96 +567,6 @@ sub print_comparison_between_volsurface {
 
 # return the number of big differences and the number of total difference at all in the volsurface:
     return ($found_big_difference, $big_diff_msg, @output);
-}
-
-=head1 plot_smile_or_termstructure
-
-=cut
-
-sub plot_smile_or_termstructure {
-    my ($self, $setup) = @_;
-
-    my $surface = $self->surface;
-    my $exist = try { $surface->surface };
-
-    return 'VolSurface does not exist' unless $exist;
-
-    my @surface_vol_point;
-    my $vol_type;
-    if ($surface->type eq 'delta') {
-        @surface_vol_point = @{$surface->deltas};
-        $vol_type          = 'delta';
-
-    } elsif ($surface->type eq 'moneyness') {
-        @surface_vol_point = @{$surface->moneynesses};
-        $vol_type          = 'moneyness';
-    }
-
-    my $days_to_expiry_fix = $setup->{days_to_expiry};
-    my $moneyness_fix      = $setup->{moneyness};
-    my $x_label            = $setup->{x_label};
-    my $top_title          = $setup->{title};
-
-    my @data_to_plot;
-
-    # Plot a Smile By Moneyness For Fixed Time To expiry
-    if ($days_to_expiry_fix) {
-        foreach my $moneyness (sort { $a <=> $b } @surface_vol_point) {
-            push @data_to_plot,
-                (
-                $moneyness . ' '
-                    . 100 * $surface->get_volatility({
-                        days      => $days_to_expiry_fix,
-                        $vol_type => $moneyness,
-                    }));
-        }
-    }
-
-    # Plot Termstructure For Fixed Moneyness
-    else {
-        foreach my $day_to_expiry (@{$surface->term_by_day}) {
-            push @data_to_plot,
-                (
-                $day_to_expiry . ' '
-                    . 100 * $surface->get_volatility({
-                        days      => $day_to_expiry,
-                        $vol_type => $moneyness_fix,
-                    }));
-        }
-    }
-    my $data = join "\n", @data_to_plot;
-
-    if (not $top_title) {
-        $top_title = $days_to_expiry_fix ? 'Smile' : 'Termstructure';
-    }
-
-    my ($file_name, $dir) = ('volsurface_' . int(rand(1000)) . '.png', BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif);
-    my $file           = "$dir/$file_name";
-    my $graphs_gnuplot = BOM::Backoffice::GNUPlot->new({
-        top_title       => $top_title,
-        x_label         => $x_label,
-        y_label         => 'Volatility',
-        x_format        => '%.0f',
-        y_format        => '%.1f',
-        legend_border   => 'box',
-        legend_position => 'out horiz bot right',
-        graph_size      => '400,300',
-        output_file     => $file,
-    });
-
-    $graphs_gnuplot->set_data_properties({
-        using      => '1:2',
-        title      => 'volatility',                        # will be shown as an item in the legend box
-        graph_type => 'lines',
-        line_style => 'lw 2 pt 1 ps 1 lc rgb "#00B900"',
-        fill_style => 'solid 0.2 noborder',
-        data       => $data,
-    });
-
-    $graphs_gnuplot->plot();
-    my $source = request()->url_for('temp/' . $file_name);
-
-    return "<img border=0 src=\"$source\">";
 }
 
 sub calculate_moneyness_vol_for_display {
@@ -722,7 +584,12 @@ sub calculate_moneyness_vol_for_display {
         #my @headers = qw(days date forward_vol RR 2vBF 1vBF skew kurtosis);
         push @row, 100 * roundnear(0.0001, $fv->{$term});
 
-        my %delta_smile = map { $_ => $volsurface->get_volatility({delta => $_, days => $term}) } qw(25 50 75);
+        my %delta_smile = map {
+            $_ => $volsurface->get_volatility({
+                    delta => $_,
+                    from  => $volsurface->recorded_date,
+                    to    => $volsurface->recorded_date->plus_time_interval($term . 'd')})
+        } qw(25 50 75);
         my $rr_bf = $volsurface->get_rr_bf_for_smile(\%delta_smile);
         push @row, roundnear(0.0001, $rr_bf->{RR_25});
         push @row, roundnear(0.0001, $rr_bf->{BF_25});
@@ -745,7 +612,7 @@ sub calculate_moneyness_vol_for_display {
         my $sk = $self->get_skew_kurtosis($rr_bf);
         push @row, roundnear(0.0001, $sk->{skew});
         push @row, roundnear(0.0001, $sk->{kurtosis});
-        my $moneynesses = $volsurface->moneynesses;
+        my $moneynesses = $volsurface->smile_points;
         my $smile       = $volsurface->surface->{$term}->{smile};
         my @rounded_vol =
             map { 100 * roundnear(0.0001, $smile->{$_}) } @$moneynesses;

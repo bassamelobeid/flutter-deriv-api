@@ -19,7 +19,6 @@
     [% IF !historical_dates %]
         <span>Try loading again in a few minutes to see historical dates.</span>
     [% END %]
-    <input type="hidden" name="cutoff" value="[% cut %]" />
     <input type="hidden" name="underlying" value="[% underlying %]" />
     <span id="loading" style="display:none; font-style:italic; color:#0000FF;">loading</span>
 </form>
