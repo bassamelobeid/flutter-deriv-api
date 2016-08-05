@@ -229,11 +229,11 @@ sub _build_slope {
     my $self             = shift;
     my @ticks            = @{$self->ticks_for_trend};
     my $duration_in_secs = $self->bet->timeindays->amount * 86400;
-    my $ticks_count      = 0;
+    my $tick_interval      = 0;
 
-    $ticks_count = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
+    $tick_interval = $ticks[-1]->{epoch} - $ticks[0]->{epoch} if scalar(@ticks) > 1;
 
-    my $ticks_per_sec = $ticks_count / $duration_in_secs;
+    my $ticks_per_sec = $tick_interval / $duration_in_secs;
     return (sqrt(1 - (($ticks_per_sec - 2)**2) / 4));
 }
 
