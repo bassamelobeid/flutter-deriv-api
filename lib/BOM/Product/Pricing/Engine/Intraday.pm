@@ -72,13 +72,16 @@ Presently represent the 1W tenor.  Math::Util::CalculatedValue::Validatable.
 sub _build_long_term_vol {
     my $self = shift;
 
+    my $from = $self->bet->effective_start;
+
     return Math::Util::CalculatedValue::Validatable->new({
             name        => 'long_term_vol',
             description => 'long term (1 week) vol)',
             set_by      => __PACKAGE__,
             base_amount => $self->bet->volsurface->get_volatility({
                     delta => 50,
-                    days  => 7
+                    from  => $from,
+                    to    => $from->plus_time_interval('7d'),
                 }
             ),
         });
