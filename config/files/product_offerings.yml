@@ -341,7 +341,9 @@ R_100: &random_index
   endsinout:
     daily:
       spot:
-        euro_non_atm: *one_day_to_year
+        euro_non_atm: &one_day_to_year
+          max: 365d
+          min: 1d
     intraday:
       spot:
         euro_non_atm: *two_minutes_to_day
