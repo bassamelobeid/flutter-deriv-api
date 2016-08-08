@@ -1742,7 +1742,6 @@ sub _generate_market_data {
         $underlying->quoted_currency_symbol => 1,
         $underlying->asset_symbol           => 1,
     );
-    $DB::single = 1;
 
     my $ee = Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($for_date),
