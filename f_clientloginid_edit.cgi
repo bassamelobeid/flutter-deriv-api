@@ -360,7 +360,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $client->custom_max_acbal($input{$key});
                 next CLIENT_KEY;
             } else {
-                print qq{<p style="color:red">ERROR: Invalid max account balance, can be integer only</p>};
+                print qq{<p style="color:red">ERROR: Invalid max account balance, minimum value is 1 and it can be integer only</p>};
                 code_exit_BO();
             }
         }
@@ -369,7 +369,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $client->custom_max_daily_turnover($input{$key});
                 next CLIENT_KEY;
             } else {
-                print qq{<p style="color:red">ERROR: Invalid daily turnover limit, can be integer only</p>};
+                print qq{<p style="color:red">ERROR: Invalid daily turnover limit, minimum value is 1 and it can be integer only</p>};
                 code_exit_BO();
             }
         }
@@ -378,7 +378,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $client->custom_max_payout($input{$key});
                 next CLIENT_KEY;
             } else {
-                print qq{<p style="color:red">ERROR: Invalid max payout, can be integer only</p>};
+                print qq{<p style="color:red">ERROR: Invalid max payout, minimum value is 1 and it can be integer only</p>};
                 code_exit_BO();
             }
         }
