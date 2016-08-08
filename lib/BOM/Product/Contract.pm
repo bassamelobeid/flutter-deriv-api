@@ -1718,6 +1718,9 @@ sub _generate_market_data {
     my $for_date = $underlying->for_date;
     my $result   = {};
 
+    #this is a list of symbols which are applicable when getting important economic events.
+    #Note that other than currency pair of the fx symbol, we include some other important currencies
+    #here because any event for these currencies, can potentially affect all other currencies too
     my %applicable_symbols = (
         USD                                 => 1,
         AUD                                 => 1,
@@ -1738,6 +1741,8 @@ sub _generate_market_data {
     my @applicable_news =
         sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
 
+    #as of now, we only update the result with a raw list of economic events, later that we move to other
+    #engines, we will add other market-data items too (e.g. dividends, vol-surface, ...)
     $result->{economic_events} = \@applicable_news;
     return $result;
 }
