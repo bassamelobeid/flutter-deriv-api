@@ -21,7 +21,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol        => $_,
-        rates         => {8 => 0},
+        rates         => {8 => 0, 0 => 0},
         recorded_date => $now,
     }) for (qw/JPY USD JPY-USD/);
 
@@ -74,8 +74,8 @@ my $params = {
 };
 my $c = produce_contract($params);
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
-is roundnear(0.0001, $c->bs_probability->amount), 0.1496, 'correct bs probability for FX contract';
-is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0381, 'correct market supplement';
+is roundnear(0.0001, $c->bs_probability->amount), 0.1537, 'correct bs probability for FX contract';
+is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0355, 'correct market supplement';
 
 $c = produce_contract({
     %$params,
@@ -84,8 +84,8 @@ $c = produce_contract({
     low_barrier  => 99,
 });
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
-is roundnear(0.0001, $c->bs_probability->amount), 0.1106, 'correct bs probability for FX contract';
-is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0299, 'correct market supplement';
+is roundnear(0.0001, $c->bs_probability->amount), 0.1053, 'correct bs probability for FX contract';
+is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0287, 'correct market supplement';
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
