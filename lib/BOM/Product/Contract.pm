@@ -540,7 +540,8 @@ sub _build_pricing_engine {
         $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
     } else {
         $pricing_engine = $self->pricing_engine_name->new({
-                bet => $self,
+                bet                     => $self,
+                apply_bounceback_safety => !$self->for_sale,
                 %{$self->pricing_engine_parameters}});
     }
 

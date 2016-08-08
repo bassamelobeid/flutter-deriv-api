@@ -39,7 +39,10 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         quote      => $spot,
         epoch      => $now->epoch,
     });
-    my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul, for_date => $now});
+    my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
+        underlying => $ul,
+        for_date   => $now
+    });
     foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter('contract_category', {underlying_symbol => $ul->symbol}))
     {
         my $category_obj = BOM::Product::Contract::Category->new($contract_category);
@@ -57,7 +60,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                                 from  => $volsurface->recorded_date,
                                 to    => $volsurface->recorded_date->plus_time_interval($duration),
                             }
-                            ),
+                        ),
                     })};
             foreach my $barrier (@barriers) {
                 foreach my $contract_type (get_offerings_with_filter('contract_type', {contract_category => $contract_category})) {
@@ -81,7 +84,8 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         }
                         my $code = join '_', @codes;
                         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-                        is roundnear(0.00001,$c->theo_probability->amount), roundnear(0.00001, $expectation->{$code}), 'theo probability matches [' . $code . ']';
+                        is roundnear(0.00001, $c->theo_probability->amount), roundnear(0.00001, $expectation->{$code}),
+                            'theo probability matches [' . $code . ']';
                     }
                     'survived';
                 }

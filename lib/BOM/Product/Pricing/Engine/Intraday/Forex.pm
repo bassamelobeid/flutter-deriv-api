@@ -35,6 +35,11 @@ has [qw(long_term_prediction)] => (
     lazy_build => 1,
 );
 
+has apply_bounceback_safety => (
+    is      => 'ro',
+    default => undef,
+);
+
 has [qw(pricing_vol news_adjusted_pricing_vol)] => (
     is         => 'rw',
     lazy_build => 1,
@@ -304,7 +309,9 @@ sub calculate_intraday_bounceback {
         $bounceback_base_intraday_trend = ($self->bet->code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
     }
 
-    return ($bounceback_base_intraday_trend + $bounceback_safety);
+    $bounceback_base_intraday_trend += $bounceback_safety if $self->apply_bounceback_safety;
+
+    return $bounceback_base_intraday_trend;
 }
 
 sub calculate_bounceback_base {
