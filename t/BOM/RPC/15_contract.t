@@ -502,9 +502,9 @@ subtest $method => sub {
     };
     my $res = $c->call_ok('get_bid', $params)->result;
     my $expected_result = {
-        'ask_price'       => '208.81',
+        'ask_price'       => '193.04',
         'barrier'         => '0.99360',
-        'bid_price'       => '208.81',
+        'bid_price'       => '193.04',
         'contract_id'     => 10,
         'currency'        => 'USD',
         'date_expiry'     => 1127287060,
@@ -516,7 +516,7 @@ subtest $method => sub {
         'exit_tick'       => '0.99380',
         'exit_tick_time'  => 1127287059,
         'longcode'        => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 40 seconds after contract start time.',
-        'shortcode'       => 'CALL_FRXAUDCAD_208.81_1127286660_1127287060_S0P_0',
+        'shortcode'       => 'CALL_FRXAUDCAD_193.04_1127286660_1127287060_S0P_0',
         'underlying'      => 'frxAUDCAD',
     };
 
