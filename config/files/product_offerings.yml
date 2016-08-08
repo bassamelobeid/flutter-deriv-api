@@ -454,7 +454,7 @@ frxAUDJPY: &active_fx
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
-          max: 5h
+          max: 1d
           min: 15m
     tick:
       spot:
@@ -504,9 +504,7 @@ frxGBPCAD: &no_intraday_pd_fx
         euro_atm:
           max: 365d
           min: 1m
-        euro_non_atm:
-          max: 365d
-          min: 1m
+        euro_non_atm: *one_day_to_year
     intraday:
       forward:
         euro_atm:
