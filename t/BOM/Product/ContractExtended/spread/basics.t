@@ -61,7 +61,7 @@ subtest 'entry tick' => sub {
 
 subtest 'current tick' => sub {
     my $u = Test::MockModule->new('BOM::Market::Underlying');
-    $u->mock('get_combined_realtime_tick', sub { undef });
+    $u->mock('spot_tick', sub { undef });
     my $c = produce_contract($params);
     is $c->current_tick->quote, 0.01, 'current tick is pip size value if current tick is undefined';
     ok($c->primary_validation_error, 'error');

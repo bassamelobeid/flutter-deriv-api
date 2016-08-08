@@ -9,7 +9,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Strike;
 use BOM::Market::Underlying;
-use BOM::Market::Data::Tick;
+use Quant::Framework::Spot::Tick;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -29,7 +29,7 @@ my @codes = qw(
     T_DIGITMATCH_R-50_7t_5_c_USD_EN
 );
 
-my @expected = (0.5, 0.943, 0.498, 0.475089218874021, 0.669, 0.321054315020547, 0.5, 0.1);
+my @expected = (0.5, 0.876, 0.498, 0.475089218874021, 0.669, 0.321054315020547, 0.5, 0.1);
 
 my $count = 0;
 foreach my $code (@codes) {
@@ -74,7 +74,7 @@ foreach my $code (@codes) {
     }
     $bet_args{payout}       = 250;
     $bet_args{currency}     = $currency;
-    $bet_args{entry_tick} = $bet_args{current_tick} = BOM::Market::Data::Tick->new({
+    $bet_args{entry_tick} = $bet_args{current_tick} = Quant::Framework::Spot::Tick->new({
         symbol => $underlying->symbol,
         epoch  => $start_time->epoch + 300,
         quote  => 1.6084
@@ -89,6 +89,7 @@ foreach my $code (@codes) {
     };
 
     my $contract = produce_contract(\%bet_args);
+
     is(roundnear(0.001, $contract->bs_probability->amount), roundnear(0.001, $expected[$count]), 'bs probability for [' . $contract->code . ']');
     $count++;
 }

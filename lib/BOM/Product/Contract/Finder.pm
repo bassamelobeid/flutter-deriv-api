@@ -145,13 +145,14 @@ sub _default_barrier {
     # latest available spot should be sufficient.
     my $barrier_spot = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
     return unless $barrier_spot;
-    my $tid      = $duration / 86400;
-    my $tiy      = $tid / 365;
-    my $vol_args = {
-        delta => 50,
-        days  => $tid
-    };
-    my $volatility          = $volsurface->get_volatility($vol_args);
+    my $tid        = $duration / 86400;
+    my $tiy        = $tid / 365;
+    my $now        = Date::Utility->new;
+    my $volatility = $volsurface->get_volatility({
+        $volsurface->type => $volsurface->atm_spread_point,
+        from              => $now,
+        to                => $now->plus_time_interval($duration),
+    });
     my $approximate_barrier = get_strike_for_spot_delta({
         delta            => 0.2,
         option_type      => $option_type,
@@ -178,11 +179,13 @@ sub _get_minimum_stop_loss {
     my $underlying = shift;
 
     my $vs = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
+    my $from = Date::Utility->new;
     # 7 days volatility should be fine.
     my $spread = $underlying->calculate_spread(
         $vs->get_volatility({
                 delta => 50,
-                days  => 7
+                from  => $from,
+                to    => $from->plus_time_interval('7d'),
             }));
     return 1.5 * $spread;
 }

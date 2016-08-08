@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::Most;
+use Test::Exception;
 use Test::FailWarnings;
 use Scalar::Util qw( looks_like_number );
 use Test::MockModule;
@@ -21,7 +22,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date => Date::Utility->new,
+        recorded_date => Date::Utility->new('2008-01-01'),
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -130,9 +131,8 @@ subtest 'Probabilities etc.' => sub {
     };
 
     my $bet = produce_contract($bet_params);
-
     isa_ok($bet->discounted_probability, 'Math::Util::CalculatedValue::Validatable', 'isa CalculatedValue.');
-    isa_ok($bet->bid_probability,        'Math::Util::CalculatedValue::Validatable', 'isa CalculatedValue.');
+    lives_ok {$bet->bid_probability} 'can call bid_probability for expired contract.';
 
 };
 
