@@ -356,16 +356,31 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             next CLIENT_KEY;
         }
         if ($key eq 'custom_max_acbal') {
-            $client->custom_max_acbal($input{$key});
-            next CLIENT_KEY;
+            if ($key =~ /^\d+$/) {
+                $client->custom_max_acbal($input{$key});
+                next CLIENT_KEY;
+            } else {
+                print qq{<p style="color:red">ERROR: Invalid max account balance, can be integer only</p>};
+                code_exit_BO();
+            }
         }
         if ($key eq 'custom_max_daily_turnover') {
-            $client->custom_max_daily_turnover($input{$key});
-            next CLIENT_KEY;
+            if ($key =~ /^\d+$/) {
+                $client->custom_max_daily_turnover($input{$key});
+                next CLIENT_KEY;
+            } else {
+                print qq{<p style="color:red">ERROR: Invalid daily turnover limit, can be integer only</p>};
+                code_exit_BO();
+            }
         }
         if ($key eq 'custom_max_payout') {
-            $client->custom_max_payout($input{$key});
-            next CLIENT_KEY;
+            if ($key =~ /^\d+$/) {
+                $client->custom_max_payout($input{$key});
+                next CLIENT_KEY;
+            } else {
+                print qq{<p style="color:red">ERROR: Invalid max payout, can be integer only</p>};
+                code_exit_BO();
+            }
         }
         if ($key eq 'phone') {
             $client->phone($input{$key});
