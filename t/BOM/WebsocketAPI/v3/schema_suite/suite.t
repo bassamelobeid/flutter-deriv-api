@@ -5,7 +5,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
-use TestHelper qw/test_schema build_mojo_test/;
+use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
@@ -17,6 +17,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use File::Slurp;
 
 initialize_realtime_ticks_db();
+build_test_R_50_data();
 
 for my $i (1 .. 10) {
     for my $symbol (qw/R_50 R_100/) {
@@ -93,6 +94,9 @@ foreach my $line (@lines) {
 
     $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
     my $result = decode_json($t->message->[1]);
+    use Data::Dumper;
+    warn Dumper($result);
+    die;
     $response->{$call} = $result->{$call};
 
     $content = File::Slurp::read_file('config/v3/' . $receive_file);
