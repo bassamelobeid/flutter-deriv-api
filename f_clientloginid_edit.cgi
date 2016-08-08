@@ -356,7 +356,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             next CLIENT_KEY;
         }
         if ($key eq 'custom_max_acbal') {
-            if ($key =~ /^\d+$/) {
+            if ($key =~ /^[1-9](\d+)?$/) {
                 $client->custom_max_acbal($input{$key});
                 next CLIENT_KEY;
             } else {
@@ -365,7 +365,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             }
         }
         if ($key eq 'custom_max_daily_turnover') {
-            if ($key =~ /^\d+$/) {
+            if ($key =~ /^[1-9](\d+)?$/) {
                 $client->custom_max_daily_turnover($input{$key});
                 next CLIENT_KEY;
             } else {
@@ -374,7 +374,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             }
         }
         if ($key eq 'custom_max_payout') {
-            if ($key =~ /^\d+$/) {
+            if ($key =~ /^[1-9](\d+)?$/) {
                 $client->custom_max_payout($input{$key});
                 next CLIENT_KEY;
             } else {

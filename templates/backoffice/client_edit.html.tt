@@ -306,9 +306,9 @@ table#client_edit td{
     [% END %]
     <tr>
         <td class="label">Max Account Balance</td>
-        <td>: <input type="text" name="custom_max_acbal" value="[% client.custom_max_acbal %]" size="15" />
-         Currently enforced client limit: 
-         [% client.currency %] [% client.get_limit_for_account_balance %] 
+        <td>: <input type="text" name="custom_max_acbal" value="[% client.custom_max_acbal %]" size="15" placeholder="min: 1. Only integer"/>
+         Currently enforced client limit:
+         [% client.currency %] [% client.get_limit_for_account_balance %]
          [% IF self_exclusion_enabled == 'yes' && client.self_exclusion.max_balance %]
             (self-exclusion: [% client.currency %] [% client.self_exclusion.max_balance %])
          [% END %]
@@ -316,9 +316,9 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">Max Daily Turnover</td>
-        <td>: <input type="text" name="custom_max_daily_turnover" value="[% client.custom_max_daily_turnover %]" size="15" />
-         Currently enforced client limit: 
-         [% client.currency %] [% client.get_limit_for_daily_turnover %] 
+        <td>: <input type="text" name="custom_max_daily_turnover" value="[% client.custom_max_daily_turnover %]" size="15" placeholder="min: 1. Only integer"/>
+         Currently enforced client limit:
+         [% client.currency %] [% client.get_limit_for_daily_turnover %]
          [% IF self_exclusion_enabled == 'yes' && client.self_exclusion.max_turnover %]
             (self-exclusion: [% client.currency %] [% client.self_exclusion.max_turnover %])
          [% END %]
@@ -326,10 +326,9 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">Max Open Positions Payout</td>
-        <td>: <input type="text" name="custom_max_payout" value="[% client.custom_max_payout %]" size="15" />
-         Currently enforced client limit: 
-         [% client.currency %] [% client.get_limit_for_payout %] 
-        
+        <td>: <input type="text" name="custom_max_payout" value="[% client.custom_max_payout %]" size="15" placeholder="min: 1. Only integer"/>
+         Currently enforced client limit:
+         [% client.currency %] [% client.get_limit_for_payout %]
         </td>
     </tr>
     <tr>
