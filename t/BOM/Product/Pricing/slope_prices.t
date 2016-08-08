@@ -69,15 +69,14 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         my @duration = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
             my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
-                    underlying => $ul,
-                    for_date   => $now
-                }
-                );
+                underlying => $ul,
+                for_date   => $now
+            });
             my $vol = $volsurface->get_volatility({
-                    delta => 50,
-                    from => $volsurface->recorded_date,
-                    to => $volsurface->recorded_date->plus_time_interval($duration),
-                });
+                delta => 50,
+                from  => $volsurface->recorded_date,
+                to    => $volsurface->recorded_date->plus_time_interval($duration),
+            });
             my @barriers = @{
                 BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
                         type => ($category_obj->two_barriers ? 'double' : 'single'),
