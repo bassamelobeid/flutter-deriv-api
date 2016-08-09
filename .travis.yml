@@ -51,7 +51,7 @@ before_install:
     - /tmp/travis-scripts/redis.sh
 
 install:
-    - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
+    - sudo ln -s $PWD /home/git/regentmarkets/binary-websocket-api
     - export WEBSOCKET_CONFIG=$PWD/websocket.conf.travis; export RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis
     - /tmp/travis-scripts/devbox.sh
 
