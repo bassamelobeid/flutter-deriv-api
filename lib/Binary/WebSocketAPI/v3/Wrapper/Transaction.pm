@@ -13,19 +13,13 @@ use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 sub buy_get_contract_params {
     my ($c, $req_storage) = @_;
     my $args = $req_storage->{args};
-    # 1. Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
-    # 2. Calling forget_buy_proposal instead of forget_one as we need args for contract proposal
+    # Take parameters from args if $args->{parameters} is defined instead ot taking it from proposal
     if ($args->{parameters}) {
         $req_storage->{call_params}->{contract_parameters} = $args->{parameters};
         $req_storage->{call_params}->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
         return;
     }
     if (my $proposal_id = $args->{buy} // $args->{buy_contract_for_multiple_accounts}) {
-        if (my $p = Binary::WebSocketAPI::v3::Wrapper::System::forget_buy_proposal($c, $proposal_id)) {
-            $req_storage->{call_params}->{contract_parameters} = $p;
-            $req_storage->{call_params}->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
-            return;
-        }
         my $ch = $c->stash('pricing_channel');
         if ($ch and $ch = $ch->{uuid} and $ch = $ch->{$proposal_id}) {
             $req_storage->{call_params}->{payout}                                       = $ch->{cache}->{payout};
