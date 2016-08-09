@@ -1020,6 +1020,12 @@ sub transfer_between_accounts {
         });
     };
 
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
+    if (   $app_config->system->suspend->payments
+        or $app_config->system->suspend->system)
+    {
+        return $error_sub->(localize('Payments are suspended.'));
+    }
     unless ($user = BOM::Platform::User->new({email => $client->email})) {
         warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
         return $error_sub->(localize('Internal server error'));
