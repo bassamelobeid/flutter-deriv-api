@@ -10,6 +10,7 @@ use WWW::OneAll;
 use Date::Utility;
 use Data::Password::Meter;
 use HTML::Entities qw(encode_entities);
+use List::Util qw(first);
 
 use Brands;
 use Client::Account;
@@ -318,32 +319,12 @@ sub get_account_status {
 
     # check whether the user need to perform financial assessment
     my $financial_assessment = $client->financial_assessment();
-    unless ($financial_assessment) {
-        push @status, 'financial_assessment_not_complete';
-    } else {
-        # get questions
-        my $financial_input_mapping = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-        $financial_assessment = from_json $financial_assessment->data;
-        # comparing $financial_input_mapping with $financial_assessment
-        # if $financial_assessment contained a key that is not included in $financial_input_mapping
-        # or $financial_assessment do not include all the keys stored in $financial_input_mapping
-        # in otherwords, check whether $financial_input_mapping is a subset of $financial_assessment
-        # push 'financial_assessment_not_complete'
-        if (grep { !defined || !length } @{$financial_assessment}{keys %$financial_input_mapping}) {
-            push @status, 'financial_assessment_not_complete';
-        } else {
-            # deleting 'total_score' because it doesn't not contain
-            # hash and may cause error when perform checking later
-            delete $financial_assessment->{total_score};
-            # loop and find questions where the answer is empty
-            foreach my $key (keys %$financial_assessment) {
-                unless ($financial_assessment->{$key}->{answer}) {
-                    push @status, "financial_assessment_not_complete";
-                    last;
-                }
-            }
-        }
-    }
+    $financial_assessment = ref($financial_assessment) ? from_json($financial_assessment->data || '{}') : {};
+    push @status,
+        'financial_assessment_not_complete'
+        if (
+        first { !$financial_assessment->{$_} || !$financial_assessment->{$_}->{answer} }
+        keys %{BOM::Platform::Account::Real::default::get_financial_input_mapping()});
 
     return {
         status              => \@status,

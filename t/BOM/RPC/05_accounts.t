@@ -634,7 +634,7 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['has_password','financial_assessment_not_complete'],
+            status              => ['has_password', 'financial_assessment_not_complete'],
             risk_classification => 'low'
         },
         'status only has_password'
@@ -644,7 +644,7 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['has_password','financial_assessment_not_complete'],
+            status              => ['has_password', 'financial_assessment_not_complete'],
             risk_classification => 'low'
         },
         'tnc_approval is excluded, still status only has has_password'
@@ -664,7 +664,6 @@ subtest $method => sub {
         "forex_trading_experience" => {"answer" => ""},
         "forex_trading_frequency"  => {"answer" => ""},
     };
-    encode_json $data;
     $test_client->financial_assessment({
         data            => encode_json $data,
         is_professional => 0
@@ -699,8 +698,7 @@ subtest $method => sub {
         "stocks_trading_experience"            => {"answer" => "1-2 years"},
         "stocks_trading_frequency"             => {"answer" => "0-5 transactions in the past 12 months"},
         "account_turnover"                     => {"answer" => 'Less than $25,000'},
-        "account_opening_reason"               => {"answer" => "Experience"}
-    };
+        "account_opening_reason"               => {"answer" => "Experience"}};
     $test_client->financial_assessment({
         data            => encode_json $data,
         is_professional => 0
@@ -746,8 +744,7 @@ subtest $method => sub {
         "stocks_trading_experience"            => {"answer" => "1-2 years"},
         "stocks_trading_frequency"             => {"answer" => "0-5 transactions in the past 12 months"},
         "account_turnover"                     => {"answer" => 'Less than $25,000'},
-        "account_opening_reason"               => {"answer" => "Experience"}
-    };
+        "account_opening_reason"               => {"answer" => "Experience"}};
     $test_client->financial_assessment({
         data            => encode_json $data,
         is_professional => 0
