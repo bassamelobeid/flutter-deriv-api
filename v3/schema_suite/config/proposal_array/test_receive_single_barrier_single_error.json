@@ -67,7 +67,7 @@
                                     "type" : "object",
                                     "required": "1",
                                     "properties": {
-                                        "message_to_client" : {
+                                        "message" : {
                                             "type" : "string",
                                             "required" : "1",
                                             "pattern": "^Barrier is not an integer between 0 to 9.$"
