@@ -853,7 +853,7 @@ sub _build_corporate_actions {
     return \@actions;
 }
 
-has probability => (
+has price_calculator => (
     is         => 'ro',
     lazy_build => 1,
     handles    => [qw/ theo_probability ask_probability bid_probability discounted_probability bs_probability /],
@@ -862,7 +862,7 @@ has probability => (
 sub _build_probability {
     my $self = shift;
 
-    return Contract::Probability->new(
+    return Price::Calculator->new(
         market_name => $self->market->name,
         new_interface_engine => $self->new_interface_engine,
         price_engine_name => $self->price_engine_name,
@@ -1040,7 +1040,7 @@ sub _price_from_prob {
     if ($self->date_pricing->is_after($self->date_start) and $self->is_expired) {
         $price = $self->value;
     } else {
-        $price = (defined $self->probability->$prob_method) ? $self->payout * $self->probability->$prob_method->amount : undef;
+        $price = (defined $self->price_calculator->$prob_method) ? $self->payout * $self->price_calculator->$prob_method->amount : undef;
     }
     return (defined $price) ? roundnear(($self->{currency} eq 'JPY' ? 1 : 0.01), $price) : undef;
 }
