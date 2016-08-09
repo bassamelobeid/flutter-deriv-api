@@ -11,7 +11,7 @@ use Time::HiRes qw(gettimeofday tv_interval);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::RPC::v3::Contract;
-use DataDog::DogStatsd::Helper qw(stats_timing);
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
@@ -383,6 +383,10 @@ sub _price_stream_results_adjustment {
         maximum     => 1,
     });
     $contract_parameters->{theo_probability}      = $theo_probability;
+
+    # log the instances when pricing server doesn't return theo probability
+    stats_inc('price_adjustment.missing_theo_probability');
+
     $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
     my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
