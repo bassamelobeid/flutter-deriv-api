@@ -2,17 +2,13 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "echo_req": {
-      "required": "1"
-    },
-    "mt5_password_change": {
-      "type": "integer",
-      "pattern": "^0$"
-    },
-    "msg_type": {
+    "message_to_client": {
       "type": "string",
-      "required": "1",
-      "pattern": "^mt5_password_change$"
+      "pattern": "^Invalid\\saccount\\spassword$"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^MT5PasswordCheckError$"
     }
   }
 }

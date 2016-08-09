@@ -2,9 +2,13 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "error": {
-      "type": "integer",
-      "pattern": "^0$"
+    "message_to_client": {
+      "type": "string",
+      "pattern": "^Invalid\\saccount\\spassword$"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^MT5PasswordCheckError$"
     }
   }
 }
