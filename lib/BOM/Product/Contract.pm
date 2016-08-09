@@ -1332,8 +1332,8 @@ has uses_empirical_volatility => (
 sub _build_uses_empirical_volatility {
     my $self = shift;
 
-    # only applicable for forex because it has not been studied on other markets.
-    return 0 if $self->market->name ne 'forex';
+    # only applicable for forex and commodities because it has not been studied on other markets.
+    return 0 if (not($self->market->name eq 'forex' or $self->market->name eq 'commodities'));
     # some forex has flat volatility, e.g. WLDUSD
     return 0 if $self->underlying->volatility_surface_type eq 'flat';
     return 0 if $self->is_forward_starting;

@@ -21,6 +21,12 @@ my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => 'frxUSDJPY',
         recorded_date => $now
     });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxXAUUSD',
+        recorded_date => $now
+    });
 
 subtest 'uses_empirical_vol' => sub {
     my $bet_params = {
@@ -48,6 +54,9 @@ subtest 'uses_empirical_vol' => sub {
     is $c->date_expiry->epoch, $overnight_epoch, 'date expiry on overnight tenor';
     ok !$c->uses_empirical_volatility, 'does not use empirical vol';
     $bet_params->{date_expiry} = $overnight_epoch - 1;
+    $c = produce_contract($bet_params);
+    ok $c->uses_empirical_volatility, 'uses empirical volatility if all conditions are met';
+    $bet_params->{underlying} = 'frxXAUUSD';
     $c = produce_contract($bet_params);
     ok $c->uses_empirical_volatility, 'uses empirical volatility if all conditions are met';
     $bet_params->{is_forward_starting} = 1;
