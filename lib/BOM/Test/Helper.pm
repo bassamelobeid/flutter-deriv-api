@@ -60,6 +60,14 @@ sub build_wsapi_test {
     $args->{app_id} = 1 unless exists $args->{app_id};
     delete $args->{app_id} unless defined $args->{app_id};
 
+    $ENV{BOM_TEST_WS_REDIS} = '/home/git/regentmarkets/bom-test/data/config/ws-redis.yml';    ## no critic
+    {
+        my $ws_redis_cfg = LoadFile($ENV{BOM_TEST_WS_REDIS});
+        my $url          = "redis://" . $ws_redis_cfg->{write}->{host} . ":" . $ws_redis_cfg->{write}->{port};
+        my $redis        = RedisDB->new(url => $url);
+        $redis->del($_) for (@{$redis->keys('rate_limits::*') // []});
+    }
+
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
 
     my @query_params;
@@ -71,14 +79,6 @@ sub build_wsapi_test {
 
     if ($args->{deflate}) {
         $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
-    }
-
-    $ENV{BOM_TEST_WS_REDIS} = '/home/git/regentmarkets/bom-test/data/config/ws-redis.yml';    ## no critic
-    {
-        my $ws_redis_cfg = LoadFile($ENV{BOM_TEST_WS_REDIS});
-        my $url          = "redis://" . $ws_redis_cfg->{write}->{host} . ":" . $ws_redis_cfg->{write}->{port};
-        my $redis        = RedisDB->new(url => $url);
-        $redis->del($_) for (@{$redis->keys('rate_limits::*') // []});
     }
 
     $t->websocket_ok($url => $headers);
