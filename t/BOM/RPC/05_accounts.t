@@ -1188,7 +1188,12 @@ subtest $method => sub {
     my $old_latest_environment = $test_client->latest_environment;
     $mailbox->clear;
     $params->{args}->{email_consent} = 1;
+
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    my $res = $c->tcall('get_settings', {token => $token1});
+    is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
+    is($res->{tax_residence}, $params->{args}{tax_residence}, "Check tax information");
+
     ok($add_note_called, 'add_note is called, so the email should be sent to support address');
     $test_client->load();
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
