@@ -7,10 +7,12 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
 use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Test::MockModule;
+use YAML::XS qw(LoadFile);
 
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
 use BOM::Platform::Client;
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -18,6 +20,7 @@ use File::Slurp;
 
 initialize_realtime_ticks_db();
 build_test_R_50_data();
+_setup_market_data();
 
 for my $i (1 .. 10) {
     for my $symbol (qw/R_50 R_100/) {
@@ -201,4 +204,30 @@ sub _set_allow_omnibus {
     $client->save();
 
     return $r;
+}
+
+sub _setup_market_data {
+    my $data = LoadFile('/home/git/regentmarkets/bom-websocket-api/t/BOM/WebsocketAPI/v3/schema_suite/test_data.yml');
+
+    foreach my $md (values %$data) {
+        while (my ($key, $value) = each %$md) {
+            $value->{recorded_date} = Date::Utility->new;
+            BOM::Test::Data::Utility::UnitTestMarketData::create_doc($key, $value);
+        }
+    }
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'economic_events',
+        {
+            events => [{
+                release_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                event_name   => 'test',
+                symbol       => 'FAKE',
+                impact       => 1,
+                source       => 'fake source'
+            }]});
+
+    
+
+    return;
 }
