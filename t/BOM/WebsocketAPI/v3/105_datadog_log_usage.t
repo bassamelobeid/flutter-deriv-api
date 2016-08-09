@@ -67,7 +67,7 @@ my $token = BOM::Database::Model::AccessToken->new->create_token("CR0021", 'Test
 $t       = $t->send_ok({json => {authorize => $token}})->message_ok;
 $res     = decode_json($t->message->[1]);
 @$timing = ();
-$t       = $t->send_ok({
+$t = $t->send_ok({
         json => {
             buy   => 1,
             price => 1,
@@ -90,8 +90,13 @@ $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) }
 $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
 $rpc_client_mock->mock('new', sub { return $fake_rpc_client });
 
-$t->send_ok({json => {website_status => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+my $warn_string;
+{
+    local $SIG{'__WARN__'} = sub { $warn_string = shift; };
+    $t->send_ok({json => {website_status => 1}})->message_ok;
+    $res = decode_json($t->message->[1]);
+}
+like $warn_string, qr/error/, 'Should make warning if RPC response is_error method is true';
 
 is $res->{error}->{code}, 'CallError', 'Should make timing if returns CallError';
 
@@ -106,8 +111,12 @@ is $timing->[1]->[2]->{tags}->[0], 'rpc:website_status', 'Should set tag with rp
 @$timing = ();
 $fake_rpc_client->mock('call', sub { shift; return $_[2]->('') });
 
-$t->send_ok({json => {website_status => 1}})->message_ok;
-$res = decode_json($t->message->[1]);
+{
+    local $SIG{'__WARN__'} = sub { $warn_string = shift; };
+    $t->send_ok({json => {website_status => 1}})->message_ok;
+    $res = decode_json($t->message->[1]);
+}
+like $warn_string, qr/WrongResponse/, 'Should make warning if RPS response is empty';
 
 is $res->{error}->{code}, 'WrongResponse', 'Should make timing if returns WrongResponse';
 

@@ -128,7 +128,6 @@ ok($trx->{$_}, "got $_") foreach (qw/sell_price buy_price purchase_time contract
 test_schema('profit_table', $profit_table);
 
 my (undef, $call_params) = call_mocked_client($t, {get_limits => 1});
-$t = $t->send_ok({json =>})->message_ok;
 is $call_params->{language}, 'EN';
 ok exists $call_params->{token};
 
