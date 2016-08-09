@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
     "proposal": 1,
     "subscribe": 1,
     "amount": 100,
@@ -8,4 +9,14 @@
     "symbol": "R_50",
     "duration": 5,
     "duration_unit": "t"
+=======
+  "proposal": 1,
+  "amount": "100",
+  "basis": "payout",
+  "currency": "USD",
+  "contract_type": "[_1]",
+  "symbol": "[_2]",
+  "duration": "[_3]",
+  "duration_unit": "[_4]"
+>>>>>>> upstream/master
 }
