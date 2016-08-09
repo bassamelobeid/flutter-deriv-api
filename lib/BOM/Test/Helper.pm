@@ -20,12 +20,16 @@ use BOM::System::Password;
 use BOM::Platform::User;
 use Net::EmptyPort qw/empty_port/;
 
+use Mojo::Redis2::Server;
+use File::Temp qw/ tempdir /;
+use Path::Tiny;
+
 use Test::MockModule;
 use Test::MockObject;
 use MojoX::JSON::RPC::Client;
 
 use RedisDB;
-use YAML::XS qw/LoadFile/;
+use YAML::XS qw/LoadFile DumpFile/;
 
 use Exporter qw/import/;
 our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect/;
@@ -60,13 +64,23 @@ sub build_wsapi_test {
     $args->{app_id} = 1 unless exists $args->{app_id};
     delete $args->{app_id} unless defined $args->{app_id};
 
-    $ENV{BOM_TEST_WS_REDIS} = '/home/git/regentmarkets/bom-test/data/config/ws-redis.yml';    ## no critic
-    {
-        my $ws_redis_cfg = LoadFile($ENV{BOM_TEST_WS_REDIS});
-        my $url          = "redis://" . $ws_redis_cfg->{write}->{host} . ":" . $ws_redis_cfg->{write}->{port};
-        my $redis        = RedisDB->new(url => $url);
-        $redis->del($_) for (@{$redis->keys('rate_limits::*') // []});
-    }
+    my $redis_port = empty_port
+    my $redis_server = Mojo::Redis2::Server->new;
+    $redis_server->start(port => $redis_port);
+    my $tmp_dir = tempdir(CLEANUP => 1);
+    my $ws_redis_path = path($tmp_dir, "ws-redis.yml");
+    my $ws_redis_config = {
+        write => {
+            host => '127.0.0.1',
+            port => $redis_port,
+        },
+        read => {
+            host => '127.0.0.1',
+            port => $redis_port,
+        },
+    };
+    DumpFile($ws_redis_path, $ws_redis_config);
+    $ENV{BOM_TEST_WS_REDIS} = "$ws_redis_path";
 
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
 
@@ -83,6 +97,12 @@ sub build_wsapi_test {
 
     $t->websocket_ok($url => $headers);
     $t->tx->on(json => $callback) if $callback;
+
+    # keep them until $t be destroyed
+    $t->{_bom} = {
+        tmp_dir      => $tmp_dir,
+        redis_server => $redis_server,
+    };
     return $t;
 }
 
