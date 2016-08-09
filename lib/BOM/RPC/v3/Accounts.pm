@@ -327,9 +327,12 @@ sub get_account_status {
             if (grep { !defined || !length } @{$financial_assessment}{keys %$financial_input_mapping}) {
                 push @status, 'financial_assessment_needed';
             } else {
+                # deleting 'total_score' because it doesn't not contain
+                # hash and may cause error when perform checking later
+                delete $financial_assessment->{total_score};
                 # loop and find questions where the answer is empty
                 foreach my $key (keys %$financial_assessment) {
-                    unless ($financial_assessment->{$key}) {
+                    unless ($financial_assessment->{$key}->{answer}) {
                         push @status, "financial_assessment_needed";
                         last;
                     }

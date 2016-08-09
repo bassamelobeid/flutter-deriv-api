@@ -660,13 +660,13 @@ subtest $method => sub {
             status              => ['has_password', 'financial_assessment_needed'],
             risk_classification => 'high'
         },
-        'financial_assessment_needed when client has not filled it'
+        'financial_assessment_needed when client has not filled questionnaire'
     );
 
     # test when some questions are not answered
     my $data = {
-        "forex_trading_experience" => "",
-        "forex_trading_frequency"  => "",
+        "forex_trading_experience" => {"answer" => ""},
+        "forex_trading_frequency"  => {"answer" => ""},
     };
     encode_json $data;
     $test_client->financial_assessment({
@@ -685,25 +685,28 @@ subtest $method => sub {
 
     # client has let some answers empty
     $data = {
-        "commodities_trading_experience"       => "1-2 years",
-        "commodities_trading_frequency"        => "",
-        "education_level"                      => "Secondary",
-        "estimated_worth"                      => '$100,000 - $250,000',
-        "employment_industry"                  => "Finance",
-        "forex_trading_experience"             => "Over 3 years",
-        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
-        "income_source"                        => "Self-Employed",
-        "indices_trading_experience"           => "Over 3 years",
-        "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
-        "net_income"                           => '$25,000 - $50,000',
-        "occupation"                           => 'Managers',
-        "other_derivatives_trading_experience" => "Over 3 years",
-        "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
-        "other_instruments_trading_experience" => "Over 3 years",
-        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
-        "stocks_trading_experience"            => "1-2 years",
-        "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
+        "commodities_trading_experience"       => {"answer" => ""},
+        "commodities_trading_frequency"        => {"answer" => ""},
+        "education_level"                      => {"answer" => ""},
+        "estimated_worth"                      => {"answer" => '$100,000 - $250,000'},
+        "employment_industry"                  => {"answer" => "Finance"},
+        "forex_trading_experience"             => {"answer" => "Over 3 years"},
+        "forex_trading_frequency"              => {"answer" => "0-5 transactions in the past 12 months"},
+        "income_source"                        => {"answer" => "Self-Employed"},
+        "indices_trading_experience"           => {"answer" => "Over 3 years"},
+        "indices_trading_frequency"            => {"answer" => "40 transactions or more in the past 12 months"},
+        "net_income"                           => {"answer" => '$25,000 - $50,000'},
+        "occupation"                           => {"answer" => "Managers"},
+        "other_derivatives_trading_experience" => {"answer" => "Over 3 years"},
+        "other_derivatives_trading_frequency"  => {"answer" => "0-5 transactions in the past 12 months"},
+        "other_instruments_trading_experience" => {"answer" => "Over 3 years"},
+        "other_instruments_trading_frequency"  => {"answer" => "6-10 transactions in the past 12 months"},
+        "stocks_trading_experience"            => {"answer" => "1-2 years"},
+        "stocks_trading_frequency"             => {"answer" => "0-5 transactions in the past 12 months"},
+        "account_turnover"                     => {"answer" => 'Less than $25,000'},
+        "account_opening_reason"               => {"answer" => "Experience"}
     };
+
 
     $test_client->financial_assessment({
         data            => encode_json $data,
@@ -720,26 +723,26 @@ subtest $method => sub {
     );
 
     $data = {
-        "commodities_trading_experience"       => "1-2 years",
-        "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
-        "education_level"                      => "Secondary",
-        "estimated_worth"                      => '$100,000 - $250,000',
-        "employment_industry"                  => "Finance",
-        "forex_trading_experience"             => "Over 3 years",
-        "forex_trading_frequency"              => "0-5 transactions in the past 12 months",
-        "income_source"                        => "Self-Employed",
-        "indices_trading_experience"           => "Over 3 years",
-        "indices_trading_frequency"            => "40 transactions or more in the past 12 months",
-        "net_income"                           => '$25,000 - $50,000',
-        "occupation"                           => 'Managers',
-        "other_derivatives_trading_experience" => "Over 3 years",
-        "other_derivatives_trading_frequency"  => "0-5 transactions in the past 12 months",
-        "other_instruments_trading_experience" => "Over 3 years",
-        "other_instruments_trading_frequency"  => "6-10 transactions in the past 12 months",
-        "stocks_trading_experience"            => "1-2 years",
-        "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
-        "account_turnover"                     => 'Less than $25,000',
-        "account_opening_reason"               => "Experience"
+        "commodities_trading_experience"       => {"answer" => "1-2 years"},
+        "commodities_trading_frequency"        => {"answer" => "0-5 transactions in the past 12 months"},
+        "education_level"                      => {"answer" => "Secondary"},
+        "estimated_worth"                      => {"answer" => '$100,000 - $250,000'},
+        "employment_industry"                  => {"answer" => "Finance"},
+        "forex_trading_experience"             => {"answer" => "Over 3 years"},
+        "forex_trading_frequency"              => {"answer" => "0-5 transactions in the past 12 months"},
+        "income_source"                        => {"answer" => "Self-Employed"},
+        "indices_trading_experience"           => {"answer" => "Over 3 years"},
+        "indices_trading_frequency"            => {"answer" => "40 transactions or more in the past 12 months"},
+        "net_income"                           => {"answer" => '$25,000 - $50,000'},
+        "occupation"                           => {"answer" => "Managers"},
+        "other_derivatives_trading_experience" => {"answer" => "Over 3 years"},
+        "other_derivatives_trading_frequency"  => {"answer" => "0-5 transactions in the past 12 months"},
+        "other_instruments_trading_experience" => {"answer" => "Over 3 years"},
+        "other_instruments_trading_frequency"  => {"answer" => "6-10 transactions in the past 12 months"},
+        "stocks_trading_experience"            => {"answer" => "1-2 years"},
+        "stocks_trading_frequency"             => {"answer" => "0-5 transactions in the past 12 months"},
+        "account_turnover"                     => {"answer" => 'Less than $25,000'},
+        "account_opening_reason"               => {"answer" => "Experience"}
     };
     # financial assessment is not needed when all questions is answered
     $test_client->financial_assessment({
