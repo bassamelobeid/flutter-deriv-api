@@ -1,0 +1,120 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "proposal_array":
+        {
+            "type": "object",
+            "required": "1",
+            "properties" : {
+                "id": {
+                    "type": "string",
+                    "pattern": "[\\d\\w-]+$",
+                    "required": "1"
+                },
+                "proposals" : {
+                    "type": "array",
+                    "required" : "1",
+                    "items" :[
+                        {
+                            "type": "object",
+                            "properties": {
+                                "barrier": {
+                                    "required" : "1",
+                                    "enum" : ["[_5]","[_7]"]
+                                },
+                                "barrier2": {
+                                    "required" : "1",
+                                    "enum" : ["[_6]","[_8]"]
+                                },
+                                "longcode": {
+                                    "type": "string",
+                                    "pattern": "^[_9]$",
+                                    "required": "1"
+                                },
+                                "ask_price": {
+                                    "type": "number",
+                                    "pattern": "^[_10]",
+                                    "required": "1"
+                                },
+                                "display_value": {
+                                    "type": "number",
+                                    "pattern": "^[_11]",
+                                    "required": "1"
+                                },
+                                "date_start": {
+                                    "type": "number",
+                                    "pattern": "^\\d+$",
+                                    "required": "1"
+                                },
+                                "payout": {
+                                    "type": "number",
+                                    "pattern": "^100$",
+                                    "required": "1"
+                                },
+                                "spot": {
+                                    "type": "number",
+                                    "pattern": "^[_12]$",
+                                    "required": "1"
+                                },
+                                "spot_time": {
+                                    "type": "number",
+                                    "pattern": "^\\d+$",
+                                    "required": "1"
+                                }
+                            }
+                        },
+                        {
+                            "type": "object",
+                            "properties" : {
+                                "error" :{
+                                    "type" : "object",
+                                    "required": "1",
+                                    "properties": {
+                                        "message_to_client" : {
+                                            "type" : "string",
+                                            "required" : "1",
+                                            "pattern": "^[_13]$"
+                                        },
+                                        "details": {
+                                            "type" : "object",
+                                            "required" : "1",
+                                            "properties": {
+                                                "barrier": {
+                                                    "required" : "1",
+                                                    "enum" : ["[_5]","[_7]"]
+                                                },
+                                                "barrier2": {
+                                                    "required" : "1",
+                                                    "enum" : ["[_6]","[_8]"]
+                                                },
+                                                "display_value": {
+                                                    "required" : "1"
+                                                },
+                                                "payout": {
+                                                    "required" : "1"
+                                                }
+                                            }
+                                        },
+                                        "code": {
+                                            "required": "1",
+                                            "pattern": "^ContractBuyValidationError$"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "echo_req": {
+            "required": "1"
+        },
+        "msg_type": {
+            "type": "string",
+            "pattern": "^proposal_array$",
+            "required": "1"
+        }
+    }
+}
