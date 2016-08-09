@@ -386,7 +386,7 @@ sub _setup_market_data {
         'economic_events',
         {
             events => [{
-                    release_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                    release_date => Date::Utility->new->minus_time_interval('5d')->epoch,
                     event_name   => 'test',
                     symbol       => 'FAKE',
                     impact       => 1,
