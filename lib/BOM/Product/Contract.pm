@@ -863,10 +863,11 @@ sub _build_price_calculator {
     my $self = shift;
 
     return Price::Calculator->new(
-        market_name => $self->market->name,
-        new_interface_engine => $self->new_interface_engine,
-        price_engine_name => $self->price_engine_name,
-        price_engine => $self->price_engine,
+        market_name                 => $self->market->name,
+        new_interface_engine        => $self->new_interface_engine,
+        price_engine_name           => $self->price_engine_name,
+        price_engine_probability    => $self->price_engine->probability,
+        price_engine_bs_probability => $self->price_engine->bs_probability,
     );
 }
 

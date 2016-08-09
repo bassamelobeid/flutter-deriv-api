@@ -50,7 +50,7 @@ subtest 'Proper form' => sub {
 
     foreach my $currency (@currencies) {
         my $expected_standard_form = qr/Win payout if .*\.$/;    # Simplified standard form to which all should adhere.
-                                                                                     # Can this be improved further?
+                                                                 # Can this be improved further?
         my $params;
         foreach my $shortcode (@shortcodes) {
             my ($description) = simple_contract_info($shortcode, $currency);

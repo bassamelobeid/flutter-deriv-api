@@ -71,7 +71,7 @@ subtest 'custom client profile' => sub {
     note("set volatility index to no business for client XYZ");
     BOM::Platform::Runtime->instance->app_config->quants->custom_client_profiles(
         '{"XYZ": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "volidx", "risk_profile": "no_business", "name": "test custom"}}}}');
-    my $rp = BOM::Product::RiskProfile->new(%args);
+    my $rp    = BOM::Product::RiskProfile->new(%args);
     my @cl_pr = $rp->get_client_profiles('ABC');
     ok !@cl_pr, 'no custom client limit';
     @cl_pr = $rp->get_client_profiles('XYZ');

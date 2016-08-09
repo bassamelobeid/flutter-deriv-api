@@ -104,8 +104,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 my $current_tick = Quant::Framework::Spot::Tick->new({
     underlying => 'frxUSDJPY',
-    epoch => 1352344145,
-    quote => 76,
+    epoch      => 1352344145,
+    quote      => 76,
 });
 my %bet_params = (
     bet_type     => 'CALL',

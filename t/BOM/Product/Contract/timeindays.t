@@ -41,7 +41,7 @@ my $fake_data = {
 
 {
     #we can have warnigns here because symbol name is invalid
-    local $SIG{__WARN__} = sub {};
+    local $SIG{__WARN__} = sub { };
     $FRW_frxUSDJPY_ON->set_combined_realtime($fake_data);
     $FRW_frxUSDJPY_TN->set_combined_realtime($fake_data);
     $FRW_frxUSDJPY_1W->set_combined_realtime($fake_data);
@@ -58,7 +58,7 @@ subtest Forex => sub {
     Test::Exception::lives_ok {
         my $date = Date::Utility->new('2012-01-11 10:00:00');
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                epoch => $date->epoch,
+            epoch => $date->epoch,
             quote => '99.840'
         });
     }
@@ -69,7 +69,11 @@ subtest Forex => sub {
         date_expiry => Date::Utility->new('12-Jan-12')->plus_time_interval('23h59m59s'),
     );
 
-    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch)/86400, 'Wed -> Thurs FX bet (expiry: 23:59, rollover: 22:00).');
+    is(
+        $bet->timeindays->amount,
+        ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400,
+        'Wed -> Thurs FX bet (expiry: 23:59, rollover: 22:00).'
+    );
     cmp_ok(
         $bet->vol_at_strike,
         '==',
@@ -90,7 +94,7 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-01-11 10:00:00'),
         date_expiry => Date::Utility->new('13-Jan-12')->plus_time_interval('21h'),
     );
-    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch)/86400, 'Wed -> Fri FX bet (expiry: 21:00, rollover: 22:00).');
+    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400, 'Wed -> Fri FX bet (expiry: 21:00, rollover: 22:00).');
     cmp_ok(
         $bet->vol_at_strike,
         '==',
@@ -111,7 +115,11 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-04-04 10:00:00'),
         date_expiry => Date::Utility->new('5-Apr-12')->plus_time_interval('23h59m59s'),
     );
-    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch)/86400, 'Wed -> Thurs FX bet in summer (expiry: 23:59, rollover: 21:00).');
+    is(
+        $bet->timeindays->amount,
+        ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400,
+        'Wed -> Thurs FX bet in summer (expiry: 23:59, rollover: 21:00).'
+    );
     cmp_ok(
         $bet->vol_at_strike,
         '==',
@@ -131,7 +139,11 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-04-04 10:00:00'),
         date_expiry => Date::Utility->new('6-Apr-12')->plus_time_interval('23h59m59s'),
     );
-    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch)/86400, 'Wed -> Fri FX bet in summer (expiry: 21:00, rollover: 21:00).');
+    is(
+        $bet->timeindays->amount,
+        ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400,
+        'Wed -> Fri FX bet in summer (expiry: 21:00, rollover: 21:00).'
+    );
     cmp_ok(
         $bet->vol_at_strike,
         '==',
@@ -151,7 +163,7 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-03-09 10:00:00'),
         date_expiry => Date::Utility->new('29-Mar-12')->plus_time_interval('23h59m59s'),
     );
-    is($bet->timeindays->amount,($bet->date_expiry->epoch - $bet->date_start->epoch)/86400, 'Three week FX bet in summer.');
+    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400, 'Three week FX bet in summer.');
     cmp_ok(
         $bet->vol_at_strike,
         '==',
@@ -171,7 +183,7 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-03-09 10:00:00'),
         date_expiry => Date::Utility->new('30-Mar-12')->plus_time_interval('23h59m59s'),
     );
-    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch)/86400, 'Three week FX bet in summer ending on Friday.');
+    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400, 'Three week FX bet in summer ending on Friday.');
     cmp_ok(
         $bet->vol_at_strike,
         '==',
@@ -192,7 +204,12 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-03-09 10:00:00'),
         date_expiry => Date::Utility->new('2012-03-09 11:00:00'),
     );
-    cmp_ok($bet->timeindays->amount, '==', ($bet->date_expiry->epoch - $bet->date_start->epoch)/86400, 'Intraday bet: does not follow integer days convnetion.');
+    cmp_ok(
+        $bet->timeindays->amount,
+        '==',
+        ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400,
+        'Intraday bet: does not follow integer days convnetion.'
+    );
 };
 
 subtest 'Forex date start after cutoff' => sub {
@@ -204,23 +221,23 @@ subtest 'Forex date start after cutoff' => sub {
         date_start  => Date::Utility->new('2012-03-12 21:00:01'),
         date_expiry => Date::Utility->new('2012-03-16 21:00:00'),
     );
-    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch)/86400, 'timeindays is 4 days after rollover in DST.');
+    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400, 'timeindays is 4 days after rollover in DST.');
     $bet = _sample_bet(
         date_start  => Date::Utility->new('2012-03-12 20:59:59'),
         date_expiry => Date::Utility->new('2012-03-16 21:00:00'),
     );
-    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch)/86400, 'timeindays is 5 days before rollover in DST.');
+    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400, 'timeindays is 5 days before rollover in DST.');
 
     $bet = _sample_bet(
         date_start  => Date::Utility->new('2012-03-05 22:00:01'),
         date_expiry => Date::Utility->new('2012-03-09 21:00:00'),
     );
-    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch)/86400, 'timeindays is 4 days after rollover in non DST.');
+    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400, 'timeindays is 4 days after rollover in non DST.');
     $bet = _sample_bet(
         date_start  => Date::Utility->new('2012-03-05 21:59:59'),
         date_expiry => Date::Utility->new('2012-03-09 21:00:00'),
     );
-    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch)/86400, 'timeindays is 5 days before rollover in non DST.');
+    is($bet->timeindays->amount, ($bet->date_expiry->epoch - $bet->date_start->epoch) / 86400, 'timeindays is 5 days before rollover in non DST.');
 };
 
 subtest Equity => sub {
@@ -277,8 +294,8 @@ sub _sample_bet {
 
     my $current_tick = Quant::Framework::Spot::Tick->new({
         underlying => $underlying,
-        epoch => $overrides{date_pricing}->epoch,
-        quote => 100,
+        epoch      => $overrides{date_pricing}->epoch,
+        quote      => 100,
     });
 
     my $start_epoch = Date::Utility->new($overrides{date_start})->epoch;
