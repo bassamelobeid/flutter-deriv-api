@@ -1372,6 +1372,7 @@ sub _validate_sell_pricing_adjustment {
     $self->recomputed_price($contract->bid_price);
     my $recomputed        = $contract->bid_probability->amount;
     my $move              = $recomputed - $requested;
+    my $slippage = $contract->bid_price - $self->price;
     my $commission_markup = 0;
     if (not $contract->is_expired) {
         $commission_markup = $contract->opposite_contract->commission_markup->amount || 0;
@@ -1404,7 +1405,7 @@ sub _validate_sell_pricing_adjustment {
                     details                 => JSON::to_json({
                             order_price      => $self->price,
                             recomputed_price => $contract->bid_price,
-                            slippage         => roundnear(0.01, $move * $self->payout)}
+                            slippage         => $slippage
                     ),
                     db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
                 });
@@ -1420,11 +1421,11 @@ sub _validate_sell_pricing_adjustment {
             if ($move <= $allowed_move and $move >= -$allowed_move) {
                 $final_value = $amount;
                 # We absorbed the price difference here and we want to keep it in our book.
-                $self->price_slippage(roundnear(0.01, $move * $self->payout));
+                $self->price_slippage($slippage);
             } elsif ($move > $allowed_move) {
                 $self->execute_at_better_price(1);
                 # We need to keep record of slippage even it is executed at better price
-                $self->price_slippage(roundnear(0.01, $move * $self->payout));
+                $self->price_slippage($slippage);
                 $final_value = $recomputed_amount;
             }
         }
@@ -1454,6 +1455,7 @@ sub _validate_trade_pricing_adjustment {
     $self->recomputed_price($contract->ask_price);
     my $recomputed        = $contract->ask_probability->amount;
     my $move              = $requested - $recomputed;
+    my $slippage = $self->price - $contract->ask_price;
     my $commission_markup = 0;
     if (not $contract->is_expired) {
         $commission_markup = $contract->commission_markup->amount || 0;
@@ -1492,7 +1494,7 @@ sub _validate_trade_pricing_adjustment {
                     details     => JSON::to_json({
                             order_price      => $self->price,
                             recomputed_price => $contract->ask_price,
-                            slippage         => roundnear(0.01, $move * $self->payout)}
+                            slippage         => $slippage
                     ),
                     db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
                 });
@@ -1508,11 +1510,11 @@ sub _validate_trade_pricing_adjustment {
             if ($move <= $allowed_move and $move >= -$allowed_move) {
                 $final_value = $amount;
                 # We absorbed the price difference here and we want to keep it in our book.
-                $self->price_slippage(roundnear(0.01, $move * $self->payout));
+                $self->price_slippage(roundnear($slippage);
             } elsif ($move > $allowed_move) {
                 $self->execute_at_better_price(1);
                 # We need to keep record of slippage even it is executed at better price
-                $self->price_slippage(roundnear(0.01, $move * $self->payout));
+                $self->price_slippage(roundnear($slippage);
                 $final_value = $recomputed_amount;
             }
         }
