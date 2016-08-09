@@ -385,7 +385,7 @@ sub _price_stream_results_adjustment {
         minimum     => 0,
         maximum     => 1,
     });
-    $contract_parameters->{theo_probability}      = $theo_probability;
+    $contract_parameters->{theo_probability} = $theo_probability;
 
     $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
     my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
