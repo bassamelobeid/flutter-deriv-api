@@ -859,7 +859,7 @@ has price_calculator => (
     handles    => [qw/ theo_probability ask_probability bid_probability discounted_probability bs_probability /],
 );
 
-sub _build_probability {
+sub _build_price_calculator {
     my $self = shift;
 
     return Price::Calculator->new(
