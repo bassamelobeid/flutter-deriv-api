@@ -385,7 +385,7 @@ sub _price_stream_results_adjustment {
     $contract_parameters->{theo_probability}      = $theo_probability;
 
     # log the instances when pricing server doesn't return theo probability
-    stats_inc('price_adjustment.missing_theo_probability');
+    stats_inc('price_adjustment.missing_theo_probability') unless $contract_parameters->{theo_probability};
 
     $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
     my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
