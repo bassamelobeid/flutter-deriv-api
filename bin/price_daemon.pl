@@ -15,6 +15,7 @@ use LWP::Simple;
 use BOM::Platform::Runtime;
 use DBIx::TransactionManager::Distributed qw(txn);
 use List::Util qw(first);
+use Time::HiRes ();
 
 my $internal_ip     = get("http://169.254.169.254/latest/meta-data/local-ipv4");
 my $workers         = 4;
@@ -59,6 +60,12 @@ sub process_job {
     my $response;
 
     my $underlying = _get_underlying($params) or return undef;
+
+    if(!ref($underlying)) {
+        warn "Have legacy underlying - $underlying with params " . Dumper($params) . "\n";
+        DataDog::DogStatsd::Helper::stats_inc("pricer_daemon.$price_daemon_cmd.invalid", {tags => ['tag:' . $internal_ip]});
+        return undef;
+    }
 
     unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
         warn "$params->{symbol} has invalid spot tick";
@@ -111,7 +118,12 @@ while (1) {
         $tv = $tv_now;
 
         if (Time::HiRes::tv_interval($tv_appconfig, $tv_now) >= 15) {
-            BOM::Platform::Runtime->instance->app_config->check_for_update;
+            my $rev = BOM::Platform::Runtime->instance->app_config->check_for_update;
+            # Will return empty if we didn't need to update, so make sure we apply actual
+            # version before our check here
+            $rev ||= BOM::Platform::Runtime->instance->app_config->current_revision;
+            my $age = Time::HiRes::time - $rev;
+            warn "Config age is >90s - $age\n" if $age > 90;
             $tv_appconfig = $tv_now;
         }
 

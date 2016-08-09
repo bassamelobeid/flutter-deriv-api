@@ -26,6 +26,7 @@ sub validate_symbol {
     my $symbol = shift;
     my @offerings = get_offerings_with_filter(BOM::Platform::Runtime->instance->get_offerings_config, 'underlying_symbol');
     if (!$symbol || none { $symbol eq $_ } @offerings) {
+        warn "Symbol " . ($symbol // 'undef') . " not found, our offerings are: " . join(',', @offerings);
         return {
             error => {
                 code    => 'InvalidSymbol',
