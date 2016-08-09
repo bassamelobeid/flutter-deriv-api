@@ -224,6 +224,7 @@ sub startup {
         ['mt5_set_settings',    \&BOM::RPC::v3::MT5::Account::mt5_set_settings,    1],
         ['mt5_password_check',  \&BOM::RPC::v3::MT5::Account::mt5_password_check,  1],
         ['mt5_password_change', \&BOM::RPC::v3::MT5::Account::mt5_password_change, 1],
+        ['mt5_password_reset',  \&BOM::RPC::v3::MT5::Account::mt5_password_reset,  1],
         ['mt5_deposit',         \&BOM::RPC::v3::MT5::Account::mt5_deposit,         1],
         ['mt5_withdrawal',      \&BOM::RPC::v3::MT5::Account::mt5_withdrawal,      1],
     );

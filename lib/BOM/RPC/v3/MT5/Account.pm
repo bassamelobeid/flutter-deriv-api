@@ -288,7 +288,7 @@ sub _mt5_set_password {
                 code              => 'MT5PasswordChangeError',
                 message_to_client => $status->{error}});
     }
-    return 1;
+    return  {status => 1};
 }
 
 sub mt5_deposit {
