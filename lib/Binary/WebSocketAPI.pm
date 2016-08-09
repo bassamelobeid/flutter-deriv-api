@@ -503,7 +503,6 @@ sub startup {
         'rate_limitations_load' => sub {
             my $c   = shift;
             my $key = $c->rate_limitations_key;
-            # blocking call
             my $hits_json = $c->ws_redis_slave->get(
                 $key,
                 sub {
