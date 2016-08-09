@@ -6,5 +6,7 @@
   "contract_type": "[_1]",
   "symbol": "[_2]",
   "duration": "[_3]",
-  "duration_unit": "[_4]"
+  "duration_unit": "[_4]",
+  "barrier": "[_5]",
+  "barrier2": "[_6]"
 }
