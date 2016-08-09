@@ -10,8 +10,8 @@ use BOM::Test::Suite;
 
 my $dir_path = __DIR__;
 BOM::Test::Suite->run({
-    test_app => 'BOM::RPC',
-    test_conf_path => $dir_path . '/suite.conf',
+    test_app          => 'BOM::RPC',
+    test_conf_path    => $dir_path . '/suite.conf',
     suite_schema_path => $dir_path . '/config/',
 });
 done_testing();
