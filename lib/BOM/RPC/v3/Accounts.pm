@@ -317,14 +317,17 @@ sub get_account_status {
             # get questions
             my $financial_input_mapping = BOM::Platform::Account::Real::default::get_financial_input_mapping();
             $financial_assessment = from_json $financial_assessment->data;
-            delete $financial_assessment->{total_score};    #remove total_score
-                                                            # if the keys are not equal
-            if (!((keys $financial_input_mapping) ~~ (keys $financial_assessment))) {
+            # comparing $financial_input_mapping with $financial_assessment
+            # if $financial_assessment contained a key that is not included in $financial_input_mapping
+            # or $financial_assessment do not include all the keys stored in $financial_input_mapping
+            # in otherwords, check whether $financial_input_mapping is a subset of $financial_assessment
+            # push 'financial_assessment_needed'
+            if (grep { !defined || !length } @{$financial_assessment}{keys %$financial_input_mapping}) {
                 push @status, 'financial_assessment_needed';
             } else {
                 # loop and find questions where the answer is empty
-                while (my ($key, $value) = each $financial_assessment) {
-                    if ($value eq "") {
+                foreach my $key (keys %$financial_assessment) {
+                    unless ($financial_assessment->{$key}) {
                         push @status, "financial_assessment_needed";
                         last;
                     }

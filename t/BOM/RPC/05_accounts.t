@@ -736,7 +736,7 @@ subtest $method => sub {
         "stocks_trading_experience"            => "1-2 years",
         "stocks_trading_frequency"             => "0-5 transactions in the past 12 months",
         "account_turnover"                     => 'Less than $25,000',
-        "account_open_reason"                  => "Experience"
+        "account_opening_reason"               => "Experience"
     };
     # financial assessment is not needed when all questions is answered
     $test_client->financial_assessment({
