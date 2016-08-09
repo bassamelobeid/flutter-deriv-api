@@ -388,40 +388,6 @@ sub _build_economic_events_markup {
     return $economic_events_markup;
 }
 
-sub _get_economic_events {
-    my ($self, $start, $end) = @_;
-
-    state $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
-    my $underlying = $self->bet->underlying;
-
-    my $raw_events = Quant::Framework::EconomicEventCalendar->new({
-            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader($underlying->for_date),
-        }
-        )->get_latest_events_for_period({
-            from => Date::Utility->new($start),
-            to   => Date::Utility->new($end)});
-
-    my $default_underlying = 'frxUSDJPY';
-    my @events;
-    foreach my $event (@$raw_events) {
-        my $event_name = $event->{event_name};
-        $event_name =~ s/\s/_/g;
-        my $key = first { exists $news_categories->{$_} }
-        map { (
-                $_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name,
-                $_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_default'
-                )
-        } ($underlying->symbol, $default_underlying);
-
-        my $news_parameters = $news_categories->{$key};
-        next unless $news_parameters;
-        $news_parameters->{release_time} = $event->{release_date};
-        push @events, $news_parameters;
-    }
-
-    return \@events;
-}
-
 # Generally for indices and stocks the minimum available tenor for smile is 30 days.
 # We use this to price short term contracts, so adding a 5% markup for the volatility uncertainty.
 sub _build_smile_uncertainty_markup {
