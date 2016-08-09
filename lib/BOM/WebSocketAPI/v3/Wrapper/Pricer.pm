@@ -7,7 +7,7 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
-use Time::HiRes qw(gettimeofday);
+use Time::HiRes qw(gettimeofday tv_interval);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::RPC::v3::Contract;
@@ -370,6 +370,7 @@ sub _price_stream_results_adjustment {
     # skips for spreads
     $_ eq $orig_args->{contract_type} and return $results for qw(SPREADU SPREADD);
 
+    my $t = [gettimeofday];
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
     my $theo_probability = Math::Util::CalculatedValue::Validatable->new({
@@ -399,6 +400,7 @@ sub _price_stream_results_adjustment {
 
     $results->{ask_price} = $results->{display_value} = $contract->ask_price;
     $results->{payout} = $contract->payout;
+    stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
 
     return $results;
 }
