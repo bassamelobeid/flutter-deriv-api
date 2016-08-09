@@ -40,14 +40,14 @@ ok(BOM::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0)) or die "her
     my $i = 0;
     my $failed;
     while ($i < 5000) {
-        $failed = $_ for grep BOM::WebSocketAPI::Hooks::reached_limit_check(1, $_, 0), qw(portfolio profit_table);
+        $failed = $_ for grep BOM::WebSocketAPI::Hooks::reached_limit_check($c, $_, 0), qw(portfolio profit_table);
         last if $failed;
         ++$i;
     }
     is($i, 660, 'rate limiting for portfolio happened after expected number of iterations');
 }
-ok(BOM::WebSocketAPI::Hooks::reached_limit_check(1, 'portfolio',    0));
-ok(BOM::WebSocketAPI::Hooks::reached_limit_check(1, 'profit_table', 0));
+ok(BOM::WebSocketAPI::Hooks::reached_limit_check($c, 'portfolio',    0));
+ok(BOM::WebSocketAPI::Hooks::reached_limit_check($c, 'profit_table', 0));
 
 # portfolio for connection number 1 is limited but then if it is another connections (number 2), it goes OK.
 # for new controller/user we'll have new stash, hence check should pass
