@@ -11,6 +11,7 @@ use File::Slurp;
 use Data::Dumper;
 use Date::Utility;
 
+use BOM::Test;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -22,6 +23,9 @@ use Net::EmptyPort qw/empty_port/;
 use Test::MockModule;
 use Test::MockObject;
 use MojoX::JSON::RPC::Client;
+
+use RedisDB;
+use YAML::XS qw/LoadFile/;
 
 use Exporter qw/import/;
 our @EXPORT_OK = qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect/;
@@ -67,6 +71,15 @@ sub build_wsapi_test {
 
     if ($args->{deflate}) {
         $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
+    }
+
+    # nocritic
+    $ENV{BOM_TEST_WS_REDIS} = '/home/git/regentmarkets/bom-test/data/config/ws-redis.yml';
+    {
+        my $ws_redis_cfg = LoadFile($ENV{BOM_TEST_WS_REDIS});
+        my $url          = "redis://" . $ws_redis_cfg->{write}->{host} . ":" . $ws_redis_cfg->{write}->{port};
+        my $redis        = RedisDB->new(url => $url);
+        $redis->del($_) for (@{$redis->keys('rate_limits::*') // []});
     }
 
     $t->websocket_ok($url => $headers);
