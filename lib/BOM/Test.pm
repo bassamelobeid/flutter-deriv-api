@@ -83,7 +83,7 @@ BEGIN {
 }
 
 END {
-    kill TERM => -$sid;
+    kill -TERM => $sid;
 }
 
 1;
