@@ -7,7 +7,6 @@ use Test::MockModule;
 
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
-use RateLimitations qw(within_rate_limits);
 
 use Test::BOM::RPC::Client;
 
