@@ -119,6 +119,10 @@ sub validate_as_payment {
         return $c->throw(403, 'Client activity disabled at this time');
     }
 
+    if (BOM::Platform::Runtime->instance->app_config->system->suspend->payments) {
+        return $c->throw(403, 'Payments are suspended.');
+    }
+
     my $client = $c->user;
     my $action =
           ($c->type =~ /deposit/i)    ? 'deposit'
