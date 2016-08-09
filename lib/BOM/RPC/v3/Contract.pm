@@ -273,7 +273,7 @@ sub _get_ask {
         });
     };
 
-    print "returning: ".Dumper($response);
+    #print "returning: ".Dumper($response);
     return $response;
 }
 
@@ -531,6 +531,7 @@ sub send_ask {
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
     map { exists($response->{$_}) && ($response->{$_} .= '') } qw(ask_price barrier date_start display_value payout spot spot_time);
+    print "send_ask returning: ".Dumper($response);
     return $response;
 }
 
