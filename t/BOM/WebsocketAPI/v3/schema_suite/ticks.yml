@@ -3,129 +3,217 @@ AGGTICKS_frxUSDJPY_31m_FULL:
 - ask: '100.603'
   bid: '100.599'
   count: 1
-  epoch: '1471316348'
+  epoch: '1470744010'
+  quote: '100.601'
+  symbol: frxUSDJPY
+- ask: '100.603'
+  bid: '100.599'
+  count: 1
+  epoch: '1470744011'
+  quote: '100.601'
+  symbol: frxUSDJPY
+- ask: '100.603'
+  bid: '100.599'
+  count: 1
+  epoch: '1470744012'
+  quote: '100.601'
+  symbol: frxUSDJPY
+- ask: '100.603'
+  bid: '100.599'
+  count: 1
+  epoch: '1470744013'
+  quote: '100.601'
+  symbol: frxUSDJPY
+- ask: '100.603'
+  bid: '100.599'
+  count: 1
+  epoch: '1470744014'
+  quote: '100.601'
+  symbol: frxUSDJPY
+- ask: '100.603'
+  bid: '100.599'
+  count: 1
+  epoch: '1470744015'
+  quote: '100.601'
+  symbol: frxUSDJPY
+- ask: '100.603'
+  bid: '100.599'
+  count: 1
+  epoch: '1470744016'
+  quote: '100.601'
+  symbol: frxUSDJPY
+- ask: '100.603'
+  bid: '100.599'
+  count: 1
+  epoch: '1470744017'
+  quote: '100.601'
+  symbol: frxUSDJPY
+- ask: '100.603'
+  bid: '100.599'
+  count: 1
+  epoch: '1470744018'
+  quote: '100.601'
+  symbol: frxUSDJPY
+- ask: '100.603'
+  bid: '100.599'
+  count: 1
+  epoch: '1470744019'
+  quote: '100.601'
+  symbol: frxUSDJPY
+- ask: '100.603'
+  bid: '100.599'
+  count: 1
+  epoch: '1470744020'
   quote: '100.601'
   symbol: frxUSDJPY
 - ask: '100.604'
   bid: '100.597'
   count: 1
-  epoch: '1471316349'
+  epoch: '1470744021'
   quote: '100.6'
   symbol: frxUSDJPY
 - ask: '100.602'
   bid: '100.598'
   count: 1
-  epoch: '1471316350'
+  epoch: '1470744022'
   quote: '100.6'
   symbol: frxUSDJPY
 - ask: '100.609'
   bid: '100.595'
   count: 1
-  epoch: '1471316351'
+  epoch: '1470744023'
   quote: '100.602'
   symbol: frxUSDJPY
 - ask: '100.604'
   bid: '100.599'
   count: 1
-  epoch: '1471316352'
+  epoch: '1470744024'
   quote: '100.602'
   symbol: frxUSDJPY
 - ask: '100.608'
   bid: '100.597'
   count: 1
-  epoch: '1471316353'
+  epoch: '1470744025'
   quote: '100.602'
   symbol: frxUSDJPY
 - ask: '100.609'
   bid: '100.599'
   count: 1
-  epoch: '1471316354'
+  epoch: '1470744026'
   quote: '100.604'
   symbol: frxUSDJPY
 - ask: '100.614'
   bid: '100.607'
   count: 1
-  epoch: '1471316355'
+  epoch: '1470744027'
   quote: '100.611'
   symbol: frxUSDJPY
 - ask: '100.614'
   bid: '100.609'
   count: 1
-  epoch: '1471316356'
+  epoch: '1470744028'
   quote: '100.612'
   symbol: frxUSDJPY
 - ask: '100.616'
   bid: '100.609'
   count: 1
-  epoch: '1471316357'
+  epoch: '1470744029'
   quote: '100.612'
   symbol: frxUSDJPY
 - ask: '100.623'
   bid: '100.605'
   count: 1
-  epoch: '1471316358'
+  epoch: '1470744030'
   quote: '100.614'
   symbol: frxUSDJPY
 - ask: '100.617'
   bid: '100.604'
   count: 1
-  epoch: '1471316359'
+  epoch: '1470744031'
   quote: '100.611'
   symbol: frxUSDJPY
 - ask: '100.618'
   bid: '100.599'
   count: 1
-  epoch: 1471316360
+  epoch: 1470744032
   prev_epoch: 1471316359
   quote: '100.608'
   symbol: frxUSDJPY
 - ask: '100.614'
   bid: '100.603'
   count: 1
-  epoch: 1471316361
+  epoch: 1470744033
   prev_epoch: 1471316360
   quote: '100.608'
   symbol: frxUSDJPY
 - ask: '100.611'
   bid: '100.606'
   count: 1
-  epoch: 1471316362
+  epoch: 1470744034
   prev_epoch: 1471316361
   quote: '100.608'
   symbol: frxUSDJPY
 - ask: '100.623'
   bid: '100.595'
   count: 1
-  epoch: 1471316363
+  epoch: 1470744035
   prev_epoch: 1471316362
   quote: '100.609'
   symbol: frxUSDJPY
 - ask: '100.633'
   bid: '100.583'
   count: 1
-  epoch: 1471316365
+  epoch: 1470744036
   prev_epoch: 1471316363
   quote: '100.608'
   symbol: frxUSDJPY
 - ask: '100.611'
   bid: '100.606'
   count: 1
-  epoch: 1471316366
+  epoch: 1470744037
   prev_epoch: 1471316365
   quote: '100.608'
   symbol: frxUSDJPY
 - ask: '100.615'
   bid: '100.602'
   count: 1
-  epoch: 1471316367
+  epoch: 1470744038
   prev_epoch: 1471316366
   quote: '100.608'
   symbol: frxUSDJPY
 - ask: '100.614'
   bid: '100.607'
   count: 1
-  epoch: 1471316368
+  epoch: 1470744039
   prev_epoch: 1471316367
+  quote: '100.611'
+  symbol: frxUSDJPY
+- ask: '100.614'
+  bid: '100.607'
+  count: 1
+  epoch: 1470744039
+  prev_epoch: 1471316368
+  quote: '100.611'
+  symbol: frxUSDJPY
+- ask: '100.614'
+  bid: '100.607'
+  count: 1
+  epoch: 1470744040
+  prev_epoch: 1471316369
+  quote: '100.611'
+  symbol: frxUSDJPY
+- ask: '100.614'
+  bid: '100.607'
+  count: 1
+  epoch: 1470744041
+  prev_epoch: 1471316370
+  quote: '100.611'
+  symbol: frxUSDJPY
+- ask: '100.614'
+  bid: '100.607'
+  count: 1
+  epoch: 1470744042
+  prev_epoch: 1471316371
   quote: '100.611'
   symbol: frxUSDJPY
 AGGTICKS_frxUSDJPY_15s_AGG:
