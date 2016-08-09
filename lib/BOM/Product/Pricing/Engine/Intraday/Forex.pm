@@ -273,8 +273,8 @@ sub _build_intraday_trend {
     my $trend_cv         = Math::Util::CalculatedValue::Validatable->new({
         name        => 'intraday_trend',
         description => 'Intraday trend based on historical data',
-        minimum     => $calibration_coef->{trend_min},
-        maximum     => $calibration_coef->{trend_max},
+        minimum     => $calibration_coef->{trend_min} * $self->slope,
+        maximum     => $calibration_coef->{trend_max} * $self->slope,
         set_by      => __PACKAGE__,
         base_amount => $trend,
     });
@@ -303,10 +303,15 @@ sub calculate_intraday_bounceback {
 
     my $bounceback_base_intraday_trend = $self->calculate_bounceback_base($t_mins, $st_or_lt, $self->intraday_trend->amount);
 
-    my $bounceback_base_max_trend            = $self->calculate_bounceback_base($t_mins, $st_or_lt, (-$max_abs_trend));
-    my $bounceback_base_max_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, (-1 * $slope * $max_abs_trend));
+    my $bounceback_base_max_trend            = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($calibration_coef->{trend_max}));
+    my $bounceback_base_max_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($slope * $max_abs_trend));
 
-    my $bounceback_safety = $bounceback_base_max_trend - $bounceback_base_max_trend_with_slope;
+    my $bounceback_base_min_trend            = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($calibration_coef->{trend_min}));
+    my $bounceback_base_min_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($slope * $calibration_coef->{trend_min}));
+
+    my $bounceback_safety_max = abs($bounceback_base_max_trend - $bounceback_base_max_trend_with_slope);
+    my $bounceback_safety_min = abs($bounceback_base_min_trend - $bounceback_base_min_trend_with_slope);
+    my $bounceback_safety = max($bounceback_safety_min, $bounceback_safety_max);
 
     if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
         $bounceback_base_intraday_trend = ($self->bet->code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
