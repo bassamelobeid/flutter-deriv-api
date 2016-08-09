@@ -169,6 +169,8 @@ sub proposal_array {
                     success  => $create_price_channel,
                     response => sub {
                         my ($rpc_response, $api_response, $req_storage) = @_;
+                        #print "in response callbacK: rpc_response: ".Dumper($rpc_response);
+                        print "in response callbacK: api_response: ".Dumper($api_response);
                         if ($rpc_response->{error}) {
                             $f->done($api_response);
                             return;
