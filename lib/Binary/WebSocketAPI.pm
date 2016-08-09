@@ -483,8 +483,7 @@ sub startup {
             my $key        = $redis_keys[0] // $redis_keys[1];
             my $hits       = $c->stash->{rate_limitations_hits};
             # blocking call
-            $c->ws_redis_master->set($key => encode_json($hits));
-            $c->ws_redis_master->expire($key => 3600);
+            $c->ws_redis_master->set($key => encode_json($hits), EX => 3600);
         });
 
     $app->helper(
