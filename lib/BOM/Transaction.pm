@@ -17,12 +17,12 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 
 use Brands;
 use Client::Account;
-use LandingCompany::Registry;
+
 use Finance::Asset::Market::Types;
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 
 use BOM::Platform::Context qw(localize request);
-use BOM::Platform::Runtime;
+
 use BOM::Platform::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Database::DataMapper::Payment;
@@ -211,8 +211,6 @@ sub BUILDARGS {
     }
     return $args;
 }
-
-my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
 
 my %known_errors;              # forward declaration
 sub sell_expired_contracts;    # forward declaration
@@ -457,45 +455,53 @@ sub prepare_bet_data_for_buy {
 }
 
 sub prepare_buy {
-    my ($self, %options) = @_;
+    my ($self, $skip) = @_;
 
-    my $error_status;
+    return $self->prepare_bet_data_for_sell if $skip and not $self->multiple;
 
-    unless ($options{skip_validation}) {
-        if ($self->multiple) {
-            for my $m (@{$self->multiple}) {
-                next if $m->{code};
-                my $error_status = BOM::Transaction::Validation->new( transaction => $self, client => $m->client )->validate_trx_buy();
-                return $error_status if $error_status;
-                $m->{limits} = $self->calculate_limits($m->{client});
+    if ($self->multiple) {
+        for my $m (@{$self->multiple}) {
+            next if $m->{code};
+            my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
+            unless ($c) {
+                $m->{code}  = 'InvalidLoginid';
+                $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
+                next;
             }
-        } else {
-            my $error_status = BOM::Transaction::Validation->new( transaction => $self, client => $self->client )->validate_trx_buy();
-            return $error_status if $error_status;
-            $self->limits($self->calculate_limits);
-        }
+            unless ($skip) {
+                my $error_status = BOM::Transaction::Validation->new(
+                    transaction => $self,
+                    client      => $c
+                )->validate_trx_buy();
+                return $error_status if $error_status;
+            }
 
-        $self->comment(
-            _build_pricing_comment({
-                    contract         => $self->contract,
-                    price            => $self->price,
-                    requested_price  => $self->requested_price,
-                    recomputed_price => $self->recomputed_price,
-                    ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
-                    ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
-                    action => 'buy'
-                })) unless @{$self->comment};
+            $m->{client} = $c;
+        }
+    } else {
+        my $error_status = BOM::Transaction::Validation->new(
+            transaction => $self,
+            client      => $self->client
+        )->validate_trx_buy();
+        return $error_status if $error_status;
     }
 
-    ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
-    return $error_status if $error_status;
+    $self->comment(
+        _build_pricing_comment({
+                contract         => $self->contract,
+                price            => $self->price,
+                requested_price  => $self->requested_price,
+                recomputed_price => $self->recomputed_price,
+                ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
+                ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
+                action => 'buy'
+            })) unless @{$self->comment};
 
-    return $error_status, $bet_data;
+    return $self->prepare_bet_data_for_buy;
 }
 
-sub buy {    ## no critic (RequireArgUnpacking)
-    my $self    = shift;
-    my @options = @_;
+sub buy {
+    my ($self, @options) = @_;
 
     my $stats_data = $self->stats_start('buy');
 
@@ -591,18 +597,6 @@ sub batch_buy {    ## no critic (RequireArgUnpacking)
     #       virtual?
 
     my $stats_data = $self->stats_start('batch_buy');
-
-    for my $m (@{$self->multiple}) {
-        next if $m->{code};
-        my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
-        unless ($c) {
-            $m->{code}  = 'InvalidLoginid';
-            $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
-            next;
-        }
-
-        $m->{client} = $c;
-    }
 
     my ($error_status, $bet_data) = $self->prepare_buy(@options);
     return $self->stats_stop($stats_data, $error_status) if $error_status;
@@ -722,11 +716,11 @@ sub prepare_bet_data_for_sell {
 }
 
 sub prepare_sell {
-    my ( $self, $skip ) = @_;
+    my ($self, $skip) = @_;
 
     return $self->prepare_bet_data_for_sell if $skip and not $self->multiple;
 
-    if ( $self->multiple ) {
+    if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
             my $c = try { Client::Account->new({loginid => $m->{loginid}}) };
@@ -736,27 +730,33 @@ sub prepare_sell {
                 next;
             }
             unless ($skip) {
-                my $error_status = BOM::Transaction::Validation->new(transaction => $self, client => $c)->validate_trx_sell();
+                my $error_status = BOM::Transaction::Validation->new(
+                    transaction => $self,
+                    client      => $c
+                )->validate_trx_sell();
                 return $error_status if $error_status;
             }
 
             $m->{client} = $c;
         }
     } else {
-        my $error_status = BOM::Transaction::Validation->new(transaction => $self, client => $self->client)->validate_trx_sell();
+        my $error_status = BOM::Transaction::Validation->new(
+            transaction => $self,
+            client      => $self->client
+        )->validate_trx_sell();
         return $error_status if $error_status;
     }
 
     $self->comment(
         _build_pricing_comment({
-            contract         => $self->contract,
-            price            => $self->price,
-            requested_price  => $self->requested_price,
-            recomputed_price => $self->recomputed_price,
-            ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
-            ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
-            action => 'sell'
-        })) unless @{$self->comment};
+                contract         => $self->contract,
+                price            => $self->price,
+                requested_price  => $self->requested_price,
+                recomputed_price => $self->recomputed_price,
+                ($self->price_slippage) ? (price_slippage => $self->price_slippage) : (),
+                ($self->trading_period_start) ? (trading_period_start => $self->trading_period_start->db_timestamp) : (),
+                action => 'sell'
+            })) unless @{$self->comment};
 
     return $self->prepare_bet_data_for_sell;
 }
@@ -766,7 +766,7 @@ sub sell {
 
     my $stats_data = $self->stats_start('sell');
 
-    my ( $error_status, $bet_data ) = $self->prepare_sell($options{skip});
+    my ($error_status, $bet_data) = $self->prepare_sell($options{skip});
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $bet_data->{account_data} = {
@@ -821,9 +821,9 @@ sub sell {
 sub sell_by_shortcode {
     my ($self, %options) = @_;
 
-    my $stats_data   = $self->stats_start('sell');
+    my $stats_data = $self->stats_start('sell');
 
-    my ( $error_status, $bet_data ) = $self->prepare_sell($options{skip});
+    my ($error_status, $bet_data) = $self->prepare_sell($options{skip});
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
@@ -1157,8 +1157,6 @@ sub _recover {
     }
     die $err;
 }
-
-
 
 sub _build_pricing_comment {
     my $args = shift;

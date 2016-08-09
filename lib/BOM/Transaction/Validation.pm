@@ -1,4 +1,4 @@
-package BOM::Validation;
+package BOM::Transaction::Validation;
 
 use strict;
 use warnings;
@@ -18,9 +18,7 @@ has transaction => (
     required => 0
 );
 
-
 ################ Client and transaction validation ########################
-
 
 sub validate_trx_sell {
     my $self = shift;
@@ -29,18 +27,18 @@ sub validate_trx_sell {
     # ask your friendly DBA team if in doubt
     for (
         qw/
-              _is_valid_to_sell
-              _validate_available_currency
-              _validate_currency
-              _validate_sell_pricing_adjustment
-              _validate_date_pricing /
-          ) {
-        my $res  = $self->$_;
+        _is_valid_to_sell
+        _validate_available_currency
+        _validate_currency
+        _validate_sell_pricing_adjustment
+        _validate_date_pricing /
+        )
+    {
+        my $res = $self->$_;
         return $res if $res;
     }
     return;
 }
-
 
 sub validate_trx_buy {
     my $self = shift;
@@ -52,30 +50,29 @@ sub validate_trx_buy {
 
     for (
         qw/
-            _validate_iom_withdrawal_limit
-            _validate_available_currency
-            _validate_currency
-            _validate_jurisdictional_restrictions
-            _validate_client_status
-            _validate_client_self_exclusion
+        _validate_iom_withdrawal_limit
+        _validate_available_currency
+        _validate_currency
+        _validate_jurisdictional_restrictions
+        _validate_client_status
+        _validate_client_self_exclusion
 
-            _is_valid_to_buy
-            _validate_date_pricing
-            _validate_trade_pricing_adjustment
+        _is_valid_to_buy
+        _validate_date_pricing
+        _validate_trade_pricing_adjustment
 
-            _validate_payout_limit
-            _validate_stake_limit/
-          ) {
-        my $res  = $self->$_;
+        _validate_payout_limit
+        _validate_stake_limit/
+        )
+    {
+        my $res = $self->$_;
         return $res if $res;
     }
     return;
 }
 
-
-
 sub _validate_available_currency {
-    my $self     = shift;
+    my $self = shift;
 
     my $currency = $self->transaction->contract->currency;
 
@@ -90,7 +87,7 @@ sub _validate_available_currency {
 }
 
 sub _validate_currency {
-    my $self     = shift;
+    my $self = shift;
 
     my $broker   = $self->client->broker_code;
     my $currency = $self->transaction->contract->currency;
@@ -239,7 +236,8 @@ sub _validate_trade_pricing_adjustment {
     }
     my $allowed_move = ($contract->category->code eq 'digits') ? $commission_markup : ($commission_markup * 0.5);
     $allowed_move = 0 if $recomputed == 1;
-    my ($amount, $recomputed_amount) = $amount_type eq 'payout' ? ($self->transaction->price, $contract->ask_price) : ($self->transaction->payout, $contract->payout);
+    my ($amount, $recomputed_amount) =
+        $amount_type eq 'payout' ? ($self->transaction->price, $contract->ask_price) : ($self->transaction->payout, $contract->payout);
 
     if ($move != 0) {
         my $final_value;
@@ -274,7 +272,9 @@ sub _validate_trade_pricing_adjustment {
                             slippage         => $slippage,
                             option_type      => $contract->code,
                             currency_pair    => $contract->underlying->symbol,
-                            ($self->transaction->trading_period_start) ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp) : (),
+                            ($self->transaction->trading_period_start)
+                            ? (trading_period_start => $self->transaction->trading_period_start->db_timestamp)
+                            : (),
                             ($contract->two_barriers)
                             ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
                             : (barriers => $contract->barrier->as_absolute),
@@ -324,7 +324,6 @@ sub _validate_trade_pricing_adjustment {
 
     return;
 }
-
 
 sub _is_valid_to_buy {
     my $self     = shift;
@@ -391,6 +390,8 @@ sub _validate_iom_withdrawal_limit {
     my $landing_company = LandingCompany::Registry::get_by_broker($client->broker_code);
     return if ($landing_company->country ne 'Isle of Man');
 
+    my $payment_limits = LoadFile(File::ShareDir::dist_file('Client-Account', 'payment_limits.yml'));
+
     my $landing_company_short = $landing_company->short;
     my $withdrawal_limits     = $payment_limits->{withdrawal_limits};
     my $numdays               = $withdrawal_limits->{$landing_company_short}->{for_days};
@@ -431,10 +432,10 @@ sub _validate_iom_withdrawal_limit {
 # This validation should always come after _validate_trade_pricing_adjustment
 # because we recompute the price and that's the price that we going to transact with!
 sub _validate_stake_limit {
-    my $self   = shift;
-    my $client = $self->client;
-
-    return if $self->transaction->contract->is_spread;
+    my $self     = shift;
+    my $client   = $self->client;
+    my $contract = $self->transaction->contract;
+    return if $contract->is_spread;
 
     my $landing_company = $client->landing_company;
     my $currency        = $contract->currency;
@@ -613,7 +614,7 @@ is not able to purchase contract
 =cut
 
 sub _validate_client_self_exclusion {
-    my $self   = shift;
+    my $self = shift;
 
     if (my $limit_excludeuntil = $self->client->get_self_exclusion_until_dt) {
         return Error::Base->cuss(
@@ -627,9 +628,7 @@ sub _validate_client_self_exclusion {
     return;
 }
 
-
 ################ Client only validation ########################
-
 
 sub validate_tnc {
     my $self = shift;
@@ -640,6 +639,7 @@ sub validate_tnc {
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     my $client_tnc_status   = $self->client->get_status('tnc_approval');
     return if not $client_tnc_status or ($client_tnc_status->reason ne $current_tnc_version);
+    return 1;
 }
 
 sub compliance_checks {
