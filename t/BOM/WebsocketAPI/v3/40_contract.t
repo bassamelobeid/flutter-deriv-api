@@ -68,6 +68,43 @@ my %contractParameters = (
     "duration"      => "2",
     "duration_unit" => "m",
 );
+
+$t = $t->send_ok({
+        json => {
+            "proposal"  => 1,
+            %contractParameters
+        }});
+$t->message_ok;
+my $proposal = decode_json($t->message->[1]);
+ok $proposal->{proposal}->{id};
+ok $proposal->{proposal}->{ask_price};
+test_schema('proposal', $proposal);
+
+my $id1 = $proposal->{proposal}->{id};
+
+$t = $t->send_ok({
+        json => {
+            "proposal"  => 1,
+            %contractParameters
+        }});
+$t->message_ok;
+$proposal = decode_json($t->message->[1]);
+ok $proposal->{proposal}->{id};
+cmp_ok $id1, 'eq', $proposal->{proposal}->{id}, 'ids are the same for same parameters';
+
+$contractParameters{amount}++;
+$t = $t->send_ok({
+        json => {
+            "proposal"  => 1,
+            %contractParameters
+        }});
+$t->message_ok;
+$proposal = decode_json($t->message->[1]);
+ok $proposal->{proposal}->{id};
+cmp_ok $id1, 'ne', $proposal->{proposal}->{id}, 'ids are not the same if parameters are different';
+$contractParameters{amount}--;
+
+
 $t = $t->send_ok({
         json => {
             "proposal"  => 1,
@@ -75,7 +112,7 @@ $t = $t->send_ok({
             %contractParameters
         }});
 $t->message_ok;
-my $proposal = decode_json($t->message->[1]);
+$proposal = decode_json($t->message->[1]);
 ok $proposal->{proposal}->{id};
 ok $proposal->{proposal}->{ask_price};
 test_schema('proposal', $proposal);

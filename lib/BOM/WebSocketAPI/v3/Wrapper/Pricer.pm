@@ -35,7 +35,6 @@ sub proposal {
             },
             success => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
-                return unless $req_storage->{args}->{subscribe};
                 my $cache = {
                     longcode            => $rpc_response->{longcode},
                     contract_parameters => delete $rpc_response->{contract_parameters}};
@@ -47,7 +46,6 @@ sub proposal {
                 return $api_response if $rpc_response->{error};
 
                 $api_response->{passthrough} = $req_storage->{args}->{passthrough};
-                return $api_response unless $req_storage->{args}->{subscribe};
                 if (my $uuid = $req_storage->{uuid}) {
                     $api_response->{proposal}->{id} = $uuid;
                 } else {
@@ -192,6 +190,9 @@ sub _create_pricer_channel {
 
     # already subscribed
     if (exists $pricing_channel->{$redis_channel} and exists $pricing_channel->{$redis_channel}->{$subchannel}) {
+        return $pricing_channel->{$redis_channel}->{$subchannel}->{uuid}
+            if not(exists $args->{subscribe} and $args->{subscribe} == 1)
+            and exists $pricing_channel->{$redis_channel}->{$subchannel}->{uuid};
         return;
     }
 
