@@ -4,17 +4,17 @@
     "properties": {
         "client_id": {
             "type": "string",
-            "pattern": "^CR\\d+$",
+            "pattern": "^MF\\d+$",
             "required": "1"
         },
         "landing_company": {
             "type": "string",
-            "pattern": "^Binary \\(C\\.R\\.\\) S\\.A\\.$",
+            "pattern": "^Binary Investments \\(Europe\\) Ltd$",
             "required": "1"
         },
         "landing_company_shortcode": {
             "type": "string",
-            "pattern": "^costarica$",
+            "pattern": "^maltainvest$",
             "required": "1"
         },
         "oauth_token": {
