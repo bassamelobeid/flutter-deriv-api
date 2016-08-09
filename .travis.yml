@@ -15,7 +15,6 @@ env:
 before_install:
     - git clone -b arun/mt5-ssh-tunnel https://1994c85ce4f602fb682076e9a102261644fb3d19@github.com/arunbinary/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/setup_ssh.sh
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /tmp/travis-ssh-id -f -L 4000:mt5-dev.binary.com:443 travis@travis-ssh-proxy.regentmarkets.com -N
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
     - . /tmp/travis-scripts/setup_perl.sh
