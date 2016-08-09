@@ -371,6 +371,9 @@ sub _price_stream_results_adjustment {
     # skips for spreads
     $_ eq $orig_args->{contract_type} and return $results for qw(SPREADU SPREADD);
 
+    # log the instances when pricing server doesn't return theo probability
+    stats_inc('price_adjustment.missing_theo_probability') unless $resp_theo_probability;
+
     my $t = [gettimeofday];
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
@@ -383,9 +386,6 @@ sub _price_stream_results_adjustment {
         maximum     => 1,
     });
     $contract_parameters->{theo_probability}      = $theo_probability;
-
-    # log the instances when pricing server doesn't return theo probability
-    stats_inc('price_adjustment.missing_theo_probability') unless $contract_parameters->{theo_probability};
 
     $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
     my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
