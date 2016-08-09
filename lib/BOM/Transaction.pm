@@ -36,6 +36,7 @@ use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
+use BOM::Transaction::Validation;
 
 has client => (
     is  => 'ro',
