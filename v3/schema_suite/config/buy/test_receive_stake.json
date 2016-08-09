@@ -31,7 +31,7 @@
         },
         "buy_price": {
           "type": "number",
-          "pattern": "10",
+          "pattern": "^[_1]$",
           "required": 1
         },
         "purchase_time": {
