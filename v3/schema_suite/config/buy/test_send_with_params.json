@@ -3,7 +3,7 @@
   "price": 10000,
   "parameters": {
     "amount": 10,
-    "basis": "^[_1]$",
+    "basis": "[_1]",
     "contract_type": "CALL",
     "currency": "USD",
     "symbol": "R_50",
