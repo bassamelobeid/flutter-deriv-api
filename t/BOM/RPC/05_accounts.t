@@ -595,7 +595,6 @@ subtest $method => sub {
     is_deeply($res, {}, 'empty assessment details');
 };
 
-
 $method = 'get_account_status';
 subtest $method => sub {
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
@@ -655,7 +654,7 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status               => ['has_password', 'financial_assessment_needed'],
+            status              => ['has_password', 'financial_assessment_needed'],
             risk_classification => 'high'
         },
         'financial_assessment_needed when client has not filled it'
@@ -663,8 +662,8 @@ subtest $method => sub {
 
     # test when some questions are not answered
     my $data = {
-        "forex_trading_experience"             => "",
-        "forex_trading_frequency"              => "",
+        "forex_trading_experience" => "",
+        "forex_trading_frequency"  => "",
     };
     encode_json $data;
     $test_client->financial_assessment({
@@ -675,7 +674,7 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status               => ['has_password', 'financial_assessment_needed'],
+            status              => ['has_password', 'financial_assessment_needed'],
             risk_classification => 'high'
         },
         'financial_assessment_needed when some questions are not answered'
@@ -711,13 +710,13 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status               => ['has_password', 'financial_assessment_needed'],
+            status              => ['has_password', 'financial_assessment_needed'],
             risk_classification => 'high'
         },
         'financial_assessment_needed when some answers are empty'
     );
 
-   $data = {
+    $data = {
         "commodities_trading_experience"       => "1-2 years",
         "commodities_trading_frequency"        => "0-5 transactions in the past 12 months",
         "education_level"                      => "Secondary",
@@ -748,7 +747,7 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status               => ['has_password'],
+            status              => ['has_password'],
             risk_classification => 'high'
         },
         'financial_assessment_needed should not present when questions are answered properly'
