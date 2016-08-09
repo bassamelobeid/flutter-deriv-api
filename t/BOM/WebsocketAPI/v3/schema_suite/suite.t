@@ -76,7 +76,6 @@ foreach my $line (@lines) {
     }
 
     my ($send_file, $receive_file, @template_func) = split(',', $line);
-    my $func_ref = \@template_func;
     chomp $receive_file;
     diag("\nRunning line $counter [$send_file, $receive_file]\n");
 
@@ -84,7 +83,7 @@ foreach my $line (@lines) {
     my $call = $1;
 
     my $content = File::Slurp::read_file('config/v3/' . $send_file);
-    $content = _get_values($content, $func_ref);
+    $content = _get_values($content, @template_func);
 
     if ($lang || !$t || $reset) {
         $t         = build_mojo_test({($lang ne '' ? (language => $lang) : (language => $last_lang))});
@@ -99,19 +98,18 @@ foreach my $line (@lines) {
 
     $content = File::Slurp::read_file('config/v3/' . $receive_file);
 
-    $content = _get_values($content, $func_ref);
+    $content = _get_values($content, @template_func);
     _test_schema($receive_file, $content, $result, $fail);
 }
 
 done_testing();
 
 sub _get_values {
-    my ($content, $func_ref) = @_;
+    my ($content, @template_func) = @_;
     my $c = 0;
-    while (my $f = shift @$func_ref) {
+    while (my $f = shift @template_func) {
         $c++;
         $f =~ s/^\s+|\s+$//g;
-        last if $f eq "'=='";
         my $template_content;
         if ($f =~ /^\_.*$/) {
             $template_content = eval $f;
