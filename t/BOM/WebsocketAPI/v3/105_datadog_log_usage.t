@@ -116,7 +116,7 @@ $fake_rpc_client->mock('call', sub { shift; return $_[2]->('') });
     $t->send_ok({json => {website_status => 1}})->message_ok;
     $res = decode_json($t->message->[1]);
 }
-like $warn_string, qr/WrongResponse/, 'Should make warning if RPS response is empty';
+like $warn_string, qr/WrongResponse/, 'Should make warning if RPC response is empty';
 
 is $res->{error}->{code}, 'WrongResponse', 'Should make timing if returns WrongResponse';
 
