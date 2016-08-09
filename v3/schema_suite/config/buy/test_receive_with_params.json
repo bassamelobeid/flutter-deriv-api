@@ -31,7 +31,7 @@
         },
         "buy_price": {
           "type": "number",
-          "pattern": "^[_1]$",
+          "pattern": "^[_2]$",
           "required": 1
         },
         "purchase_time": {
@@ -45,6 +45,7 @@
         },
         "payout": {
             "type": "number",
+            "pattern": "^[_3]$",
             "required": 1
         }
       },
