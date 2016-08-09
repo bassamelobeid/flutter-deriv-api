@@ -36,7 +36,7 @@ use BOM::RPC::v3::Japan::NewAccount;
 use BOM::RPC::v3::MT5::Account;
 use BOM::RPC::v3::CopyTrading::Statistics;
 use BOM::RPC::v3::CopyTrading;
-use BOM::Validation;
+use BOM::Transaction::Validation;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -82,7 +82,7 @@ sub _validate_tnc {
     # we shouldn't get to this error, so we can die it directly
     my $client = $params->{client} // die "client should be authenticated before calling this action";
 
-    unless (BOM::Validation->new(client => $client)->validate_tnc) {
+    unless (BOM::Transaction::Validation->new(client => $client)->validate_tnc) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'ASK_TNC_APPROVAL',
             message_to_client => localize('Terms and conditions approval is required.'),
@@ -96,7 +96,7 @@ sub _compliance_checks {
 
     # we shouldn't get to this error, so we can die it directly
     my $client = $params->{client} // die "client should be authed before calling this action";
-    unless (BOM::Validation->new(client => $client)->compliance_checks) {
+    unless (BOM::Transaction::Validation->new(client => $client)->compliance_checks) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'FinancialAssessmentRequired',
             message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
@@ -110,7 +110,7 @@ sub _check_tax_information {
 
     # we shouldn't get to this error, so we can die it directly
     my $client = $params->{client} // die "client should be authed before calling this action";
-    unless (BOM::Validation->new(client => $client)->check_tax_information) {
+    unless (BOM::Transaction::Validation->new(client => $client)->check_tax_information) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'TINDetailsMandatory',
                 message_to_client => localize(
@@ -127,7 +127,7 @@ sub _check_trade_status {
 
     # we shouldn't get to this error, so we can die it directly
     my $client = $params->{client} // die "client should be authenticated before calling this action";
-    unless (BOM::Validation->new(client => $client)->check_trade_status) {
+    unless (BOM::Transaction::Validation->new(client => $client)->check_trade_status) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'PleaseContactSupport',
             message_to_client => localize('Please contact customer support for more information.'),
