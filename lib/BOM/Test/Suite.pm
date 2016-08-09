@@ -61,8 +61,12 @@ sub set_date {
 
     my $attempts     = 0;
     my $max_attempts = 10;
+    # autoflush stdouts;
+    $| = 1;
     while ($attempts < $max_attempts) {
+
         my ($stdout, $stderr, $exitcode) = capture {
+
             system @cmd;
         };
         $stdout //= '';
