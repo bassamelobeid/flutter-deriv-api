@@ -452,47 +452,44 @@ sub startup {
 
     $app->helper(
         'rate_limitations_keys' => sub {
-            my $c = shift;
-            my $login_id = $c->stash('loginid');
-            my $authorised_key = $login_id ? "rate_limits::authorised::$login_id" : undef;
-            my $non_authorised_key =
-                do {
-                    my $ip = $c->client_ip;
-                    if (! defined $ip) {
-                        warn("cannot determine client IP-address");
-                        $ip = 'unknown-IP';
-                    }
-                    my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
-                    my $client_id = md5_hex($ip . ":" . $user_agent);
-                    "rate_limits::non-authorised::$client_id";
-                };
+            my $c                  = shift;
+            my $login_id           = $c->stash('loginid');
+            my $authorised_key     = $login_id ? "rate_limits::authorised::$login_id" : undef;
+            my $non_authorised_key = do {
+                my $ip = $c->client_ip;
+                if (!defined $ip) {
+                    warn("cannot determine client IP-address");
+                    $ip = 'unknown-IP';
+                }
+                my $user_agent = $c->req->headers->header('User-Agent') // 'Unknown-UA';
+                my $client_id = md5_hex($ip . ":" . $user_agent);
+                "rate_limits::non-authorised::$client_id";
+            };
             return ($authorised_key, $non_authorised_key);
         });
 
-
     $app->helper(
         'rate_limitations_save' => sub {
-            my $c     = shift;
+            my $c          = shift;
             my @redis_keys = $c->rate_limitations_keys;
-            my $key = $redis_keys[0] // $redis_keys[1];
-            my $hits = $c->stash->{rate_limitations_hits};
+            my $key        = $redis_keys[0] // $redis_keys[1];
+            my $hits       = $c->stash->{rate_limitations_hits};
             # TODO: use correct redis!
             # blocking call
-            $c->redis->set($key => encode_json($hits));
+            $c->ws_redis->set($key => encode_json($hits));
         });
 
     $app->helper(
         'rate_limitations_load' => sub {
-            my $c     = shift;
+            my $c          = shift;
             my @redis_keys = $c->rate_limitations_keys;
-            my $key = $redis_keys[0] // $redis_keys[1];
+            my $key        = $redis_keys[0] // $redis_keys[1];
             # TODO: use correct redis!
             # blocking call
-            my $hits_json = $c->redis->get($key);
+            my $hits_json = $c->ws_redis->get($key);
             my $hits = $hits_json ? decode_json($hits_json) : {};
-            $c->stash(rate_limitations_hits => decode_json($hits));
+            $c->stash(rate_limitations_hits => $hits);
         });
-
 
     $app->plugin(
         'web_socket_proxy' => {

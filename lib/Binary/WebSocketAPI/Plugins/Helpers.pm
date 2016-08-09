@@ -79,11 +79,30 @@ sub register {
         });
 
     # read it once, and share between workers
-    my $chronicle_redis_config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml')->{read};
-    my $chronicle_redis_url = do {
-        my ($host, $port, $password) = @{$chronicle_redis_config}{qw/host port password/};
-        "redis://" . (defined $password ? "dummy:$password\@" : "") . "$host:$port";
+    my $chronicle_cfg = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml');
+    my $ws_redis_cfg  = YAML::XS::LoadFile($ENV{BOM_TEST_WS_REDIS}         // '/etc/rmg/ws-redis.yml');
+    my $redis_url     = sub {
+        my $cfg = shift;
+        my ($host, $port, $password) = @{$cfg}{qw/host port password/};
+        "redis://$host:$port" . (defined $password ? "?password=$password" : "");
     };
+    my $chronicle_redis_url = $redis_url->($chronicle_cfg->{read});
+    my $ws_redis_url        = $redis_url->($ws_redis_cfg->{write});
+
+    $app->helper(
+        ws_redis => sub {
+            state $redis = do {
+                print("using url $ws_redis_url\n");
+                my $redis = Mojo::Redis2->new(url => $ws_redis_url);
+                $redis->on(
+                    error => sub {
+                        my ($self, $err) = @_;
+                        $app->log->warn("redis error: $err");
+                    });
+                $redis;
+            };
+            return $redis;
+        });
 
     # one redis connection (Mojo::Redis2 instance) per worker, i.e. shared among multiple clients, connected to
     # the same worker
