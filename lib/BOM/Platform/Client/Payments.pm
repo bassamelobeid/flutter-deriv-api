@@ -14,7 +14,6 @@ use YAML::XS qw(LoadFile);
 use Postgres::FeedDB::CurrencyConverter qw(amount_from_to_currency);
 
 use BOM::Database::ClientDB;
-use BOM::Platform::Runtime;
 
 # NOTE.. this is a 'mix-in' of extra subs for BOM::Platform::Client.  It is not a distinct Class.
 
@@ -30,9 +29,6 @@ sub validate_payment {
     my $accbal  = $account->load->balance;                      # forces db-read to get very latest
     my $acccur  = $account->currency_code;
     my $absamt  = abs($amount);
-
-    die "Payments are suspended.\n"
-        if BOM::Platform::Runtime->instance->app_config->system->suspend->payments;
 
     die "Client\'s cashier is locked.\n"
         if $self->get_status('cashier_locked');
