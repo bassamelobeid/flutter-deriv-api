@@ -455,7 +455,8 @@ sub paymentagent_transfer {
     my $error_msg;
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->payment_agents)
+        or $app_config->system->suspend->payment_agents
+        or $app_config->system->suspend->system)
     {
         $error_msg = localize('Sorry, Payment Agent Transfer is temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif (not $client_fm->landing_company->allows_payment_agents) {
@@ -703,7 +704,8 @@ sub paymentagent_withdraw {
 
     my $app_config = BOM::Platform::Runtime->instance->app_config;
     if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->payment_agents)
+        or $app_config->system->suspend->payment_agents
+        or $app_config->system->suspend->system)
     {
         return $error_sub->(
             localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
