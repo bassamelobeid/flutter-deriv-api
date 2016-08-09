@@ -13,7 +13,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::System::Password;
 use BOM::Platform::User;
-use BOM::Platform::Client;
+use Client::Account;
 
 my $t = build_wsapi_test();
 

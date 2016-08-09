@@ -14,11 +14,11 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::System::Password;
 use BOM::Platform::User;
-use BOM::Platform::Client;
+use Client::Account;
 
 ## do not send email
 use Test::MockModule;
-my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
+my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
 $email_mocked->mock('send_email', sub { return 1 });
@@ -91,7 +91,7 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 ok $res->{error}->{message} =~ /Your cashier was locked/, 'Your cashier was locked';
 
-$client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});
+$client_cr = Client::Account->new({loginid => $client_cr->loginid});
 ok length $client_cr->cashier_setting_password, 'cashier_setting_password is set';
 
 # unlock
@@ -117,7 +117,7 @@ $res = decode_json($t->message->[1]);
 ok $res->{cashier_password} == 0, 'password was clear';
 test_schema('cashier_password', $res);
 
-$client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});
+$client_cr = Client::Account->new({loginid => $client_cr->loginid});
 ok(length($client_cr->cashier_setting_password) == 0, 'cashier_setting_password is clear');
 
 $t = $t->send_ok({

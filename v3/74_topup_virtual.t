@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::System::Password;
 use BOM::Platform::User;
-use BOM::Platform::Client;
+use Client::Account;
 
 my $t = build_wsapi_test({language => 'EN'});
 
@@ -62,7 +62,7 @@ is $res->{msg_type}, 'topup_virtual';
 ok $res->{error}->{message} =~ /virtual accounts only/, 'virtual accounts only';
 
 # virtual is ok
-$client_vr = BOM::Platform::Client->new({loginid => $client_vr->loginid});
+$client_vr = Client::Account->new({loginid => $client_vr->loginid});
 my $old_balance = $client_vr->default_account->balance;
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_1);
@@ -78,14 +78,14 @@ is $res->{msg_type}, 'topup_virtual';
 my $topup_amount = $res->{topup_virtual}->{amount};
 ok $topup_amount, 'topup ok';
 
-$client_vr = BOM::Platform::Client->new({loginid => $client_vr->loginid});
+$client_vr = Client::Account->new({loginid => $client_vr->loginid});
 ok $old_balance + $topup_amount == $client_vr->default_account->balance, 'balance is right';
 
 $t = $t->send_ok({json => {topup_virtual => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{error}->{message} =~ /Your balance is higher than the permitted amount/, 'Your balance is higher than the permitted amount';
 
-$client_vr = BOM::Platform::Client->new({loginid => $client_vr->loginid});
+$client_vr = Client::Account->new({loginid => $client_vr->loginid});
 ok $old_balance + $topup_amount == $client_vr->default_account->balance, 'balance stays same';
 
 $t->finish_ok;

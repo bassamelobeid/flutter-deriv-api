@@ -17,7 +17,7 @@ $ENV{BOM_TEST_RATE_LIMITATIONS} = '/home/git/regentmarkets/bom-websocket-tests/v
 ## do not send email
 use Test::MockObject;
 use Test::MockModule;
-my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
+my $client_mocked = Test::MockModule->new('Client::Account');
 $client_mocked->mock('add_note', sub { return 1 });
 
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
