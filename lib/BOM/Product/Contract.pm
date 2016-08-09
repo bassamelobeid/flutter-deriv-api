@@ -856,11 +856,27 @@ sub _build_corporate_actions {
 has price_calculator => (
     is         => 'ro',
     lazy_build => 1,
-    handles    => [qw/ theo_probability ask_probability bid_probability discounted_probability bs_probability /],
+    handles    => [
+        qw/
+            theo_probability
+            ask_probability
+            bid_probability
+            discounted_probability
+            bs_probability
+            risk_markup
+            commission_markup
+            base_commission
+            /
+    ],
 );
 
 sub _build_price_calculator {
     my $self = shift;
+
+    my $risk_markup = 0;
+    if ($self->pricing_engine->can('risk_markup')) {
+        $risk_markup = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
+    }
 
     return Price::Calculator->new(
         market_name                 => $self->market->name,
@@ -868,6 +884,10 @@ sub _build_price_calculator {
         price_engine_name           => $self->price_engine_name,
         price_engine_probability    => $self->price_engine->probability,
         price_engine_bs_probability => $self->price_engine->bs_probability,
+        price_engine_risk_markup    => $risk_markup,
+        base_commission_min         => BOM::System::Config::quants->{commission}->{adjustment}->{minimum},
+        base_commission_max         => BOM::System::Config::quants->{commission}->{adjustment}->{maximum},
+        base_commission_scaling     => BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling,
     );
 }
 
@@ -1178,59 +1198,6 @@ sub _build_bs_price {
     my $self = shift;
 
     return $self->_price_from_prob('bs_probability');
-}
-
-# base_commission can be overridden on contract type level.
-# When this happens, underlying base_commission is ignored.
-has [qw(risk_markup commission_markup base_commission)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_risk_markup {
-    my $self = shift;
-
-    my $base_amount = 0;
-    if ($self->pricing_engine->can('risk_markup')) {
-        $base_amount = $self->new_interface_engine ? $self->pricing_engine->risk_markup : $self->pricing_engine->risk_markup->amount;
-    }
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'risk_markup',
-        description => 'Risk markup for a pricing model',
-        set_by      => $self->pricing_engine_name,
-        base_amount => $base_amount,
-    });
-}
-
-sub _build_base_commission {
-    my $self = shift;
-
-    my $minimum        = BOM::System::Config::quants->{commission}->{adjustment}->{minimum} / 100;
-    my $maximum        = BOM::System::Config::quants->{commission}->{adjustment}->{maximum} / 100;
-    my $scaling_factor = BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->global_scaling / 100;
-    $scaling_factor = max($minimum, min($maximum, $scaling_factor));
-
-    return $self->underlying->base_commission * $scaling_factor;
-}
-
-sub _build_commission_markup {
-    my $self = shift;
-
-    my $base_amount   = $self->base_commission * $self->commission_multiplier($self->payout);
-    my %min           = ($self->has_payout and $self->payout != 0) ? (minimum => 0.02 / $self->payout) : ();
-    my $commission_cv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_markup',
-        description => 'Commission markup for a pricing model',
-        set_by      => __PACKAGE__,
-        base_amount => $base_amount,
-        maximum     => BOM::System::Config::quants->{commission}->{maximum_total_markup} / 100,
-        %min,
-    });
-
-    $commission_cv->include_adjustment('add', $self->app_markup);
-
-    return $commission_cv;
 }
 
 sub _build_theo_price {
