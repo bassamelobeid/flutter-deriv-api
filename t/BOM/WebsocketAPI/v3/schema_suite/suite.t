@@ -250,14 +250,13 @@ sub _setup_market_data {
                 }]});
 
     # only populating aggregated ticks for frxUSDJPY
-    my $ticks   = LoadFile('/home/git/regentmarkets/bom-websocket-api/t/BOM/WebsocketAPI/v3/schema_suite/ticks.yml');
-    my $key     = 'AGGTICKS_frxUSDJPY_15s_AGG';
+    my $tick_data   = LoadFile('/home/git/regentmarkets/bom-websocket-api/t/BOM/WebsocketAPI/v3/schema_suite/ticks.yml');
     my $encoder = Sereal::Encoder->new({
         canonical => 1,
     });
     my $redis = Cache::RedisDB->redis;
-    foreach my $tick (@$ticks) {
-        $redis->zadd($key, $tick->{epoch}, $encoder->encode($tick));
+    while (my ($key, $ticks) = each %$tick_data) {
+        $redis->zadd($key, $_->{epoch}, $encoder->encode($_)) for @$ticks;
     }
 
     return;
