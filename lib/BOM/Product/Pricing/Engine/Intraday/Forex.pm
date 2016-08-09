@@ -298,13 +298,12 @@ sub calculate_intraday_bounceback {
     my ($self, $t_mins, $st_or_lt) = @_;
 
     my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
-    my $max_abs_trend    = max(abs($calibration_coef->{trend_min}), $calibration_coef->{trend_max});
     my $slope            = $self->slope;
 
     my $bounceback_base_intraday_trend = $self->calculate_bounceback_base($t_mins, $st_or_lt, $self->intraday_trend->amount);
 
     my $bounceback_base_max_trend            = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($calibration_coef->{trend_max}));
-    my $bounceback_base_max_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($slope * $max_abs_trend));
+    my $bounceback_base_max_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($slope * $calibration_coef->{trend_max}));
 
     my $bounceback_base_min_trend            = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($calibration_coef->{trend_min}));
     my $bounceback_base_min_trend_with_slope = $self->calculate_bounceback_base($t_mins, $st_or_lt, ($slope * $calibration_coef->{trend_min}));
