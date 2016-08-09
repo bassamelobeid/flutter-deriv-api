@@ -189,15 +189,23 @@ sub register {
                         my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions') // {};
                         for my $pa_uuid (keys %{$proposal_array_subscriptions}) {
                             print "pa_uuid : $pa_uuid\n";
-                            for my $uuid (@{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
+                            for my $i (0..$#{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
+                            #for my $uuid (@{$proposal_array_subscriptions->{$pa_uuid}{seq}}) {
+                                my $uuid = $proposal_array_subscriptions->{$pa_uuid}{seq}->[$i];
+                                my $barriers = $proposal_array_subscriptions->{$pa_uuid}{args}{barriers}->[$i];
+                                my $proposal = pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}} // {};
+                                if (keys %$proposal && ! $proposal->{error}) {
+                                    $proposal->{proposal}{barrier} = $barriers->{barrier};
+                                    $proposal->{proposal}{barrier2} = $barriers->{barrier2} if $barriers->{barrier2};
+                                }
                                 print "uuid: $uuid\n";
-                                push @proposals, pop @{$proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid}} || {};
+                                push @proposals, $proposal;
                                 $proposal_array_subscriptions->{$pa_uuid}{proposals}{$uuid} = [];
                             }
                             #print "props to pack back: ".Dumper(\@proposals);
                             my $results = {
                                 proposal_array => {
-                                    proposals => [map { delete $_->{msg_type}; $_ } @proposals],
+                                    proposals => [map {$_->{proposal} || $_ } @proposals],
                                     id => $pa_uuid,
                                 },
                                 echo_req => $proposal_array_subscriptions->{$pa_uuid}{args},

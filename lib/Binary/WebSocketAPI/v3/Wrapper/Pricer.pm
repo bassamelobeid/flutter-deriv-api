@@ -129,7 +129,7 @@ sub proposal_array {
         print "Cache creating chan: " . Dumper($cache);
         $req_storage->{uuid} = _pricing_channel_for_ask($c, $req_storage->{args}, $cache);
         print "msg gone: " . $req_storage->{uuid} . "\n";
-        if ($req_storage->{uuid}) {                                                       # we are in subscr mode, so remember the sequence of streams
+        if ($uuid) {                                                       # we are in subscr mode, so remember the sequence of streams
             print "HWA!\n";
             my $proposal_array_subscriptions = $c->stash('proposal_array_subscriptions');
             if ($proposal_array_subscriptions->{$uuid}) {
@@ -214,13 +214,19 @@ sub proposal_array {
                 # should not throw 'cos we do not $future->fail
                 my @result = $f->get;
                 delete @{$_}{qw(msg_type passthrough)} for @result;
+                for my $i (0..$#{$req_storage->{args}->{barriers}}) {
+                    if (! $result[$i]->{error} && keys %{$result[$i]->{proposal}}) {
+                        $result[$i]->{proposal}{barrier} = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
+                        $result[$i]->{proposal}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2} if ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
+                    }
+                }
                 print "Collect res from on_ready: " . Dumper(\@result);
                 # Return a single result back to the client.
                 my $res = {
                     json => {
                         echo_req       => $req_storage->{args},
                         proposal_array => {
-                            proposals => \@result,
+                            proposals => [map {$_->{proposal} || $_} @result],
                             $uuid ? (id => $uuid) : (),
                         },
                         msg_type => $msg_type,
