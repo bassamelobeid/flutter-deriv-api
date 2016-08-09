@@ -19,10 +19,17 @@ use BOM::DualControl;
 use BOM::System::AuditLog;
 use BOM::System::Config;
 use BOM::Backoffice::Sysinit ();
+use BOM::Platform::Runtime;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Batch Credit/Debit to Clients Accounts');
+
+if (BOM::Platform::Runtime->instance->app_config->system->suspend->system) {
+    print "ERROR: Sytem is suspended";
+    code_exit_BO();
+}    
+
 
 my $cgi               = CGI->new;
 my $broker            = request()->broker_code;
