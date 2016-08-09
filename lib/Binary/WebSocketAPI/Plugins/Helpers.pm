@@ -84,24 +84,30 @@ sub register {
     my $redis_url     = sub {
         my $cfg = shift;
         my ($host, $port, $password) = @{$cfg}{qw/host port password/};
-        "redis://$host:$port" . (defined $password ? "?password=$password" : "");
+        "redis://" . ($password ? "x:$password\@" : "") . "$host:$port";
     };
     my $chronicle_redis_url = $redis_url->($chronicle_cfg->{read});
     my $ws_redis_url        = $redis_url->($ws_redis_cfg->{write});
 
-    $app->helper(
-        ws_redis => sub {
-            state $redis = do {
-                my $redis = Mojo::Redis2->new(url => $ws_redis_url);
-                $redis->on(
-                    error => sub {
-                        my ($self, $err) = @_;
-                        $app->log->warn("redis error: $err");
-                    });
-                $redis;
-            };
-            return $redis;
-        });
+    my @redises = ([ws_redis_master => $redis_url->($ws_redis_cfg->{write})], [ws_redis_slave => $redis_url->($ws_redis_cfg->{read})],);
+
+    for my $redis_info (@redises) {
+        my ($helper_name, $redis_url) = @$redis_info;
+        $app->helper(
+            $helper_name => sub {
+                state $redis = do {
+                    my $redis = Mojo::Redis2->new(url => $redis_url);
+                    $redis->on(
+                        error => sub {
+                            my ($self, $err) = @_;
+                            $app->log->warn("redis error: $err");
+                            warn("redis error: $err");
+                        });
+                    $redis;
+                };
+                return $redis;
+            });
+    }
 
     # one redis connection (Mojo::Redis2 instance) per worker, i.e. shared among multiple clients, connected to
     # the same worker

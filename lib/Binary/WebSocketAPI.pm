@@ -482,10 +482,9 @@ sub startup {
             my @redis_keys = $c->rate_limitations_keys;
             my $key        = $redis_keys[0] // $redis_keys[1];
             my $hits       = $c->stash->{rate_limitations_hits};
-            # TODO: use correct redis!
             # blocking call
-            $c->ws_redis->set($key => encode_json($hits));
-            $c->ws_redis->expire($key => 3600);
+            $c->ws_redis_master->set($key => encode_json($hits));
+            $c->ws_redis_master->expire($key => 3600);
         });
 
     $app->helper(
@@ -493,9 +492,8 @@ sub startup {
             my $c          = shift;
             my @redis_keys = $c->rate_limitations_keys;
             my $key        = $redis_keys[0] // $redis_keys[1];
-            # TODO: use correct redis!
             # blocking call
-            my $hits_json = $c->ws_redis->get($key);
+            my $hits_json = $c->ws_redis_slave->get($key);
             my $hits = $hits_json ? decode_json($hits_json) : {};
             $c->stash(rate_limitations_hits => $hits);
         });
