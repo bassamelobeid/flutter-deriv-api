@@ -58,13 +58,24 @@ sub set_date {
     # so we want to capture any output we can that might indicate what's
     # happening
     my @cmd = (qw(sudo date -s), $date->datetime_yyyymmdd_hhmmss, '+%F %T');
-    my ($stdout, $stderr, $exitcode) = capture {
-        system @cmd;
-    };
-    $stdout //= '';
-    $stderr //= '';
-    die "Failed to set date using this command:\n@cmd\nDo we have sudo access? (return code = $exitcode, stdout = $stdout, stderr = $stderr)"
-        unless $stdout eq $date->datetime_yyyymmdd_hhmmss . "\n";
+
+    my $attempts     = 0;
+    my $max_attempts = 10;
+    while ($attempts < $max_attempts) {
+        my ($stdout, $stderr, $exitcode) = capture {
+            system @cmd;
+        };
+        $stdout //= '';
+        $stderr //= '';
+        if ($stdout ne $date->datetime_yyyymmdd_hhmmss . "\n") {
+            warn
+                "Failed to set date using this command:\n@cmd\nDo we have sudo access? (return code = $exitcode, stdout = $stdout, stderr = $stderr)";
+        } else {
+            last;
+        }
+        $attempts++;
+    }
+    die("Cannot setup date after $max_attempts atempts") if $attempts == $max_attempts;
     return;
 }
 
