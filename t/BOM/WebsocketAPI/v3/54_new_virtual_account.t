@@ -4,7 +4,7 @@ use Test::More tests => 7;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test call_mocked_client/;
+use TestHelper qw/test_schema build_mojo_test call_mocked_client reconnect/;
 use BOM::Platform::Token;
 use BOM::System::RedisReplicated;
 use List::Util qw(first);
@@ -57,8 +57,8 @@ subtest 'verify_email' => sub {
     ok $call_params->{args}->{type};
     ok $call_params->{server_name};
 
-    # send this again to check if invalidates old one
-    Cache::RedisDB->redis->flushall;
+    # close session to invalidate hit limit
+    reconnect($t);
     $t = $t->send_ok({
             json => {
                 verify_email => $email,
