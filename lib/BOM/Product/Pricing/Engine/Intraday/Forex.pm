@@ -308,6 +308,9 @@ sub calculate_intraday_bounceback {
     if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
         $bounceback_base_intraday_trend = ($self->bet->code eq 'CALL') ? $bounceback_base_intraday_trend : $bounceback_base_intraday_trend * -1;
     }
+    if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_lt') {
+        $bounceback_safety = ($self->bet->code eq 'CALL') ? $bounceback_safety : $bounceback_safety * -1;
+    }
 
     $bounceback_base_intraday_trend += $bounceback_safety if $self->apply_bounceback_safety;
 
