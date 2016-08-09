@@ -80,7 +80,7 @@ sub build_wsapi_test {
         },
     };
     DumpFile($ws_redis_path, $ws_redis_config);
-    $ENV{BOM_TEST_WS_REDIS} = "$ws_redis_path";
+    $ENV{BOM_TEST_WS_REDIS} = "$ws_redis_path";    ## no critic
 
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
 
