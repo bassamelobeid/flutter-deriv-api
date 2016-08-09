@@ -631,11 +631,10 @@ subtest $method => sub {
         'This account is unavailable.',
         'check authorization'
     );
-
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['has_password'],
+            status              => ['has_password','financial_assessment_not_complete'],
             risk_classification => 'low'
         },
         'status only has_password'
@@ -645,24 +644,21 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['has_password'],
+            status              => ['has_password','financial_assessment_not_complete'],
             risk_classification => 'low'
         },
         'tnc_approval is excluded, still status only has has_password'
     );
 
-    # test 'financial_assessment_needed'
-    $test_client->aml_risk_classification('high');
-    $test_client->save();
+    # test 'financial_assessment_not_complete'
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['has_password', 'financial_assessment_needed'],
-            risk_classification => 'high'
+            status              => ['has_password', 'financial_assessment_not_complete'],
+            risk_classification => 'low'
         },
-        'financial_assessment_needed when client has not filled questionnaire'
+        'financial_assessment_not_complete when client has not filled questionnaire'
     );
-
     # test when some questions are not answered
     my $data = {
         "forex_trading_experience" => {"answer" => ""},
@@ -677,12 +673,11 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['has_password', 'financial_assessment_needed'],
-            risk_classification => 'high'
+            status              => ['has_password', 'financial_assessment_not_complete'],
+            risk_classification => 'low'
         },
-        'financial_assessment_needed when some questions are not answered'
+        'financial_assessment_not_complete when some questions are not answered'
     );
-
     # client has let some answers empty
     $data = {
         "commodities_trading_experience"       => {"answer" => ""},
@@ -706,8 +701,6 @@ subtest $method => sub {
         "account_turnover"                     => {"answer" => 'Less than $25,000'},
         "account_opening_reason"               => {"answer" => "Experience"}
     };
-
-
     $test_client->financial_assessment({
         data            => encode_json $data,
         is_professional => 0
@@ -716,12 +709,23 @@ subtest $method => sub {
     is_deeply(
         $c->tcall($method, {token => $token1}),
         {
-            status              => ['has_password', 'financial_assessment_needed'],
+            status              => ['has_password', 'financial_assessment_not_complete'],
+            risk_classification => 'low'
+        },
+        'financial_assessment_not_complete when some answers are empty'
+    );
+    # result should be the same regardless of client's risk_classification
+    $test_client->aml_risk_classification('high');
+    $test_client->save();
+    is_deeply(
+        $c->tcall($method, {token => $token1}),
+        {
+            status              => ['has_password', 'financial_assessment_not_complete'],
             risk_classification => 'high'
         },
-        'financial_assessment_needed when some answers are empty'
+        'financial_assessment_not_complete should present regardless of client\'s risk classfication'
     );
-
+    # financial assessment is not needed when all questions is answered
     $data = {
         "commodities_trading_experience"       => {"answer" => "1-2 years"},
         "commodities_trading_frequency"        => {"answer" => "0-5 transactions in the past 12 months"},
@@ -744,7 +748,6 @@ subtest $method => sub {
         "account_turnover"                     => {"answer" => 'Less than $25,000'},
         "account_opening_reason"               => {"answer" => "Experience"}
     };
-    # financial assessment is not needed when all questions is answered
     $test_client->financial_assessment({
         data            => encode_json $data,
         is_professional => 0
@@ -756,15 +759,12 @@ subtest $method => sub {
             status              => ['has_password'],
             risk_classification => 'high'
         },
-        'financial_assessment_needed should not present when questions are answered properly'
+        'financial_assessment_not_complete should not present when questions are answered properly'
     );
 
     # reset the risk classification for the following test
     $test_client->aml_risk_classification('low');
-    $test_client->financial_assessment({
-        data            => undef,
-        is_professional => 0
-    });
+    $test_client->save();
 
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;

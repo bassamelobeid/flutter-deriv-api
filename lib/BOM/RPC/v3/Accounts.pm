@@ -317,31 +317,29 @@ sub get_account_status {
     push @status, 'unwelcome' if not $already_unwelcomed and BOM::Transaction::Validation->new({clients => [$client]})->not_allow_trade($client);
 
     # check whether the user need to perform financial assessment
-    if ($risk_classification eq "high") {
-        my $financial_assessment = $client->financial_assessment();
-        unless ($financial_assessment) {
-            push @status, 'financial_assessment_needed';
+    my $financial_assessment = $client->financial_assessment();
+    unless ($financial_assessment) {
+        push @status, 'financial_assessment_not_complete';
+    } else {
+        # get questions
+        my $financial_input_mapping = BOM::Platform::Account::Real::default::get_financial_input_mapping();
+        $financial_assessment = from_json $financial_assessment->data;
+        # comparing $financial_input_mapping with $financial_assessment
+        # if $financial_assessment contained a key that is not included in $financial_input_mapping
+        # or $financial_assessment do not include all the keys stored in $financial_input_mapping
+        # in otherwords, check whether $financial_input_mapping is a subset of $financial_assessment
+        # push 'financial_assessment_not_complete'
+        if (grep { !defined || !length } @{$financial_assessment}{keys %$financial_input_mapping}) {
+            push @status, 'financial_assessment_not_complete';
         } else {
-            # get questions
-            my $financial_input_mapping = BOM::Platform::Account::Real::default::get_financial_input_mapping();
-            $financial_assessment = from_json $financial_assessment->data;
-            # comparing $financial_input_mapping with $financial_assessment
-            # if $financial_assessment contained a key that is not included in $financial_input_mapping
-            # or $financial_assessment do not include all the keys stored in $financial_input_mapping
-            # in otherwords, check whether $financial_input_mapping is a subset of $financial_assessment
-            # push 'financial_assessment_needed'
-            if (grep { !defined || !length } @{$financial_assessment}{keys %$financial_input_mapping}) {
-                push @status, 'financial_assessment_needed';
-            } else {
-                # deleting 'total_score' because it doesn't not contain
-                # hash and may cause error when perform checking later
-                delete $financial_assessment->{total_score};
-                # loop and find questions where the answer is empty
-                foreach my $key (keys %$financial_assessment) {
-                    unless ($financial_assessment->{$key}->{answer}) {
-                        push @status, "financial_assessment_needed";
-                        last;
-                    }
+            # deleting 'total_score' because it doesn't not contain
+            # hash and may cause error when perform checking later
+            delete $financial_assessment->{total_score};
+            # loop and find questions where the answer is empty
+            foreach my $key (keys %$financial_assessment) {
+                unless ($financial_assessment->{$key}->{answer}) {
+                    push @status, "financial_assessment_not_complete";
+                    last;
                 }
             }
         }
