@@ -297,6 +297,10 @@ sub on_client_disconnect {
     forget_all($c);
     delete $c->app->active_connections->{$c};
     $c->rate_limitations_save;
+
+    my $timer_id = $c->stash->{rate_limitations_timer};
+    Mojo::IOLoop->remove($timer_id) if $timer_id;
+
     return;
 }
 

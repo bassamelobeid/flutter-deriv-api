@@ -501,8 +501,8 @@ sub startup {
 
     $app->helper(
         'rate_limitations_load' => sub {
-            my $c   = shift;
-            my $key = $c->rate_limitations_key;
+            my $c         = shift;
+            my $key       = $c->rate_limitations_key;
             my $hits_json = $c->ws_redis_slave->get(
                 $key,
                 sub {
