@@ -31,7 +31,7 @@ sub _build_pricing_engine {
     my $self = shift;
 #    return Pricing::Engine::Digits->new({bet => shift});
     return Pricing::Engine::Digits->new({
-        contract_type => $self->contract_type,
+        contract_type => $self->sentiment,
         strike        => $self->supplied_barrier
     });
 }
