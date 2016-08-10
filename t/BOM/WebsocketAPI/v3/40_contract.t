@@ -104,7 +104,6 @@ ok $proposal->{proposal}->{id};
 cmp_ok $id1, 'ne', $proposal->{proposal}->{id}, 'ids are not the same if parameters are different';
 $contractParameters{amount}--;
 
-
 $t = $t->send_ok({
         json => {
             "proposal"  => 1,
@@ -116,6 +115,16 @@ $proposal = decode_json($t->message->[1]);
 ok $proposal->{proposal}->{id};
 ok $proposal->{proposal}->{ask_price};
 test_schema('proposal', $proposal);
+
+$t = $t->send_ok({
+        json => {
+            "proposal"  => 1,
+            "subscribe" => 1,
+            %contractParameters
+        }})->message_ok;
+my $err_proposal = decode_json($t->message->[1]);
+cmp_ok $err_proposal->{msg_type}, ,'eq', 'proposal';
+cmp_ok $err_proposal->{error}->{code}, ,'eq', 'AlreadySubscribed', 'AlreadySubscribed error expected';
 
 sleep 1;
 $t = $t->send_ok({
