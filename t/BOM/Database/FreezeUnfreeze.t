@@ -15,7 +15,7 @@ lives_ok {
 }
 'Data mapper object created';
 
-ok($client_data_mapper->freeze), 'Client was locked successfully');
+ok($client_data_mapper->freeze, 'Client was locked successfully');
 
 cmp_ok(scalar keys %{$client_data_mapper->locked_client_list()}, '==', 1, 'There is one locked client');
 
