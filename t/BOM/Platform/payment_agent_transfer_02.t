@@ -43,15 +43,17 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
         my $remark;
         $remark .= 'x' x 800;
 
+        # note amount must differ from 1000 here to avoid BI102
         $client->payment_account_transfer(
             toClient => $pa_client,
             currency => 'USD',
-            amount   => 1000,
+            amount   => 999,
             remark   => $remark
         );
     }
     "OK with remark length = 800";
 
+    select undef, undef, undef, 2.1; # avoid BI102
     throws_ok {
         my $remark;
         $remark .= 'x' x 801;
@@ -59,7 +61,7 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
         $client->payment_account_transfer(
             toClient => $pa_client,
             currency => 'USD',
-            amount   => 1000,
+            amount   => 999,
             remark   => $remark
         );
     }
