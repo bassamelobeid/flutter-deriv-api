@@ -178,8 +178,9 @@ has starts_as_forward_starting => (
 );
 
 #expiry_daily - Does this bet expire at close of the exchange?
-has [qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries)]
-    => (
+has [
+    qw( is_atm_bet expiry_daily is_intraday expiry_type start_type payouttime_code translated_display_name is_forward_starting permitted_expiries effective_daily_trading_seconds)
+    ] => (
     is         => 'ro',
     lazy_build => 1,
     );
@@ -196,10 +197,35 @@ sub _build_expiry_daily {
     return $self->is_intraday ? 0 : 1;
 }
 
+# daily trading seconds based on the market's trading hour
+sub _build_effective_daily_trading_seconds {
+    my $self                  = shift;
+    my $date_expiry           = $self->date_expiry;
+    my $calendar              = $self->calendar;
+    my $daily_trading_seconds = $calendar->closing_on($date_expiry)->epoch - $calendar->opening_on($date_expiry)->epoch;
+
+    return $daily_trading_seconds;
+}
+
 sub _build_is_intraday {
-    my $self              = shift;
-    my $contract_duration = $self->date_expiry->epoch - $self->effective_start->epoch;
-    return ($contract_duration <= 86400) ? 1 : 0;
+    my $self = shift;
+
+    return $self->_check_is_intraday($self->effective_start);
+
+}
+
+sub _check_is_intraday {
+    my ($self, $date_start) = @_;
+    my $date_expiry       = $self->date_expiry;
+    my $contract_duration = $date_expiry->epoch - $date_start->epoch;
+
+    return 0 if $contract_duration > 86400;
+
+    # for contract that start at the open of day and expire at the close of day (include early close) should be treated as daily contract
+    my $closing = $self->calendar->closing_on($self->date_expiry);
+    return 0 if $closing and $closing->is_same_as($self->date_expiry) and $contract_duration >= $self->effective_daily_trading_seconds;
+
+    return 1;
 }
 
 sub _build_expiry_type {
@@ -773,8 +799,7 @@ sub _build_longcode {
 
     # When we are building the longcode, we should always take the date_start to date_expiry as duration.
     # Don't use $self->expiry_type because that's use to price a contract at effective_start time.
-    my $contract_duration = $self->date_expiry->epoch - $self->date_start->epoch;
-    my $expiry_type = $self->tick_expiry ? 'tick' : $contract_duration > 86400 ? 'daily' : 'intraday';
+    my $expiry_type = $self->tick_expiry ? 'tick' : $self->_check_is_intraday($self->date_start) == 0 ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' and not $self->starts_as_forward_starting and $self->fixed_expiry;
     my $localizable_description = $self->localizable_description->{$expiry_type};
 
@@ -2373,7 +2398,6 @@ sub _validate_trading_times {
 
     return;
 }
-
 has date_start_blackouts => (
     is         => 'ro',
     lazy_build => 1,
