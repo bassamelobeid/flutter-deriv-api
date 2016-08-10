@@ -1706,6 +1706,7 @@ sub _build_new_interface_engine {
     my $self = shift;
 
     my %engines = (
+        'Pricing::Engine::Digits'               => 1,
         'Pricing::Engine::TickExpiry'           => 1,
         'Pricing::Engine::EuropeanDigitalSlope' => 1,
     );
