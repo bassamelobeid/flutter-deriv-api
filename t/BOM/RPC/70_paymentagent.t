@@ -195,6 +195,23 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     # need unfreeze_client after withdraw error
     BOM::Database::Transaction->unfreeze_client($client->loginid);
     BOM::Database::Transaction->unfreeze_client($pa_client->loginid);
+
+    $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
+            client => $client,
+            args   => {
+                paymentagent_withdraw => 1,
+                paymentagent_loginid  => $pa_client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+                verification_code     => $code
+            }});
+    ok $res->{error}->{message_to_client} =~ /Request too frequent. Please try again later./, 'Too many attempts';
+
+    BOM::Database::Transaction->unfreeze_client($client->loginid);
+    BOM::Database::Transaction->unfreeze_client($pa_client->loginid);
+
+    # sleep for 3 seconds as we have limit for 2 seconds
+    sleep 3;
     $res = BOM::RPC::v3::Cashier::paymentagent_withdraw({
             client => $client,
             args   => {
@@ -360,6 +377,22 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
     # need unfreeze_client after transfer error
     BOM::Database::Transaction->unfreeze_client($client->loginid);
     BOM::Database::Transaction->unfreeze_client($pa_client->loginid);
+
+    $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
+            client => $pa_client,
+            args   => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+            }});
+    ok $res->{error}->{message_to_client} =~ /Request too frequent. Please try again later./, 'Too many attempts';
+
+    BOM::Database::Transaction->unfreeze_client($client->loginid);
+    BOM::Database::Transaction->unfreeze_client($pa_client->loginid);
+
+    # sleep for 3 seconds as we have limit for 2 seconds
+    sleep 3;
     $res = BOM::RPC::v3::Cashier::paymentagent_transfer({
             client => $pa_client,
             args   => {
