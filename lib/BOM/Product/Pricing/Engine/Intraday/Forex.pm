@@ -446,7 +446,6 @@ sub _build_risk_markup {
     });
 
     $risk_markup->include_adjustment('add', $self->economic_events_markup);
-    $risk_markup->include_adjustment('add', $self->eod_market_risk_markup) if not $bet->is_atm_bet;
 
     if ($bet->is_path_dependent) {
         my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
