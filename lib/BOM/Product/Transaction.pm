@@ -35,8 +35,6 @@ use BOM::Product::Offerings qw/get_offerings_with_filter/;
 use BOM::Platform::LandingCompany::Registry;
 use BOM::Database::ClientDB;
 
-extends 'BOM::Database::Transaction';
-
 has client => (
     is  => 'ro',
     isa => 'BOM::Platform::Client',
@@ -849,7 +847,7 @@ not met.
 
 The caller should not retry the operation or try to amend the
 situation. Instead it should pass on the error to the client.
-However, make sure to C<unfreeze_client> before.
+However, make sure to C<BOM::Database::DataMapper::Client::unfreeze> before.
 
 =back
 
