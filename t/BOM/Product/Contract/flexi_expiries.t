@@ -114,9 +114,9 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 subtest 'correct expiry on holiday' => sub {
     my %params = (
         underlying   => 'frxUSDJPY',
-        date_start   => '2014-03-23',
-        date_pricing => '2014-03-23 00:00:01',
-        date_expiry  => '2014-03-30 23:59:59',
+        date_start   => '2014-03-21',
+        date_pricing => '2014-03-21 00:00:01',
+        date_expiry  => '2014-03-28 21:00:00',
         bet_type     => 'DOUBLEUP',
         payout       => 100,
         currency     => $currency,
@@ -126,7 +126,7 @@ subtest 'correct expiry on holiday' => sub {
         my $contract = produce_contract(\%params);
         ok($contract->expiry_daily, 'is an expiry daily contract');
         ok(!$contract->is_intraday, 'it is not an intraday contract');
-        like($contract->longcode, qr/at close on 2014-03-30/, 'longcode showing exact end time at close on holiday');
+        like($contract->longcode, qr/at close on 2014-03-28/, 'longcode showing exact end time at close on holiday');
     }
     'does not die when expiry is on non-trading day';
 
@@ -143,9 +143,9 @@ subtest 'correct expiry on holiday' => sub {
 subtest 'build the correct shortcode' => sub {
     my %params = (
         underlying   => 'frxUSDJPY',
-        date_start   => '2014-03-23',
-        date_pricing => '2014-03-23 00:00:01',
-        date_expiry  => '2014-03-30 23:59:59',
+        date_start   => '2014-03-21',
+        date_pricing => '2014-03-21 00:00:01',
+        date_expiry  => '2014-03-28 21:00:00',
         bet_type     => 'DOUBLEUP',
         payout       => 100,
         currency     => $currency,
@@ -154,13 +154,13 @@ subtest 'build the correct shortcode' => sub {
     );
     lives_ok {
         my $contract = produce_contract(\%params);
-        is($contract->shortcode, 'CALL_FRXUSDJPY_100_1395532800_1396223999F_S0P_0', 'correct shortcode for fixed expiry contracts');
-        $contract = produce_contract('DOUBLEUP_FRXUSDJPY_100_1395532800_1396223999F_S0P_0', $currency);
+        is($contract->shortcode, 'CALL_FRXUSDJPY_100_1395360000_1396040400F_S0P_0', 'correct shortcode for fixed expiry contracts');
+        $contract = produce_contract('DOUBLEUP_FRXUSDJPY_100_1395360000_1396040400F_S0P_0', $currency);
         ok($contract->fixed_expiry, 'correctly convert shortcode to fixed expiry contract');
         delete $params{fixed_expiry};
         $contract = produce_contract(\%params);
-        is($contract->shortcode, 'CALL_FRXUSDJPY_100_1395532800_1396223999_S0P_0', 'correct shortcode for non-fixed expiry contracts');
-        $contract = produce_contract('DOUBLEUP_FRXUSDJPY_100_1395532800_1396223999_S0P_0', $currency);
+        is($contract->shortcode, 'CALL_FRXUSDJPY_100_1395360000_1396040400_S0P_0', 'correct shortcode for non-fixed expiry contracts');
+        $contract = produce_contract('DOUBLEUP_FRXUSDJPY_100_1395360000_1396040400_S0P_0', $currency);
         ok(!$contract->fixed_expiry, 'non-fixed expiry if no _F');
     }
     'produce the correct shortcode';
