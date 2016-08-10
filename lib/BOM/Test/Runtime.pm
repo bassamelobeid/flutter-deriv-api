@@ -27,26 +27,26 @@ use BOM::Platform::Runtime;
 use BOM::System::Chronicle;
 
 sub _normal {
-    my $app_settings = '/home/git/regentmarkets/bom-test/data/app_settings.yml';
-    if (!-f $app_settings) {
-        $app_settings = '../' . $app_settings;
-    }
-
-    my $ac = App::Config->new(
-        definition_yml   => $app_settings,
-        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
-    );
-
-    return BOM::Platform::Runtime->instance(BOM::Platform::Runtime->new(app_config => $ac));
+#    my $app_settings = '/home/git/regentmarkets/bom-test/data/app_settings.yml';
+#    if (!-f $app_settings) {
+#        $app_settings = '../' . $app_settings;
+#    }
+#
+#    my $ac = App::Config->new(
+#        definition_yml   => $app_settings,
+#        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+#        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+#    );
+#
+#    return BOM::Platform::Runtime->instance(BOM::Platform::Runtime->new(app_config => $ac));
 }
 
 sub import {
     my ($class, $init) = @_;
 
-    if ($init and $init eq ':normal') {
-        return _normal();
-    }
+ #   if ($init and $init eq ':normal') {
+ #       return _normal();
+ #   }
 
     return;
 }
