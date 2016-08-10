@@ -1,3 +1,5 @@
+#!perl
+
 use strict;
 use warnings;
 use Test::More tests => 3;
@@ -59,7 +61,7 @@ subtest 'Initialization' => sub {
 };
 
 subtest 'Client withdraw money via payment agent' => sub {
-    plan tests => 7;
+    plan tests => 9;
 
     lives_ok {
         transfer_from_client_to_pa();
@@ -91,6 +93,19 @@ subtest 'Client withdraw money via payment agent' => sub {
 
     cmp_ok($total_withdrawal, 'eq', $transfer_amount_2dp, 'Client withdrawal amount, 2 digits rounded');
     cmp_ok($withdrawal_count, '==', 1, 'Client withdrawal count');
+
+    throws_ok {
+        transfer_from_client_to_pa();
+    }
+    qr/BI102\b.*?\blast transfer happened less than 2 seconds ago, this probably is a duplicate transfer/,
+    'Client withdrawal: do it again -- should fail due to duplicated transfer';
+
+    select undef, undef, undef, 2.1; # sleep over the BI102 period
+    lives_ok {
+        transfer_from_client_to_pa();
+    }
+    'Client withdrawal: do it again -- should succeed after more than 2 sec.';
+
 };
 
 sub transfer_from_client_to_pa {
