@@ -477,15 +477,6 @@ sub _build_risk_markup {
         });
         $risk_markup->include_adjustment('add', $illiquid_market_markup);
     }
-    if ($bet->underlying->submarket->name eq 'minor_pairs') {
-        my $minor_fx_market_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'minor_fx_market_markup',
-            description => 'Intraday::Forex markup factor for minor fx pairs',
-            set_by      => __PACKAGE__,
-            base_amount => 0.02,
-        });
-        $risk_markup->include_adjustment('add', $minor_fx_market_markup);
-    }
 
     return $risk_markup;
 }
