@@ -107,7 +107,7 @@ done_testing();
 sub _get_values {
     my ($content, @template_func) = @_;
     my $c = 0;
-    while (my $f = shift @template_func) {
+    foreach my $f (@template_func) {
         $c++;
         $f =~ s/^\s+|\s+$//g;
         my $template_content;
