@@ -27,7 +27,12 @@ sub _build_pricing_engine_name {
 }
 
 sub _build_pricing_engine {
-    return Pricing::Engine::Digits->new({bet => shift});
+#    return Pricing::Engine::Digits->new({bet => shift});
+    my $self = shift;
+    return Pricing::Engine::Digits->new({
+        contract_type => $self->pricing_code,
+        strike        => $self->supplied_barrier
+    });
 }
 
 sub _build_greek_engine {
