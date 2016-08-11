@@ -83,7 +83,7 @@ subtest 'prices' => sub {
             my $expect = $expectations{$bt_code};
 
             is $c->pricing_code, $bt_code, 'contract type';
-            is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Digits', 'pricing engine';
+            is $c->pricing_engine_name, 'Pricing::Engine::Digits', 'pricing engine';
             _check_amount($c->bs_probability, $expect->{bs_prob}, 'bs_prob');
             _check_amount($c->commission_markup,   $expect->{markup},  'markup');
         };
