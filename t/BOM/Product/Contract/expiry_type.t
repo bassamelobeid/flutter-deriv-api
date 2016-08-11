@@ -35,11 +35,11 @@ subtest 'tick expiry' => sub {
 };
 
 subtest 'intraday|multiday' => sub {
-    $params->{duration} = '24h';
+    $params->{duration} = '86399s';
     lives_ok {
         my $c = produce_contract($params);
         ok !$c->tick_expiry, 'not tick expiry';
-        is $c->date_expiry->epoch, $time + 86400, 'correct expiry time';
+        is $c->date_expiry->epoch, $time + 86399, 'correct expiry time';
         ok $c->is_intraday, 'is intraday';
         ok !$c->expiry_daily, ' not expiry daily';
     }

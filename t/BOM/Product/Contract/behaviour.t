@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 9;
+use Test::More tests => 15;
 use Test::NoWarnings;
 
 use Time::HiRes;
@@ -13,7 +13,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 
 my $now = Date::Utility->new;
 
@@ -31,6 +31,19 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events',
                 event_name   => 'FOMC',
             }]
     });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+      'partial_trading',
+      {
+          type          => 'early_closes',
+          recorded_date => Date::Utility->new('2016-01-01'),
+          # dummy early close 
+          calendar      => {
+              '22-Dec-2016' => {
+                  '18h00m' => ['FOREX'],
+              },
+          },
+      });
 
 my $bet_params = {
     bet_type   => 'CALL',
@@ -198,11 +211,88 @@ subtest 'longcode misbehaving for daily contracts' => sub {
     $bet_params->{duration} = '2d';
     my $c = produce_contract($bet_params);
     ok $c->expiry_daily, 'multiday contract';
+    is $c->effective_daily_trading_seconds, 86399;
+    is $c->expiry_type, 'daily';
     my $expiry_daily_longcode = $c->longcode;
     $bet_params->{date_pricing} = $c->date_start->plus_time_interval('2d');
     $c = produce_contract($bet_params);
+    is $c->effective_daily_trading_seconds, 86399;
+    is $c->expiry_type, 'intraday';
     ok $c->is_intraday, 'date_pricing reaches intraday';
     is $c->longcode, $expiry_daily_longcode, 'longcode does not change';
+};
+
+subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday' => sub {
+    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463087154_1463173200_S0P_0', 'USD');
+    my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
+    ok $c2->expiry_daily, 'multiday contract';
+    is $c2->longcode, 'Win payout if GBP/USD is strictly lower than entry spot at close on 2016-05-13.';
+    is $c->effective_daily_trading_seconds, 75600;
+    is $c->expiry_type, 'daily';
+    my $expiry_daily_longcode = $c2->longcode;
+    $c2 = make_similar_contract($c , {date_pricing => $c->date_start->plus_time_interval('5h')});
+    ok $c2->is_intraday, 'date_pricing reaches intraday';
+    is $c2->longcode, $expiry_daily_longcode, 'longcode does not change';
+    is $c->effective_daily_trading_seconds, 75600;
+    is $c->expiry_type, 'daily';
+ 
+};
+
+subtest 'longcode of daily contracts at 10 minutes before friday close' => sub {
+    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463172600_1463173200_S0P_0', 'usd');
+    my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
+    is $c2->longcode, 'Win payout if GBP/USD is strictly lower than entry spot at 10 minutes after contract start time.';
+    is $c2->effective_daily_trading_seconds, 75600;
+    is $c2->expiry_type, 'intraday';
+    ok $c2->is_intraday, 'is an intraday contract';
+};
+
+subtest 'longcode of 22 hours contract from Thursday 3GMT' => sub {
+    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463022000_1463101200_S0P_0', 'usd');
+    my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
+    is $c2->longcode, 'Win payout if GBP/USD is strictly lower than entry spot at 22 hours after contract start time.';
+    is $c2->effective_daily_trading_seconds, 75600;
+    is $c2->expiry_type, 'intraday';
+    ok $c2->is_intraday, 'is an intraday contract';
+};
+
+
+
+subtest 'longcode of index daily contracts' => sub {
+    my $c = produce_contract('PUT_GDAXI_166.27_1469523600_1469633400_S0P_0', 'USD');
+    my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
+    ok $c2->expiry_daily, 'is daily contract';
+    is $c2->longcode, 'Win payout if German Index is strictly lower than entry spot at close on 2016-07-27.';
+    is $c->effective_daily_trading_seconds, 30600;
+    is $c->expiry_type, 'daily';
+    my $expiry_daily_longcode = $c2->longcode;
+    $c2 = make_similar_contract($c , {date_pricing => $c->date_start->plus_time_interval('8h')});
+    ok $c2->expiry_daily, 'is daily contract';
+    is $c2->longcode, $expiry_daily_longcode, 'longcode does not change';
+    is $c->effective_daily_trading_seconds, 30600;
+    is $c->expiry_type, 'daily';
+    $c2 = make_similar_contract($c , {date_pricing => $c->date_start->plus_time_interval('24h')});
+    ok $c2->is_intraday, 'date_pricing reaches intraday';
+    is $c2->longcode, $expiry_daily_longcode, 'longcode does not change';
+    is $c->effective_daily_trading_seconds, 30600;
+    is $c->expiry_type, 'daily';
+ 
+};
+
+subtest 'longcode of daily contract on early close day' => sub {
+    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1482332400_1482429600_S0P_0', 'USD');
+    my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
+    ok $c2->expiry_daily, 'is a multiday contract';
+    is $c2->longcode, 'Win payout if GBP/USD is strictly lower than entry spot at close on 2016-12-22.';
+    is $c->effective_daily_trading_seconds, 64800;
+    is $c->expiry_type, 'daily';
+};
+
+subtest 'longcode of intraday contracts' => sub {
+    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463126400_1463173200_S0P_0', 'USD');
+    my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
+    ok $c2->is_intraday, 'is an contract';
+    is $c2->longcode, 'Win payout if GBP/USD is strictly lower than entry spot at 13 hours after contract start time.';
 };
 
 subtest 'ATM and non ATM switches on sellback' => sub {
