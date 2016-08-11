@@ -8,6 +8,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use Test::MockModule;
+use Test::Warnings 'warning';
 
 my $t = build_mojo_test({
         debug    => 1,
@@ -67,11 +68,13 @@ my $token = BOM::Database::Model::AccessToken->new->create_token("CR0021", 'Test
 $t       = $t->send_ok({json => {authorize => $token}})->message_ok;
 $res     = decode_json($t->message->[1]);
 @$timing = ();
-$t       = $t->send_ok({
+like(warning {
+    $t   = $t->send_ok({
         json => {
             buy   => 1,
             price => 1,
         }})->message_ok;
+}, qr/^WSAPI 'buy'/, "Expected wrong buy call warning");
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'InvalidContractProposal', 'Should save only timing sent log, if dont call RPC';
 
@@ -84,13 +87,15 @@ my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
 $fake_rpc_response = Test::MockObject->new();
 $fake_rpc_response->mock('is_error',      sub { 1 });
 $fake_rpc_response->mock('result',        sub { +{} });
-$fake_rpc_response->mock('error_message', sub { 'error' });
+$fake_rpc_response->mock('error_message', sub { 'error 123' });
 $fake_rpc_client = Test::MockObject->new();
 $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
 $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
 $rpc_client_mock->mock('new', sub { return $fake_rpc_client });
 
-$t->send_ok({json => {website_status => 1}})->message_ok;
+like(warning {
+    $t->send_ok({json => {website_status => 1}})->message_ok;
+}, qr/^error 123/, "Expected warning from RPC CallingEngine");
 $res = decode_json($t->message->[1]);
 
 is $res->{error}->{code}, 'CallError', 'Should make timing if returns CallError';
@@ -106,7 +111,9 @@ is $timing->[1]->[2]->{tags}->[0], 'rpc:website_status', 'Should set tag with rp
 @$timing = ();
 $fake_rpc_client->mock('call', sub { shift; return $_[2]->('') });
 
-$t->send_ok({json => {website_status => 1}})->message_ok;
+like(warning {
+    $t->send_ok({json => {website_status => 1}})->message_ok;
+}, qr/^WrongResponse \[website_status\]/, "Expected warning from RPC CallingEngine");
 $res = decode_json($t->message->[1]);
 
 is $res->{error}->{code}, 'WrongResponse', 'Should make timing if returns WrongResponse';
