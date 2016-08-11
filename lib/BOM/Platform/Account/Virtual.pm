@@ -62,7 +62,6 @@ sub create_account {
             secret_answer                 => '',
             myaffiliates_token_registered => 0,
             checked_affiliate_exposures   => 0,
-            source                        => $source,
             latest_environment            => $details->{latest_environment} // '',
         });
     }
@@ -77,8 +76,11 @@ sub create_account {
     my $user = BOM::Platform::User->create(
         email          => $email,
         password       => $password,
-        email_verified => 1
-    );
+        email_verified => 1,
+        app_id         => $source,
+        $details->{utm_source}   ? (utm_source   => $args->{utm_source})   : (),
+        $details->{utm_medium}   ? (utm_medium   => $args->{utm_medium})   : (),
+        $details->{utm_campaign} ? (utm_campaign => $args->{utm_campaign}) : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->save;
     $client->deposit_virtual_funds($source);
