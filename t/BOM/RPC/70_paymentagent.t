@@ -200,7 +200,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
         client_loginid => $pa_client->loginid,
     });
 
-    # need unfreeze_client after withdraw error
+    # need unfreeze client after withdraw error
     $client_data_mapper->unfreeze;
     $pa_client_data_mapper->unfreeze;
 
@@ -389,7 +389,7 @@ ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
         client_loginid => $pa_client->loginid,
     });
 
-    # need unfreeze_client after transfer error
+    # need unfreeze client after transfer error
     $client_data_mapper->unfreeze;
     $pa_client_data_mapper->unfreeze;
 

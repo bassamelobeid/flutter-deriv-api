@@ -11,7 +11,7 @@ use BOM::RPC::v3::Cashier;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::User;
 use BOM::MT5::User;
-use BOM::Database::Transaction;
+use BOM::Database::DataMapper::Client;
 
 sub mt5_login_list {
     my $params = shift;
@@ -37,7 +37,7 @@ sub mt5_new_account {
         $group = 'demo\demoforex';
     } elsif (
         any {
-            $account_type eq $_
+            $account_type eq $_;
         }
         qw(vanuatu costarica iom malta maltainvest japan)
         )
@@ -284,7 +284,10 @@ sub mt5_deposit {
     }
 
     # withdraw from Binary a/c
-    if (not BOM::Database::Transaction->freeze_client($fm_loginid)) {
+    my $fm_data_mapper = = BOM::Database::DataMapper::Client->new({
+        client_loginid => $fm_loginid,
+    });
+    if (not $fm_data_mapper->freeze) {
         return $error_sub->(localize('If this error persists, please contact customer support.'),
             "Account stuck in previous transaction $fm_loginid");
     }
@@ -302,7 +305,7 @@ sub mt5_deposit {
 
     if ($withdraw_error) {
         # should be save to unlock account
-        BOM::Database::Transaction->unfreeze_client($fm_loginid);
+        $fm_data_mapper->unfreeze;
 
         return $error_sub->(
             BOM::RPC::v3::Cashier::__client_withdrawal_notes({
@@ -345,7 +348,7 @@ sub mt5_deposit {
         return $error_sub->($status->{error});
     }
 
-    BOM::Database::Transaction->unfreeze_client($fm_loginid);
+    $fm_data_mapper->unfreeze;
     return {
         status                => 1,
         binary_transaction_id => $txn->id
@@ -399,7 +402,10 @@ sub mt5_withdrawal {
         return $error_sub->(localize('Your account [_1] cashier section was locked.', $to_loginid));
     }
 
-    if (not BOM::Database::Transaction->freeze_client($to_loginid)) {
+    my $to_data_mapper = BOM::Database::DataMapper::Client->new({
+        client_loginid => $to_loginid,
+    });
+    if (not $to_data_mapper->freeze) {
         return $error_sub->(localize('If this error persists, please contact customer support.'),
             "Account stuck in previous transaction $to_loginid");
     }
@@ -439,7 +445,7 @@ sub mt5_withdrawal {
     $account->save(cascade => 1);
     $payment->save(cascade => 1);
 
-    BOM::Database::Transaction->unfreeze_client($to_loginid);
+    $to_data_mapper->unfreeze;
     return {
         status                => 1,
         binary_transaction_id => $txn->id
