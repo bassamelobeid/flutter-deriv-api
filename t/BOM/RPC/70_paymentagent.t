@@ -8,6 +8,7 @@ use BOM::RPC::v3::Cashier;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::AccessToken;
+use BOM::Database::DataMapper::Client;
 
 my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
 $client_mocked->mock('add_note', sub { return 1 });
