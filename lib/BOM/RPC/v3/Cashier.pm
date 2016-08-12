@@ -763,7 +763,7 @@ sub paymentagent_withdraw {
             "Account stuck in previous transaction $client_loginid"
         );
     }
-    my $paymantagent_data_mapper = BOM::Database::DataMapper::Client->new({
+    my $paymentagent_data_mapper = BOM::Database::DataMapper::Client->new({
         client_loginid => $paymentagent_loginid,
     });
 
