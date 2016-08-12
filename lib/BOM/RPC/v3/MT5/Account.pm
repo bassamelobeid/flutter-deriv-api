@@ -284,7 +284,7 @@ sub mt5_deposit {
     }
 
     # withdraw from Binary a/c
-    my $fm_data_mapper = = BOM::Database::DataMapper::Client->new({
+    my $fm_data_mapper = BOM::Database::DataMapper::Client->new({
         client_loginid => $fm_loginid,
     });
     if (not $fm_data_mapper->freeze) {
