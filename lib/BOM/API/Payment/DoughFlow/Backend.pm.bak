@@ -134,7 +134,7 @@ sub validate_as_payment {
             currency    => $currency,
             amount      => $signed_amount,
             action_type => $action,
-        );
+            )
     }
     catch {
         $err = $_;
