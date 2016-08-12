@@ -54,7 +54,7 @@ sub __get_open_contracts {
         operation      => 'replica',
     });
 
-    return $clientdb->fetchall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
+    return $clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
 
 }
 
