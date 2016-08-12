@@ -706,7 +706,7 @@ if ($financial_assessment) {
     Bar("Financial Assessment");
     print qq{<table class="collapsed">
         <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">$user_data_json</textarea></td></tr>
-        <tr><td></td><td></td></tr>
+        <tr><td></td><td><input id="format_financial_assessment_score" type="button" value="Format"/></td></tr>
         <tr><td>Is professional</td><td>$is_professional</td></tr>
         </table>
     };
