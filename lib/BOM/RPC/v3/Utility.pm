@@ -189,4 +189,12 @@ sub mask_app_id {
     return $id;
 }
 
+# pass the app id to get the app name
+sub get_app_name {
+    my $app_id = shift;
+    my $oauth  = BOM::Database::Model::OAuth->new;
+    my $app    = $oauth->verify_app($app_id);
+    return $app->{name};
+}
+
 1;
