@@ -13,7 +13,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::System::RedisReplicated;
-use Test::Warnings qw(warning);
 
 build_test_R_50_data();
 my $t = build_mojo_test();
@@ -71,13 +70,11 @@ ok $proposal->{proposal}->{ask_price};
 test_schema('proposal', $proposal);
 
 sleep 1;
-like(warning {
 $t = $t->send_ok({
         json => {
             buy   => 1,
             price => 1,
         }})->message_ok;
-}, qr[^WSAPI 'buy'], "Expected warning of InvalidContractProposal");         
 my $buy_error = decode_json($t->message->[1]);
 is $buy_error->{msg_type}, 'buy';
 is $buy_error->{error}->{code}, 'InvalidContractProposal';
