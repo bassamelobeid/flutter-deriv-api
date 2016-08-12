@@ -705,7 +705,7 @@ if ($financial_assessment) {
     my $is_professional = $financial_assessment->is_professional ? 'yes' : 'no';
     Bar("Financial Assessment");
     print qq{<table class="collapsed">
-        <tr><td>User Data</td><td><textarea rows=10 cols=150>$user_data_json</textarea></td></tr>
+        <tr><td>User Data</td><td><textarea rows=10 cols=150 id="financial_assessment_score">$user_data_json</textarea></td></tr>
         <tr><td></td><td></td></tr>
         <tr><td>Is professional</td><td>$is_professional</td></tr>
         </table>
