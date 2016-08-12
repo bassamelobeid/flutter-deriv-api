@@ -2,6 +2,7 @@ package Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 use strict;
 use warnings;
+use Data::Dumper;
 
 no indirect;
 use Try::Tiny;
@@ -197,6 +198,7 @@ sub proposal_array {
                 for my $i (0 .. $#{$req_storage->{args}->{barriers}}) {
                     if (keys %{$result[$i]}) {
                         if ($result[$i]->{error}) {
+                            print "ERROR!!!!!!!!!!!! ".Dumper($result[$i]);
                             $result[$i]->{error}{details}{barrier}  = ${$req_storage->{args}->{barriers}}[$i]->{barrier};
                             $result[$i]->{error}{details}{barrier2} = ${$req_storage->{args}->{barriers}}[$i]->{barrier2}
                                 if exists ${$req_storage->{args}->{barriers}}[$i]->{barrier2};
@@ -458,6 +460,7 @@ sub _create_pricer_channel {
 
 sub process_pricing_events {
     my ($c, $message, $channel_name) = @_;
+    print "========================================================= pricing event\n";
 
     return if not $message or not $c->tx;
     my $pricing_channel = $c->stash('pricing_channel');
