@@ -37,7 +37,7 @@ for (1 .. 1320) {
 ok(BOM::WebSocketAPI::Hooks::reached_limit_check(1, 'proposal', 0));
 
 # porfolio is even more limited for the rest if limited
-for (1 .. 60) {
+for (1 .. 1320) {
     ok(not BOM::WebSocketAPI::Hooks::reached_limit_check(3, 'portfolio',    0));
     ok(not BOM::WebSocketAPI::Hooks::reached_limit_check(4, 'profit_table', 0));
 }
