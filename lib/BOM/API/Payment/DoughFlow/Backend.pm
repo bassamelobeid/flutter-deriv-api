@@ -6,7 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use BOM::Platform::Runtime;
-use BOM::Database::Transaction;
+use BOM::Database::DataMapper::Client;
 use Date::Utility;
 use Guard;
 use BOM::Database::DataMapper::Payment::DoughFlow;
