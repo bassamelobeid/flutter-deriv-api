@@ -11,7 +11,7 @@ use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
-use BOM::Database::Transaction;
+use BOM::Database::DataMapper::Client;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -144,7 +144,11 @@ read_csv_row_and_callback(
         }
 
         if (not $preview and $confirm and @invalid_lines == 0) {
-            if (not BOM::Database::Transaction->freeze_client($login_id)) {
+            my $client_data_mapper = BOM::Database::DataMapper::Client->new({
+                client_loginid => $login_id,
+            });
+
+            if (not $client_data_mapper->freeze) {
                 die "Account stuck in previous transaction $login_id";
             }
             my $signed_amount = $amount;
@@ -162,7 +166,7 @@ read_csv_row_and_callback(
                     ($skip_validation ? (skip_validation => 1) : ()),
                 );
             } or $err = $@;
-            BOM::Database::Transaction->unfreeze_client($login_id);
+            $client_data_mapper->unfreeze;
 
             if ($err) {
                 $client_account_table .= construct_row_line(%row, error => "Transaction Error: $err");
