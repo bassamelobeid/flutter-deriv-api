@@ -254,7 +254,7 @@ sub _build_bet {
      });
 
     $bet_args->{volsurface}   = $surface;
-    $bet_args->{current_tick} = Quant::Framework::Spot:::Tick->new(
+    $bet_args->{current_tick} = Quant::Framework::Spot::Tick->new(
         underlying => $bet_args->{underlying}->symbol,
         quote      => $bet_args->{current_spot},
         epoch      => $bet_args->{date_start}->epoch,
