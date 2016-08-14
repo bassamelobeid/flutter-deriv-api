@@ -24,7 +24,7 @@ sub prepare_pending {
     my ($id) = $self->dbh->selectrow_array("SELECT nextval('sequences.payment_epg_serial')");
 
     $self->dbh->do("
-        INSERT INTO payment.epg_pending
+        INSERT INTO payment.epg_request
             (id, amount, payment_type_code, status, account_id, payment_currency, payment_country)
         VALUES
             (?, ?, ?, ?, ?, ?, ?)
