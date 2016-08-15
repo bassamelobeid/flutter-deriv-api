@@ -110,7 +110,6 @@ sub _predefined_trading_period {
     my $today_close_epoch = $today_close->epoch;
     my $today             = $now->truncate_to_day;                                # Start of the day object.
     my $trading_periods   = Cache::RedisDB->get($cache_keyspace, $trading_key);
-    $trading_periods = undef;
 
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
