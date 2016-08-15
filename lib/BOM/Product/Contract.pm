@@ -154,7 +154,7 @@ sub _build_basis_tick {
         $basis_tick = $self->current_tick;
         $potential_error = $self->starts_as_forward_starting ? $waiting_for_entry_tick : $missing_market_data;
     } else {
-        $basis_tck       = $self->entry_tick;
+        $basis_tick       = $self->entry_tick;
         $potential_error = $waiting_for_entry_tick;
     }
 
