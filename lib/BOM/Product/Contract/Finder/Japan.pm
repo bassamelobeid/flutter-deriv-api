@@ -110,6 +110,7 @@ sub _predefined_trading_period {
     my $today_close_epoch = $today_close->epoch;
     my $today             = $now->truncate_to_day;                                # Start of the day object.
     my $trading_periods   = Cache::RedisDB->get($cache_keyspace, $trading_key);
+    $trading_periods = undef;
 
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
@@ -118,12 +119,26 @@ sub _predefined_trading_period {
         my @skip_even_hour = (grep { $_ eq $symbol } qw(frxUSDJPY frxAUDJPY frxAUDUSD)) ? (18, 20) : (18, 20, 22);
 
         if (not grep { $even_hour == $_ } @skip_even_hour) {
-            $trading_periods = [
-                _get_intraday_trading_window({
+            $trading_periods = [];
+
+            my $window_2h = _get_intraday_trading_window({
+                now        => $now,
+                date_start => $today->plus_time_interval($even_hour . 'h'),
+                duration   => '2h'
+            });
+
+            # There always should be available previous 2 hr contract in the first 15 minutes of the next one 
+            # (except start of the trading day)
+            if (($now->epoch - $window_2h->{date_start}->{epoch}) / 60 < 15 && $even_hour - 2 >= 0) {
+                push @$trading_periods,
+                    _get_intraday_trading_window({
                         now        => $now,
-                        date_start => $today->plus_time_interval($even_hour . 'h'),
+                        date_start => $today->plus_time_interval(($even_hour - 2) . 'h'),
                         duration   => '2h'
-                    })];
+                    });
+            }
+
+            push @$trading_periods, $window_2h;
             if ($now_hour > 0 and $now_hour < 18) {
                 my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
                 $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
