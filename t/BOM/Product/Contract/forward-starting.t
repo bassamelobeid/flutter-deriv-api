@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::MockTime qw(set_absolute_time);
@@ -12,12 +12,17 @@ use Time::HiRes qw(sleep);
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-initialize_realtime_ticks_db();
 
 use Date::Utility;
 
 my $now = Date::Utility->new;
 use BOM::Test::Data::Utility::UnitTestMarketData;
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'index',
+    {
+        symbol        => 'RDBULL',
+        recorded_date => $now->minus_time_interval('5m'),
+    });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -117,4 +122,51 @@ subtest 'end of day blockout period for random nightly and random daily' => sub 
     like (($c->_validate_start_and_expiry_date)[0]->{message_to_client}, qr/may not expire between 23:59:00 and 23:59:59/, 'throws error');
     my $valid_c = make_similar_contract($c, {duration => '9m59s'});
     ok !$valid_c->_validate_start_and_expiry_date;
+};
+
+subtest 'basis_tick for forward starting contract' => sub {
+    # flush everything to make sure we start fresh
+    Cache::RedisDB->flushall;
+    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
+    # date_pricing is set to a specific time so that we can check conditions easier.
+    my $date_pricing = Date::Utility->new('2016-08-15');
+    my $date_start = $date_pricing->plus_time_interval('15m');
+
+    foreach my $data ([$date_pricing->epoch, 100],[$date_start->epoch, 101],[$date_start->epoch + 1, 102]) {
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            epoch      => $data->[0],
+            underlying => 'frxUSDJPY',
+            quote      => $data->[1],
+        });
+    }
+
+    my $expected_shortcode = 'CALL_FRXUSDJPY_10_1471220100F_1471221000_S0P_0';
+    my $args = {
+        bet_type => 'CALL',
+        underlying => 'frxUSDJPY',
+        date_start => $date_start,
+        date_pricing => $date_pricing,
+        duration => '15m',
+        barrier => 'S0P',
+        currency => 'USD',
+        payout => 10,
+    };
+    my $c = produce_contract($args);
+    ok $c->pricing_new, 'is pricing new';
+    is $c->basis_tick->quote, 100, 'basis tick is current tick at date pricing';
+    is $c->basis_tick->epoch, $date_pricing->epoch, 'basis tick epoch is correct';
+    is $c->shortcode, $expected_shortcode, 'shortcode is correct';
+
+    $args->{date_pricing} = $date_pricing->plus_time_interval('5m');
+    $args->{starts_as_forward_starting} = 1; #to simulate reprice of an existing forward starting contract
+    $c = produce_contract($args);
+    ok $c->pricing_new, 'pricing new return before contract starts';
+    is $c->basis_tick->quote, 100, 'basis tick is current tick at date pricing';
+    is $c->basis_tick->epoch, $date_pricing->epoch, 'basis tick epoch is correct';
+
+    $c = produce_contract($c->shortcode, 'USD');
+    ok $c->starts_as_forward_starting, 'starts as forward starting';
+    ok !$c->pricing_new, 'not pricing new';
+    is $c->basis_tick->quote, 101, 'basis tick is tick at start';
+    is $c->basis_tick->epoch, $date_start->epoch, 'correct epoch for tick';
 };
