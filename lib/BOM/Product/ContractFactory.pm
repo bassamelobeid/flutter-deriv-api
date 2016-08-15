@@ -105,9 +105,6 @@ sub produce_contract {
     # dereference here
     my %input_params = %$params_ref;
 
-    # always build shortcode
-    delete $input_params{shortcode};
-
     if (my $missing = first { not defined $input_params{$_} } (qw(bet_type currency))) {
         # Some things are required for all possible contracts
         # This list is pretty small, though!

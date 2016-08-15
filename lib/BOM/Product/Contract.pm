@@ -145,14 +145,17 @@ has basis_tick => (
 sub _build_basis_tick {
     my $self = shift;
 
+    my $waiting_for_entry_tick = localize('Waiting for entry tick.');
+    my $missing_market_data    = localize('Trading on this market is suspended due to missing market data.');
     my ($basis_tick, $potential_error);
 
-    if (not $self->pricing_new and not $self->is_forward_starting) {
-        $basis_tick      = $self->entry_tick;
-        $potential_error = localize('Waiting for entry tick.');
+    # basis_tick is only set to entry_tick when the contract has started.
+    if ($self->pricing_new) {
+        $basis_tick = $self->current_tick;
+        $potential_error = $self->starts_as_forward_starting ? $waiting_for_entry_tick : $missing_market_data;
     } else {
-        $basis_tick      = $self->current_tick;
-        $potential_error = localize('Trading on this market is suspended due to missing market data.');
+        $basis_tck       = $self->entry_tick;
+        $potential_error = $waiting_for_entry_tick;
     }
 
     # if there's no basis tick, don't die but catch the error.
@@ -636,8 +639,6 @@ sub _build_current_tick {
 sub _build_pricing_new {
     my $self = shift;
 
-    # Forward starting contract bought. Not a new contract.
-    return 0 if $self->starts_as_forward_starting;
     # do not use $self->date_pricing here because milliseconds matters!
     # _date_pricing_milliseconds will not be set if date_pricing is not built.
     my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
