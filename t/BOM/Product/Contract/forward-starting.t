@@ -169,4 +169,5 @@ subtest 'basis_tick for forward starting contract' => sub {
     ok !$c->pricing_new, 'not pricing new';
     is $c->basis_tick->quote, 101, 'basis tick is tick at start';
     is $c->basis_tick->epoch, $date_start->epoch, 'correct epoch for tick';
+    is $c->shortcode, $expected_shortcode, 'shortcode is correct';
 };
