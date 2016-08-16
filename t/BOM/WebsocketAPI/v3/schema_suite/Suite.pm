@@ -63,7 +63,7 @@ sub run {
 		$counter++;
 		next if ($line =~ /^(#.*|)$/);
 
-		s{\@binary\.com}{\@binary${global_test_iteration}.com}g;
+		$line =~ s{\@binary\.com}{\@binary${global_test_iteration}.com}g;
 
 	# arbitrary perl code
 		if ($line =~ s/^\[%(.*?)%\]//) {
