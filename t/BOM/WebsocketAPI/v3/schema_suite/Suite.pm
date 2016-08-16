@@ -16,6 +16,10 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use File::Slurp;
 
+# Needs to be at top-level scope since _set_allow_omnibus and _get_stashed need access,
+# populated in the main run() loop
+my $response;
+
 sub run {
 	my ($class, $input) = @_;
 	initialize_realtime_ticks_db();
@@ -46,7 +50,6 @@ sub run {
 
 	my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/' . $input);
 
-	my $response;
 	my $counter = 0;
 
 	my $t;
