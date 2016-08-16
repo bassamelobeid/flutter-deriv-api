@@ -112,7 +112,7 @@ sub run {
 
         my ($send_file, $receive_file, @template_func) = split(',', $line);
         chomp $receive_file;
-        diag("\nRunning line $counter [$send_file, $receive_file]\n");
+        diag("Running line $counter [$send_file, $receive_file]");
 
         $send_file =~ /^(.*)\//;
         my $call = $1;
