@@ -146,8 +146,7 @@ subtest 'Return not expired client contracts' => sub {
             currency       => $client->currency,
             shortcode      => $fmb->{short_code},
             longcode       => (simple_contract_info($fmb->{short_code}, $client->currency))[0] // '',
-            app_id         => undef,
-            app_name       => undef
+            app_id         => undef
         };
     }
     'Create not expired contract and expected data';
