@@ -23,15 +23,30 @@ my $response;
 # Used to allow ->run to happen more than once
 my $global_test_iteration = 0;
 
+# Blind search-and-replace for all strings which look like email addresses, to make
+# sure that we don't reuse the same ones in multiple places. Note that this requires
+# that there is no special handling anywhere in the code for specific accounts, which
+# may not be a valid assumption.
 sub remap_email_addresses {
 	my $txt = shift;
-	$txt =~ s{\@binary\.com}{\@binary${global_test_iteration}.com}g;
+	# Avoid remapping for the moment, test whether the database reset is sufficient.
+	# $txt =~ s{\@binary\.com}{-${global_test_iteration}\@binary.com}g;
 	return $txt
 }
 
 sub run {
 	my ($class, $input) = @_;
+
+	# When using remapped email addresses, ensure that each call to ->run increments the counter
 	++$global_test_iteration;
+
+	# Throw away any existing response data - we'll build this up during a ->run session, and
+	# need to share it with other subs in this module, but should always start with an empty state.
+	undef $response;
+
+	# Start with a clean database
+	BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
+	BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
 	initialize_realtime_ticks_db();
 
 	for my $i (1 .. 10) {
