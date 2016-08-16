@@ -153,12 +153,15 @@ sub _get_values {
             local $@; # ensure we clear this first, to avoid false positive
             $template_content = eval $f;
             # undef here *probably* means invalid Perl code, which implies a broken test
-            diag "Possible exception on eval \"$f\": $@" unless defined $template_content;
+            diag "Possible exception on eval \"$f\": $@" if $@;
+            # _get_token may return undef, the template implementation is not advanced
+            # enough to support JSON null so we fall back to an empty string
+            $template_content //= '';
         } else {
             $f =~ s/^\'|\'$//g;
             $template_content = $f;
         }
-        $content =~ s/\[_$c\]/$template_content/g if defined $content;
+        $content =~ s/\[_$c\]/$template_content/g;
     }
     return $content;
 }
