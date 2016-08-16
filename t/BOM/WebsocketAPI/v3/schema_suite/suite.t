@@ -29,6 +29,7 @@ for my $i (1 .. 10) {
     sleep 1;
 }
 
+my $streams = {};
 my $stash  = {};
 my $module = Test::MockModule->new('Mojolicious::Controller');
 $module->mock(
@@ -54,7 +55,7 @@ foreach my $line (@lines) {
     $counter++;
     next if ($line =~ /^(#.*|)$/);
 
-# arbitrary perl code
+    # arbitrary perl code
     if ($line =~ s/^\[%(.*?)%\]//) {
         eval $1;
         die $@ if $@;
@@ -74,9 +75,28 @@ foreach my $line (@lines) {
         $fail = 1;
     }
 
+    my $start_stream_id;
+    if ($line =~ s/^\{start_stream:(.+?)\}//) {
+        $start_stream_id = $1;
+    }
+    my $test_stream_id;
+    if ($line =~ s/^\{test_last_stream_message:(.+?)\}//) {
+        $test_stream_id = $1;
+    }
+
     my ($send_file, $receive_file, @template_func) = split(',', $line);
     chomp $receive_file;
     diag("\nRunning line $counter [$send_file, $receive_file]\n");
+
+    if ($test_stream_id) {
+        my $content = _get_values(File::Slurp::read_file('config/v3/' . $receive_file), @template_func);
+        die 'wrong stream_id' unless $streams->{$test_stream_id};
+        my $result = $streams->{$test_stream_id}->{stream_data}->[-1];
+        _test_schema($receive_file, $content, $result, $fail);
+
+        # No need to send request
+        next;
+    }
 
     $send_file =~ /^(.*)\//;
     my $call = $1;
@@ -84,8 +104,25 @@ foreach my $line (@lines) {
     my $content = File::Slurp::read_file('config/v3/' . $send_file);
     $content = _get_values($content, @template_func);
 
+    die 'wrong stream parameters' if $start_stream_id && ! $content->{subscribe};
+
     if ($lang || !$t || $reset) {
-        $t         = build_mojo_test({($lang ne '' ? (language => $lang) : (language => $last_lang))});
+        $t = build_mojo_test(
+            {($lang ne '' ? (language => $lang) : (language => $last_lang))},
+            {},
+            sub {
+                my ($tx, $result) = @_;
+                my $call_name;
+                for my $stream_id (keys %$streams) {
+                    $call_name = $streams->{call_name} if exists $result->{$streams->{call_name}};
+                }
+                return unless $call_name;
+                for my $stream_id (keys %$streams) {
+                    push @{$streams->{$stream_id}->{stream_data}}, $result
+                        if $result->{$call_name}->{id} eq $streams->{$stream_id}->{id};
+                }
+            }
+        );
         $last_lang = $lang;
         $lang      = '';
         $reset     = '';
@@ -94,6 +131,14 @@ foreach my $line (@lines) {
     $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
     my $result = decode_json($t->message->[1]);
     $response->{$call} = $result->{$call};
+
+    if ($start_stream_id) {
+        my $id = $result->{$call}->{id};
+        die 'wrong stream response' unless $id;
+        die 'already exists same stream_id' if $streams->{$start_stream_id};
+        $streams->{$start_stream_id}->{id} = $id;
+        $streams->{$start_stream_id}->{call_name} = $call;
+    }
 
     $content = File::Slurp::read_file('config/v3/' . $receive_file);
 
