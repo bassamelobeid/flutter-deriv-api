@@ -125,15 +125,7 @@ sub get_bet_results {
         next if $date_expiry->epoch - $date_start->epoch > 365 * 86400;
         next if $date_expiry->is_a_weekend or $date_start->is_a_weekend;
 
-        my $cutoff_str  = $date_start->day_of_week == 5 ? 'UTC 21:00' : 'UTC 23:59';
-        my $vol_surface = $raw_surface->generate_surface_for_cutoff($cutoff_str);
-        my $surface     = $raw_surface->clone({
-            surface => $vol_surface,
-            cutoff  => $cutoff_str,
-        });
-
-        die "Invalid spot" if $surface->underlying_config->spot != $raw_surface->underlying_config->spot;
-
+       
         my $currency = ($base_or_num eq 'base') ? $record->{base_currency} : $record->{numeraire_currency};
         my $bet_type = $record->{bet_type};
         my $bet_args = {
@@ -141,7 +133,7 @@ sub get_bet_results {
             bet_type     => $bet_type,
             date_start   => $date_start,
             date_expiry  => $date_expiry,
-            volsurface   => $surface,
+            volsurface   => $raw_surface,
             payout       => $payout,
             currency     => $currency,
             date_pricing => $date_start,
@@ -154,7 +146,7 @@ sub get_bet_results {
         } else {
             $bet_args->{barrier} = $record->{barrier};
         }
-        $bet_args->{current_tick} = BOM::Market::Data::Tick->new(
+        $bet_args->{current_tick} = Quant::Framework::Spot::Tick->new(
             underlying => $bet_args->{underlying}->symbol,
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start}->epoch,
