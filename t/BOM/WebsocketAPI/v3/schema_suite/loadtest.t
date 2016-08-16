@@ -11,7 +11,7 @@ use Time::HiRes qw(tv_interval gettimeofday);
 use List::Util qw(min max sum);
 
 my @times;
-for my $iteration (1..2) {
+for my $iteration (1..10) {
 	my $t0 = [gettimeofday];
 	Suite->run('loadtest.conf');
 	my $elapsed = tv_interval( $t0, [gettimeofday]);
