@@ -30,8 +30,8 @@ for my $i (1 .. 10) {
 }
 
 my $streams = {};
-my $stash  = {};
-my $module = Test::MockModule->new('Mojolicious::Controller');
+my $stash   = {};
+my $module  = Test::MockModule->new('Mojolicious::Controller');
 $module->mock(
     'stash',
     sub {
@@ -104,7 +104,7 @@ foreach my $line (@lines) {
     my $content = File::Slurp::read_file('config/v3/' . $send_file);
     $content = _get_values($content, @template_func);
 
-    die 'wrong stream parameters' if $start_stream_id && ! $content->{subscribe};
+    die 'wrong stream parameters' if $start_stream_id && !$content->{subscribe};
 
     if ($lang || !$t || $reset) {
         $t = build_mojo_test(
@@ -121,8 +121,7 @@ foreach my $line (@lines) {
                     push @{$streams->{$stream_id}->{stream_data}}, $result
                         if $result->{$call_name}->{id} eq $streams->{$stream_id}->{id};
                 }
-            }
-        );
+            });
         $last_lang = $lang;
         $lang      = '';
         $reset     = '';
@@ -136,7 +135,7 @@ foreach my $line (@lines) {
         my $id = $result->{$call}->{id};
         die 'wrong stream response' unless $id;
         die 'already exists same stream_id' if $streams->{$start_stream_id};
-        $streams->{$start_stream_id}->{id} = $id;
+        $streams->{$start_stream_id}->{id}        = $id;
         $streams->{$start_stream_id}->{call_name} = $call;
     }
 

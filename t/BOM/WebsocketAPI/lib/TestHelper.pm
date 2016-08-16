@@ -48,8 +48,8 @@ sub build_mojo_test {
     push @query_params, 'app_id=' . $args->{app_id} if $args->{app_id};
     $url .= '?' . join('&', @query_params) if @query_params;
 
-    my $port = empty_port;
-    my $app = BOM::WebSocketAPI->new;
+    my $port   = empty_port;
+    my $app    = BOM::WebSocketAPI->new;
     my $daemon = Mojo::Server::Daemon->new(
         app    => $app,
         listen => ["http://127.0.0.1:$port"],
