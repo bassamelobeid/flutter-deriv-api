@@ -82,7 +82,7 @@ sub complete {
         staff             => $client->loginid,
         created_by        => '',
         trace_id          => 0,
-        payment_processor => $payment_processor,
+        payment_processor => $data->{paymentSolution},
         # transaction_id    => $transaction_id,
         # ip_address        => $ip_address, # FIXME
     );
