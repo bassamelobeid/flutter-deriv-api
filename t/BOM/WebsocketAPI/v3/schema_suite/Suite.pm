@@ -150,12 +150,15 @@ sub _get_values {
         $f =~ s/^\s+|\s+$//g;
         my $template_content;
         if ($f =~ /^\_.*$/) {
+            local $@; # ensure we clear this first, to avoid false positive
             $template_content = eval $f;
+            # undef here *probably* means invalid Perl code, which implies a broken test
+            diag "Possible exception on eval \"$f\": $@" unless defined $template_content;
         } else {
             $f =~ s/^\'|\'$//g;
             $template_content = $f;
         }
-        $content =~ s/\[_$c\]/$template_content/g;
+        $content =~ s/\[_$c\]/$template_content/g if defined $content;
     }
     return $content;
 }
