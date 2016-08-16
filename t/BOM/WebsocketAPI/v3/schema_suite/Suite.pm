@@ -14,6 +14,7 @@ use BOM::Platform::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use RateLimitations qw (flush_all_service_consumers);
 use File::Slurp;
 
 # Needs to be at top-level scope since _set_allow_omnibus and _get_stashed need access,
@@ -48,6 +49,9 @@ sub run {
 	BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
 	BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
 	initialize_realtime_ticks_db();
+
+	# Clear existing state for rate limits: verify email in particular
+	flush_all_service_consumers();
 
 	for my $i (1 .. 10) {
 		for my $symbol (qw/R_50 R_100/) {
