@@ -546,7 +546,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             currency     => 'USD',
             payout       => 100,
             date_start   => $now->epoch,
-            duration     => '2d',
+            duration     => '3d',
             current_tick => $tick,
             barrier      => 'S0P',
         });
@@ -580,7 +580,6 @@ subtest 'intraday_spot_index_turnover_limit', sub {
 
             note("mocked high_risk USD limit to 150.00");
             BOM::System::Config::quants->{risk_profile}{high_risk}{turnover}{USD} = 150.00;
-
             $contract = make_similar_contract($contract);
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
