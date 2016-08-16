@@ -20,8 +20,12 @@ use File::Slurp;
 # populated in the main run() loop
 my $response;
 
+# Used to allow ->run to happen more than once
+my $global_test_iteration = 0;
+
 sub run {
 	my ($class, $input) = @_;
+	++$global_test_iteration;
 	initialize_realtime_ticks_db();
 
 	for my $i (1 .. 10) {
@@ -58,6 +62,8 @@ sub run {
 		chomp $line;
 		$counter++;
 		next if ($line =~ /^(#.*|)$/);
+
+		s{\@binary\.com}{\@binary${global_test_iteration}.com}g;
 
 	# arbitrary perl code
 		if ($line =~ s/^\[%(.*?)%\]//) {
