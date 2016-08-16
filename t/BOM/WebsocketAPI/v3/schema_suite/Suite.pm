@@ -29,117 +29,117 @@ my $global_test_iteration = 0;
 # that there is no special handling anywhere in the code for specific accounts, which
 # may not be a valid assumption.
 sub remap_email_addresses {
-	my $txt = shift;
-	# Avoid remapping for the moment, test whether the database reset is sufficient.
-	# $txt =~ s{\@binary\.com}{-${global_test_iteration}\@binary.com}g;
-	return $txt
+    my $txt = shift;
+    # Avoid remapping for the moment, test whether the database reset is sufficient.
+    # $txt =~ s{\@binary\.com}{-${global_test_iteration}\@binary.com}g;
+    return $txt
 }
 
 sub run {
-	my ($class, $input) = @_;
+    my ($class, $input) = @_;
 
-	# When using remapped email addresses, ensure that each call to ->run increments the counter
-	++$global_test_iteration;
+    # When using remapped email addresses, ensure that each call to ->run increments the counter
+    ++$global_test_iteration;
 
-	# Throw away any existing response data - we'll build this up during a ->run session, and
-	# need to share it with other subs in this module, but should always start with an empty state.
-	undef $response;
+    # Throw away any existing response data - we'll build this up during a ->run session, and
+    # need to share it with other subs in this module, but should always start with an empty state.
+    undef $response;
 
-	# Start with a clean database
-	BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
-	BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
-	initialize_realtime_ticks_db();
+    # Start with a clean database
+    BOM::Test::Data::Utility::UnitTestDatabase->import(qw(:init));
+    BOM::Test::Data::Utility::AuthTestDatabase->import(qw(:init));
+    initialize_realtime_ticks_db();
 
-	# Clear existing state for rate limits: verify email in particular
-	flush_all_service_consumers();
+    # Clear existing state for rate limits: verify email in particular
+    flush_all_service_consumers();
 
-	for my $i (1 .. 10) {
-		for my $symbol (qw/R_50 R_100/) {
-			BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-				underlying => $symbol,
-				epoch      => Date::Utility->new->epoch,
-				quote      => 100
-			});
-		}
-		sleep 1;
-	}
+    for my $i (1 .. 10) {
+        for my $symbol (qw/R_50 R_100/) {
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                underlying => $symbol,
+                epoch      => Date::Utility->new->epoch,
+                quote      => 100
+            });
+        }
+        sleep 1;
+    }
 
-	my $stash  = {};
-	my $module = Test::MockModule->new('Mojolicious::Controller');
-	$module->mock(
-		'stash',
-		sub {
-			my (undef, @params) = @_;
-			if (@params > 1 || ref $params[0]) {
-				my $values = ref $params[0] ? $params[0] : {@params};
-				@$stash{keys %$values} = values %$values;
-			}
-			Mojo::Util::_stash(stash => @_);
-		});
+    my $stash  = {};
+    my $module = Test::MockModule->new('Mojolicious::Controller');
+    $module->mock(
+        'stash',
+        sub {
+            my (undef, @params) = @_;
+            if (@params > 1 || ref $params[0]) {
+                my $values = ref $params[0] ? $params[0] : {@params};
+                @$stash{keys %$values} = values %$values;
+            }
+            Mojo::Util::_stash(stash => @_);
+        });
 
-	my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/' . $input);
+    my @lines = File::Slurp::read_file('t/BOM/WebsocketAPI/v3/schema_suite/' . $input);
 
-	my $counter = 0;
+    my $counter = 0;
 
-	my $t;
-	my ($lang, $last_lang, $reset) = '';
-	foreach my $line (@lines) {
-		chomp $line;
-		$counter++;
-		next if ($line =~ /^(#.*|)$/);
+    my $t;
+    my ($lang, $last_lang, $reset) = '';
+    foreach my $line (@lines) {
+        chomp $line;
+        $counter++;
+        next if ($line =~ /^(#.*|)$/);
 
-		$line = remap_email_addresses($line);
+        $line = remap_email_addresses($line);
 
-	# arbitrary perl code
-		if ($line =~ s/^\[%(.*?)%\]//) {
-			eval $1;
-			die $@ if $@;
-		}
+    # arbitrary perl code
+        if ($line =~ s/^\[%(.*?)%\]//) {
+            eval $1;
+            die $@ if $@;
+        }
 
-		if ($line =~ s/^\[(\w+)\]//) {
-			$lang = $1;
-			next;
-		}
-		if ($line =~ s/^\{(\w+)\}//) {
-			$reset = $1;
-			next;
-		}
+        if ($line =~ s/^\[(\w+)\]//) {
+            $lang = $1;
+            next;
+        }
+        if ($line =~ s/^\{(\w+)\}//) {
+            $reset = $1;
+            next;
+        }
 
-		my $fail;
-		if ($line =~ s/^!//) {
-			$fail = 1;
-		}
+        my $fail;
+        if ($line =~ s/^!//) {
+            $fail = 1;
+        }
 
-		my ($send_file, $receive_file, @template_func) = split(',', $line);
-		chomp $receive_file;
-		diag("\nRunning line $counter [$send_file, $receive_file]\n");
+        my ($send_file, $receive_file, @template_func) = split(',', $line);
+        chomp $receive_file;
+        diag("\nRunning line $counter [$send_file, $receive_file]\n");
 
-		$send_file =~ /^(.*)\//;
-		my $call = $1;
+        $send_file =~ /^(.*)\//;
+        my $call = $1;
 
-		my $content = File::Slurp::read_file('config/v3/' . $send_file);
-		# Any email addresses need remapping to avoid conflicts between test runs
-		$content = remap_email_addresses($content);
-		$content = _get_values($content, @template_func);
+        my $content = File::Slurp::read_file('config/v3/' . $send_file);
+        # Any email addresses need remapping to avoid conflicts between test runs
+        $content = remap_email_addresses($content);
+        $content = _get_values($content, @template_func);
 
-		if ($lang || !$t || $reset) {
-			$t         = build_mojo_test({($lang ne '' ? (language => $lang) : (language => $last_lang))});
-			$last_lang = $lang;
-			$lang      = '';
-			$reset     = '';
-		}
+        if ($lang || !$t || $reset) {
+            $t         = build_mojo_test({($lang ne '' ? (language => $lang) : (language => $last_lang))});
+            $last_lang = $lang;
+            $lang      = '';
+            $reset     = '';
+        }
 
-		$t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
-		my $result = decode_json($t->message->[1]);
-		$response->{$call} = $result->{$call};
+        $t = $t->send_ok({json => JSON::from_json($content)})->message_ok;
+        my $result = decode_json($t->message->[1]);
+        $response->{$call} = $result->{$call};
 
-		$content = File::Slurp::read_file('config/v3/' . $receive_file);
-		# Any email addresses need remapping to avoid conflicts between test runs
-		$content = remap_email_addresses($content);
+        $content = File::Slurp::read_file('config/v3/' . $receive_file);
+        # Any email addresses need remapping to avoid conflicts between test runs
+        $content = remap_email_addresses($content);
 
-		$content = _get_values($content, @template_func);
-		_test_schema($receive_file, $content, $result, $fail);
-	}
+        $content = _get_values($content, @template_func);
+        _test_schema($receive_file, $content, $result, $fail);
+    }
 }
 
 sub _get_values {
