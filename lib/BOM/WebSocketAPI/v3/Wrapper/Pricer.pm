@@ -7,10 +7,11 @@ use Format::Util::Numbers qw(roundnear);
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use Mojo::Redis::Processor;
 use JSON::XS qw(encode_json decode_json);
-use Time::HiRes qw(gettimeofday);
+use Time::HiRes qw(gettimeofday tv_interval);
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::RPC::v3::Contract;
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 my %pricer_cmd_handler = (
     price => \&process_ask_event,
@@ -370,6 +371,10 @@ sub _price_stream_results_adjustment {
     # skips for spreads
     $_ eq $orig_args->{contract_type} and return $results for qw(SPREADU SPREADD);
 
+    # log the instances when pricing server doesn't return theo probability
+    stats_inc('price_adjustment.missing_theo_probability') unless $resp_theo_probability;
+
+    my $t = [gettimeofday];
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
     my $theo_probability = Math::Util::CalculatedValue::Validatable->new({
@@ -380,7 +385,8 @@ sub _price_stream_results_adjustment {
         minimum     => 0,
         maximum     => 1,
     });
-    $contract_parameters->{theo_probability}      = $theo_probability;
+    $contract_parameters->{theo_probability} = $theo_probability;
+
     $contract_parameters->{app_markup_percentage} = $orig_args->{app_markup_percentage};
     my $contract = BOM::RPC::v3::Contract::create_contract($contract_parameters);
 
@@ -399,6 +405,7 @@ sub _price_stream_results_adjustment {
 
     $results->{ask_price} = $results->{display_value} = $contract->ask_price;
     $results->{payout} = $contract->payout;
+    stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
 
     return $results;
 }
