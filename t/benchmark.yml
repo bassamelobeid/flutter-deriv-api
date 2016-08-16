@@ -114,10 +114,10 @@ mini:
         N225:
             ONETOUCH:
                 avg: 0.0121
-                max: 0.1506
+                max: 0.1517
             CALL:
-                avg: 0.0038
-                max: 0.0182
+                avg: 0.001
+                max: 0.0078
         SSECOMP:
             RANGE:
                 avg: 0.0351
