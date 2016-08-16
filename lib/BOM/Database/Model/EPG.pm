@@ -56,13 +56,13 @@ sub complete {
     if ($data->{amount} != $epg_request->{amount}) {
         $self->dbh->do("
             UPDATE payment.epg_request SET status = ?, remark = ? WHERE id = ?
-        ", undef, 'AMOUNT_NOT_MATCH', $data->{data}, $id);
+        ", undef, 'AMOUNT_NOT_MATCH', $data->{amount}, $id);
         return 0;
     }
     if ($data->{currency} != $epg_request->{payment_currency}) {
         $self->dbh->do("
             UPDATE payment.epg_request SET status = ?, remark = ? WHERE id = ?
-        ", undef, 'CURRENCY_NOT_MATCH', $data->{data}, $id);
+        ", undef, 'CURRENCY_NOT_MATCH', $data->{currency}, $id);
         return 0;
     }
 
@@ -79,7 +79,7 @@ sub complete {
     my %payment_args = (
         currency          => $data->{currency},
         amount            => $amount,
-        remark            => $data->{data},
+        remark            => '', # 800 chars, $data->{data} is too long to fit
         staff             => $client->loginid,
         created_by        => '',
         trace_id          => 0,
@@ -105,6 +105,10 @@ sub complete {
         }
         $trx = $client->payment_epg(%payment_args, amount => sprintf("%0.2f", -$amount));
     }
+
+    $self->dbh->do("
+        UPDATE payment.epg_request SET status = ?, remark = ? WHERE id = ?
+    ", undef, 'OK', $trx->id, $id);
 
     return $trx->id;
 }
