@@ -10,6 +10,9 @@ v3_3:
 json_schema:
 	bash -c "sudo date -s '2016-08-09 12:00:00'; prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/suite.t"
 
+loadtest:
+	bash -c 'prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/loadtest.t'
+
 structure:
 	prove --timer -I./lib  -I./t t/BOM/*.t
 
