@@ -23,8 +23,8 @@ my $min = min(@times);
 my $avg = sum(@times)/@times;
 my $max = max(@times);
 diag sprintf "min/avg/max - %.3fs/%.3fs/%.3fs", $min, $avg, $max;
-cmp_ok($avg, '>', 60, 'average time was at least 60s');
-cmp_ok($avg, '<', 120, 'average time was less than 120s');
+cmp_ok($avg, '>', 28, 'average time was high enough');
+cmp_ok($avg, '<', 37, 'average time was low enough');
 
 done_testing();
 
