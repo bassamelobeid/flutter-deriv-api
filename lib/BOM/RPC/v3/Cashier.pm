@@ -160,6 +160,10 @@ sub cashier {
                 message_to_client => localize('Verify your withdraw request.'),
             });
         }
+
+        if ($client->get_status('withdrawal_locked')) {
+            $error_sub->(localize('Your account is locked for withdrawal. Please contact customer service.'));
+        }
     }
 
     # create handoff token
