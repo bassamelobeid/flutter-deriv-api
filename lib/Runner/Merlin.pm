@@ -102,14 +102,6 @@ sub _calculate_results {
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start}->epoch,
         );
-    my $raw_surface = $bet_args->{volsurface};
-    my $cutoff_str  = $bet_args->{date_start}->day_of_week == 5 ? 'UTC 21:00' : 'UTC 23:59';
-    my $vol_surface = $raw_surface->generate_surface_for_cutoff($cutoff_str);
-    $bet_args->{volsurface} = $raw_surface->clone({
-       surface => $vol_surface,
-       cutoff  => $cutoff_str,
-     });
-
 
         my $bet           = produce_contract($bet_args);
         my $bet_type      = $bet->code;
@@ -146,6 +138,7 @@ sub _calculate_results {
 sub _get_bet_args {
     my $record = shift;
     my $when   = Date::Utility->new($record->{date_start});
+    $record->{surface}->{recorded_date} = $when;
     my $args   = {
         current_spot => $record->{current_spot},
         underlying   => $record->{underlying},
