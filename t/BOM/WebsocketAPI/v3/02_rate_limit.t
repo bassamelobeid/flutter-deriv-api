@@ -31,7 +31,7 @@ for (1 .. 60) {
 }
 
 # proposal for the rest if limited
-for (1 .. 60 {
+for (1 .. 60) {
     ok(not BOM::WebSocketAPI::Hooks::reached_limit_check(1, 'proposal', 0));
 }
 ok(BOM::WebSocketAPI::Hooks::reached_limit_check(1, 'proposal', 0));
