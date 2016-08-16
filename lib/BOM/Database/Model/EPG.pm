@@ -46,7 +46,7 @@ sub complete {
 
     my $data = $success_data[0];
     my $id = $data->{id};
-    my ($epg_request) = $self->dbh->selectrow_array("
+    my ($epg_request) = $self->dbh->selectrow_hashref("
         SELECT * FROM payment.epg_request WHERE id = ?
     ", undef, $id);
 
