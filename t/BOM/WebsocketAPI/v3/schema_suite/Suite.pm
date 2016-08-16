@@ -16,6 +16,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use RateLimitations qw (flush_all_service_consumers);
 use File::Slurp;
+use Time::HiRes qw(tv_interval gettimeofday);
 
 # Needs to be at top-level scope since _set_allow_omnibus and _get_stashed need access,
 # populated in the main run() loop
@@ -97,6 +98,7 @@ sub run {
             $fail = 1;
         }
 
+        my $t0 = [gettimeofday];
         my ($send_file, $receive_file, @template_func) = split(',', $line);
         diag("Running line $counter [$send_file, $receive_file]");
 
@@ -121,6 +123,8 @@ sub run {
 
         $content = _get_values($content, @template_func);
         _test_schema($receive_file, $content, $result, $fail);
+        my $elapsed = tv_interval($t0, [gettimeofday]);
+        diag "- took ${elapsed}s";
     }
 }
 
