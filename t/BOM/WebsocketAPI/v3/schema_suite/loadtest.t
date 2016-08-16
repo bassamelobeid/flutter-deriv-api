@@ -12,11 +12,11 @@ use List::Util qw(min max sum);
 
 my @times;
 for my $iteration (1..10) {
-	my $t0 = [gettimeofday];
-	Suite->run('loadtest.conf');
-	my $elapsed = tv_interval( $t0, [gettimeofday]);
-	diag "Took $elapsed seconds for loadtest";
-	push @times, $elapsed;
+    my $t0 = [gettimeofday];
+    Suite->run('loadtest.conf');
+    my $elapsed = tv_interval( $t0, [gettimeofday]);
+    diag "Took $elapsed seconds for loadtest";
+    push @times, $elapsed;
 }
 
 my $min = min(@times);
