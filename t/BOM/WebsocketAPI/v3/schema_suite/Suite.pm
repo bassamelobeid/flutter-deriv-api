@@ -23,6 +23,12 @@ my $response;
 # Used to allow ->run to happen more than once
 my $global_test_iteration = 0;
 
+sub remap_email_addresses {
+	my $txt = shift;
+	$txt =~ s{\@binary\.com}{\@binary${global_test_iteration}.com}g;
+	return $txt
+}
+
 sub run {
 	my ($class, $input) = @_;
 	++$global_test_iteration;
@@ -63,7 +69,7 @@ sub run {
 		$counter++;
 		next if ($line =~ /^(#.*|)$/);
 
-		$line =~ s{\@binary\.com}{\@binary${global_test_iteration}.com}g;
+		$line = remap_email_addresses($line);
 
 	# arbitrary perl code
 		if ($line =~ s/^\[%(.*?)%\]//) {
@@ -93,6 +99,8 @@ sub run {
 		my $call = $1;
 
 		my $content = File::Slurp::read_file('config/v3/' . $send_file);
+		# Any email addresses need remapping to avoid conflicts between test runs
+		$content = remap_email_addresses($content);
 		$content = _get_values($content, @template_func);
 
 		if ($lang || !$t || $reset) {
@@ -107,6 +115,8 @@ sub run {
 		$response->{$call} = $result->{$call};
 
 		$content = File::Slurp::read_file('config/v3/' . $receive_file);
+		# Any email addresses need remapping to avoid conflicts between test runs
+		$content = remap_email_addresses($content);
 
 		$content = _get_values($content, @template_func);
 		_test_schema($receive_file, $content, $result, $fail);
